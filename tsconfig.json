@@ -1,0 +1,21 @@
+{
+  "files": [],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "ignoreDeprecations": "6.0",
+    "paths": {
+      "@": ["./src"],
+      "@/*": ["./src/*"],
+      "~components": ["./src/components"],
+      "~components/*": ["./src/components/*"],
+      "~features": ["./src/features"],
+      "~features/*": ["./src/features/*"],
+      "~types": ["./src/types"],
+      "~types/*": ["./src/types/*"]
+    }
+  },
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.node.json" }
+  ]
+}
