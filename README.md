@@ -40,7 +40,7 @@ Import aliases are available for `@/`, `~components/`, `~features/`, and `~types
 
 ## UI foundation
 
-Tailwind CSS v4 is integrated through `@tailwindcss/vite`; its CSS entry point is `src/styles/globals.css`. shadcn/ui uses the Radix Nova preset, neutral CSS variables, the existing `@/` alias, and selects Lucide for future generated components. It is source-owned: no `src/components/ui` component has been installed yet. Add one only when a feature needs it:
+Tailwind CSS v4 is integrated through `@tailwindcss/vite`; its CSS entry point is `src/styles/globals.css`. shadcn/ui uses the Radix Nova preset, neutral CSS variables, the existing `@/` alias, and selects Lucide for generated components. `lucide-react` is available for future icons, but no source-owned shadcn component has been installed yet. Add one only when a feature needs it:
 
 ```bash
 npx shadcn@4.21.0 add button
@@ -55,6 +55,11 @@ npx shadcn@4.21.0 add button
 | React | 19.3.0 | UI runtime. |
 | React DOM | 19.3.0 | Browser renderer. |
 | `cn` | 0.3.0 | Class composition utility re-exported by `src/lib/utils.ts`. |
+| `lucide-react` | 1.46.0 | Icon components for the application and future shadcn components. |
+| `react-hook-form` | 7.88.0 | Performant, type-friendly form state and validation integration. |
+| `react-router-dom` | 7.18.3 | Client-side routing primitives for navigable views. |
+| `zod` | 4.6.5 | TypeScript-first schema validation. |
+| `zustand` | 5.0.15 | Lightweight shared client-state management. |
 
 ### Development and authoring
 
@@ -86,4 +91,4 @@ npx shadcn@4.21.0 add button
 
 ## Dependencies intentionally deferred
 
-Routing, server-state/query libraries, global state managers, form libraries, a test framework, CI, and deployment configuration are added only when a feature justifies them. This keeps the starter dependency graph intentional.
+Server-state/query libraries, a test framework, CI, and deployment configuration are added only when a feature justifies them. The installed routing, form, validation, icon, and state libraries are available for the first feature, but are not configured or adopted in source yet.
