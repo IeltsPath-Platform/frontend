@@ -1,94 +1,61 @@
-# React web scaffold
+# IeltsPath Platform Frontend
 
-React application foundation with Tailwind CSS v4 and shadcn/ui ready for feature work. Exact versions below come from the current `package-lock.json`.
+Frontend của nền tảng luyện thi IELTS **IeltsPath Platform**. Repository hiện mới có khung ứng dụng React chạy trên trình duyệt và một trang giới thiệu tĩnh; các tính năng luyện thi chưa được triển khai.
 
-## Prerequisites
+## Công nghệ hiện có
 
-- Node.js 24.21.0 (recorded in `.nvmrc`)
-- npm 11.19.0
+- **Ứng dụng và build:** Node.js 24, npm 11, React 19.3.0, React DOM 19.3.0, TypeScript 6 ở chế độ `strict`, Vite 8.3.0 và `@vitejs/plugin-react`.
+- **Giao diện:** Tailwind CSS 4 qua `@tailwindcss/vite`, `tw-animate-css`, cấu hình shadcn/ui CLI (preset Radix Nova) và tiện ích `cn`. Chưa có component shadcn nào được thêm vào mã nguồn.
+- **Kiểm tra và kiểu:** ESLint 9 với `@eslint/js`, `typescript-eslint`, `eslint-plugin-react-hooks`, `eslint-plugin-react-refresh`, `globals`; các gói kiểu `@types/node`, `@types/react`, `@types/react-dom`.
+- **Đã cài nhưng chưa dùng trong ứng dụng:** `react-router-dom`, Zustand, `react-hook-form`, Zod và `lucide-react`.
 
-## Getting started
+Phiên bản và các script được khai báo trong [`package.json`](./package.json); phiên bản dependency đã giải quyết nằm trong [`package-lock.json`](./package-lock.json).
+
+## Chạy trên máy cá nhân
+
+Cần **Node.js 24.21.0** theo [`.nvmrc`](./.nvmrc) và **npm 11.19.0** theo `package.json`. Từ một thư mục làm việc bất kỳ:
 
 ```bash
+git clone https://github.com/IeltsPath-Platform/frontend.git
+cd frontend
 npm ci
 npm run dev
 ```
 
-## Commands
+Mở địa chỉ Vite in ra trong terminal. Khung ứng dụng hiện tại không cần cấu hình `.env` hoặc chạy backend.
 
-| Command | Purpose |
-|---|---|
-| `npm run dev` | Start the Vite development server. |
-| `npm run build` | Type-check and create the production bundle. |
-| `npm run typecheck` | Run strict TypeScript checks without bundling. |
-| `npm run lint` | Run ESLint for TypeScript and React code. |
-| `npm run preview` | Preview the production bundle locally. |
+## Lệnh thường dùng
 
-## Source layout
+| Lệnh | Tác dụng |
+| --- | --- |
+| `npm run dev` | Chạy máy chủ phát triển Vite. |
+| `npm run typecheck` | Kiểm tra kiểu TypeScript (`tsc -b`). |
+| `npm run lint` | Kiểm tra mã bằng ESLint. |
+| `npm run build` | Kiểm tra kiểu và tạo bản build production trong `dist/`. |
+| `npm run preview` | Xem bản build sau khi chạy `npm run build`. |
+
+Hiện chưa có script `test` hoặc bộ kiểm thử tự động trong repository.
+
+## Cấu trúc và quy ước
 
 ```text
 src/
-  app/          # Application composition
-  components/   # Reusable UI; shadcn components are added under ui/
-  features/     # Domain feature modules
-  lib/          # Shared utilities, including the shadcn cn helper
-  styles/       # Global CSS, Tailwind imports, and shadcn theme tokens
-  types/        # Cross-feature types
+  main.tsx       Điểm khởi chạy React
+  app/           Component gốc và CSS của màn hình hiện tại
+  styles/        CSS toàn cục, Tailwind và token giao diện
+  lib/           Tiện ích dùng chung (`cn`)
+  components/    Vị trí dành cho component tái sử dụng
+  features/      Vị trí dành cho mô-đun tính năng
+  types/         Vị trí dành cho kiểu dùng chung
 ```
 
-Import aliases are available for `@/`, `~components/`, `~features/`, and `~types/`.
+Ba thư mục `components/`, `features/` và `types/` hiện chỉ có `.gitkeep`. Alias import đã cấu hình: `@/` → `src/`, `~components/` → `src/components/`, `~features/` → `src/features/`, `~types/` → `src/types/`. Quy ước chi tiết về tên file, cấu trúc tính năng và UI nằm trong [`AGENTS.md`](./AGENTS.md).
 
-## UI foundation
+## Kết nối backend
 
-Tailwind CSS v4 is integrated through `@tailwindcss/vite`; its CSS entry point is `src/styles/globals.css`. shadcn/ui uses the Radix Nova preset, neutral CSS variables, the existing `@/` alias, and selects Lucide for generated components. `lucide-react` is available for future icons, but no source-owned shadcn component has been installed yet. Add one only when a feature needs it:
+Mã nguồn hiện chưa có lời gọi API, HTTP client, endpoint, proxy hay biến môi trường cho backend. Vì vậy có thể chạy trang hiện tại độc lập; cách kết nối backend sẽ cần được xác định khi triển khai tính năng đầu tiên.
 
-```bash
-npx shadcn@4.21.0 add button
-```
+## Đọc tiếp
 
-## Technology inventory
-
-### Application runtime dependencies
-
-| Technology | Version | Purpose |
-|---|---:|---|
-| React | 19.3.0 | UI runtime. |
-| React DOM | 19.3.0 | Browser renderer. |
-| `cn` | 0.3.0 | Class composition utility re-exported by `src/lib/utils.ts`. |
-| `lucide-react` | 1.46.0 | Icon components for the application and future shadcn components. |
-| `react-hook-form` | 7.88.0 | Performant, type-friendly form state and validation integration. |
-| `react-router-dom` | 7.18.3 | Client-side routing primitives for navigable views. |
-| `zod` | 4.6.5 | TypeScript-first schema validation. |
-| `zustand` | 5.0.15 | Lightweight shared client-state management. |
-
-### Development and authoring
-
-| Technology | Version | Purpose |
-|---|---:|---|
-| Node.js | 24.21.0 | Project runtime, recorded in `.nvmrc`. |
-| npm | 11.19.0 | Package manager and lockfile producer. |
-| Vite | 8.3.0 | Development server and production build. |
-| `@vitejs/plugin-react` | 6.1.1 | React transform for Vite. |
-| TypeScript | 6.0.3 | Strict static type checking. |
-| `@types/node` | 24.13.4 | Vite configuration typings. |
-| `@types/react` | 19.3.0 | React TypeScript declarations. |
-| `@types/react-dom` | 19.3.0 | React DOM TypeScript declarations. |
-| Tailwind CSS | 4.3.3 | Utility-first styling engine. |
-| `@tailwindcss/vite` | 4.3.3 | Tailwind v4 Vite integration. |
-| shadcn/ui | 4.21.0 | CLI and CSS layer used to author source-owned UI components. |
-| `tw-animate-css` | 1.4.0 | Tailwind-compatible animation utilities. |
-
-### Code quality
-
-| Technology | Version | Purpose |
-|---|---:|---|
-| ESLint | 9.39.5 | JavaScript and TypeScript linting. |
-| `@eslint/js` | 9.39.5 | ESLint base recommended rules. |
-| `typescript-eslint` | 8.70.0 | TypeScript-aware ESLint rules. |
-| `eslint-plugin-react-hooks` | 7.1.1 | React Hook correctness rules. |
-| `eslint-plugin-react-refresh` | 0.4.26 | Vite Fast Refresh safety rules. |
-| `globals` | 16.5.0 | Browser globals for ESLint. |
-
-## Dependencies intentionally deferred
-
-Server-state/query libraries, a test framework, CI, and deployment configuration are added only when a feature justifies them. The installed routing, form, validation, icon, and state libraries are available for the first feature, but are not configured or adopted in source yet.
+- [`AGENTS.md`](./AGENTS.md): quy tắc phát triển và định hướng kiến trúc.
+- [`plans/`](./plans/): kế hoạch theo từng công việc; kiểm tra trạng thái plan trước khi áp dụng.
