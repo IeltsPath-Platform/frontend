@@ -1,6 +1,6 @@
 # IeltsPath Platform Frontend
 
-Frontend của nền tảng luyện thi IELTS **IeltsPath Platform**. Repository hiện mới có khung ứng dụng React chạy trên trình duyệt và một trang giới thiệu tĩnh; các tính năng luyện thi chưa được triển khai.
+Frontend của nền tảng luyện thi IELTS **IeltsPath Platform**. Ứng dụng hiện có trang chủ công khai, mock-first workspace cho kho đề, phòng thi Reading, dashboard học viên, AI Writing review và xác thực demo.
 
 ## Công nghệ hiện có
 
@@ -51,9 +51,11 @@ src/
 
 Ba thư mục `components/`, `features/` và `types/` hiện chỉ có `.gitkeep`. Alias import đã cấu hình: `@/` → `src/`, `~components/` → `src/components/`, `~features/` → `src/features/`, `~types/` → `src/types/`. Quy ước chi tiết về tên file, cấu trúc tính năng và UI nằm trong [`AGENTS.md`](./AGENTS.md).
 
-## Kết nối backend
+## Kết nối backend và mock mode
 
-Mã nguồn hiện chưa có lời gọi API, HTTP client, endpoint, proxy hay biến môi trường cho backend. Vì vậy có thể chạy trang hiện tại độc lập; cách kết nối backend sẽ cần được xác định khi triển khai tính năng đầu tiên.
+Ứng dụng chạy độc lập bằng mock data khi chưa cấu hình `VITE_API_BASE_URL` (mặc định), hoặc khi đặt `VITE_USE_MOCK=true`. HTTP client dùng `withCredentials: true`; access/refresh token phải do backend quản lý bằng HttpOnly cookie và không được đưa vào `localStorage`.
+
+Khi có gateway backend, cấu hình một `VITE_API_BASE_URL` công khai (không chứa secret). Request `401` sẽ gọi `/auth/refresh` một lần cho các request đồng thời rồi thử lại request gốc. Các route mock hiện phục vụ session hiện tại, exam bank và dashboard để giao diện tiếp tục hoạt động nếu API trả lỗi.
 
 ## Đọc tiếp
 
