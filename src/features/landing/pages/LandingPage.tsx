@@ -1,101 +1,129 @@
-import { ArrowRight, BookOpenCheck, BrainCircuit, ChartNoAxesCombined, Check, GraduationCap, Headphones, PenLine, Quote, Sparkles } from "lucide-react"
 import { Link } from "react-router-dom"
-import heroImage from "@/assets/ielts-study-hero.png"
-import { PublicHeader } from "@/components/common/PublicHeader"
-import { Button } from "@/components/ui/button"
+import { ARTICLES, CATALOG, SKILL_ENTRIES } from "@/lib/mock/catalog"
 
-const learningPaths = [
-  {
-    title: "Luyện đề 4 kỹ năng",
-    description: "Kho Reading, Listening, Writing và Speaking để bạn luyện đúng phần đang yếu.",
-    icon: Headphones,
-    to: "/auth/login",
-    accent: "free",
-  },
-  {
-    title: "AI Review có định hướng",
-    description: "Hiểu lỗi trong Writing bằng feedback theo từng câu, thay vì chỉ nhận một con số.",
-    icon: BrainCircuit,
-    to: "/assistant",
-    accent: "review",
-  },
-  {
-    title: "Lộ trình Band 7.5",
-    description: "Chọn từng mục tiêu tuần để biến một band mong muốn thành kế hoạch có thể làm được.",
-    icon: ChartNoAxesCombined,
-    to: "/auth/register",
-    accent: "plan",
-  },
-]
+const skillClass: Record<string, string> = {
+  LISTENING: "skill-listening",
+  READING: "skill-reading",
+  WRITING: "skill-writing",
+  SPEAKING: "skill-speaking",
+}
 
 export function LandingPage() {
+  const preview = CATALOG.slice(0, 6)
+
   return (
-    <div className="landing">
-      <a className="skip-link" href="#main-content">Bỏ qua điều hướng</a>
-      <PublicHeader />
-      <main id="main-content" tabIndex={-1}>
-        <section className="landing-hero" aria-labelledby="landing-title">
-          <div className="landing-hero__copy">
-            <p className="landing-kicker"><Sparkles aria-hidden="true" /> Không học một mình</p>
-            <h1 id="landing-title">Học đều mỗi ngày.<br /><span>Band tiến mỗi tuần.</span></h1>
-            <p>IELTSPath chia nhỏ hành trình 4 kỹ năng thành những bài luyện rõ ràng, để bạn luôn biết mình đang tiến về đâu.</p>
-            <div className="landing-hero__actions">
-              <Button asChild size="lg"><Link to="/auth/register">Bắt đầu lộ trình <ArrowRight aria-hidden="true" /></Link></Button>
-              <Button asChild variant="outline" size="lg"><Link to="/exams">Xem kho đề</Link></Button>
-            </div>
-            <ul className="landing-proof" aria-label="Các lợi ích chính">
-              <li><Check aria-hidden="true" /> Mô phỏng thi máy</li>
-              <li><Check aria-hidden="true" /> Feedback dễ hiểu</li>
-              <li><Check aria-hidden="true" /> Theo dõi tiến bộ</li>
-            </ul>
+    <main id="main-content" tabIndex={-1}>
+      <section className="hero">
+        <div className="hero__copy">
+          <p className="kicker">Phòng thi trên máy</p>
+          <h1>Luyện đề IELTS đủ 4 kỹ năng.</h1>
+          <p>Làm bài với đồng hồ, bảng câu hỏi và bài đọc cạnh nhau. Nộp xong là có điểm, lời giải và vị trí thông tin trong bài.</p>
+          <div className="hero__actions">
+            <Link className="cta" to="/practice">Luyện đề miễn phí</Link>
+            <Link className="cta cta--ghost" to="/roadmap">Xem lộ trình 7.0</Link>
           </div>
-          <figure className="landing-hero__art">
-            <img src={heroImage} alt="Minh họa một người học IELTS chăm chú học cùng tai nghe, sách và đồng hồ học tập." />
-            <figcaption><BookOpenCheck aria-hidden="true" /> 15 phút tập trung hôm nay cũng tạo khác biệt.</figcaption>
-          </figure>
-        </section>
-
-        <section className="landing-entry" aria-labelledby="entry-title">
-          <div className="landing-section-heading"><p className="landing-kicker">Chọn nơi bắt đầu</p><h2 id="entry-title">Một platform, ba cách để tiến về mục tiêu.</h2></div>
-          <div className="landing-entry__grid">
-            {learningPaths.map((path) => {
-              const Icon = path.icon
-              return (
-                <article className={`learning-card learning-card--${path.accent}`} key={path.title}>
-                  <div className="learning-card__icon"><Icon aria-hidden="true" /></div>
-                  <h3>{path.title}</h3>
-                  <p>{path.description}</p>
-                  <Link to={path.to}>Khám phá <ArrowRight aria-hidden="true" /></Link>
-                </article>
-              )
-            })}
-          </div>
-        </section>
-
-        <section className="landing-path" id="learning-path" aria-labelledby="path-title">
-          <div className="landing-path__steps">
-            <p className="landing-kicker">Học có nhịp, không bị ngợp</p>
-            <h2 id="path-title">Chỉ cần bạn dành thời gian.<br /><span>Phần còn lại, IELTSPath giúp sắp xếp.</span></h2>
+          <ul className="hero__facts">
+            <li><strong>186</strong><span>đề Listening và Reading</span></li>
+            <li><strong>42</strong><span>dạng câu hỏi tách riêng</span></li>
+            <li><strong>4</strong><span>tiêu chí chấm Writing</span></li>
+          </ul>
+        </div>
+        <aside className="console" aria-label="Minh họa màn hình làm bài Reading">
+          <header><span>Reading · Cambridge 18 Test 2</span><strong>47:12</strong></header>
+          <div className="console__split">
+            <p>Researchers caution that a garden cannot solve every environmental problem, yet its value often lies in the habits it encourages.</p>
             <ol>
-              <li><span>01</span><div><strong>Nhìn rõ điểm xuất phát</strong><p>Chọn kỹ năng và band mục tiêu phù hợp với bạn.</p></div></li>
-              <li><span>02</span><div><strong>Luyện theo phiên ngắn</strong><p>Tập trung một việc quan trọng mỗi lần học.</p></div></li>
-              <li><span>03</span><div><strong>Đọc feedback, sửa ngay</strong><p>Biết vì sao sai để không lặp lại ở bài tiếp theo.</p></div></li>
+              <li><b>1</b> Urban gardens help neighbours meet. <em>TRUE</em></li>
+              <li><b>2</b> Gardens fix every city problem. <em>FALSE</em></li>
+              <li><b>3</b> The best review hour is 10 p.m. <em>NOT GIVEN</em></li>
+              <li className="is-current"><b>4</b> Fixed sea walls are no longer built.</li>
             </ol>
           </div>
-          <aside className="landing-path__panel" aria-label="Mẫu kế hoạch học tập">
-            <div className="path-panel__header"><span><GraduationCap aria-hidden="true" /> Kế hoạch tuần này</span><strong>7.5</strong></div>
-            <div className="path-panel__progress"><p>3 / 5 phiên đã hoàn thành</p><div><span /></div></div>
-            <ul><li><Check aria-hidden="true" /> Reading: Matching headings</li><li><Check aria-hidden="true" /> Listening: Note completion</li><li><PenLine aria-hidden="true" /> Writing: Topic sentences</li></ul>
-            <Button asChild variant="secondary"><Link to="/auth/register">Tạo lộ trình của tôi <ArrowRight aria-hidden="true" /></Link></Button>
-          </aside>
-        </section>
+          <footer>
+            {Array.from({ length: 14 }, (_, index) => <span key={index} className={index < 3 ? "is-done" : index === 3 ? "is-now" : ""}>{index + 1}</span>)}
+          </footer>
+        </aside>
+      </section>
 
-        <section className="landing-story" aria-labelledby="story-title">
-          <Quote aria-hidden="true" />
-          <div><p className="landing-kicker">Trải nghiệm học tập</p><h2 id="story-title">“Khi biết mình cần sửa gì, việc luyện IELTS trở nên nhẹ nhàng hơn hẳn.”</h2><p>IELTSPath được thiết kế để biến những buổi tự học rời rạc thành một hành trình có phản hồi, có định hướng và có động lực tiếp tục.</p></div>
-        </section>
-      </main>
-      <footer className="landing-footer"><div><Link className="brand brand--public" to="/home"><GraduationCap aria-hidden="true" /> IELTS<span>Path</span></Link><p>Nền tảng luyện thi IELTS theo nhịp học của bạn.</p></div><Button asChild variant="outline"><Link to="/auth/login">Vào không gian học <ArrowRight aria-hidden="true" /></Link></Button></footer>
-    </div>
+      <section className="band" aria-labelledby="skill-title">
+        <div className="section-head">
+          <h2 id="skill-title">Chọn một kỹ năng và vào đề.</h2>
+          <Link to="/practice">Mở cả kho đề</Link>
+        </div>
+        <div className="skill-row">
+          {SKILL_ENTRIES.map((item) => (
+            <Link className={`skill-tile ${skillClass[item.skill]}`} key={item.skill} to={`/practice?skill=${item.skill}`}>
+              <span>{item.count}</span>
+              <strong>{item.label}</strong>
+              <p>{item.detail}</p>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className="band band--paper" aria-labelledby="bank-title">
+        <div className="section-head">
+          <h2 id="bank-title">Đề vừa được mở</h2>
+          <Link to="/practice">Lọc theo sách và dạng bài</Link>
+        </div>
+        <div className="test-table" role="table" aria-label="Sáu đề mới">
+          {preview.map((test) => (
+            <Link role="row" className="test-row" key={test.id} to={`/practice?skill=${test.skill}`}>
+              <span className={`pill ${skillClass[test.skill] ?? "skill-full"}`}>{test.skill === "FULL_TEST" ? "Full test" : test.skill[0] + test.skill.slice(1).toLowerCase()}</span>
+              <span><strong>{test.title}</strong><small>{test.source} · {test.questionType}</small></span>
+              <span>{test.questionCount} câu · {test.durationMinutes} phút</span>
+              <span>Band TB {test.averageBand.toFixed(1)}</span>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className="band split" aria-labelledby="after-title">
+        <div>
+          <p className="kicker">Sau khi nộp</p>
+          <h2 id="after-title">Biết mình sai ở đâu, không chỉ biết bao nhiêu câu đúng.</h2>
+          <ul className="check-list">
+            <li><strong>Lời giải từng câu</strong><span>Giải thích vì sao TRUE, FALSE hoặc NOT GIVEN.</span></li>
+            <li><strong>Định vị trong bài</strong><span>Nhảy tới câu chứa manh mối, hoặc thấy rõ khi bài không nói.</span></li>
+            <li><strong>Tra từ ngay tại chỗ</strong><span>Nghĩa theo đúng đoạn đang đọc, rồi lưu vào sổ.</span></li>
+            <li><strong>Dictation</strong><span>Nghe lại một câu và chép chính tả trước khi làm full test.</span></li>
+          </ul>
+        </div>
+        <article className="explain-card">
+          <p>Câu 4 · NOT GIVEN</p>
+          <h3>The best hour to review vocabulary is 10 p.m.</h3>
+          <p>Bài chỉ nói một lần ôn ngắn trước khi ngủ thường xuyên có ích hơn là học khuya. Không có giờ cụ thể, nên không thể kết luận câu này đúng hay sai.</p>
+          <Link to="/blog/tfng-khong-phai-doan">Đọc cách xử lý dạng này</Link>
+        </article>
+      </section>
+
+      <section className="band course" aria-labelledby="course-title">
+        <div>
+          <p className="kicker">12 tuần</p>
+          <h2 id="course-title">Lộ trình Intensive 7.0</h2>
+          <p>Dành cho bạn đang quanh band 5.5–6.5 và muốn một lịch làm bài cụ thể, không phải danh sách mẹo.</p>
+          <Link className="cta" to="/roadmap">Mở lịch 12 tuần</Link>
+        </div>
+        <ol>
+          <li><strong>Đo trình độ</strong><span>Một bài Reading và nửa bài Listening, đúng giờ.</span></li>
+          <li><strong>Sửa dạng hay sai</strong><span>Chỉ luyện dạng đang mất điểm, không làm lan man.</span></li>
+          <li><strong>Viết và nói</strong><span>Task 2 có chấm 4 tiêu chí, cue card đủ 2 phút.</span></li>
+          <li><strong>Thi thử</strong><span>Một full test mỗi tuần, xem lại trong 24 giờ.</span></li>
+        </ol>
+      </section>
+
+      <section className="band" aria-labelledby="read-title">
+        <div className="section-head"><h2 id="read-title">Đọc trước khi vào đề</h2><Link to="/blog">Tất cả bài viết</Link></div>
+        <div className="article-row">
+          {ARTICLES.slice(0, 3).map((article) => (
+            <Link key={article.slug} to={`/blog/${article.slug}`}>
+              <span>{article.kicker} · {article.minutes} phút</span>
+              <strong>{article.title}</strong>
+              <p>{article.lead}</p>
+            </Link>
+          ))}
+        </div>
+      </section>
+    </main>
   )
 }

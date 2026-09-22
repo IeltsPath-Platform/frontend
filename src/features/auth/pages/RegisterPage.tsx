@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { ArrowRight } from "lucide-react"
-import { Link, useNavigate } from "react-router-dom"
+import { Link, useLocation, useNavigate } from "react-router-dom"
 import { AuthLayout } from "@/components/layouts/AuthLayout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -8,7 +8,9 @@ import { useAuthStore } from "@/features/auth/store/useAuthStore"
 
 export function RegisterPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const signInWithMock = useAuthStore((state) => state.signInWithMock)
+  const nextPath = (location.state as { from?: string } | null)?.from ?? "/dashboard"
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -16,7 +18,7 @@ export function RegisterPage() {
     setIsSubmitting(true)
     window.setTimeout(() => {
       signInWithMock()
-      navigate("/dashboard")
+      navigate(nextPath)
     }, 250)
   }
 

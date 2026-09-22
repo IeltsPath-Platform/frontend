@@ -13,7 +13,7 @@ export function DashboardPage() {
 
   return (
     <main className="page dashboard" id="main-content" tabIndex={-1}>
-      <section className="dashboard-welcome"><div><p className="eyebrow">Lộ trình của {user?.fullName.split(" ").slice(-1)}</p><h1>Hôm nay, mình tiến thêm một chút nhé.</h1><p>Band Reading của bạn đang là điểm tựa. Hãy dùng đà này để cải thiện cách phát triển ý trong Writing.</p></div><Button asChild size="lg"><Link to="/exams">Làm bài luyện hôm nay <ArrowRight aria-hidden="true" /></Link></Button></section>
+      <section className="dashboard-welcome"><div><p className="eyebrow">Bảng tiến độ</p><h1>{user?.fullName.split(" ").slice(-1)}, band đang ở 7.0.</h1><p>Reading giữ nhịp. Việc tiếp theo là viết lại câu chủ đề ở Task 2 trước khi làm full test.</p></div><Button asChild size="lg"><Link to="/practice">Làm đề tiếp theo <ArrowRight aria-hidden="true" /></Link></Button></section>
 
       <section className="dashboard-overview" aria-label="Tổng quan điểm số">
         <Card className="overall-band-card"><CardContent><p>Overall band dự đoán</p><strong>7.0</strong><div><Badge>+0.5 so với tháng trước</Badge><span><Target aria-hidden="true" /> Target {user?.targetBand ?? 7.5}</span></div></CardContent></Card>
