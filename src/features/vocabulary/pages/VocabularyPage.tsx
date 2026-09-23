@@ -1,18 +1,22 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { VOCAB_TOPICS } from "@/lib/mock/catalog"
 
 const STORAGE_KEY = "ieltspath-vocab"
 
 export function VocabularyPage() {
-  const [saved, setSaved] = useState<string[]>([])
+  const [saved, setSaved] = useState<string[]>(() => {
+    if (typeof window === "undefined") return []
+    const raw = window.localStorage.getItem(STORAGE_KEY)
+    if (!raw) return []
+    try {
+      return JSON.parse(raw) as string[]
+    } catch {
+      return []
+    }
+  })
   const [open, setOpen] = useState<string | null>(null)
   const [topicId, setTopicId] = useState(VOCAB_TOPICS[0].id)
   const topic = VOCAB_TOPICS.find((item) => item.id === topicId) ?? VOCAB_TOPICS[0]
-
-  useEffect(() => {
-    const raw = window.localStorage.getItem(STORAGE_KEY)
-    if (raw) setSaved(JSON.parse(raw) as string[])
-  }, [])
 
   const toggleSave = (word: string) => {
     const next = saved.includes(word) ? saved.filter((item) => item !== word) : [...saved, word]
