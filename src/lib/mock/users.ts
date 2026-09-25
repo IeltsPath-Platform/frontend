@@ -7,6 +7,14 @@ export const CURRENT_STUDENT: User = {
   targetBand: 7.5,
   roles: ["CUSTOMER"],
   status: "ACTIVE",
+  tier: "FREE",
+  points: 120,
+}
+
+export const PREMIUM_STUDENT: User = {
+  ...CURRENT_STUDENT,
+  tier: "PREMIUM",
+  points: 9999,
 }
 
 export const MOCK_USERS: User[] = [

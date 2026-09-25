@@ -57,8 +57,12 @@ export function TopBar() {
   const user = useAuthStore((state) => state.user)
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const signOut = useAuthStore((state) => state.signOut)
+  const toggleTier = useAuthStore((state) => state.toggleTier)
   const navigate = useNavigate()
   const [scrolled, setScrolled] = useState(false)
+
+  const isPremium = user?.tier === "PREMIUM"
+  const points = user?.points ?? 120
 
   useEffect(() => {
     const handleScroll = () => {
@@ -71,7 +75,7 @@ export function TopBar() {
   const initials = user?.fullName.split(" ").slice(-2).map((part) => part[0]).join("") ?? "IP"
 
   return (
-    <header className={`topbar ${scrolled ? "topbar--scrolled" : ""}`}>
+    <header className={`topbar ${scrolled ? "topbar--scrolled" : ""} anim-entrance-header`}>
       <div className="topbar__inner">
         {/* Brand Logo on the left (clean, without PRO) */}
         <Link className="mark" to="/home" aria-label="IELTSPath, trang chủ">
@@ -124,29 +128,89 @@ export function TopBar() {
           ))}
         </nav>
 
-        {/* Account actions */}
+        {/* Account actions: Free (Points) vs Premium (Animated Halo) */}
         <div className="topbar__account">
           {isAuthenticated ? (
             <details className="account">
-              <summary>
-                <span className="avatar" aria-hidden="true">{initials}</span>
+              <summary className="account-summary-btn" title="Tài khoản & Gói học viên">
+                <div className={`avatar-tier-wrap ${isPremium ? "avatar-tier-wrap--premium" : "avatar-tier-wrap--free"}`}>
+                  {isPremium && (
+                    <div className="premium-halo-ring" aria-hidden="true">
+                      <span className="premium-halo-glow" />
+                      <span className="premium-halo-sparkle premium-halo-sparkle--1" />
+                      <span className="premium-halo-sparkle premium-halo-sparkle--2" />
+                      <span className="premium-halo-sparkle premium-halo-sparkle--3" />
+                    </div>
+                  )}
+                  <span
+                    className={`avatar ${isPremium ? "avatar--premium-circle" : "avatar--free-circle"}`}
+                    aria-hidden="true"
+                  >
+                    {initials}
+                  </span>
+                  <span
+                    className={`avatar-tier-pill ${isPremium ? "avatar-tier-pill--premium" : "avatar-tier-pill--free"}`}
+                    title={isPremium ? "Gói Premium - Không giới hạn chấm AI" : "Gói Free - Dùng điểm Point"}
+                  >
+                    {isPremium ? "Premium" : "Free"}
+                  </span>
+                </div>
                 <span className="account__identity">
                   <span className="account__name">{user?.fullName}</span>
-                  <span className="account__tier">PRO</span>
+                  {isPremium ? (
+                    <span className="account__tier account__tier--premium">
+                      <span className="tier-star-icon">★</span> Premium Member
+                    </span>
+                  ) : (
+                    <span
+                      className="account__tier account__tier--points"
+                      title="Số Point chấm AI hiện có (tự trừ khi chấm bài)"
+                    >
+                      <span className="tier-points-icon">⚡</span> {points} Points
+                    </span>
+                  )}
                 </span>
               </summary>
               <div className="account__panel">
-                <Link to="/dashboard">Bảng tiến độ</Link>
-                <Link to="/assistant">Chấm Writing AI</Link>
-                <button
-                  type="button"
-                  onClick={() => {
-                    signOut()
-                    navigate("/home")
-                  }}
-                >
-                  Đăng xuất
-                </button>
+                <div className={`account__tier-card account__tier-card--${isPremium ? "premium" : "free"}`}>
+                  <div className="account__tier-card-head">
+                    <span className="account__tier-card-badge">
+                      {isPremium ? "★ Gói Premium" : "Gói Miễn phí (Free)"}
+                    </span>
+                    {isPremium ? (
+                      <span className="account__tier-unlimited">AI Không giới hạn</span>
+                    ) : (
+                      <span className="account__tier-points-val">⚡ {points} Points</span>
+                    )}
+                  </div>
+                  <p className="account__tier-card-desc">
+                    {isPremium
+                      ? "Không giới hạn lượt chấm AI Writing & Speaking chi tiết."
+                      : "Điểm dùng để chấm bài AI (tự động trừ khi chấm bài)."}
+                  </p>
+                  <button
+                    type="button"
+                    className="account__tier-switch-btn"
+                    onClick={() => toggleTier()}
+                    title="Bấm để chuyển đổi gói demo"
+                  >
+                    {isPremium ? "Đổi sang gói Free (xem Points)" : "Nâng cấp Premium (xem Animation)"}
+                  </button>
+                </div>
+
+                <div className="account__panel-links">
+                  <Link to="/dashboard">Bảng tiến độ học tập</Link>
+                  <Link to="/assistant">Chấm bài AI Writing</Link>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      signOut()
+                      navigate("/home")
+                    }}
+                  >
+                    Đăng xuất
+                  </button>
+                </div>
               </div>
             </details>
           ) : (
@@ -155,7 +219,7 @@ export function TopBar() {
                 Đăng nhập
               </Link>
               <Link className="cta cta--3d" to="/auth/register">
-                Đăng ký
+                <span>Bắt đầu miễn phí</span>
               </Link>
             </>
           )}

@@ -1,30 +1,43 @@
 import { useEffect } from "react"
 import { Link } from "react-router-dom"
+import {
+  BookOpenCheck,
+  Layers,
+  Award,
+  Sparkles,
+  ArrowRight,
+  Target,
+  ShieldCheck,
+  BookOpen,
+} from "lucide-react"
 import reviewMascotImage from "@/assets/ielts-dino-review.png"
 import { InteractiveHeroMascot } from "@/features/landing/components/InteractiveHeroMascot"
 import { ARTICLES, CATALOG, SKILL_ENTRIES } from "@/lib/mock/catalog"
 
 const practiceBenefits = [
   {
+    icon: BookOpenCheck,
     value: "186+",
     label: "Đề Listening & Reading chuẩn Cambridge & BC",
     badge: "CAM 10-19",
-    barColor: "linear-gradient(90deg, #0284c7, #38bdf8)",
-    textColor: "#0284c7",
+    accentColor: "#C55D2B",
+    barColor: "linear-gradient(90deg, #C55D2B, #E27945)",
   },
   {
+    icon: Layers,
     value: "42",
     label: "Dạng bài chi tiết: TFNG, Heading, Map, Flowchart",
     badge: "PHÂN LOẠI",
-    barColor: "linear-gradient(90deg, #d97706, #fbbf24)",
-    textColor: "#d97706",
+    accentColor: "#E07A48",
+    barColor: "linear-gradient(90deg, #E07A48, #F59E0B)",
   },
   {
+    icon: Award,
     value: "4",
     label: "Tiêu chí chấm điểm Writing & Speaking chuẩn Band",
     badge: "BAND DESCRIPTORS",
-    barColor: "linear-gradient(90deg, #059669, #34d399)",
-    textColor: "#059669",
+    accentColor: "#008BFF",
+    barColor: "linear-gradient(90deg, #008BFF, #38BDF8)",
   },
 ]
 
@@ -40,28 +53,28 @@ const skillWidgets: Record<
 > = {
   LISTENING: {
     color: "#0284c7",
-    bg: "#e0f2fe",
+    bg: "rgba(2, 132, 199, 0.15)",
     badge: "Audio Cam 10-19",
     actionText: "Luyện nghe ngay",
     widgetType: "audio",
   },
   READING: {
-    color: "#d97706",
-    bg: "#fef3c7",
+    color: "#C55D2B",
+    bg: "rgba(197, 93, 43, 0.15)",
     badge: "Định vị Keyword",
     actionText: "Luyện đọc ngay",
     widgetType: "scanner",
   },
   WRITING: {
     color: "#e11d48",
-    bg: "#ffe4e6",
+    bg: "rgba(225, 29, 72, 0.15)",
     badge: "Chấm AI trong 30s",
     actionText: "Chấm bài viết",
     widgetType: "meter",
   },
   SPEAKING: {
     color: "#059669",
-    bg: "#d1fae5",
+    bg: "rgba(5, 150, 105, 0.15)",
     badge: "Dự đoán Quý mới",
     actionText: "Luyện phản xạ",
     widgetType: "radar",
@@ -106,30 +119,30 @@ export function LandingPage() {
 
   return (
     <main className="landing-page" id="main-content" tabIndex={-1}>
-      {/* Ambient colorful glowing background orbs */}
+      {/* Ambient warm glowing background orbs */}
+      <div className="ambient-blob ambient-blob--orange" aria-hidden="true"></div>
+      <div className="ambient-blob ambient-blob--blue" aria-hidden="true"></div>
       <div className="ambient-blob ambient-blob--amber" aria-hidden="true"></div>
-      <div className="ambient-blob ambient-blob--cyan" aria-hidden="true"></div>
-      <div className="ambient-blob ambient-blob--rose" aria-hidden="true"></div>
 
       {/* ================= HERO SECTION (FULL BACKGROUND WITH DINO) ================= */}
       <section className="landing-page__hero landing-page__hero--full-bg" aria-labelledby="landing-title">
         {/* Full background image layer with interactive mouse-tracking dinosaur mascot */}
-        <div className="hero-bg-layer">
+        <div className="hero-bg-layer anim-entrance-character">
           <InteractiveHeroMascot />
         </div>
 
         {/* Hero Content Container (Text + Scene Badges inside image) */}
         <div className="landing-page__hero-container">
-          <div className="landing-page__hero-copy reveal-on-scroll is-revealed">
+          <div className="landing-page__hero-copy anim-entrance-headline">
             <div className="hero-badge-eyebrow">
               <span className="live-sparkle-dot"></span>
               <span>Phòng thi IELTS chuẩn máy 2026</span>
-              <span className="eyebrow-accent-tag">PRO</span>
+              <span className="eyebrow-accent-tag">PREMIUM</span>
             </div>
 
             <h1 id="landing-title">
               Luyện đề IELTS chuẩn máy,{" "}
-              <span className="text-gradient-shimmer">chắc tay bứt Band 7.5+</span>
+              <span className="headline-warm-orange">chắc tay bứt Band 7.5+</span>
             </h1>
 
             <p className="landing-page__lead">
@@ -138,91 +151,148 @@ export function LandingPage() {
             </p>
 
             <div className="hero-actions">
-              <Link className="cta cta--3d cta--hero cta--animated" to="/practice">
+              <Link className="cta-primary-elastic" to="/practice">
                 <span>Bắt đầu luyện miễn phí</span>
-                <span className="cta-arrow-slide" aria-hidden="true">→</span>
+                <ArrowRight className="cta-arrow-icon" aria-hidden="true" />
               </Link>
-              <Link className="cta-ghost-3d" to="/roadmap">
+              <Link className="cta-ghost-glass" to="/roadmap">
                 Xem lộ trình 12 tuần
               </Link>
             </div>
 
+            {/* Student avatar with animated Premium status badge */}
+            <div className="hero-avatar-proof">
+              <div className="avatar-tier-wrap avatar-tier-wrap--premium avatar-tier-wrap--hero">
+                <div className="premium-halo-ring" aria-hidden="true">
+                  <span className="premium-halo-glow" />
+                  <span className="premium-halo-sparkle premium-halo-sparkle--1" />
+                  <span className="premium-halo-sparkle premium-halo-sparkle--2" />
+                  <span className="premium-halo-sparkle premium-halo-sparkle--3" />
+                </div>
+                <div className="avatar-circle-img avatar--premium-circle" aria-hidden="true">
+                  <span className="avatar-letter">MA</span>
+                </div>
+                <span className="avatar-tier-pill avatar-tier-pill--premium" title="Học viên Premium">Premium</span>
+              </div>
+              <div className="hero-avatar-info">
+                <div className="hero-avatar-stars" aria-label="Đánh giá 5 sao">
+                  <span className="star-pip">★</span>
+                  <span className="star-pip">★</span>
+                  <span className="star-pip">★</span>
+                  <span className="star-pip">★</span>
+                  <span className="star-pip">★</span>
+                  <span className="hero-avatar-score">5.0</span>
+                </div>
+                <p className="hero-avatar-caption">
+                  <strong>Nguyễn Minh Anh</strong> · Đạt <strong>Band 8.0</strong> sau 6 tuần
+                </p>
+              </div>
+            </div>
+
             <div className="hero-trust-row">
               <span className="hero-trust-item">
-                <span className="trust-bullet trust-bullet--gold"></span> 186+ Bộ đề Cambridge 10-19
+                <BookOpen className="size-3.5 text-[#C55D2B]" /> 186+ Bộ đề Cambridge 10-19
               </span>
               <span className="hero-trust-item">
-                <span className="trust-bullet trust-bullet--emerald"></span> Chấm AI Writing & Speaking
+                <Sparkles className="size-3.5 text-[#008BFF]" /> Chấm AI Writing & Speaking 30s
               </span>
               <span className="hero-trust-item">
-                <span className="trust-bullet trust-bullet--sky"></span> Miễn phí không giới hạn
+                <ShieldCheck className="size-3.5 text-[#059669]" /> Miễn phí không giới hạn
               </span>
             </div>
           </div>
 
-          {/* 3D Floating Scene Badges over the Dinosaur scene */}
-          <div className="hero-scene-badges" aria-hidden="true">
-            {/* Target Band 7.5+ */}
+          {/* 3D Glassmorphic Floating Scene Badges over the Dinosaur scene */}
+          <div className="hero-scene-badges anim-entrance-tags" aria-hidden="true">
+            {/* Tag 1: Mục tiêu bứt phá */}
             <div className="hero-floating-badge hero-floating-badge--top">
-              <div className="badge-animated-widget badge-animated-widget--amber">
-                <span className="mini-status-dot"></span>
-                <strong>Band 7.5+</strong>
-              </div>
-              <div>
-                <span className="badge-subtitle">Mục tiêu bứt phá</span>
-                <div className="mini-progress-bar">
-                  <div className="mini-progress-fill mini-progress-fill--amber"></div>
+              <div className="floating-tag-glass float-anim-target">
+                <div className="floating-tag-icon floating-tag-icon--orange">
+                  <Target className="size-4 text-[#C55D2B]" />
+                </div>
+                <div>
+                  <div className="floating-tag-header">
+                    <strong className="floating-tag-title">Mục tiêu bứt phá</strong>
+                    <span className="floating-band-pill">Band 7.5+</span>
+                  </div>
+                  <div className="mini-progress-track">
+                    <div className="mini-progress-fill"></div>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* AI 30s Live Feedback */}
+            {/* Tag 2: Chấm AI 30s (with distinct pulsing blue indicator #008BFF) */}
             <div className="hero-floating-badge hero-floating-badge--bottom-left">
-              <div className="badge-animated-widget badge-animated-widget--cyan">
-                <span className="radar-ping-ring"></span>
-                <span className="radar-center-dot"></span>
-              </div>
-              <div>
-                <div className="badge-pulse">
-                  <strong>Chấm AI 30s</strong>
-                  <span className="badge-tag-live">LIVE</span>
+              <div className="floating-tag-glass float-anim-ai">
+                <div className="floating-tag-icon floating-tag-icon--blue">
+                  <span className="live-pulsing-indicator">
+                    <span className="live-pulsing-indicator__ring"></span>
+                    <span className="live-pulsing-indicator__core"></span>
+                  </span>
                 </div>
-                <span className="badge-subtitle">Sửa ngữ pháp & từ vựng</span>
+                <div>
+                  <div className="floating-tag-header">
+                    <strong className="floating-tag-title">Chấm AI 30s</strong>
+                    <span className="badge-tag-live">LIVE</span>
+                  </div>
+                  <span className="floating-tag-subtitle">Sửa ngữ pháp & từ vựng tức thì</span>
+                </div>
               </div>
             </div>
 
-            {/* Cambridge 186+ Tests */}
+            {/* Tag 3: Bộ đề Cambridge */}
             <div className="hero-floating-badge hero-floating-badge--bottom-right">
-              <div className="badge-animated-widget badge-animated-widget--purple">
-                <span className="spinning-ring-glow"></span>
-                <span className="inner-label-bold">186</span>
-              </div>
-              <div>
-                <strong>Bộ Đề Cambridge</strong>
-                <span className="badge-subtitle">Format chuẩn IDP / BC</span>
+              <div className="floating-tag-glass float-anim-cambridge">
+                <div className="floating-tag-icon floating-tag-icon--amber">
+                  <BookOpenCheck className="size-4 text-[#C55D2B]" />
+                </div>
+                <div>
+                  <div className="floating-tag-header">
+                    <strong className="floating-tag-title">Bộ đề Cambridge</strong>
+                    <span className="badge-cambridge-count">186+ Đề</span>
+                  </div>
+                  <span className="floating-tag-subtitle">Format chuẩn IDP / BC 2026</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ================= 3D PROOF STATS ================= */}
-      <section className="landing-page__proof reveal-on-scroll" aria-label="Quy mô kho luyện IELTS">
-        {practiceBenefits.map((item, index) => (
-          <div key={item.label} className={`proof-card-3d reveal-delay-${index + 1}`}>
-            <div className="proof-card-top-bar" style={{ background: item.barColor }}></div>
-            <div className="proof-card-content">
-              <div className="proof-card-header">
-                <span className="proof-card-badge" style={{ color: item.textColor }}>
-                  {item.badge}
-                </span>
-                <span className="proof-card-glow-dot" style={{ backgroundColor: item.textColor }}></span>
+      {/* ================= INFORMATION CARDS AT THE BOTTOM ================= */}
+      <section className="landing-page__proof reveal-on-scroll anim-entrance-cards" aria-label="Quy mô kho luyện IELTS">
+        {practiceBenefits.map((item, index) => {
+          const Icon = item.icon
+          return (
+            <div key={item.label} className={`proof-card-glass reveal-delay-${index + 1}`}>
+              <div className="proof-card-glass__bar" style={{ background: item.barColor }}></div>
+              <div className="proof-card-glass__body">
+                <div className="proof-card-glass__head">
+                  <div
+                    className="proof-card-icon-wrap"
+                    style={{
+                      borderColor: `${item.accentColor}33`,
+                      backgroundColor: `${item.accentColor}18`,
+                    }}
+                  >
+                    <Icon className="size-5" style={{ color: item.accentColor }} />
+                  </div>
+                  <span
+                    className="proof-card-glass__badge"
+                    style={{ color: item.accentColor, borderColor: `${item.accentColor}33` }}
+                  >
+                    {item.badge}
+                  </span>
+                </div>
+                <strong className="proof-card-glass__val" style={{ color: item.accentColor }}>
+                  {item.value}
+                </strong>
+                <span className="proof-card-glass__label">{item.label}</span>
               </div>
-              <strong style={{ color: item.textColor }}>{item.value}</strong>
-              <span>{item.label}</span>
             </div>
-          </div>
-        ))}
+          )
+        })}
       </section>
 
       {/* ================= 4 SKILLS SECTION ================= */}

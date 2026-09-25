@@ -14,6 +14,7 @@ export interface Role {
 }
 
 export type UserStatus = "ACTIVE" | "SUSPENDED" | "PENDING_VERIFICATION"
+export type MembershipTier = "FREE" | "PREMIUM"
 
 export interface User {
   id: string
@@ -23,4 +24,6 @@ export interface User {
   targetBand: number
   roles: RoleName[]
   status: UserStatus
+  tier?: MembershipTier
+  points?: number
 }
