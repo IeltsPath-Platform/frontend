@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react"
-import { Link, NavLink, useNavigate } from "react-router-dom"
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom"
 import { useAuthStore } from "@/features/auth/store/useAuthStore"
 
 const links = [
-  { to: "/roadmap", label: "Lộ trình 7.0" },
-  { to: "/vocabulary", label: "Từ vựng" },
-  { to: "/dictation", label: "Dictation" },
-  { to: "/community", label: "Cộng đồng" },
-  { to: "/blog", label: "Blog" },
+  { to: "/overview", label: "Overview" },
+  { to: "/class", label: "Lớp học" },
+  { to: "/roadmap", label: "Thực hành" },
+  { to: "/vocabulary", label: "Từ điển" },
+  { to: "/blog", label: "Học liệu" },
 ]
 
 const skills = [
@@ -59,7 +59,10 @@ export function TopBar() {
   const signOut = useAuthStore((state) => state.signOut)
   const toggleTier = useAuthStore((state) => state.toggleTier)
   const navigate = useNavigate()
+  const location = useLocation()
   const [scrolled, setScrolled] = useState(false)
+  const practiceActive = location.pathname.startsWith("/practice")
+  const classChrome = location.pathname.startsWith("/class") || location.pathname.startsWith("/overview") || practiceActive
 
   const isPremium = user?.tier === "PREMIUM"
   const points = user?.points ?? 120
@@ -75,7 +78,7 @@ export function TopBar() {
   const initials = user?.fullName.split(" ").slice(-2).map((part) => part[0]).join("") ?? "IP"
 
   return (
-    <header className={`topbar ${scrolled ? "topbar--scrolled" : ""} anim-entrance-header`}>
+    <header className={`topbar ${scrolled ? "topbar--scrolled" : ""} ${classChrome ? "topbar--lms" : ""} anim-entrance-header`}>
       <div className="topbar__inner">
         {/* Brand Logo on the left (clean, without PRO) */}
         <Link className="mark" to="/home" aria-label="IELTSPath, trang chủ">
@@ -87,7 +90,11 @@ export function TopBar() {
 
         {/* Navigation Links in Center */}
         <nav className="topbar__links" aria-label="Điều hướng chính">
-          <details className="mega">
+          <NavLink to="/overview">Overview</NavLink>
+          <NavLink to="/class">Lớp học</NavLink>
+          <NavLink to="/roadmap">Thực hành</NavLink>
+
+          <details className={`mega${practiceActive ? " is-active" : ""}`}>
             <summary>
               <span>Luyện đề</span>
               <span className="dropdown-caret" aria-hidden="true"></span>
@@ -121,11 +128,8 @@ export function TopBar() {
             </div>
           </details>
 
-          {links.map((item) => (
-            <NavLink key={item.to} to={item.to}>
-              {item.label}
-            </NavLink>
-          ))}
+          <NavLink to="/vocabulary">Từ điển</NavLink>
+          <NavLink to="/blog">Học liệu</NavLink>
         </nav>
 
         {/* Account actions: Free (Points) vs Premium (Animated Halo) */}
@@ -199,6 +203,7 @@ export function TopBar() {
                 </div>
 
                 <div className="account__panel-links">
+                  <Link to="/class">Lớp học của tôi</Link>
                   <Link to="/dashboard">Bảng tiến độ học tập</Link>
                   <Link to="/assistant">Chấm bài AI Writing</Link>
                   <button
@@ -251,10 +256,13 @@ export function TopBar() {
             <div className="topbar__drawer-section">
               <p className="topbar__drawer-title">Tiện ích học tập</p>
               {links.map((item) => (
-                <Link key={item.to} to={item.to} className="topbar__drawer-link">
+                <Link key={`${item.to}-${item.label}`} to={item.to} className="topbar__drawer-link">
                   {item.label}
                 </Link>
               ))}
+              <Link to="/practice" className="topbar__drawer-link">
+                Luyện đề
+              </Link>
             </div>
 
             <div className="topbar__drawer-actions">

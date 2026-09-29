@@ -1,5 +1,6 @@
 import "./app.css"
 import "@/styles/site.css"
+import "@/styles/class.css"
 import { ErrorBoundary } from "@/components/common/ErrorBoundary"
 import { AppProvider } from "@/app/provider"
 import { AppRouter } from "@/app/router"

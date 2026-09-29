@@ -8,6 +8,11 @@ import { LoginPage } from "@/features/auth/pages/LoginPage"
 import { RegisterPage } from "@/features/auth/pages/RegisterPage"
 import { AiAssistantPage } from "@/features/ai-assistant/pages/AiAssistantPage"
 import { ArticlePage, BlogPage } from "@/features/blog/pages/BlogPages"
+import { ClassPage } from "@/features/class/pages/ClassPage"
+import { HomeworkPage } from "@/features/class/pages/HomeworkPage"
+import { LuyenDePage } from "@/features/class/pages/LuyenDePage"
+import { MaterialsPage } from "@/features/class/pages/MaterialsPage"
+import { OverviewPage } from "@/features/class/pages/OverviewPage"
 import { CommunityPage } from "@/features/community/pages/CommunityPage"
 import { DashboardPage } from "@/features/dashboard/pages/DashboardPage"
 import { DictationPage } from "@/features/dictation/pages/DictationPage"
@@ -33,7 +38,12 @@ const router = createBrowserRouter([
     children: [
       { path: "/", element: <Navigate to="/home" replace /> },
       { path: "/home", element: <Suspense fallback={<main className="route-loading">Đang mở trang chủ…</main>}><LandingPage /></Suspense> },
-      { path: "/practice", element: <PracticePage /> },
+      { path: "/overview", element: <OverviewPage /> },
+      { path: "/class", element: <ClassPage /> },
+      { path: "/class/materials", element: <MaterialsPage /> },
+      { path: "/class/homework", element: <HomeworkPage /> },
+      { path: "/practice", element: <LuyenDePage /> },
+      { path: "/practice/catalog", element: <PracticePage /> },
       { path: "/roadmap", element: <RoadmapPage /> },
       { path: "/vocabulary", element: <VocabularyPage /> },
       { path: "/dictation", element: <DictationPage /> },
