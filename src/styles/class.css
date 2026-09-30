@@ -200,7 +200,7 @@
   width: auto;
   height: 100%;
   margin-inline: auto;
-  filter: drop-shadow(0 14px 24px rgba(10, 40, 120, 0.35));
+  filter: drop-shadow(0 14px 24px rgba(194, 65, 12, 0.28));
   animation: cls-float 5s ease-in-out infinite;
 }
 
@@ -2022,7 +2022,7 @@
 .cls-luyen-hero__mascot img {
   width: 160px;
   height: auto;
-  filter: drop-shadow(0 12px 22px rgba(10, 40, 120, 0.3));
+  filter: drop-shadow(0 12px 22px rgba(194, 65, 12, 0.26));
 }
 
 .cls-luyen-hero h1 {
