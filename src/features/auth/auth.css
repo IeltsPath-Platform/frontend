@@ -1,0 +1,216 @@
+.auth-page {
+  --auth-surface: color-mix(in srgb, var(--card) 84%, transparent);
+  --auth-surface-solid: var(--card);
+  --auth-ink: var(--card-foreground);
+  --auth-muted: var(--muted-foreground);
+  --auth-border: color-mix(in srgb, var(--border) 82%, transparent);
+  background:
+    radial-gradient(circle at 13% 22%, color-mix(in srgb, var(--primary) 22%, transparent), transparent 25rem),
+    radial-gradient(circle at 88% 76%, color-mix(in srgb, var(--accent) 68%, transparent), transparent 22rem),
+    var(--background);
+  color: var(--foreground);
+  min-block-size: 100dvh;
+  overflow-x: clip;
+}
+
+.auth-page .site-main-header {
+  background: color-mix(in srgb, var(--primary) 84%, transparent);
+  border-bottom-color: color-mix(in srgb, var(--primary-foreground) 16%, transparent);
+  box-shadow: 0 .4rem 1.6rem color-mix(in srgb, var(--primary) 20%, transparent);
+  backdrop-filter: blur(18px);
+}
+
+.auth-main {
+  display: grid;
+  isolation: isolate;
+  min-block-size: calc(100dvh - 4rem);
+  overflow: hidden;
+  padding: clamp(1rem, 4vw, 3rem);
+  position: relative;
+}
+
+.auth-backdrop {
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  position: absolute;
+}
+
+.auth-backdrop-orb {
+  border: 1px solid color-mix(in srgb, var(--primary) 20%, transparent);
+  border-radius: 50%;
+  opacity: .8;
+  position: absolute;
+}
+
+.auth-backdrop-orb--one {
+  block-size: 28rem;
+  inline-size: 28rem;
+  inset-block-start: -13rem;
+  inset-inline-end: 14%;
+}
+
+.auth-backdrop-orb--two {
+  block-size: 18rem;
+  inline-size: 18rem;
+  inset-block-end: -9rem;
+  inset-inline-start: 29%;
+}
+
+.auth-floating-icon {
+  color: color-mix(in srgb, var(--primary) 56%, var(--accent-foreground));
+  filter: drop-shadow(0 .65rem 1rem color-mix(in srgb, var(--primary) 18%, transparent));
+  opacity: .62;
+  position: absolute;
+  stroke-width: 1.55;
+  transform: translate3d(0, 0, 0);
+}
+
+.auth-floating-icon--book { animation: auth-float-a 7s ease-in-out infinite; inset-block-start: 8%; inset-inline-start: 11%; }
+.auth-floating-icon--pen { animation: auth-float-b 8.5s ease-in-out infinite; inset-block-end: 13%; inset-inline-end: 10%; }
+.auth-floating-icon--star { animation: auth-float-c 6.5s ease-in-out infinite; inset-block-start: 22%; inset-inline-end: 22%; }
+.auth-floating-icon--award { animation: auth-float-d 9s ease-in-out infinite; inset-block-end: 23%; inset-inline-start: 8%; }
+.auth-floating-icon--trophy { animation: auth-float-b 7.7s ease-in-out infinite reverse; inset-block-start: 61%; inset-inline-start: 37%; }
+
+.auth-floating-icon--book,
+.auth-floating-icon--trophy { block-size: 2.35rem; inline-size: 2.35rem; }
+.auth-floating-icon--pen,
+.auth-floating-icon--award { block-size: 1.75rem; inline-size: 1.75rem; }
+.auth-floating-icon--star { block-size: 1.45rem; inline-size: 1.45rem; }
+
+.auth-shell {
+  align-items: center;
+  display: flex;
+  inline-size: min(100%, 76rem);
+  justify-content: flex-end;
+  margin-inline: auto;
+  min-inline-size: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.auth-ambient-copy {
+  color: var(--auth-ink);
+  inset-inline-start: clamp(0rem, 5vw, 5rem);
+  max-inline-size: 28rem;
+  position: absolute;
+  translate: 0 -8rem;
+  z-index: 2;
+}
+
+.auth-ambient-copy > span {
+  align-items: center;
+  color: var(--primary);
+  display: inline-flex;
+  font-size: .72rem;
+  font-weight: 900;
+  gap: .4rem;
+  letter-spacing: .08em;
+}
+
+.auth-ambient-copy h2 {
+  font-size: clamp(2rem, 4vw, 3.65rem);
+  letter-spacing: -.055em;
+  line-height: 1.04;
+  margin: .7rem 0 1rem;
+  max-inline-size: 11ch;
+}
+
+.auth-ambient-copy p {
+  color: var(--auth-muted);
+  font-size: .98rem;
+  line-height: 1.65;
+  max-inline-size: 29rem;
+}
+
+.auth-mascot {
+  inset-block-end: clamp(-2rem, 1vw, 1rem);
+  inset-inline-start: calc(25% - var(--mascot-size) / 2);
+  pointer-events: none;
+  position: absolute;
+  z-index: 1;
+}
+
+.auth-form-panel {
+  backdrop-filter: blur(20px);
+  background: var(--auth-surface);
+  border: 1px solid var(--auth-border);
+  border-radius: calc(var(--radius) * 2.25);
+  box-shadow: 0 1.5rem 4rem color-mix(in srgb, var(--primary) 18%, transparent);
+  inline-size: min(100%, 31rem);
+  min-inline-size: 0;
+  padding: clamp(1.5rem, 3vw, 2.5rem);
+  position: relative;
+  z-index: 3;
+}
+
+.auth-form-heading > p {
+  color: var(--primary);
+  font-size: .68rem;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.auth-form-heading h1 {
+  color: var(--auth-ink);
+  font-size: clamp(1.6rem, 3vw, 2.15rem);
+  letter-spacing: -.04em;
+  line-height: 1.1;
+  margin-top: .45rem;
+}
+
+.auth-form-heading > span {
+  color: var(--auth-muted);
+  display: block;
+  font-size: .86rem;
+  line-height: 1.55;
+  margin-top: .65rem;
+}
+
+.auth-form { display: grid; margin-top: 1.55rem; }
+.auth-social-buttons { display: grid; gap: .65rem; }
+.auth-social-button, .auth-submit-button { min-block-size: 2.75rem; width: 100%; }
+.auth-social-button { color: var(--auth-ink); justify-content: center; }
+.auth-social-button:hover { border-color: var(--primary); color: var(--primary); transform: translateY(-1px); }
+.auth-divider { align-items: center; color: var(--auth-muted); display: flex; font-size: .7rem; gap: .7rem; margin-block: 1.2rem; text-align: center; }
+.auth-divider::before, .auth-divider::after { background: var(--auth-border); content: ''; flex: 1; height: 1px; }
+.auth-divider span { background: var(--auth-surface-solid); padding-inline: .25rem; }
+.auth-fields { display: grid; gap: 1rem; }
+.auth-input-field { display: grid; gap: .4rem; }
+.auth-input-field > label { color: var(--auth-ink); font-size: .78rem; font-weight: 800; }
+.auth-input-field > small { color: var(--auth-muted); font-size: .68rem; line-height: 1.4; }
+.auth-input-control { position: relative; }
+.auth-input-control input { background: color-mix(in srgb, var(--auth-surface-solid) 82%, transparent); border-color: var(--auth-border); min-block-size: 2.75rem; padding-inline: .75rem; width: 100%; }
+.auth-input-control input:focus { border-color: var(--primary); }
+.auth-input-control input[type='password'], .auth-input-control input[type='text'] { padding-inline-end: 3rem; }
+.auth-password-toggle { color: var(--primary); inset-block-start: 50%; min-block-size: 2.75rem; min-inline-size: 2.75rem; position: absolute; right: .1rem; transform: translateY(-50%); }
+.auth-forgot-password { color: var(--primary); font-size: .75rem; justify-self: end; min-block-size: 2.75rem; padding-inline: .25rem; }
+.auth-submit-button { margin-top: 1.3rem; }
+.auth-status { color: var(--auth-muted); font-size: .72rem; line-height: 1.45; margin: .7rem 0 0; min-block-size: 1.45rem; text-align: center; }
+.auth-mode-toggle { color: var(--auth-muted); font-size: .78rem; margin: 1.2rem 0 0; text-align: center; }
+.auth-mode-toggle a { color: var(--primary); font-weight: 800; text-underline-offset: .18em; }
+.auth-mode-toggle a:hover { color: color-mix(in srgb, var(--primary) 82%, black); }
+
+@keyframes auth-float-a { 0%, 100% { transform: translate3d(0, 0, 0) rotate(-8deg); } 50% { transform: translate3d(.55rem, -1rem, 0) rotate(4deg); } }
+@keyframes auth-float-b { 0%, 100% { transform: translate3d(0, 0, 0) rotate(6deg); } 50% { transform: translate3d(-.65rem, -1.15rem, 0) rotate(-6deg); } }
+@keyframes auth-float-c { 0%, 100% { opacity: .45; transform: translate3d(0, 0, 0) scale(.88); } 50% { opacity: .78; transform: translate3d(.3rem, -.8rem, 0) scale(1.1); } }
+@keyframes auth-float-d { 0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); } 50% { transform: translate3d(.8rem, -.7rem, 0) rotate(8deg); } }
+
+@media (max-width: 64rem) {
+  .auth-shell { justify-content: center; }
+  .auth-ambient-copy { display: none; }
+  .auth-mascot { inset-block-end: -3rem; inset-inline-start: 3%; opacity: .62; }
+}
+
+@media (max-width: 42rem) {
+  .auth-main { align-items: center; padding: 1rem; }
+  .auth-form-panel { inline-size: min(100%, 31rem); padding: 1.5rem; }
+  .auth-mascot { inset-block-end: -2rem; inset-inline-start: -4rem; opacity: .27; }
+  .auth-floating-icon--trophy, .auth-floating-icon--award { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-floating-icon, .auth-mascot, .auth-social-button { animation: none; transition: none; }
+  .auth-social-button:hover { transform: none; }
+}
