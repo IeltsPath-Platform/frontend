@@ -8,6 +8,7 @@ const navigation = [
   { to: '/home', label: 'Trang chủ', public: true },
   { to: '/overview', label: 'Overview', public: false },
   { to: '/classroom', label: 'Lớp học', public: false },
+  { to: '/learn', label: 'Lộ trình', public: false },
   { to: '/practice', label: 'Thực hành', public: false },
   { to: '/practice-tests', label: 'Luyện đề', public: false },
   { to: '/vocabulary', label: 'Từ điển', public: true },

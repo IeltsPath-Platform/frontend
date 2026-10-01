@@ -12,6 +12,14 @@ import { SpeakingPage } from '@/features/practice/pages/SpeakingPage'
 import { HomePage } from '@/features/home/HomePage'
 import { VocabularyPage } from '@/features/vocabulary/pages/VocabularyPage'
 import { AuthPage } from '@/features/auth/pages/AuthPage'
+import { LearnLayout } from '@/features/learning-path/components/LearnLayout'
+import { NotFoundState } from '@/features/learning-path/components/PageState'
+import { LessonPage } from '@/features/learning-path/pages/LessonPage'
+import { ReviewPage } from '@/features/learning-path/pages/ReviewPage'
+import { TopicDetailPage } from '@/features/learning-path/pages/TopicDetailPage'
+import { TopicListPage } from '@/features/learning-path/pages/TopicListPage'
+import { TopicTestPage } from '@/features/learning-path/pages/TopicTestPage'
+import { TopicTestResultPage } from '@/features/learning-path/pages/TopicTestResultPage'
 import { getPracticeMode } from '@/features/practice/lib/passageTools'
 import type { PracticeMode, SkillType } from '@/types/practice'
 import './app.css'
@@ -26,6 +34,15 @@ function AppContent() {
       <Route path="/home" element={<HomePage />} />
       <Route path="/overview" element={<OverviewPage />} />
       <Route path="/classroom" element={<ClassroomPage />} />
+      <Route path="/learn" element={<LearnLayout />}>
+        <Route index element={<TopicListPage />} />
+        <Route path="topics/:topicId" element={<TopicDetailPage />} />
+        <Route path="lessons/:lessonId" element={<LessonPage />} />
+        <Route path="reviews/:reviewId" element={<ReviewPage />} />
+        <Route path="tests/:attemptId" element={<TopicTestPage />} />
+        <Route path="tests/:attemptId/result" element={<TopicTestResultPage />} />
+        <Route path="*" element={<NotFoundState />} />
+      </Route>
       <Route
         path="/practice"
         element={<RouteStatusPage title="Thực hành" />}

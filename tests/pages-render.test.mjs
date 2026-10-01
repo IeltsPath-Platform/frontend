@@ -51,10 +51,10 @@ test('UserTierDropdown is store-free and renders reusable Free and Premium state
 test('Shared navbar exposes only public routes to guests and the account dropdown to signed-in users', async () => {
   const guestHtml = await render('/src/components/SiteNavbar.tsx', 'SiteNavbar', { isLoggedIn: false }, '/home')
   for (const label of ['Trang chủ', 'Từ điển', 'Đăng nhập', 'Đăng ký']) assert.match(guestHtml, new RegExp(label))
-  for (const label of ['Overview', 'Lớp học', 'Thực hành', 'Luyện đề', 'Học liệu', '120 Points']) assert.doesNotMatch(guestHtml, new RegExp(label))
+  for (const label of ['Overview', 'Lớp học', 'Thực hành', 'Luyện đề', 'Học liệu', 'Lộ trình', '120 Points']) assert.doesNotMatch(guestHtml, new RegExp(label))
 
   const userHtml = await render('/src/components/SiteNavbar.tsx', 'SiteNavbar', { isLoggedIn: true, userName: 'Minh Anh' }, '/home')
-  for (const label of ['Overview', 'Lớp học', 'Thực hành', 'Luyện đề', 'Học liệu', 'Minh Anh', '120 Points']) assert.match(userHtml, new RegExp(label))
+  for (const label of ['Overview', 'Lớp học', 'Lộ trình', 'Thực hành', 'Luyện đề', 'Học liệu', 'Minh Anh', '120 Points']) assert.match(userHtml, new RegExp(label))
   assert.doesNotMatch(userHtml, /Đăng nhập|Đăng ký/)
 })
 
