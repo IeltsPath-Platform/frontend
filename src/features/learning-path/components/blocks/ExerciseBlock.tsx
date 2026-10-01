@@ -47,7 +47,12 @@ export function ExerciseBlock({ block, onSubmit, allowResubmit = true, failedFoo
   const [error, setError] = useState<string | null>(null)
   const inFlight = useRef(false)
   const mounted = useRef(true)
-  useEffect(() => () => { mounted.current = false }, [])
+  // Strict Mode re-runs effect cleanup+setup on the same instance; reset so async
+  // submit can still update UI after the simulated cleanup.
+  useEffect(() => {
+    mounted.current = true
+    return () => { mounted.current = false }
+  }, [])
 
   const passed = graded?.outcome.passed === true
   const closed = passed || (graded !== null && !allowResubmit)

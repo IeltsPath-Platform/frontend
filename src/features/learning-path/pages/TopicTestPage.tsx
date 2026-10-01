@@ -39,7 +39,12 @@ function TestRunner({ attemptId, sections, topicId }: { attemptId: string; secti
   const queues = useRef<Record<string, Promise<boolean>>>({})
   const inFlight = useRef(false)
   const mounted = useRef(true)
-  useEffect(() => () => { mounted.current = false }, [])
+  // Strict Mode re-runs effect cleanup+setup on the same instance; reset so async
+  // saves/submit can still update UI after the simulated cleanup.
+  useEffect(() => {
+    mounted.current = true
+    return () => { mounted.current = false }
+  }, [])
 
   const answerable = sections.flatMap((section) => section.items).filter((item) => item.question !== null)
   const answeredCount = answerable.filter((item) => (answers[item.id] ?? '').trim()).length

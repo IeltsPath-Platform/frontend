@@ -1,13 +1,14 @@
 # Lộ trình học theo topic (mock API trong FE)
 
-- **Status:** implemented
+- **Status:** implemented (nền UI)
 - **Scope:** Chỉ frontend. Màn danh sách topic, chi tiết topic, bài học (renderer block), bài ôn bắt buộc, bài kiểm tra cuối topic và kết quả; mock API in-memory chạy được kịch bản demo học viên "Lan".
 - **Quyết định đã chốt (01/10/2026):** prefix `/learn` + mục "Lộ trình" trong `SiteNavbar`; interface `LearningApi` + bản mock (chưa làm bản HTTP); tiến độ mock lưu `localStorage` + nút "Đặt lại demo"; giữ shell và token hiện có, điểm nhấn là danh sách topic dạng đường mòn; nội dung IELTS Reading tự soạn; thêm `tests/learning-path.test.mjs`.
 - **Sau review (01/10/2026):** hydrate banner ôn bằng `getPendingReviews()` trên `LearnLayout`; đồng bộ `pendingReviews` qua `useSyncPendingReviews` sau khi load settled (không gọi `setPendingReviews` trong loader); giả lỗi 500 là toggle `setServerFailing` (StrictMode); navbar nằm ngoài `.lp-root`.
+- **Đồng bộ BE (01/10/2026):** contract thật đã duyệt ở backend `docs/contracts/lesson-learning-v1.md` (`/api/learning/**`, learning-service Java). Mock DTO **lệch tên field** so với BE — việc nối HTTP, chỉnh types và Writing/Listening/gợi ý theo lộ trình MVP BE nằm ở plan kế tiếp: [`../261001-learning-api-be-align/plan.md`](../261001-learning-api-be-align/plan.md). Plan này giữ làm nền UI + mock offline; không mở rộng mock thay cho contract BE.
 
 ## Ngoài phạm vi
 
-Đăng nhập (user cố định "Lan"), tutor/chat, flashcard, game, Writing, Listening, gợi ý câu, giới hạn giờ, bản HTTP client thật, công thức mastery thật. Không thêm dependency, không sửa `package.json`/config.
+Đăng nhập (user cố định "Lan"), tutor/chat, flashcard, game, Writing, Listening, gợi ý câu, giới hạn giờ, bản HTTP client thật, công thức mastery thật. Không thêm dependency, không sửa `package.json`/config. (HTTP + kỹ năng tiếp theo → `261001-learning-api-be-align`.)
 
 ## Hợp đồng dữ liệu (FE tự định nghĩa, ghi trong `src/types/learningPath.ts`)
 
