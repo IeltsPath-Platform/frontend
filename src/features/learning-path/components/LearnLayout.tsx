@@ -2,8 +2,7 @@ import { useEffect } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import { ErrorBoundary } from '@/app/ErrorBoundary'
 import { SiteNavbar } from '@/components/SiteNavbar'
-import { MOCK_LEARNER } from '@/mocks/learning-path/topics'
-import { learningApi } from '../api'
+import { isMockLearning, learningApi } from '../api'
 import { setPendingReviews } from '../lib/reviewGate'
 import { DemoControls } from './DemoControls'
 import { ReviewGateBanner } from './ReviewGateBanner'
@@ -13,6 +12,7 @@ export function LearnLayout() {
   const { pathname } = useLocation()
 
   useEffect(() => {
+    if (!isMockLearning) return
     let active = true
     learningApi.getPendingReviews().then(
       (reviews) => { if (active) setPendingReviews(reviews) },
@@ -24,7 +24,7 @@ export function LearnLayout() {
   return (
     <>
       <a className="skip-link" href="#main-content">Chuyển đến nội dung chính</a>
-      <SiteNavbar isLoggedIn userName={MOCK_LEARNER.name} />
+      <SiteNavbar />
       <div className="lp-root">
         <ReviewGateBanner />
         <main id="main-content" tabIndex={-1} className="lp-main lp-shell">
@@ -32,7 +32,7 @@ export function LearnLayout() {
             <Outlet />
           </ErrorBoundary>
         </main>
-        <DemoControls />
+        {isMockLearning ? <DemoControls /> : null}
       </div>
     </>
   )

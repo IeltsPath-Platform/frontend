@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowRight, Check, CloudOff, Infinity as InfinityIcon, Loade
 import { Button } from '@/components/ui/button'
 import type { AnswerMap } from '~types/learningPath'
 import { learningApi, toApiError } from '../api'
+import { AudioBlock } from '../components/blocks/AudioBlock'
 import { PassageBlock } from '../components/blocks/PassageBlock'
 import { QuestionField } from '../components/blocks/QuestionField'
 import { UnsupportedBlock } from '../components/blocks/UnsupportedBlock'
@@ -142,7 +143,13 @@ function TestRunner({ attemptId, sections, topicId }: { attemptId: string; secti
 
       <section className="lp-split lp-split--test" aria-label={`Phần ${active + 1}`} key={section.id}>
         <div className="lp-split__passage">
-          {section.snapshot ? <PassageBlock passage={section.snapshot.passage} /> : <UnsupportedBlock block={{ id: section.id, sortOrder: section.sortOrder, type: 'SECTION' }} />}
+          {section.snapshot?.audio ? <AudioBlock audio={section.snapshot.audio} title={section.snapshot.title} /> : null}
+          {section.snapshot?.passage && (section.snapshot.passage.paragraphs.length > 0 || section.snapshot.passage.title) ? (
+            <PassageBlock passage={section.snapshot.passage} />
+          ) : null}
+          {!section.snapshot?.audio && !(section.snapshot?.passage && (section.snapshot.passage.paragraphs.length > 0 || section.snapshot.passage.title)) ? (
+            <UnsupportedBlock block={{ id: section.id, sortOrder: section.sortOrder, type: 'SECTION' }} />
+          ) : null}
         </div>
         <div className="lp-split__work">
           <div className="lp-exercise">

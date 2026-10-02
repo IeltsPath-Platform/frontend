@@ -1,19 +1,20 @@
 import { useState } from 'react'
 import { FlaskConical, RotateCcw, ServerCrash } from 'lucide-react'
-import { learningApi } from '../api'
+import { learningDemoControls } from '../api'
 import { setPendingReviews } from '../lib/reviewGate'
 
 export function DemoControls() {
   const [failing, setFailing] = useState(false)
+  if (!learningDemoControls) return null
 
   function resetDemo() {
-    learningApi.reset()
+    learningDemoControls?.reset()
     setPendingReviews([])
     window.location.assign('/learn')
   }
 
   function toggleFailure() {
-    learningApi.setServerFailing(!failing)
+    learningDemoControls?.setServerFailing(!failing)
     setFailing(!failing)
   }
 

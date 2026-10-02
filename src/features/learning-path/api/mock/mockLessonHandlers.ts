@@ -187,6 +187,7 @@ export function getReview(state: MockState, reviewId: string): ReviewDetail {
           attemptNumber: review.setIndex + 1,
           maxAttempts: pack.length,
           passage: structuredClone(set.passage),
+          audio: null,
           questions: set.questions.map(toPublicQuestion),
         }
       : null,

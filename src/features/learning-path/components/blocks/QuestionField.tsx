@@ -56,6 +56,9 @@ export function QuestionField({ question, value, onChange, onBlur, disabled, res
           {result.correct ? 'Đúng' : 'Sai'}
         </p>
       ) : null}
+      {!result?.correct && (result?.hint || question.hint) ? (
+        <p className="lp-question__hint" role="note"><strong>Gợi ý:</strong> {result?.hint || question.hint}</p>
+      ) : null}
       {result?.correctAnswer ? (
         <div className="lp-solution">
           <p><strong>Đáp án:</strong> {result.correctAnswer}</p>

@@ -6,7 +6,7 @@
 
 ## 1. Mục tiêu và phạm vi
 
-Repository này là một ứng dụng frontend React/Vite cho IeltsPath Platform. Mã nguồn hiện chỉ có màn hình khởi tạo; chưa có tính năng IELTS, API client, router, store hoặc form được triển khai. Agent MUST phân biệt định hướng dự án với hành vi đã có trong code.
+Repository này là một ứng dụng frontend React/Vite cho IeltsPath Platform. Mã nguồn đã triển khai HTTP client với auth hybrid và hỗ trợ mock/HTTP learning. Mã nguồn hiện có màn hình khởi tạo; chưa có các tính năng IELTS, router, store hoặc form được triển khai. Agent MUST phân biệt định hướng dự án với hành vi đã có trong code.
 
 ## 2. Nguồn tham chiếu và thứ tự ưu tiên
 
@@ -18,6 +18,8 @@ Repository này là một ứng dụng frontend React/Vite cho IeltsPath Platfor
 
 - Giữ runtime trong khoảng `Node.js >=24 <25` và `npm >=11 <12`; phiên bản làm việc ghi ở [`.nvmrc`](./.nvmrc) là Node 24.21.0, package manager trong [`package.json`](./package.json) là npm 11.19.0. Dùng npm và `package-lock.json` để cài đặt tái lập.
 - Stack hiện có: React 19.3.0, React DOM 19.3.0, TypeScript `~6.0.0` ở chế độ `strict`, Vite 8.3.0, Tailwind CSS 4 qua `@tailwindcss/vite`, shadcn CLI với preset `radix-nova`, ESLint 9. Đối chiếu phiên bản dependency cụ thể với manifest/lockfile trước khi thay đổi.
+- HTTP client (`src/lib/httpClient.ts`) đã hoạt động: auth hybrid (credentials include + Bearer memory-only), refresh 401 single-flight, session expiry callback.
+- Learning: `VITE_USE_MOCK_LEARNING` (bool) chọn mock vs HTTP `/api/learning/**`. Env vars định nghĩa ở `.env.example`.
 - `react-router-dom`, Zustand, `react-hook-form`, Zod và `lucide-react` đã là dependency nhưng chưa được nối vào ứng dụng. MUST NOT mô tả chúng như router, store, form hoặc icon đã hoạt động. Chưa có bộ kiểm thử tự động, CI/CD, Docker hoặc cấu hình deployment trong repository.
 
 ## 4. Kiến trúc, tổ chức mã và UI
@@ -76,6 +78,7 @@ Repository này là một ứng dụng frontend React/Vite cho IeltsPath Platfor
 
 - [`plans/260915-runtime-dependencies/plan.md`](./plans/260915-runtime-dependencies/plan.md) vẫn ghi `proposed` dù các dependency nêu trong plan đã có trong `package.json`. Khi làm việc với dependency, đối chiếu manifest/lockfile và làm rõ trạng thái phê duyệt nếu cần.
 - Màn hình khởi tạo trong `src/app/App.tsx` chưa có `ErrorBoundary` dù quy tắc UI ở trên yêu cầu với màn hình chính. Đây là điểm còn tồn tại; không sửa code ngoài scope chỉ để giải quyết điểm này.
+- HTTP client + auth được triển khai trong phase 1–3 của [`plans/261002-2048-fe-auth-learning/`](./plans/261002-2048-fe-auth-learning/). Đọc plan này trước khi mở rộng auth, learning hoặc API integration.
 
 ## 11. Cần làm rõ
 

@@ -1,61 +1,63 @@
 # IeltsPath Platform Frontend
 
-Frontend của nền tảng luyện thi IELTS **IeltsPath Platform**. Repository hiện mới có khung ứng dụng React chạy trên trình duyệt và một trang giới thiệu tĩnh; các tính năng luyện thi chưa được triển khai.
+Frontend React + Vite của nền tảng luyện thi IELTS **IeltsPath Platform**.
 
-## Công nghệ hiện có
+## Công nghệ
 
-- **Ứng dụng và build:** Node.js 24, npm 11, React 19.3.0, React DOM 19.3.0, TypeScript 6 ở chế độ `strict`, Vite 8.3.0 và `@vitejs/plugin-react`.
-- **Giao diện:** Tailwind CSS 4 qua `@tailwindcss/vite`, `tw-animate-css`, cấu hình shadcn/ui CLI (preset Radix Nova) và tiện ích `cn`. Chưa có component shadcn nào được thêm vào mã nguồn.
-- **Kiểm tra và kiểu:** ESLint 9 với `@eslint/js`, `typescript-eslint`, `eslint-plugin-react-hooks`, `eslint-plugin-react-refresh`, `globals`; các gói kiểu `@types/node`, `@types/react`, `@types/react-dom`.
-- **Đã cài nhưng chưa dùng trong ứng dụng:** `react-router-dom`, Zustand, `react-hook-form`, Zod và `lucide-react`.
-
-Phiên bản và các script được khai báo trong [`package.json`](./package.json); phiên bản dependency đã giải quyết nằm trong [`package-lock.json`](./package-lock.json).
+- Node.js 24 (khuyến nghị theo `.nvmrc`), npm 11, React 19, TypeScript strict, Vite 8
+- Tailwind CSS 4, React Router 7
 
 ## Chạy trên máy cá nhân
 
-Cần **Node.js 24.21.0** theo [`.nvmrc`](./.nvmrc) và **npm 11.19.0** theo `package.json`. Từ một thư mục làm việc bất kỳ:
-
 ```bash
-git clone https://github.com/IeltsPath-Platform/frontend.git
 cd frontend
-npm ci
+cp .env.example .env   # chỉnh nếu cần
+npm ci                 # hoặc: npm install --engine-strict=false nếu Node chưa đúng engines
 npm run dev
 ```
 
-Mở địa chỉ Vite in ra trong terminal. Khung ứng dụng hiện tại không cần cấu hình `.env` hoặc chạy backend.
+Mở URL Vite in ra (mặc định `http://localhost:5173`).
+
+### Biến môi trường
+
+| Biến | Mặc định | Ý nghĩa |
+| --- | --- | --- |
+| `VITE_API_BASE_URL` | `http://localhost:8080` | Gateway BE |
+| `VITE_USE_MOCK_LEARNING` | `false` khi có base URL | `true` = mock learning; `false` = HTTP `/api/learning/**` |
+
+Không commit file `.env` (đã có trong `.gitignore`). Dùng `.env.example` làm mẫu.
+
+### Backend cần chạy
+
+- Gateway `:8080` (CORS + credentials)
+- user_db + learning_db + content/assessment theo stack BE
+- Nhánh BE có learning API đầy đủ (không chỉ skeleton)
+
+Auth: hybrid — cookie HttpOnly (`credentials: 'include'`) + `Authorization: Bearer` (access token **memory-only**). Refresh `POST /auth/refresh` khi 401 (một lần, single-flight). Me: `GET /api/users/me`.
 
 ## Lệnh thường dùng
 
 | Lệnh | Tác dụng |
 | --- | --- |
-| `npm run dev` | Chạy máy chủ phát triển Vite. |
-| `npm run typecheck` | Kiểm tra kiểu TypeScript (`tsc -b`). |
-| `npm run lint` | Kiểm tra mã bằng ESLint. |
-| `npm run build` | Kiểm tra kiểu và tạo bản build production trong `dist/`. |
-| `npm run preview` | Xem bản build sau khi chạy `npm run build`. |
+| `npm run dev` | Dev server Vite |
+| `npm run typecheck` | `tsc -b` |
+| `npm run lint` | ESLint |
+| `npm run build` | Typecheck + production build |
+| `npm run preview` | Xem bản build |
 
-Hiện chưa có script `test` hoặc bộ kiểm thử tự động trong repository.
-
-## Cấu trúc và quy ước
+## Cấu trúc
 
 ```text
 src/
-  main.tsx       Điểm khởi chạy React
-  app/           Component gốc và CSS của màn hình hiện tại
-  styles/        CSS toàn cục, Tailwind và token giao diện
-  lib/           Tiện ích dùng chung (`cn`)
-  components/    Vị trí dành cho component tái sử dụng
-  features/      Vị trí dành cho mô-đun tính năng
-  types/         Vị trí dành cho kiểu dùng chung
+  app/           Router, ErrorBoundary
+  lib/           env, httpClient, utils
+  features/      auth, learning-path, …
+  components/    Navbar, UI
+  types/         Shared DTOs (UI)
 ```
-
-Ba thư mục `components/`, `features/` và `types/` hiện chỉ có `.gitkeep`. Alias import đã cấu hình: `@/` → `src/`, `~components/` → `src/components/`, `~features/` → `src/features/`, `~types/` → `src/types/`. Quy ước chi tiết về tên file, cấu trúc tính năng và UI nằm trong [`AGENTS.md`](./AGENTS.md).
-
-## Kết nối backend
-
-Mã nguồn hiện chưa có lời gọi API, HTTP client, endpoint, proxy hay biến môi trường cho backend. Vì vậy có thể chạy trang hiện tại độc lập; cách kết nối backend sẽ cần được xác định khi triển khai tính năng đầu tiên.
 
 ## Đọc tiếp
 
-- [`AGENTS.md`](./AGENTS.md): quy tắc phát triển và định hướng kiến trúc.
-- [`plans/`](./plans/): kế hoạch theo từng công việc; kiểm tra trạng thái plan trước khi áp dụng.
+- [`AGENTS.md`](./AGENTS.md)
+- [`plans/261002-2048-fe-auth-learning/`](./plans/261002-2048-fe-auth-learning/)
+- BE: `backend/docs/fe-main-flow-guide.md`, `backend/docs/contracts/lesson-learning-v1.md`

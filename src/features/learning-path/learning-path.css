@@ -279,6 +279,25 @@ a.lp-lesson__row:hover { border-color: var(--lp-primary); transform: translateX(
 .lp-root .lp-section-title { margin-bottom: .75rem; }
 .lp-result-items { display: grid; gap: .7rem; margin: 0; padding: 0; list-style: none; }
 
+.lp-question__hint { margin: .4rem 0 0; padding: .55rem .75rem; border-radius: .6rem; background: color-mix(in srgb, #f5e6b8 70%, white); color: #5c4a12; font-size: .9rem; line-height: 1.45; }
+.lp-audio { display: grid; gap: .65rem; padding: 1rem; border: 1px solid var(--lp-line); border-radius: var(--lp-radius); background: var(--lp-surface); }
+.lp-audio__head { display: flex; align-items: center; gap: .5rem; }
+.lp-audio__head h3 { margin: 0; font-size: 1rem; }
+.lp-audio__meta { margin-left: auto; color: var(--lp-muted); font-size: .85rem; }
+.lp-audio__player { width: 100%; }
+.lp-audio__transcript { color: var(--lp-muted); font-size: .92rem; line-height: 1.55; }
+.lp-essay { display: grid; gap: .85rem; padding: 1.1rem; border: 1px solid var(--lp-line); border-radius: var(--lp-radius); background: var(--lp-surface); }
+.lp-essay.is-passed { border-color: #b7e2cd; }
+.lp-essay__meta { margin: .35rem 0 0; color: var(--lp-muted); font-size: .88rem; }
+.lp-essay__images { display: grid; gap: .75rem; }
+.lp-essay__images img { max-width: 100%; border-radius: .6rem; border: 1px solid var(--lp-line); }
+.lp-essay__label { font-weight: 600; }
+.lp-essay__input { width: 100%; min-height: 220px; padding: .85rem 1rem; border: 1px solid var(--lp-line); border-radius: .7rem; font: inherit; line-height: 1.55; resize: vertical; }
+.lp-essay__words { margin: 0; color: var(--lp-muted); font-size: .85rem; }
+.lp-essay__disclaimer { margin: 0; color: var(--lp-muted); font-size: .82rem; }
+.lp-essay__result { display: grid; gap: .55rem; padding-top: .5rem; border-top: 1px solid var(--lp-line); }
+.lp-essay__criteria, .lp-essay__corrections { margin: 0; padding-left: 1.1rem; color: var(--lp-muted); }
+
 @keyframes lp-spin { to { transform: rotate(360deg); } }
 @keyframes lp-rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 @keyframes lp-pulse { 0% { opacity: .7; transform: scale(.85); } 100% { opacity: 0; transform: scale(1.25); } }

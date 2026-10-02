@@ -1,4 +1,4 @@
-import type { AttemptStructure, Passage, Question, QuestionOption, SectionSnapshot } from '~types/learningPath'
+import type { AttemptStructure, MediaAudio, Passage, Question, QuestionOption, SectionSnapshot } from '~types/learningPath'
 
 export interface TestItem {
   id: string
@@ -26,18 +26,51 @@ function parseJson(raw: string | null): unknown {
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null
 
 function toPassage(value: unknown): Passage | null {
-  if (!isRecord(value) || typeof value.title !== 'string' || !Array.isArray(value.paragraphs)) return null
-  const paragraphs = value.paragraphs.filter((paragraph): paragraph is Passage['paragraphs'][number] =>
-    isRecord(paragraph) && typeof paragraph.text === 'string' && (paragraph.label === null || typeof paragraph.label === 'string'))
-  return { title: value.title, paragraphs }
+  if (!isRecord(value)) return null
+  if (typeof value.title === 'string' && Array.isArray(value.paragraphs)) {
+    const paragraphs = value.paragraphs.filter((paragraph): paragraph is Passage['paragraphs'][number] =>
+      isRecord(paragraph) && typeof paragraph.text === 'string' && (paragraph.label === null || typeof paragraph.label === 'string'))
+    return { title: value.title, paragraphs }
+  }
+  if (typeof value === 'string' || typeof value.text === 'string') {
+    const text = typeof value === 'string' ? value : String(value.text)
+    return { title: '', paragraphs: text ? [{ label: null, text }] : [] }
+  }
+  return null
+}
+
+function toAudio(value: unknown): MediaAudio | null {
+  if (!isRecord(value)) return null
+  const url = typeof value.url === 'string' ? value.url : typeof value.mediaUrl === 'string' ? value.mediaUrl : null
+  if (!url) return null
+  return {
+    mediaUrl: url,
+    durationSeconds: typeof value.durationSeconds === 'number' ? value.durationSeconds : null,
+    transcript: typeof value.transcript === 'string' ? value.transcript : null,
+  }
 }
 
 function toSectionSnapshot(raw: string): SectionSnapshot | null {
   const value = parseJson(raw)
   if (!isRecord(value) || typeof value.title !== 'string') return null
-  const passage = toPassage(value.passage)
-  if (!passage) return null
-  return { title: value.title, instructions: typeof value.instructions === 'string' ? value.instructions : '', passage }
+  const passage = value.passage != null ? toPassage(value.passage) : null
+  const audio = value.audio != null ? toAudio(value.audio) : null
+  if (!passage && !audio) {
+    return {
+      title: value.title,
+      instructions: typeof value.instructions === 'string' ? value.instructions : '',
+      skill: typeof value.skill === 'string' ? value.skill : undefined,
+      passage: { title: '', paragraphs: [] },
+      audio: null,
+    }
+  }
+  return {
+    title: value.title,
+    instructions: typeof value.instructions === 'string' ? value.instructions : '',
+    skill: typeof value.skill === 'string' ? value.skill : undefined,
+    passage,
+    audio,
+  }
 }
 
 function toOptions(value: unknown): QuestionOption[] | null | undefined {
@@ -50,10 +83,30 @@ function toOptions(value: unknown): QuestionOption[] | null | undefined {
 
 function toQuestion(itemId: string, raw: string): Question | null {
   const value = parseJson(raw)
-  if (!isRecord(value) || typeof value.number !== 'number' || typeof value.prompt !== 'string') return null
-  const options = toOptions(value.options)
+  if (!isRecord(value)) return null
+  const prompt = typeof value.prompt === 'string' ? value.prompt : typeof value.stem === 'string' ? value.stem : null
+  const number = typeof value.number === 'number' ? value.number : typeof value.sortOrder === 'number' ? value.sortOrder : null
+  if (prompt === null || number === null) return null
+  const options = toOptions(
+    Array.isArray(value.options)
+      ? value.options.map((option) => {
+          if (!isRecord(option)) return option
+          if (typeof option.value === 'string' && typeof option.label === 'string') return option
+          if (typeof option.optionKey === 'string' && typeof option.content === 'string') {
+            return { value: option.optionKey, label: option.content }
+          }
+          return option
+        })
+      : value.options,
+  )
   if (options === undefined) return null
-  return { id: itemId, number: value.number, prompt: value.prompt, options }
+  return {
+    id: itemId,
+    number,
+    prompt,
+    options,
+    hint: typeof value.hint === 'string' ? value.hint : null,
+  }
 }
 
 export function parseAttemptStructure(structure: AttemptStructure): TestSection[] {

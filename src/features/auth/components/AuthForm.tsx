@@ -1,16 +1,22 @@
 import { Link } from 'react-router-dom'
 import type { FormEvent } from 'react'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { InputField } from './InputField'
 import { SocialButtons, type SocialProvider } from './SocialButtons'
 
 export type AuthMode = 'sign-in' | 'sign-up'
 
+export interface AuthSubmitPayload {
+  email: string
+  password: string
+  fullName?: string
+}
+
 interface AuthFormProps {
   mode: AuthMode
   statusMessage: string
-  onSubmit: (email: string) => void
+  submitting?: boolean
+  onSubmit: (payload: AuthSubmitPayload) => void
   onSocialSelect: (provider: SocialProvider) => void
 }
 
@@ -33,26 +39,7 @@ const FORM_COPY: Record<AuthMode, { title: string; description: string; submitLa
   },
 }
 
-function ForgotPasswordDialog() {
-  return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button type="button" variant="link" className="auth-forgot-password">Quên mật khẩu?</Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Quên mật khẩu?</DialogTitle>
-          <DialogDescription>Tính năng khôi phục mật khẩu hiện chưa khả dụng. Vui lòng thử lại sau.</DialogDescription>
-        </DialogHeader>
-        <DialogClose asChild>
-          <Button type="button">Quay lại đăng nhập</Button>
-        </DialogClose>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-export function AuthForm({ mode, statusMessage, onSubmit, onSocialSelect }: AuthFormProps) {
+export function AuthForm({ mode, statusMessage, submitting = false, onSubmit, onSocialSelect }: AuthFormProps) {
   const copy = FORM_COPY[mode]
   const passwordAutocomplete = mode === 'sign-in' ? 'current-password' : 'new-password'
 
@@ -61,9 +48,15 @@ export function AuthForm({ mode, statusMessage, onSubmit, onSocialSelect }: Auth
     const formData = new FormData(event.currentTarget)
     const email = formData.get('email')
     const password = formData.get('password')
+    const fullName = formData.get('fullName')
 
     if (typeof email !== 'string' || typeof password !== 'string' || !email || !password) return
-    onSubmit(email)
+    if (mode === 'sign-up') {
+      if (typeof fullName !== 'string' || !fullName.trim()) return
+      onSubmit({ email, password, fullName: fullName.trim() })
+      return
+    }
+    onSubmit({ email, password })
   }
 
   return (
@@ -75,6 +68,17 @@ export function AuthForm({ mode, statusMessage, onSubmit, onSocialSelect }: Auth
       </header>
       <form className="auth-form" onSubmit={handleSubmit}>
         <div className="auth-fields">
+          {mode === 'sign-up' ? (
+            <InputField
+              id={`${mode}-fullName`}
+              name="fullName"
+              label="Họ và tên"
+              type="text"
+              autoComplete="name"
+              required
+              placeholder="Nguyễn Văn A"
+            />
+          ) : null}
           <InputField
             id={`${mode}-email`}
             name="email"
@@ -93,13 +97,19 @@ export function AuthForm({ mode, statusMessage, onSubmit, onSocialSelect }: Auth
             type="password"
             autoComplete={passwordAutocomplete}
             required
-            minLength={mode === 'sign-up' ? 8 : undefined}
-            placeholder="Ít nhất 8 ký tự"
-            hint={mode === 'sign-up' ? 'Dùng ít nhất 8 ký tự để bảo vệ tài khoản.' : undefined}
+            minLength={mode === 'sign-up' ? 6 : undefined}
+            placeholder="Ít nhất 6 ký tự"
+            hint={mode === 'sign-up' ? 'Dùng ít nhất 6 ký tự để bảo vệ tài khoản.' : undefined}
           />
         </div>
-        {mode === 'sign-in' && <ForgotPasswordDialog />}
-        <Button type="submit" className="auth-submit-button">{copy.submitLabel}</Button>
+        {mode === 'sign-in' ? (
+          <Button type="button" variant="link" className="auth-forgot-password" disabled>
+            Quên mật khẩu? (sắp có)
+          </Button>
+        ) : null}
+        <Button type="submit" className="auth-submit-button" disabled={submitting}>
+          {submitting ? 'Đang xử lý…' : copy.submitLabel}
+        </Button>
         <div className="auth-divider" role="separator" aria-label="hoặc"><span>hoặc</span></div>
         <SocialButtons onSelect={onSocialSelect} />
         <p className="auth-status" role="status" aria-live="polite">{statusMessage}</p>

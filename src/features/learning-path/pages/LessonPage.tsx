@@ -2,8 +2,10 @@ import { useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, CheckCircle2, Flag, Loader2, ShieldAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { reloadSessionPoints, useAuthSession } from '@/features/auth/authSession'
 import type { LessonCompletionResult, LessonDetail } from '~types/learningPath'
 import { learningApi, toApiError } from '../api'
+import { USE_MOCK_LEARNING } from '@/lib/env'
 import { BlockList } from '../components/blocks/BlockList'
 import type { BlockRenderContext } from '../components/blocks/blockRegistry'
 import { ApiErrorState, LoadingState } from '../components/PageState'
@@ -25,6 +27,7 @@ export function LessonPage() {
 }
 
 function LessonView({ lesson }: { lesson: LessonDetail }) {
+  const { points } = useAuthSession()
   const [completion, setCompletion] = useState<LessonCompletionResult | null>(null)
   const [completing, setCompleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -33,11 +36,26 @@ function LessonView({ lesson }: { lesson: LessonDetail }) {
   const done = completion !== null || lesson.status === 'COMPLETED'
 
   const context: BlockRenderContext = {
+    pointsBalance: points,
     async submitExercise(block, answers) {
       try {
         const result = await learningApi.submitExercise(lesson.id, block.id, { requestId: newRequestId(), answers })
-        setPendingReviews(result.pendingReviews)
+        if (result.pendingReviews.length > 0 || USE_MOCK_LEARNING) setPendingReviews(result.pendingReviews)
         if (result.lessonCompleted) setCompletion(result)
+        return result
+      } catch (reason) {
+        const apiError = toApiError(reason)
+        reportApiError(apiError)
+        throw apiError
+      }
+    },
+    async submitEssay(block, essayText) {
+      try {
+        const result = await learningApi.submitEssay(lesson.id, block.id, {
+          requestId: newRequestId(),
+          essayText,
+        })
+        await reloadSessionPoints()
         return result
       } catch (reason) {
         const apiError = toApiError(reason)
@@ -54,7 +72,7 @@ function LessonView({ lesson }: { lesson: LessonDetail }) {
     setError(null)
     try {
       const result = await learningApi.completeLesson(lesson.id)
-      setPendingReviews(result.pendingReviews)
+      if (result.pendingReviews.length > 0 || USE_MOCK_LEARNING) setPendingReviews(result.pendingReviews)
       setCompletion(result)
     } catch (reason) {
       const apiError = toApiError(reason)

@@ -1,10 +1,12 @@
 import { Award, BookOpenCheck, PenLine, Sparkles, Star, Trophy } from 'lucide-react'
 import { useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { ClassMascot } from '@/components/ClassMascot'
 import { InteractiveCanvasBackground } from '@/components/InteractiveCanvasBackground'
 import { SiteNavbar } from '@/components/SiteNavbar'
-import { AuthForm, type AuthMode } from '../components/AuthForm'
-import { signInForDemo } from '../authSession'
+import { HttpError } from '@/lib/httpClient'
+import { AuthForm, type AuthMode, type AuthSubmitPayload } from '../components/AuthForm'
+import { loginWithPassword, registerWithPassword } from '../authSession'
 import type { SocialProvider } from '../components/SocialButtons'
 import '../auth.css'
 
@@ -32,14 +34,35 @@ function AuthBackdrop() {
 
 export function AuthPage({ mode }: AuthPageProps) {
   const [statusMessage, setStatusMessage] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const navigate = useNavigate()
+  const location = useLocation()
+  const redirectTo = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || '/learn'
 
-  function handleSubmit(email: string) {
-    signInForDemo(email)
-    setStatusMessage('Bạn đã đăng nhập ở chế độ giao diện. Tính năng xác thực thực tế sẽ khả dụng khi backend được kết nối.')
+  async function handleSubmit(payload: AuthSubmitPayload) {
+    setSubmitting(true)
+    setStatusMessage('')
+    try {
+      if (mode === 'sign-up') {
+        await registerWithPassword({
+          email: payload.email,
+          password: payload.password,
+          fullName: payload.fullName ?? payload.email.split('@')[0] ?? 'Học viên',
+        })
+      } else {
+        await loginWithPassword(payload.email, payload.password)
+      }
+      navigate(redirectTo, { replace: true })
+    } catch (error) {
+      const message = error instanceof HttpError ? error.message : 'Không thể xác thực. Vui lòng thử lại.'
+      setStatusMessage(message)
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   function handleSocialSelect(provider: SocialProvider) {
-    setStatusMessage(`Đăng nhập với ${provider} chưa được kết nối trong môi trường hiện tại.`)
+    setStatusMessage(`Đăng nhập với ${provider} chưa được hỗ trợ trong giai đoạn này.`)
   }
 
   return (
@@ -56,7 +79,13 @@ export function AuthPage({ mode }: AuthPageProps) {
             <p>Giữ bài học, lộ trình và từ vựng trong một không gian tập trung.</p>
           </section>
           <ClassMascot className="auth-mascot" size="lg" />
-          <AuthForm mode={mode} statusMessage={statusMessage} onSubmit={handleSubmit} onSocialSelect={handleSocialSelect} />
+          <AuthForm
+            mode={mode}
+            statusMessage={statusMessage}
+            submitting={submitting}
+            onSubmit={handleSubmit}
+            onSocialSelect={handleSocialSelect}
+          />
         </div>
       </main>
     </div>

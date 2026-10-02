@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { Link, NavLink, useLocation } from 'react-router-dom'
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { GraduationCap, Menu, X } from 'lucide-react'
 import { UserTierDropdown } from './UserTierDropdown'
-import { setDemoTier, useAuthSession } from '@/features/auth/authSession'
+import { logoutSession, setDemoTier, useAuthSession } from '@/features/auth/authSession'
 
 const navigation = [
   { to: '/home', label: 'Trang chủ', public: true },
@@ -23,11 +23,26 @@ export interface SiteNavbarProps {
 
 export function SiteNavbar({ isLoggedIn, userName }: SiteNavbarProps) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [loggingOut, setLoggingOut] = useState(false)
   const { pathname } = useLocation()
+  const navigate = useNavigate()
   const session = useAuthSession()
   const activeIsLoggedIn = isLoggedIn ?? session.isLoggedIn
   const activeUserName = userName ?? session.userName
   const visibleNavigation = activeIsLoggedIn ? navigation : navigation.filter((item) => item.public)
+
+  async function handleLogout() {
+    if (loggingOut) return
+    setLoggingOut(true)
+    try {
+      await logoutSession()
+      navigate('/login', { replace: true })
+    } finally {
+      setLoggingOut(false)
+      setMenuOpen(false)
+    }
+  }
+
   return (
     <header className="site-main-header">
       <div className="site-header-shell">
@@ -47,13 +62,18 @@ export function SiteNavbar({ isLoggedIn, userName }: SiteNavbarProps) {
           </div>
           <div className="site-nav-actions">
             {activeIsLoggedIn ? (
-              <UserTierDropdown
-                className="site-user-tier-dropdown"
-                onToggleTier={setDemoTier}
-                points={session.points}
-                tier={session.tier}
-                userName={activeUserName}
-              />
+              <>
+                <UserTierDropdown
+                  className="site-user-tier-dropdown"
+                  onToggleTier={setDemoTier}
+                  points={session.points}
+                  tier={session.tier}
+                  userName={activeUserName}
+                />
+                <button type="button" className="site-login-btn" disabled={loggingOut} onClick={handleLogout}>
+                  {loggingOut ? 'Đang thoát…' : 'Đăng xuất'}
+                </button>
+              </>
             ) : (
               <>
                 <Link to="/login" className="site-login-btn">Đăng nhập</Link>

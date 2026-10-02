@@ -45,6 +45,12 @@ export function createMockLearningApi({ storage = null, latencyMs = 0, now = () 
     getTopicLessons: (topicId) => respond((s) => lessons.getTopicLessons(s, topicId)),
     getLesson: (lessonId) => respond((s) => lessons.getLesson(s, lessonId)),
     submitExercise: (lessonId, blockId, request) => idempotent(request.requestId, (s) => lessons.submitExercise(s, lessonId, blockId, request)),
+    submitEssay: async () => {
+      throw new ApiError(503, 'GRADING_UNAVAILABLE', 'Mock learning chưa hỗ trợ chấm bài luận. Bật HTTP thật để thử Writing.')
+    },
+    getWritingSubmission: async () => {
+      throw new ApiError(404, 'NOT_FOUND', 'Mock learning không có writing submission.')
+    },
     completeLesson: (lessonId) => respond((s) => lessons.completeLesson(s, lessonId)),
     getReview: (reviewId) => respond((s) => lessons.getReview(s, reviewId)),
     submitReview: (reviewId, request) => idempotent(request.requestId, (s) => lessons.submitReview(s, reviewId, request)),

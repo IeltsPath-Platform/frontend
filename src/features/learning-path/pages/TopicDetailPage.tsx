@@ -91,7 +91,7 @@ function FinalTestCard({ test, topicId, onChanged }: { test: FinalTestSummary; t
     try {
       const assignment = await learningApi.createTestAssignment(topicId)
       const attempt = await learningApi.createAttempt({
-        packageVersionId: assignment.packageVersionId, attemptType: 'TOPIC_TEST', mode: 'PRACTICE', channel: 'WEB', expiresAt: null,
+        packageVersionId: assignment.packageVersionId, attemptType: 'TOPIC_TEST', mode: 'STANDARD', channel: 'WEB', expiresAt: null,
       })
       navigate(`/learn/tests/${attempt.id}?topic=${topicId}`)
     } catch (reason) {

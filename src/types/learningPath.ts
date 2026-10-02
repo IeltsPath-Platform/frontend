@@ -56,6 +56,8 @@ export interface Question {
   number: number
   prompt: string
   options: QuestionOption[] | null
+  /** Present when BE reveals a hint (after a wrong answer while block unpassed). */
+  hint?: string | null
 }
 
 export type AnswerMap = Record<string, string>
@@ -71,6 +73,7 @@ export interface QuestionResult {
   correct: boolean
   correctAnswer?: string
   explanation?: string
+  hint?: string | null
 }
 
 export interface PassageParagraph {
@@ -81,6 +84,12 @@ export interface PassageParagraph {
 export interface Passage {
   title: string
   paragraphs: PassageParagraph[]
+}
+
+export interface MediaAudio {
+  mediaUrl: string
+  durationSeconds: number | null
+  transcript?: string | null
 }
 
 /** Blocks arrive untyped from the API; renderers narrow them with the guards in `blockGuards.ts`. */
@@ -102,8 +111,17 @@ export interface PassageBlockData extends RawBlock, Passage {
   mediaUrl: null
 }
 
+export interface AudioBlockData extends RawBlock {
+  type: 'ASSET'
+  assetType: 'AUDIO'
+  mediaUrl: string
+  durationSeconds: number | null
+  transcript: string | null
+}
+
 export interface ExerciseBlockData extends RawBlock {
   type: 'EXERCISE'
+  blockKind?: 'EXERCISE'
   title: string
   instructions: string
   knowledgePointCode: string
@@ -111,6 +129,66 @@ export interface ExerciseBlockData extends RawBlock {
   state: ExerciseState
   savedAnswers: AnswerMap | null
   solutions: QuestionResult[] | null
+}
+
+export interface EssayImage {
+  mediaUrl: string
+  altText: string
+}
+
+export interface EssayLatestSubmission {
+  id: string
+  status: string
+  overallBand: number | null
+  passed: boolean | null
+}
+
+export interface EssayBlockData extends RawBlock {
+  type: 'EXERCISE'
+  blockKind: 'ESSAY'
+  title: string
+  questionVersionId: string
+  stem: string
+  task: string
+  minWords: number
+  passBand: number
+  images: EssayImage[]
+  latestSubmission: EssayLatestSubmission | null
+  sampleAnswer: string | null
+}
+
+export interface WritingCriterion {
+  code: string
+  band: number
+  strengths: string[]
+  improvements: string[]
+}
+
+export interface WritingCorrection {
+  excerpt: string
+  suggestion: string
+  category: string
+}
+
+export interface WritingSubmissionResult {
+  submissionId: string
+  status: string
+  task?: string
+  wordCount?: number
+  overallBand?: number | null
+  passed?: boolean | null
+  criteria?: WritingCriterion[]
+  corrections?: WritingCorrection[]
+  summary?: string
+  pointsCharged?: number
+  sampleAnswer?: string | null
+  code?: string
+  failureCode?: string
+}
+
+export interface EssaySubmissionRequest {
+  requestId: string
+  essayText: string
 }
 
 export interface LessonDetail {
@@ -154,6 +232,7 @@ export interface ReviewSet {
   attemptNumber: number
   maxAttempts: number
   passage: Passage
+  audio: MediaAudio | null
   questions: Question[]
 }
 
@@ -197,7 +276,7 @@ export type AttemptStatus = 'IN_PROGRESS' | 'SUBMITTED' | 'EXPIRED'
 export interface StartAttemptRequest {
   packageVersionId: string
   attemptType: 'TOPIC_TEST'
-  mode: 'PRACTICE'
+  mode: 'STANDARD' | 'PRACTICE'
   channel: 'WEB'
   expiresAt: null
 }
@@ -243,7 +322,9 @@ export interface AttemptItem {
 export interface SectionSnapshot {
   title: string
   instructions: string
-  passage: Passage
+  skill?: string
+  passage: Passage | null
+  audio: MediaAudio | null
 }
 
 export interface QuestionSnapshot {

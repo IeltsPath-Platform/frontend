@@ -3,6 +3,7 @@ import type {
   AttemptItemResponse,
   AttemptResult,
   AttemptStructure,
+  EssaySubmissionRequest,
   ExerciseSubmissionRequest,
   ExerciseSubmissionResult,
   LessonCompletionResult,
@@ -16,6 +17,7 @@ import type {
   TestAssignment,
   TopicLessonsResponse,
   TopicSummary,
+  WritingSubmissionResult,
 } from '~types/learningPath'
 
 /** Every method rejects with `ApiError` on failure. */
@@ -25,14 +27,12 @@ export interface LearningApi {
   getTopicLessons(topicId: string): Promise<TopicLessonsResponse>
   getLesson(lessonId: string): Promise<LessonDetail>
   submitExercise(lessonId: string, blockId: string, request: ExerciseSubmissionRequest): Promise<ExerciseSubmissionResult>
+  submitEssay(lessonId: string, blockId: string, request: EssaySubmissionRequest): Promise<WritingSubmissionResult>
+  getWritingSubmission(submissionId: string): Promise<WritingSubmissionResult>
   completeLesson(lessonId: string): Promise<LessonCompletionResult>
   getReview(reviewId: string): Promise<ReviewDetail>
   submitReview(reviewId: string, request: ReviewSubmissionRequest): Promise<ReviewSubmissionResult>
   createTestAssignment(topicId: string): Promise<TestAssignment>
-  /**
-   * assessment-service currently requires `sections` in this request. The topic flow assumes the
-   * assignment already binds sections server-side, so only `packageVersionId` is sent.
-   */
   createAttempt(request: StartAttemptRequest): Promise<AssessmentAttempt>
   getAttemptStructure(attemptId: string): Promise<AttemptStructure>
   saveItemResponse(attemptId: string, itemId: string, request: SaveItemResponseRequest): Promise<AttemptItemResponse>

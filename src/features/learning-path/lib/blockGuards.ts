@@ -1,4 +1,4 @@
-import type { ExerciseBlockData, PassageBlockData, Question, RawBlock, TextBlockData } from '~types/learningPath'
+import type { AudioBlockData, EssayBlockData, ExerciseBlockData, PassageBlockData, Question, RawBlock, TextBlockData } from '~types/learningPath'
 
 const isString = (value: unknown): value is string => typeof value === 'string'
 
@@ -14,7 +14,7 @@ export function isTextBlock(block: RawBlock): block is TextBlockData {
   return block.type === 'TEXT' && isString(block.text)
 }
 
-/** Assets with a media URL (audio, video, image) have no renderer yet. */
+/** Assets with a media URL (audio, video, image) have no renderer yet — except AUDIO via AudioBlock. */
 export function isPassageBlock(block: RawBlock): block is PassageBlockData {
   return block.type === 'ASSET'
     && block.assetType === 'PASSAGE'
@@ -24,8 +24,26 @@ export function isPassageBlock(block: RawBlock): block is PassageBlockData {
     && block.paragraphs.every((paragraph) => paragraph && isString(paragraph.text))
 }
 
+export function isAudioBlock(block: RawBlock): block is AudioBlockData {
+  return block.type === 'ASSET'
+    && block.assetType === 'AUDIO'
+    && isString(block.mediaUrl)
+    && block.mediaUrl.length > 0
+}
+
+export function isEssayBlock(block: RawBlock): block is EssayBlockData {
+  return block.type === 'EXERCISE'
+    && block.blockKind === 'ESSAY'
+    && isString(block.questionVersionId)
+    && isString(block.stem)
+    && isString(block.task)
+    && typeof block.minWords === 'number'
+    && typeof block.passBand === 'number'
+}
+
 export function isExerciseBlock(block: RawBlock): block is ExerciseBlockData {
   return block.type === 'EXERCISE'
+    && block.blockKind !== 'ESSAY'
     && isString(block.title)
     && isString(block.instructions)
     && isString(block.knowledgePointCode)

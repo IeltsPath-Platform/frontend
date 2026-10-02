@@ -4,6 +4,7 @@ import { ArrowRight, BookOpenCheck, RefreshCw, SkipForward } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { AnswerInput, ExerciseBlockData, ReviewDetail, ReviewSet, ReviewSubmissionResult } from '~types/learningPath'
 import { learningApi, toApiError } from '../api'
+import { AudioBlock } from '../components/blocks/AudioBlock'
 import { BlockList } from '../components/blocks/BlockList'
 import type { BlockRenderContext } from '../components/blocks/blockRegistry'
 import { ExerciseBlock } from '../components/blocks/ExerciseBlock'
@@ -14,7 +15,9 @@ import { reportApiError, resolvePendingReview } from '../lib/reviewGate'
 import { useApiResource } from '../lib/useApiResource'
 
 const THEORY_CONTEXT: BlockRenderContext = {
+  pointsBalance: 0,
   submitExercise: () => Promise.reject(new Error('Phần lý thuyết không có bài tập.')),
+  submitEssay: () => Promise.reject(new Error('Phần lý thuyết không có bài luận.')),
 }
 
 export function ReviewPage() {
@@ -29,7 +32,9 @@ export function ReviewPage() {
 }
 
 function resumePath(review: Pick<ReviewDetail, 'resumeLessonId' | 'topicId'>) {
-  return review.resumeLessonId ? `/learn/lessons/${review.resumeLessonId}` : `/learn/topics/${review.topicId}`
+  if (review.resumeLessonId) return `/learn/lessons/${review.resumeLessonId}`
+  if (review.topicId) return `/learn/topics/${review.topicId}`
+  return '/learn'
 }
 
 function toExerciseBlock(review: ReviewDetail, set: ReviewSet): ExerciseBlockData {
@@ -85,7 +90,10 @@ function ReviewView({ review, onReload }: { review: ReviewDetail; onReload: () =
 
       {set ? (
         <section className="lp-split" aria-label="Bộ câu hỏi ôn">
-          <div className="lp-split__passage"><PassageBlock passage={set.passage} /></div>
+          <div className="lp-split__passage">
+            {set.audio ? <AudioBlock audio={set.audio} title="Audio ôn" /> : null}
+            {set.passage.paragraphs.length > 0 || set.passage.title ? <PassageBlock passage={set.passage} /> : null}
+          </div>
           <div className="lp-split__work">
             <ExerciseBlock
               allowResubmit={false}
