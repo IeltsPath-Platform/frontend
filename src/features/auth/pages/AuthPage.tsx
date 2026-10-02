@@ -1,5 +1,6 @@
 import { Award, BookOpenCheck, PenLine, Sparkles, Star, Trophy } from 'lucide-react'
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { ClassMascot } from '@/components/ClassMascot'
 import { InteractiveCanvasBackground } from '@/components/InteractiveCanvasBackground'
 import { SiteNavbar } from '@/components/SiteNavbar'
@@ -32,10 +33,11 @@ function AuthBackdrop() {
 
 export function AuthPage({ mode }: AuthPageProps) {
   const [statusMessage, setStatusMessage] = useState('')
+  const navigate = useNavigate()
 
   function handleSubmit(email: string) {
     signInForDemo(email)
-    setStatusMessage('Bạn đã đăng nhập ở chế độ giao diện. Tính năng xác thực thực tế sẽ khả dụng khi backend được kết nối.')
+    navigate('/overview', { replace: true })
   }
 
   function handleSocialSelect(provider: SocialProvider) {

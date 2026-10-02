@@ -31,7 +31,7 @@ export const OverviewSidebar: React.FC<OverviewSidebarProps> = ({
           onClick={() => onSelectTab('overview')}
         >
           <LayoutDashboard size={18} />
-          <span>Overview</span>
+          <span>Tổng quát</span>
         </button>
 
         <button

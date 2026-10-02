@@ -46,6 +46,11 @@ export function signInForDemo(email: string) {
   emitChange()
 }
 
+export function signOutForDemo() {
+  session = GUEST_SESSION
+  emitChange()
+}
+
 export function setDemoTier(tier: UserTier) {
   session = { ...session, tier }
   emitChange()

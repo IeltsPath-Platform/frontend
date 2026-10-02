@@ -12,6 +12,8 @@ import { SpeakingPage } from '@/features/practice/pages/SpeakingPage'
 import { HomePage } from '@/features/home/HomePage'
 import { VocabularyPage } from '@/features/vocabulary/pages/VocabularyPage'
 import { AuthPage } from '@/features/auth/pages/AuthPage'
+import { useAuthSession } from '@/features/auth/authSession'
+import { SiteFooter } from '@/components/SiteFooter'
 import { getPracticeMode } from '@/features/practice/lib/passageTools'
 import type { PracticeMode, SkillType } from '@/types/practice'
 import './app.css'
@@ -19,10 +21,12 @@ import '@/features/practice/practice.css'
 
 function AppContent() {
   const navigate = useNavigate()
+  const { isLoggedIn } = useAuthSession()
 
   return (
-    <Routes>
-      <Route path="/" element={<Navigate replace to="/overview" />} />
+    <>
+      <Routes>
+      <Route path="/" element={<Navigate replace to={isLoggedIn ? '/overview' : '/home'} />} />
       <Route path="/home" element={<HomePage />} />
       <Route path="/overview" element={<OverviewPage />} />
       <Route path="/classroom" element={<ClassroomPage />} />
@@ -68,8 +72,13 @@ function AppContent() {
       <Route path="/classes/:classCode/join" element={<RouteStatusPage title="Phòng học trực tuyến" />} />
       <Route path="/lessons/:lessonId" element={<LessonWorkspacePage />} />
       <Route path="/mentors/:mentorSlug" element={<RouteStatusPage title="Liên hệ Mentor" />} />
+      <Route path="/terms" element={<RouteStatusPage title="Điều khoản sử dụng" />} />
+      <Route path="/privacy" element={<RouteStatusPage title="Chính sách bảo mật" />} />
+      <Route path="/copyright" element={<RouteStatusPage title="Chính sách bản quyền" />} />
       <Route path="*" element={<NotFoundPage />} />
-    </Routes>
+      </Routes>
+      <SiteFooter />
+    </>
   )
 }
 

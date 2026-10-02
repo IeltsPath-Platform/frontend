@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { LogOut } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import styles from './UserTierDropdown.module.css'
 
 export type UserTier = 'FREE' | 'PREMIUM'
@@ -14,6 +16,8 @@ export interface UserTierDropdownProps {
   userName?: string
   /** Runs after a tier switch. The next tier is provided, but callbacks may ignore it. */
   onToggleTier?: (nextTier: UserTier) => void
+  /** Ends the current session when supplied by the consuming application. */
+  onSignOut?: () => void
   /** Lets a consuming top bar adjust placement without reaching into this component. */
   className?: string
 }
@@ -41,6 +45,7 @@ export function UserTierDropdown({
   points = 0,
   userName = 'Học viên',
   onToggleTier,
+  onSignOut,
   className,
 }: UserTierDropdownProps) {
   const [demoTier, setDemoTier] = useState<UserTier>(defaultTier)
@@ -99,6 +104,13 @@ export function UserTierDropdown({
 
         <button type="button" className={styles.toggleButton} onClick={toggleTier}>{toggleLabel}</button>
         <p className={styles.demoHint} role="status" aria-live="polite">Chế độ demo — không thay đổi gói học thực tế.</p>
+        {onSignOut && (
+          <div className={styles.accountActions}>
+            <Button type="button" variant="ghost" className={styles.accountAction} onClick={onSignOut}>
+              <LogOut aria-hidden="true" /> Đăng xuất
+            </Button>
+          </div>
+        )}
       </article>
     </details>
   )

@@ -47,35 +47,23 @@
 .site-brand {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  min-height: 44px;
   color: white;
   text-decoration: none;
-  font-size: 1.15rem;
-  font-weight: 800;
   flex-shrink: 0;
 }
 
-.site-brand-mark {
-  width: 2rem;
-  height: 2rem;
-  border: 3px solid white;
-  border-radius: 50% 50% 40% 40%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.site-brand small {
+.site-brand-logo {
   display: block;
-  font-size: 0.45rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  opacity: 0.85;
+  width: 112px;
+  height: auto;
+  object-fit: contain;
 }
 
 .site-nav-links {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.35rem;
   flex: 1;
 }
@@ -176,6 +164,15 @@
   color: white;
 }
 
+@media (min-width: 1241px) {
+  .site-main-nav {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  }
+  .site-brand { justify-self: start; }
+  .site-nav-actions { justify-self: end; }
+}
+
 @media (max-width: 1240px) {
   .site-nav-links {
     display: none;
@@ -199,6 +196,7 @@
   }
   .site-nav-links a {
     min-height: 44px;
+    justify-content: center;
   }
 }
 
@@ -207,11 +205,11 @@
   .site-main-nav { gap: .25rem; }
   .site-header-shell { padding-inline: 1rem; }
   .site-register-btn { padding-inline: .75rem; white-space: nowrap; }
-  .site-brand { font-size: 1rem; }
+  .site-brand-logo { width: 100px; }
 }
 
 @media (max-width: 25rem) {
-  .site-brand > span:last-child { display: none; }
+  .site-brand-logo { width: 84px; }
   .site-nav-actions { gap: .2rem; }
   .site-login-btn, .site-register-btn { font-size: .74rem; padding-inline: .55rem; }
 }
