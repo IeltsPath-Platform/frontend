@@ -26,7 +26,7 @@ export function OAuthCallbackPage() {
         if (cancelled) return
         await loginWithAccessToken(tokens.accessToken)
         if (cancelled) return
-        navigate('/learn', { replace: true })
+        navigate('/home', { replace: true })
       } catch (error) {
         if (cancelled) return
         setMessage(error instanceof HttpError ? error.message : error instanceof Error ? error.message : 'OAuth thất bại.')

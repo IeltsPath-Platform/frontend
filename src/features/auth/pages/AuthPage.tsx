@@ -17,7 +17,7 @@ export function AuthPage({ mode }: AuthPageProps) {
   const [submitting, setSubmitting] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
-  const redirectTo = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || '/learn'
+  const redirectTo = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || '/home'
 
   async function handleSubmit(payload: AuthSubmitPayload) {
     setSubmitting(true)
