@@ -1,3 +1,6 @@
+/** UI/API provider id for future OAuth login. */
+export type SocialProvider = 'Google'
+
 export interface AuthTokenResponse {
   message: string
   accessToken: string

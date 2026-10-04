@@ -16,6 +16,7 @@ interface AuthFormProps {
   mode: AuthMode
   statusMessage: string
   submitting?: boolean
+  oauthEnabled?: boolean
   onSubmit: (payload: AuthSubmitPayload) => void
   onSocialSelect: (provider: SocialProvider) => void
 }
@@ -39,7 +40,14 @@ const FORM_COPY: Record<AuthMode, { title: string; description: string; submitLa
   },
 }
 
-export function AuthForm({ mode, statusMessage, submitting = false, onSubmit, onSocialSelect }: AuthFormProps) {
+export function AuthForm({
+  mode,
+  statusMessage,
+  submitting = false,
+  oauthEnabled = false,
+  onSubmit,
+  onSocialSelect,
+}: AuthFormProps) {
   const copy = FORM_COPY[mode]
   const passwordAutocomplete = mode === 'sign-in' ? 'current-password' : 'new-password'
 
@@ -103,15 +111,13 @@ export function AuthForm({ mode, statusMessage, submitting = false, onSubmit, on
           />
         </div>
         {mode === 'sign-in' ? (
-          <Button type="button" variant="link" className="auth-forgot-password" disabled>
-            Quên mật khẩu? (sắp có)
-          </Button>
+          <Link className="auth-forgot-password" to="/forgot-password">Quên mật khẩu?</Link>
         ) : null}
         <Button type="submit" className="auth-submit-button" disabled={submitting}>
           {submitting ? 'Đang xử lý…' : copy.submitLabel}
         </Button>
         <div className="auth-divider" role="separator" aria-label="hoặc"><span>hoặc</span></div>
-        <SocialButtons onSelect={onSocialSelect} />
+        <SocialButtons disabled={!oauthEnabled} onSelect={onSocialSelect} />
         <p className="auth-status" role="status" aria-live="polite">{statusMessage}</p>
       </form>
       <p className="auth-mode-toggle">{copy.prompt} <Link to={copy.switchTo}>{copy.switchLabel}</Link></p>

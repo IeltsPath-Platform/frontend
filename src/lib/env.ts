@@ -15,3 +15,6 @@ export const USE_MOCK_LEARNING = (() => {
   if (flag === 'false') return false
   return !import.meta.env.VITE_API_BASE_URL
 })()
+
+/** Social OAuth login. Off until user-service exposes a real authorize endpoint. */
+export const OAUTH_ENABLED = import.meta.env.VITE_OAUTH_ENABLED === 'true'

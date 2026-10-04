@@ -185,7 +185,17 @@
 .auth-input-control input:focus { border-color: var(--primary); }
 .auth-input-control input[type='password'], .auth-input-control input[type='text'] { padding-inline-end: 3rem; }
 .auth-password-toggle { color: var(--primary); inset-block-start: 50%; min-block-size: 2.75rem; min-inline-size: 2.75rem; position: absolute; right: .1rem; transform: translateY(-50%); }
-.auth-forgot-password { color: var(--primary); font-size: .75rem; justify-self: end; min-block-size: 2.75rem; padding-inline: .25rem; }
+.auth-forgot-password {
+  color: var(--primary);
+  font-size: .75rem;
+  justify-self: end;
+  min-block-size: 2.75rem;
+  padding-inline: .25rem;
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+.auth-forgot-password:hover { text-decoration: underline; }
 .auth-submit-button { margin-top: 1.3rem; }
 .auth-status { color: var(--auth-muted); font-size: .72rem; line-height: 1.45; margin: .7rem 0 0; min-block-size: 1.45rem; text-align: center; }
 .auth-mode-toggle { color: var(--auth-muted); font-size: .78rem; margin: 1.2rem 0 0; text-align: center; }

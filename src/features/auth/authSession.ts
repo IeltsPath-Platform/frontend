@@ -95,13 +95,17 @@ export async function hydrateAuthSession(): Promise<boolean> {
   }
 }
 
-export async function loginWithPassword(email: string, password: string) {
-  const tokens = await authApi.login({ email, password })
-  setAccessToken(tokens.accessToken)
+export async function loginWithAccessToken(accessToken: string) {
+  setAccessToken(accessToken)
   const user = await authApi.me()
   applyUser(user)
   await refreshPoints()
   return user
+}
+
+export async function loginWithPassword(email: string, password: string) {
+  const tokens = await authApi.login({ email, password })
+  return loginWithAccessToken(tokens.accessToken)
 }
 
 export async function registerWithPassword(input: {
