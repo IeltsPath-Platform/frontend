@@ -81,11 +81,17 @@ function toOptions(value: unknown): QuestionOption[] | null | undefined {
   return options.length === value.length ? options : undefined
 }
 
-function toQuestion(itemId: string, raw: string): Question | null {
+function toQuestion(itemId: string, raw: string, sortOrderFallback = 0): Question | null {
   const value = parseJson(raw)
   if (!isRecord(value)) return null
   const prompt = typeof value.prompt === 'string' ? value.prompt : typeof value.stem === 'string' ? value.stem : null
-  const number = typeof value.number === 'number' ? value.number : typeof value.sortOrder === 'number' ? value.sortOrder : null
+  const number = typeof value.number === 'number'
+    ? value.number
+    : typeof value.sortOrder === 'number'
+      ? value.sortOrder
+      : sortOrderFallback > 0
+        ? sortOrderFallback
+        : null
   if (prompt === null || number === null) return null
   const options = toOptions(
     Array.isArray(value.options)
@@ -118,6 +124,10 @@ export function parseAttemptStructure(structure: AttemptStructure): TestSection[
       snapshot: toSectionSnapshot(section.snapshot),
       items: [...section.items]
         .sort((a, b) => a.sortOrder - b.sortOrder)
-        .map((item) => ({ id: item.id, sortOrder: item.sortOrder, question: toQuestion(item.id, item.questionSnapshot) })),
+        .map((item) => ({
+          id: item.id,
+          sortOrder: item.sortOrder,
+          question: toQuestion(item.id, item.questionSnapshot, item.sortOrder),
+        })),
     }))
 }

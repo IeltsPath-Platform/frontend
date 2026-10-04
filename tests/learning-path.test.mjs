@@ -359,8 +359,10 @@ describe('learning path rendering', () => {
       { id: 'essay', sortOrder: 10, type: 'ESSAY' },
       { id: 'broken', sortOrder: 11, type: 'EXERCISE', questions: 'oops' },
     ])
-    assert.equal(html.match(/Nội dung chưa hỗ trợ/g)?.length, 4)
-    assert.match(html, /ASSET · AUDIO/)
+    // L4 AUDIO is rendered by AudioBlock; only the 3 injected unknown kinds stay unsupported.
+    assert.equal(html.match(/Nội dung chưa hỗ trợ/g)?.length, 3)
+    assert.match(html, /lp-audio__player|Bài nghe|Nghe giảng/)
+    assert.doesNotMatch(html, /ASSET · AUDIO/)
   })
 
   test('a passed exercise reopens with saved answers and solutions', async () => {

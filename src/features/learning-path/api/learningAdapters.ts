@@ -548,7 +548,9 @@ export function mapAttemptStructure(raw: {
         id: item.id,
         questionVersionId: item.questionVersionId,
         sortOrder: item.sortOrder,
-        questionSnapshot: stringifySnapshot(normalizeQuestionSnapshot(item.questionSnapshot, item.questionVersionId)),
+        questionSnapshot: stringifySnapshot(
+          normalizeQuestionSnapshot(item.questionSnapshot, item.questionVersionId, item.sortOrder),
+        ),
         answerSnapshot: item.answerSnapshot == null ? null : stringifySnapshot(item.answerSnapshot),
         knowledgeSnapshot: item.knowledgeSnapshot == null ? null : stringifySnapshot(item.knowledgeSnapshot),
       })),
@@ -556,24 +558,52 @@ export function mapAttemptStructure(raw: {
   }
 }
 
-function normalizeQuestionSnapshot(raw: unknown, questionVersionId: string): unknown {
-  if (!raw || typeof raw !== 'object') return raw
-  const record = raw as Record<string, unknown>
-  if (typeof record.prompt === 'string' && typeof record.number === 'number') return record
-  // BE may use stem/sortOrder/options[{optionKey,content}]
+/**
+ * BE often returns questionSnapshot as a JSON string with stem/optionKey and no top-level
+ * number — parse first, then map to the FE Question shape.
+ */
+function normalizeQuestionSnapshot(
+  raw: unknown,
+  questionVersionId: string,
+  sortOrderFallback = 0,
+): unknown {
+  let value: unknown = raw
+  if (typeof value === 'string') {
+    try {
+      value = JSON.parse(value)
+    } catch {
+      return raw
+    }
+  }
+  if (!value || typeof value !== 'object') return value
+  const record = value as Record<string, unknown>
   const options = Array.isArray(record.options)
     ? record.options.map((option) => {
         if (!option || typeof option !== 'object') return option
         const entry = option as Record<string, unknown>
-        if (typeof entry.value === 'string') return entry
-        return { value: entry.optionKey, label: entry.content }
+        if (typeof entry.value === 'string' && typeof entry.label === 'string') return entry
+        return {
+          value: typeof entry.optionKey === 'string' ? entry.optionKey : entry.value,
+          label: typeof entry.content === 'string' ? entry.content : entry.label,
+        }
       })
     : record.options ?? null
+  const number = typeof record.number === 'number'
+    ? record.number
+    : typeof record.sortOrder === 'number'
+      ? record.sortOrder
+      : sortOrderFallback
+  const prompt = typeof record.prompt === 'string'
+    ? record.prompt
+    : typeof record.stem === 'string'
+      ? record.stem
+      : ''
   return {
-    number: typeof record.sortOrder === 'number' ? record.sortOrder : 0,
-    prompt: typeof record.stem === 'string' ? record.stem : typeof record.prompt === 'string' ? record.prompt : '',
+    number,
+    prompt,
     options,
     id: questionVersionId,
+    hint: record.hint ?? null,
   }
 }
 
