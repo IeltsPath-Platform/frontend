@@ -7,7 +7,7 @@ interface InputFieldProps extends Omit<ComponentPropsWithoutRef<typeof Input>, '
   id: string
   name: string
   label: string
-  type: 'email' | 'password'
+  type: 'email' | 'password' | 'text'
   hint?: string
 }
 
