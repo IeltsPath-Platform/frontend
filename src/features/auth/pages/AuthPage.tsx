@@ -7,6 +7,7 @@ import { AuthShell } from '../components/AuthShell'
 import type { SocialProvider } from '../components/SocialButtons'
 import { loginWithPassword, registerWithPassword } from '../authSession'
 import { authApi } from '../api/authApi'
+import { mapAuthPasswordHttpError } from '../lib/passwordRules'
 
 interface AuthPageProps {
   mode: AuthMode
@@ -34,8 +35,13 @@ export function AuthPage({ mode }: AuthPageProps) {
       }
       navigate(redirectTo, { replace: true })
     } catch (error) {
-      const message = error instanceof HttpError ? error.message : 'Không thể xác thực. Vui lòng thử lại.'
-      setStatusMessage(message)
+      setStatusMessage(
+        mode === 'sign-up'
+          ? mapAuthPasswordHttpError(error, 'Không thể đăng ký. Vui lòng thử lại.')
+          : error instanceof HttpError
+            ? error.message
+            : 'Không thể xác thực. Vui lòng thử lại.',
+      )
     } finally {
       setSubmitting(false)
     }

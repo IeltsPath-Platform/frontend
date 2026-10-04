@@ -1,6 +1,15 @@
 import { Link } from 'react-router-dom'
-import type { FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { Button } from '@/components/ui/button'
+import {
+  isPasswordLengthValid,
+  PASSWORD_LENGTH_HINT,
+  PASSWORD_LENGTH_MESSAGE,
+  PASSWORD_LENGTH_PLACEHOLDER,
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
+  PASSWORD_MISMATCH_MESSAGE,
+} from '../lib/passwordRules'
 import { InputField } from './InputField'
 import { SocialButtons, type SocialProvider } from './SocialButtons'
 
@@ -50,22 +59,37 @@ export function AuthForm({
 }: AuthFormProps) {
   const copy = FORM_COPY[mode]
   const passwordAutocomplete = mode === 'sign-in' ? 'current-password' : 'new-password'
+  const [clientMessage, setClientMessage] = useState('')
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    setClientMessage('')
     const formData = new FormData(event.currentTarget)
     const email = formData.get('email')
     const password = formData.get('password')
     const fullName = formData.get('fullName')
+    const confirmPassword = formData.get('confirmPassword')
 
     if (typeof email !== 'string' || typeof password !== 'string' || !email || !password) return
+
     if (mode === 'sign-up') {
       if (typeof fullName !== 'string' || !fullName.trim()) return
+      if (!isPasswordLengthValid(password)) {
+        setClientMessage(PASSWORD_LENGTH_MESSAGE)
+        return
+      }
+      if (typeof confirmPassword !== 'string' || password !== confirmPassword) {
+        setClientMessage(PASSWORD_MISMATCH_MESSAGE)
+        return
+      }
       onSubmit({ email, password, fullName: fullName.trim() })
       return
     }
+
     onSubmit({ email, password })
   }
+
+  const statusText = clientMessage || statusMessage
 
   return (
     <section className="auth-form-panel" aria-labelledby="auth-form-title">
@@ -105,10 +129,25 @@ export function AuthForm({
             type="password"
             autoComplete={passwordAutocomplete}
             required
-            minLength={mode === 'sign-up' ? 6 : undefined}
-            placeholder="Ít nhất 6 ký tự"
-            hint={mode === 'sign-up' ? 'Dùng ít nhất 6 ký tự để bảo vệ tài khoản.' : undefined}
+            minLength={mode === 'sign-up' ? PASSWORD_MIN_LENGTH : undefined}
+            maxLength={mode === 'sign-up' ? PASSWORD_MAX_LENGTH : undefined}
+            placeholder={mode === 'sign-up' ? PASSWORD_LENGTH_PLACEHOLDER : 'Mật khẩu'}
+            hint={mode === 'sign-up' ? PASSWORD_LENGTH_HINT : undefined}
           />
+          {mode === 'sign-up' ? (
+            <InputField
+              id={`${mode}-confirmPassword`}
+              name="confirmPassword"
+              label="Xác nhận mật khẩu"
+              type="password"
+              autoComplete="new-password"
+              required
+              minLength={PASSWORD_MIN_LENGTH}
+              maxLength={PASSWORD_MAX_LENGTH}
+              placeholder="Nhập lại mật khẩu"
+              hint={PASSWORD_LENGTH_HINT}
+            />
+          ) : null}
         </div>
         {mode === 'sign-in' ? (
           <Link className="auth-forgot-password" to="/forgot-password">Quên mật khẩu?</Link>
@@ -118,7 +157,7 @@ export function AuthForm({
         </Button>
         <div className="auth-divider" role="separator" aria-label="hoặc"><span>hoặc</span></div>
         <SocialButtons disabled={!oauthEnabled} onSelect={onSocialSelect} />
-        <p className="auth-status" role="status" aria-live="polite">{statusMessage}</p>
+        <p className="auth-status" role="status" aria-live="polite">{statusText}</p>
       </form>
       <p className="auth-mode-toggle">{copy.prompt} <Link to={copy.switchTo}>{copy.switchLabel}</Link></p>
     </section>

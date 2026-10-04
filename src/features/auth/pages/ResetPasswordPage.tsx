@@ -1,10 +1,19 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
-import { HttpError } from '@/lib/httpClient'
 import { authApi } from '../api/authApi'
 import { AuthShell } from '../components/AuthShell'
 import { InputField } from '../components/InputField'
+import {
+  isPasswordLengthValid,
+  mapAuthPasswordHttpError,
+  PASSWORD_LENGTH_HINT,
+  PASSWORD_LENGTH_MESSAGE,
+  PASSWORD_LENGTH_PLACEHOLDER,
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
+  PASSWORD_MISMATCH_MESSAGE,
+} from '../lib/passwordRules'
 
 export function ResetPasswordPage() {
   const [searchParams] = useSearchParams()
@@ -27,12 +36,12 @@ export function ResetPasswordPage() {
     const confirmPassword = String(formData.get('confirmPassword') ?? '')
 
     if (!token || !newPassword) return
-    if (newPassword.length < 6) {
-      setStatusMessage('Mật khẩu mới cần ít nhất 6 ký tự.')
+    if (!isPasswordLengthValid(newPassword)) {
+      setStatusMessage(PASSWORD_LENGTH_MESSAGE)
       return
     }
     if (newPassword !== confirmPassword) {
-      setStatusMessage('Mật khẩu xác nhận không khớp.')
+      setStatusMessage(PASSWORD_MISMATCH_MESSAGE)
       return
     }
 
@@ -43,7 +52,7 @@ export function ResetPasswordPage() {
       setStatusMessage(result.message || 'Đặt lại mật khẩu thành công. Đang chuyển tới đăng nhập…')
       redirectTimer.current = window.setTimeout(() => navigate('/login', { replace: true }), 900)
     } catch (error) {
-      setStatusMessage(error instanceof HttpError ? error.message : 'Không đặt lại được mật khẩu. Kiểm tra mã và thử lại.')
+      setStatusMessage(mapAuthPasswordHttpError(error, 'Không đặt lại được mật khẩu. Kiểm tra mã và thử lại.'))
     } finally {
       setSubmitting(false)
     }
@@ -80,8 +89,10 @@ export function ResetPasswordPage() {
               type="password"
               autoComplete="new-password"
               required
-              minLength={6}
-              placeholder="Ít nhất 6 ký tự"
+              minLength={PASSWORD_MIN_LENGTH}
+              maxLength={PASSWORD_MAX_LENGTH}
+              placeholder={PASSWORD_LENGTH_PLACEHOLDER}
+              hint={PASSWORD_LENGTH_HINT}
             />
             <InputField
               id="reset-confirm-password"
@@ -90,8 +101,10 @@ export function ResetPasswordPage() {
               type="password"
               autoComplete="new-password"
               required
-              minLength={6}
+              minLength={PASSWORD_MIN_LENGTH}
+              maxLength={PASSWORD_MAX_LENGTH}
               placeholder="Nhập lại mật khẩu mới"
+              hint={PASSWORD_LENGTH_HINT}
             />
           </div>
           <Button type="submit" className="auth-submit-button" disabled={submitting}>
