@@ -33,6 +33,8 @@ type RequestOptions = {
   body?: unknown
   auth?: boolean
   signal?: AbortSignal
+  /** Override default REQUEST_TIMEOUT_MS (e.g. writing grade ≥60s). */
+  timeoutMs?: number
 }
 
 type TokenPair = { accessToken: string; refreshToken?: string }
@@ -67,7 +69,7 @@ async function send(path: string, options: RequestOptions, bearer?: string | nul
   if (bearer) headers.Authorization = `Bearer ${bearer}`
 
   const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+  const timeout = setTimeout(() => controller.abort(), options.timeoutMs ?? REQUEST_TIMEOUT_MS)
   options.signal?.addEventListener('abort', () => controller.abort())
 
   try {

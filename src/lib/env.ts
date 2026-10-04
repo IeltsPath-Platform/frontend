@@ -5,6 +5,9 @@ export const API_BASE_URL = rawBase.replace(/\/+$/, '') || 'http://localhost:808
 
 export const REQUEST_TIMEOUT_MS = 30_000
 
+/** Writing grading can exceed the default API timeout. */
+export const WRITING_REQUEST_TIMEOUT_MS = 60_000
+
 /**
  * Mock learning when explicitly true, or when API base is unset and flag omitted.
  * Default with a configured base URL: false (HTTP).

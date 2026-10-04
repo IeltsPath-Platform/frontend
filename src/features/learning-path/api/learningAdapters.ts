@@ -43,6 +43,8 @@ export type LessonSummaryDto = {
   title: string
   sortOrder: number
   status: LessonStatus
+  practiceStatus?: 'LOCKED' | 'REQUIRED' | 'PASSED' | null
+  practicePassReason?: string | null
 }
 
 export type TopicLessonsDto = {
@@ -156,16 +158,87 @@ export type ReviewDetailDto = {
   lessonId: string
   theory: string[]
   set: ReviewSetDto | null
+  stage?: 'PRACTICE' | 'THEORY'
+  theoryReason?: string | null
+  theoryScope?: string | null
+  failedSets?: number
+  maxFailedSets?: number
+  quickCheck?: QuestionDto[] | null
+  knowledgePointId?: string
+  skill?: string
 }
 
 export type ReviewSubmissionResultDto = {
   reviewStatus: ReviewStatus
+  stage?: 'PRACTICE' | 'THEORY'
+  failedSets?: number
   results: Array<{
     questionVersionId: string
     correct: boolean
     correctAnswer?: string
     explanation?: string
   }>
+}
+
+export type TheoryCheckResultDto = {
+  reviewId: string
+  correct: number
+  total: number
+  stage: 'PRACTICE' | 'THEORY'
+  results: Array<{
+    questionVersionId: string
+    correct: boolean
+    correctAnswer?: string
+    explanation?: string
+    hint?: string | null
+  }>
+}
+
+export type PracticeSetItemDto = {
+  packageId: string
+  code: string
+  title: string
+  questionCount: number
+  accessLevel: string
+  status: string
+  bestPercent: number | null
+  lastAttemptId: string | null
+  revealed: boolean
+}
+
+export type LessonPracticeSetsDto = {
+  lessonId: string
+  skill: string
+  lessonCompleted: boolean
+  practiceStatus: 'LOCKED' | 'REQUIRED' | 'PASSED'
+  practicePassReason: string | null
+  items: PracticeSetItemDto[]
+}
+
+export type PracticeAttemptViewDto = {
+  attemptId: string
+  packageId: string
+  packageVersionId: string
+  passage?: string | { title?: string; paragraphs?: Array<{ label?: string | null; text: string }> } | null
+  audio?: { mediaUrl: string; durationSeconds?: number | null; transcript?: string | null } | null
+  questions: QuestionDto[]
+}
+
+export type PracticeSubmissionResultDto = {
+  attemptId: string
+  correct: number
+  total: number
+  percent: number
+  passed: boolean
+  countedAsEvidence: boolean
+  results: Array<{
+    questionVersionId: string
+    correct: boolean
+    correctAnswer?: string
+    explanation?: string
+    hint?: string | null
+  }>
+  reviewsCreated?: Array<{ reviewId: string; knowledgePointId: string; stage?: string }>
 }
 
 export type TestAssignmentDto = {
@@ -352,6 +425,7 @@ export function mapTopicLessons(dto: TopicLessonsDto, topic: TopicSummary): Topi
     status: lesson.status,
     estimatedMinutes: 10,
     lockedReason: lesson.status === 'LOCKED' ? 'Hoàn thành bài trước để mở.' : null,
+    practiceStatus: lesson.practiceStatus ?? null,
   }))
   const completed = lessons.filter((lesson) => lesson.status === 'COMPLETED').length
   return {
@@ -422,33 +496,40 @@ export function mapReviewRef(dto: ReviewRefDto): ReviewRef {
   }
 }
 
+function mapPassageField(
+  passage?: string | { title?: string; paragraphs?: Array<{ label?: string | null; text: string }> } | null,
+) {
+  if (!passage) return { title: '', paragraphs: [] as Array<{ label: string | null; text: string }> }
+  if (typeof passage === 'string') {
+    return { title: '', paragraphs: [{ label: null, text: passage }] }
+  }
+  return {
+    title: passage.title ?? '',
+    paragraphs: (passage.paragraphs ?? []).map((paragraph) => ({
+      label: paragraph.label ?? null,
+      text: paragraph.text,
+    })),
+  }
+}
+
 export function mapReviewDetail(dto: ReviewDetailDto, topicId: string): ReviewDetail {
-  const theory = dto.theory.map((text, index) => ({
+  const theory = (dto.theory ?? []).map((text, index) => ({
     id: `theory-${index}`,
     sortOrder: index + 1,
     type: 'TEXT',
     text,
   }))
+  const failedSets = dto.failedSets ?? 0
+  const maxFailedSets = dto.maxFailedSets ?? 2
+  const stage = dto.stage ?? (dto.set ? 'PRACTICE' : 'THEORY')
 
   const set = dto.set
     ? {
         setId: dto.set.reviewSetId,
         packageCode: dto.set.packageId.slice(0, 8),
-        attemptNumber: 1,
-        maxAttempts: 3,
-        passage: (() => {
-          if (!dto.set?.passage) return { title: '', paragraphs: [] as Array<{ label: string | null; text: string }> }
-          if (typeof dto.set.passage === 'string') {
-            return { title: '', paragraphs: [{ label: null, text: dto.set.passage }] }
-          }
-          return {
-            title: dto.set.passage.title ?? '',
-            paragraphs: (dto.set.passage.paragraphs ?? []).map((paragraph) => ({
-              label: paragraph.label ?? null,
-              text: paragraph.text,
-            })),
-          }
-        })(),
+        attemptNumber: Math.min(failedSets + 1, maxFailedSets),
+        maxAttempts: maxFailedSets,
+        passage: mapPassageField(dto.set.passage),
         audio: dto.set.audio?.mediaUrl
           ? {
               mediaUrl: dto.set.audio.mediaUrl,
@@ -464,11 +545,84 @@ export function mapReviewDetail(dto: ReviewDetailDto, topicId: string): ReviewDe
     reviewId: dto.reviewId,
     topicId,
     status: dto.reviewStatus,
-    knowledgePoint: { code: 'KP', title: 'Ôn kiến thức' },
+    stage,
+    knowledgePoint: {
+      code: dto.knowledgePointId?.slice(0, 8) ?? 'KP',
+      title: 'Ôn kiến thức',
+    },
     sourceLessonTitle: 'Bài học trước',
     theory,
     set,
+    quickCheck: (dto.quickCheck ?? []).map(mapQuestion),
+    failedSets,
+    maxFailedSets,
+    theoryReason: dto.theoryReason ?? null,
     resumeLessonId: dto.lessonId,
+  }
+}
+
+export function mapLessonPracticeSets(dto: LessonPracticeSetsDto): import('~types/learningPath').LessonPracticeSets {
+  return {
+    lessonId: dto.lessonId,
+    skill: dto.skill,
+    lessonCompleted: dto.lessonCompleted,
+    practiceStatus: dto.practiceStatus,
+    practicePassReason: dto.practicePassReason,
+    items: dto.items.map((item) => ({
+      packageId: item.packageId,
+      code: item.code,
+      title: item.title,
+      questionCount: item.questionCount,
+      accessLevel: item.accessLevel,
+      status: item.status as import('~types/learningPath').PracticeSetItemStatus,
+      bestPercent: item.bestPercent,
+      lastAttemptId: item.lastAttemptId,
+      revealed: item.revealed,
+    })),
+  }
+}
+
+export function mapPracticeAttemptView(dto: PracticeAttemptViewDto): import('~types/learningPath').PracticeAttemptView {
+  return {
+    attemptId: dto.attemptId,
+    packageId: dto.packageId,
+    packageVersionId: dto.packageVersionId,
+    passage: dto.passage ? mapPassageField(dto.passage) : null,
+    audio: dto.audio?.mediaUrl
+      ? {
+          mediaUrl: dto.audio.mediaUrl,
+          durationSeconds: dto.audio.durationSeconds ?? null,
+          transcript: dto.audio.transcript ?? null,
+        }
+      : null,
+    questions: (dto.questions ?? []).map(mapQuestion),
+  }
+}
+
+export function mapPracticeSubmission(dto: PracticeSubmissionResultDto): import('~types/learningPath').PracticeSubmissionResult {
+  return {
+    attemptId: dto.attemptId,
+    correct: dto.correct,
+    total: dto.total,
+    percent: dto.percent,
+    passed: dto.passed,
+    countedAsEvidence: dto.countedAsEvidence,
+    results: dto.results.map(mapQuestionResult),
+    reviewsCreated: (dto.reviewsCreated ?? []).map((review) => ({
+      reviewId: review.reviewId,
+      knowledgePointId: review.knowledgePointId,
+      stage: (review.stage === 'THEORY' ? 'THEORY' : 'PRACTICE') as import('~types/learningPath').ReviewStage,
+    })),
+  }
+}
+
+export function mapTheoryCheck(dto: TheoryCheckResultDto): import('~types/learningPath').TheoryCheckResult {
+  return {
+    reviewId: dto.reviewId,
+    correct: dto.correct,
+    total: dto.total,
+    stage: dto.stage,
+    results: dto.results.map(mapQuestionResult),
   }
 }
 
@@ -490,10 +644,12 @@ export function mapReviewSubmission(
   const percent = totalCount === 0 ? 0 : Math.round((correctCount / totalCount) * 100)
   return {
     status: dto.reviewStatus,
+    stage: dto.stage ?? 'PRACTICE',
     passed: dto.reviewStatus === 'DONE',
     correctCount,
     totalCount,
     percent,
+    failedSets: dto.failedSets ?? 0,
     results,
     resumeLessonId,
     topicId,

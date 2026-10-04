@@ -25,6 +25,7 @@ export const TEST_STATUS: Record<TestStatus, StatusMeta> = {
   PASSED: { label: 'Đã đạt', tone: 'success', icon: CheckCircle2 },
   AVAILABLE: { label: 'Sẵn sàng', tone: 'accent', icon: Flag },
   LOCKED: { label: 'Đang khóa', tone: 'locked', icon: Lock },
+  NONE: { label: 'Không có đề', tone: 'locked', icon: Lock },
 }
 
 const UNKNOWN: StatusMeta = { label: 'Không rõ', tone: 'locked', icon: Lock }

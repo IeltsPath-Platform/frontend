@@ -63,6 +63,7 @@ function TopicStation({ topic, index }: { topic: TopicSummary; index: number }) 
       <p>{topic.description}</p>
       <div className="lp-station__foot">
         <span>{topic.completedLessons}/{topic.totalLessons} bài đã xong</span>
+        {topic.lockedReason?.includes('Premium') ? <span className="lp-badge lp-tone-locked">Premium</span> : null}
         {locked ? <Lock aria-hidden="true" size={16} /> : <ArrowRight aria-hidden="true" size={18} />}
       </div>
       {locked && topic.lockedReason ? <p className="lp-station__reason" id={reasonId}>{topic.lockedReason}</p> : null}

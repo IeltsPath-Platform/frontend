@@ -52,8 +52,32 @@ export function createMockLearningApi({ storage = null, latencyMs = 0, now = () 
       throw new ApiError(404, 'NOT_FOUND', 'Mock learning không có writing submission.')
     },
     completeLesson: (lessonId) => respond((s) => lessons.completeLesson(s, lessonId)),
+    getLessonPracticeSets: async (lessonId) => ({
+      lessonId,
+      skill: 'READING',
+      lessonCompleted: true,
+      practiceStatus: 'PASSED',
+      practicePassReason: 'NO_PRACTICE',
+      items: [],
+    }),
+    startPracticeAttempt: async () => {
+      throw new ApiError(404, 'NOT_FOUND', 'Mock learning không có practice set. Dùng HTTP thật để luyện thêm.')
+    },
+    getPracticeAttempt: async () => {
+      throw new ApiError(404, 'NOT_FOUND', 'Mock learning không có practice attempt.')
+    },
+    submitPracticeAttempt: async () => {
+      throw new ApiError(404, 'NOT_FOUND', 'Mock learning không có practice attempt.')
+    },
     getReview: (reviewId) => respond((s) => lessons.getReview(s, reviewId)),
     submitReview: (reviewId, request) => idempotent(request.requestId, (s) => lessons.submitReview(s, reviewId, request)),
+    submitTheoryCheck: async (reviewId) => ({
+      reviewId,
+      correct: 0,
+      total: 0,
+      stage: 'PRACTICE',
+      results: [],
+    }),
     createTestAssignment: (topicId) => respond((s) => tests.createTestAssignment(s, topicId)),
     createAttempt: (request) => respond((s) => tests.createAttempt(s, request, timestamp())),
     getAttemptStructure: (attemptId) => respond((s) => tests.getAttemptStructure(s, attemptId)),

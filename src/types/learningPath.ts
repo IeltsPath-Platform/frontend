@@ -1,6 +1,9 @@
 export type TopicStatus = 'PASSED' | 'IN_PROGRESS' | 'LOCKED'
 export type LessonStatus = 'LOCKED' | 'AVAILABLE' | 'COMPLETED'
-export type TestStatus = 'LOCKED' | 'AVAILABLE' | 'PASSED'
+export type TestStatus = 'LOCKED' | 'AVAILABLE' | 'PASSED' | 'NONE'
+export type PracticeStatus = 'LOCKED' | 'REQUIRED' | 'PASSED'
+export type PracticeSetItemStatus = 'LOCKED' | 'AVAILABLE' | 'IN_PROGRESS' | 'PASSED' | 'ATTEMPTED'
+export type ReviewStage = 'PRACTICE' | 'THEORY'
 export type ExerciseState = 'NOT_ATTEMPTED' | 'FAILED' | 'PASSED'
 export type ReviewStatus = 'PENDING' | 'DONE' | 'SKIPPED'
 
@@ -23,6 +26,8 @@ export interface LessonSummary {
   status: LessonStatus
   estimatedMinutes: number
   lockedReason: string | null
+  /** From BE topic lessons; omitted/null in mock when unused. */
+  practiceStatus?: PracticeStatus | null
 }
 
 export interface FinalTestSummary {
@@ -240,10 +245,15 @@ export interface ReviewDetail {
   reviewId: string
   topicId: string
   status: ReviewStatus
+  stage: ReviewStage
   knowledgePoint: { code: string; title: string }
   sourceLessonTitle: string
   theory: RawBlock[]
   set: ReviewSet | null
+  quickCheck: Question[]
+  failedSets: number
+  maxFailedSets: number
+  theoryReason: string | null
   resumeLessonId: string | null
 }
 
@@ -255,13 +265,80 @@ export interface ReviewSubmissionRequest {
 
 export interface ReviewSubmissionResult {
   status: ReviewStatus
+  stage: ReviewStage
   passed: boolean
   correctCount: number
   totalCount: number
   percent: number
+  failedSets: number
   results: QuestionResult[]
   resumeLessonId: string | null
   topicId: string
+}
+
+export interface TheoryCheckRequest {
+  requestId: string
+  answers: AnswerInput[]
+}
+
+export interface TheoryCheckResult {
+  reviewId: string
+  correct: number
+  total: number
+  stage: ReviewStage
+  results: QuestionResult[]
+}
+
+export interface PracticeSetItem {
+  packageId: string
+  code: string
+  title: string
+  questionCount: number
+  accessLevel: string
+  status: PracticeSetItemStatus
+  bestPercent: number | null
+  lastAttemptId: string | null
+  revealed: boolean
+}
+
+export interface LessonPracticeSets {
+  lessonId: string
+  skill: string
+  lessonCompleted: boolean
+  practiceStatus: PracticeStatus
+  practicePassReason: string | null
+  items: PracticeSetItem[]
+}
+
+export interface PracticeAttemptView {
+  attemptId: string
+  packageId: string
+  packageVersionId: string
+  passage: Passage | null
+  audio: MediaAudio | null
+  questions: Question[]
+}
+
+export interface PracticeSubmissionRequest {
+  requestId: string
+  answers: AnswerInput[]
+}
+
+export interface PracticeReviewCreated {
+  reviewId: string
+  knowledgePointId: string
+  stage: ReviewStage
+}
+
+export interface PracticeSubmissionResult {
+  attemptId: string
+  correct: number
+  total: number
+  percent: number
+  passed: boolean
+  countedAsEvidence: boolean
+  results: QuestionResult[]
+  reviewsCreated: PracticeReviewCreated[]
 }
 
 export interface TestAssignment {

@@ -3,11 +3,15 @@ import type { ReviewRef } from '~types/learningPath'
 import { USE_MOCK_LEARNING } from '@/lib/env'
 import { setPendingReviews } from './reviewGate'
 
-/** Applies pending reviews only after a settled load so cancelled navigations cannot revive a cleared banner. */
-export function useSyncPendingReviews(reviews: ReviewRef[] | undefined) {
+/**
+ * Applies pending reviews after a settled load.
+ * Topic detail now hydrates from GET /reviews; empty arrays clear the banner.
+ * Lesson payloads still send [] on HTTP — skip those so a REVIEW_REQUIRED banner survives.
+ */
+export function useSyncPendingReviews(reviews: ReviewRef[] | undefined, options?: { allowClear?: boolean }) {
+  const allowClear = options?.allowClear ?? USE_MOCK_LEARNING
   useEffect(() => {
     if (reviews === undefined) return
-    // HTTP adapters always return []; clearing would wipe a REVIEW_REQUIRED banner.
-    if (reviews.length > 0 || USE_MOCK_LEARNING) setPendingReviews(reviews)
-  }, [reviews])
+    if (reviews.length > 0 || allowClear) setPendingReviews(reviews)
+  }, [reviews, allowClear])
 }

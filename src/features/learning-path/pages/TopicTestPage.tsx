@@ -192,7 +192,7 @@ function TestRunner({ attemptId, sections, topicId }: { attemptId: string; secti
         <p aria-live="polite"><strong>{answeredCount}/{answerable.length}</strong> câu đã trả lời</p>
         {confirming ? <p className="lp-hint" role="status">Còn {unanswered} câu bỏ trống, các câu đó sẽ tính sai. Bấm lần nữa để nộp.</p> : null}
         {error ? <p className="lp-error" role="alert">{error}</p> : null}
-        <Button className="lp-btn lp-btn--accent" disabled={submitting} onClick={submit} type="button">
+        <Button className="lp-btn lp-btn--accent lp-btn--cta" disabled={submitting} onClick={submit} type="button">
           {submitting ? <Loader2 aria-hidden="true" className="lp-spin" /> : <Send aria-hidden="true" />}
           {submitting ? 'Đang nộp…' : confirming ? 'Vẫn nộp bài' : 'Nộp bài'}
         </Button>

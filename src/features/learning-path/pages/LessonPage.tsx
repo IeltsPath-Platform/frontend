@@ -111,6 +111,7 @@ function CompletionPanel({ lesson, nextLessonId, fresh }: { lesson: LessonDetail
   const pending = usePendingReviews()
   const review = pending[0]
   const topicPath = `/learn/topics/${lesson.topicId}`
+  const practicePath = `/learn/lessons/${lesson.id}/practice`
 
   return (
     <section className={`lp-done${review ? ' lp-done--review' : ''}`} role="status" aria-labelledby="lp-done-title">
@@ -119,19 +120,23 @@ function CompletionPanel({ lesson, nextLessonId, fresh }: { lesson: LessonDetail
         <h2 id="lp-done-title">{fresh ? 'Bạn đã hoàn thành bài này' : 'Bài này đã hoàn thành'}</h2>
         {review ? (
           <p>Trước khi sang bài kế, cần ôn lại "{review.knowledgePointTitle}". Bài ôn gồm phần lý thuyết và một bộ câu hỏi ngắn.</p>
-        ) : nextLessonId ? (
-          <p>Bài tiếp theo đã mở.</p>
         ) : (
-          <p>Bạn đã học hết các bài của topic. Bài kiểm tra cuối đang chờ bạn.</p>
+          <p>
+            Tiếp theo: làm <strong>luyện thêm (practice)</strong> nếu còn REQUIRED — đề cuối chỉ mở khi mọi bài đã practice PASSED và không còn review.
+            {nextLessonId ? ' Bạn cũng có thể sang bài học kế tiếp.' : ''}
+          </p>
         )}
       </div>
       <div className="lp-done__actions">
         {review ? (
-          <Button asChild className="lp-btn lp-btn--accent"><Link to={`/learn/reviews/${review.reviewId}`}>Làm bài ôn<ArrowRight aria-hidden="true" /></Link></Button>
-        ) : nextLessonId ? (
-          <Button asChild className="lp-btn"><Link to={`/learn/lessons/${nextLessonId}`}>Bài tiếp theo<ArrowRight aria-hidden="true" /></Link></Button>
+          <Button asChild className="lp-btn lp-btn--accent lp-btn--cta"><Link to={`/learn/reviews/${review.reviewId}`}>Làm bài ôn<ArrowRight aria-hidden="true" /></Link></Button>
         ) : (
-          <Button asChild className="lp-btn lp-btn--accent"><Link to={topicPath}><Flag aria-hidden="true" />Đến bài kiểm tra cuối</Link></Button>
+          <Button asChild className="lp-btn lp-btn--accent lp-btn--cta"><Link to={practicePath}>Luyện thêm<ArrowRight aria-hidden="true" /></Link></Button>
+        )}
+        {nextLessonId ? (
+          <Button asChild className="lp-btn"><Link to={`/learn/lessons/${nextLessonId}`}>Bài tiếp theo</Link></Button>
+        ) : (
+          <Button asChild className="lp-btn"><Link to={topicPath}><Flag aria-hidden="true" />Về topic / đề cuối</Link></Button>
         )}
         <Button asChild className="lp-btn" variant="outline"><Link to={topicPath}>Về topic</Link></Button>
       </div>

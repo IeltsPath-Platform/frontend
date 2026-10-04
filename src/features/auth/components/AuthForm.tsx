@@ -152,7 +152,7 @@ export function AuthForm({
         {mode === 'sign-in' ? (
           <Link className="auth-forgot-password" to="/forgot-password">Quên mật khẩu?</Link>
         ) : null}
-        <Button type="submit" className="auth-submit-button" disabled={submitting}>
+        <Button type="submit" className="auth-submit-button auth-submit-button--cta" disabled={submitting}>
           {submitting ? 'Đang xử lý…' : copy.submitLabel}
         </Button>
         <div className="auth-divider" role="separator" aria-label="hoặc"><span>hoặc</span></div>

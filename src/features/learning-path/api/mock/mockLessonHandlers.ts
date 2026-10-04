@@ -177,6 +177,7 @@ export function getReview(state: MockState, reviewId: string): ReviewDetail {
     reviewId: review.id,
     topicId: review.topicId,
     status: review.status,
+    stage: 'PRACTICE',
     knowledgePoint: { code: kp.code, title: kp.title },
     sourceLessonTitle: theoryLesson.title,
     theory: theoryLesson.blocks.filter((block) => block.type === 'TEXT').map((block) => structuredClone(block)),
@@ -191,6 +192,10 @@ export function getReview(state: MockState, reviewId: string): ReviewDetail {
           questions: set.questions.map(toPublicQuestion),
         }
       : null,
+    quickCheck: [],
+    failedSets: review.setIndex,
+    maxFailedSets: pack.length,
+    theoryReason: null,
     resumeLessonId: review.resumeLessonId,
   }
 }
@@ -212,5 +217,12 @@ export function submitReview(state: MockState, reviewId: string, request: Review
     review.setIndex += 1
     if (review.setIndex >= pack.length) review.status = 'SKIPPED'
   }
-  return { ...outcome, status: review.status, resumeLessonId: review.resumeLessonId, topicId: review.topicId }
+  return {
+    ...outcome,
+    status: review.status,
+    stage: 'PRACTICE',
+    failedSets: review.setIndex,
+    resumeLessonId: review.resumeLessonId,
+    topicId: review.topicId,
+  }
 }

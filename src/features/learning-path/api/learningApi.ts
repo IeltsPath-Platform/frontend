@@ -8,6 +8,10 @@ import type {
   ExerciseSubmissionResult,
   LessonCompletionResult,
   LessonDetail,
+  LessonPracticeSets,
+  PracticeAttemptView,
+  PracticeSubmissionRequest,
+  PracticeSubmissionResult,
   ReviewDetail,
   ReviewRef,
   ReviewSubmissionRequest,
@@ -15,6 +19,8 @@ import type {
   SaveItemResponseRequest,
   StartAttemptRequest,
   TestAssignment,
+  TheoryCheckRequest,
+  TheoryCheckResult,
   TopicLessonsResponse,
   TopicSummary,
   WritingSubmissionResult,
@@ -26,12 +32,17 @@ export interface LearningApi {
   getPendingReviews(): Promise<ReviewRef[]>
   getTopicLessons(topicId: string): Promise<TopicLessonsResponse>
   getLesson(lessonId: string): Promise<LessonDetail>
+  getLessonPracticeSets(lessonId: string): Promise<LessonPracticeSets>
+  startPracticeAttempt(lessonId: string, packageId: string): Promise<PracticeAttemptView>
+  getPracticeAttempt(attemptId: string): Promise<PracticeAttemptView | PracticeSubmissionResult>
+  submitPracticeAttempt(attemptId: string, request: PracticeSubmissionRequest): Promise<PracticeSubmissionResult>
   submitExercise(lessonId: string, blockId: string, request: ExerciseSubmissionRequest): Promise<ExerciseSubmissionResult>
   submitEssay(lessonId: string, blockId: string, request: EssaySubmissionRequest): Promise<WritingSubmissionResult>
   getWritingSubmission(submissionId: string): Promise<WritingSubmissionResult>
   completeLesson(lessonId: string): Promise<LessonCompletionResult>
   getReview(reviewId: string): Promise<ReviewDetail>
   submitReview(reviewId: string, request: ReviewSubmissionRequest): Promise<ReviewSubmissionResult>
+  submitTheoryCheck(reviewId: string, request: TheoryCheckRequest): Promise<TheoryCheckResult>
   createTestAssignment(topicId: string): Promise<TestAssignment>
   createAttempt(request: StartAttemptRequest): Promise<AssessmentAttempt>
   getAttemptStructure(attemptId: string): Promise<AttemptStructure>

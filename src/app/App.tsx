@@ -20,6 +20,7 @@ import { GuestOnly, RequireAuth } from '@/features/auth/AuthGuards'
 import { LearnLayout } from '@/features/learning-path/components/LearnLayout'
 import { NotFoundState } from '@/features/learning-path/components/PageState'
 import { LessonPage } from '@/features/learning-path/pages/LessonPage'
+import { PracticePage } from '@/features/learning-path/pages/PracticePage'
 import { ReviewPage } from '@/features/learning-path/pages/ReviewPage'
 import { TopicDetailPage } from '@/features/learning-path/pages/TopicDetailPage'
 import { TopicListPage } from '@/features/learning-path/pages/TopicListPage'
@@ -43,6 +44,7 @@ function AppContent() {
         <Route index element={<TopicListPage />} />
         <Route path="topics/:topicId" element={<TopicDetailPage />} />
         <Route path="lessons/:lessonId" element={<LessonPage />} />
+        <Route path="lessons/:lessonId/practice" element={<PracticePage />} />
         <Route path="reviews/:reviewId" element={<ReviewPage />} />
         <Route path="tests/:attemptId" element={<TopicTestPage />} />
         <Route path="tests/:attemptId/result" element={<TopicTestResultPage />} />

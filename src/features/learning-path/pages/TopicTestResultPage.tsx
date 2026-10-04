@@ -14,8 +14,16 @@ export function TopicTestResultPage() {
   const resource = useApiResource(`result:${attemptId}`, async () => {
     const result = await learningApi.getAttemptResult(attemptId)
     const withTopic = topicId && !result.topicId ? { ...result, topicId } : result
-    // Always reload topics after a test — never trust a fake nextTopicId from adapters.
-    const topics = await learningApi.listTopics()
+    // Poll topics briefly after a pass so PASSED / next IN_PROGRESS settle.
+    let topics = await learningApi.listTopics()
+    if (withTopic.passed && withTopic.topicId) {
+      for (let i = 0; i < 4; i += 1) {
+        const current = topics.find((topic) => topic.id === withTopic.topicId)
+        if (current?.status === 'PASSED') break
+        await new Promise((resolve) => setTimeout(resolve, 400))
+        topics = await learningApi.listTopics()
+      }
+    }
     const nextTopic = topics.find((topic) => topic.status === 'IN_PROGRESS' && topic.id !== withTopic.topicId)
     return {
       ...withTopic,
