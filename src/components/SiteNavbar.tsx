@@ -2,12 +2,13 @@ import { useState } from 'react'
 import { Link, NavLink, useLocation, useMatch, useNavigate } from 'react-router-dom'
 import { Menu, X } from 'lucide-react'
 import { UserTierDropdown } from './UserTierDropdown'
-import { setDemoTier, signOutForDemo, useAuthSession } from '@/features/auth/authSession'
+import { logoutSession, setDemoTier, useAuthSession } from '@/features/auth/authSession'
 
 const navigation = [
   { to: '/home', label: 'Trang chủ', public: true },
   { to: '/overview', label: 'Tổng quát', public: false },
   { to: '/classroom', label: 'Lớp học', public: false },
+  { to: '/learn', label: 'Lộ trình', public: false },
   { to: '/practice', label: 'Thực hành', public: false },
   { to: '/practice-tests', label: 'Luyện đề', public: false },
   { to: '/vocabulary', label: 'Từ điển', public: true },
@@ -15,13 +16,14 @@ const navigation = [
 ] as const
 
 export interface SiteNavbarProps {
-  /** Optional visual override for embeds and component previews. App routes use the transient auth UI state. */
+  /** Optional visual override for embeds and component previews. App routes use the backend auth session. */
   isLoggedIn?: boolean
   userName?: string
 }
 
 export function SiteNavbar({ isLoggedIn, userName }: SiteNavbarProps) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [loggingOut, setLoggingOut] = useState(false)
   const { pathname } = useLocation()
   const loginMatch = useMatch('/login')
   const registerMatch = useMatch('/register')
@@ -31,10 +33,16 @@ export function SiteNavbar({ isLoggedIn, userName }: SiteNavbarProps) {
   const activeUserName = userName ?? session.userName
   const visibleNavigation = activeIsLoggedIn ? navigation : navigation.filter((item) => item.public)
 
-  function handleSignOut() {
-    signOutForDemo()
-    setMenuOpen(false)
-    navigate('/home', { replace: true })
+  async function handleLogout() {
+    if (loggingOut) return
+    setLoggingOut(true)
+    try {
+      await logoutSession()
+      navigate('/login', { replace: true })
+    } finally {
+      setLoggingOut(false)
+      setMenuOpen(false)
+    }
   }
 
   return (
@@ -64,7 +72,8 @@ export function SiteNavbar({ isLoggedIn, userName }: SiteNavbarProps) {
               <UserTierDropdown
                 className="site-user-tier-dropdown"
                 onToggleTier={setDemoTier}
-                onSignOut={handleSignOut}
+                onSignOut={handleLogout}
+                signingOut={loggingOut}
                 points={session.points}
                 tier={session.tier}
                 userName={activeUserName}

@@ -18,6 +18,8 @@ export interface UserTierDropdownProps {
   onToggleTier?: (nextTier: UserTier) => void
   /** Ends the current session when supplied by the consuming application. */
   onSignOut?: () => void
+  /** Prevents repeated requests while backend logout is pending. */
+  signingOut?: boolean
   /** Lets a consuming top bar adjust placement without reaching into this component. */
   className?: string
 }
@@ -46,6 +48,7 @@ export function UserTierDropdown({
   userName = 'Học viên',
   onToggleTier,
   onSignOut,
+  signingOut = false,
   className,
 }: UserTierDropdownProps) {
   const [demoTier, setDemoTier] = useState<UserTier>(defaultTier)
@@ -106,8 +109,8 @@ export function UserTierDropdown({
         <p className={styles.demoHint} role="status" aria-live="polite">Chế độ demo — không thay đổi gói học thực tế.</p>
         {onSignOut && (
           <div className={styles.accountActions}>
-            <Button type="button" variant="ghost" className={styles.accountAction} onClick={onSignOut}>
-              <LogOut aria-hidden="true" /> Đăng xuất
+            <Button type="button" variant="ghost" className={styles.accountAction} disabled={signingOut} onClick={onSignOut}>
+              <LogOut aria-hidden="true" /> {signingOut ? 'Đang thoát…' : 'Đăng xuất'}
             </Button>
           </div>
         )}

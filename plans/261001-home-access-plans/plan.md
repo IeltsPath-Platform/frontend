@@ -23,7 +23,7 @@
 
 ## Risks and rollback
 
-- Frontend currently has demo auth only. `HomePage` accepts an authenticated `AccessClient`; the modal keeps activation disabled until the application supplies a real bearer-token client.
+- Backend auth from `feat/ui-main-flow` is retained after the merge resolution. `HomePage` still accepts an optional authenticated `AccessClient`; the app route does not supply it, so activation remains disabled until that integration is completed. See the [merge record](../../docs/journals/2026-10-05-home-auth-merge.md).
 - V5 and `SubscriptionResponse` expose the active `FREE`/`PREMIUM` plan, not the last `PREMIUM_30D`/`PREMIUM_90D` key product. The UI therefore shows one authoritative Premium status block instead of guessing a duration card after extensions.
 - The requested `POST /api/access/keys/activate` + `{ code }` contract conflicts with the implemented backend controller, which exposes `POST /api/access/me/keys/activate` + `{ rawKey, idempotencyKey }`. The frontend retains the verified backend contract until the product owner confirms a coordinated API change.
 - Roll back only this task's pricing/activation changes, preserving earlier work.

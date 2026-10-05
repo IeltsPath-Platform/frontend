@@ -1,0 +1,11 @@
+﻿PASS | login → /learn — http://localhost:5173/learn
+PASS | /learn Reading topic
+FAIL | practice page load (post-PASSED)
+FAIL | practice status visible
+FAIL | topic lessons Đã xong
+FAIL | topic CTA đề cuối AVAILABLE
+PASS | vào đề cuối — http://localhost:5173/learn/tests/51836a6f-9115-4958-b4f0-663eff323b8b?topic=10000000-0000-4000-8000-000000000001
+PASS | đề render câu hỏi
+PASS | submit → result — http://localhost:5173/learn/tests/51836a6f-9115-4958-b4f0-663eff323b8b/result?topic=10000000-0000-4000-8000-000000000001
+FAIL | result nội dung
+PASS | reload /learn topics

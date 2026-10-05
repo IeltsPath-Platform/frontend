@@ -8,7 +8,7 @@ import { createServer } from 'vite'
 
 let server
 before(async () => {
-  server = await createServer({ server: { middlewareMode: true }, appType: 'custom' })
+  server = await createServer({ envDir: false, define: { 'import.meta.env.VITE_OAUTH_ENABLED': '"false"' }, server: { middlewareMode: true }, appType: 'custom' })
 })
 after(async () => { await server?.close() })
 
@@ -128,10 +128,10 @@ test('UserTierDropdown is store-free and renders reusable Free and Premium state
 test('Shared navbar exposes only public routes to guests and the account dropdown to signed-in users', async () => {
   const guestHtml = await render('/src/components/SiteNavbar.tsx', 'SiteNavbar', { isLoggedIn: false }, '/home')
   for (const label of ['Trang chủ', 'Từ điển', 'Đăng nhập', 'Đăng ký']) assert.match(guestHtml, new RegExp(label))
-  for (const label of ['Tổng quát', 'Lớp học', 'Thực hành', 'Luyện đề', 'Học liệu', '120 Points', 'Đăng xuất']) assert.doesNotMatch(guestHtml, new RegExp(label))
+  for (const label of ['Tổng quát', 'Lớp học', 'Lộ trình', 'Thực hành', 'Luyện đề', 'Học liệu', '120 Points', 'Đăng xuất']) assert.doesNotMatch(guestHtml, new RegExp(label))
 
   const userHtml = await render('/src/components/SiteNavbar.tsx', 'SiteNavbar', { isLoggedIn: true, userName: 'Minh Anh' }, '/home')
-  for (const label of ['Tổng quát', 'Lớp học', 'Thực hành', 'Luyện đề', 'Học liệu', 'Minh Anh', '120 Points', 'Đăng xuất']) assert.match(userHtml, new RegExp(label))
+  for (const label of ['Tổng quát', 'Lớp học', 'Lộ trình', 'Thực hành', 'Luyện đề', 'Học liệu', 'Minh Anh', '0 Points', 'Đăng xuất']) assert.match(userHtml, new RegExp(label))
   assert.doesNotMatch(userHtml, /Đăng nhập|Đăng ký|>Overview</)
 })
 
@@ -342,12 +342,12 @@ test('Dictionary shares the topic vocabulary and interactive affordances', async
 test('Sign-in form has password-manager semantics and only safe non-submit controls', async () => {
   const html = await render('/src/features/auth/pages/AuthPage.tsx', 'AuthPage', { mode: 'sign-in' }, '/login')
   assert.match(html, /<form[^>]*class="auth-form"/)
-  assert.match(html, /Continue with Google/)
+  assert.match(html, /<button(?=[^>]*disabled)[^>]*>[\s\S]*?Google \(chưa hỗ trợ\)/)
   assert.doesNotMatch(html, /Continue with Apple/)
   assert.ok(html.indexOf('name="password"') < html.indexOf('type="submit"'))
   assert.ok(html.indexOf('type="submit"') < html.indexOf('hoặc'))
-  assert.ok(html.indexOf('hoặc') < html.indexOf('Continue with Google'))
-  assert.match(html, /<button(?=[^>]*type="button")(?=[^>]*aria-haspopup="dialog")[^>]*>Quên mật khẩu\?</)
+  assert.ok(html.indexOf('hoặc') < html.indexOf('Google (chưa hỗ trợ)'))
+  assert.match(html, /<a(?=[^>]*href="\/forgot-password")[^>]*>Quên mật khẩu\?</)
   assert.match(html, /<input(?=[^>]*type="email")(?=[^>]*autoComplete="username")(?=[^>]*autoCapitalize="none")[^>]*>/)
   assert.match(html, /<input(?=[^>]*type="password")(?=[^>]*autoComplete="current-password")[^>]*>/)
   assert.match(html, /<button(?=[^>]*type="button")(?=[^>]*aria-label="Show password")[^>]*>/)
@@ -365,7 +365,9 @@ test('Sign-up form uses new-password and retains the same native form structure'
   assert.match(html, /<input(?=[^>]*type="email")(?=[^>]*autoComplete="username")(?=[^>]*autoCapitalize="none")[^>]*>/)
   assert.match(html, /<input(?=[^>]*type="password")(?=[^>]*autoComplete="new-password")[^>]*>/)
   assert.match(html, /<button(?=[^>]*type="submit")[^>]*>Tạo tài khoản</)
-  assert.ok(html.indexOf('type="submit"') < html.indexOf('Continue with Google'))
+  assert.ok(html.indexOf('type="submit"') < html.indexOf('Google (chưa hỗ trợ)'))
+  assert.match(html, /name="fullName"/)
+  assert.match(html, /<input(?=[^>]*name="confirmPassword")(?=[^>]*autoComplete="new-password")[^>]*>/)
   assert.doesNotMatch(html, /Continue with Apple|Quên mật khẩu/)
   assert.match(html, /href="\/login"/)
 })
@@ -378,12 +380,12 @@ test('Auth form reads submitted fields through FormData without persisting the p
 })
 
 test('Auth layout uses transform-only ambient motion and a reduced-motion fallback', () => {
-  const pageSource = readFileSync(new URL('../src/features/auth/pages/AuthPage.tsx', import.meta.url), 'utf8')
+  const shellSource = readFileSync(new URL('../src/features/auth/components/AuthShell.tsx', import.meta.url), 'utf8')
   const styles = readFileSync(new URL('../src/features/auth/auth.css', import.meta.url), 'utf8')
   const sessionSource = readFileSync(new URL('../src/features/auth/authSession.ts', import.meta.url), 'utf8')
   for (const animation of ['auth-float-a', 'auth-float-b', 'auth-float-c', 'auth-float-d']) assert.ok(styles.includes(animation))
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/)
-  assert.match(pageSource, /ClassMascot/)
+  assert.match(shellSource, /ClassMascot/)
   assert.match(sessionSource, /useSyncExternalStore/)
   assert.doesNotMatch(sessionSource, /localStorage|sessionStorage/)
 })
