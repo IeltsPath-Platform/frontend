@@ -12,6 +12,22 @@ import { SpeakingPage } from '@/features/practice/pages/SpeakingPage'
 import { HomePage } from '@/features/home/HomePage'
 import { VocabularyPage } from '@/features/vocabulary/pages/VocabularyPage'
 import { AuthPage } from '@/features/auth/pages/AuthPage'
+import { useAuthSession } from '@/features/auth/authSession'
+import { SiteFooter } from '@/components/SiteFooter'
+import { ForgotPasswordPage } from '@/features/auth/pages/ForgotPasswordPage'
+import { OAuthCallbackPage } from '@/features/auth/pages/OAuthCallbackPage'
+import { ResetPasswordPage } from '@/features/auth/pages/ResetPasswordPage'
+import { AuthProvider } from '@/features/auth/AuthProvider'
+import { GuestOnly, RequireAuth } from '@/features/auth/AuthGuards'
+import { LearnLayout } from '@/features/learning-path/components/LearnLayout'
+import { NotFoundState } from '@/features/learning-path/components/PageState'
+import { LessonPage } from '@/features/learning-path/pages/LessonPage'
+import { PracticePage } from '@/features/learning-path/pages/PracticePage'
+import { ReviewPage } from '@/features/learning-path/pages/ReviewPage'
+import { TopicDetailPage } from '@/features/learning-path/pages/TopicDetailPage'
+import { TopicListPage } from '@/features/learning-path/pages/TopicListPage'
+import { TopicTestPage } from '@/features/learning-path/pages/TopicTestPage'
+import { TopicTestResultPage } from '@/features/learning-path/pages/TopicTestResultPage'
 import { getPracticeMode } from '@/features/practice/lib/passageTools'
 import type { PracticeMode, SkillType } from '@/types/practice'
 import './app.css'
@@ -19,57 +35,79 @@ import '@/features/practice/practice.css'
 
 function AppContent() {
   const navigate = useNavigate()
+  const { isLoggedIn } = useAuthSession()
 
   return (
-    <Routes>
-      <Route path="/" element={<Navigate replace to="/overview" />} />
+    <>
+      <Routes>
+      <Route path="/" element={<Navigate replace to={isLoggedIn ? '/overview' : '/home'} />} />
       <Route path="/home" element={<HomePage />} />
-      <Route path="/overview" element={<OverviewPage />} />
-      <Route path="/classroom" element={<ClassroomPage />} />
+      <Route path="/overview" element={<RequireAuth><OverviewPage /></RequireAuth>} />
+      <Route path="/classroom" element={<RequireAuth><ClassroomPage /></RequireAuth>} />
+      <Route path="/learn" element={<RequireAuth><LearnLayout /></RequireAuth>}>
+        <Route index element={<TopicListPage />} />
+        <Route path="topics/:topicId" element={<TopicDetailPage />} />
+        <Route path="lessons/:lessonId" element={<LessonPage />} />
+        <Route path="lessons/:lessonId/practice" element={<PracticePage />} />
+        <Route path="reviews/:reviewId" element={<ReviewPage />} />
+        <Route path="tests/:attemptId" element={<TopicTestPage />} />
+        <Route path="tests/:attemptId/result" element={<TopicTestResultPage />} />
+        <Route path="*" element={<NotFoundState />} />
+      </Route>
       <Route
         path="/practice"
-        element={<RouteStatusPage title="Thực hành" />}
+        element={<RequireAuth><RouteStatusPage title="Thực hành" /></RequireAuth>}
       />
       <Route
         path="/practice-tests"
         element={
-          <PracticeCatalogPage
-            onOpenTest={(skill: SkillType, id: string, mode: PracticeMode) => {
-              const route = skill === 'reading' ? `/practice/test/${id}` : `/practice/${skill}/${id}`
-              navigate(`${route}?mode=${mode}`)
-            }}
-          />
+          <RequireAuth>
+            <PracticeCatalogPage
+              onOpenTest={(skill: SkillType, id: string, mode: PracticeMode) => {
+                const route = skill === 'reading' ? `/practice/test/${id}` : `/practice/${skill}/${id}`
+                navigate(`${route}?mode=${mode}`)
+              }}
+            />
+          </RequireAuth>
         }
       />
       <Route
         path="/practice/test/:testId"
-        element={<PracticeTestRouteWrapper onExit={() => navigate('/practice-tests')} />}
+        element={<RequireAuth><PracticeTestRouteWrapper onExit={() => navigate('/practice-tests')} /></RequireAuth>}
       />
       <Route
         path="/practice/test"
-        element={<PracticeTestRouteWrapper onExit={() => navigate('/practice-tests')} />}
+        element={<RequireAuth><PracticeTestRouteWrapper onExit={() => navigate('/practice-tests')} /></RequireAuth>}
       />
       <Route
         path="/practice/listening/:testId"
-        element={<ListeningPage onExit={() => navigate('/practice-tests')} />}
+        element={<RequireAuth><ListeningPage onExit={() => navigate('/practice-tests')} /></RequireAuth>}
       />
       <Route
         path="/practice/writing/:taskId"
-        element={<WritingPage onExit={() => navigate('/practice-tests')} />}
+        element={<RequireAuth><WritingPage onExit={() => navigate('/practice-tests')} /></RequireAuth>}
       />
       <Route
         path="/practice/speaking/:cueId"
-        element={<SpeakingPage onExit={() => navigate('/practice-tests')} />}
+        element={<RequireAuth><SpeakingPage onExit={() => navigate('/practice-tests')} /></RequireAuth>}
       />
       <Route path="/vocabulary" element={<VocabularyPage />} />
-      <Route path="/materials" element={<RouteStatusPage title="Học liệu" />} />
-      <Route path="/login" element={<AuthPage mode="sign-in" />} />
-      <Route path="/register" element={<AuthPage mode="sign-up" />} />
+      <Route path="/materials" element={<RequireAuth><RouteStatusPage title="Học liệu" /></RequireAuth>} />
+      <Route path="/login" element={<GuestOnly><AuthPage mode="sign-in" /></GuestOnly>} />
+      <Route path="/register" element={<GuestOnly><AuthPage mode="sign-up" /></GuestOnly>} />
+      <Route path="/forgot-password" element={<GuestOnly><ForgotPasswordPage /></GuestOnly>} />
+      <Route path="/reset-password" element={<GuestOnly><ResetPasswordPage /></GuestOnly>} />
+      <Route path="/auth/oauth/callback" element={<GuestOnly><OAuthCallbackPage /></GuestOnly>} />
       <Route path="/classes/:classCode/join" element={<RouteStatusPage title="Phòng học trực tuyến" />} />
-      <Route path="/lessons/:lessonId" element={<LessonWorkspacePage />} />
+      <Route path="/lessons/:lessonId" element={<RequireAuth><LessonWorkspacePage /></RequireAuth>} />
       <Route path="/mentors/:mentorSlug" element={<RouteStatusPage title="Liên hệ Mentor" />} />
+      <Route path="/terms" element={<RouteStatusPage title="Điều khoản sử dụng" />} />
+      <Route path="/privacy" element={<RouteStatusPage title="Chính sách bảo mật" />} />
+      <Route path="/copyright" element={<RouteStatusPage title="Chính sách bản quyền" />} />
       <Route path="*" element={<NotFoundPage />} />
-    </Routes>
+      </Routes>
+      <SiteFooter />
+    </>
   )
 }
 
@@ -84,7 +122,9 @@ export default function App() {
   return (
     <ErrorBoundary>
       <BrowserRouter>
-        <AppContent />
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
       </BrowserRouter>
     </ErrorBoundary>
   )

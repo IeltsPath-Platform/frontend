@@ -8,7 +8,7 @@ import { createServer } from 'vite'
 
 let server
 before(async () => {
-  server = await createServer({ server: { middlewareMode: true }, appType: 'custom' })
+  server = await createServer({ envDir: false, define: { 'import.meta.env.VITE_OAUTH_ENABLED': '"false"' }, server: { middlewareMode: true }, appType: 'custom' })
 })
 after(async () => { await server?.close() })
 
@@ -17,16 +17,93 @@ async function render(modulePath, name, props, path) {
   return renderToString(createElement(MemoryRouter, { initialEntries: [path] }, createElement(module[name], props)))
 }
 
-test('Home renders a full-width animated hero without the retired IELTS space panel', async () => {
+test('Home preserves the learning journey hero and renders the complete landing page with activation', async () => {
   const html = await render('/src/features/home/HomePage.tsx', 'HomePage', {}, '/home')
-  for (const id of ['home-intro', 'home-features', 'home-mentors', 'home-pricing']) assert.ok(html.includes(`id="${id}"`))
+  for (const id of ['home-hero', 'home-intro', 'home-features', 'home-quality', 'home-mentors', 'home-pricing']) assert.ok(html.includes(`id="${id}"`))
   assert.match(html, /aria-current="page"[^>]*href="\/home"/)
   assert.ok(html.indexOf('aria-current="page"') < html.indexOf('href="/vocabulary"'))
-  assert.match(html, /giá minh họa/)
+  assert.match(html, /Premium 30 Ngày/)
+  assert.match(html, /Premium 90 Ngày/)
+  assert.match(html, /Phổ biến nhất/)
+  assert.match(html, /Thẻ Point 50/)
+  assert.match(html, /Kích hoạt bằng Mã Key/)
+  assert.match(html, /Gói Premium/)
+  assert.match(html, /Thẻ nạp Point/)
+  assert.match(html, /Gói FREE mặc định/)
+  assert.match(html, /Khi gói chuyển sang EXPIRED/)
+  assert.equal((html.match(/<article class="[^"]*home-combined-card(?=\s|")/g) || []).length, 2)
+  assert.equal((html.match(/home-card-activation-button/g) || []).length, 2)
+  assert.match(html, /<input(?=[^>]*name="premium-product")(?=[^>]*value="PREMIUM_90D")(?=[^>]*checked)[^>]*>/)
+  assert.match(html, /<input(?=[^>]*name="point-product")(?=[^>]*value="POINT_100")(?=[^>]*checked)[^>]*>/)
+  assert.doesNotMatch(html, /Mua ngay|Gói minh họa|giá minh họa|So sánh FREE và PREMIUM|home-plan-table/)
+  for (const content of [
+    'THE IELTS SPACE',
+    'TỐI ƯU HÀNH TRÌNH HỌC',
+    'HỌC THÍCH ỨNG AI - DEEPTUTOR CORE',
+    'LẤY CHẤT LƯỢNG LÀM GIÁ TRỊ CỐT LÕI',
+    '150\\+ GIẢNG VIÊN',
+    'THẠC SĨ LINH PHƯƠNG',
+    'Hành trình thật. Kết quả thật.',
+    'BẢNG GÓI DỊCH VỤ',
+  ]) assert.match(html, new RegExp(content))
+  assert.match(html, /pv-hocba\.B5Z0mx97\.png/)
+  assert.match(html, /img-gv-2\.DZIRbuF_\.webp/)
   assert.match(html, /Mỗi ngày một bước/)
   assert.match(html, /home-hero-shell/)
+  assert.ok((html.match(/data-home-reveal="true"/g) || []).length >= 12)
   assert.match(html, /triceratops-class-mascot/)
   assert.doesNotMatch(html, /YOUR IELTS SPACE/)
+})
+
+test('Learner feedback duplicates cards for a continuous right-to-left marquee with pause controls', async () => {
+  const html = await render('/src/features/home/components/LearnerFeedbackCarousel.tsx', 'LearnerFeedbackCarousel', {}, '/home')
+  const styles = readFileSync(new URL('../src/features/home/components/LearnerFeedbackCarousel.css', import.meta.url), 'utf8')
+
+  for (const learner of ['THU HÀ', 'MINH ANH', 'ĐẮC HƯNG']) {
+    assert.equal((html.match(new RegExp(`<h3>${learner}</h3>`, 'g')) || []).length, 2)
+  }
+  assert.equal((html.match(/role="listitem"/g) || []).length, 6)
+  assert.match(html, /Tạm dừng/)
+  assert.match(html, /7\.0 IELTS/)
+  assert.match(html, /5\.5 IELTS/)
+  assert.match(styles, /@keyframes learner-feedback-marquee/)
+  assert.match(styles, /translateX\(-50%\)/)
+  assert.match(styles, /:hover \.learner-feedback-track/)
+  assert.match(styles, /animation-play-state:\s*paused/)
+  assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/)
+})
+
+test('Pricing cards show authoritative Premium status without guessing a 30/90-day activation product', async () => {
+  const subscription = {
+    id: 'subscription-id',
+    userId: 'user-id',
+    planId: 'plan-id',
+    planCode: 'PREMIUM',
+    planName: 'Premium',
+    status: 'ACTIVE',
+    startsAt: '2026-10-01T00:00:00Z',
+    endsAt: '2099-12-31T00:00:00Z',
+    humanGradingCreditsTotal: 12,
+    humanGradingCreditsUsed: 3,
+    remainingCredits: 9,
+    createdAt: '2026-10-01T00:00:00Z',
+    updatedAt: '2026-10-01T00:00:00Z',
+  }
+  const html = await render('/src/features/home/components/PricingCards.tsx', 'PricingCards', {
+    isLoggedIn: true,
+    subscription,
+    accessStatus: 'ready',
+    onRetryAccess() {},
+    onActivate() {},
+  }, '/home')
+
+  assert.match(html, /Đang sử dụng/)
+  assert.match(html, /9(?:<!-- -->)? lượt chấm giáo viên còn lại/)
+  assert.match(html, /Premium 30 Ngày/)
+  assert.match(html, /Premium 90 Ngày/)
+  assert.equal((html.match(/<article class="[^"]*home-combined-card(?=\s|")/g) || []).length, 2)
+  assert.equal((html.match(/home-card-activation-button/g) || []).length, 2)
+  assert.equal((html.match(/Đang sử dụng/g) || []).length, 1)
 })
 
 test('UserTierDropdown is store-free and renders reusable Free and Premium states', async () => {
@@ -51,11 +128,20 @@ test('UserTierDropdown is store-free and renders reusable Free and Premium state
 test('Shared navbar exposes only public routes to guests and the account dropdown to signed-in users', async () => {
   const guestHtml = await render('/src/components/SiteNavbar.tsx', 'SiteNavbar', { isLoggedIn: false }, '/home')
   for (const label of ['Trang chủ', 'Từ điển', 'Đăng nhập', 'Đăng ký']) assert.match(guestHtml, new RegExp(label))
-  for (const label of ['Overview', 'Lớp học', 'Thực hành', 'Luyện đề', 'Học liệu', '120 Points']) assert.doesNotMatch(guestHtml, new RegExp(label))
+  for (const label of ['Tổng quát', 'Lớp học', 'Lộ trình', 'Thực hành', 'Luyện đề', 'Học liệu', '120 Points', 'Đăng xuất']) assert.doesNotMatch(guestHtml, new RegExp(label))
 
   const userHtml = await render('/src/components/SiteNavbar.tsx', 'SiteNavbar', { isLoggedIn: true, userName: 'Minh Anh' }, '/home')
-  for (const label of ['Overview', 'Lớp học', 'Thực hành', 'Luyện đề', 'Học liệu', 'Minh Anh', '120 Points']) assert.match(userHtml, new RegExp(label))
-  assert.doesNotMatch(userHtml, /Đăng nhập|Đăng ký/)
+  for (const label of ['Tổng quát', 'Lớp học', 'Lộ trình', 'Thực hành', 'Luyện đề', 'Học liệu', 'Minh Anh', '0 Points', 'Đăng xuất']) assert.match(userHtml, new RegExp(label))
+  assert.doesNotMatch(userHtml, /Đăng nhập|Đăng ký|>Overview</)
+})
+
+test('Auth routes hide guest account links while retaining public navigation', async () => {
+  for (const path of ['/login', '/register', '/login/', '/register?from=home']) {
+    const html = await render('/src/components/SiteNavbar.tsx', 'SiteNavbar', { isLoggedIn: false }, path)
+    assert.doesNotMatch(html, /Đăng nhập|Đăng ký|Đăng xuất/)
+    assert.match(html, /href="\/home"/)
+    assert.match(html, /href="\/vocabulary"/)
+  }
 })
 
 test('ClassMascot packages the image, floating orbit and twinkle motion independently', async () => {
@@ -146,18 +232,40 @@ test('Progress bar is native, determinate, and keeps text and ARIA percentage in
 
 test('Home and workspace motion use performant directional transitions with a reduced-motion fallback', () => {
   const homeStyles = readFileSync(new URL('../src/features/home/home.css', import.meta.url), 'utf8')
+  const homeRevealSource = readFileSync(new URL('../src/features/home/useHomeScrollReveal.ts', import.meta.url), 'utf8')
+  const homeHeroSource = readFileSync(new URL('../src/features/home/components/HomeHeroSection.tsx', import.meta.url), 'utf8')
   const workspaceStyles = readFileSync(new URL('../src/features/practice/workspace.css', import.meta.url), 'utf8')
   const answersSource = readFileSync(new URL('../src/features/practice/components/PracticeAnswers.tsx', import.meta.url), 'utf8')
 
   assert.match(homeStyles, /home-fade-up/)
   assert.match(homeStyles, /home-hero-breathe/)
+  assert.match(homeStyles, /home-reveal-enabled/)
+  assert.match(homeStyles, /\.home-hero-orbit[\s\S]*?left:\s*50%[\s\S]*?transform:\s*translate\(-50%, -50%\)/)
+  assert.match(homeStyles, /\.home-orbit-layout\s*\{[\s\S]*?min-height:\s*39rem/)
+  assert.match(homeStyles, /\.home-orbit-line\s*\{[\s\S]*?width:\s*58%[\s\S]*?height:\s*48%/)
   assert.match(homeStyles, /@media \(prefers-reduced-motion: reduce\)/)
+  assert.match(homeHeroSource, /home-hero-journey[\s\S]*home-hero-orbit[\s\S]*home-hero-mascot/)
+  assert.match(homeRevealSource, /IntersectionObserver/)
+  assert.match(homeRevealSource, /prefers-reduced-motion/)
   assert.match(workspaceStyles, /question-slide-enter-forward/)
   assert.match(workspaceStyles, /question-slide-enter-backward/)
   assert.match(workspaceStyles, /answer-selection-pop/)
   assert.match(workspaceStyles, /@media \(prefers-reduced-motion: reduce\)/)
   assert.match(answersSource, /question-transition-\$\{transitionPhase\}/)
   assert.match(answersSource, /question-transition-\$\{transitionDirection\}/)
+})
+
+test('Shared footer exposes contact, support and legal information for every route', async () => {
+  const html = await render('/src/components/SiteFooter.tsx', 'SiteFooter', {}, '/home')
+  const appSource = readFileSync(new URL('../src/app/App.tsx', import.meta.url), 'utf8')
+
+  for (const content of ['THÔNG TIN LIÊN HỆ', 'VỀ THE IELTS SPACE', 'TRUNG TÂM HỖ TRỢ', 'THÔNG TIN PHÁP LÝ', 'Tư vấn miễn phí']) {
+    assert.match(html, new RegExp(content))
+  }
+  assert.match(html, /257 Giải Phóng/)
+  assert.match(html, /theenglishspace01@gmail\.com/)
+  assert.match(appSource, /<SiteFooter \/>/)
+  assert.ok(appSource.indexOf('<SiteFooter />') > appSource.indexOf('</Routes>'))
 })
 
 test('Listening keeps a single timed question aligned with the audio controls', async () => {
@@ -234,12 +342,12 @@ test('Dictionary shares the topic vocabulary and interactive affordances', async
 test('Sign-in form has password-manager semantics and only safe non-submit controls', async () => {
   const html = await render('/src/features/auth/pages/AuthPage.tsx', 'AuthPage', { mode: 'sign-in' }, '/login')
   assert.match(html, /<form[^>]*class="auth-form"/)
-  assert.match(html, /Continue with Google/)
+  assert.match(html, /<button(?=[^>]*disabled)[^>]*>[\s\S]*?Google \(chưa hỗ trợ\)/)
   assert.doesNotMatch(html, /Continue with Apple/)
   assert.ok(html.indexOf('name="password"') < html.indexOf('type="submit"'))
   assert.ok(html.indexOf('type="submit"') < html.indexOf('hoặc'))
-  assert.ok(html.indexOf('hoặc') < html.indexOf('Continue with Google'))
-  assert.match(html, /<button(?=[^>]*type="button")(?=[^>]*aria-haspopup="dialog")[^>]*>Quên mật khẩu\?</)
+  assert.ok(html.indexOf('hoặc') < html.indexOf('Google (chưa hỗ trợ)'))
+  assert.match(html, /<a(?=[^>]*href="\/forgot-password")[^>]*>Quên mật khẩu\?</)
   assert.match(html, /<input(?=[^>]*type="email")(?=[^>]*autoComplete="username")(?=[^>]*autoCapitalize="none")[^>]*>/)
   assert.match(html, /<input(?=[^>]*type="password")(?=[^>]*autoComplete="current-password")[^>]*>/)
   assert.match(html, /<button(?=[^>]*type="button")(?=[^>]*aria-label="Show password")[^>]*>/)
@@ -257,7 +365,9 @@ test('Sign-up form uses new-password and retains the same native form structure'
   assert.match(html, /<input(?=[^>]*type="email")(?=[^>]*autoComplete="username")(?=[^>]*autoCapitalize="none")[^>]*>/)
   assert.match(html, /<input(?=[^>]*type="password")(?=[^>]*autoComplete="new-password")[^>]*>/)
   assert.match(html, /<button(?=[^>]*type="submit")[^>]*>Tạo tài khoản</)
-  assert.ok(html.indexOf('type="submit"') < html.indexOf('Continue with Google'))
+  assert.ok(html.indexOf('type="submit"') < html.indexOf('Google (chưa hỗ trợ)'))
+  assert.match(html, /name="fullName"/)
+  assert.match(html, /<input(?=[^>]*name="confirmPassword")(?=[^>]*autoComplete="new-password")[^>]*>/)
   assert.doesNotMatch(html, /Continue with Apple|Quên mật khẩu/)
   assert.match(html, /href="\/login"/)
 })
@@ -270,12 +380,12 @@ test('Auth form reads submitted fields through FormData without persisting the p
 })
 
 test('Auth layout uses transform-only ambient motion and a reduced-motion fallback', () => {
-  const pageSource = readFileSync(new URL('../src/features/auth/pages/AuthPage.tsx', import.meta.url), 'utf8')
+  const shellSource = readFileSync(new URL('../src/features/auth/components/AuthShell.tsx', import.meta.url), 'utf8')
   const styles = readFileSync(new URL('../src/features/auth/auth.css', import.meta.url), 'utf8')
   const sessionSource = readFileSync(new URL('../src/features/auth/authSession.ts', import.meta.url), 'utf8')
   for (const animation of ['auth-float-a', 'auth-float-b', 'auth-float-c', 'auth-float-d']) assert.ok(styles.includes(animation))
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/)
-  assert.match(pageSource, /ClassMascot/)
+  assert.match(shellSource, /ClassMascot/)
   assert.match(sessionSource, /useSyncExternalStore/)
   assert.doesNotMatch(sessionSource, /localStorage|sessionStorage/)
 })

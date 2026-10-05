@@ -1,0 +1,242 @@
+.home-current-access {
+  margin-bottom: 1.25rem;
+  border: 1px solid var(--site-card-border);
+  border-radius: 14px;
+  padding: 1rem 1.2rem;
+  background: var(--classroom-surface);
+  color: var(--color-text-muted);
+  font-size: .8rem;
+}
+
+.home-current-access > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .55rem 1rem;
+}
+
+.home-current-access strong {
+  color: var(--site-navy);
+  font-size: 1rem;
+}
+
+.home-current-access p {
+  margin: 0;
+}
+
+.home-current-badge,
+.home-recommended-badge {
+  border-radius: 999px;
+  padding: .35rem .65rem;
+  background: var(--classroom-soft);
+  color: var(--site-blue);
+  font-size: .68rem;
+  font-weight: 800;
+}
+
+.home-free-baseline {
+  display: flex;
+  align-items: flex-start;
+  gap: .85rem;
+  margin-bottom: 1.25rem;
+  border: 1px solid var(--site-card-border);
+  border-radius: 1rem;
+  padding: 1rem 1.1rem;
+  background: var(--classroom-surface);
+  box-shadow: var(--classroom-shadow);
+}
+
+.home-free-baseline > span {
+  display: grid;
+  flex: 0 0 2.35rem;
+  place-items: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  border-radius: .75rem;
+  background: var(--classroom-soft);
+  color: var(--site-blue);
+}
+
+.home-free-baseline strong {
+  color: var(--site-navy);
+  font-size: .9rem;
+}
+
+.home-free-baseline p {
+  margin: .25rem 0 0;
+  color: var(--color-text-muted);
+  font-size: .78rem;
+  line-height: 1.6;
+}
+
+.home-product-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem;
+}
+
+.home-combined-card {
+  min-width: 0;
+}
+
+.home-combined-card-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.home-combined-card-heading > div {
+  min-width: 0;
+}
+
+.home-combined-card-heading .home-plan-tag {
+  display: block;
+  min-height: 0;
+  margin-bottom: .3rem;
+  font-size: .68rem;
+}
+
+.home-combined-card-heading h3 {
+  margin-bottom: .45rem;
+  font-size: clamp(1.25rem, 2vw, 1.55rem);
+}
+
+.home-combined-card-heading p {
+  color: var(--color-text-muted);
+  font-size: .8rem;
+  line-height: 1.65;
+}
+
+.home-combined-icon {
+  display: grid;
+  flex: 0 0 48px;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--classroom-soft);
+  color: var(--site-blue);
+}
+
+.home-combined-card.is-featured .home-combined-icon {
+  background: var(--site-blue);
+  color: var(--classroom-surface);
+}
+
+.home-combined-benefits {
+  list-style: none;
+}
+
+.home-combined-card .home-unavailable,
+.home-combined-card .home-unavailable svg {
+  color: var(--color-text-muted);
+}
+
+.home-product-options {
+  display: grid;
+  gap: .85rem;
+  margin-top: auto;
+}
+
+.home-product-option {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid var(--site-card-border);
+  border-radius: 14px;
+  padding: 1rem;
+  background: var(--classroom-surface);
+  cursor: pointer;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+
+.home-product-option.is-recommended,
+.home-product-option.is-selected {
+  border-color: var(--site-blue);
+}
+
+.home-product-option.is-selected {
+  background: var(--classroom-soft);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--site-blue) 16%, transparent);
+}
+
+.home-product-option > input {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--site-blue);
+}
+
+.home-product-option:focus-within {
+  outline: 3px solid color-mix(in srgb, var(--site-blue) 28%, transparent);
+  outline-offset: 2px;
+}
+
+.home-product-option-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: .5rem;
+  padding-right: 1.8rem;
+}
+
+.home-product-option h4 {
+  margin: 0 0 .25rem;
+  color: var(--site-navy);
+  font-size: .95rem;
+  font-weight: 800;
+}
+
+.home-product-option code {
+  color: var(--site-blue);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: .68rem;
+}
+
+.home-product-option > p {
+  display: grid;
+  gap: .15rem;
+  margin: .9rem 0;
+  color: var(--color-text-muted);
+  font-size: .75rem;
+}
+
+.home-product-option > p strong {
+  color: var(--site-navy);
+  font-size: 1.2rem;
+  letter-spacing: -.025em;
+}
+
+.home-option-button {
+  width: 100%;
+  min-height: 44px;
+  height: auto;
+  margin-top: auto;
+  padding-block: .65rem;
+  white-space: normal;
+}
+
+.home-card-activation-button {
+  margin-top: 1rem;
+}
+
+.home-pricing-note {
+  margin-top: 1.25rem;
+  border-inline-start: 3px solid var(--site-blue);
+  border-radius: 0 .5rem .5rem 0;
+  padding: 1rem 1.2rem;
+  background: var(--classroom-soft);
+  color: var(--color-text-muted);
+  font-size: .8rem;
+  line-height: 1.75;
+}
+
+@media (min-width: 950px) {
+  .home-product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
