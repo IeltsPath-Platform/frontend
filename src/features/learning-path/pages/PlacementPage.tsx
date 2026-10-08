@@ -94,7 +94,7 @@ function PlacementFlow({ initialAttempt }: { initialAttempt: AssessmentAttempt |
         />
       ) : null}
 
-      {view === 'grading' ? <PlacementGrading onGraded={() => setView('result')} /> : null}
+      {view === 'grading' && usableAttempt ? <PlacementGrading attemptId={usableAttempt.id} onGraded={() => setView('result')} /> : null}
       {view === 'result' && usableAttempt ? <PlacementResultView attemptId={usableAttempt.id} /> : null}
     </div>
   )
@@ -224,7 +224,8 @@ function PlacementHub({ attempt, data, onProgress, onSubmitted, onRedoSurvey }: 
 type GradingPhase = 'grading' | 'slow' | 'failed'
 
 /** After submitting, Learning stores the band asynchronously; courses open once it has. */
-function PlacementGrading({ onGraded }: { onGraded: () => void }) {
+/** Waits for the result: the placement result is not found until every essay is graded and the attempt completes. */
+function PlacementGrading({ attemptId, onGraded }: { attemptId: string; onGraded: () => void }) {
   const [phase, setPhase] = useState<GradingPhase>('grading')
   const [error, setError] = useState<string | null>(null)
   const graded = useEffectEvent(onGraded)
@@ -235,12 +236,12 @@ function PlacementGrading({ onGraded }: { onGraded: () => void }) {
     void (async () => {
       for (let tries = 0; tries < POLL_ATTEMPTS && live; tries += 1) {
         try {
-          await learningApi.listCourses()
+          await learningApi.getPlacementResult(attemptId)
           if (live) graded()
           return
         } catch (reason) {
           const apiError = toApiError(reason)
-          if (apiError.code !== 'PLACEMENT_REQUIRED') {
+          if (apiError.code !== 'NOT_FOUND') {
             if (live) { setError(apiError.message); setPhase('failed') }
             return
           }
@@ -250,7 +251,7 @@ function PlacementGrading({ onGraded }: { onGraded: () => void }) {
       if (live) setPhase('slow')
     })()
     return () => { live = false }
-  }, [phase])
+  }, [phase, attemptId])
 
   return (
     <section className="lp-state lp-state--panel pl-grading" aria-live="polite">
