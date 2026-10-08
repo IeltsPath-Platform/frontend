@@ -12,6 +12,8 @@ export interface TestSection {
   sortOrder: number
   snapshot: SectionSnapshot | null
   items: TestItem[]
+  startedAt: string | null
+  completedAt: string | null
 }
 
 function parseJson(raw: string | null): unknown {
@@ -25,17 +27,25 @@ function parseJson(raw: string | null): unknown {
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null
 
+/** Passage text as Content stores it: blank-line separated paragraphs, each optionally starting with "A. ". */
+function passageFromText(text: string): Passage {
+  const paragraphs = text.split(/\n\s*\n/).map((block) => block.trim()).filter(Boolean).map((block) => {
+    const labelled = /^([A-Z])\.\s+([\s\S]*)$/.exec(block)
+    return labelled ? { label: labelled[1], text: labelled[2] } : { label: null, text: block }
+  })
+  return { title: '', paragraphs }
+}
+
 function toPassage(value: unknown): Passage | null {
+  // Assessment snapshots carry the passage as plain text.
+  if (typeof value === 'string') return passageFromText(value)
   if (!isRecord(value)) return null
   if (typeof value.title === 'string' && Array.isArray(value.paragraphs)) {
     const paragraphs = value.paragraphs.filter((paragraph): paragraph is Passage['paragraphs'][number] =>
       isRecord(paragraph) && typeof paragraph.text === 'string' && (paragraph.label === null || typeof paragraph.label === 'string'))
     return { title: value.title, paragraphs }
   }
-  if (typeof value === 'string' || typeof value.text === 'string') {
-    const text = typeof value === 'string' ? value : String(value.text)
-    return { title: '', paragraphs: text ? [{ label: null, text }] : [] }
-  }
+  if (typeof value.text === 'string') return passageFromText(value.text)
   return null
 }
 
@@ -122,6 +132,8 @@ export function parseAttemptStructure(structure: AttemptStructure): TestSection[
       id: section.id,
       sortOrder: section.sortOrder,
       snapshot: toSectionSnapshot(section.snapshot),
+      startedAt: section.startedAt ?? null,
+      completedAt: section.completedAt ?? null,
       items: [...section.items]
         .sort((a, b) => a.sortOrder - b.sortOrder)
         .map((item) => ({

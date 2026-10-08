@@ -1,4 +1,4 @@
-import type { LessonStatus, ReviewRef, TestStatus, TopicStatus, TopicSummary } from '~types/learningPath'
+import type { CourseRef, LessonStatus, ReviewRef, TestStatus, TopicStatus, TopicSummary } from '~types/learningPath'
 import type { MockExerciseBlock, MockKnowledgePoint, MockLesson, MockTopic } from '@/mocks/learning-path/contentTypes'
 import { MOCK_LESSONS } from '@/mocks/learning-path/lessons'
 import { MOCK_REVIEW_PACKS } from '@/mocks/learning-path/reviewPacks'
@@ -89,11 +89,15 @@ export function testStatus(state: MockState, topic: MockTopic): TestStatus {
   return allDone && topicStatus(state, topic) !== 'LOCKED' && pendingReviews(state).length === 0 ? 'AVAILABLE' : 'LOCKED'
 }
 
+/** The mock has a single course holding every mock topic. */
+export const MOCK_COURSE: CourseRef = { id: 'mock-course', code: 'IELTS_DEMO', title: 'IELTS Demo', bandLevel: 5.5 }
+
 export function topicSummary(state: MockState, topic: MockTopic): TopicSummary {
   const status = topicStatus(state, topic)
   const previous = previousTopic(topic)
   return {
     id: topic.id,
+    course: MOCK_COURSE,
     code: topic.code,
     title: topic.title,
     description: topic.description,

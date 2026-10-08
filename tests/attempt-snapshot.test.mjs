@@ -78,3 +78,17 @@ describe('assessment structure snapshots from Gateway', () => {
     assert.equal(questions[1].options, null)
   })
 })
+
+test('a plain-text passage from the assessment snapshot keeps its lettered paragraphs', () => {
+  const [section] = parseAttemptStructure(mapAttemptStructure({
+    sections: [{
+      id: 'sec-p', contentSectionId: 'csec-p', sortOrder: 1,
+      snapshot: { title: 'Reading: tools', skill: 'READING', passage: 'A. First paragraph.\n\nB. Second\nline.' },
+      items: [],
+    }],
+  }))
+  assert.deepEqual(section.snapshot.passage.paragraphs, [
+    { label: 'A', text: 'First paragraph.' },
+    { label: 'B', text: 'Second\nline.' },
+  ])
+})

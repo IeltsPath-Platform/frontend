@@ -33,7 +33,9 @@ export function TopicDetailView({ detail, onChanged }: { detail: TopicLessonsRes
   return (
     <div className="lp-page">
       <NoticeBanner />
-      <Link className="lp-back" to="/learn"><ArrowLeft aria-hidden="true" size={16} />Lộ trình</Link>
+      <Link className="lp-back" to={topic.course ? `/learn/courses/${topic.course.id}` : '/learn'}>
+        <ArrowLeft aria-hidden="true" size={16} />{topic.course?.title ?? 'Lộ trình'}
+      </Link>
       <header className="lp-topic-head">
         <div>
           <p className="lp-eyebrow">Chặng {topic.sequenceOrder} · {topic.code}</p>

@@ -1,6 +1,6 @@
-import { Link } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import type { CSSProperties } from 'react'
-import { ArrowRight, Lock } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Lock } from 'lucide-react'
 import type { TopicSummary } from '~types/learningPath'
 import { learningApi } from '../api'
 import { NoticeBanner } from '../components/NoticeBanner'
@@ -9,22 +9,27 @@ import { StatusBadge } from '../components/StatusBadge'
 import { topicStatusMeta } from '../lib/statusMeta'
 import { useApiResource } from '../lib/useApiResource'
 
+/** Topics of one course, picked on the course list screen. */
 export function TopicListPage() {
-  const topics = useApiResource('topics', () => learningApi.listTopics())
+  const { courseId = '' } = useParams()
+  const resource = useApiResource('topics', () => learningApi.listTopics())
+  const topics = resource.data?.filter((topic) => topic.course?.id === courseId) ?? null
+  const course = topics?.[0]?.course ?? null
 
   return (
     <div className="lp-page">
       <NoticeBanner />
+      <Link className="lp-back" to="/learn"><ArrowLeft aria-hidden="true" size={16} />Danh sách course</Link>
       <header className="lp-hero">
-        <p className="lp-eyebrow">Lộ trình Reading</p>
-        <h1>Đi từng chặng, mở khóa từng kỹ năng</h1>
-        <p>Mỗi topic là một chặng. Học hết các bài và đạt bài kiểm tra cuối để mở chặng tiếp theo.</p>
-        {topics.data ? <TrailProgress topics={topics.data} /> : null}
+        <p className="lp-eyebrow">{course ? `Course · Band ${course.bandLevel.toFixed(1)}` : 'Course'}</p>
+        <h1>{course?.title ?? 'Lộ trình của course'}</h1>
+        <p>Mỗi topic là một chặng. Học hết các bài và đạt bài kiểm tra cuối để mở chặng tiếp theo trong course.</p>
+        {topics ? <TrailProgress topics={topics} /> : null}
       </header>
-      {topics.status === 'loading' ? <LoadingState label="Đang tải lộ trình…" /> : null}
-      {topics.status === 'error' && topics.error ? <ApiErrorState error={topics.error} onRetry={topics.reload} /> : null}
-      {topics.data?.length === 0 ? <p className="lp-empty">Chưa có topic nào được giao cho bạn.</p> : null}
-      {topics.data && topics.data.length > 0 ? <TopicTrail topics={topics.data} /> : null}
+      {resource.status === 'loading' ? <LoadingState label="Đang tải lộ trình…" /> : null}
+      {resource.status === 'error' && resource.error ? <ApiErrorState error={resource.error} onRetry={resource.reload} /> : null}
+      {topics?.length === 0 ? <p className="lp-empty">Course này chưa có topic nào.</p> : null}
+      {topics && topics.length > 0 ? <TopicTrail topics={topics} /> : null}
     </div>
   )
 }

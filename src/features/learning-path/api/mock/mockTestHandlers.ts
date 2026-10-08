@@ -94,6 +94,8 @@ export function getAttemptStructure(state: MockState, attemptId: string): Attemp
       contentSectionId: section.id,
       sortOrder: sectionIndex + 1,
       snapshot: JSON.stringify({ title: section.title, instructions: section.instructions, passage: section.passage }),
+      startedAt: null,
+      completedAt: null,
       items: section.questions.map((question, itemIndex) => {
         const { number, prompt, options } = toPublicQuestion(question)
         return {

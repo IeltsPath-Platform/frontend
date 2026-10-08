@@ -7,8 +7,24 @@ export type ReviewStage = 'PRACTICE' | 'THEORY'
 export type ExerciseState = 'NOT_ATTEMPTED' | 'FAILED' | 'PASSED'
 export type ReviewStatus = 'PENDING' | 'DONE' | 'SKIPPED'
 
+export interface CourseRef {
+  id: string
+  code: string
+  title: string
+  bandLevel: number
+}
+
+export interface CourseSummary extends CourseRef {
+  topicCount: number
+  passedTopicCount: number
+  /** Placement guidance only; every course stays open. */
+  recommended: boolean
+  testStatus: TestStatus
+}
+
 export interface TopicSummary {
   id: string
+  course: CourseRef | null
   code: string
   title: string
   description: string
@@ -348,11 +364,87 @@ export interface TestAssignment {
   packageCode: string
 }
 
-export type AttemptStatus = 'IN_PROGRESS' | 'SUBMITTED' | 'EXPIRED'
+/** The published placement test a learner without a placement band sits first. */
+export interface PlacementTest {
+  packageId: string
+  packageVersionId: string
+}
+
+/** The learner's study goal from the placement survey (POST /api/users/me/learning-goals). */
+export interface LearningGoalRequest {
+  targetBand: number
+  /** ISO date (yyyy-mm-dd) in the future, or null when the learner has not picked one. */
+  examDate: string | null
+  availableMinutesPerDay: number
+}
+
+/** The learner's active study goal (GET /api/users/me/learning-goals/active). */
+export interface LearningGoal extends LearningGoalRequest {
+  id: string
+  status: string
+}
+
+export type PlacementSkill = 'LISTENING' | 'READING' | 'WRITING' | 'SPEAKING'
+
+/** A graded placement: the overall band, the skill bands averaged into it and the report detail per section. */
+export interface PlacementResult {
+  attemptId: string
+  overallBand: number | null
+  completedAt: string | null
+  skills: { skill: PlacementSkill; band: number }[]
+  /** In test order; empty from a backend that predates the report. */
+  sections: PlacementReportSection[]
+}
+
+export interface PlacementReportSection {
+  skill: PlacementSkill
+  title: string | null
+  /** Listening and Reading only. */
+  questions: PlacementReportQuestion[]
+  /** Writing only. */
+  essays: PlacementReportEssay[]
+}
+
+export interface PlacementReportQuestion {
+  number: number
+  prompt: string
+  /** Null when left blank. */
+  learnerAnswer: string | null
+  correctAnswer: string | null
+  correct: boolean
+  explanation: string | null
+}
+
+export interface PlacementReportEssay {
+  task: 'TASK_1' | 'TASK_2' | string | null
+  /** Null while still being graded. */
+  band: number | null
+  /** False when the learner handed the section in without an essay. */
+  submitted: boolean
+  /** The LLM examiner's comments; null when the essay was graded without them. */
+  feedback: {
+    summary: string | null
+    criteria: { code: string; band: number | null; comment: string | null }[]
+    focus: string[]
+  } | null
+}
+
+/** A Writing essay or Speaking recording attached to an attempt item (POST /api/assessments/submissions). */
+export interface LearnerSubmissionRequest {
+  attemptItemId: string
+  /** JSON text of the prompt the learner answered. */
+  promptSnapshot: string
+  skill: 'WRITING' | 'SPEAKING'
+  textPayload?: string
+  audioReference?: string
+  submissionKey: string
+}
+
+export type AttemptStatus = 'IN_PROGRESS' | 'SUBMITTED' | 'EXPIRED' | 'CANCELLED'
 
 export interface StartAttemptRequest {
   packageVersionId: string
-  attemptType: 'TOPIC_TEST'
+  attemptType: 'TOPIC_TEST' | 'PLACEMENT_TEST'
   mode: 'STANDARD' | 'PRACTICE'
   channel: 'WEB'
   expiresAt: null
@@ -385,6 +477,10 @@ export interface AttemptSection {
   sortOrder: number
   snapshot: string
   items: AttemptItem[]
+  /** Set the first time the learner opens the section. */
+  startedAt: string | null
+  /** Set once the learner finished the section; it then takes no more responses. */
+  completedAt: string | null
 }
 
 export interface AttemptItem {

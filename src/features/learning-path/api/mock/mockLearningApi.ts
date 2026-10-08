@@ -40,6 +40,25 @@ export function createMockLearningApi({ storage = null, latencyMs = 0, now = () 
   const timestamp = () => now().toISOString()
 
   return {
+    // The mock learner has no placement gate: the test is treated as already taken.
+    getPlacementTest: async () => {
+      throw new ApiError(409, 'PLACEMENT_ALREADY_DONE', 'Mock learning không có placement test.')
+    },
+    saveLearningGoal: async () => {
+      throw new ApiError(404, 'NOT_FOUND', 'Mock learning không lưu mục tiêu học.')
+    },
+    getActiveLearningGoal: async () => null,
+    getCurrentPlacementAttempt: async () => null,
+    listAttemptResponses: async () => [],
+    startAttemptSection: async () => {},
+    completeAttemptSection: async () => {},
+    getPlacementResult: async () => {
+      throw new ApiError(404, 'NOT_FOUND', 'Mock learning không có kết quả placement.')
+    },
+    submitLearnerSubmission: async () => {
+      throw new ApiError(404, 'NOT_FOUND', 'Mock learning không nhận bài Writing/Speaking của placement.')
+    },
+    listCourses: () => respond(lessons.listCourses),
     listTopics: () => respond(lessons.listTopics),
     getPendingReviews: () => respond(pendingReviewRefs),
     getTopicLessons: (topicId) => respond((s) => lessons.getTopicLessons(s, topicId)),

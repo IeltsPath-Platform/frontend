@@ -5,6 +5,7 @@ import { ApiError, type ApiErrorCode } from './apiError'
 import {
   mapAttemptResult,
   mapAttemptStructure,
+  mapCourseSummary,
   mapExerciseSubmission,
   mapLessonCompletion,
   mapLessonDetail,
@@ -20,6 +21,7 @@ import {
   mapTopicSummary,
   toStartAttemptBody,
   toWireAnswers,
+  type CourseSummaryDto,
   type ExerciseSubmissionResultDto,
   type LearnerAttemptResultDto,
   type LessonCompletionDto,
@@ -41,7 +43,12 @@ import type {
   AttemptStructure,
   ExerciseSubmissionRequest,
   LessonCompletionResult,
+  LearnerSubmissionRequest,
+  LearningGoal,
+  LearningGoalRequest,
   LessonDetail,
+  PlacementResult,
+  PlacementTest,
   PracticeAttemptView,
   PracticeSubmissionResult,
   ReviewDetail,
@@ -76,6 +83,9 @@ const CODE_MAP: Record<string, ApiErrorCode> = {
   GRADING_UNAVAILABLE: 'GRADING_UNAVAILABLE',
   DAILY_LIMIT_REACHED: 'DAILY_LIMIT_REACHED',
   ESSAY_BLOCK: 'ESSAY_BLOCK',
+  PLACEMENT_REQUIRED: 'PLACEMENT_REQUIRED',
+  PLACEMENT_ALREADY_DONE: 'PLACEMENT_ALREADY_DONE',
+  NO_PLACEMENT_TEST: 'NO_PLACEMENT_TEST',
 }
 
 function statusFallback(status: number): ApiErrorCode {
@@ -134,6 +144,7 @@ export function createHttpLearningApi(): LearningApi {
     const topics = await loadTopics()
     return topics.find((topic) => topic.id === topicId) ?? {
       id: topicId,
+      course: null,
       code: '',
       title: 'Topic',
       description: '',
@@ -146,6 +157,19 @@ export function createHttpLearningApi(): LearningApi {
   }
 
   return {
+    async getPlacementTest(): Promise<PlacementTest> {
+      return learningRequest<PlacementTest>('/placement-test')
+    },
+
+    async submitLearnerSubmission(request: LearnerSubmissionRequest) {
+      return assessmentRequest<{ id: string }>('/submissions', { method: 'POST', body: request })
+    },
+
+    async listCourses() {
+      const rows = await learningRequest<CourseSummaryDto[]>('/courses')
+      return rows.map(mapCourseSummary)
+    },
+
     async listTopics() {
       return loadTopics(true)
     },
@@ -331,6 +355,45 @@ export function createHttpLearningApi(): LearningApi {
         method: 'POST',
         body: {},
       })
+    },
+
+    async saveLearningGoal(request: LearningGoalRequest): Promise<void> {
+      try {
+        await apiRequest('/api/users/me/learning-goals', { method: 'POST', body: request, auth: true })
+      } catch (error) {
+        throwLearningError(error)
+      }
+    },
+
+    async getActiveLearningGoal(): Promise<LearningGoal | null> {
+      try {
+        return await apiRequest<LearningGoal>('/api/users/me/learning-goals/active', { auth: true })
+      } catch (error) {
+        if (error instanceof HttpError && error.status === 404) return null
+        throwLearningError(error)
+      }
+    },
+
+    async getCurrentPlacementAttempt(): Promise<AssessmentAttempt | null> {
+      // 204 (empty body, parsed as null) when the learner never started a placement.
+      return assessmentRequest<AssessmentAttempt | null>('/attempts/placement/current')
+    },
+
+    async listAttemptResponses(attemptId: string): Promise<AttemptItemResponse[]> {
+      return assessmentRequest<AttemptItemResponse[]>(`/attempts/${attemptId}/responses`)
+    },
+
+    async startAttemptSection(attemptId: string, sectionId: string): Promise<void> {
+      await assessmentRequest<null>(`/attempts/${attemptId}/sections/${sectionId}/start`, { method: 'POST', body: {} })
+    },
+
+    async completeAttemptSection(attemptId: string, sectionId: string): Promise<void> {
+      await assessmentRequest<null>(`/attempts/${attemptId}/sections/${sectionId}/complete`, { method: 'POST', body: {} })
+    },
+
+    async getPlacementResult(attemptId: string): Promise<PlacementResult> {
+      const result = await assessmentRequest<PlacementResult>(`/attempts/${attemptId}/placement-result`)
+      return { ...result, sections: result.sections ?? [] }
     },
 
     async getAttemptResult(attemptId: string): Promise<AttemptResult> {

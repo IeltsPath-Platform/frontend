@@ -21,6 +21,7 @@ import type {
   TestAssignment,
   TestStatus,
   TopicLessonsResponse,
+  CourseSummary,
   TopicStatus,
   TopicSummary,
 } from '~types/learningPath'
@@ -35,6 +36,18 @@ export type TopicSummaryDto = {
   status: TopicStatus
   completedLessonCount: number
   accessLevel?: 'FREE' | 'PREMIUM'
+  course?: { courseId: string; code: string; name: string; bandLevel: number } | null
+}
+
+export type CourseSummaryDto = {
+  courseId: string
+  code: string
+  name: string
+  bandLevel: number
+  topicCount: number
+  passedTopicCount: number
+  recommended: boolean
+  testStatus: TestStatus
 }
 
 export type LessonSummaryDto = {
@@ -398,10 +411,26 @@ function mapBlock(dto: LessonBlockDto): RawBlock {
   }
 }
 
+export function mapCourseSummary(dto: CourseSummaryDto): CourseSummary {
+  return {
+    id: dto.courseId,
+    code: dto.code,
+    title: dto.name,
+    bandLevel: Number(dto.bandLevel),
+    topicCount: dto.topicCount,
+    passedTopicCount: dto.passedTopicCount,
+    recommended: dto.recommended,
+    testStatus: dto.testStatus,
+  }
+}
+
 export function mapTopicSummary(dto: TopicSummaryDto): TopicSummary {
   const premium = dto.accessLevel === 'PREMIUM'
   return {
     id: dto.topicId,
+    course: dto.course
+      ? { id: dto.course.courseId, code: dto.course.code, title: dto.course.name, bandLevel: Number(dto.course.bandLevel) }
+      : null,
     code: dto.code,
     title: dto.name,
     description: premium ? 'Nội dung Premium.' : '',
@@ -684,6 +713,8 @@ export function mapAttemptStructure(raw: {
     contentSectionId: string
     sortOrder: number
     snapshot: unknown
+    startedAt?: string | null
+    completedAt?: string | null
     items: Array<{
       id: string
       questionVersionId: string
@@ -700,6 +731,8 @@ export function mapAttemptStructure(raw: {
       contentSectionId: section.contentSectionId,
       sortOrder: section.sortOrder,
       snapshot: stringifySnapshot(section.snapshot),
+      startedAt: section.startedAt ?? null,
+      completedAt: section.completedAt ?? null,
       items: section.items.map((item) => ({
         id: item.id,
         questionVersionId: item.questionVersionId,

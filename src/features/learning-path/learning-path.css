@@ -1,4 +1,5 @@
-.lp-root {
+/* Design tokens. `.lp-tokens` carries them into content portaled out of .lp-root, such as dialogs. */
+.lp-root, .lp-tokens {
   --lp-ink: var(--classroom-text, #202633);
   --lp-muted: #5f6774;
   --lp-canvas: var(--classroom-canvas, #f8f9fc);
@@ -18,7 +19,9 @@
   --lp-locked-soft: #eff1f5;
   --lp-radius: 14px;
   --lp-shadow: var(--classroom-shadow, 0 10px 30px rgb(18 36 84 / 8%));
+}
 
+.lp-root {
   min-height: 100dvh;
   color: var(--lp-ink);
   background-color: var(--lp-canvas);
@@ -331,3 +334,7 @@ a.lp-lesson__row:hover { border-color: var(--lp-primary); transform: translateX(
 @media (prefers-reduced-motion: reduce) {
   .lp-root *, .lp-root *::before, .lp-root *::after { animation: none !important; transition: none !important; }
 }
+
+.lp-speaking { display: grid; gap: .6rem; justify-items: start; }
+.lp-link-button { padding: 0; border: 0; background: none; color: inherit; font: inherit; text-decoration: underline; cursor: pointer; }
+.lp-link-button:disabled { cursor: not-allowed; opacity: .6; }

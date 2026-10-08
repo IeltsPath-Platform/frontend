@@ -21,7 +21,9 @@ import { AuthProvider } from '@/features/auth/AuthProvider'
 import { GuestOnly, RequireAuth } from '@/features/auth/AuthGuards'
 import { LearnLayout } from '@/features/learning-path/components/LearnLayout'
 import { NotFoundState } from '@/features/learning-path/components/PageState'
+import { CourseListPage } from '@/features/learning-path/pages/CourseListPage'
 import { LessonPage } from '@/features/learning-path/pages/LessonPage'
+import { PlacementPage } from '@/features/learning-path/pages/PlacementPage'
 import { PracticePage } from '@/features/learning-path/pages/PracticePage'
 import { ReviewPage } from '@/features/learning-path/pages/ReviewPage'
 import { TopicDetailPage } from '@/features/learning-path/pages/TopicDetailPage'
@@ -45,7 +47,9 @@ function AppContent() {
       <Route path="/overview" element={<RequireAuth><OverviewPage /></RequireAuth>} />
       <Route path="/classroom" element={<RequireAuth><ClassroomPage /></RequireAuth>} />
       <Route path="/learn" element={<RequireAuth><LearnLayout /></RequireAuth>}>
-        <Route index element={<TopicListPage />} />
+        <Route index element={<CourseListPage />} />
+        <Route path="placement" element={<PlacementPage />} />
+        <Route path="courses/:courseId" element={<TopicListPage />} />
         <Route path="topics/:topicId" element={<TopicDetailPage />} />
         <Route path="lessons/:lessonId" element={<LessonPage />} />
         <Route path="lessons/:lessonId/practice" element={<PracticePage />} />
@@ -92,7 +96,10 @@ function AppContent() {
         element={<RequireAuth><SpeakingPage onExit={() => navigate('/practice-tests')} /></RequireAuth>}
       />
       <Route path="/vocabulary" element={<VocabularyPage />} />
-      <Route path="/materials" element={<RequireAuth><RouteStatusPage title="Học liệu" /></RequireAuth>} />
+      <Route path="/submission-history" element={<RequireAuth><RouteStatusPage title="Lịch sử nộp bài" /></RequireAuth>} />
+      <Route path="/flashcards" element={<RequireAuth><RouteStatusPage title="Flashcard của tôi" /></RequireAuth>} />
+      <Route path="/writing-samples" element={<RequireAuth><RouteStatusPage title="Bài mẫu Writing 8.0+" /></RequireAuth>} />
+      <Route path="/student-results" element={<RequireAuth><RouteStatusPage title="Kết quả học viên" /></RequireAuth>} />
       <Route path="/login" element={<GuestOnly><AuthPage mode="sign-in" /></GuestOnly>} />
       <Route path="/register" element={<GuestOnly><AuthPage mode="sign-up" /></GuestOnly>} />
       <Route path="/forgot-password" element={<GuestOnly><ForgotPasswordPage /></GuestOnly>} />

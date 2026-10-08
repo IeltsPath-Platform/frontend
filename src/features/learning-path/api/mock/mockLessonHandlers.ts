@@ -1,4 +1,5 @@
 import type {
+  CourseSummary,
   ExerciseBlockData,
   ExerciseSubmissionRequest,
   ExerciseSubmissionResult,
@@ -20,6 +21,7 @@ import {
   exerciseBlocks,
   isMockExercise,
   lessonStatus,
+  MOCK_COURSE,
   nextLessonId,
   pendingReviewRefs,
   requireKnowledgePoint,
@@ -34,6 +36,17 @@ import {
 import type { MockState, ReviewRecord } from './mockState'
 
 const INCOMPLETE_ANSWERS = 'Cần trả lời đủ mọi câu trước khi nộp.'
+
+export function listCourses(state: MockState): CourseSummary[] {
+  const topics = listTopics(state)
+  return [{
+    ...MOCK_COURSE,
+    topicCount: topics.length,
+    passedTopicCount: topics.filter((topic) => topic.status === 'PASSED').length,
+    recommended: true,
+    testStatus: 'LOCKED',
+  }]
+}
 
 export function listTopics(state: MockState): TopicSummary[] {
   return [...MOCK_TOPICS].sort((a, b) => a.sequenceOrder - b.sequenceOrder).map((topic) => topicSummary(state, topic))
