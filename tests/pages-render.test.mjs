@@ -21,7 +21,7 @@ test('Home preserves the learning journey hero and renders the complete landing 
   const html = await render('/src/features/home/HomePage.tsx', 'HomePage', {}, '/home')
   for (const id of ['home-hero', 'home-intro', 'home-features', 'home-quality', 'home-mentors', 'home-pricing']) assert.ok(html.includes(`id="${id}"`))
   assert.match(html, /aria-current="page"[^>]*href="\/home"/)
-  assert.ok(html.indexOf('aria-current="page"') < html.indexOf('href="/vocabulary"'))
+  assert.ok(html.indexOf('aria-current="page"') < html.indexOf('href="/learn"'))
   assert.match(html, /Premium 30 Ngày/)
   assert.match(html, /Premium 90 Ngày/)
   assert.match(html, /Phổ biến nhất/)
@@ -125,14 +125,31 @@ test('UserTierDropdown is store-free and renders reusable Free and Premium state
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/)
 })
 
-test('Shared navbar exposes only public routes to guests and the account dropdown to signed-in users', async () => {
-  const guestHtml = await render('/src/components/SiteNavbar.tsx', 'SiteNavbar', { isLoggedIn: false }, '/home')
-  for (const label of ['Trang chủ', 'Từ điển', 'Đăng nhập', 'Đăng ký']) assert.match(guestHtml, new RegExp(label))
-  for (const label of ['Tổng quát', 'Lớp học', 'Lộ trình', 'Thực hành', 'Luyện đề', 'Học liệu', '120 Points', 'Đăng xuất']) assert.doesNotMatch(guestHtml, new RegExp(label))
+test('Shared navbar swaps the guest menu for member sections after sign-in', async () => {
+  const renderNavbar = (props, path) => render('/src/components/SiteNavbar.tsx', 'SiteNavbar', props, path)
+  const guest = { isLoggedIn: false }
+  const member = { isLoggedIn: true, userName: 'Minh Anh' }
 
-  const userHtml = await render('/src/components/SiteNavbar.tsx', 'SiteNavbar', { isLoggedIn: true, userName: 'Minh Anh' }, '/home')
-  for (const label of ['Tổng quát', 'Lớp học', 'Lộ trình', 'Thực hành', 'Luyện đề', 'Học liệu', 'Minh Anh', '0 Points', 'Đăng xuất']) assert.match(userHtml, new RegExp(label))
-  assert.doesNotMatch(userHtml, /Đăng nhập|Đăng ký|>Overview</)
+  const guestHome = await renderNavbar(guest, '/home')
+  for (const label of ['Trang chủ', 'Khóa học Intensive 7.0', 'Luyện tập 4 kỹ năng', 'Bài mẫu Writing 8.0+', 'Kết quả học viên', 'Đăng nhập', 'Đăng ký']) assert.match(guestHome, new RegExp(label))
+  for (const label of ['Dashboard', 'Lịch sử nộp bài', 'Khóa học của tôi', 'Sổ từ vựng', 'Flashcard của tôi', '0 Points', 'Đăng xuất']) assert.doesNotMatch(guestHome, new RegExp(label))
+  assert.doesNotMatch(guestHome, /site-subnav/)
+
+  // The second row lists the sections of whichever primary item owns the route.
+  const guestCourses = await renderNavbar(guest, '/learn')
+  assert.match(guestCourses, /Test đầu vào 4 kỹ năng FREE/)
+  const guestPractice = await renderNavbar(guest, '/practice-tests?skill=writing')
+  for (const skill of ['listening', 'reading', 'writing', 'speaking']) assert.match(guestPractice, new RegExp(`href="/practice-tests[?]skill=${skill}"`))
+  assert.match(guestPractice, /aria-current="page"[^>]*href="\/practice-tests\?skill=writing"|class="active"[^>]*aria-current="page"[^>]*href="\/practice-tests\?skill=writing"/)
+
+  const memberHome = await renderNavbar(member, '/home')
+  for (const label of ['Sổ từ vựng', 'Kết quả học viên', 'Minh Anh', '0 Points', 'Đăng xuất']) assert.match(memberHome, new RegExp(label))
+  assert.doesNotMatch(memberHome, /Bài mẫu Writing 8\.0\+|Đăng nhập|Đăng ký|>Overview</)
+  const memberDashboard = await renderNavbar(member, '/overview')
+  for (const label of ['Dashboard', 'Lịch sử nộp bài', 'Khóa học của tôi']) assert.match(memberDashboard, new RegExp(label))
+  assert.match(memberDashboard, /class="active"[^>]*href="\/home"/)
+  const memberVocabulary = await renderNavbar(member, '/vocabulary')
+  for (const label of ['Flashcard của tôi', 'Kho từ vựng', 'Bài mẫu 8đ']) assert.match(memberVocabulary, new RegExp(label))
 })
 
 test('Auth routes hide guest account links while retaining public navigation', async () => {
@@ -140,7 +157,7 @@ test('Auth routes hide guest account links while retaining public navigation', a
     const html = await render('/src/components/SiteNavbar.tsx', 'SiteNavbar', { isLoggedIn: false }, path)
     assert.doesNotMatch(html, /Đăng nhập|Đăng ký|Đăng xuất/)
     assert.match(html, /href="\/home"/)
-    assert.match(html, /href="\/vocabulary"/)
+    assert.match(html, /href="\/learn"/)
   }
 })
 
@@ -308,7 +325,7 @@ test('Classroom retains its schedule while the guest header limits navigation to
   const html = await render('/src/features/classroom/ClassroomPage.tsx', 'ClassroomPage', {}, '/classroom')
   assert.match(html, /LỚP HỌC CỦA TÔI/)
   assert.match(html, /href="\/home"/)
-  assert.match(html, /href="\/vocabulary"/)
+  assert.match(html, /href="\/learn"/)
   assert.doesNotMatch(html, /aria-current="page"[^>]*href="\/classroom"/)
   assert.match(html, /id="schedule"/)
   assert.match(html, /triceratops-class-mascot/)
@@ -404,5 +421,5 @@ test('Overview remains separate from Classroom', async () => {
   assert.match(html, /Dữ Liệu Học Tổng Quan/)
   assert.doesNotMatch(html, /LỚP HỌC CỦA TÔI/)
   assert.doesNotMatch(html, /aria-current="page"[^>]*href="\/overview"/)
-  assert.match(html, /href="\/vocabulary"/)
+  assert.match(html, /href="\/learn"/)
 })

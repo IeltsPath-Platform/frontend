@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react'
 import { Search } from 'lucide-react'
+import { useSearchParams } from 'react-router-dom'
 import { PracticeNavbar } from '../components/PracticeNavbar'
 import { PracticeSidebar } from '../components/PracticeSidebar'
 import { PracticeCosmicBanner } from '../components/PracticeCosmicBanner'
@@ -13,6 +14,8 @@ import type {
   PracticeCard,
 } from '@/types/practice'
 
+const SKILLS: readonly SkillType[] = ['reading', 'listening', 'writing', 'speaking']
+
 export interface PracticeCatalogPageProps {
   onNavigateToClassroom?: () => void
   onOpenTest: (skill: SkillType, testId: string, mode: PracticeMode) => void
@@ -22,7 +25,15 @@ export const PracticeCatalogPage: React.FC<PracticeCatalogPageProps> = ({
   onOpenTest,
 }) => {
   // Sidebar state
-  const [currentSkill, setCurrentSkill] = useState<SkillType>('reading')
+  const [searchParams] = useSearchParams()
+  const skillParam = SKILLS.find((item) => item === searchParams.get('skill'))
+  const [currentSkill, setCurrentSkill] = useState<SkillType>(skillParam ?? 'reading')
+  // The navbar links here with ?skill=…; follow it when the page is already open.
+  const [seenSkillParam, setSeenSkillParam] = useState(skillParam)
+  if (skillParam !== seenSkillParam) {
+    setSeenSkillParam(skillParam)
+    if (skillParam) setCurrentSkill(skillParam)
+  }
   const [currentReadingSub, setCurrentReadingSub] =
     useState<ReadingSubcategory>('passage-1')
   const [selectedResources, setSelectedResources] = useState<string[]>([

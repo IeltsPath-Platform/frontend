@@ -93,6 +93,67 @@
   font-weight: 700;
 }
 
+/* Second row inside the header: the sections of the active (or hovered) primary item.
+   The matching primary item becomes a tab of the same blue that joins this row (see .tab below). */
+.site-subnav {
+  background: var(--site-blue);
+}
+
+.site-subnav--floating {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-start: 100%;
+  box-shadow: 0 10px 24px rgba(4, 20, 68, 0.25);
+}
+
+.site-subnav-inner {
+  display: flex;
+  align-items: stretch;
+  justify-content: safe center;
+  gap: 0.25rem;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 0 clamp(1.25rem, 2.5vw, 2.5rem);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+@keyframes site-subnav-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+
+.site-subnav-inner { animation: site-subnav-in 0.22s ease both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .site-subnav-inner { animation: none; }
+  .site-nav-indicator { transition: none; }
+}
+
+.site-subnav-inner a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 42px;
+  padding: 0 1rem;
+  border-bottom: 3px solid transparent;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.16s ease, border-color 0.16s ease;
+}
+
+.site-subnav-inner a:hover,
+.site-subnav-inner a:focus-visible {
+  color: white;
+}
+
+.site-subnav-inner a.active {
+  color: white;
+  border-bottom-color: var(--site-orange);
+}
+
 .site-nav-actions {
   display: flex;
   align-items: center;
@@ -164,7 +225,66 @@
   color: white;
 }
 
+.site-nav-indicator { display: none; }
+
 @media (min-width: 1241px) {
+  .site-nav-links {
+    align-self: stretch;
+    position: relative;
+  }
+  /* The highlight is one element that slides between primary items. With sections it is a blue tab
+     joined to the sub row (concave fillets at its feet); without sections it is a plain pill. */
+  .site-nav-indicator {
+    --tab-radius: 0.9rem;
+    display: block;
+    position: absolute;
+    inset-block-end: 13px;
+    inset-inline-start: 0;
+    block-size: 38px;
+    inline-size: 0;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.16);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1), width 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+      height 0.2s ease, bottom 0.2s ease, border-radius 0.2s ease, background-color 0.2s ease, opacity 0.2s ease;
+  }
+  .site-nav-indicator.has-sections {
+    inset-block-end: -1px;
+    block-size: 49px;
+    border-radius: var(--tab-radius) var(--tab-radius) 0 0;
+    background: var(--site-blue);
+  }
+  .site-nav-indicator::before,
+  .site-nav-indicator::after {
+    content: '';
+    position: absolute;
+    inset-block-end: 0;
+    inline-size: var(--tab-radius);
+    block-size: var(--tab-radius);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  .site-nav-indicator.has-sections::before,
+  .site-nav-indicator.has-sections::after { opacity: 1; }
+  .site-nav-indicator::before {
+    inset-inline-end: 100%;
+    background: radial-gradient(circle at 0 0, transparent calc(var(--tab-radius) - 0.5px), var(--site-blue) var(--tab-radius));
+  }
+  .site-nav-indicator::after {
+    inset-inline-start: 100%;
+    background: radial-gradient(circle at 100% 0, transparent calc(var(--tab-radius) - 0.5px), var(--site-blue) var(--tab-radius));
+  }
+  .site-nav-links a,
+  .site-nav-links a:hover,
+  .site-nav-links a.active {
+    position: relative;
+    z-index: 1;
+    background: transparent;
+    border: 0;
+    padding: 0.45rem 1.1rem;
+  }
+  .site-nav-links a.active { color: white; font-weight: 700; }
   .site-main-nav {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
