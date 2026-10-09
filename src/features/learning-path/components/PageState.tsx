@@ -1,14 +1,97 @@
 import { useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { AlertTriangle, FileQuestion, Loader2, RotateCcw } from 'lucide-react'
+import { AlertTriangle, FileQuestion, Loader2, Lock, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { ApiError } from '../api/apiError'
 
 export function LoadingState({ label = 'Đang tải…' }: { label?: string }) {
   return (
     <div className="lp-state" role="status" aria-live="polite">
-      <Loader2 aria-hidden="true" className="lp-spin" size={22} />
+      <Loader2 aria-hidden="true" className="lp-spin" size={24} />
       <p>{label}</p>
+    </div>
+  )
+}
+
+export function EmptyState({
+  title = 'Chưa có nội dung',
+  description = 'Không tìm thấy dữ liệu phù hợp với bộ lọc hiện tại.',
+  actionLabel,
+  onAction,
+}: {
+  title?: string
+  description?: string
+  actionLabel?: string
+  onAction?: () => void
+}) {
+  return (
+    <div className="lp-empty-card" role="status">
+      <div className="lp-empty-card__icon" aria-hidden="true">
+        <FileQuestion size={32} />
+      </div>
+      <h2 className="lp-empty-card__title">{title}</h2>
+      <p className="lp-empty-card__desc">{description}</p>
+      {actionLabel && onAction ? (
+        <Button className="lp-btn lp-btn--accent" onClick={onAction} type="button">
+          {actionLabel}
+        </Button>
+      ) : null}
+    </div>
+  )
+}
+
+export function CourseCatalogSkeleton() {
+  return (
+    <div className="lp-skeleton-catalog" aria-busy="true" aria-label="Đang tải danh sách khóa học…">
+      <div className="lp-skeleton-featured">
+        <div className="lp-skeleton-box lp-skeleton-band" />
+        <div className="lp-skeleton-content">
+          <div className="lp-skeleton-line lp-skeleton-line--short" />
+          <div className="lp-skeleton-line lp-skeleton-line--title" />
+          <div className="lp-skeleton-line lp-skeleton-line--desc" />
+          <div className="lp-skeleton-line lp-skeleton-line--progress" />
+        </div>
+        <div className="lp-skeleton-box lp-skeleton-btn" />
+      </div>
+      <div className="lp-skeleton-grid">
+        {[1, 2, 3].map((key) => (
+          <div className="lp-skeleton-card" key={key}>
+            <div className="lp-skeleton-card__head">
+              <div className="lp-skeleton-box lp-skeleton-pill" />
+              <div className="lp-skeleton-box lp-skeleton-chip" />
+            </div>
+            <div className="lp-skeleton-line lp-skeleton-line--title" />
+            <div className="lp-skeleton-line lp-skeleton-line--desc" />
+            <div className="lp-skeleton-line lp-skeleton-line--progress" />
+            <div className="lp-skeleton-box lp-skeleton-card__cta" />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+export function TopicListSkeleton() {
+  return (
+    <div className="lp-skeleton-topics" aria-busy="true" aria-label="Đang tải lộ trình chặng học…">
+      <div className="lp-skeleton-head">
+        <div className="lp-skeleton-line lp-skeleton-line--short" />
+        <div className="lp-skeleton-line lp-skeleton-line--title" />
+        <div className="lp-skeleton-line lp-skeleton-line--desc" />
+      </div>
+      <div className="lp-skeleton-trail">
+        {[1, 2, 3, 4].map((key) => (
+          <div className="lp-skeleton-node" key={key}>
+            <div className="lp-skeleton-box lp-skeleton-node__dot" />
+            <div className="lp-skeleton-node__card">
+              <div className="lp-skeleton-line lp-skeleton-line--short" />
+              <div className="lp-skeleton-line lp-skeleton-line--title" />
+              <div className="lp-skeleton-line lp-skeleton-line--desc" />
+              <div className="lp-skeleton-line lp-skeleton-line--progress" />
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
@@ -48,12 +131,22 @@ export function ApiErrorState({ error, onRetry }: { error: ApiError; onRetry: ()
   if (error.code === 'NOT_FOUND') return <NotFoundState />
   if (error.code === 'REVIEW_REQUIRED') {
     const review = error.details.reviews?.[0]
+    const topicPath = error.details.topicId ? `/learn/topics/${error.details.topicId}` : '/learn'
     return (
       <section className="lp-state lp-state--panel" aria-labelledby="lp-review-required">
-        <AlertTriangle aria-hidden="true" size={28} />
-        <h1 id="lp-review-required">Cần ôn lại trước khi học tiếp</h1>
-        <p>Hoàn thành bài ôn {review ? `"${review.knowledgePointTitle}"` : ''} để mở nội dung này.</p>
-        {review ? <Button asChild className="lp-btn"><Link to={`/learn/reviews/${review.reviewId}`}>Làm bài ôn</Link></Button> : null}
+        <Lock aria-hidden="true" size={26} />
+        <h1 id="lp-review-required">Nội dung này đang tạm khóa</h1>
+        <p>
+          Làm xong bài ôn{review ? ` “${review.knowledgePointTitle}”` : ''} trước, bài học sẽ tự mở lại.
+        </p>
+        <div className="lp-state__actions">
+          {review ? (
+            <Button asChild className="lp-btn lp-btn--accent lp-btn--cta">
+              <Link to={`/learn/reviews/${review.reviewId}`}>Làm bài ôn</Link>
+            </Button>
+          ) : null}
+          <Link className="lp-state__link" to={topicPath}>Về danh sách bài</Link>
+        </div>
       </section>
     )
   }

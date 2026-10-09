@@ -93,7 +93,7 @@ export function ExerciseBlock({ block, onSubmit, allowResubmit = true, failedFoo
     <form aria-labelledby={titleId} className={`lp-exercise${passed ? ' is-passed' : ''}`} noValidate onSubmit={handleSubmit}>
       <header className="lp-exercise__head">
         <div>
-          <p className="lp-eyebrow">Bài tập · {block.knowledgePointCode}</p>
+          <p className="lp-eyebrow">Bài tập</p>
           <h3 id={titleId}>{block.title}</h3>
         </div>
         {passed ? <StatusBadge meta={PASSED_META} /> : null}

@@ -1,0 +1,2445 @@
+Screen Design Specification
+IELTS Space (CAPSTONE-FALL26) — Report 3.2
+Project Name
+IELTS Space (IeltsPath Platform)
+Project Code
+CAPSTONE-FALL26
+SRS Reference
+SRS vTBD
+TDS Reference
+TDS vTBD
+Spec Version
+v0.3.0
+Date Created
+05/10/2026
+Last Updated
+06/10/2026
+Author(s)
+UX / Product (draft from frontend codebase)
+Reviewer(s)
+Tech Lead, Product Owner — pending
+Status
+Draft — with Desktop + Mobile mockups
+Design File
+docs/sds-mockups/ (local FE captures @ http://localhost:5173)
+Purpose & Scope
+What this document covers
+Design language (colours, typography, grid, icons)
+Information architecture (site map, navigation, role access)
+Screen flows (end-to-end user journeys)
+Screen specifications for MVP screens (layout, states, key interactions, mockup refs)
+Responsive rules (breakpoints and global layout adaptation)
+What this document does NOT cover
+Component-level implementation detail, ARIA labels, keyboard navigation → TDS / Frontend Spec
+WCAG contrast ratios, accessibility audit → Accessibility Review
+Motion and animation timing → Frontend Spec
+Detailed acceptance criteria and business rules → SRS (AC-xx, NAC-xx)
+Companion documents
+SRS vTBD — requirements, user roles, scenarios, acceptance criteria
+TDS vTBD — technical implementation; Part 2.3 pages map to screens here
+CAPSTONE-FALL26_RTW.xlsx Sheet 2 — Use Case List (TBD)
+CAPSTONE-FALL26_RTW.xlsx Sheet 4 — Permission Matrix (TBD)
+Design file: docs/sds-mockups/ — local FE Desktop/Mobile captures
+Source of tokens: frontend/src/styles/globals.css + feature CSS (classroom, learning-path, practice, auth)
+Document Change History
+Version
+Date
+Changes
+Author
+v0.1.0-phase-A
+05/10/2026
+Phase A: metadata, Part 1 Design Language, Part 2 Information Architecture
+Agent draft
+v0.2.0-phase-B
+05/10/2026
+Phase B: F-01 Auth, F-02 Learn, F-03 Practice, F-04 Guest→Home→auth gate; Part 4 MVP P-IDs; Part 5; Appendix A
+Agent draft
+v0.2.1-phase-B
+05/10/2026
+Replace F-04 Classroom journey with Guest Home auth-gate flow; finalize Phase B content
+Agent draft
+v0.3.0
+06/10/2026
+Embed Desktop+Mobile FE screenshots for MVP; Design File=docs/sds-mockups; P-35/P-36 blocked (topic test LOCKED on demo)
+Agent draft
+Part 1 — Design Language
+Visual rules applied consistently across screens. Tokens extracted from the current frontend theme (globals.css and feature CSS).
+1.1 Design Principles
+#
+Principle
+What It Means in Practice
+1
+Progress first
+Every learner screen surfaces current topic/lesson status and the next actionable step without an extra click.
+2
+Gate honestly
+Locked practice, pending reviews, and insufficient points show why progress is blocked and what unlocks it.
+3
+Practice over polish
+Learning Path and Practice workspaces prioritise answer submission, feedback, and retry over decorative chrome.
+4
+One primary action
+Each screen emphasises a single primary CTA (Start, Submit, Continue, Join) with secondary actions visually quieter.
+5
+Mock vs live clarity
+UI that still uses mock or stub routes (Classroom, Overview, Materials) must remain navigable but not imply completed product capability.
+1.2 Colour Palette
+Brand / Primary Colours
+Name
+Hex
+Usage
+Primary
+#123AB5
+Primary buttons, active nav, key links (`--classroom-primary` / `--primary`)
+Primary Dark
+#0D2B8D
+Hover / pressed primary; high-emphasis text (`--classroom-primary-strong`)
+Primary Light
+#EEF3FF
+Selected backgrounds, soft panels, active tab fill (`--classroom-soft`)
+Primary XLight
+#F8F9FC
+Page canvas / subtle section background (`--classroom-canvas`)
+Hero Start
+#061C64
+Hero gradient start (`--classroom-hero-start`)
+Hero End
+#1647D6
+Hero gradient end (`--classroom-hero-end`)
+Accent / Warning
+#FF7624
+Join CTAs, accent chips, warning accents (`--classroom-warning`)
+Semantic / Feedback Colours
+Name
+Hex
+Usage
+Success
+#13845A
+Passed lesson/practice, positive badges (`--lp-success`)
+Success Light
+#E6F5EE
+Success banner / badge fill (`--lp-success-soft`)
+Warning
+#FF7624
+At-risk / pending / accent warning
+Warning Light
+#FFF1E7
+Warning banner fill (`--lp-accent-soft`)
+Error
+#C2332B
+Validation / fetch errors (`--lp-danger`)
+Error Light
+#FDECEA
+Error banner fill (`--lp-danger-soft`)
+Info
+#388BFF
+Informational highlights (`--particle-blue`)
+Info Light
+#BDD8FF
+Soft info / home accent (`--home-hero-accent`)
+Focus
+#005FCC
+Focus-visible outline (`--color-focus`)
+Highlight
+#FEF08A
+Reading passage highlight (`--practice-highlight-bg`)
+Neutral / Text / Surface Colours
+Name
+Hex
+Usage
+Text Primary
+#202633
+Headings, body, labels (`--classroom-text`)
+Text Secondary
+#77808E
+Helper text, muted labels (`--classroom-text-muted`)
+Text Disabled / Locked
+#7A8291
+Locked nodes, disabled labels (`--lp-locked`)
+Border
+#E3E7EF
+Cards, inputs, dividers (`--classroom-border`)
+Border Strong
+#D0D7E4
+Stronger section separators (derived)
+Surface 1
+#F8F9FC
+Page background
+Surface 2
+#FFFFFF
+Cards / panels (`--classroom-surface`)
+Surface 3
+#EEF3FF
+Sidebar soft / selected rows
+Locked Soft
+#EFF1F5
+Locked lesson/practice chip fill
+White
+#FFFFFF
+Button labels on dark fills; card inner
+Shadow: 0 8px 22px rgb(32 55 115 / 8%) (`--classroom-shadow`). Radius base: 0.625rem (~10px) with feature radii up to ~14–18px.
+1.3 Typography
+Font family — Primary: Inter (CSS stack; system fallbacks)
+Fallback: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif
+Monospace (IDs, codes, timers): ui-monospace, SFMono-Regular, Menlo, monospace
+Default line-height: 1.5 on :root.
+Style
+Size
+Weight
+Line Height
+Used For
+heading-1
+32px (clamp ~32–51px heroes)
+800
+1.1–1.2
+Page / hero titles
+heading-2
+24px
+700–800
+1.3
+Section headings, modal titles
+heading-3
+20px
+600–700
+1.35
+Card titles, subsection headings
+heading-4
+16px
+600
+1.4
+Form section labels
+body-lg
+16px
+400
+1.5–1.6
+Primary descriptive copy
+body-md
+14px
+400
+1.5
+Default body, table cells, inputs
+body-sm
+12px
+400
+1.5
+Helper text, captions, timestamps
+label
+12px
+500–700
+1.4
+Field labels, nav meta, column headers
+code
+13px
+400–600
+1.5
+IDs, timers, station codes (ui-monospace)
+button
+14px
+600–700
+1.0
+Button labels
+badge
+11–12px
+600–800
+1.2
+Status badges, chips
+1.4 Layout Grid & Spacing
+Spacing base unit: 4px (tokens --space-1…4 in globals.css).
+Token
+Value
+Primary Usage
+xs
+4px
+Icon-to-label gap (`--space-1`)
+sm
+8px
+Tight related elements (`--space-2`)
+md
+16px
+Default card/panel padding (`--space-3`)
+lg
+24px
+Form groups / section gaps (`--space-4`)
+xl
+32px
+Card-to-card / major separation
+2xl
+48px
+Page section gap / empty-state padding
+Breakpoint
+Width Range
+Columns
+Gutter
+Page Margin
+Mobile
+< 768px (CSS also uses 680px for classroom)
+4
+16px
+16px
+Tablet
+768–1024px (CSS nav collapse ~1100px)
+8
+24px
+24px
+Desktop
+1025–1440px
+12
+24px
+24–32px
+Wide
+> 1440px
+12
+32px
+auto (content max ~1440px)
+Layout Zone
+Width
+Top navbar (desktop)
+Full width; shell max ~1440px
+Main content area
+Remaining width; classroom/home shell max 1440px
+Narrow forms (auth)
+Centred auth card (~400–480px)
+Modal — small
+~400px (confirm / mode pick)
+Modal — medium
+~600–724px (lesson detail ~45.25rem)
+Modal — large
+~800px+ (practice settings / chart zoom)
+Left sidebar (Overview)
+~240–280px fixed on desktop (Overview/Practice shells)
+1.5 Iconography
+Icon library: Lucide React (frontend dependency)
+Sizes: 16px (inline/small) · 18–20px (default/button) · 24px (standalone/brand)
+Icon
+Meaning
+Must NOT be used for
+X / close
+Close, dismiss overlay
+Delete permanently
+Trash
+Delete permanently
+Remove from temporary list
+Pencil / edit
+Edit content
+Create new
+Plus
+Create / add flashcard
+Expand / collapse
+Chevron down
+Expand / dropdown
+Navigate back
+Arrow left
+Navigate back / exit practice
+Expand / collapse
+Menu / hamburger
+Open mobile nav drawer
+Submit / confirm
+GraduationCap
+Brand / learning identity
+Error state
+BookOpen / BookMarked
+Learning materials / vocabulary
+Destructive action
+Mic / Headphones
+Speaking / Listening skills
+General navigation
+Settings gear
+Practice display settings
+Account settings (not yet)
+Warning
+Caution / side-effect
+Blocking hard error
+Check
+Completed / success
+Selectable radio (use control)
+Part 2 — Information Architecture
+Product structure: pages, organisation, and navigation between them.
+2.1 User Roles & Navigation Access
+Role
+Visible Navigation Sections
+Landing Page After Login
+Guest
+Home, Vocabulary; auth entry (Sign in / Sign up)
+Home (P-10) or Sign In (P-01)
+Learner (authenticated CUSTOMER)
+Home, Overview, Classroom, Learning Path, Practice hub, Practice Catalog, Vocabulary, Materials
+Learning Path Topic List (P-30) after auth
+Notes: FE guards distinguish Guest vs authenticated Learner only (`GuestOnly` / `RequireAuth`). Backend role CUSTOMER maps to Learner. Admin/Teacher FE surfaces are out of scope for this web Site Map.
+Public nav when logged out: Home, Vocabulary. Logged-in adds Overview, Classroom, Learning Path, Practice, Practice Catalog, Materials.
+2.2 Site Map
+Format: [P-ID] Page Name (Roles) [PRIMARY | SUB | DEEP | MODAL | AUTH]. MVP vs Later marked. Later* = UI exists with mock data.
+[Root] IELTS Space web app
+│
+├── Auth
+│   ├── [P-01] Sign In (Guest) [AUTH] — MVP — /login
+│   ├── [P-02] Sign Up (Guest) [AUTH] — MVP — /register
+│   ├── [P-03] Forgot Password (Guest) [AUTH] — MVP — /forgot-password
+│   ├── [P-04] Reset Password (Guest) [AUTH] — MVP — /reset-password
+│   └── [P-05] OAuth Callback (Guest) [AUTH] — Later — /auth/oauth/callback
+│
+├── Home / Overview
+│   ├── [P-10] Home / Landing (Guest, Learner) [PRIMARY] — MVP — /home
+│   ├── [P-10a] Mentor Detail (Guest, Learner) [MODAL] — Later — Home
+│   ├── [P-10b] Plan Detail (Guest, Learner) [MODAL] — Later — Home
+│   └── [P-11] Overview Dashboard (Learner) [PRIMARY] — Later* — /overview
+│
+├── Classroom
+│   ├── [P-20] My Classroom (Learner) [PRIMARY] — Later* — /classroom
+│   ├── [P-20a] Lesson Detail (Learner) [MODAL] — Later — Classroom
+│   ├── [P-21] Lesson Workspace (Learner) [DEEP] — Later* — /lessons/:lessonId
+│   ├── [P-22] Join Live Class (Guest, Learner) [SUB] — Later — /classes/:classCode/join
+│   └── [P-23] Contact Mentor (Guest, Learner) [SUB] — Later — /mentors/:mentorSlug
+│
+├── Learning Path
+│   ├── [P-30] Topic List (Learner) [PRIMARY] — MVP — /learn
+│   ├── [P-31] Topic Detail (Learner) [SUB] — MVP — /learn/topics/:topicId
+│   ├── [P-32] Lesson Player (Learner) [DEEP] — MVP — /learn/lessons/:lessonId
+│   ├── [P-33] Lesson Practice (Learner) [DEEP] — MVP — /learn/lessons/:lessonId/practice
+│   ├── [P-34] Review Session (Learner) [DEEP] — MVP — /learn/reviews/:reviewId
+│   ├── [P-35] Topic Test (Learner) [DEEP] — MVP — /learn/tests/:attemptId
+│   └── [P-36] Topic Test Result (Learner) [DEEP] — MVP — /learn/tests/:attemptId/result
+│
+├── Practice
+│   ├── [P-40] Practice Hub (Learner) [PRIMARY] — Later — /practice (stub)
+│   ├── [P-41] Practice Catalog (Learner) [PRIMARY] — MVP — /practice-tests
+│   ├── [P-41a] Practice Mode Select (Learner) [MODAL] — MVP
+│   ├── [P-42] Reading Practice Test (Learner) [DEEP] — MVP — /practice/test/:testId
+│   ├── [P-42a] Create Flashcard (Learner) [MODAL] — MVP
+│   ├── [P-42b] Dictionary Lookup (Learner) [MODAL] — MVP
+│   ├── [P-42c] Saved Flashcards (Learner) [MODAL] — Later
+│   ├── [P-43] Listening Practice (Learner) [DEEP] — MVP — /practice/listening/:testId
+│   ├── [P-44] Writing Practice (Learner) [DEEP] — MVP — /practice/writing/:taskId
+│   ├── [P-44a] Writing Chart Zoom (Learner) [MODAL] — MVP
+│   └── [P-45] Speaking Practice (Learner) [DEEP] — Later* — /practice/speaking/:cueId
+│
+├── Vocabulary
+│   └── [P-50] Vocabulary / Dictionary (Guest, Learner) [PRIMARY] — Later* — /vocabulary
+│
+└── System / Related
+├── [P-60] Materials (Learner) [PRIMARY] — Later — /materials (stub)
+└── [P-90] Not Found (Guest, Learner) [DEEP] — MVP — *
+2.3 Navigation Patterns
+Primary Navigation
+Attribute
+Specification
+Pattern
+Fixed top navbar (SiteNavbar / PracticeNavbar) with brand left, links centre-left, auth actions right
+Desktop width
+Full viewport; content shell max ~1440px
+Tablet behaviour
+Link row collapses ~≤1100px; hamburger opens nav panel
+Mobile behaviour
+Hamburger opens full nav overlay; secondary auth buttons may hide
+Active state
+Pill / highlighted link (white translucent on dark hero nav; primary accent on light nav)
+Badge / count
+Not used on primary nav today; tier/points shown in user dropdown when logged in
+In-Page Navigation (Tabs)
+Used on: Lesson Workspace (materials / quiz / vocabulary); Classroom lesson modal tabs; Overview sidebar sections.
+Attribute
+Specification
+Style
+Underline / bottom-border tabs — Primary colour + soft fill on active
+Position
+Below page heading or inside modal content
+Mobile
+Horizontal scroll if tabs overflow
+Breadcrumbs
+Used on: Learning Path deep screens (topic → lesson → practice / review / test) via LearnLayout trail / back affordances rather than classic Home > Section crumbs.
+Attribute
+Specification
+Format
+Back / trail to parent topic or catalog (not multi-level text crumbs everywhere)
+Current page
+Page title as plain text (Text Primary)
+Mobile
+Show previous level control + current title
+Part 3 — Screen Flows
+MVP flows only. Later / Later* pages appear in Site Map (§2.2) and Appendix A.1 index — they do not receive Part 4 specs in this revision.
+MVP Part 4 coverage: P-01, P-02, P-03, P-04, P-10, P-30–P-36, P-41, P-41a, P-42, P-42a, P-42b, P-43, P-44, P-44a, P-90.
+Flow [F-01] — Authentication & Account Recovery
+Related SRS Scenario
+SC-AUTH-01…04 (TBD)
+Primary Actor
+Guest → Learner
+Entry Point
+P-10 CTA or direct /login
+Success End State
+Authenticated session; land on P-30
+Design File
+TBD — frame '[F-01] Authentication'
+Flow Diagram
+[Entry: Home P-10 or deep link]
+│
+▼
+[P-01 Sign In] ──link──► [P-02 Sign Up] ──after register──► [P-01]
+│
+├── invalid credentials → inline error on P-01
+├── Forgot password → [P-03] → email sent status → [P-01]
+│                         └── reset link → [P-04] → success → [P-01]
+▼
+[Session established]
+▼
+[P-30 Topic List]  (GuestOnly redirect target)
+Key Decision Points
+Branch
+Condition
+Outcome
+B1
+Invalid email/password
+Stay on P-01 with error; preserve email
+B2
+Already authenticated hits auth route
+GuestOnly redirect → P-30
+B3
+Reset token invalid/expired
+P-04 error; offer P-03
+B4
+OAuth enabled (Later)
+Optional social path via P-05 — deferred
+Flow [F-02] — Learning Path Ladder
+Related SRS Scenario
+SC-LEARN-01…07 (TBD)
+Primary Actor
+Learner
+Entry Point
+Nav → P-30 after login
+Success End State
+Topic PASSED (via lessons+practice+test) and next topic unlocked
+Design File
+TBD — frame '[F-02] Learning Path'
+Flow Diagram
+[P-30 Topic List]
+│ select IN_PROGRESS/PASSED
+▼
+[P-31 Topic Detail]
+│
+├── REVIEW_REQUIRED ──► [P-34 Review] ──► P-31
+│
+▼ open lesson
+[P-32 Lesson Player] ──complete──► [P-33 Lesson Practice]
+│                                      │
+│                                      ├── pass → P-31
+│                                      └── reviewsCreated → P-34 → P-31
+▼ when testStatus=AVAILABLE
+[P-35 Topic Test] ──submit──► [P-36 Result]
+│                                ├── pass → poll topics → P-30
+│                                └── fail → retry policy / return P-31
+Key Decision Points
+Branch
+Condition
+Outcome
+B1
+Topic LOCKED / PREMIUM gated
+No enter; show locked/premium cue
+B2
+Lesson blocked by pending review
+Gate banner → P-34
+B3
+Practice creates reviews
+Navigate P-34 before continuing
+B4
+Essay grading insufficient points
+Error on P-32; keep draft
+B5
+Topic test below pass mark
+P-36 failed state; answers may hide
+Flow [F-03] — Practice Catalog to Skill Workspace
+Related SRS Scenario
+SC-PRACTICE-01…04 (TBD)
+Primary Actor
+Learner
+Entry Point
+Nav Practice Catalog / Home CTA → P-41
+Success End State
+Learner completes or exits a skill practice session back to P-41
+Design File
+TBD — frame '[F-03] Practice'
+Flow Diagram
+[P-41 Practice Catalog]
+│ select card
+▼
+[P-41a Mode Select]
+│ confirm mode
+├── reading  → [P-42] ──modals──► [P-42a]/[P-42b]
+├── listening → [P-43]
+├── writing  → [P-44] ──zoom──► [P-44a]
+└── speaking → [P-45] (Later*)
+│
+▼ Exit
+[P-41]
+Note: Nav item /practice (P-40) is a stub Later hub — catalog is P-41.
+Key Decision Points
+Branch
+Condition
+Outcome
+B1
+User cancels mode modal
+Remain on P-41
+B2
+Skill = speaking
+P-45 Later* — out of MVP Part 4
+B3
+Exit mid-session
+Return P-41; persist policy per SRS
+Flow [F-04] — Guest Home to Auth Gate
+Related SRS Scenario
+SC-HOME-01 / SC-AUTH-01 (TBD)
+Primary Actor
+Guest
+Entry Point
+Open app → P-10 Home (or / → redirect /home)
+Success End State
+Guest reaches auth (P-01/P-02) or is redirected there when hitting a RequireAuth route; after login continues on learner flow (F-01 → P-30)
+Design File
+TBD — frame '[F-04] Guest Home Auth Gate'
+Flow Diagram
+[Entry: / or bookmark]
+│
+▼
+[P-10 Home / Landing]  (public)
+│
+├── Sign in / Sign up (nav) ──────────────► [P-01] / [P-02]  → F-01
+├── CTA Practice Catalog ──(RequireAuth)─► if Guest: [P-01] (from=target)
+│                                           if Learner: [P-41]
+├── Feature links Overview / Classroom ──► RequireAuth → [P-01] if Guest
+└── Browse Vocabulary (public Later*) ───► no auth gate
+After successful auth (F-01): default land [P-30]; optional return to original from= route.
+Key Decision Points
+Branch
+Condition
+Outcome
+B1
+Guest opens RequireAuth route
+Redirect to P-01 with from= state
+B2
+Guest uses public Home CTA to catalog
+Auth gate then continue to P-41
+B3
+Guest stays on P-10 only
+No auth required; marketing browse
+B4
+Learner already signed in visits P-10
+Full nav visible; CTAs go direct
+Part 4 — Screen Specifications
+One section per MVP screen. Shared chrome documented once in 4.0. Mobile behaviour defaults to Part 5; screen-specific exceptions appear under each section.
+4.0 — Shared Layout (Authenticated Shell)
+Design file: TBD — frame 'Shared Layout — Authenticated Shell'
+┌───────────────────────────────────────────────────────────┐
+│ Top navbar: brand | primary links | user tier | logout    │
+├───────────────────────────────────────────────────────────┤
+│ Page content area (feature-specific)                      │
+│ LearnLayout may add trail/header under navbar             │
+└───────────────────────────────────────────────────────────┘
+Nav Item
+Icon
+Visible to Roles
+Shows Badge?
+Home
+GraduationCap/brand
+Guest, Learner
+No
+Overview
+—
+Learner
+No
+Classroom
+—
+Learner
+No
+Learning Path (Lộ trình)
+—
+Learner
+No
+Practice (hub stub)
+—
+Learner
+No
+Practice Catalog (Luyện đề)
+—
+Learner
+No
+Vocabulary
+BookMarked
+Guest, Learner
+No
+Materials
+—
+Learner
+No
+Auth screens (P-01–P-04) use AuthShell (centred card + canvas) without the authenticated nav links.
+4.1 — Sign In (P-01)
+Page ID
+P-01
+Screen name
+Sign In
+Design file
+docs/sds-mockups/ (P-01__*.png)
+SRS Feature
+FT-AUTH (TBD)
+SRS Scenario
+SC-AUTH-01 (TBD)
+Roles with access
+Guest
+Route
+/login
+Nav level
+AUTH
+Capture status
+Captured (Desktop + Mobile)
+Screen States
+State
+When It Appears
+Design File Frame
+Loading
+Submit in flight
+[P-01] — Loading
+Empty
+N/A (form always shown)
+N/A
+Populated — default
+Guest form ready
+Desktop: P-01__populated__desktop.png · Mobile: P-01__populated__mobile.png
+Error
+Invalid credentials / network
+[P-01] — Error
+Layout Description
+┌──────────────────────────────────────┐
+│ Brand / canvas background            │
+│  ┌────────────────────────────────┐  │
+│  │ Auth card: title, email, pwd   │  │
+│  │ Primary CTA Sign in            │  │
+│  │ Links: Forgot / Sign up        │  │
+│  │ Optional OAuth (if enabled)    │  │
+│  └────────────────────────────────┘  │
+└──────────────────────────────────────┘
+Zone descriptions:
+Zone
+Description
+A
+Page title + short supporting line
+B
+Email + password fields; show/hide password
+C
+Primary Sign in; status/error message
+D
+Forgot password → P-03; Sign up → P-02
+Key Interactions
+User Action
+What Happens
+Notes
+Submit valid credentials
+Session created; navigate to P-30
+GuestOnly
+Submit invalid
+Inline error; keep fields
+Do not clear password blindly
+Forgot password
+Navigate to P-03
+Sign up link
+Navigate to P-02
+Mobile exception (this screen)
+Auth card full-width with 16px page margin; OAuth row stacks vertically if enabled.
+Mockup
+Mockup / Wireframe — local FE captures
+Folder: docs/sds-mockups/  ·  Base URL: http://localhost:5173
+[P-01] — Populated (Desktop)
+[P-01] — Populated (Mobile)
+4.2 — Sign Up (P-02)
+Page ID
+P-02
+Screen name
+Sign Up
+Design file
+docs/sds-mockups/ (P-02__*.png)
+SRS Feature
+FT-AUTH (TBD)
+SRS Scenario
+SC-AUTH-02 (TBD)
+Roles with access
+Guest
+Route
+/register
+Nav level
+AUTH
+Capture status
+Captured (Desktop + Mobile)
+Screen States
+State
+When It Appears
+Design File Frame
+Loading
+Register request in flight
+[P-02] — Loading
+Empty
+N/A
+N/A
+Populated — default
+Registration form
+Desktop: P-02__populated__desktop.png · Mobile: P-02__populated__mobile.png
+Error
+Validation / duplicate email
+[P-02] — Error
+Layout Description
+┌──────────────────────────────────────┐
+│ Auth card: fullName, email, password │
+│ optional phone; CTA Create account   │
+│ Link: already have account → Sign in │
+└──────────────────────────────────────┘
+Zone descriptions:
+Zone
+Description
+A
+Title + helper copy
+B
+Registration fields
+C
+Primary Create account + status
+D
+Link to P-01
+Key Interactions
+User Action
+What Happens
+Notes
+Submit valid
+Account created; proceed to login / session per product rule
+SRS TBD
+Validation fail
+Inline field errors
+Sign in link
+Navigate to P-01
+Mobile exception (this screen)
+Same as P-01 — single-column full-width card.
+Mockup
+Mockup / Wireframe — local FE captures
+Folder: docs/sds-mockups/  ·  Base URL: http://localhost:5173
+[P-02] — Populated (Desktop)
+[P-02] — Populated (Mobile)
+4.3 — Forgot Password (P-03)
+Page ID
+P-03
+Screen name
+Forgot Password
+Design file
+docs/sds-mockups/ (P-03__*.png)
+SRS Feature
+FT-AUTH (TBD)
+SRS Scenario
+SC-AUTH-03 (TBD)
+Roles with access
+Guest
+Route
+/forgot-password
+Nav level
+AUTH
+Capture status
+Captured (Desktop + Mobile)
+Screen States
+State
+When It Appears
+Design File Frame
+Loading
+Request submit in flight
+[P-03] — Loading
+Empty
+N/A
+N/A
+Populated — default
+Email request form
+Desktop: P-03__populated__desktop.png · Mobile: P-03__populated__mobile.png
+Error
+Request failed
+[P-03] — Error
+Success
+Generic confirmation shown
+[P-03] — Success
+Layout Description
+┌──────────────────────────────────────┐
+│ Title + email field + Submit         │
+│ Back to Sign in                      │
+└──────────────────────────────────────┘
+Zone descriptions:
+Zone
+Description
+A
+Heading + privacy-safe helper text
+B
+Email field + submit
+C
+Status message; link to P-01
+Key Interactions
+User Action
+What Happens
+Notes
+Submit email
+Show success/status (no account enumeration)
+Back to Sign in
+Navigate to P-01
+Mockup
+Mockup / Wireframe — local FE captures
+Folder: docs/sds-mockups/  ·  Base URL: http://localhost:5173
+[P-03] — Populated (Desktop)
+[P-03] — Populated (Mobile)
+4.4 — Reset Password (P-04)
+Page ID
+P-04
+Screen name
+Reset Password
+Design file
+docs/sds-mockups/ (P-04__*.png)
+SRS Feature
+FT-AUTH (TBD)
+SRS Scenario
+SC-AUTH-04 (TBD)
+Roles with access
+Guest
+Route
+/reset-password
+Nav level
+AUTH
+Capture status
+Captured (Desktop + Mobile)
+Screen States
+State
+When It Appears
+Design File Frame
+Loading
+Token validate / submit
+[P-04] — Loading
+Empty
+Missing/invalid token message
+[P-04] — Invalid token
+Populated — default
+New password form
+Desktop: P-04__populated__desktop.png · Mobile: P-04__populated__mobile.png
+Error
+Weak password / expired token
+[P-04] — Error
+Success
+Password updated; prompt sign in
+[P-04] — Success
+Layout Description
+┌──────────────────────────────────────┐
+│ New password + confirm + Submit      │
+└──────────────────────────────────────┘
+Zone descriptions:
+Zone
+Description
+A
+Heading
+B
+Password fields
+C
+Submit + status + link to P-01
+Key Interactions
+User Action
+What Happens
+Notes
+Submit new password
+On success → guide to P-01
+Invalid token
+Show recovery path to P-03
+Mockup
+Mockup / Wireframe — local FE captures
+Folder: docs/sds-mockups/  ·  Base URL: http://localhost:5173
+[P-04] — Populated (Desktop)
+[P-04] — Populated (Mobile)
+4.5 — Home / Landing (P-10)
+Page ID
+P-10
+Screen name
+Home / Landing
+Design file
+docs/sds-mockups/ (P-10__*.png)
+SRS Feature
+FT-HOME (TBD)
+SRS Scenario
+SC-HOME-01 (TBD)
+Roles with access
+Guest, Learner
+Route
+/home
+Nav level
+PRIMARY
+Capture status
+Captured (Desktop + Mobile)
+Screen States
+State
+When It Appears
+Design File Frame
+Loading
+N/A (static + local mock sections)
+N/A
+Empty
+N/A
+N/A
+Populated — default
+Hero + features + mentors + pricing
+Desktop: P-10__populated__desktop.png · Mobile: P-10__populated__mobile.png
+Error
+N/A for MVP static home
+N/A
+Layout Description
+┌──────────────────────────────────────┐
+│ SiteNavbar                           │
+├──────────────────────────────────────┤
+│ Hero: headline + CTAs + skill icons  │
+│ Features grid                        │
+│ Mentors (demo) + Pricing (demo)      │
+│ Footer                               │
+└──────────────────────────────────────┘
+Zone descriptions:
+Zone
+Description
+A
+Hero brand message + CTA to practice catalog / mentors
+B
+Feature cards linking Overview / Practice / Classroom
+C
+Mentor & pricing demo sections (Later modals P-10a/b)
+Key Interactions
+User Action
+What Happens
+Notes
+Primary CTA
+Navigate to P-41 Practice Catalog
+May require auth downstream
+Nav Sign in / Sign up
+P-01 / P-02
+Guest
+Feature card Practice
+Navigate to P-41
+Mobile exception (this screen)
+Hero stacks single column; feature/mentor/pricing grids → 1 column; secondary hero CTA full-width.
+Mockup
+Mockup / Wireframe — local FE captures
+Folder: docs/sds-mockups/  ·  Base URL: http://localhost:5173
+[P-10] — Populated (Desktop)
+[P-10] — Populated (Mobile)
+4.6 — Topic List (P-30)
+Page ID
+P-30
+Screen name
+Topic List
+Design file
+docs/sds-mockups/ (P-30__*.png)
+SRS Feature
+FT-LEARN (TBD)
+SRS Scenario
+SC-LEARN-01 (TBD)
+Roles with access
+Learner
+Route
+/learn
+Nav level
+PRIMARY
+Capture status
+Captured (Desktop + Mobile)
+Screen States
+State
+When It Appears
+Design File Frame
+Loading
+Fetching topics
+[P-30] — Loading
+Empty
+No topics returned
+[P-30] — Empty
+Populated — default
+Ordered topic trail/list
+Desktop: P-30__populated__desktop.png · Mobile: P-30__populated__mobile.png
+Error
+Fetch failed
+[P-30] — Error
+Layout Description
+┌──────────────────────────────────────┐
+│ LearnLayout header / trail           │
+├──────────────────────────────────────┤
+│ Topic nodes: status, name, progress  │
+│ LOCKED / IN_PROGRESS / PASSED        │
+└──────────────────────────────────────┘
+Zone descriptions:
+Zone
+Description
+A
+Section title + points/status if shown
+B
+Topic list/trail with lock & premium cues
+C
+Retry on error
+Key Interactions
+User Action
+What Happens
+Notes
+Open IN_PROGRESS/PASSED topic
+Navigate to P-31
+Tap LOCKED topic
+No navigation; show locked affordance
+Retry on error
+Reload topics
+Mockup
+Mockup / Wireframe — local FE captures
+Folder: docs/sds-mockups/  ·  Base URL: http://localhost:5173
+[P-30] — Populated (Desktop)
+[P-30] — Populated (Mobile)
+4.7 — Topic Detail (P-31)
+Page ID
+P-31
+Screen name
+Topic Detail
+Design file
+docs/sds-mockups/ (P-31__*.png)
+SRS Feature
+FT-LEARN (TBD)
+SRS Scenario
+SC-LEARN-02 (TBD)
+Roles with access
+Learner
+Route
+/learn/topics/:topicId
+Nav level
+SUB
+Capture status
+Captured (Desktop + Mobile)
+Screen States
+State
+When It Appears
+Design File Frame
+Loading
+Fetching lessons
+[P-31] — Loading
+Empty
+Topic with no lessons
+[P-31] — Empty
+Populated — default
+Lesson list + test gate
+Desktop: P-31__populated__desktop.png · Mobile: P-31__populated__mobile.png
+Error
+TOPIC_LOCKED / fetch fail
+[P-31] — Error
+Gate
+Review required banner
+[P-31] — Review gate
+Layout Description
+┌──────────────────────────────────────┐
+│ Topic title + back                   │
+│ Optional ReviewGate banner           │
+│ Lessons: LOCKED/AVAILABLE/COMPLETED  │
+│ Final test CTA when AVAILABLE        │
+└──────────────────────────────────────┘
+Zone descriptions:
+Zone
+Description
+A
+Topic header + back to P-30
+B
+Lesson rows with practice status
+C
+Topic test unlock / start
+Key Interactions
+User Action
+What Happens
+Notes
+Open AVAILABLE/COMPLETED lesson
+Navigate to P-32
+Start topic test
+Create attempt → P-35
+When testStatus=AVAILABLE
+Open pending review
+Navigate to P-34
+From gate banner
+Mockup
+Mockup / Wireframe — local FE captures
+Folder: docs/sds-mockups/  ·  Base URL: http://localhost:5173
+[P-31] — Populated (Desktop)
+[P-31] — Populated (Mobile)
+4.8 — Lesson Player (P-32)
+Page ID
+P-32
+Screen name
+Lesson Player
+Design file
+docs/sds-mockups/ (P-32__*.png)
+SRS Feature
+FT-LEARN (TBD)
+SRS Scenario
+SC-LEARN-03 (TBD)
+Roles with access
+Learner
+Route
+/learn/lessons/:lessonId
+Nav level
+DEEP
+Capture status
+Captured (Desktop + Mobile)
+Screen States
+State
+When It Appears
+Design File Frame
+Loading
+Fetching lesson blocks
+[P-32] — Loading
+Empty
+N/A
+N/A
+Populated — default
+Theory + exercises + essay blocks
+Desktop: P-32__populated__desktop.png · Mobile: P-32__populated__mobile.png
+Error
+Fetch/submit fail; REVIEW_REQUIRED
+[P-32] — Error
+Completed
+Lesson done → continue practice
+[P-32] — Completed
+Layout Description
+┌──────────────────────────────────────┐
+│ Lesson title + progress              │
+│ Content blocks (text/audio/questions)│
+│ Exercise submit / Essay submit       │
+│ Footer: continue / practice CTA      │
+└──────────────────────────────────────┘
+Zone descriptions:
+Zone
+Description
+A
+Header + back to topic
+B
+Scrollable lesson blocks
+C
+Block-level submit feedback
+D
+Post-complete CTA to P-33
+Key Interactions
+User Action
+What Happens
+Notes
+Submit exercise block
+Show correct/incorrect + hints
+Submit essay
+Spend points; show grading result
+INSUFFICIENT_POINTS
+Continue to practice
+Navigate to P-33
+When lesson complete
+Mobile exception (this screen)
+Blocks stack full-width; audio controls sticky optional; long essay field expands vertically.
+Mockup
+Mockup / Wireframe — local FE captures
+Folder: docs/sds-mockups/  ·  Base URL: http://localhost:5173
+[P-32] — Populated (Desktop)
+[P-32] — Populated (Mobile)
+4.9 — Lesson Practice (P-33)
+Page ID
+P-33
+Screen name
+Lesson Practice
+Design file
+docs/sds-mockups/ (P-33__*.png)
+SRS Feature
+FT-LEARN (TBD)
+SRS Scenario
+SC-LEARN-04 (TBD)
+Roles with access
+Learner
+Route
+/learn/lessons/:lessonId/practice
+Nav level
+DEEP
+Capture status
+Captured (Desktop + Mobile)
+Screen States
+State
+When It Appears
+Design File Frame
+Loading
+Load practice sets / attempt
+[P-33] — Loading
+Empty
+NO_PRACTICE / nothing required
+[P-33] — Empty
+Populated — default
+Active attempt questions
+Desktop: P-33__populated__desktop.png · Mobile: P-33__populated__mobile.png
+Error
+Submit/start fail
+[P-33] — Error
+Passed / Review created
+Outcome + next step
+[P-33] — Outcome
+Layout Description
+┌──────────────────────────────────────┐
+│ Practice set selector / progress     │
+│ Question list + submit               │
+│ Result panel + continue to topic     │
+└──────────────────────────────────────┘
+Zone descriptions:
+Zone
+Description
+A
+Header + set status
+B
+Questions + answers
+C
+Submit + outcome (pass reason / review link)
+Key Interactions
+User Action
+What Happens
+Notes
+Start / continue attempt
+Load questions
+Submit answers
+Score + reveal per rules; may create review → P-34
+Back to topic
+Navigate to P-31
+Mockup
+Mockup / Wireframe — local FE captures
+Folder: docs/sds-mockups/  ·  Base URL: http://localhost:5173
+[P-33] — Populated (Desktop)
+[P-33] — Populated (Mobile)
+4.10 — Review Session (P-34)
+Page ID
+P-34
+Screen name
+Review Session
+Design file
+docs/sds-mockups/ (P-34__*.png)
+SRS Feature
+FT-LEARN (TBD)
+SRS Scenario
+SC-LEARN-05 (TBD)
+Roles with access
+Learner
+Route
+/learn/reviews/:reviewId
+Nav level
+DEEP
+Capture status
+Captured (Desktop + Mobile)
+Screen States
+State
+When It Appears
+Design File Frame
+Loading
+Load review pack
+[P-34] — Loading
+Empty
+N/A
+N/A
+Populated — default
+Practice-set review or theory+quick-check
+Desktop: P-34__populated__desktop.png · Mobile: P-34__populated__mobile.png
+Error
+Fetch/submit fail
+[P-34] — Error
+Finished
+Review cleared; return to topic
+[P-34] — Finished
+Layout Description
+┌──────────────────────────────────────┐
+│ Review stage banner                  │
+│ Questions / theory + quick check     │
+│ Submit / finish                      │
+└──────────────────────────────────────┘
+Zone descriptions:
+Zone
+Description
+A
+Stage indicator (THEORY vs PRACTICE_SET)
+B
+Review content
+C
+Submit + return CTA to P-31
+Key Interactions
+User Action
+What Happens
+Notes
+Submit review set
+Update mastery gate; unlock lesson path
+Finish / return
+Navigate to P-31
+Mockup
+Mockup / Wireframe — local FE captures
+Folder: docs/sds-mockups/  ·  Base URL: http://localhost:5173
+[P-34] — Populated (Desktop)
+[P-34] — Populated (Mobile)
+4.11 — Topic Test (P-35)
+Page ID
+P-35
+Screen name
+Topic Test
+Design file
+docs/sds-mockups/ (P-35__*.png)
+SRS Feature
+FT-LEARN (TBD)
+SRS Scenario
+SC-LEARN-06 (TBD)
+Roles with access
+Learner
+Route
+/learn/tests/:attemptId
+Nav level
+DEEP
+Capture status
+Partial / Blocked — see Mockup
+Screen States
+State
+When It Appears
+Design File Frame
+Loading
+Load attempt structure
+[P-35] — Loading
+Empty
+N/A
+N/A
+Populated — default
+Timed/untimed question run
+Desktop: Blocked — not captured · Mobile: Blocked — not captured
+Error
+Save/submit fail
+[P-35] — Error
+Confirm submit
+Unanswered warning
+[P-35] — Confirm
+Layout Description
+┌──────────────────────────────────────┐
+│ Progress / unanswered count          │
+│ Question stem + options/inputs       │
+│ Nav prev/next + Submit               │
+└──────────────────────────────────────┘
+Zone descriptions:
+Zone
+Description
+A
+Attempt header
+B
+Current question workspace
+C
+Navigation + submit with confirm
+Key Interactions
+User Action
+What Happens
+Notes
+Answer + navigate
+Persist answer locally/API
+First submit with blanks
+Confirm warning
+Confirm submit
+Grade → navigate to P-36
+Mobile exception (this screen)
+Question nav collapses to compact pager; submit bar sticky bottom.
+Mockup
+Mockup / Wireframe — local FE captures
+Folder: docs/sds-mockups/  ·  Base URL: http://localhost:5173
+Blocked — needs auth / unlock — no populated capture for P-35.
+4.12 — Topic Test Result (P-36)
+Page ID
+P-36
+Screen name
+Topic Test Result
+Design file
+docs/sds-mockups/ (P-36__*.png)
+SRS Feature
+FT-LEARN (TBD)
+SRS Scenario
+SC-LEARN-07 (TBD)
+Roles with access
+Learner
+Route
+/learn/tests/:attemptId/result
+Nav level
+DEEP
+Capture status
+Partial / Blocked — see Mockup
+Screen States
+State
+When It Appears
+Design File Frame
+Loading
+Load result / topics for next
+[P-36] — Loading
+Empty
+N/A
+N/A
+Populated — passed
+Score ≥ pass threshold
+Desktop: Blocked — not captured · Mobile: Blocked — not captured
+Populated — failed
+Score below threshold; answers may hide
+Desktop: Blocked — not captured · Mobile: Blocked — not captured
+Error
+Result fetch fail
+[P-36] — Error
+Layout Description
+┌──────────────────────────────────────┐
+│ Score dial + pass/fail               │
+│ Per-question summary                 │
+│ CTA: back to topics / retry policy   │
+└──────────────────────────────────────┘
+Zone descriptions:
+Zone
+Description
+A
+Score + outcome
+B
+Item review (correct answers gated if failed)
+C
+Navigation to P-30 / P-31
+Key Interactions
+User Action
+What Happens
+Notes
+Return to topics
+Navigate to P-30
+Open next topic if unlocked
+Navigate to P-31
+Derived from topic list
+Retry per policy
+New attempt flow if allowed
+SRS TBD
+Mockup
+Mockup / Wireframe — local FE captures
+Folder: docs/sds-mockups/  ·  Base URL: http://localhost:5173
+Blocked — needs auth / unlock — no populated capture for P-36.
+4.13 — Practice Catalog (P-41)
+Page ID
+P-41
+Screen name
+Practice Catalog
+Design file
+docs/sds-mockups/ (P-41__*.png)
+SRS Feature
+FT-PRACTICE (TBD)
+SRS Scenario
+SC-PRACTICE-01 (TBD)
+Roles with access
+Learner
+Route
+/practice-tests
+Nav level
+PRIMARY
+Capture status
+Captured (Desktop + Mobile)
+Screen States
+State
+When It Appears
+Design File Frame
+Loading
+Catalog load
+[P-41] — Loading
+Empty
+No tests available
+[P-41] — Empty
+Populated — default
+Skill cards grid
+Desktop: P-41__populated__desktop.png · Mobile: P-41__populated__mobile.png
+Error
+Fetch fail
+[P-41] — Error
+Layout Description
+┌──────────────────────────────────────┐
+│ PracticeNavbar                       │
+│ Filters / skill tabs (if any)        │
+│ Test cards grid                      │
+└──────────────────────────────────────┘
+Zone descriptions:
+Zone
+Description
+A
+Page heading
+B
+Catalog cards (skill, title, meta)
+C
+Opens P-41a on card select
+Key Interactions
+User Action
+What Happens
+Notes
+Select a test card
+Open P-41a mode modal
+Retry on error
+Reload catalog
+Mobile exception (this screen)
+Card grid → 1 column; navbar compact.
+Mockup
+Mockup / Wireframe — local FE captures
+Folder: docs/sds-mockups/  ·  Base URL: http://localhost:5173
+[P-41] — Populated (Desktop)
+[P-41] — Populated (Mobile)
+4.14 — Practice Mode Select (P-41a)
+Page ID
+P-41a
+Screen name
+Practice Mode Select
+Design file
+docs/sds-mockups/ (P-41a__*.png)
+SRS Feature
+FT-PRACTICE (TBD)
+SRS Scenario
+SC-PRACTICE-01 (TBD)
+Roles with access
+Learner
+Route
+Modal on P-41
+Nav level
+MODAL
+Capture status
+Captured (Desktop + Mobile)
+Screen States
+State
+When It Appears
+Design File Frame
+Loading
+N/A
+N/A
+Empty
+N/A
+N/A
+Populated — default
+Mode choices for selected card
+Desktop: P-41a__populated__desktop.png · Mobile: P-41a__populated__mobile.png
+Error
+N/A
+N/A
+Layout Description
+┌──────────────────────────────────────┐
+│ Dialog: test title                   │
+│ Mode options (e.g. practice/exam)    │
+│ Confirm → skill workspace            │
+└──────────────────────────────────────┘
+Zone descriptions:
+Zone
+Description
+A
+Title + short description
+B
+Mode radio/cards
+C
+Start / Cancel
+Key Interactions
+User Action
+What Happens
+Notes
+Choose mode + Start
+Navigate to P-42 / P-43 / P-44 / P-45 by skill
+Reading→P-42
+Cancel / close
+Stay on P-41
+Mockup
+Mockup / Wireframe — local FE captures
+Folder: docs/sds-mockups/  ·  Base URL: http://localhost:5173
+[P-41a] — Populated (Desktop)
+[P-41a] — Populated (Mobile)
+4.15 — Reading Practice Test (P-42)
+Page ID
+P-42
+Screen name
+Reading Practice Test
+Design file
+docs/sds-mockups/ (P-42__*.png)
+SRS Feature
+FT-PRACTICE (TBD)
+SRS Scenario
+SC-PRACTICE-02 (TBD)
+Roles with access
+Learner
+Route
+/practice/test/:testId
+Nav level
+DEEP
+Capture status
+Captured (Desktop + Mobile)
+Screen States
+State
+When It Appears
+Design File Frame
+Loading
+Load passage/questions
+[P-42] — Loading
+Empty
+N/A
+N/A
+Populated — default
+Split passage + answers
+Desktop: P-42__populated__desktop.png · Mobile: P-42__populated__mobile.png
+Error
+Submit/load fail
+[P-42] — Error
+Layout Description
+┌──────────────────────────────────────┐
+│ Practice subbar (timer/settings/exit)│
+├───────────────┬──────────────────────┤
+│ Passage       │ Questions / answers  │
+│ highlight     │                      │
+└───────────────┴──────────────────────┘
+Zone descriptions:
+Zone
+Description
+A
+Subbar: exit → P-41, settings, timer
+B
+Passage with selection tools
+C
+Question panel
+D
+Modals P-42a / P-42b
+Key Interactions
+User Action
+What Happens
+Notes
+Answer questions
+Update local answer map
+Select text → Flashcard
+Open P-42a
+Dictionary lookup
+Open P-42b
+Exit
+Return to P-41
+Mobile exception (this screen)
+Passage and questions stack vertically (tabs or accordion); no persistent side-by-side split.
+Mockup
+Mockup / Wireframe — local FE captures
+Folder: docs/sds-mockups/  ·  Base URL: http://localhost:5173
+[P-42] — Populated (Desktop)
+[P-42] — Populated (Mobile)
+4.16 — Create Flashcard (P-42a)
+Page ID
+P-42a
+Screen name
+Create Flashcard
+Design file
+docs/sds-mockups/ (P-42a__*.png)
+SRS Feature
+FT-PRACTICE (TBD)
+SRS Scenario
+SC-PRACTICE-02 (TBD)
+Roles with access
+Learner
+Route
+Modal on P-42
+Nav level
+MODAL
+Capture status
+Captured (Desktop + Mobile)
+Screen States
+State
+When It Appears
+Design File Frame
+Loading
+Saving card
+[P-42a] — Loading
+Empty
+N/A
+N/A
+Populated — default
+Word/meaning/example form
+Desktop: P-42a__populated__desktop.png · Mobile: P-42a__populated__mobile.png
+Error
+Validation / save fail
+[P-42a] — Error
+Layout Description
+Dialog: word, meaning, example, optional image, Save / Cancel
+Zone descriptions:
+Zone
+Description
+A
+Prefilled selected text
+B
+Editable fields
+C
+Save (local) / Close
+Key Interactions
+User Action
+What Happens
+Notes
+Save
+Persist locally; toast on P-42
+Not account-synced
+Close
+Dismiss modal
+Mockup
+Mockup / Wireframe — local FE captures
+Folder: docs/sds-mockups/  ·  Base URL: http://localhost:5173
+[P-42a] — Populated (Desktop)
+[P-42a] — Populated (Mobile)
+4.17 — Dictionary Lookup (P-42b)
+Page ID
+P-42b
+Screen name
+Dictionary Lookup
+Design file
+docs/sds-mockups/ (P-42b__*.png)
+SRS Feature
+FT-PRACTICE (TBD)
+SRS Scenario
+SC-PRACTICE-02 (TBD)
+Roles with access
+Learner
+Route
+Modal on P-42
+Nav level
+MODAL
+Capture status
+Captured (Desktop + Mobile)
+Screen States
+State
+When It Appears
+Design File Frame
+Loading
+Lookup in progress
+[P-42b] — Loading
+Empty
+No definition found
+[P-42b] — Empty
+Populated — default
+Definition shown
+Desktop: P-42b__populated__desktop.png · Mobile: P-42b__populated__mobile.png
+Error
+Lookup fail
+[P-42b] — Error
+Layout Description
+Dialog: selected term + definition / close
+Zone descriptions:
+Zone
+Description
+A
+Term
+B
+Definition body
+C
+Close
+Key Interactions
+User Action
+What Happens
+Notes
+Close
+Return to P-42
+Mockup
+Mockup / Wireframe — local FE captures
+Folder: docs/sds-mockups/  ·  Base URL: http://localhost:5173
+[P-42b] — Populated (Desktop)
+[P-42b] — Populated (Mobile)
+4.18 — Listening Practice (P-43)
+Page ID
+P-43
+Screen name
+Listening Practice
+Design file
+docs/sds-mockups/ (P-43__*.png)
+SRS Feature
+FT-PRACTICE (TBD)
+SRS Scenario
+SC-PRACTICE-03 (TBD)
+Roles with access
+Learner
+Route
+/practice/listening/:testId
+Nav level
+DEEP
+Capture status
+Captured (Desktop + Mobile)
+Screen States
+State
+When It Appears
+Design File Frame
+Loading
+Load audio + questions
+[P-43] — Loading
+Empty
+N/A
+N/A
+Populated — default
+Player + question map
+Desktop: P-43__populated__desktop.png · Mobile: P-43__populated__mobile.png
+Error
+Audio/load fail
+[P-43] — Error
+Layout Description
+┌──────────────────────────────────────┐
+│ Instruction + audio player           │
+│ Question map synced to cues          │
+│ Answer inputs + exit                 │
+└──────────────────────────────────────┘
+Zone descriptions:
+Zone
+Description
+A
+Audio controls + time
+B
+Question list / map
+C
+Exit → P-41
+Key Interactions
+User Action
+What Happens
+Notes
+Play/seek audio
+Update active cue/question
+Answer question
+Store response
+Exit
+Return to P-41
+Mobile exception (this screen)
+Player sticky top; question map scrolls below.
+Mockup
+Mockup / Wireframe — local FE captures
+Folder: docs/sds-mockups/  ·  Base URL: http://localhost:5173
+[P-43] — Populated (Desktop)
+[P-43] — Populated (Mobile)
+4.19 — Writing Practice (P-44)
+Page ID
+P-44
+Screen name
+Writing Practice
+Design file
+docs/sds-mockups/ (P-44__*.png)
+SRS Feature
+FT-PRACTICE (TBD)
+SRS Scenario
+SC-PRACTICE-04 (TBD)
+Roles with access
+Learner
+Route
+/practice/writing/:taskId
+Nav level
+DEEP
+Capture status
+Captured (Desktop + Mobile)
+Screen States
+State
+When It Appears
+Design File Frame
+Loading
+Load task
+[P-44] — Loading
+Empty
+N/A
+N/A
+Populated — default
+Prompt + editor + word count
+Desktop: P-44__populated__desktop.png · Mobile: P-44__populated__mobile.png
+Error
+Submit/load fail
+[P-44] — Error
+Layout Description
+┌──────────────────────────────────────┐
+│ Task prompt + chart thumbnail        │
+│ Essay textarea + word counter        │
+│ Submit / Exit                        │
+└──────────────────────────────────────┘
+Zone descriptions:
+Zone
+Description
+A
+Prompt + visual (opens P-44a)
+B
+Writing surface + counter
+C
+Actions → P-41 on exit
+Key Interactions
+User Action
+What Happens
+Notes
+Zoom chart
+Open P-44a
+Type essay
+Update word count
+Exit
+Return to P-41
+Mobile exception (this screen)
+Prompt above editor (no split); chart zoom opens full-screen dialog.
+Mockup
+Mockup / Wireframe — local FE captures
+Folder: docs/sds-mockups/  ·  Base URL: http://localhost:5173
+[P-44] — Populated (Desktop)
+[P-44] — Populated (Mobile)
+4.20 — Writing Chart Zoom (P-44a)
+Page ID
+P-44a
+Screen name
+Writing Chart Zoom
+Design file
+docs/sds-mockups/ (P-44a__*.png)
+SRS Feature
+FT-PRACTICE (TBD)
+SRS Scenario
+SC-PRACTICE-04 (TBD)
+Roles with access
+Learner
+Route
+Modal on P-44
+Nav level
+MODAL
+Capture status
+Captured (Desktop + Mobile)
+Screen States
+State
+When It Appears
+Design File Frame
+Loading
+N/A
+N/A
+Empty
+N/A
+N/A
+Populated — default
+Enlarged chart
+Desktop: P-44a__populated__desktop.png · Mobile: P-44a__populated__mobile.png
+Error
+N/A
+N/A
+Layout Description
+Dialog: large chart + close
+Zone descriptions:
+Zone
+Description
+A
+Chart visual
+B
+Close control
+Key Interactions
+User Action
+What Happens
+Notes
+Close
+Return to P-44
+Mockup
+Mockup / Wireframe — local FE captures
+Folder: docs/sds-mockups/  ·  Base URL: http://localhost:5173
+[P-44a] — Populated (Desktop)
+[P-44a] — Populated (Mobile)
+4.21 — Not Found (P-90)
+Page ID
+P-90
+Screen name
+Not Found
+Design file
+docs/sds-mockups/ (P-90__*.png)
+SRS Feature
+—
+SRS Scenario
+—
+Roles with access
+Guest, Learner
+Route
+*
+Nav level
+DEEP
+Capture status
+Captured (Desktop + Mobile)
+Screen States
+State
+When It Appears
+Design File Frame
+Loading
+N/A
+N/A
+Empty
+N/A
+N/A
+Populated — default
+404 message + path
+Desktop: P-90__populated__desktop.png · Mobile: P-90__populated__mobile.png
+Error
+N/A
+N/A
+Layout Description
+Centered panel: 404 title, pathname, CTA to Overview/Home
+Zone descriptions:
+Zone
+Description
+A
+Message
+B
+Primary recovery link
+Key Interactions
+User Action
+What Happens
+Notes
+Go to Overview
+Navigate /overview (auth) or /home
+Mockup
+Mockup / Wireframe — local FE captures
+Folder: docs/sds-mockups/  ·  Base URL: http://localhost:5173
+[P-90] — Populated (Desktop)
+[P-90] — Populated (Mobile)
+Part 5 — Responsive Rules
+Global rules for all screens. Screen-specific mobile exceptions are recorded in Part 4 only.
+5.1 Navigation
+Breakpoint
+Behaviour
+Desktop (≥ 1025px)
+Full top navbar; all labels visible; shell max ~1440px
+Tablet (768–1024px)
+Nav links may collapse (~≤1100px CSS); hamburger opens panel
+Mobile (< 768px)
+Hamburger overlay drawer; compact auth actions
+5.2 Content Layout
+Breakpoint
+Layout Behaviour
+Desktop
+Multi-column grids (practice catalog 2–3 col; reading split pane); side-by-side forms where designed
+Tablet
+2-column grids; reading may retain split or soften; tables/cards reduce columns
+Mobile
+Single column throughout; auth card full width; practice workspaces stack
+5.3 Data Tables
+Pattern A — Horizontal scroll: keep columns; sticky first column when 5+ columns. Use for dense score/item review tables.
+Pattern B — Card reflow: each row becomes a card showing 3–4 key fields. Prefer for entity lists (topics, catalog cards already use cards).
+MVP screens primarily use cards/lists rather than wide data tables; choose Pattern B for any future tabular topic/test history.
+5.4 Typography Scaling
+Breakpoint
+Heading Adjustment
+Desktop
+Full type scale as Part 1.3
+Tablet
+heading-1 may reduce toward heading-2 size; body unchanged
+Mobile
+heading-1 → ~24px; heading-2 → ~20px; body sizes unchanged
+5.5 Touch Targets (Mobile)
+Element
+Visual Size
+Minimum Touch Target
+Primary buttons
+Design spec
+44px height minimum
+Icon-only buttons
+~24px icon
+44×44px tap area via padding
+Checkboxes / radio
+~18px
+44×44px tap area
+Navigation items (drawer)
+variable
+48px height minimum
+List/card row
+variable
+Full row tappable; 48px min height
+Appendix A — Screen Index & Design File
+A.1 Screen Index
+1:1 with Site Map §2.2. Spec Section = Part 4 heading for MVP; Deferred = Later / not in this Phase B pass.
+Page ID
+Screen Name
+SRS Feature
+Flow(s)
+Spec Section
+Design Frame
+Status
+P-01
+Sign In
+FT-AUTH
+F-01, F-04
+4.1
+P-01__populated__desktop.png / P-01__populated__mobile.png
+Captured
+P-02
+Sign Up
+FT-AUTH
+F-01, F-04
+4.2
+P-02__populated__desktop.png / P-02__populated__mobile.png
+Captured
+P-03
+Forgot Password
+FT-AUTH
+F-01
+4.3
+P-03__populated__desktop.png / P-03__populated__mobile.png
+Captured
+P-04
+Reset Password
+FT-AUTH
+F-01
+4.4
+P-04__populated__desktop.png / P-04__populated__mobile.png
+Captured
+P-05
+OAuth Callback
+FT-AUTH
+F-01
+Deferred
+[P-05] OAuth Callback
+Later
+P-10
+Home / Landing
+FT-HOME
+F-04, F-01
+4.5
+P-10__populated__desktop.png / P-10__populated__mobile.png
+Captured
+P-10a
+Mentor Detail
+FT-HOME
+—
+Deferred
+[P-10a] Mentor Detail
+Later
+P-10b
+Plan Detail
+FT-HOME
+—
+Deferred
+[P-10b] Plan Detail
+Later
+P-11
+Overview Dashboard
+FT-OVERVIEW
+—
+Deferred
+[P-11] Overview
+Later*
+P-20
+My Classroom
+FT-CLASS
+—
+Deferred
+[P-20] Classroom
+Later*
+P-20a
+Lesson Detail
+FT-CLASS
+—
+Deferred
+[P-20a] Lesson Detail
+Later
+P-21
+Lesson Workspace
+FT-CLASS
+—
+Deferred
+[P-21] Lesson Workspace
+Later*
+P-22
+Join Live Class
+FT-CLASS
+—
+Deferred
+[P-22] Join Class
+Later
+P-23
+Contact Mentor
+FT-CLASS
+—
+Deferred
+[P-23] Mentor
+Later
+P-30
+Topic List
+FT-LEARN
+F-02
+4.6
+P-30__populated__desktop.png / P-30__populated__mobile.png
+Captured
+P-31
+Topic Detail
+FT-LEARN
+F-02
+4.7
+P-31__populated__desktop.png / P-31__populated__mobile.png
+Captured
+P-32
+Lesson Player
+FT-LEARN
+F-02
+4.8
+P-32__populated__desktop.png / P-32__populated__mobile.png
+Captured
+P-33
+Lesson Practice
+FT-LEARN
+F-02
+4.9
+P-33__populated__desktop.png / P-33__populated__mobile.png
+Captured
+P-34
+Review Session
+FT-LEARN
+F-02
+4.10
+P-34__populated__desktop.png / P-34__populated__mobile.png
+Captured
+P-35
+Topic Test
+FT-LEARN
+F-02
+4.11
+P-35__populated__desktop.png / P-35__populated__mobile.png
+Blocked — topic test LOCKED
+P-36
+Topic Test Result
+FT-LEARN
+F-02
+4.12
+P-36__populated__desktop.png / P-36__populated__mobile.png
+Blocked — topic test LOCKED
+P-40
+Practice Hub
+FT-PRACTICE
+F-03
+Deferred
+[P-40] Practice Hub
+Later
+P-41
+Practice Catalog
+FT-PRACTICE
+F-03
+4.13
+P-41__populated__desktop.png / P-41__populated__mobile.png
+Captured
+P-41a
+Practice Mode Select
+FT-PRACTICE
+F-03
+4.14
+P-41a__populated__desktop.png / P-41a__populated__mobile.png
+Captured
+P-42
+Reading Practice Test
+FT-PRACTICE
+F-03
+4.15
+P-42__populated__desktop.png / P-42__populated__mobile.png
+Captured
+P-42a
+Create Flashcard
+FT-PRACTICE
+F-03
+4.16
+P-42a__populated__desktop.png / P-42a__populated__mobile.png
+Captured
+P-42b
+Dictionary Lookup
+FT-PRACTICE
+F-03
+4.17
+P-42b__populated__desktop.png / P-42b__populated__mobile.png
+Captured
+P-42c
+Saved Flashcards
+FT-PRACTICE
+F-03
+Deferred
+[P-42c] Saved Flashcards
+Later
+P-43
+Listening Practice
+FT-PRACTICE
+F-03
+4.18
+P-43__populated__desktop.png / P-43__populated__mobile.png
+Captured
+P-44
+Writing Practice
+FT-PRACTICE
+F-03
+4.19
+P-44__populated__desktop.png / P-44__populated__mobile.png
+Captured
+P-44a
+Writing Chart Zoom
+FT-PRACTICE
+F-03
+4.20
+P-44a__populated__desktop.png / P-44a__populated__mobile.png
+Captured
+P-45
+Speaking Practice
+FT-PRACTICE
+F-03
+Deferred
+[P-45] Speaking
+Later*
+P-50
+Vocabulary
+FT-VOCAB
+—
+Deferred
+[P-50] Vocabulary
+Later*
+P-60
+Materials
+FT-MATERIALS
+—
+Deferred
+[P-60] Materials
+Later
+P-90
+Not Found
+—
+—
+4.21
+P-90__populated__desktop.png / P-90__populated__mobile.png
+Captured
+A.2 Design File Structure
+docs/sds-mockups/   (local FE captures — Design File for this SDS)
+│
+├── Desktop populated:  P-xx__populated__desktop.png
+├── Mobile populated:   P-xx__populated__mobile.png
+├── Optional states:    P-xx__loading|empty|error__{desktop|mobile}.png
+└── _manifest.json      capture metadata
+Mirror folders (logical):
+├── Screens — Desktop / {Auth, Home, Learning Path, Practice, System}
+└── Screens — Mobile  / (same P-ID filenames with __mobile suffix)
+Flows F-01…F-04 documented in Part 3 (no separate flow PNGs required).
+Placeholder frame names map 1:1 to PNG filenames under docs/sds-mockups/.
+A.3 Glossary
+Term
+Definition
+P-xx
+Page ID — Site Map and Part 4 traceability
+F-xx
+Flow ID — Part 3 screen flow
+FT-xx
+SRS Feature ID (TBD until SRS published)
+SC-xx
+SRS Scenario ID (TBD)
+AC-xx / NAC-xx
+SRS acceptance criteria — not duplicated here
+Later*
+UI exists with mock data; not MVP-wired
+Screen state
+Loading / Empty / Populated / Error (and extras)
+Design file
+Figma / draw.io source of mockups (TBD)
+— End of Report 3.2 Screen Design Specification (Phase B) —
+---TOTAL---
+2403
+---MEDIA---
+word/media/
+word/media/957d44b50946b534c413739e6f44a0d65d9ec486.png
+word/media/269215ddd925dbfef0b6ad04f79ab0c750c24437.png
+word/media/73d2796ab4f613e427b18e696cc831c3f4966748.png
+word/media/002e02f8caf37f56f7a2f2745ac6d50e04fb8a9c.png
+word/media/cbe2964d7336d9fe9af0b2ed0130f5f98d3eb9fd.png
+word/media/7c5402721f019905ed6a524a30dded0c390d20e4.png
+word/media/52dded9378d35dd0a27767d16200cc81b68faff6.png
+word/media/dab001c4a2e3c0e3a33b5b762ceb7092d7422a37.png
+word/media/4ef1640386c55a1509214db86b6eef7e65afcb77.png
+word/media/32a526a0ddce64a144348f67b4f3dcd2f701da59.png
+word/media/453892202182d6d7d621513273f0783fcd2804f1.png
+word/media/cddf5ba466e19b1c053a435eb98e4e566875d593.png
+word/media/2cd2ad35f23d60c1285731820d398121544f3b1b.png
+word/media/7224bbf3904511bd751301048ec06e7feac9ec43.png
+word/media/244521086509b69dc13c00fb40d962e8ce81e726.png
+word/media/9e4b80137975762b3ed1140c306c57851dab25e8.png
+word/media/0623701e9145f8e752e4f21a90c466db9c7159fb.png
+word/media/95485ef40261f9a4f74b2bc3bf93652bf940c740.png
+word/media/b609df93daf63b45332e7c4eb5d61d5ffe58d82b.png
+word/media/3df2ed66a9087824bb8e8cdf8311dda2394a75aa.png
+word/media/1c763a952ac4eb5a47a46857324dd25b31c45250.png
+word/media/45a299353298ace24a96bbf833bed9f2f5aabab1.png
+word/media/f7d40db16fe85962cfdb2f111b6c0f56b461a3b9.png
+word/media/f2d38233aac4aca8a413fcdba418df19037d7270.png
+word/media/129c58b990a885bc3dbd6a7ae06df0c1150a7c8e.png
+word/media/66b1ec30200dfe7bde9250336184393548546240.png
+word/media/896fd31ba8715c4944738eb074cff865698d1274.png
+word/media/74790cdde3333bde6d814b3d674dbf9a0b0602fb.png
+word/media/af454c36aab1590930582e6e687f37cba1c0b868.png
+word/media/edc208681d6501e69e1a5b6c087dff8c8a578bad.png
+word/media/7b53e784ccc091a79cc466c9829a91a6dbf074b3.png
+word/media/b1cee5e986de96546007d1e48516717d2170e332.png
+word/media/d4fbe03a04871ea2ea17646e27023eb793004fed.png
+word/media/26f88eb0d43b7e5f81c32ca73838d5d8e9248128.png
+word/media/15fb5d5ed054c8f752c9a9d087a91d44417001f0.png
+word/media/df818decd78004fd98d90a11839feb45042025ae.png
+word/media/184ae971391ed32fe2f753f2d3e8c52d92f34bd6.png
+word/media/bd5f8d4891d54f0bd3743846f5670bcf1d6ef1ea.png

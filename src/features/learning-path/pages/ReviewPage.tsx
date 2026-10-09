@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ArrowRight, BookOpenCheck, RefreshCw, SkipForward } from 'lucide-react'
+import { ArrowLeft, ArrowRight, BookOpenCheck, RefreshCw, SkipForward } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type {
   AnswerInput,
@@ -117,17 +117,22 @@ function ReviewView({ review, onReload }: { review: ReviewDetail; onReload: () =
 
   return (
     <article className="lp-page lp-review-page" aria-labelledby="lp-review-title">
+      <Link className="lp-back" to={resumePath(review)}>
+        <ArrowLeft aria-hidden="true" size={16} />Về lộ trình học
+      </Link>
       <header className="lp-review-head">
         <p className="lp-eyebrow">
-          Ôn bắt buộc · {review.knowledgePoint.code}
-          {stage ? ` · ${stage}` : ''}
-          {review.status === 'PENDING' ? ` · fail ${review.failedSets}/${review.maxFailedSets}` : ''}
+          Bài ôn bắt buộc
+          {stage ? ` · Bước ${stage === 'THEORY' ? 'đọc lý thuyết' : 'luyện tập'}` : ''}
         </p>
         <h1 id="lp-review-title">{review.knowledgePoint.title}</h1>
         <p>
           {showTheoryGate
-            ? 'Đọc lại lý thuyết rồi trả lời quick-check để mở bộ luyện ôn.'
-            : 'Làm bộ câu hỏi ôn. Đạt để hoàn thành; chưa đạt có thể sang THEORY hoặc bộ khác.'}
+            ? 'Đọc lại lý thuyết rồi trả lời vài câu kiểm tra nhanh để mở bộ luyện ôn.'
+            : 'Làm bộ câu hỏi ôn. Đạt là hoàn thành; chưa đạt thì đọc lại lý thuyết hoặc làm bộ khác.'}
+          {review.status === 'PENDING' && review.failedSets > 0
+            ? ` Số bộ chưa đạt: ${review.failedSets}/${review.maxFailedSets}.`
+            : ''}
         </p>
       </header>
 
@@ -147,7 +152,7 @@ function ReviewView({ review, onReload }: { review: ReviewDetail; onReload: () =
               <ExerciseBlock
                 allowResubmit={false}
                 block={toExerciseBlock(
-                  'Quick-check lý thuyết',
+                  'Kiểm tra nhanh lý thuyết',
                   review.quickCheck,
                   review.knowledgePoint.code,
                   `theory-check:${review.reviewId}`,
@@ -156,7 +161,7 @@ function ReviewView({ review, onReload }: { review: ReviewDetail; onReload: () =
               />
             ) : (
               <div className="lp-complete-bar">
-                <p>Không có câu quick-check. Xác nhận đã đọc lý thuyết để sang PRACTICE.</p>
+                <p>Không có câu kiểm tra nhanh. Xác nhận đã đọc lý thuyết để sang bước luyện tập.</p>
                 <Button
                   className="lp-btn lp-btn--accent lp-btn--cta"
                   type="button"
@@ -187,7 +192,7 @@ function ReviewView({ review, onReload }: { review: ReviewDetail; onReload: () =
               )}
               failedFooter={result?.status === 'PENDING' && result.stage === 'PRACTICE' ? (
                 <div className="lp-review-retry">
-                  <p>Chưa đạt (failedSets {result.failedSets}/{review.maxFailedSets}). Tải bộ tiếp theo.</p>
+                  <p>Chưa đạt ({result.failedSets}/{review.maxFailedSets} bộ). Thử bộ tiếp theo.</p>
                   <Button className="lp-btn" onClick={onReload} type="button"><RefreshCw aria-hidden="true" />Làm bộ tiếp theo</Button>
                 </div>
               ) : null}
@@ -210,11 +215,13 @@ function ReviewOutcome({ review, status }: { review: ReviewDetail; status: 'DONE
         <p>
           {skipped
             ? `Bạn chưa đạt sau ${review.maxFailedSets} bộ. Bài ôn được bỏ qua để bạn tiếp tục học.`
-            : 'Lộ trình đã mở lại. Bạn có thể học tiếp hoặc quay lại luyện thêm / đề cuối.'}
+            : 'Lộ trình đã mở lại. Bạn có thể học tiếp.'}
         </p>
       </div>
       <div className="lp-done__actions">
-        <Button asChild className="lp-btn"><Link to={resumePath(review)}>Học tiếp<ArrowRight aria-hidden="true" /></Link></Button>
+        <Button asChild className="lp-btn lp-btn--accent lp-btn--cta">
+          <Link to={resumePath(review)}>Học tiếp<ArrowRight aria-hidden="true" /></Link>
+        </Button>
       </div>
     </section>
   )

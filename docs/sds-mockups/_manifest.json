@@ -1,0 +1,122 @@
+{
+  "capturedAt": "2026-10-07T08:04:30.625Z",
+  "baseUrl": "http://localhost:5173",
+  "viewports": {
+    "desktop": {
+      "width": 1440,
+      "height": 900
+    },
+    "mobile": {
+      "width": 375,
+      "height": 812
+    }
+  },
+  "account": "learner@ielts.demo",
+  "screens": [
+    {
+      "id": "P-01",
+      "status": "captured",
+      "reason": "http://localhost:5173/login"
+    },
+    {
+      "id": "P-02",
+      "status": "captured",
+      "reason": "http://localhost:5173/register"
+    },
+    {
+      "id": "P-03",
+      "status": "captured",
+      "reason": "http://localhost:5173/forgot-password"
+    },
+    {
+      "id": "P-04",
+      "status": "captured",
+      "reason": "http://localhost:5173/reset-password?token=demo-token"
+    },
+    {
+      "id": "P-10",
+      "status": "captured",
+      "reason": "http://localhost:5173/home"
+    },
+    {
+      "id": "P-90",
+      "status": "captured",
+      "reason": "http://localhost:5173/sds-missing-screen"
+    },
+    {
+      "id": "P-34",
+      "status": "blocked",
+      "reason": "Fresh demo session has no reviewId. Mock learning starts with an empty review list; opening P-34 would require completing lessons first."
+    },
+    {
+      "id": "P-35",
+      "status": "blocked",
+      "reason": "Topic test LOCKED on the running demo. BÀI KIỂM TRA CUỐI Bài kiểm tra cuối: Đọc hiểu nền tảng 4 câu · cần đạt từ 70% · không giới hạn thời gian Chưa mở đề — cần hoàn tất: Hoàn thành 4 bài học còn lại (vd. Bài 1: Nhận diện paraphrase). Đang khóa"
+    },
+    {
+      "id": "P-36",
+      "status": "blocked",
+      "reason": "Topic test result not captured. The final test is LOCKED until the remaining lessons are completed, so no attempt or result screen was opened."
+    },
+    {
+      "id": "P-30",
+      "status": "captured",
+      "reason": "http://localhost:5173/learn"
+    },
+    {
+      "id": "P-31",
+      "status": "captured",
+      "reason": "http://localhost:5173/learn/topics/topic-demo-reading"
+    },
+    {
+      "id": "P-32",
+      "status": "captured",
+      "reason": "http://localhost:5173/learn/lessons/lesson-l1"
+    },
+    {
+      "id": "P-33",
+      "status": "captured",
+      "reason": "http://localhost:5173/learn/lessons/lesson-l1/practice"
+    },
+    {
+      "id": "P-41",
+      "status": "captured",
+      "reason": "http://localhost:5173/practice-tests"
+    },
+    {
+      "id": "P-41a",
+      "status": "captured",
+      "reason": "http://localhost:5173/practice-tests"
+    },
+    {
+      "id": "P-42",
+      "status": "captured",
+      "reason": "http://localhost:5173/practice/test/vitamins-supplement?mode=practice"
+    },
+    {
+      "id": "P-42a",
+      "status": "captured",
+      "reason": "http://localhost:5173/practice/test/vitamins-supplement?mode=practice"
+    },
+    {
+      "id": "P-42b",
+      "status": "captured",
+      "reason": "http://localhost:5173/practice/test/vitamins-supplement?mode=practice"
+    },
+    {
+      "id": "P-43",
+      "status": "captured",
+      "reason": "http://localhost:5173/practice/listening/student-services-enquiry"
+    },
+    {
+      "id": "P-44",
+      "status": "captured",
+      "reason": "http://localhost:5173/practice/writing/transport-trends"
+    },
+    {
+      "id": "P-44a",
+      "status": "captured",
+      "reason": "http://localhost:5173/practice/writing/transport-trends"
+    }
+  ]
+}

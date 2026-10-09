@@ -1,16 +1,22 @@
 import { useRef, useState, type CSSProperties } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, ArrowRight, Check, Clock3, Flag, Loader2, Lock, PlayCircle } from 'lucide-react'
+import { ArrowDown, ArrowLeft, ArrowRight, Check, CheckCircle2, Circle, Clock3, Dumbbell, Flag, Loader2, Lock, Trophy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { FinalTestSummary, LessonSummary, ReviewRef, TopicLessonsResponse } from '~types/learningPath'
 import { learningApi, toApiError } from '../api'
 import { NoticeBanner } from '../components/NoticeBanner'
 import { ApiErrorState, LoadingState } from '../components/PageState'
-import { StatusBadge } from '../components/StatusBadge'
 import { reportApiError, usePendingReviews } from '../lib/reviewGate'
-import { lessonStatusMeta, testStatusMeta, topicStatusMeta } from '../lib/statusMeta'
+import { lessonStatusMeta } from '../lib/statusMeta'
 import { useApiResource } from '../lib/useApiResource'
 import { useSyncPendingReviews } from '../lib/useSyncPendingReviews'
+
+const SKILL_LABEL: Record<string, string> = {
+  READING: 'Reading',
+  LISTENING: 'Listening',
+  WRITING: 'Writing',
+  SPEAKING: 'Speaking',
+}
 
 export function TopicDetailPage() {
   const { topicId = '' } = useParams()
@@ -20,171 +26,226 @@ export function TopicDetailPage() {
     { allowClear: true },
   )
 
-  if (resource.status === 'loading') return <LoadingState label="Đang tải topic…" />
+  if (resource.status === 'loading') return <LoadingState label="Đang tải chặng học…" />
   if (resource.status === 'error' && resource.error) return <ApiErrorState error={resource.error} onRetry={resource.reload} />
   if (!resource.data) return null
   return <TopicDetailView detail={resource.data} onChanged={resource.reload} />
+}
+
+function needsPractice(lesson: LessonSummary) {
+  return lesson.status === 'COMPLETED' && lesson.practiceStatus === 'REQUIRED'
 }
 
 export function TopicDetailView({ detail, onChanged }: { detail: TopicLessonsResponse; onChanged: () => void }) {
   const { topic, lessons, finalTest } = detail
   const progress = topic.totalLessons === 0 ? 0 : Math.round((topic.completedLessons / topic.totalLessons) * 100)
   const sorted = [...lessons].sort((a, b) => a.sortOrder - b.sortOrder)
-  const continueLesson = sorted.find((lesson) => lesson.status === 'AVAILABLE')
-    ?? sorted.find((lesson) => lesson.status === 'COMPLETED' && lesson.practiceStatus === 'REQUIRED')
-  const continueLabel = continueLesson
-    && continueLesson.status === 'AVAILABLE'
-    && !sorted.some((lesson) => lesson.status === 'COMPLETED')
-    ? 'Bắt đầu'
-    : 'Tiếp tục'
+  const continueLesson = sorted.find((lesson) => lesson.status === 'AVAILABLE') ?? sorted.find(needsPractice)
+  const continueIsPractice = continueLesson ? needsPractice(continueLesson) : false
+  const pendingReviews = usePendingReviews()
+  const blockingReview = continueLesson && !continueIsPractice ? pendingReviews[0] : undefined
+  const neverStarted = !sorted.some((lesson) => lesson.status === 'COMPLETED')
+  const totalMinutes = sorted.reduce((sum, lesson) => sum + (lesson.estimatedMinutes || 0), 0)
+  const skill = topic.skill ? SKILL_LABEL[topic.skill.toUpperCase()] ?? topic.skill : null
+  const coursePath = topic.course ? `/learn/courses/${topic.course.id}` : '/learn'
 
   return (
-    <div className="lp-page">
+    <div className="lp-page lp-topic-page">
       <NoticeBanner />
-      <Link className="lp-back" to={topic.course ? `/learn/courses/${topic.course.id}` : '/learn'}>
-        <ArrowLeft aria-hidden="true" size={16} />{topic.course?.title ?? 'Lộ trình'}
+      <Link className="lp-back" to={coursePath}>
+        <ArrowLeft aria-hidden="true" size={16} />
+        {topic.course ? topic.course.title : 'Lộ trình khóa học'}
       </Link>
-      <header className="lp-topic-head">
-        <div>
-          <p className="lp-eyebrow">Chặng {topic.sequenceOrder} · {topic.code}</p>
+
+      <header className="lp-overview">
+        <div className="lp-overview__text">
+          <p className="lp-eyebrow">
+            Chặng {String(topic.sequenceOrder).padStart(2, '0')}
+            {skill ? ` · ${skill}` : ''}
+          </p>
           <h1>{topic.title}</h1>
-          <p>{topic.description}</p>
-          {continueLesson ? (
-            <Button asChild className="lp-btn lp-btn--accent lp-btn--cta lp-topic-head__cta">
-              <Link to={
-                continueLesson.practiceStatus === 'REQUIRED' && continueLesson.status === 'COMPLETED'
-                  ? `/learn/lessons/${continueLesson.id}/practice`
-                  : `/learn/lessons/${continueLesson.id}`
-              }>
-                <PlayCircle aria-hidden="true" size={18} />
-                {continueLabel} · Bài {continueLesson.sortOrder}
-                <ArrowRight aria-hidden="true" size={18} />
-              </Link>
-            </Button>
+          {topic.description ? <p className="lp-overview__lead">{topic.description}</p> : null}
+        </div>
+
+        <div className="lp-overview__panel">
+          <div className="lp-meter">
+            <div className="lp-meter__row">
+              <span><strong>{topic.completedLessons}/{topic.totalLessons}</strong> bài đã xong</span>
+              <span className="lp-meter__value">{progress}%</span>
+            </div>
+            <progress className="lp-progress" max={100} value={progress}>{progress}%</progress>
+          </div>
+
+          {blockingReview ? (
+            <>
+              <p className="lp-overview__next">
+                <span>Cần làm trước</span>
+                Bài ôn: {blockingReview.knowledgePointTitle}
+              </p>
+              <Button asChild className="lp-btn lp-btn--accent lp-btn--cta lp-overview__cta">
+                <Link to={`/learn/reviews/${blockingReview.reviewId}`}>
+                  Làm bài ôn
+                  <ArrowRight aria-hidden="true" size={18} />
+                </Link>
+              </Button>
+            </>
+          ) : continueLesson ? (
+            <>
+              <p className="lp-overview__next">
+                <span>{continueIsPractice ? 'Cần luyện thêm' : neverStarted ? 'Bắt đầu với' : 'Tiếp theo'}</span>
+                Bài {continueLesson.sortOrder}: {continueLesson.title}
+              </p>
+              <Button asChild className="lp-btn lp-btn--accent lp-btn--cta lp-overview__cta">
+                <Link to={continueIsPractice ? `/learn/lessons/${continueLesson.id}/practice` : `/learn/lessons/${continueLesson.id}`}>
+                  {continueIsPractice ? 'Luyện thêm' : neverStarted ? 'Bắt đầu học' : 'Học tiếp'}
+                  <ArrowRight aria-hidden="true" size={18} />
+                </Link>
+              </Button>
+            </>
+          ) : finalTest.testStatus === 'AVAILABLE' ? (
+            <a className="lp-overview__jump" href="#lp-final-title">
+              Đã học xong các bài. Làm bài kiểm tra chặng
+              <ArrowDown aria-hidden="true" size={16} />
+            </a>
+          ) : finalTest.testStatus === 'PASSED' ? (
+            <p className="lp-overview__done">
+              <CheckCircle2 aria-hidden="true" size={18} />
+              Bạn đã qua chặng này{finalTest.lastPercent !== null ? ` · ${finalTest.lastPercent}%` : ''}
+            </p>
           ) : null}
         </div>
-        <div className="lp-topic-head__meter">
-          <StatusBadge meta={topicStatusMeta(topic.status)} />
-          <label htmlFor="lp-topic-progress">{topic.completedLessons}/{topic.totalLessons} bài đã xong</label>
-          <progress className="lp-progress" id="lp-topic-progress" max={100} value={progress}>{progress}%</progress>
-        </div>
       </header>
-      {sorted.length === 0 ? <p className="lp-empty">Topic này chưa có bài học.</p> : (
-        <ol className="lp-lessons" aria-label="Danh sách bài học">
+
+      <section className="lp-section" aria-labelledby="lp-lessons-title">
+        <div className="lp-section__head">
+          <h2 id="lp-lessons-title">Bài học trong chặng</h2>
+          <span className="lp-section__note">
+            {sorted.length} bài{totalMinutes > 0 ? ` · khoảng ${totalMinutes} phút` : ''}
+          </span>
+        </div>
+
+        {sorted.length === 0 ? <p className="lp-empty">Chặng này chưa có bài học.</p> : null}
+        <ol className="lp-route lp-route--lessons" aria-label="Danh sách bài học">
           {sorted.map((lesson, index) => (
-            <LessonRow
-              continueLabel={continueLabel}
+            <LessonStep
               index={index}
-              isContinue={continueLesson?.id === lesson.id}
+              isNext={continueLesson?.id === lesson.id}
               key={lesson.id}
               lesson={lesson}
             />
           ))}
+          <FinalTestStop lessons={sorted} onChanged={onChanged} test={finalTest} topicId={topic.id} />
         </ol>
-      )}
-      <FinalTestCard lessons={sorted} onChanged={onChanged} test={finalTest} topicId={topic.id} />
+      </section>
     </div>
   )
 }
 
-function LessonRow({
-  lesson,
-  isContinue,
-  index,
-  continueLabel,
-}: {
-  lesson: LessonSummary
-  isContinue: boolean
-  index: number
-  continueLabel: string
-}) {
-  const meta = lessonStatusMeta(lesson.status)
-  const openable = lesson.status !== 'LOCKED'
-  const reasonId = `${lesson.id}-reason`
-  const needsPractice = lesson.status === 'COMPLETED' && lesson.practiceStatus === 'REQUIRED'
+function LessonStep({ lesson, isNext, index }: { lesson: LessonSummary; isNext: boolean; index: number }) {
+  const locked = lesson.status === 'LOCKED'
   const completed = lesson.status === 'COMPLETED'
+  const practice = needsPractice(lesson)
+  const reasonId = `${lesson.id}-reason`
+  const action = isNext && !practice ? 'Học tiếp' : completed ? 'Xem lại' : 'Mở bài'
+
   const body = (
     <>
-      <span className="lp-lesson__num" aria-hidden="true">
-        {lesson.status === 'LOCKED'
-          ? <Lock size={16} />
-          : completed
-            ? <Check size={16} />
-            : lesson.sortOrder}
-      </span>
-      <span className="lp-lesson__main">
-        <span className="lp-lesson__title">Bài {lesson.sortOrder}: {lesson.title}</span>
-        <span className="lp-lesson__meta"><Clock3 aria-hidden="true" size={14} />{lesson.estimatedMinutes} phút</span>
-        {!openable && lesson.lockedReason ? <span className="lp-lesson__reason" id={reasonId}>{lesson.lockedReason}</span> : null}
-        {needsPractice ? (
-          <span className="lp-lesson__reason" id={`${lesson.id}-practice`}>Cần luyện thêm trước khi mở đề cuối</span>
-        ) : null}
-      </span>
-      <span className="lp-lesson__aside">
-        <StatusBadge meta={meta} />
-        {isContinue && openable ? (
-          <span className="lp-lesson__continue">
-            {continueLabel}
-            <ArrowRight aria-hidden="true" size={16} />
+      <span className="lp-step__main">
+        <span className="lp-step__title">{lesson.title}</span>
+        <span className="lp-step__meta">
+          <span className="lp-step__time">
+            <Clock3 aria-hidden="true" size={13} />
+            {lesson.estimatedMinutes} phút
           </span>
-        ) : null}
+          {locked && lesson.lockedReason ? (
+            <span className="lp-step__reason" id={reasonId}>
+              <Lock aria-hidden="true" size={12} />
+              {lesson.lockedReason}
+            </span>
+          ) : null}
+        </span>
       </span>
+      {!locked ? (
+        <span className="lp-step__go">
+          {action}
+          <ArrowRight aria-hidden="true" size={15} />
+        </span>
+      ) : null}
+      <span className="lp-sr-only">Bài {lesson.sortOrder}, {lessonStatusMeta(lesson.status).label}</span>
     </>
   )
+
   return (
     <li
-      className={`lp-lesson lp-lesson--${lesson.status.toLowerCase()}${isContinue ? ' is-continue' : ''}`}
+      className={`lp-step lp-step--${lesson.status.toLowerCase()}${isNext ? ' is-next' : ''}${practice ? ' needs-practice' : ''}`}
       style={{ '--i': index } as CSSProperties}
     >
-      {openable
-        ? <Link className="lp-lesson__row" to={`/learn/lessons/${lesson.id}`}>{body}</Link>
-        : <div className="lp-lesson__row" aria-describedby={lesson.lockedReason ? reasonId : undefined} aria-disabled="true">{body}</div>}
-      {needsPractice ? (
-        <div className="lp-lesson__practice-link">
-          <Link to={`/learn/lessons/${lesson.id}/practice`}>Mở luyện thêm</Link>
-        </div>
-      ) : null}
+      <span className="lp-step__node" aria-hidden="true">
+        {completed ? <Check size={16} strokeWidth={2.75} /> : lesson.sortOrder}
+      </span>
+      <div className="lp-step__body">
+        {locked ? (
+          <div className="lp-step__row" aria-describedby={lesson.lockedReason ? reasonId : undefined} aria-disabled="true">
+            {body}
+          </div>
+        ) : (
+          <Link aria-current={isNext ? 'step' : undefined} className="lp-step__row" to={`/learn/lessons/${lesson.id}`}>
+            {body}
+          </Link>
+        )}
+        {practice ? (
+          <Link className="lp-step__practice" to={`/learn/lessons/${lesson.id}/practice`}>
+            <Dumbbell aria-hidden="true" size={15} />
+            <span>Cần luyện thêm trước khi mở bài kiểm tra chặng</span>
+            <strong>
+              Luyện ngay
+              <ArrowRight aria-hidden="true" size={14} />
+            </strong>
+          </Link>
+        ) : null}
+      </div>
     </li>
   )
 }
 
-function unlockHints(lessons: LessonSummary[], reviews: ReviewRef[], testStatus: string) {
-  if (testStatus !== 'LOCKED') return null
-  const incomplete = lessons.filter((lesson) => lesson.status !== 'COMPLETED')
-  const needPractice = lessons.filter((lesson) => lesson.status === 'COMPLETED' && lesson.practiceStatus === 'REQUIRED')
-  const items: Array<{ key: string; text: string; to?: string }> = []
+type UnlockItem = { key: string; text: string; done: boolean; to?: string }
 
-  if (incomplete.length > 0) {
-    items.push({
+function unlockChecklist(lessons: LessonSummary[], reviews: ReviewRef[]): UnlockItem[] {
+  const incomplete = lessons.filter((lesson) => lesson.status !== 'COMPLETED')
+  const practice = lessons.filter(needsPractice)
+  const items: UnlockItem[] = [
+    {
       key: 'lessons',
-      text: `Hoàn thành ${incomplete.length} bài học còn lại (vd. Bài ${incomplete[0]?.sortOrder}: ${incomplete[0]?.title}).`,
-      to: `/learn/lessons/${incomplete[0].id}`,
-    })
-  }
-  if (needPractice.length > 0) {
-    items.push({
-      key: 'practice',
-      text: `Luyện thêm ${needPractice.length} bài đã học (practice REQUIRED) — vào trang luyện thêm của bài.`,
-      to: `/learn/lessons/${needPractice[0].id}/practice`,
-    })
-  }
-  if (reviews.length > 0) {
-    items.push({
-      key: 'review',
-      text: `Hoàn thành ${reviews.length} bài ôn bắt buộc (review) trước khi mở đề.`,
-      to: `/learn/reviews/${reviews[0].reviewId}`,
-    })
-  }
-  if (items.length === 0) {
-    items.push({
-      key: 'generic',
-      text: 'Hoàn thành mọi bài học, luyện thêm (nếu có) và bài ôn còn treo để mở đề cuối.',
-    })
+      text: incomplete.length > 0
+        ? `Hoàn thành ${incomplete.length} bài học còn lại`
+        : 'Hoàn thành tất cả bài học',
+      done: incomplete.length === 0,
+      to: incomplete[0] ? `/learn/lessons/${incomplete[0].id}` : undefined,
+    },
+    ...(practice.length > 0
+      ? [{
+          key: 'practice',
+          text: `Hoàn thành phần luyện thêm của ${practice.length} bài`,
+          done: false,
+          to: `/learn/lessons/${practice[0].id}/practice`,
+        }]
+      : []),
+    ...(reviews.length > 0
+      ? [{
+          key: 'review',
+          text: `Làm ${reviews.length} bài ôn bắt buộc`,
+          done: false,
+          to: `/learn/reviews/${reviews[0].reviewId}`,
+        }]
+      : []),
+  ]
+  if (items.every((item) => item.done)) {
+    items.push({ key: 'pending', text: 'Hoàn tất phần luyện thêm và bài ôn còn treo (nếu có)', done: false })
   }
   return items
 }
 
-function FinalTestCard({
+function FinalTestStop({
   test,
   topicId,
   lessons,
@@ -200,7 +261,8 @@ function FinalTestCard({
   const [starting, setStarting] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const inFlight = useRef(false)
-  const hints = unlockHints(lessons, pendingReviews, test.testStatus)
+  const status = test.testStatus
+  const checklist = status === 'LOCKED' ? unlockChecklist(lessons, pendingReviews) : null
 
   async function startTest() {
     if (inFlight.current) return
@@ -217,7 +279,7 @@ function FinalTestCard({
       const error = toApiError(reason)
       reportApiError(error)
       if (error.code === 'TEST_UNAVAILABLE') {
-        setMessage('Chưa có đề cho topic này. Hãy quay lại sau.')
+        setMessage('Chưa có đề cho chặng này. Hãy quay lại sau.')
       } else if (error.code === 'PRACTICE_REQUIRED') {
         const ids = new Set(error.details.lessonIds ?? [])
         const titled = lessons.filter((lesson) => ids.has(lesson.id))
@@ -243,42 +305,54 @@ function FinalTestCard({
     }
   }
 
+  const meta = [
+    test.questionCount > 0 ? `${test.questionCount} câu hỏi` : null,
+    'cần đạt từ 70%',
+    'không giới hạn thời gian',
+    test.lastPercent !== null ? `lần gần nhất ${test.lastPercent}%` : null,
+  ].filter(Boolean).join(' · ')
+
   return (
-    <section className={`lp-final lp-final--${test.testStatus.toLowerCase()}`} aria-labelledby="lp-final-title">
-      <span className="lp-final__icon" aria-hidden="true"><Flag size={22} /></span>
-      <div className="lp-final__body">
-        <p className="lp-eyebrow">Bài kiểm tra cuối</p>
-        <h2 id="lp-final-title">{test.title}</h2>
-        <p>
-          {test.questionCount} câu · cần đạt từ 70% · không giới hạn thời gian
-          {test.lastPercent !== null ? ` · lần gần nhất ${test.lastPercent}%` : ''}
-        </p>
-        {hints ? (
-          <div className="lp-final__unlock" role="status">
-            <p className="lp-final__hint">Chưa mở đề — cần hoàn tất:</p>
-            <ul>
-              {hints.map((item) => (
-                <li key={item.key}>
-                  {item.to ? <Link to={item.to}>{item.text}</Link> : item.text}
+    <li className={`lp-stop lp-stop--finish lp-finish--${status.toLowerCase()}`}>
+      <span className="lp-stop__node" aria-hidden="true">
+        {status === 'PASSED' ? <Trophy size={17} /> : <Flag size={16} />}
+      </span>
+      <section className="lp-finish" aria-labelledby="lp-final-title">
+        <div className="lp-finish__head">
+          <div className="lp-finish__text">
+            <p className="lp-stop__kicker">Kiểm tra cuối chặng</p>
+            <h3 id="lp-final-title" className="lp-stop__title">{test.title}</h3>
+            {status === 'NONE'
+              ? <p className="lp-finish__meta">Chặng này không có bài kiểm tra cuối.</p>
+              : <p className="lp-finish__meta">{meta}</p>}
+          </div>
+          {status === 'AVAILABLE' ? (
+            <Button className="lp-btn lp-btn--accent lp-btn--cta" disabled={starting} onClick={startTest} type="button">
+              {starting ? <Loader2 aria-hidden="true" className="lp-spin" /> : null}
+              {starting ? 'Đang giao đề…' : 'Làm bài kiểm tra'}
+            </Button>
+          ) : status === 'PASSED' ? (
+            <span className="lp-chip lp-chip--success">Đã đạt</span>
+          ) : null}
+        </div>
+
+        {checklist ? (
+          <div className="lp-finish__unlock" role="status">
+            <p>Để mở bài kiểm tra:</p>
+            <ul className="lp-checklist">
+              {checklist.map((item) => (
+                <li className={item.done ? 'is-done' : undefined} key={item.key}>
+                  {item.done
+                    ? <CheckCircle2 aria-hidden="true" size={16} />
+                    : <Circle aria-hidden="true" size={16} />}
+                  {item.to && !item.done ? <Link to={item.to}>{item.text}</Link> : <span>{item.text}</span>}
                 </li>
               ))}
             </ul>
           </div>
         ) : null}
         {message ? <p className="lp-error" role="alert">{message}</p> : null}
-      </div>
-      <div className="lp-final__aside">
-        <StatusBadge meta={testStatusMeta(test.testStatus)} />
-        {test.testStatus === 'AVAILABLE' ? (
-          <Button className="lp-btn lp-btn--accent lp-btn--cta" disabled={starting} onClick={startTest} type="button">
-            {starting ? <Loader2 aria-hidden="true" className="lp-spin" /> : null}
-            {starting ? 'Đang giao đề…' : 'Làm bài kiểm tra'}
-          </Button>
-        ) : null}
-        {test.testStatus === 'NONE' ? (
-          <p className="lp-final__hint">Topic này không có đề cuối (NO_TOPIC_TEST).</p>
-        ) : null}
-      </div>
-    </section>
+      </section>
+    </li>
   )
 }

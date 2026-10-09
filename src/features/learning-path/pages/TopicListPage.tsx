@@ -1,15 +1,13 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import type { CSSProperties } from 'react'
-import { ArrowLeft, ArrowRight, Check, Crown, Flag, Loader2, Lock } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, CheckCircle2, Crown, Flag, Loader2, Lock, Trophy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { CourseSummary, TopicSummary } from '~types/learningPath'
 import { learningApi, toApiError } from '../api'
 import { NoticeBanner } from '../components/NoticeBanner'
-import { ApiErrorState, LoadingState } from '../components/PageState'
-import { StatusBadge } from '../components/StatusBadge'
+import { ApiErrorState, TopicListSkeleton } from '../components/PageState'
 import { reportApiError } from '../lib/reviewGate'
-import { topicStatusMeta, testStatusMeta } from '../lib/statusMeta'
+import { topicStatusMeta } from '../lib/statusMeta'
 import { useApiResource } from '../lib/useApiResource'
 
 const SKILL_LABEL: Record<string, string> = {
@@ -20,41 +18,73 @@ const SKILL_LABEL: Record<string, string> = {
   OTHER: 'Khác',
 }
 
+const SKILL_ORDER = ['LISTENING', 'READING', 'WRITING', 'SPEAKING']
+
 /** Topics of one course, picked on the course list screen. */
 export function TopicListPage() {
   const { courseId = '' } = useParams()
   const topicsResource = useApiResource('topics', () => learningApi.listTopics())
   const coursesResource = useApiResource('courses', () => learningApi.listCourses())
   const topics = topicsResource.data?.filter((topic) => topic.course?.id === courseId) ?? null
-  const course = coursesResource.data?.find((row) => row.id === courseId)
-    ?? topics?.[0]?.course
-    ?? null
   const courseSummary = coursesResource.data?.find((row) => row.id === courseId) ?? null
+  const course = courseSummary ?? topics?.[0]?.course ?? null
   const loading = topicsResource.status === 'loading' || coursesResource.status === 'loading'
   const error = topicsResource.error ?? coursesResource.error
   const passed = topics?.filter((topic) => topic.status === 'PASSED').length ?? 0
   const total = topics?.length ?? 0
   const pct = total === 0 ? 0 : Math.round((passed / total) * 100)
+  const nextTopic = topics?.find((topic) => topic.status === 'IN_PROGRESS') ?? null
 
   return (
-    <div className="lp-page">
+    <div className="lp-page lp-course-page">
       <NoticeBanner />
-      <Link className="lp-back" to="/learn"><ArrowLeft aria-hidden="true" size={16} />Danh sách khóa học</Link>
-      <header className="lp-course-head">
-        <div>
-          <p className="lp-eyebrow">{course ? `Khóa học · Band ${course.bandLevel.toFixed(1)}` : 'Khóa học'}</p>
-          <h1>{course?.title ?? 'Lộ trình của khóa'}</h1>
-          <p>Mỗi topic là một chặng. Học hết bài và đạt kiểm tra cuối để mở chặng tiếp theo.</p>
+      <Link className="lp-back" to="/learn">
+        <ArrowLeft aria-hidden="true" size={16} />
+        Tất cả khóa học
+      </Link>
+
+      <header className="lp-overview">
+        <div className="lp-overview__text">
+          <p className="lp-eyebrow">{course ? `Band ${course.bandLevel.toFixed(1)} · Lộ trình khóa học` : 'Lộ trình khóa học'}</p>
+          <h1>{course?.title ?? 'Lộ trình khóa học'}</h1>
+          <p className="lp-overview__lead">
+            Học lần lượt từng chặng. Hoàn thành các bài học và đạt bài kiểm tra chặng (từ 70%) để mở chặng tiếp theo.
+          </p>
         </div>
-        {topics ? (
-          <div className="lp-course-head__meter">
-            <strong>{passed}/{total}</strong>
-            <span>chặng đã qua</span>
-            <progress className="lp-progress" max={100} value={pct}>{pct}%</progress>
+
+        {topics && total > 0 ? (
+          <div className="lp-overview__panel">
+            <div className="lp-meter">
+              <div className="lp-meter__row">
+                <span><strong>{passed}/{total}</strong> chặng đã qua</span>
+                <span className="lp-meter__value">{pct}%</span>
+              </div>
+              <progress className="lp-progress" max={100} value={pct}>{pct}%</progress>
+            </div>
+            {nextTopic ? (
+              <>
+                <p className="lp-overview__next">
+                  <span>Tiếp theo</span>
+                  Chặng {nextTopic.sequenceOrder}: {nextTopic.title}
+                </p>
+                <Button asChild className="lp-btn lp-btn--accent lp-btn--cta lp-overview__cta">
+                  <Link to={`/learn/topics/${nextTopic.id}`}>
+                    {nextTopic.completedLessons > 0 ? 'Học tiếp' : 'Bắt đầu chặng'}
+                    <ArrowRight aria-hidden="true" size={18} />
+                  </Link>
+                </Button>
+              </>
+            ) : passed === total ? (
+              <p className="lp-overview__done">
+                <CheckCircle2 aria-hidden="true" size={18} />
+                Bạn đã qua tất cả các chặng.
+              </p>
+            ) : null}
           </div>
         ) : null}
       </header>
-      {loading ? <LoadingState label="Đang tải lộ trình…" /> : null}
+
+      {loading ? <TopicListSkeleton /> : null}
       {error ? (
         <ApiErrorState
           error={error}
@@ -64,25 +94,33 @@ export function TopicListPage() {
           }}
         />
       ) : null}
-      {topics?.length === 0 ? <p className="lp-empty">Khóa này chưa có topic nào.</p> : null}
-      {topics && topics.length > 0 ? <TopicCatalog topics={topics} /> : null}
-      {courseSummary ? (
-        <CourseFinalTestCard
-          course={courseSummary}
-          onChanged={() => {
-            coursesResource.reload()
-            topicsResource.reload()
-          }}
+      {topics?.length === 0 ? <p className="lp-empty">Khóa này chưa có chặng nào.</p> : null}
+      {topics && topics.length > 0 ? (
+        <TopicCatalog
+          finish={courseSummary && courseSummary.testStatus !== 'NONE' ? (
+            <CourseFinalTestStop
+              course={courseSummary}
+              onChanged={() => {
+                coursesResource.reload()
+                topicsResource.reload()
+              }}
+            />
+          ) : null}
+          nextTopicId={nextTopic?.id ?? null}
+          topics={topics}
         />
       ) : null}
     </div>
   )
 }
 
-const SKILL_ORDER = ['LISTENING', 'READING', 'WRITING', 'SPEAKING']
-
 function skillKey(topic: TopicSummary) {
   return topic.skill?.toUpperCase() || 'OTHER'
+}
+
+function skillLabel(skill: string | null | undefined) {
+  if (!skill) return null
+  return SKILL_LABEL[skill.toUpperCase()] ?? skill
 }
 
 function orderedSkills(topics: TopicSummary[]) {
@@ -102,118 +140,148 @@ export function TopicCardList({ topics }: { topics: TopicSummary[] }) {
   return <TopicCatalog topics={topics} />
 }
 
-function TopicCatalog({ topics }: { topics: TopicSummary[] }) {
+function TopicCatalog({
+  topics,
+  nextTopicId = null,
+  finish = null,
+}: {
+  topics: TopicSummary[]
+  nextTopicId?: string | null
+  finish?: ReactNode
+}) {
   const [filter, setFilter] = useState('ALL')
   const skills = orderedSkills(topics)
-  const visible = [...(filter === 'ALL' ? topics : topics.filter((topic) => skillKey(topic) === filter))]
+  const visible = (filter === 'ALL' ? topics : topics.filter((topic) => skillKey(topic) === filter))
+    .slice()
     .sort((a, b) => a.sequenceOrder - b.sequenceOrder)
 
   return (
-    <div className="lp-skill-catalog">
-      {skills.length > 1 ? (
-        <div className="lp-skill-filters" role="group" aria-label="Lọc theo kỹ năng">
-          <button aria-pressed={filter === 'ALL'} onClick={() => setFilter('ALL')} type="button">Tất cả</button>
-          {skills.map((key) => (
-            <button aria-pressed={filter === key} key={key} onClick={() => setFilter(key)} type="button">
-              {skillLabel(key) ?? key}
-            </button>
-          ))}
-        </div>
-      ) : null}
-      <ol className="lp-path" aria-label="Lộ trình topic">
-        {visible.map((topic, index) => <PathNode index={index} key={topic.id} topic={topic} />)}
+    <section className="lp-section" aria-labelledby="lp-topics-title">
+      <div className="lp-section__head">
+        <h2 id="lp-topics-title">Các chặng</h2>
+        {skills.length > 1 ? (
+          <div className="lp-segment" role="group" aria-label="Lọc theo kỹ năng">
+            <button aria-pressed={filter === 'ALL'} onClick={() => setFilter('ALL')} type="button">Tất cả</button>
+            {skills.map((key) => (
+              <button aria-pressed={filter === key} key={key} onClick={() => setFilter(key)} type="button">
+                {skillLabel(key) ?? key}
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </div>
+      <ol className="lp-route" aria-label="Lộ trình các chặng">
+        {visible.map((topic, index) => {
+          const prev = visible[index - 1]
+          const repeatsReason = topic.status === 'LOCKED' && prev?.status === 'LOCKED' && lockText(prev) === lockText(topic)
+          return (
+            <TopicStop
+              index={index}
+              isNext={topic.id === nextTopicId}
+              key={topic.id}
+              quietReason={repeatsReason}
+              topic={topic}
+            />
+          )
+        })}
+        {finish}
       </ol>
-    </div>
+    </section>
   )
 }
 
-function skillLabel(skill: string | null | undefined) {
-  if (!skill) return null
-  return SKILL_LABEL[skill.toUpperCase()] ?? skill
+function lockText(topic: TopicSummary) {
+  return topic.lockedReason ?? 'Hoàn thành chặng trước để mở'
 }
 
-function PathNode({ topic, index }: { topic: TopicSummary; index: number }) {
-  const meta = topicStatusMeta(topic.status)
+function TopicStop({
+  topic,
+  index,
+  isNext,
+  quietReason = false,
+}: {
+  topic: TopicSummary
+  index: number
+  isNext: boolean
+  quietReason?: boolean
+}) {
   const locked = topic.status === 'LOCKED'
+  const passed = topic.status === 'PASSED'
   const premium = topic.accessLevel === 'PREMIUM' || topic.lockedReason?.includes('Premium')
   const reasonId = `${topic.id}-reason`
-  const lessonPct = topic.totalLessons === 0
-    ? 0
-    : Math.round((topic.completedLessons / topic.totalLessons) * 100)
+  const lessonPct = topic.totalLessons === 0 ? 0 : Math.round((topic.completedLessons / topic.totalLessons) * 100)
   const skill = skillLabel(topic.skill)
-  const cta = locked
-    ? null
-    : topic.status === 'PASSED'
-      ? 'Xem lại'
-      : topic.completedLessons > 0
-        ? 'Tiếp tục'
-        : 'Bắt đầu'
+  const cta = passed ? 'Xem lại' : topic.completedLessons > 0 ? 'Học tiếp' : 'Vào chặng'
 
-  const card = (
+  const body = (
     <>
-      <div className="lp-path-node__top">
-        <div className="lp-path-node__tags">
-          {skill ? <span className="lp-badge lp-tone-primary">{skill}</span> : null}
-          {premium ? <span className="lp-badge lp-tone-locked"><Crown aria-hidden="true" size={12} />Premium</span> : null}
-          {!premium && topic.accessLevel === 'FREE' ? <span className="lp-badge lp-tone-success">FREE</span> : null}
-        </div>
-        <StatusBadge meta={meta} />
+      <div className="lp-stop__head">
+        <p className="lp-stop__kicker">
+          Chặng {String(topic.sequenceOrder).padStart(2, '0')}
+          {skill ? ` · ${skill}` : ''}
+        </p>
+        {premium ? (
+          <span className="lp-chip lp-chip--locked">
+            <Crown aria-hidden="true" size={12} />
+            Premium
+          </span>
+        ) : null}
       </div>
-      <h2>{topic.title}</h2>
-      {topic.description ? <p>{topic.description}</p> : null}
-      <div className="lp-path-node__progress">
-        <div className="lp-path-node__progress-row">
-          <span>{topic.completedLessons}/{topic.totalLessons} bài</span>
-          <span className="lp-path-node__code">{topic.code}</span>
-        </div>
-        <progress className="lp-progress" max={100} value={locked ? 0 : lessonPct}>{lessonPct}%</progress>
+      <h3 className="lp-stop__title">{topic.title}</h3>
+      {topic.description ? <p className="lp-stop__desc">{topic.description}</p> : null}
+      <div className="lp-stop__foot">
+        {locked ? (
+          <span className={quietReason ? 'lp-sr-only' : 'lp-stop__lock'} id={reasonId}>
+            <Lock aria-hidden="true" size={14} />
+            {lockText(topic)}
+          </span>
+        ) : passed ? (
+          <span className="lp-stop__stat is-passed">
+            <CheckCircle2 aria-hidden="true" size={15} />
+            Đã qua · {topic.totalLessons} bài
+          </span>
+        ) : (
+          <span className="lp-stop__stat">
+            <progress className="lp-progress lp-progress--mini" max={100} value={lessonPct}>{lessonPct}%</progress>
+            {topic.completedLessons}/{topic.totalLessons} bài
+          </span>
+        )}
+        {!locked ? (
+          <span className="lp-stop__go">
+            {cta}
+            <ArrowRight aria-hidden="true" size={15} />
+          </span>
+        ) : null}
       </div>
-      {locked && topic.lockedReason ? (
-        <p className="lp-path-node__reason" id={reasonId}>{topic.lockedReason}</p>
-      ) : null}
-      {cta ? (
-        <span className="lp-path-node__cta">
-          {cta}
-          <ArrowRight aria-hidden="true" size={18} />
-        </span>
-      ) : (
-        <span className="lp-path-node__cta"><Lock aria-hidden="true" size={16} />Đang khóa</span>
-      )}
+      <span className="lp-sr-only">Trạng thái: {topicStatusMeta(topic.status).label}</span>
     </>
   )
 
   return (
     <li
-      className={`lp-path-node lp-path-node--${topic.status.toLowerCase()}`}
+      className={`lp-stop lp-stop--${topic.status.toLowerCase()}${isNext ? ' is-next' : ''}`}
       style={{ '--i': index } as CSSProperties}
     >
-      <span className="lp-path-node__dot" aria-hidden="true">
-        {locked ? <Lock size={18} /> : topic.status === 'PASSED' ? <Check size={20} /> : topic.sequenceOrder}
+      <span className="lp-stop__node" aria-hidden="true">
+        {locked ? <Lock size={15} /> : passed ? <Check size={17} strokeWidth={2.75} /> : topic.sequenceOrder}
       </span>
       {locked ? (
-        <div className="lp-path-node__card" aria-describedby={topic.lockedReason ? reasonId : undefined} aria-disabled="true">
-          {card}
-        </div>
+        <div className="lp-stop__card" aria-describedby={reasonId} aria-disabled="true">{body}</div>
       ) : (
-        <Link className="lp-path-node__card" to={`/learn/topics/${topic.id}`}>{card}</Link>
+        <Link aria-current={isNext ? 'step' : undefined} className="lp-stop__card" to={`/learn/topics/${topic.id}`}>
+          {body}
+        </Link>
       )}
     </li>
   )
 }
 
-function CourseFinalTestCard({
-  course,
-  onChanged,
-}: {
-  course: CourseSummary
-  onChanged: () => void
-}) {
+function CourseFinalTestStop({ course, onChanged }: { course: CourseSummary; onChanged: () => void }) {
   const navigate = useNavigate()
   const [starting, setStarting] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const inFlight = useRef(false)
-
-  if (course.testStatus === 'NONE') return null
+  const status = course.testStatus
 
   async function startTest() {
     if (inFlight.current) return
@@ -234,7 +302,7 @@ function CourseFinalTestCard({
       const error = toApiError(reason)
       reportApiError(error)
       if (error.code === 'TEST_LOCKED') {
-        setMessage('Bài thi cuối khóa chưa mở. Hoàn thành mọi topic trong khóa trước.')
+        setMessage('Bài thi cuối khóa chưa mở. Hoàn thành mọi chặng trong khóa trước.')
         onChanged()
       } else if (error.code === 'TEST_UNAVAILABLE') {
         setMessage('Chưa có đề thi cuối cho khóa này. Hãy quay lại sau.')
@@ -246,32 +314,35 @@ function CourseFinalTestCard({
     }
   }
 
+  const description = status === 'PASSED'
+    ? 'Bạn đã đạt bài thi cuối khóa.'
+    : status === 'AVAILABLE'
+      ? 'Bạn đã qua mọi chặng. Đề tổng hợp theo band mục tiêu, cần đạt từ 70%.'
+      : `Mở khi qua đủ ${course.topicCount} chặng (hiện ${course.passedTopicCount}/${course.topicCount}). Cần đạt từ 70%.`
+
   return (
-    <section className={`lp-final lp-final--${course.testStatus.toLowerCase()}`} aria-labelledby="lp-course-final-title">
-      <span className="lp-final__icon" aria-hidden="true"><Flag size={22} /></span>
-      <div className="lp-final__body">
-        <p className="lp-eyebrow">Thi cuối khóa</p>
-        <h2 id="lp-course-final-title">Bài kiểm tra cuối · {course.title}</h2>
-        <p>
-          Mở khi mọi topic đã qua · cần đạt từ 70% · không khóa khóa học khác
-          {course.testStatus === 'LOCKED'
-            ? ` · tiến độ ${course.passedTopicCount}/${course.topicCount} topic`
-            : ''}
-        </p>
-        {course.testStatus === 'LOCKED' ? (
-          <p className="lp-final__hint">Hoàn thành tất cả topic trong khóa để mở đề.</p>
-        ) : null}
+    <li className={`lp-stop lp-stop--finish lp-finish--${status.toLowerCase()}`}>
+      <span className="lp-stop__node" aria-hidden="true">
+        {status === 'PASSED' ? <Trophy size={17} /> : <Flag size={16} />}
+      </span>
+      <section className="lp-finish" aria-labelledby="lp-course-final-title">
+        <div className="lp-finish__head">
+          <div className="lp-finish__text">
+            <p className="lp-stop__kicker">Về đích</p>
+            <h3 id="lp-course-final-title" className="lp-stop__title">Bài thi cuối khóa</h3>
+            <p className="lp-finish__meta">{description}</p>
+          </div>
+          {status === 'AVAILABLE' ? (
+            <Button className="lp-btn lp-btn--accent lp-btn--cta" disabled={starting} onClick={startTest} type="button">
+              {starting ? <Loader2 aria-hidden="true" className="lp-spin" /> : null}
+              {starting ? 'Đang giao đề…' : 'Làm bài thi cuối khóa'}
+            </Button>
+          ) : status === 'PASSED' ? (
+            <span className="lp-chip lp-chip--success">Đã đạt</span>
+          ) : null}
+        </div>
         {message ? <p className="lp-error" role="alert">{message}</p> : null}
-      </div>
-      <div className="lp-final__aside">
-        <StatusBadge meta={testStatusMeta(course.testStatus)} />
-        {course.testStatus === 'AVAILABLE' ? (
-          <Button className="lp-btn lp-btn--accent lp-btn--cta" disabled={starting} onClick={startTest} type="button">
-            {starting ? <Loader2 aria-hidden="true" className="lp-spin" /> : null}
-            {starting ? 'Đang giao đề…' : 'Làm bài thi cuối'}
-          </Button>
-        ) : null}
-      </div>
-    </section>
+      </section>
+    </li>
   )
 }
