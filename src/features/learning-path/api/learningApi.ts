@@ -67,6 +67,8 @@ export interface LearningApi {
   submitReview(reviewId: string, request: ReviewSubmissionRequest): Promise<ReviewSubmissionResult>
   submitTheoryCheck(reviewId: string, request: TheoryCheckRequest): Promise<TheoryCheckResult>
   createTestAssignment(topicId: string): Promise<TestAssignment>
+  /** Course final test when `GET /courses` reports `testStatus = AVAILABLE`. */
+  createCourseTestAssignment(courseId: string): Promise<TestAssignment>
   createAttempt(request: StartAttemptRequest): Promise<AssessmentAttempt>
   getAttemptStructure(attemptId: string): Promise<AttemptStructure>
   saveItemResponse(attemptId: string, itemId: string, request: SaveItemResponseRequest): Promise<AttemptItemResponse>

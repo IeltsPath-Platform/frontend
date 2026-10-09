@@ -19,15 +19,34 @@ export function TopicTestPage() {
   const { attemptId = '' } = useParams()
   const [searchParams] = useSearchParams()
   const topicId = searchParams.get('topic')
+  const courseId = searchParams.get('course')
   const resource = useApiResource(`attempt:${attemptId}`, async () => parseAttemptStructure(await learningApi.getAttemptStructure(attemptId)))
 
   if (resource.status === 'loading') return <LoadingState label="Đang tải đề…" />
   if (resource.status === 'error' && resource.error) return <ApiErrorState error={resource.error} onRetry={resource.reload} />
   if (!resource.data) return null
-  return <TestRunner attemptId={attemptId} key={attemptId} sections={resource.data} topicId={topicId} />
+  return (
+    <TestRunner
+      attemptId={attemptId}
+      courseId={courseId}
+      key={attemptId}
+      sections={resource.data}
+      topicId={topicId}
+    />
+  )
 }
 
-function TestRunner({ attemptId, sections, topicId }: { attemptId: string; sections: TestSection[]; topicId: string | null }) {
+function TestRunner({
+  attemptId,
+  sections,
+  topicId,
+  courseId,
+}: {
+  attemptId: string
+  sections: TestSection[]
+  topicId: string | null
+  courseId: string | null
+}) {
   const navigate = useNavigate()
   const [active, setActive] = useState(0)
   const [answers, setAnswers] = useState<AnswerMap>({})
@@ -51,7 +70,16 @@ function TestRunner({ attemptId, sections, topicId }: { attemptId: string; secti
   const answeredCount = answerable.filter((item) => (answers[item.id] ?? '').trim()).length
   const unanswered = answerable.length - answeredCount
   const section = sections[active]
-  const topicPath = topicId ? `/learn/topics/${topicId}` : '/learn'
+  const backPath = topicId
+    ? `/learn/topics/${topicId}`
+    : courseId
+      ? `/learn/courses/${courseId}`
+      : '/learn'
+  const resultQuery = topicId
+    ? `?topic=${topicId}`
+    : courseId
+      ? `?course=${courseId}`
+      : ''
 
   function saveAnswer(itemId: string, rawValue: string): Promise<boolean> {
     const value = rawValue.trim()
@@ -107,7 +135,7 @@ function TestRunner({ attemptId, sections, topicId }: { attemptId: string; secti
     }
     try {
       await learningApi.submitAttempt(attemptId)
-      navigate(`/learn/tests/${attemptId}/result${topicId ? `?topic=${topicId}` : ''}`, { replace: true })
+      navigate(`/learn/tests/${attemptId}/result${resultQuery}`, { replace: true })
     } catch (reason) {
       const apiError = toApiError(reason)
       reportApiError(apiError)
@@ -119,10 +147,13 @@ function TestRunner({ attemptId, sections, topicId }: { attemptId: string; secti
 
   return (
     <article className="lp-page lp-test-page" aria-labelledby="lp-test-title">
-      <Link className="lp-back" to={topicPath}><ArrowLeft aria-hidden="true" size={16} />Về topic</Link>
+      <Link className="lp-back" to={backPath}>
+        <ArrowLeft aria-hidden="true" size={16} />
+        {courseId ? 'Về khóa học' : 'Về topic'}
+      </Link>
       <header className="lp-test-head">
         <div>
-          <p className="lp-eyebrow">Bài kiểm tra cuối</p>
+          <p className="lp-eyebrow">{courseId ? 'Thi cuối khóa' : 'Bài kiểm tra cuối'}</p>
           <h1 id="lp-test-title">Làm từng phần, câu trả lời được lưu ngay</h1>
         </div>
         <p className="lp-test-head__meta"><InfinityIcon aria-hidden="true" size={18} />Không giới hạn thời gian</p>

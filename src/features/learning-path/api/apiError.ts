@@ -22,6 +22,7 @@ export type ApiErrorCode =
 
 export interface ApiErrorDetails {
   topicId?: string
+  courseId?: string
   lessonId?: string
   lessonIds?: string[]
   reviews?: ReviewRef[]

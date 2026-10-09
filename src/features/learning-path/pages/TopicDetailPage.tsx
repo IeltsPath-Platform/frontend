@@ -1,6 +1,6 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, type CSSProperties } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Clock3, Flag, Loader2, Lock } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, Clock3, Flag, Loader2, Lock, PlayCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { FinalTestSummary, LessonSummary, ReviewRef, TopicLessonsResponse } from '~types/learningPath'
 import { learningApi, toApiError } from '../api'
@@ -29,6 +29,14 @@ export function TopicDetailPage() {
 export function TopicDetailView({ detail, onChanged }: { detail: TopicLessonsResponse; onChanged: () => void }) {
   const { topic, lessons, finalTest } = detail
   const progress = topic.totalLessons === 0 ? 0 : Math.round((topic.completedLessons / topic.totalLessons) * 100)
+  const sorted = [...lessons].sort((a, b) => a.sortOrder - b.sortOrder)
+  const continueLesson = sorted.find((lesson) => lesson.status === 'AVAILABLE')
+    ?? sorted.find((lesson) => lesson.status === 'COMPLETED' && lesson.practiceStatus === 'REQUIRED')
+  const continueLabel = continueLesson
+    && continueLesson.status === 'AVAILABLE'
+    && !sorted.some((lesson) => lesson.status === 'COMPLETED')
+    ? 'Bắt đầu'
+    : 'Tiếp tục'
 
   return (
     <div className="lp-page">
@@ -41,6 +49,19 @@ export function TopicDetailView({ detail, onChanged }: { detail: TopicLessonsRes
           <p className="lp-eyebrow">Chặng {topic.sequenceOrder} · {topic.code}</p>
           <h1>{topic.title}</h1>
           <p>{topic.description}</p>
+          {continueLesson ? (
+            <Button asChild className="lp-btn lp-btn--accent lp-btn--cta lp-topic-head__cta">
+              <Link to={
+                continueLesson.practiceStatus === 'REQUIRED' && continueLesson.status === 'COMPLETED'
+                  ? `/learn/lessons/${continueLesson.id}/practice`
+                  : `/learn/lessons/${continueLesson.id}`
+              }>
+                <PlayCircle aria-hidden="true" size={18} />
+                {continueLabel} · Bài {continueLesson.sortOrder}
+                <ArrowRight aria-hidden="true" size={18} />
+              </Link>
+            </Button>
+          ) : null}
         </div>
         <div className="lp-topic-head__meter">
           <StatusBadge meta={topicStatusMeta(topic.status)} />
@@ -48,24 +69,49 @@ export function TopicDetailView({ detail, onChanged }: { detail: TopicLessonsRes
           <progress className="lp-progress" id="lp-topic-progress" max={100} value={progress}>{progress}%</progress>
         </div>
       </header>
-      {lessons.length === 0 ? <p className="lp-empty">Topic này chưa có bài học.</p> : (
+      {sorted.length === 0 ? <p className="lp-empty">Topic này chưa có bài học.</p> : (
         <ol className="lp-lessons" aria-label="Danh sách bài học">
-          {[...lessons].sort((a, b) => a.sortOrder - b.sortOrder).map((lesson) => <LessonRow key={lesson.id} lesson={lesson} />)}
+          {sorted.map((lesson, index) => (
+            <LessonRow
+              continueLabel={continueLabel}
+              index={index}
+              isContinue={continueLesson?.id === lesson.id}
+              key={lesson.id}
+              lesson={lesson}
+            />
+          ))}
         </ol>
       )}
-      <FinalTestCard lessons={lessons} onChanged={onChanged} test={finalTest} topicId={topic.id} />
+      <FinalTestCard lessons={sorted} onChanged={onChanged} test={finalTest} topicId={topic.id} />
     </div>
   )
 }
 
-function LessonRow({ lesson }: { lesson: LessonSummary }) {
+function LessonRow({
+  lesson,
+  isContinue,
+  index,
+  continueLabel,
+}: {
+  lesson: LessonSummary
+  isContinue: boolean
+  index: number
+  continueLabel: string
+}) {
   const meta = lessonStatusMeta(lesson.status)
   const openable = lesson.status !== 'LOCKED'
   const reasonId = `${lesson.id}-reason`
   const needsPractice = lesson.status === 'COMPLETED' && lesson.practiceStatus === 'REQUIRED'
+  const completed = lesson.status === 'COMPLETED'
   const body = (
     <>
-      <span className="lp-lesson__num" aria-hidden="true">{lesson.status === 'LOCKED' ? <Lock size={16} /> : lesson.sortOrder}</span>
+      <span className="lp-lesson__num" aria-hidden="true">
+        {lesson.status === 'LOCKED'
+          ? <Lock size={16} />
+          : completed
+            ? <Check size={16} />
+            : lesson.sortOrder}
+      </span>
       <span className="lp-lesson__main">
         <span className="lp-lesson__title">Bài {lesson.sortOrder}: {lesson.title}</span>
         <span className="lp-lesson__meta"><Clock3 aria-hidden="true" size={14} />{lesson.estimatedMinutes} phút</span>
@@ -74,11 +120,22 @@ function LessonRow({ lesson }: { lesson: LessonSummary }) {
           <span className="lp-lesson__reason" id={`${lesson.id}-practice`}>Cần luyện thêm trước khi mở đề cuối</span>
         ) : null}
       </span>
-      <StatusBadge meta={meta} />
+      <span className="lp-lesson__aside">
+        <StatusBadge meta={meta} />
+        {isContinue && openable ? (
+          <span className="lp-lesson__continue">
+            {continueLabel}
+            <ArrowRight aria-hidden="true" size={16} />
+          </span>
+        ) : null}
+      </span>
     </>
   )
   return (
-    <li className={`lp-lesson lp-lesson--${lesson.status.toLowerCase()}`}>
+    <li
+      className={`lp-lesson lp-lesson--${lesson.status.toLowerCase()}${isContinue ? ' is-continue' : ''}`}
+      style={{ '--i': index } as CSSProperties}
+    >
       {openable
         ? <Link className="lp-lesson__row" to={`/learn/lessons/${lesson.id}`}>{body}</Link>
         : <div className="lp-lesson__row" aria-describedby={lesson.lockedReason ? reasonId : undefined} aria-disabled="true">{body}</div>}

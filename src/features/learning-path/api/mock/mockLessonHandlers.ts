@@ -39,12 +39,17 @@ const INCOMPLETE_ANSWERS = 'Cần trả lời đủ mọi câu trước khi nộ
 
 export function listCourses(state: MockState): CourseSummary[] {
   const topics = listTopics(state)
+  const passedTopicCount = topics.filter((topic) => topic.status === 'PASSED').length
+  const courseTest = state.courseTests[MOCK_COURSE.id]
+  let testStatus: CourseSummary['testStatus'] = 'LOCKED'
+  if (courseTest?.passed) testStatus = 'PASSED'
+  else if (passedTopicCount > 0 && passedTopicCount === topics.length) testStatus = 'AVAILABLE'
   return [{
     ...MOCK_COURSE,
     topicCount: topics.length,
-    passedTopicCount: topics.filter((topic) => topic.status === 'PASSED').length,
+    passedTopicCount,
     recommended: true,
-    testStatus: 'LOCKED',
+    testStatus,
   }]
 }
 

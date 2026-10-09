@@ -1,7 +1,7 @@
 import type { AnswerMap, AttemptResult, AttemptStatus, ExerciseState, ReviewStatus } from '~types/learningPath'
 
-export const MOCK_STORAGE_KEY = 'ieltspath.learning-path.mock.v1'
-const STATE_VERSION = 1
+export const MOCK_STORAGE_KEY = 'ieltspath.learning-path.mock.v2'
+const STATE_VERSION = 2
 
 export interface KeyValueStorage {
   getItem(key: string): string | null
@@ -33,7 +33,8 @@ export interface TopicTestRecord {
 
 export interface AssignmentRecord {
   id: string
-  topicId: string
+  topicId: string | null
+  courseId: string | null
   packageCode: string
   packageVersionId: string
 }
@@ -48,7 +49,8 @@ export interface AttemptResponseRecord {
 
 export interface AttemptRecord {
   id: string
-  topicId: string
+  topicId: string | null
+  courseId: string | null
   packageCode: string
   packageVersionId: string
   status: AttemptStatus
@@ -68,6 +70,7 @@ export interface MockState {
   flaggedKps: Record<string, string[]>
   reviews: ReviewRecord[]
   topicTests: Record<string, TopicTestRecord>
+  courseTests: Record<string, TopicTestRecord>
   assignments: Record<string, AssignmentRecord>
   attempts: Record<string, AttemptRecord>
   processedRequests: Record<string, unknown>
@@ -82,6 +85,7 @@ export function createInitialState(): MockState {
     flaggedKps: {},
     reviews: [],
     topicTests: {},
+    courseTests: {},
     assignments: {},
     attempts: {},
     processedRequests: {},

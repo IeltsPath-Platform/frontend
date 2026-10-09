@@ -29,12 +29,12 @@ const practiceSkills: readonly NavChild[] = [
   { to: '/practice-tests?skill=speaking', label: 'Speaking' },
 ]
 
-const intensiveCourse: NavItem = {
+const coursesNav: NavItem = {
   to: '/learn',
-  label: 'Khóa học Intensive 7.0',
+  label: 'Khóa học',
   children: [
     { to: '/learn/placement', label: 'Test đầu vào 4 kỹ năng FREE' },
-    { to: '/learn', label: 'Khóa học Intensive 7.0' },
+    { to: '/learn', label: 'Khóa học' },
   ],
 }
 const practice: NavItem = { to: '/practice-tests', label: 'Luyện tập 4 kỹ năng', children: practiceSkills }
@@ -42,7 +42,7 @@ const studentResults: NavItem = { to: '/student-results', label: 'Kết quả h�
 
 const guestNavigation: readonly NavItem[] = [
   { to: '/home', label: 'Trang chủ' },
-  intensiveCourse,
+  coursesNav,
   practice,
   { to: '/writing-samples', label: 'Bài mẫu Writing 8.0+' },
   studentResults,
@@ -58,7 +58,7 @@ const memberNavigation: readonly NavItem[] = [
       { to: '/learn', label: 'Khóa học của tôi' },
     ],
   },
-  intensiveCourse,
+  coursesNav,
   practice,
   {
     to: '/vocabulary',
