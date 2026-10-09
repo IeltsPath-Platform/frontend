@@ -95,7 +95,6 @@ def p30(f):
     p.text(px + 20, py + 98, cw3 - 40, 50, "Làm bài test đầu vào 4 kỹ năng miễn phí trong 15–20 phút để được gợi ý khóa phù hợp.", size=13, color=MUTED)
     p.text(px + 20, py + 182, cw3 - 40, 26, "<b>Làm test đầu vào →</b>", size=14, color=PRIMARY)
     p.zone(px - 13, py + 10, "D")
-    p.text(px + cw3 + 30, py + 60, 360, 90, "PlacementCard is shown only on the “Tất cả” tab. ⚠ It currently links to /placement (no route → P-90). See Appendix B.", size=12, color=INK, italic=True)
     return p
 
 
@@ -112,7 +111,7 @@ def p30_states(f):
     for i in range(3):
         p.card(X0 + i * (cw3 + 20), y, cw3, 200, r=16)
         p.lines(X0 + i * (cw3 + 20) + 20, y + 24, cw3 - 40, 5, gap=30, h=14)
-    p.text(X0, y + 220, CW, 22, "CourseCatalogSkeleton · aria-busy=true · “Đang tải danh sách khóa học…”", size=13, color=MUTED, align="center", italic=True)
+    p.text(X0, y + 220, CW, 22, "Đang tải danh sách khóa học…", size=13, color=MUTED, align="center", italic=True)
     # Empty (filter)
     p, y = learn_page(f, "P-30", "Empty", "Course List", 820, child="Khóa học")
     y = p30_head(p, y)
@@ -127,9 +126,6 @@ def p30_states(f):
     y = p30_head(p, y)
     y = p30_section_head(p, y, counts=False)
     error_panel(p, X0 + 320, y + 20)
-    p.text(X0, y + 360, CW, 44, "PLACEMENT_REQUIRED does not show this panel: ApiErrorState redirects to /learn/placement (P-30a) with the notice “Hãy làm bài kiểm tra đầu vào để chọn course học.”",
-           size=13, color=INK, align="center", italic=True)
-
 
 def error_panel(p, x, y, w=600):
     p.card(x, y, w, 290, r=18, stroke=DARK, sw=2)
@@ -165,8 +161,6 @@ def p30_mobile(f):
     for i, t in enumerate(("Trang chủ", "Khóa học", "Luyện tập 4 kỹ năng", "Sổ từ vựng", "Kết quả học viên")):
         p.rect(ox + 16, y + 16 + i * 60, 343, 48, fill="#FFFFFF" if i == 1 else PRIMARY, stroke="#FFFFFF", r=10,
                value=t, color=PRIMARY if i == 1 else "#FFFFFF", size=14, bold=True)
-    p.text(ox + 16, y + 346, 343, 60, "site-nav-links.is-open: lưới link 48px; Esc hoặc chọn link để đóng.", size=12, color=MUTED, italic=True)
-
 
 # ------------------------------------------------------------------- P-30a Placement
 
@@ -199,12 +193,10 @@ def p30a(f):
     p.zone(X0 - 36, y, "B")
     p.img(X0 + 220, y, 90, 90, "Mascot")
     p.rect(X0 + 330, y + 14, 520, 60, fill=PRIMARY_SOFT, stroke=PRIMARY, r=16, value="<b>Bạn có thể dành bao nhiêu thời gian học mỗi ngày?</b>", size=16, align="left")
-    p.text(X0 + 870, y + 30, 360, 40, "Question 2/3 (question 1: exam month — chips Tháng m/yyyy · Thời gian khác 📅 · Chưa có kế hoạch)", size=12, color=MUTED, italic=True)
     for i, t in enumerate(("Dưới 1 tiếng", "Khoảng 1 – 2 tiếng", "Khoảng 2 – 3 tiếng", "Trên 3 tiếng")):
         p.rect(X0 + 330, y + 110 + i * 64, 520, 52, fill=PRIMARY_SOFT if i == 1 else "#FFFFFF",
                stroke=PRIMARY if i == 1 else DARK, r=12, value=t, size=15, align="left", sw=2 if i == 1 else 1)
     p.text(X0 + 330, y + 380, 200, 24, "← Câu trước", size=14, color=PRIMARY, bold=True)
-    p.text(X0 + 870, y + 110, 360, 120, "Question 3/3: “Mục tiêu điểm IELTS của bạn là?” — Dưới IELTS 5.5 · 6.0 · 6.5 · 7.0 · 7.5 · 8.0 trở lên. Picking a band saves the goal (FT-09) and opens the summary.", size=12, color=MUTED, italic=True)
     # Summary modal
     p, y = placement_page(f, "Survey Summary", 860, 0, 1)
     p.overlay(DESKTOP_W, 860)
@@ -223,7 +215,6 @@ def p30a(f):
     p.text(x + 170, 330, 160, 20, "Band mục tiêu ↓", size=12, color=PRIMARY, bold=True, align="center")
     p.zone(x - 13, 590, "C")
     p.btn(x + 40, 590, w - 80, 52, "Tiếp tục")
-    p.text(x + 40, 646, w - 80, 20, "A goal-save failure only shows a hint; the test can continue.", size=11, color=MUTED, italic=True, align="center")
     # Test hub
     p, y = placement_page(f, "Test Hub", 940, 1, 0.5)
     p.zone(X0 - 36, y, "B")
@@ -261,14 +252,12 @@ def p30a(f):
     p.text(X0 + 320, y + 50, 600, 40, "⟳", size=30, align="center")
     p.text(X0 + 320, y + 100, 600, 30, "Đang chấm bài của bạn…", size=22, bold=True, align="center")
     p.text(X0 + 360, y + 140, 520, 44, "Bài luận được chấm tự động nên có thể mất tới một phút. Đừng đóng trang này.", size=15, color=MUTED, align="center")
-    p.text(X0 + 340, y + 200, 560, 80, "After 45 polls (≈90 s): “Kết quả đang được chấm” + “Kiểm tra lại” · Other errors: “Chưa lấy được kết quả” + “Kiểm tra lại”", size=12, color=INK, align="center", italic=True)
     p30a_result(f)
     p30a_mobile(f)
 
 
 def exam_frame(f, frame, h=860, toolbar=None):
-    p = screen(f, "P-30a", frame, "Placement Test", h=h, fill="#FFFFFF",
-               sub="Desktop 1440px · PlacementExamShell (role=dialog, full screen, over the navbar) · draw.io frame 'P-30a / " + frame + "'")
+    p = screen(f, "P-30a", frame, "Placement Test", h=h, fill="#FFFFFF")
     p.rect(0, 0, DESKTOP_W, 72, fill=PRIMARY, stroke=PRIMARY, r=0)
     p.rect(30, 14, 140, 44, fill=PRIMARY, stroke="#FFFFFF", r=6, value="Logo", color="#FFFFFF", size=13, bold=True)
     p.text(200, 12, 600, 26, f"<b>Bài kiểm tra đầu vào · {frame.split('—')[-1].strip().split(' /')[0]}</b>", size=17, color="#FFFFFF")
@@ -316,8 +305,6 @@ def exam_objective(f):
     p.text(980, 436, 380, 60, "Bạn còn 8 câu chưa trả lời. Sau khi nộp, phần này không mở lại được.", size=13, color=MUTED, valign="top")
     p.btn(980, 520, 160, 42, "Làm tiếp", "secondary", size=13)
     p.btn(1156, 520, 200, 42, "✓ Nộp phần này", size=13)
-    p.text(960, 594, 420, 20, "(confirmation dialog — opens on ✓)", size=11, color=MUTED, italic=True, align="center")
-
 
 def exam_writing(f):
     p = exam_frame(f, "Exam — Writing")
@@ -335,7 +322,6 @@ def exam_writing(f):
         p.rect(540, yy + 26, 520, hh, fill="#FFFFFF", stroke=DARK, r=8, value="Nhập phần viết của bạn ở đây", color=MUTED, size=13, align="left", valign="top")
     p.text(540, 744, 220, 30, "Thời gian: <b>00:04:12</b>", size=14)
     p.btn(900, 738, 160, 44, "✓ Hoàn thành")
-    p.text(540, 790, 520, 40, "Dialog “Nộp phần Writing?” — an empty essay scores 0; “Viết tiếp” / submit", size=12, color=MUTED, italic=True)
     p.zone(1090, 140, "D")
     p.card(1100, 140, 310, 700, r=10)
     p.text(1120, 156, 270, 26, "📘 <b>Tra từ vựng</b>", size=15)
@@ -358,8 +344,6 @@ def exam_speaking(f):
         p.text(x + 24, 170, 370, 30, f"<b>{t}</b>", size=19)
         p.text(x + 24, 214, 370, 280, body, size=14, color=INK, valign="top")
         p.btn(x + 24, 560, 370, 48, cta)
-    p.text(60, 650, 1300, 40, "Three sequential steps in one frame: instructions → microphone check → each question (recording starts automatically, “Dừng & hoàn thành” on the last one). Save error: “Chưa lưu được bản ghi. Kiểm tra kết nối rồi ghi lại câu này.”", size=13, color=MUTED, italic=True)
-
 
 def p30a_result(f):
     h = 1540
@@ -498,7 +482,6 @@ def p30b(f):
     p.text(X0 + 94, y + 14, 300, 20, "VỀ ĐÍCH", size=12, color=MUTED, bold=True)
     p.text(X0 + 94, y + 36, 600, 28, "<b>Bài thi cuối khóa</b>", size=18)
     p.text(X0 + 94, y + 70, 800, 40, "Mở khi qua đủ 5 chặng (hiện 2/5). Cần đạt từ 70%.", size=14, color=MUTED)
-    p.text(X0 + CW - 420, y + 30, 400, 60, "AVAILABLE → “Làm bài thi cuối khóa” button (→ P-35 ?course=)<br>PASSED → “Đã đạt” chip", size=12, color=INK, italic=True, align="right")
     return p
 
 
@@ -510,14 +493,12 @@ def p30b_states(f):
         p.rect(X0 + 10, y + 180 + i * 120, 40, 40, fill=MEDIA, stroke=MEDIA, r=20)
         p.card(X0 + 70, y + 160 + i * 120, CW - 70, 100, r=14)
         p.lines(X0 + 94, y + 176 + i * 120, 600, 3, gap=24, h=12)
-    p.text(X0, y + 650, CW, 22, "TopicListSkeleton · “Đang tải lộ trình chặng học…”", size=13, color=MUTED, italic=True, align="center")
+    p.text(X0, y + 650, CW, 22, "Đang tải lộ trình chặng học…", size=13, color=MUTED, italic=True, align="center")
     p, y = learn_page(f, "P-30b", "Empty / Error", "Topic List (in course)", 820)
     back_link(p, X0, y, "Tất cả khóa học")
     p.text(X0, y + 50, 900, 40, "<b>Khóa IELTS Band 7.0</b>", size=28)
     p.rect(X0, y + 120, 560, 60, fill=SOFT, stroke=LINE, r=10, value="Empty: “Khóa này chưa có chặng nào.”", size=15, align="left")
     error_panel(p, X0 + 640, y + 110)
-    p.text(X0, y + 440, 1240, 60, "TOPIC_LOCKED when opening a locked topic: redirect to /learn with the notice “Topic đó chưa mở. Hãy hoàn thành chặng trước.” · Course final test start errors are shown inline (role=alert): TEST_LOCKED / TEST_UNAVAILABLE.", size=13, color=INK, italic=True)
-
 
 def p30b_mobile(f):
     p = mobile_screen(f, "P-30b", "Topic List (in course)", 1, h=820)
@@ -588,7 +569,6 @@ def p31(f, frame="Populated", locked=False):
              else ["○ <u>Hoàn thành 2 bài học còn lại</u>"])
     for i, it in enumerate(items):
         p.text(X0 + 100, y + 128 + i * 28, 600, 24, it, size=14, color=PRIMARY)
-    p.text(X0 + CW - 460, y + 30, 440, 70, "AVAILABLE → “Làm bài kiểm tra” button (“Đang giao đề…”) → P-35<br>PASSED → “Đã đạt” chip · NONE → “Chặng này không có bài kiểm tra cuối.”", size=12, italic=True, align="right")
     return p
 
 
@@ -628,7 +608,6 @@ def p32(f, frame="Populated", state="reading"):
         p.text(X0 + 60, y0 + 114, mw - 120, 44, "Làm xong bài ôn “Nhận diện paraphrase” trước, bài học sẽ tự mở lại.", size=15, color=MUTED, align="center")
         p.btn(X0 + mw / 2 - 170, y0 + 190, 160, 46, "Làm bài ôn")
         p.link(X0 + mw / 2 + 20, y0 + 202, 200, "Về danh sách bài")
-        p.text(X0, y0 + 300, mw, 40, "ApiErrorState REVIEW_REQUIRED — the ReviewGate banner is shown at the top of the page.", size=12, italic=True)
     else:
         p.zone(X0 - 36, y0, "B")
         p.card(X0, y0, mw, 200, r=14)
@@ -646,7 +625,6 @@ def p32(f, frame="Populated", state="reading"):
             p.rect(X0 + 20, y0 + 548, mw - 40, 50, fill=SOFT, stroke=DARK, r=8, value="✔ Đạt 4/5 câu (80%). Đáp án và giải thích hiện dưới từng câu.", size=13, align="left")
         else:
             p.btn(X0 + 20, y0 + 552, 120, 42, "Nộp")
-            p.text(X0 + 160, y0 + 556, 600, 36, "EssayBlock (when present): “Nộp bài · 3 điểm” · AI band estimate", size=12, color=MUTED, italic=True)
         if state == "completed":
             p.zone(X0 - 36, y0 + 640, "E")
             p.card(X0, y0 + 640, mw, 170, r=16, stroke=PRIMARY, sw=2)
@@ -666,7 +644,6 @@ def p32(f, frame="Populated", state="reading"):
     p.text(rx + 20, y + 118, rw - 40, 60, hint, size=14, color=MUTED, valign="top")
     p.btn(rx + 20, y + 196, rw - 40, 48, cta)
     p.link(rx + 20, y + 262, rw - 40, "Danh sách bài của chặng")
-    p.text(rx, y + 350, rw, 120, "Sticky rail. States: Đang học · Cần làm bài ôn · Cần luyện thêm (→ “Luyện thêm bài này”) · Đã hoàn thành. Last lesson: “Về chặng làm bài kiểm tra”.", size=12, color=MUTED, italic=True, valign="top")
     return p
 
 
@@ -685,8 +662,6 @@ def p32_mobile(f):
     p.rect(ox, 820 - 76, MOBILE_W, 76, fill="#FFFFFF", stroke=DARK, r=0)
     p.text(ox + 16, 820 - 62, 150, 48, "<b>◉ Đang học</b>", size=13)
     p.btn(ox + 170, 820 - 64, 190, 48, "Hoàn thành bài", size=13)
-    p.text(ox, 820 + 8, MOBILE_W, 20, "lp-lesson-mobile-bar thay cho rail", size=11, color=MUTED, italic=True, align="center")
-
 
 # ------------------------------------------------------------------- P-33 Lesson Practice
 
@@ -707,7 +682,6 @@ def p33(f):
         p.chip(X0 + 24, yy + 50, chip, "active" if i == 1 else "neutral")
         p.text(X0 + 140, yy + 50, 700, 24, meta, size=13, color=MUTED)
         p.btn(X0 + CW - 200, yy + 26, 170, 44, cta, "disabled" if prem else ("primary" if i == 1 else "secondary"), size=14)
-    p.text(X0, y + 500, CW, 40, "Empty: “Bài này không có bộ luyện thêm.” · Passed: “Bạn đã đạt phần luyện thêm. Quay lại chặng để làm bài kiểm tra (nếu không còn bài ôn).” + “Về lộ trình” button", size=13, italic=True)
     # attempt
     p, y = learn_page(f, "P-33", "Attempt", "Lesson Practice", 980)
     p.text(X0, y, 400, 24, "← Danh sách luyện thêm", size=14, color=PRIMARY, bold=True)
@@ -720,11 +694,10 @@ def p33(f):
     p.lines(X0 + 20, y + 186, 520, 14, gap=26)
     p.zone(X0 + 580 - 30, y + 130, "C")
     p.card(X0 + 580, y + 130, CW - 580, 620, r=14)
-    p.text(X0 + 600, y + 146, 500, 24, "<b>ExerciseBlock</b> (no resubmission)", size=15)
+    p.text(X0 + 600, y + 146, 500, 24, "<b>ExerciseBlock</b>", size=15)
     for i in range(6):
         p.rect(X0 + 600, y + 190 + i * 60, CW - 620, 46, fill="#FFFFFF", stroke=DARK, r=8, value=f"{i + 1}. Question …", color=MUTED, size=13, align="left")
     p.btn(X0 + 600, y + 680, 140, 46, "Nộp")
-    p.text(X0, y + 770, CW, 40, "Warning when answers were revealed: “Bộ này đã lộ đáp án trước đó nên lần nộp này không được tính.”", size=13, italic=True)
     # outcome
     p, y = learn_page(f, "P-33", "Outcome", "Lesson Practice", 760)
     p.text(X0, y, 400, 24, "← Danh sách luyện thêm", size=14, color=PRIMARY, bold=True)
@@ -737,8 +710,6 @@ def p33(f):
         p.text(x + 24, y + 80, 350, 28, f"<b>{t}</b>", size=20)
         p.text(x + 24, y + 120, 350, 80, body, size=15, color=MUTED, valign="top")
         p.btn(x + 24, y + 240, 350, 48, cta, "primary" if i == 2 else "secondary", size=14)
-    p.text(X0, y + 360, CW, 30, "A created review → navigate to P-34. After passing → back to P-31 to unlock the topic test.", size=13, italic=True)
-
 
 # ------------------------------------------------------------------- P-34 Review
 
@@ -759,7 +730,6 @@ def p34(f):
             p.text(X0 + 30, y2 + 24, 800, 30, "<b>Đã hoàn thành bài ôn</b>", size=22)
             p.text(X0 + 30, y2 + 64, 1000, 24, "Lộ trình đã mở lại. Bạn có thể học tiếp.", size=15, color=MUTED)
             p.btn(X0 + 30, y2 + 120, 180, 48, "Học tiếp →")
-            p.text(X0, y2 + 230, CW, 40, "SKIPPED: “Đã bỏ qua bài ôn” — “Bạn chưa đạt sau 3 bộ. Bài ôn được bỏ qua để bạn tiếp tục học.”", size=13, italic=True)
             y2 += 280
         p.zone(X0 - 36, y2, "B")
         p.card(X0, y2, CW, 200, r=14)
@@ -773,7 +743,6 @@ def p34(f):
             for i in range(3):
                 p.rect(X0 + 20, y2 + 56 + i * 54, CW - 40, 42, fill="#FFFFFF", stroke=DARK, r=8, value=f"{i + 1}. …", color=MUTED, size=13, align="left")
             p.btn(X0 + 20, y2 + 230, 120, 44, "Nộp")
-            p.text(X0 + 160, y2 + 236, 900, 40, "No questions: “Xác nhận đã đọc lý thuyết…” + “Tiếp tục luyện ôn” button", size=12, color=MUTED, italic=True)
         elif stage == "PRACTICE_SET":
             p.zone(X0 - 36, y2, "C")
             p.card(X0, y2, 560, 330, r=14)
@@ -817,8 +786,6 @@ def p35(f, frame="Populated", confirming=False):
     if confirming:
         p.rect(X0 + 320, y + 798, 620, 46, fill=SOFT, stroke=DARK, r=8, value="Còn 21 câu bỏ trống, các câu đó sẽ tính sai. Bấm lần nữa để nộp.", size=13)
     p.btn(X0 + CW - 200, y + 796, 200, 52, "➤ " + ("Vẫn nộp bài" if confirming else "Nộp bài"))
-    p.text(X0, y + 880, CW, 20, "lp-test-bar sticky at the bottom", size=11, color=MUTED, italic=True)
-
 
 def p36(f, passed):
     frame = "Passed" if passed else "Failed"
@@ -844,8 +811,6 @@ def p36(f, passed):
         p.card(X0, y + 376 + i * 70, CW, 60, r=10)
         p.text(X0 + 20, y + 386 + i * 70, 1000, 40,
                f"<b>Câu {i + 1}</b> · prompt …  " + ("✓ correct · answer: …" if passed else "✗ / ✓ (answers hidden when failed)"), size=14)
-    p.text(X0, y + 670, CW, 40, "Course test (?course=): title “Đạt thi cuối khóa”, button “Về khóa học”; failed: “Về khóa để làm lại”. ⚠ Current copy exposes technical details (“poll GET /courses”) — see Appendix B.", size=13, italic=True)
-
 
 def build(new):
     f = new("P-30_CourseList"); p30(f); p30_states(f); p30_mobile(f); f.save()

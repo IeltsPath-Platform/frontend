@@ -4,10 +4,6 @@ from chrome import (navbar, mobile_nav, footer, consult_fab, screen, mobile_scre
                     DESKTOP_W, MOBILE_W, NAV_H, SUB_H)
 
 
-def note(p, x, y, w, text, h=40):
-    p.text(x, y, w, h, text, size=13, color=INK, italic=True, valign="top")
-
-
 def build_shell(new):
     f = new("SHELL_SharedLayout")
     # Learner desktop
@@ -15,14 +11,13 @@ def build_shell(new):
     y = navbar(p, role="learner", active="Khóa học", child="Khóa học")
     p.zone(14, 22, "A")
     p.zone(14, NAV_H + 8, "B")
-    note(p, 1100, NAV_H + SUB_H + 6, 320, "B — subnav: sections of the active / hovered primary item", 40)
     p.zone(100 - 36, y + 20, "C")
     p.rect(100, y + 20, 1240, 64, fill=SOFT, stroke=DARK, r=12, value="🛡 ReviewGateBanner (/learn/* only, when a review is mandatory) · NoticeBanner (location.state.notice) ✕", size=14)
     p.zone(100 - 36, y + 100, "D")
     p.rect(100, y + 100, 1240, 380, fill="#FFFFFF", stroke=LINE, r=14, dashed=True,
            value="<b>main#main-content</b> — page content (LearnLayout: .lp-shell max 1240px; Practice/Home: shell max 1440px)<br>Per-route ErrorBoundary: “Không thể hiển thị lộ trình học”", size=16, color=MUTED)
     p.zone(100 - 36, y + 500, "E")
-    p.rect(100, y + 500, 1240, 46, fill=SOFT, stroke=LINE, r=10, value="🧪 DemoControls (only when VITE_USE_MOCK_LEARNING): “Đặt lại demo” · “Giả lỗi máy chủ 500”", size=13)
+    p.rect(100, y + 500, 1240, 46, fill=SOFT, stroke=LINE, r=10, value="🧪 DemoControls: “Đặt lại demo” · “Giả lỗi máy chủ 500”", size=13)
     consult_fab(p, 1250, 760 - 130)
     p.zone(14, 760 - 50, "F")
     footer(p, 760 - 64)
@@ -37,12 +32,10 @@ def build_shell(new):
     p.btn(1100, 196, 290, 40, "Chuyển sang Premium (demo)", "secondary", size=13)
     p.text(1100, 244, 290, 36, "Chế độ demo — không thay đổi gói học thực tế.", size=11, color=MUTED, italic=True)
     p.btn(1100, 292, 290, 40, "Đăng xuất", size=13)
-    note(p, 100, 400, 900, "“Đăng xuất” → logoutSession() → /login (replace). The tier toggle only changes FE demo state (setDemoTier).", 50)
     # Guest
     p = screen(f, "SHELL", "Guest Desktop", "Shared Layout — Public Shell", h=520)
     y = navbar(p, role="guest", active="Trang chủ")
     p.zone(14, 22, "A")
-    note(p, 300, y + 30, 1000, "Guest nav: Trang chủ · Khóa học · Luyện tập 4 kỹ năng · Bài mẫu Writing 8.0+ · Kết quả học viên. Every item except Trang chủ is RequireAuth → P-01 (state.from). The Đăng nhập / Đăng ký buttons are hidden on /login and /register.", 70)
     p.rect(100, y + 120, 1240, 220, fill="#FFFFFF", stroke=LINE, r=14, dashed=True, value="Public content (P-10, P-50) — floating subnav when hovering an item with sections", size=15, color=MUTED)
     footer(p, 520 - 64)
     # Auth shell
@@ -99,7 +92,6 @@ def build_system(new):
     f = new("P-90_NotFound")
     p = screen(f, "P-90", "Populated", "Not Found", h=720)
     status_card(p, 140, "←", "404", "Không tìm thấy trang", "Không có màn hình nào được khai báo cho /duong-dan-sai.", ["Về Overview"])
-    note(p, 470, 520, 500, "No SiteNavbar. The global footer still renders below <Routes>. A Guest clicking “Về Overview” → RequireAuth → P-01.", 60)
     footer(p, 720 - 64)
     f.save()
 
@@ -113,13 +105,11 @@ def build_system(new):
     p.text(500, y + 196, 440, 44, "Nội dung này không tồn tại hoặc đã bị gỡ.", size=15, color=MUTED, align="center")
     p.zone(457, y + 270, "B")
     p.btn(620, y + 270, 200, 48, "Về lộ trình")
-    note(p, 470, y + 400, 500, "Rendered inside LearnLayout for unmatched /learn/* and when the API returns NOT_FOUND.", 40)
     footer(p, 700 - 64)
     f.save()
 
     f = new("P-92_RouteStatus")
     p = screen(f, "P-92", "Populated", "Route Status (stub template)", h=720)
     status_card(p, 140, "🚧", "IELTSPATH", "{title}", "Trang này đã có đường dẫn riêng nhưng nội dung vẫn đang được hoàn thiện.", ["Về Overview", "Đến lớp học"])
-    note(p, 300, 520, 840, "Used by: /practice “Thực hành” · /submission-history · /flashcards · /writing-samples · /student-results · /classes/:classCode/join · /mentors/:mentorSlug · /terms · /privacy · /copyright.", 60)
     footer(p, 720 - 64)
     f.save()

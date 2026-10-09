@@ -15,7 +15,6 @@ def auth_backdrop(p, top, ambient="default"):
     p.text(160, top + 150, 520, 170, title, size=44, color=INK, bold=True, valign="top")
     p.text(160, top + 300, 520, 50, body, size=16, color=MUTED, valign="top")
     p.img(250, top + 400, 300, 280, "Mascot ClassMascot (lg)")
-    p.text(60, top + 30, 300, 20, "background: InteractiveCanvasBackground (particles) + floating icons", size=11, color=MUTED, italic=True)
     p.zone(130, top + 145, "A")
 
 
@@ -78,7 +77,7 @@ def auth_card(p, x, y, mode, state="populated"):
         ("reset", "error"): "Không đặt lại được mật khẩu. Kiểm tra mã và thử lại.",
     }.get((mode, state))
     if status:
-        p.rect(ix, cy, iw, 46, fill=SOFT, stroke=DARK, r=8, value=f"role=status · {status}", size=13, color=INK, align="left")
+        p.rect(ix, cy, iw, 46, fill=SOFT, stroke=DARK, r=8, value=status, size=13, color=INK, align="left")
         cy += 58
     p.zone(x - 13, cy, "D")
     prompt = {
@@ -108,7 +107,6 @@ def auth_mobile(f, pid, mode, title):
     ox = phone(p, 0, "Populated · 375", h=900)
     y = mobile_nav(p, role="guest", ox=ox, hide_auth=mode in ("sign-in", "sign-up"))
     p.img(ox + 220, y + 20, 140, 120, "Mascot mờ (opacity .27)")
-    p.text(ox + 16, y + 30, 200, 60, "≤1024px: ẩn ambient copy; mascot mờ phía sau form", size=11, color=MUTED, italic=True)
     p.card(ox + 16, y + 100, 343, 470 if mode == "sign-in" else 620, r=18)
     ix, iw = ox + 36, 303
     copy = {"sign-in": ("Chào mừng bạn trở lại", "Đăng nhập"), "sign-up": ("Tạo tài khoản mới", "Tạo tài khoản")}[mode]

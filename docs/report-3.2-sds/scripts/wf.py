@@ -156,20 +156,9 @@ class Page:
             h = max(h, frame["h"])  # cover a footer that already grew the frame
         return self.rect(ox, oy, w, h, fill="#111827", stroke="none", r=0, opacity=45)
 
-    def caption(self, title, sub, w):
-        """Frame title + legend strip drawn above the frame (y < 0)."""
-        self.caption_id = self.text(0, -86, w * 0.62, 30, f"<b>{escape(title)}</b>", size=20, color=INK)
-        self.text(0, -54, w * 0.62, 22, sub, size=13, color=MUTED)
-        lx = w - 560
-        self.rect(lx, -84, 18, 18, fill=PRIMARY, stroke=PRIMARY, r=4)
-        self.text(lx + 24, -86, 120, 22, "Primary CTA", size=12, color=MUTED)
-        self.rect(lx + 130, -84, 18, 18, fill="#FFFFFF", stroke=DARK, r=4)
-        self.text(lx + 154, -86, 120, 22, "Secondary", size=12, color=MUTED)
-        self.rect(lx + 250, -84, 18, 18, fill=MEDIA, stroke=LINE, r=2)
-        self.text(lx + 274, -86, 120, 22, "Media / data", size=12, color=MUTED)
-        self.zone(lx + 380, -86, "A")
-        self.text(lx + 412, -86, 150, 22, "Zone (Part 4)", size=12, color=MUTED)
-        self.rect(0, -32, w, 2, fill=LINE, stroke=LINE, r=0)
+    def caption(self, title, w):
+        """Frame title drawn above the frame (y < 0); diagrams carry no legend or notes."""
+        self.caption_id = self.text(0, -60, w * 0.8, 30, f"<b>{escape(title)}</b>", size=20, color=INK)
 
     def frame(self, w, h, ox=0, oy=0, fill="#FFFFFF"):
         cid = self.rect(ox, oy, w, h, fill=fill, stroke="#9CA3AF", r=0, sw=2)

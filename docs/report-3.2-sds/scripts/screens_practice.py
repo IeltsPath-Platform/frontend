@@ -59,7 +59,6 @@ def p41(f):
     h = 1080
     p = screen(f, "P-41", "Populated", "Practice Catalog", h=h)
     catalog_base(p, h)
-    p.text(330, 1000 - 40, 1070, 30, "All cards are MOCK_PRACTICE_CARDS (no API yet). Click / Enter / Space on a card → P-41a. Filters: skill (sidebar + ?skill=), tab, search.", size=12, italic=True)
     p = mobile_screen(f, "P-41", "Practice Catalog", 2, h=820)
     ox = phone(p, 0, "Populated · 375", h=820)
     y = mobile_nav(p, ox=ox)
@@ -107,7 +106,6 @@ def p41a(f):
         p.img(cx + 24, y + 196, 302, 140, "Preview " + ("exam UI" if i == 0 else "practice workspace"))
         p.text(cx + 24, y + 350, 302, 28, f"<b>{t}</b>", size=18, align="center")
         p.text(cx + 24, y + 384, 302, 70, d, size=13, color=MUTED, align="center", valign="top")
-    p.text(x + 32, y + 482, 600, 20, "aria-pressed: the selected card has a thick border (default Thi thử)", size=12, color="#FFFFFF", italic=True)
     p.zone(x - 13, y + 540, "C")
     p.rect(x + w / 2 - 160, y + 540, 320, 56, fill="#FFFFFF", stroke="#FFFFFF", r=28, value="BẮT ĐẦU LÀM BÀI", color=PRIMARY, bold=True, size=17)
 
@@ -187,8 +185,6 @@ def p42(f):
         p = screen(f, "P-42", frame, "Reading Practice Test", h=h)
         y = navbar(p, role="learner", active="Luyện tập 4 kỹ năng")
         reading(p, y, mode)
-        if mode == "Thi thử":
-            p.text(270, h - 110, 560, 40, "Thi thử: hides Practice Tools, the Ghi chú button, Floating Notes and dialogs; ⚙ settings remain.", size=12, italic=True)
         footer(p, h - 64)
     p = mobile_screen(f, "P-42", "Reading Practice Test", 1, h=820)
     ox = phone(p, 0, "Practice · 375", h=820)
@@ -206,8 +202,6 @@ def p42(f):
     p.card(ox + 12, y + 438, 351, 200, r=12)
     p.text(ox + 24, y + 448, 320, 24, "<b>Question 1 of 5</b>", size=15, color=PRIMARY)
     p.rect(ox + 24, y + 490, 327, 40, fill="#FFFFFF", stroke=DARK, r=8, value="Chưa chọn đáp án ˅", color=MUTED, size=12, align="left")
-    p.text(ox, 830, MOBILE_W, 20, "Ba cột xếp dọc (map → passage → câu hỏi)", size=11, color=MUTED, italic=True, align="center")
-
 
 def dialog_over_reading(f, pid, title, w, h_dialog, body):
     h = 960
@@ -238,7 +232,6 @@ def p42a(f):
         p.btn(x + 32, yy + 224, 180, 40, "🖼 Chọn ảnh", "secondary", size=13)
         p.text(x + 224, yy + 232, 300, 24, "PNG, JPG hoặc WebP · tối đa 1 MB", size=12, color=MUTED)
         p.zone(x - 13, yy + 290, "C")
-        p.text(x + 32, yy + 280, w - 64, 20, "Errors: “Nhập từ vựng và nghĩa trước khi lưu.” / “Không lưu được: bộ nhớ đầy…”", size=11, color=MUTED, italic=True)
         p.btn(x + w - 212, yy + 300, 180, 46, "Lưu Flashcard")
     dialog_over_reading(f, "P-42a", "Create Flashcard", 620, 600, body)
 
@@ -251,7 +244,6 @@ def p42b(f):
         p.zone(x - 13, y + 100, "B")
         p.text(x + 32, y + 100, w - 64, 30, "<b>snow gun</b>", size=20)
         p.text(x + 32, y + 136, w - 64, 30, "máy phun tuyết", size=16)
-        p.text(x + 32, y + 176, w - 64, 40, "Not in the glossary: “Chưa có nghĩa trong từ điển của bài. Hãy chọn một từ/cụm từ ngắn hoặc mở trang tra cứu bên dưới.”", size=12, color=MUTED, italic=True, valign="top")
         p.zone(x - 13, y + 236, "C")
         p.link(x + 32, y + 236, 400, "↗ Wiktionary (new tab)")
     dialog_over_reading(f, "P-42b", "Dictionary Lookup", 520, 290, body)
@@ -266,7 +258,6 @@ def p42c(f):
             p.card(x + 32, y + 76 + i * 110, w - 64, 96, r=12)
             p.img(x + 44, y + 86 + i * 110, 76, 76, "img")
             p.text(x + 136, y + 88 + i * 110, w - 200, 70, f"<b>{word}</b><br>{mean}<br><i>example …</i>", size=13, valign="top")
-        p.text(x + 32, y + 310, w - 64, 44, "Empty: “Chưa có thẻ. Chọn từ trong bài đọc và nhấn “Tạo Flashcard”.” · localStorage read errors use role=alert.", size=12, color=MUTED, italic=True, valign="top")
     dialog_over_reading(f, "P-42c", "Saved Flashcards", 600, 380, body)
 
 
@@ -322,7 +313,6 @@ def p43(f):
     p.text(950, y + 80, 440, 40, "The workshop will be held in room ______.<br><i>Write ONE word and/or a number.</i>", size=14, valign="top")
     p.rect(950, y + 140, 440, 44, fill="#FFFFFF", stroke=DARK, r=8, value="Nhập đáp án cho câu 3", color=MUTED, size=13, align="left")
     p.btn(950, y + 200, 160, 40, "⚑ Đánh dấu", "secondary", size=13)
-    p.text(270, y + 450, 1100, 40, "Audio, cues and questions are mock data (MOCK_LISTENING_QUESTIONS). No submission/grading yet; “Thoát” → P-41.", size=12, italic=True)
     footer(p, h - 64)
 
 

@@ -77,8 +77,9 @@ Language: the document is in English; quoted UI strings stay in Vietnamese becau
 
 ## Wireframe conventions
 
-Grayscale + `#123AB5` accent (primary CTA, active nav). Each frame has a title and legend
-(Primary CTA · Secondary · Media · Zone). Zone badges A/B/C… match the Zone lists in Part 4.
+Grayscale + `#123AB5` accent (primary CTA, active nav). Each frame has a title only — no legend,
+note boxes or callouts on the canvas; explanations live in the DOCX text. Zone badges A/B/C… match
+the Zone lists in Part 4.
 Desktop width 1440px. Course / topic names in the wireframes are sample data.
 
 The old screenshots in `frontend/docs/sds-mockups/` are evidence only, not the Design File.

@@ -148,10 +148,10 @@ def phone(p, i, label, h=760):
     return ox
 
 
-def screen(f, pid, frame, title, w=DESKTOP_W, h=900, fill=CANVAS, sub=None):
+def screen(f, pid, frame, title, w=DESKTOP_W, h=900, fill=CANVAS):
     """New tab named '<pid> / <frame>' with caption + frame border. Returns the page."""
     p = f.page(f"{pid} / {frame}")
-    p.caption(f"[{pid}] {title} — {frame}", sub or f"Desktop {w}px · draw.io frame '{pid} / {frame}'", max(w, 1100))
+    p.caption(f"[{pid}] {title} — {frame}", max(w, 1100))
     p.frame(w, h, fill=fill)
     return p
 
@@ -162,5 +162,5 @@ def mobile_screen(f, pid, title, count, h=760, frame="Mobile"):
         return Page(f"{pid} / {frame}")  # detached: drawn but never saved
     p = f.page(f"{pid} / {frame}")
     total = count * MOBILE_W + (count - 1) * PHONE_GAP
-    p.caption(f"[{pid}] {title} — {frame}", f"Mobile {MOBILE_W}px · draw.io frame '{pid} / {frame}'", max(total, 1100))
+    p.caption(f"[{pid}] {title} — {frame}", max(total, 1100))
     return p
