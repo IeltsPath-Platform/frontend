@@ -1,5 +1,5 @@
 import React from 'react'
-import { Headphones, RefreshCw, PenTool, Play, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Headphones, RefreshCw, PenTool, Play } from 'lucide-react'
 import type { AiRecommendationItem } from '@/types/overview'
 
 interface OverviewAiRecommendationsProps {
@@ -43,22 +43,13 @@ export const OverviewAiRecommendations: React.FC<OverviewAiRecommendationsProps>
               className="rec-action-btn"
               onClick={() => onAction && onAction(item.id)}
             >
-              <Play size={12} fill="#ffffff" className="mr-1 inline" />
+              <Play size={12} fill="currentColor" className="mr-1 inline" />
               <span>Bắt đầu ngay</span>
             </button>
           </div>
         ))}
       </div>
 
-      {/* Carousel footer arrows */}
-      <div className="ai-carousel-nav">
-        <button type="button" className="carousel-nav-btn" aria-label="Trước">
-          <ChevronLeft size={14} />
-        </button>
-        <button type="button" className="carousel-nav-btn" aria-label="Sau">
-          <ChevronRight size={14} />
-        </button>
-      </div>
     </section>
   )
 }

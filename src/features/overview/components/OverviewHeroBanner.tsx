@@ -1,5 +1,6 @@
 import React from 'react'
-import { Play, ChevronRight, GraduationCap } from 'lucide-react'
+import { ArrowRight, BookOpen, GraduationCap, Play } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import type { UserAcademicProfile } from '@/types/overview'
 
 interface OverviewHeroBannerProps {
@@ -7,136 +8,40 @@ interface OverviewHeroBannerProps {
   onContinueStudy?: () => void
 }
 
-export const OverviewHeroBanner: React.FC<OverviewHeroBannerProps> = ({
-  profile,
-  onContinueStudy,
-}) => {
-  return (
-    <section className="overview-hero-card">
-      <div className="hero-top-row">
-        {/* User Identity */}
-        <div className="hero-user-identity">
-          <div className="hero-owl-avatar-wrap">
-            <div className="hero-owl-circle">
-              <GraduationCap size={28} className="text-white" />
-            </div>
-            <span className="hero-online-status-dot" />
-          </div>
-
-          <div className="hero-user-copy">
-            <span className="hero-greeting">Xin chào,</span>
-            <h1 className="hero-username">{profile.username} 👋</h1>
-            <div className="hero-target-pill">
-              <span>Band hiện tại: {profile.currentBand.toFixed(1)}</span>
-              <span className="mx-1.5 text-amber-400">➔</span>
-              <span className="text-amber-300 font-bold">
-                Mục tiêu: {profile.targetBand.toFixed(1)}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Course Info Middle Box */}
-        <div className="hero-course-info-box">
-          <div className="course-box-header">
-            <Play size={11} fill="#ffffff" className="mr-1 inline" />
-            <span>Khoá Đang Học</span>
-          </div>
-          <h2 className="course-name-title">{profile.currentCourse}</h2>
-          <div className="course-dates-text">
-            <span>Khai giảng: {profile.startDate}</span>
-            <br />
-            <span>Kết thúc: {profile.endDate}</span>
-          </div>
-        </div>
-
-        {/* Progress Gauge Far-Right Box */}
-        <div className="hero-progress-gauge-box">
-          <div className="circular-gauge-wrapper">
-            <svg className="gauge-svg" viewBox="0 0 80 80">
-              <circle
-                cx="40"
-                cy="40"
-                r="34"
-                className="gauge-track-bg"
-                strokeWidth="7"
-              />
-              <circle
-                cx="40"
-                cy="40"
-                r="34"
-                className="gauge-track-progress"
-                strokeWidth="7"
-                strokeDasharray="213.6"
-                strokeDashoffset={213.6 * (1 - profile.courseCompletedPercent / 100)}
-              />
-            </svg>
-            <div className="gauge-label-inner">
-              <span className="gauge-percent">{profile.courseCompletedPercent}%</span>
-              <span className="gauge-sub">hoàn thành</span>
-            </div>
-          </div>
-
-          <div className="gauge-meta-col">
-            <span className="gauge-title">Tiến Độ Khoá</span>
-            <div className="gauge-lessons-count">
-              <strong>{profile.lessonsCount}</strong>
-              <small>/{profile.totalLessons}</small>
-            </div>
-            <span className="gauge-remaining">
-              Còn {profile.remainingLessons} buổi kết thúc
-            </span>
-            <button type="button" className="gauge-details-link">
-              <span>Chi tiết</span>
-              <ChevronRight size={13} className="ml-0.5 inline" />
-            </button>
-          </div>
+export const OverviewHeroBanner: React.FC<OverviewHeroBannerProps> = ({ profile, onContinueStudy }) => (
+  <div className="overview-intro-grid">
+    <section className="overview-welcome" aria-labelledby="overview-welcome-title">
+      <div className="hero-user-identity">
+        <span className="hero-avatar"><GraduationCap size={28} aria-hidden="true" /></span>
+        <div>
+          <p className="hero-greeting">Xin chào,</p>
+          <h1 id="overview-welcome-title" className="hero-username">{profile.username} <span className="hero-wave">👋</span></h1>
         </div>
       </div>
-
-      {/* CTA Button & Next Lesson */}
+      <p className="hero-band-summary">Band hiện tại: <strong>{profile.currentBand.toFixed(1)}</strong><ArrowRight size={16} aria-hidden="true" /> Mục tiêu: <strong>{profile.targetBand.toFixed(1)}</strong></p>
       <div className="hero-action-row">
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            className="hero-continue-cta-btn"
-            onClick={onContinueStudy}
-          >
-            <span>Tiếp tục học</span>
-            <Play size={14} fill="#ffffff" className="ml-1.5 inline" />
-          </button>
-          <span className="hero-next-lesson-hint">
-            Bài học tiếp theo: <strong>{profile.nextLessonText}</strong>
-          </span>
-        </div>
-      </div>
-
-      {/* Bottom IELTS Journey Progress Bar */}
-      <div className="hero-journey-timeline">
-        <span className="journey-tag">IELTS JOURNEY</span>
-
-        <div className="journey-track-wrapper">
-          <div className="journey-line-track" />
-
-          {/* Start node */}
-          <div className="journey-node start">
-            <span className="node-caption">Bắt đầu</span>
-            <div className="node-circle">{profile.journeyStart}</div>
-          </div>
-
-          {/* Current node */}
-          <div className="journey-node current">
-            <span className="node-caption">Hiện tại</span>
-            <div className="node-circle-highlight">{profile.journeyCurrent}</div>
-          </div>
-
-          {/* Target node */}
-          <div className="journey-node target">
-            <span className="node-caption">Target</span>
-            <div className="node-circle-target">{profile.journeyTarget.toFixed(1)}</div>
-          </div>
-        </div>
+        <Button className="hero-continue-cta-btn" onClick={onContinueStudy}>Tiếp tục học <Play size={16} fill="currentColor" /></Button>
+        <p className="hero-next-lesson-hint">Bài học tiếp theo:<strong>{profile.nextLessonText}</strong></p>
       </div>
     </section>
-  )
-}
+
+    <section className="overview-course" aria-labelledby="overview-course-title">
+      <div className="course-box-header"><BookOpen size={18} aria-hidden="true" /><span>Khoá Đang Học</span></div>
+      <h2 id="overview-course-title" className="course-name-title">{profile.currentCourse}</h2>
+      <div className="course-dates-text"><span>Khai giảng: {profile.startDate}</span><span>Kết thúc: {profile.endDate}</span></div>
+      <div className="course-progress-summary"><span>Tiến Độ Khoá</span><strong>{profile.courseCompletedPercent}% <small>hoàn thành</small></strong></div>
+      <progress className="overview-course-progress" value={profile.courseCompletedPercent} max={100} aria-label="Tiến độ khoá học" />
+      <div className="course-progress-summary"><span><strong>{profile.lessonsCount}</strong>/{profile.totalLessons} buổi</span><span>Còn {profile.remainingLessons} buổi kết thúc</span></div>
+    </section>
+
+    <section className="hero-journey-timeline" aria-label="IELTS Journey">
+      <span className="journey-tag">IELTS JOURNEY</span>
+      <div className="journey-track-wrapper">
+        <div className="journey-line-track" aria-hidden="true" />
+        <div className="journey-node start"><span className="node-caption">Bắt đầu</span><strong className="node-circle">{profile.journeyStart}</strong></div>
+        <div className="journey-node current"><span className="node-caption">Hiện tại</span><strong className="node-circle-highlight">{profile.journeyCurrent}</strong></div>
+        <div className="journey-node target"><span className="node-caption">Target</span><strong className="node-circle-target">{profile.journeyTarget.toFixed(1)}</strong></div>
+      </div>
+    </section>
+  </div>
+)
