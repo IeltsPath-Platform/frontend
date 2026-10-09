@@ -5,20 +5,16 @@ import {
   FileCheck2,
   Target,
   Flame,
-  Laptop,
-  ChevronLeft,
-  ChevronRight,
 } from 'lucide-react'
-import type { GeneralStudyStats, DayStreakItem } from '@/types/overview'
+import type { GeneralStudyStats } from '@/types/overview'
 
 interface OverviewGeneralStatsProps {
   stats: GeneralStudyStats
-  streakDays: DayStreakItem[]
 }
 
 export const OverviewGeneralStats: React.FC<OverviewGeneralStatsProps> = ({
   stats,
-  streakDays,
+
 }) => {
   return (
     <section className="overview-general-stats-container">
@@ -78,75 +74,6 @@ export const OverviewGeneralStats: React.FC<OverviewGeneralStatsProps> = ({
           <span className="stat-label">Streak học</span>
           <strong className="stat-value">{stats.currentStreakDays} ngày</strong>
           <span className="stat-subtext text-orange-600">kỷ lục cá nhân</span>
-        </div>
-      </div>
-
-      {/* Chuỗi học LMS tuần này Card */}
-      <div className="lms-streak-box">
-        {/* Header with week date range */}
-        <div className="lms-header-row">
-          <div className="flex items-center gap-2">
-            <div className="lms-icon-square">
-              <Laptop size={18} className="text-orange-500" />
-            </div>
-            <h3 className="lms-title">Chuỗi học LMS tuần này</h3>
-          </div>
-
-          <div className="lms-range-controls">
-            <button type="button" className="lms-nav-arrow" aria-label="Tuần trước">
-              <ChevronLeft size={14} />
-            </button>
-            <span className="lms-date-range">02/08/2026 – 08/08/2026</span>
-            <button type="button" className="lms-nav-arrow" aria-label="Tuần sau">
-              <ChevronRight size={14} />
-            </button>
-          </div>
-        </div>
-
-        {/* Stats highlight & Day flames */}
-        <div className="lms-streak-content">
-          <div className="lms-streak-highlight">
-            <span className="streak-big-num">5</span>
-            <span className="streak-big-label">ngày học liên tiếp</span>
-          </div>
-
-          <div className="lms-record-stat">
-            <strong>28</strong> ngày (Kỷ lục giữ chuỗi học {stats.streakRecordMonth})
-          </div>
-        </div>
-
-        {/* 7 Days of the week row */}
-        <div className="lms-days-row">
-          {streakDays.map((d) => (
-            <div key={d.dayLabel} className="lms-day-item">
-              <div
-                className={`day-flame-circle ${
-                  d.status === 'completed' ? 'completed' : 'empty'
-                }`}
-              >
-                {d.status === 'completed' ? (
-                  <Flame
-                    size={22}
-                    className={
-                      d.badgeColor === 'blue'
-                        ? 'text-sky-500 fill-sky-400'
-                        : 'text-amber-500 fill-amber-500'
-                    }
-                  />
-                ) : (
-                  <div className="empty-day-ring" />
-                )}
-              </div>
-              <span className="day-name-label">{d.dayLabel}</span>
-              {d.status === 'completed' && (
-                <span
-                  className={`day-status-dot ${
-                    d.badgeColor === 'blue' ? 'dot-blue' : 'dot-red'
-                  }`}
-                />
-              )}
-            </div>
-          ))}
         </div>
       </div>
     </section>

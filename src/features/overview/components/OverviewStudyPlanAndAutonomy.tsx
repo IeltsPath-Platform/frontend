@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { CheckCircle2, Circle } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import type { StudyPlanItem, SpaceAutonomyNode } from '@/types/overview'
 
 interface OverviewStudyPlanAndAutonomyProps {
@@ -28,7 +29,7 @@ export const OverviewStudyPlanAndAutonomy: React.FC<OverviewStudyPlanAndAutonomy
       {/* Left Column: Study Plan */}
       <section className="study-plan-card">
         <div className="plan-header">
-          <h3 className="plan-title">Study Plan</h3>
+          <h2 className="plan-title">Study Plan</h2>
           <p className="plan-subtitle">Kế hoạch AI cá nhân hoá – Hôm nay, 25/08</p>
         </div>
 
@@ -43,7 +44,7 @@ export const OverviewStudyPlanAndAutonomy: React.FC<OverviewStudyPlanAndAutonomy
             <div className="plan-progress-mini">
               <div
                 className="plan-progress-fill"
-                style={{ width: `${(completedCount / tasks.length) * 100}%` }}
+                style={{ width: `${(tasks.length ? completedCount / tasks.length : 0) * 100}%` }}
               />
             </div>
           </div>
@@ -52,18 +53,20 @@ export const OverviewStudyPlanAndAutonomy: React.FC<OverviewStudyPlanAndAutonomy
         {/* Tasks List */}
         <div className="plan-tasks-list">
           {tasks.map((task) => (
-            <div
+            <Button
+              variant="ghost"
+              aria-pressed={task.isCompleted}
               key={task.id}
               className={`plan-task-item ${task.isCompleted ? 'completed' : ''}`}
               onClick={() => toggleTask(task.id)}
             >
-              <button type="button" className="task-check-btn">
+              <span className="task-check-btn" aria-hidden="true">
                 {task.isCompleted ? (
                   <CheckCircle2 size={18} className="text-emerald-500 fill-emerald-100" />
                 ) : (
                   <Circle size={18} className="text-slate-300" />
                 )}
-              </button>
+              </span>
 
               <span
                 className="task-category-pill"
@@ -75,7 +78,7 @@ export const OverviewStudyPlanAndAutonomy: React.FC<OverviewStudyPlanAndAutonomy
               <span className="task-title-text">{task.title}</span>
 
               <span className="task-duration-badge">{task.durationMinutes} phút</span>
-            </div>
+            </Button>
           ))}
         </div>
 
@@ -97,7 +100,7 @@ export const OverviewStudyPlanAndAutonomy: React.FC<OverviewStudyPlanAndAutonomy
       {/* Right Column: SPACE Autonomy */}
       <section className="space-autonomy-card">
         <div className="autonomy-header">
-          <h3 className="autonomy-title">SPACE Autonomy</h3>
+          <h2 className="autonomy-title">SPACE Autonomy</h2>
           <p className="autonomy-subtitle">
             Thang 0: Dependent ➔ 3: Transfer – Cập nhật cuối module
           </p>
