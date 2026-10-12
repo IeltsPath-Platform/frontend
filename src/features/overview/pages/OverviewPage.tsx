@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { PracticeNavbar } from '@/features/practice/components/PracticeNavbar'
 import { OverviewSidebar } from '../components/OverviewSidebar'
 import { OverviewHeroBanner } from '../components/OverviewHeroBanner'
+import { OverviewActivityCalendar } from '../components/OverviewActivityCalendar'
 import { OverviewGeneralStats } from '../components/OverviewGeneralStats'
 import { OverviewLearningOrbit } from '../components/OverviewLearningOrbit'
 import { OverviewStudyPlanAndAutonomy } from '../components/OverviewStudyPlanAndAutonomy'
@@ -53,11 +54,12 @@ export const OverviewPage: React.FC = () => {
                   onContinueStudy={handleStartPractice}
                 />
 
-                {/* Dữ Liệu Học Tổng Quan & Chuỗi học LMS */}
+                {/* Dữ liệu học tổng quan và lịch hoạt động */}
                 <OverviewGeneralStats
                   stats={MOCK_GENERAL_STATS}
-                  streakDays={MOCK_WEEKLY_STREAK}
                 />
+
+                <OverviewActivityCalendar streakDays={MOCK_WEEKLY_STREAK} currentStreakDays={MOCK_GENERAL_STATS.currentStreakDays} />
 
                 {/* My Learning Orbit */}
                 <OverviewLearningOrbit skills={MOCK_ORBIT_SKILLS} />

@@ -11,7 +11,14 @@ import type { MockQuestion, MockTestPackage } from '@/mocks/learning-path/conten
 import { MOCK_TOPICS, MOCK_LEARNER } from '@/mocks/learning-path/topics'
 import { ApiError } from '../apiError'
 import { formatAnswerValue, gradeAnswers, toPublicQuestion } from './grading'
-import { findTestPackage, pendingReviewRefs, requireTopic, testStatus, topicStatus } from './mockProgress'
+import {
+  findTestPackage,
+  MOCK_COURSE,
+  pendingReviewRefs,
+  requireTopic,
+  testStatus,
+  topicStatus,
+} from './mockProgress'
 import type { AttemptRecord, MockState } from './mockState'
 
 const itemIdOf = (attemptId: string, question: MockQuestion) => `${attemptId}-${question.id}`
@@ -61,9 +68,37 @@ export function createTestAssignment(state: MockState, topicId: string): TestAss
   const record = state.topicTests[topic.id] ?? { passed: false, assignmentCount: 0, lastPercent: null }
   const pkg = requirePackage(topic.testPackageCodes[record.assignmentCount % topic.testPackageCodes.length])
   state.topicTests[topic.id] = { ...record, assignmentCount: record.assignmentCount + 1 }
-  const assignment = { id: `assign-${state.seq++}`, topicId: topic.id, packageCode: pkg.code, packageVersionId: pkg.packageVersionId }
+  const assignment = {
+    id: `assign-${state.seq++}`,
+    topicId: topic.id,
+    courseId: null as string | null,
+    packageCode: pkg.code,
+    packageVersionId: pkg.packageVersionId,
+  }
   state.assignments[assignment.id] = assignment
   return { assignmentId: assignment.id, topicId: topic.id, packageVersionId: pkg.packageVersionId, packageCode: pkg.code }
+}
+
+export function createCourseTestAssignment(state: MockState, courseId: string): TestAssignment {
+  if (courseId !== MOCK_COURSE.id) throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy course.', { courseId })
+  if (MOCK_TOPICS.length === 0 || MOCK_TOPICS.some((topic) => topicStatus(state, topic) !== 'PASSED')) {
+    throw new ApiError(403, 'TEST_LOCKED', 'Hoàn thành mọi topic trong course để mở bài thi cuối.', { courseId })
+  }
+  const record = state.courseTests[courseId] ?? { passed: false, assignmentCount: 0, lastPercent: null }
+  if (record.passed) throw new ApiError(422, 'VALIDATION_FAILED', 'Bạn đã đạt bài thi cuối course.')
+  const seedTopic = MOCK_TOPICS.find((topic) => topic.testPackageCodes.length > 0)
+  if (!seedTopic) throw new ApiError(409, 'TEST_UNAVAILABLE', 'Course này chưa có đề thi cuối.', { courseId })
+  const pkg = requirePackage(seedTopic.testPackageCodes[record.assignmentCount % seedTopic.testPackageCodes.length])
+  state.courseTests[courseId] = { ...record, assignmentCount: record.assignmentCount + 1 }
+  const assignment = {
+    id: `assign-${state.seq++}`,
+    topicId: null as string | null,
+    courseId,
+    packageCode: pkg.code,
+    packageVersionId: pkg.packageVersionId,
+  }
+  state.assignments[assignment.id] = assignment
+  return { assignmentId: assignment.id, courseId, packageVersionId: pkg.packageVersionId, packageCode: pkg.code }
 }
 
 export function createAttempt(state: MockState, request: StartAttemptRequest, now: string): AssessmentAttempt {
@@ -72,6 +107,7 @@ export function createAttempt(state: MockState, request: StartAttemptRequest, no
   const attempt: AttemptRecord = {
     id: `attempt-${state.seq++}`,
     topicId: assignment.topicId,
+    courseId: assignment.courseId,
     packageCode: assignment.packageCode,
     packageVersionId: assignment.packageVersionId,
     status: 'IN_PROGRESS',
@@ -142,33 +178,53 @@ export function submitAttempt(state: MockState, attemptId: string, now: string):
   const answers = Object.fromEntries(questions.map((question) => [question.id, attempt.responses[itemIdOf(attempt.id, question)]?.answer ?? '']))
   const outcome = gradeAnswers(questions, answers)
 
-  const record = state.topicTests[attempt.topicId] ?? { passed: false, assignmentCount: 0, lastPercent: null }
-  state.topicTests[attempt.topicId] = { ...record, passed: record.passed || outcome.passed, lastPercent: outcome.percent }
-  const topic = requireTopic(attempt.topicId)
-  const nextTopic = MOCK_TOPICS.find((candidate) => candidate.sequenceOrder === topic.sequenceOrder + 1)
+  const items = questions.map((question, index) => {
+    const answer = answers[question.id]
+    const { correct, correctAnswer, explanation } = outcome.results[index]
+    return {
+      itemId: itemIdOf(attempt.id, question),
+      number: question.number,
+      prompt: question.prompt,
+      correct,
+      yourAnswer: answer ? formatAnswerValue(question, answer) : null,
+      ...(outcome.passed ? { correctAnswer, explanation } : {}),
+    }
+  })
 
-  const result: AttemptResult = {
-    attemptId: attempt.id,
-    topicId: topic.id,
-    packageCode: attempt.packageCode,
-    score: outcome.correctCount,
-    maxScore: outcome.totalCount,
-    percent: outcome.percent,
-    passed: outcome.passed,
-    items: questions.map((question, index) => {
-      const answer = answers[question.id]
-      const { correct, correctAnswer, explanation } = outcome.results[index]
-      return {
-        itemId: itemIdOf(attempt.id, question),
-        number: question.number,
-        prompt: question.prompt,
-        correct,
-        yourAnswer: answer ? formatAnswerValue(question, answer) : null,
-        ...(outcome.passed ? { correctAnswer, explanation } : {}),
-      }
-    }),
-    topicStatus: topicStatus(state, topic),
-    nextTopicId: outcome.passed ? nextTopic?.id ?? null : null,
+  let result: AttemptResult
+  if (attempt.courseId) {
+    const record = state.courseTests[attempt.courseId] ?? { passed: false, assignmentCount: 0, lastPercent: null }
+    state.courseTests[attempt.courseId] = { ...record, passed: record.passed || outcome.passed, lastPercent: outcome.percent }
+    result = {
+      attemptId: attempt.id,
+      topicId: '',
+      packageCode: attempt.packageCode,
+      score: outcome.correctCount,
+      maxScore: outcome.totalCount,
+      percent: outcome.percent,
+      passed: outcome.passed,
+      items,
+      topicStatus: 'PASSED',
+      nextTopicId: null,
+    }
+  } else {
+    const topicId = attempt.topicId ?? ''
+    const record = state.topicTests[topicId] ?? { passed: false, assignmentCount: 0, lastPercent: null }
+    state.topicTests[topicId] = { ...record, passed: record.passed || outcome.passed, lastPercent: outcome.percent }
+    const topic = requireTopic(topicId)
+    const nextTopic = MOCK_TOPICS.find((candidate) => candidate.sequenceOrder === topic.sequenceOrder + 1)
+    result = {
+      attemptId: attempt.id,
+      topicId: topic.id,
+      packageCode: attempt.packageCode,
+      score: outcome.correctCount,
+      maxScore: outcome.totalCount,
+      percent: outcome.percent,
+      passed: outcome.passed,
+      items,
+      topicStatus: topicStatus(state, topic),
+      nextTopicId: outcome.passed ? nextTopic?.id ?? null : null,
+    }
   }
   attempt.status = 'SUBMITTED'
   attempt.submittedAt = now

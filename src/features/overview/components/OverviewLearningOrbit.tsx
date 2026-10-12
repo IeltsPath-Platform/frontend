@@ -14,12 +14,7 @@ export const OverviewLearningOrbit: React.FC<OverviewLearningOrbitProps> = () =>
       </div>
 
       <div className="orbit-diagram-container">
-        {/* Concentric Orbital Rings background */}
-        <div className="orbit-ring ring-1" />
-        <div className="orbit-ring ring-2" />
-        <div className="orbit-ring ring-3" />
-
-        {/* Central Planet */}
+        {/* Band summary */}
         <div className="orbit-center-planet">
           <span className="center-tag">BAND HIỆN TẠI</span>
           <span className="center-band-number">6.5</span>

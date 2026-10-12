@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { AlertTriangle, ArrowLeft, ArrowRight, Dumbbell, Loader2 } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, ArrowRight, Dumbbell, Loader2, Lock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type {
   AnswerInput,
@@ -25,7 +25,13 @@ const ITEM_META: Record<string, { label: string; tone: 'success' | 'primary' | '
   IN_PROGRESS: { label: 'Đang làm', tone: 'accent', icon: Dumbbell },
   PASSED: { label: 'Đã đạt', tone: 'success', icon: Dumbbell },
   ATTEMPTED: { label: 'Đã thử', tone: 'locked', icon: Dumbbell },
-  LOCKED: { label: 'Khóa', tone: 'locked', icon: Dumbbell },
+  LOCKED: { label: 'Chưa mở', tone: 'locked', icon: Lock },
+}
+
+const PRACTICE_STATUS_TEXT: Record<string, string> = {
+  REQUIRED: 'Bắt buộc: đạt ít nhất một bộ để mở bài kiểm tra chặng',
+  PASSED: 'Đã đạt phần luyện thêm',
+  LOCKED: 'Chưa mở',
 }
 
 export function PracticePage() {
@@ -103,8 +109,8 @@ function PracticeView({ catalog, onReload }: { catalog: LessonPracticeSets; onRe
           <p className="lp-eyebrow">Luyện thêm · {active.item.code}</p>
           <h1 id="lp-practice-attempt-title">{active.item.title}</h1>
           {active.item.revealed ? (
-            <p className="lp-final__hint" role="status">
-              <AlertTriangle aria-hidden="true" size={16} /> Bộ này đã lộ đáp án trước đó — lần nộp này không tính evidence.
+            <p className="lp-hint lp-hint--warn" role="status">
+              <AlertTriangle aria-hidden="true" size={16} /> Bộ này đã lộ đáp án trước đó nên lần nộp này không được tính.
             </p>
           ) : null}
         </header>
@@ -153,6 +159,10 @@ function PracticeView({ catalog, onReload }: { catalog: LessonPracticeSets; onRe
     )
   }
 
+  const openItems = catalog.items.filter((item) => item.accessLevel !== 'PREMIUM')
+  const primaryId = (openItems.find((item) => item.status === 'IN_PROGRESS')
+    ?? openItems.find((item) => item.status === 'AVAILABLE' || item.status === 'ATTEMPTED'))?.packageId
+
   return (
     <article className="lp-page" aria-labelledby="lp-practice-title">
       <Link className="lp-back" to={`/learn/lessons/${catalog.lessonId}`}>
@@ -160,16 +170,16 @@ function PracticeView({ catalog, onReload }: { catalog: LessonPracticeSets; onRe
       </Link>
       <header className="lp-lesson-head">
         <p className="lp-eyebrow">Luyện thêm</p>
-        <h1 id="lp-practice-title">Củng cố trước khi mở đề cuối</h1>
-        <p>
-          Trạng thái practice: <strong>{catalog.practiceStatus}</strong>
+        <h1 id="lp-practice-title">Củng cố trước khi mở bài kiểm tra chặng</h1>
+        <p className="lp-lesson-head__lead">
+          {PRACTICE_STATUS_TEXT[catalog.practiceStatus] ?? catalog.practiceStatus}
           {catalog.practicePassReason ? ` · ${catalog.practicePassReason}` : ''}
-          {!catalog.lessonCompleted ? ' · hoàn thành bài học trước khi luyện.' : ''}
+          {!catalog.lessonCompleted ? ' · Hoàn thành bài học trước khi luyện.' : ''}
         </p>
       </header>
       {error ? <p className="lp-error" role="alert">{error}</p> : null}
       {catalog.items.length === 0 ? (
-        <p className="lp-empty">Bài này không có bộ luyện thêm (hoặc đã được coi là PASSED).</p>
+        <p className="lp-empty">Bài này không có bộ luyện thêm.</p>
       ) : (
         <ul className="lp-practice-list" aria-label="Các bộ luyện thêm">
           {catalog.items.map((item) => {
@@ -185,27 +195,29 @@ function PracticeView({ catalog, onReload }: { catalog: LessonPracticeSets; onRe
                   ? 'Làm lại'
                   : startingId === item.packageId
                     ? 'Đang mở…'
-                    : 'Làm bộ này'
+                    : item.status === 'IN_PROGRESS'
+                      ? 'Làm tiếp'
+                      : 'Làm bộ này'
             return (
               <li className={`lp-practice-card${premium ? ' is-premium' : ''}`} key={item.packageId}>
-                <div>
-                  <p className="lp-eyebrow">{item.code}</p>
+                <div className="lp-practice-card__body">
                   <h2>{item.title}</h2>
-                  <p>{item.questionCount} câu{item.bestPercent != null ? ` · best ${Math.round(item.bestPercent * (item.bestPercent <= 1 ? 100 : 1))}%` : ''}</p>
-                  {item.revealed ? <p className="lp-final__hint">Đã lộ đáp án — không tính evidence.</p> : null}
-                  {premium ? <p className="lp-station__reason">Premium — chưa mở trong giai đoạn này.</p> : null}
+                  <p>{item.questionCount} câu{item.bestPercent != null ? ` · điểm cao nhất ${Math.round(item.bestPercent * (item.bestPercent <= 1 ? 100 : 1))}%` : ''}</p>
+                  {item.revealed ? <p className="lp-hint lp-hint--warn">Đã lộ đáp án nên không được tính.</p> : null}
+                  {premium ? <p className="lp-hint">Bộ Premium, chưa mở trong giai đoạn này.</p> : null}
                 </div>
                 <div className="lp-practice-card__aside">
                   <StatusBadge meta={meta} />
-                  <Button
-                    className="lp-btn lp-btn--accent lp-btn--cta"
+                  {item.status === 'LOCKED' && !premium ? null : <Button
+                    className={`lp-btn ${item.packageId === primaryId ? 'lp-btn--accent' : 'lp-btn--quiet'}`}
                     disabled={disabled}
                     type="button"
+                    variant={item.packageId === primaryId ? 'default' : 'outline'}
                     onClick={() => void startSet(item)}
                   >
                     {startingId === item.packageId ? <Loader2 aria-hidden="true" className="lp-spin" /> : null}
                     {label}
-                  </Button>
+                  </Button>}
                 </div>
               </li>
             )
@@ -214,8 +226,8 @@ function PracticeView({ catalog, onReload }: { catalog: LessonPracticeSets; onRe
       )}
       {catalog.practiceStatus === 'PASSED' ? (
         <div className="lp-done" role="status">
-          <p>Practice đã PASSED. Có thể quay lại topic để mở đề cuối (nếu không còn review).</p>
-          <Button asChild className="lp-btn lp-btn--cta"><Link to="/learn">Về lộ trình</Link></Button>
+          <p>Bạn đã đạt phần luyện thêm. Quay lại chặng để làm bài kiểm tra (nếu không còn bài ôn).</p>
+          <Button asChild className="lp-btn lp-btn--quiet" variant="outline"><Link to="/learn">Về lộ trình</Link></Button>
         </div>
       ) : null}
     </article>

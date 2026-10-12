@@ -106,6 +106,8 @@ export function topicSummary(state: MockState, topic: MockTopic): TopicSummary {
     completedLessons: topic.lessonIds.filter((id) => state.completedLessons.includes(id)).length,
     totalLessons: topic.lessonIds.length,
     lockedReason: status === 'LOCKED' && previous ? `Đạt bài kiểm tra cuối của "${previous.title}" để mở.` : null,
+    skill: 'READING',
+    accessLevel: 'FREE',
   }
 }
 

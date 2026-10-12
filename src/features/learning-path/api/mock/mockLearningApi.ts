@@ -98,6 +98,7 @@ export function createMockLearningApi({ storage = null, latencyMs = 0, now = () 
       results: [],
     }),
     createTestAssignment: (topicId) => respond((s) => tests.createTestAssignment(s, topicId)),
+    createCourseTestAssignment: (courseId) => respond((s) => tests.createCourseTestAssignment(s, courseId)),
     createAttempt: (request) => respond((s) => tests.createAttempt(s, request, timestamp())),
     getAttemptStructure: (attemptId) => respond((s) => tests.getAttemptStructure(s, attemptId)),
     saveItemResponse: (attemptId, itemId, request) => respond((s) => tests.saveItemResponse(s, attemptId, itemId, request, timestamp())),

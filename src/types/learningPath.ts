@@ -33,6 +33,9 @@ export interface TopicSummary {
   completedLessons: number
   totalLessons: number
   lockedReason: string | null
+  /** From GET /topics when present (READING / LISTENING / …). */
+  skill?: string | null
+  accessLevel?: 'FREE' | 'PREMIUM' | null
 }
 
 export interface LessonSummary {
@@ -359,7 +362,10 @@ export interface PracticeSubmissionResult {
 
 export interface TestAssignment {
   assignmentId: string
-  topicId: string
+  /** Topic final test; omit for course final test. */
+  topicId?: string
+  /** Course final test; omit for topic final test. */
+  courseId?: string
   packageVersionId: string
   packageCode: string
 }
@@ -444,7 +450,7 @@ export type AttemptStatus = 'IN_PROGRESS' | 'SUBMITTED' | 'EXPIRED' | 'CANCELLED
 
 export interface StartAttemptRequest {
   packageVersionId: string
-  attemptType: 'TOPIC_TEST' | 'PLACEMENT_TEST'
+  attemptType: 'TOPIC_TEST' | 'COURSE_TEST' | 'PLACEMENT_TEST'
   mode: 'STANDARD' | 'PRACTICE'
   channel: 'WEB'
   expiresAt: null

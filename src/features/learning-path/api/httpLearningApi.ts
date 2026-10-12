@@ -324,7 +324,15 @@ export function createHttpLearningApi(): LearningApi {
         method: 'POST',
         body: {},
       })
-      return mapTestAssignment(dto, topicId)
+      return mapTestAssignment(dto, { topicId })
+    },
+
+    async createCourseTestAssignment(courseId: string): Promise<TestAssignment> {
+      const dto = await learningRequest<TestAssignmentDto>(`/courses/${courseId}/test-assignments`, {
+        method: 'POST',
+        body: {},
+      })
+      return mapTestAssignment(dto, { courseId })
     },
 
     async createAttempt(request: StartAttemptRequest): Promise<AssessmentAttempt> {

@@ -36,6 +36,7 @@ export type TopicSummaryDto = {
   status: TopicStatus
   completedLessonCount: number
   accessLevel?: 'FREE' | 'PREMIUM'
+  skill?: string | null
   course?: { courseId: string; code: string; name: string; bandLevel: number } | null
 }
 
@@ -443,6 +444,8 @@ export function mapTopicSummary(dto: TopicSummaryDto): TopicSummary {
       : dto.status === 'LOCKED'
         ? 'Hoàn thành chặng trước để mở khóa.'
         : null,
+    skill: dto.skill ?? null,
+    accessLevel: dto.accessLevel ?? null,
   }
 }
 
@@ -685,10 +688,14 @@ export function mapReviewSubmission(
   }
 }
 
-export function mapTestAssignment(dto: TestAssignmentDto, topicId: string): TestAssignment {
+export function mapTestAssignment(
+  dto: TestAssignmentDto,
+  scope: { topicId?: string; courseId?: string } = {},
+): TestAssignment {
   return {
     assignmentId: dto.assignmentId,
-    topicId,
+    ...(scope.topicId ? { topicId: scope.topicId } : {}),
+    ...(scope.courseId ? { courseId: scope.courseId } : {}),
     packageVersionId: dto.packageVersionId,
     packageCode: dto.packageId.slice(0, 8),
   }

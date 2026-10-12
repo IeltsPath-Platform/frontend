@@ -37,6 +37,13 @@ Desktop.ini
 plan/
 .plan/
 
+plans/
+.plans/
+
 # Local IDE / agent state 
 .cursor/
 .claude/
+
+__pycache__/
+*.pyc
+_tmp_report_extract.txt
