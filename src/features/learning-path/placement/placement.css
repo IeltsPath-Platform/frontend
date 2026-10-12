@@ -284,6 +284,9 @@ button.pl-qnav__num { cursor: pointer; }
 .pl-speaking__card > .pl-btn { justify-self: center; }
 .pl-speaking__actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: .75rem; }
 .pl-speaking__playback { width: 100%; }
+.pl-speaking__takes { display: grid; gap: 1rem; margin: 0; padding: 0; list-style: none; }
+.pl-speaking__take { display: grid; gap: .45rem; }
+.pl-speaking__take-prompt { margin: 0; font-weight: 700; line-height: 1.4; }
 .pl-speaking__rec { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: .75rem; font-variant-numeric: tabular-nums; font-weight: 700; }
 .pl-rec-dot { width: .75rem; height: .75rem; border-radius: 50%; background: #dc2626; animation: pl-pulse 1s ease-in-out infinite; }
 @keyframes pl-pulse { 50% { opacity: .35; transform: scale(.8); } }
