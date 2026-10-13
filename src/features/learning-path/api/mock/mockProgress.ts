@@ -1,5 +1,5 @@
 import type { CourseRef, LessonStatus, ReviewRef, TestStatus, TopicStatus, TopicSummary } from '~types/learningPath'
-import type { MockExerciseBlock, MockKnowledgePoint, MockLesson, MockTopic } from '@/mocks/learning-path/contentTypes'
+import type { MockKnowledgePoint, MockLesson, MockTopic } from '@/mocks/learning-path/contentTypes'
 import { MOCK_LESSONS } from '@/mocks/learning-path/lessons'
 import { MOCK_REVIEW_PACKS } from '@/mocks/learning-path/reviewPacks'
 import { MOCK_TEST_PACKAGES } from '@/mocks/learning-path/topicTests'
@@ -29,14 +29,6 @@ export function requireKnowledgePoint(code: string): MockKnowledgePoint {
   const kp = findKnowledgePoint(code)
   if (!kp) throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy điểm kiến thức.')
   return kp
-}
-
-export function isMockExercise(block: MockLesson['blocks'][number]): block is MockExerciseBlock {
-  return block.type === 'EXERCISE' && Array.isArray(block.questions)
-}
-
-export function exerciseBlocks(lesson: MockLesson) {
-  return lesson.blocks.filter(isMockExercise)
 }
 
 export function topicLessons(topic: MockTopic) {

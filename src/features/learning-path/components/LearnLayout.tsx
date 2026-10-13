@@ -7,6 +7,7 @@ import { setPendingReviews } from '../lib/reviewGate'
 import { DemoControls } from './DemoControls'
 import { ReviewGateBanner } from './ReviewGateBanner'
 import '../learning-path.css'
+import '../lesson-resources.css'
 
 export function LearnLayout() {
   const { pathname } = useLocation()

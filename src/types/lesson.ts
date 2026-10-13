@@ -1,18 +1,26 @@
-export type LessonWorkspaceView = 'materials' | 'quiz' | 'vocabulary'
+/** The parts of a lesson page: its three resources and the embedded Practice. */
+export type LessonTab = 'slides' | 'summary' | 'documents' | 'practice'
 
-export interface LessonMaterialSection {
+export interface LessonSlideItem {
   id: string
   title: string
-  description: string
-  items: readonly string[]
+  url: string
+  sortOrder: number
 }
 
-export interface LessonQuizQuestion {
+export interface LessonDocumentItem {
   id: string
-  prompt: string
-  audioLabel: string
-  choices: readonly string[]
-  correctChoiceIndex: number
+  title: string
+  url: string
+  sortOrder: number
+}
+
+/** Response of GET /api/learning/lessons/{id}/resources. `summaryMarkdown` is null when the lesson has none. */
+export interface LessonResourcesResponse {
+  lessonId: string
+  summaryMarkdown: string | null
+  slides: LessonSlideItem[]
+  documents: LessonDocumentItem[]
 }
 
 export interface VocabularyEntry {
@@ -26,15 +34,4 @@ export interface VocabularyEntry {
   translation: string
   tags: readonly string[]
   example: string
-}
-
-export interface LessonWorkspaceData {
-  lessonId: string
-  sessionNumber: number
-  level: string
-  title: string
-  topic: string
-  materials: readonly LessonMaterialSection[]
-  quizQuestions: readonly LessonQuizQuestion[]
-  vocabulary: readonly VocabularyEntry[]
 }

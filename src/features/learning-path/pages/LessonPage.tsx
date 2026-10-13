@@ -1,33 +1,65 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
-import { ArrowDown, ArrowLeft, ArrowRight, CheckCircle2, CircleDot, Flag, Loader2, ShieldAlert, type LucideIcon } from 'lucide-react'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
+import {
+  ArrowLeft,
+  ArrowRight,
+  BookOpenText,
+  CheckCircle2,
+  CircleDot,
+  Dumbbell,
+  Flag,
+  FolderOpen,
+  Loader2,
+  MonitorPlay,
+  ShieldAlert,
+  type LucideIcon,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { reloadSessionPoints, useAuthSession } from '@/features/auth/authSession'
 import type { LessonCompletionResult, LessonDetail, ReviewRef } from '~types/learningPath'
+import type { LessonResourcesResponse, LessonTab } from '~types/lesson'
 import { learningApi, toApiError } from '../api'
 import { USE_MOCK_LEARNING } from '@/lib/env'
+import { LessonPractice } from '../components/LessonPractice'
 import { NoticeBanner } from '../components/NoticeBanner'
-import { BlockList } from '../components/blocks/BlockList'
-import type { BlockRenderContext } from '../components/blocks/blockRegistry'
 import { ApiErrorState, LoadingState } from '../components/PageState'
-import { isEssayBlock, isExerciseBlock } from '../lib/blockGuards'
-import { newRequestId } from '../lib/requestId'
+import { LessonDocuments } from '../components/resources/LessonDocuments'
+import { LessonSlides } from '../components/resources/LessonSlides'
+import { LessonSummary } from '../components/resources/LessonSummary'
 import { reportApiError, setPendingReviews, usePendingReviews } from '../lib/reviewGate'
 import { useApiResource } from '../lib/useApiResource'
 import { useSyncPendingReviews } from '../lib/useSyncPendingReviews'
+
+interface TabEntry {
+  tab: LessonTab
+  label: string
+  icon: LucideIcon
+  /** How many items the tab holds, or null when that is not a count. */
+  count: (resources: LessonResourcesResponse) => number | null
+}
+
+const TABS: readonly TabEntry[] = [
+  { tab: 'slides', label: 'Slide bài giảng', icon: MonitorPlay, count: (r) => r.slides.length },
+  { tab: 'summary', label: 'Lesson Summary', icon: BookOpenText, count: (r) => (r.summaryMarkdown?.trim() ? 1 : 0) },
+  { tab: 'documents', label: 'Tài liệu bài khoá', icon: FolderOpen, count: (r) => r.documents.length },
+  { tab: 'practice', label: 'Luyện tập', icon: Dumbbell, count: () => null },
+]
+
+function parseTab(value: string | null): LessonTab {
+  return value === 'summary' || value === 'documents' || value === 'practice' ? value : 'slides'
+}
 
 export function LessonPage() {
   const { lessonId = '' } = useParams()
   const resource = useApiResource(`lesson:${lessonId}`, () => learningApi.getLesson(lessonId))
   useSyncPendingReviews(resource.status === 'success' ? resource.data?.pendingReviews : undefined)
 
-  if (resource.status === 'loading') return <LoadingState label="Đang tải nội dung bài học…" />
+  if (resource.status === 'loading') return <LoadingState label="Đang tải bài học…" />
   if (resource.status === 'error' && resource.error) return <ApiErrorState error={resource.error} onRetry={resource.reload} />
   if (!resource.data) return null
   return <LessonView key={resource.data.id} lesson={resource.data} />
 }
 
-type LessonState = 'review' | 'practice' | 'done' | 'exercise' | 'reading'
+type LessonState = 'review' | 'practice' | 'done' | 'reading'
 
 interface StateCopy {
   label: string
@@ -56,15 +88,19 @@ function stateCopy(state: LessonState, review: ReviewRef | undefined, hasNext: b
         tone: 'success',
         icon: CheckCircle2,
       }
-    case 'exercise':
-      return { label: 'Đang học', hint: 'Làm và nộp bài tập trong bài để hoàn thành.', tone: 'active', icon: CircleDot }
     default:
-      return { label: 'Đang học', hint: 'Đọc hết nội dung rồi bấm hoàn thành để ghi nhận tiến độ.', tone: 'active', icon: CircleDot }
+      return {
+        label: 'Đang học',
+        hint: 'Xem slide, tóm tắt và tài liệu rồi bấm hoàn thành để ghi nhận tiến độ.',
+        tone: 'active',
+        icon: CircleDot,
+      }
   }
 }
 
-function LessonView({ lesson }: { lesson: LessonDetail }) {
-  const { points } = useAuthSession()
+export function LessonView({ lesson }: { lesson: LessonDetail }) {
+  const [searchParams] = useSearchParams()
+  const tab = parseTab(searchParams.get('view'))
   const [completion, setCompletion] = useState<LessonCompletionResult | null>(null)
   const [completing, setCompleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -72,6 +108,7 @@ function LessonView({ lesson }: { lesson: LessonDetail }) {
   const pendingReviews = usePendingReviews()
   const activeReview = pendingReviews[0]
 
+  const resources = useApiResource(`lesson-resources:${lesson.id}`, () => learningApi.getLessonResources(lesson.id))
   const siblings = useApiResource(`topic:${lesson.topicId}`, () => learningApi.getTopicLessons(lesson.topicId))
   const reloadSiblings = siblings.reload
   useEffect(() => {
@@ -80,7 +117,6 @@ function LessonView({ lesson }: { lesson: LessonDetail }) {
   const ordered = [...(siblings.data?.lessons ?? [])].sort((a, b) => a.sortOrder - b.sortOrder)
   const self = ordered.find((item) => item.id === lesson.id)
 
-  const hasInteractive = lesson.blocks.some((b) => isExerciseBlock(b) || isEssayBlock(b))
   const done = completion !== null || lesson.status === 'COMPLETED'
   const nextLessonId = completion?.nextLessonId
     ?? lesson.nextLessonId
@@ -89,45 +125,12 @@ function LessonView({ lesson }: { lesson: LessonDetail }) {
   const needsPractice = (self?.practiceStatus ?? (lesson as unknown as { practiceStatus?: string }).practiceStatus) === 'REQUIRED'
   const hasNext = nextLessonId ? true : siblings.status === 'loading' ? null : false
   const topicPath = `/learn/topics/${lesson.topicId}`
-  const practicePath = `/learn/lessons/${lesson.id}/practice`
+  const lessonPath = `/learn/lessons/${lesson.id}`
+  const practicePath = `${lessonPath}?view=practice`
 
-  const state: LessonState = activeReview
-    ? 'review'
-    : done
-      ? needsPractice ? 'practice' : 'done'
-      : hasInteractive ? 'exercise' : 'reading'
+  const state: LessonState = activeReview ? 'review' : done ? (needsPractice ? 'practice' : 'done') : 'reading'
   const copy = stateCopy(state, activeReview, hasNext)
   const StateIcon = copy.icon
-
-  const context: BlockRenderContext = {
-    pointsBalance: points,
-    async submitExercise(block, answers) {
-      try {
-        const result = await learningApi.submitExercise(lesson.id, block.id, { requestId: newRequestId(), answers })
-        if (result.pendingReviews.length > 0 || USE_MOCK_LEARNING) setPendingReviews(result.pendingReviews)
-        if (result.lessonCompleted) setCompletion(result)
-        return result
-      } catch (reason) {
-        const apiError = toApiError(reason)
-        reportApiError(apiError)
-        throw apiError
-      }
-    },
-    async submitEssay(block, essayText) {
-      try {
-        const result = await learningApi.submitEssay(lesson.id, block.id, {
-          requestId: newRequestId(),
-          essayText,
-        })
-        await reloadSessionPoints()
-        return result
-      } catch (reason) {
-        const apiError = toApiError(reason)
-        reportApiError(apiError)
-        throw apiError
-      }
-    },
-  }
 
   async function completeLesson() {
     if (completeInFlight.current) return
@@ -148,17 +151,11 @@ function LessonView({ lesson }: { lesson: LessonDetail }) {
     }
   }
 
-  function scrollToInteractive() {
-    const el = document.querySelector('.lp-exercise') ?? document.querySelector('.lp-essay')
-    el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
-
   const action = (
     <PrimaryAction
       completing={completing}
       nextLessonId={nextLessonId}
       onComplete={completeLesson}
-      onScrollInteractive={scrollToInteractive}
       practicePath={practicePath}
       reviewId={activeReview?.reviewId}
       state={state}
@@ -166,26 +163,39 @@ function LessonView({ lesson }: { lesson: LessonDetail }) {
     />
   )
 
+  function panel() {
+    if (tab === 'practice') return <LessonPractice key={`${lesson.id}:${done}`} lessonId={lesson.id} />
+    if (resources.status === 'loading') return <LoadingState label="Đang tải…" />
+    if (resources.status === 'error' && resources.error) {
+      return <ApiErrorState error={resources.error} onRetry={resources.reload} />
+    }
+    if (!resources.data) return null
+    if (tab === 'summary') return <LessonSummary markdown={resources.data.summaryMarkdown} />
+    if (tab === 'documents') return <LessonDocuments documents={resources.data.documents} />
+    return <LessonSlides slides={resources.data.slides} />
+  }
+
+  const current = TABS.find((entry) => entry.tab === tab) ?? TABS[0]!
+
   return (
-    <article className="lp-page lp-lesson-page" aria-labelledby="lp-lesson-title">
+    <article className="lp-page lp-lesson-page lp-res-page" aria-labelledby="lp-lesson-title">
       <NoticeBanner />
 
-      <div className="lp-lesson-layout">
-        <div className="lp-lesson-main">
+      <div className="lp-res-layout">
+        <div className="lp-res-main">
           <Link className="lp-back" to={topicPath}>
             <ArrowLeft aria-hidden="true" size={16} />
             {lesson.topicTitle}
           </Link>
 
           <header className="lp-lesson-head">
-            <p className="lp-eyebrow">
-              Bài {lesson.sortOrder} · {hasInteractive ? 'Lý thuyết và bài tập' : 'Lý thuyết'}
-            </p>
+            <p className="lp-eyebrow">Bài {lesson.sortOrder} · {lesson.topicTitle}</p>
             <h1 id="lp-lesson-title">{lesson.title}</h1>
           </header>
 
-          <section className="lp-lesson-content" aria-label="Nội dung bài học">
-            <BlockList blocks={lesson.blocks} context={context} />
+          <section className="lp-res-card" aria-label={current.label}>
+            {tab === 'practice' ? null : <h2>{current.label}</h2>}
+            {panel()}
           </section>
 
           {done ? (
@@ -197,15 +207,31 @@ function LessonView({ lesson }: { lesson: LessonDetail }) {
               review={activeReview}
               topicPath={topicPath}
             />
-          ) : !hasInteractive ? (
-            <p className="lp-lesson-end">
-              Hết nội dung bài học. Bấm <strong>Hoàn thành bài</strong> để ghi nhận tiến độ.
-            </p>
           ) : null}
         </div>
 
-        <aside className="lp-lesson-rail" aria-label="Tiến độ bài học">
-          <div className="lp-rail-card">
+        <aside className="lp-res-rail" aria-label="Nội dung và tiến độ bài học">
+          <nav className="lp-res-nav" aria-label="Nội dung bài học">
+            <p className="lp-res-nav__label">Nội dung bài học</p>
+            {TABS.map(({ tab: target, label, icon: Icon, count }) => {
+              const total = resources.data ? count(resources.data) : null
+              return (
+                <Link
+                  key={target}
+                  className={`lp-res-nav__link${target === tab ? ' is-active' : ''}`}
+                  to={target === 'slides' ? lessonPath : `${lessonPath}?view=${target}`}
+                  replace
+                  aria-current={target === tab ? 'page' : undefined}
+                >
+                  <Icon aria-hidden="true" size={17} />
+                  <span>{label}</span>
+                  {total ? <small>{total}</small> : null}
+                </Link>
+              )
+            })}
+          </nav>
+
+          <div className="lp-rail-card lp-res-progress">
             <p className="lp-rail-card__kicker">Bài {lesson.sortOrder} · {lesson.topicTitle}</p>
             <p className={`lp-rail-status lp-rail-status--${copy.tone}`}>
               <StateIcon aria-hidden="true" size={18} />
@@ -241,7 +267,6 @@ function PrimaryAction({
   practicePath,
   topicPath,
   onComplete,
-  onScrollInteractive,
 }: {
   state: LessonState
   reviewId?: string
@@ -250,7 +275,6 @@ function PrimaryAction({
   practicePath: string
   topicPath: string
   onComplete: () => void
-  onScrollInteractive: () => void
 }) {
   if (state === 'review' && reviewId) {
     return (
@@ -267,7 +291,7 @@ function PrimaryAction({
     return (
       <Button asChild className="lp-btn lp-btn--accent lp-btn--cta lp-btn--block">
         <Link to={practicePath}>
-          Luyện thêm bài này
+          Luyện tập bài này
           <ArrowRight aria-hidden="true" size={16} />
         </Link>
       </Button>
@@ -292,24 +316,15 @@ function PrimaryAction({
     )
   }
 
-  if (state === 'reading') {
-    return (
-      <Button
-        className="lp-btn lp-btn--accent lp-btn--cta lp-btn--block"
-        disabled={completing}
-        onClick={onComplete}
-        type="button"
-      >
-        {completing ? <Loader2 aria-hidden="true" className="lp-spin" /> : <CheckCircle2 aria-hidden="true" size={16} />}
-        {completing ? 'Đang ghi nhận…' : 'Hoàn thành bài'}
-      </Button>
-    )
-  }
-
   return (
-    <Button className="lp-btn lp-btn--quiet lp-btn--block" onClick={onScrollInteractive} type="button" variant="outline">
-      Đến phần bài tập
-      <ArrowDown aria-hidden="true" size={16} />
+    <Button
+      className="lp-btn lp-btn--accent lp-btn--cta lp-btn--block"
+      disabled={completing}
+      onClick={onComplete}
+      type="button"
+    >
+      {completing ? <Loader2 aria-hidden="true" className="lp-spin" /> : <CheckCircle2 aria-hidden="true" size={16} />}
+      {completing ? 'Đang ghi nhận…' : 'Hoàn thành bài'}
     </Button>
   )
 }
@@ -331,11 +346,11 @@ function CompletionPanel({
 }) {
   const warning = Boolean(review) || needsPractice
   const message = review
-    ? <>Bạn cần củng cố lại <strong>“{review.knowledgePointTitle}”</strong> trước khi học tiếp. Bài ôn gồm tóm tắt lý thuyết và vài câu hỏi ngắn.</>
+    ? <>Bạn cần củng cố lại <strong>“{review.knowledgePointTitle}”</strong> trước khi học tiếp. Bài ôn gồm phần tóm tắt lý thuyết và vài câu hỏi ngắn.</>
     : needsPractice
-      ? 'Bài này yêu cầu luyện thêm trước khi mở bài kiểm tra chặng.'
+      ? 'Bài này yêu cầu luyện tập trước khi mở bài kiểm tra chặng.'
       : nextLessonId
-        ? 'Kiến thức của bài đã được ghi nhận. Bạn có thể sang bài tiếp theo.'
+        ? 'Kiến thức của bài đã được ghi nhận. Bạn có thể luyện tập hoặc sang bài tiếp theo.'
         : 'Bạn đã học xong bài cuối của chặng. Quay về chặng để làm bài kiểm tra.'
 
   return (
@@ -347,7 +362,7 @@ function CompletionPanel({
         <h2 id="lp-done-title">{fresh ? 'Bạn đã hoàn thành bài này' : 'Bài này đã hoàn thành'}</h2>
         <p>{message}</p>
         <div className="lp-done__links">
-          {!warning && nextLessonId ? <Link to={practicePath}>Luyện thêm bài này</Link> : null}
+          {!warning ? <Link to={practicePath}>Luyện tập bài này</Link> : null}
           <Link to={topicPath}>Về danh sách bài</Link>
         </div>
       </div>

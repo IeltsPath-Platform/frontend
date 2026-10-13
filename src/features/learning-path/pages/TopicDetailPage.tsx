@@ -96,7 +96,7 @@ export function TopicDetailView({ detail, onChanged }: { detail: TopicLessonsRes
                 Bài {continueLesson.sortOrder}: {continueLesson.title}
               </p>
               <Button asChild className="lp-btn lp-btn--accent lp-btn--cta lp-overview__cta">
-                <Link to={continueIsPractice ? `/learn/lessons/${continueLesson.id}/practice` : `/learn/lessons/${continueLesson.id}`}>
+                <Link to={continueIsPractice ? `/learn/lessons/${continueLesson.id}?view=practice` : `/learn/lessons/${continueLesson.id}`}>
                   {continueIsPractice ? 'Luyện thêm' : neverStarted ? 'Bắt đầu học' : 'Học tiếp'}
                   <ArrowRight aria-hidden="true" size={18} />
                 </Link>
@@ -194,7 +194,7 @@ function LessonStep({ lesson, isNext, index }: { lesson: LessonSummary; isNext: 
           </Link>
         )}
         {practice ? (
-          <Link className="lp-step__practice" to={`/learn/lessons/${lesson.id}/practice`}>
+          <Link className="lp-step__practice" to={`/learn/lessons/${lesson.id}?view=practice`}>
             <Dumbbell aria-hidden="true" size={15} />
             <span>Cần luyện thêm trước khi mở bài kiểm tra chặng</span>
             <strong>
@@ -227,7 +227,7 @@ function unlockChecklist(lessons: LessonSummary[], reviews: ReviewRef[]): Unlock
           key: 'practice',
           text: `Hoàn thành phần luyện thêm của ${practice.length} bài`,
           done: false,
-          to: `/learn/lessons/${practice[0].id}/practice`,
+          to: `/learn/lessons/${practice[0].id}?view=practice`,
         }]
       : []),
     ...(reviews.length > 0

@@ -4,9 +4,6 @@ import type {
   AttemptResult,
   AttemptStructure,
   CourseSummary,
-  EssaySubmissionRequest,
-  ExerciseSubmissionRequest,
-  ExerciseSubmissionResult,
   LearnerSubmissionRequest,
   LearningGoal,
   LearningGoalRequest,
@@ -31,6 +28,7 @@ import type {
   TopicSummary,
   WritingSubmissionResult,
 } from '~types/learningPath'
+import type { LessonResourcesResponse } from '~types/lesson'
 
 /** Every method rejects with `ApiError` on failure. */
 export interface LearningApi {
@@ -55,12 +53,12 @@ export interface LearningApi {
   getPendingReviews(): Promise<ReviewRef[]>
   getTopicLessons(topicId: string): Promise<TopicLessonsResponse>
   getLesson(lessonId: string): Promise<LessonDetail>
+  /** The lesson's Markdown summary, slides and documents, behind the same gate as the lesson. */
+  getLessonResources(lessonId: string): Promise<LessonResourcesResponse>
   getLessonPracticeSets(lessonId: string): Promise<LessonPracticeSets>
   startPracticeAttempt(lessonId: string, packageId: string): Promise<PracticeAttemptView>
   getPracticeAttempt(attemptId: string): Promise<PracticeAttemptView | PracticeSubmissionResult>
   submitPracticeAttempt(attemptId: string, request: PracticeSubmissionRequest): Promise<PracticeSubmissionResult>
-  submitExercise(lessonId: string, blockId: string, request: ExerciseSubmissionRequest): Promise<ExerciseSubmissionResult>
-  submitEssay(lessonId: string, blockId: string, request: EssaySubmissionRequest): Promise<WritingSubmissionResult>
   getWritingSubmission(submissionId: string): Promise<WritingSubmissionResult>
   completeLesson(lessonId: string): Promise<LessonCompletionResult>
   getReview(reviewId: string): Promise<ReviewDetail>

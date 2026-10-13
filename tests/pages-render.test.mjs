@@ -332,22 +332,6 @@ test('Classroom retains its schedule while the guest header limits navigation to
   assert.match(html, /class="cls-panel cls-panel--dark"/)
 })
 
-test('Lesson workspace provides the reference material, quiz and vocabulary views', async () => {
-  const materials = await render('/src/features/classroom/pages/LessonWorkspacePage.tsx', 'LessonWorkspacePage', {}, '/lessons/session-02')
-  assert.match(materials, /Tài liệu buổi học/)
-  assert.match(materials, /Bài 1: Nature &amp; Environment/)
-  assert.match(materials, /LESSON RESOURCE/)
-  assert.match(materials, /HOMEWORK HUB/)
-
-  const quiz = await render('/src/features/classroom/pages/LessonWorkspacePage.tsx', 'LessonWorkspacePage', {}, '/lessons/session-02?view=quiz')
-  assert.match(quiz, /Nghe hội thoại và chọn đáp án đúng/)
-  assert.match(quiz, /Bản đồ câu hỏi/)
-
-  const vocabulary = await render('/src/features/classroom/pages/LessonWorkspacePage.tsx', 'LessonWorkspacePage', {}, '/lessons/session-02?view=vocabulary')
-  assert.match(vocabulary, /sustainable/)
-  assert.match(vocabulary, /Hình ảnh gợi nhớ/)
-})
-
 test('Dictionary shares the topic vocabulary and interactive affordances', async () => {
   const html = await render('/src/features/vocabulary/pages/VocabularyPage.tsx', 'VocabularyPage', {}, '/vocabulary')
   assert.match(html, /Từ điển học theo chủ đề/)
@@ -408,11 +392,10 @@ test('Auth layout uses transform-only ambient motion and a reduced-motion fallba
 })
 
 test('New lesson and dictionary styles preserve motion fallbacks', () => {
-  const lessonStyles = readFileSync(new URL('../src/features/classroom/lesson-workspace.css', import.meta.url), 'utf8')
+  const lessonStyles = readFileSync(new URL('../src/features/learning-path/lesson-resources.css', import.meta.url), 'utf8')
   const vocabularyStyles = readFileSync(new URL('../src/features/vocabulary/vocabulary.css', import.meta.url), 'utf8')
 
   assert.match(lessonStyles, /@media \(prefers-reduced-motion: reduce\)/)
-  assert.match(lessonStyles, /transform-origin:\s*left/)
   assert.match(vocabularyStyles, /@media \(prefers-reduced-motion: reduce\)/)
 })
 

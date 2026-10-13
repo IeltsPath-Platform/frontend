@@ -2,7 +2,6 @@ import { BrowserRouter, Navigate, Routes, Route, useNavigate, useParams, useSear
 import { ErrorBoundary } from './ErrorBoundary'
 import { NotFoundPage, RouteStatusPage } from './RouteStatusPage'
 import { ClassroomPage } from '~features/classroom/ClassroomPage'
-import { LessonWorkspacePage } from '~features/classroom/pages/LessonWorkspacePage'
 import { OverviewPage } from '@/features/overview/pages/OverviewPage'
 import { PracticeCatalogPage } from '@/features/practice/pages/PracticeCatalogPage'
 import { PracticeTestPage } from '@/features/practice/pages/PracticeTestPage'
@@ -24,7 +23,6 @@ import { NotFoundState } from '@/features/learning-path/components/PageState'
 import { CourseListPage } from '@/features/learning-path/pages/CourseListPage'
 import { LessonPage } from '@/features/learning-path/pages/LessonPage'
 import { PlacementPage } from '@/features/learning-path/pages/PlacementPage'
-import { PracticePage } from '@/features/learning-path/pages/PracticePage'
 import { ReviewPage } from '@/features/learning-path/pages/ReviewPage'
 import { TopicDetailPage } from '@/features/learning-path/pages/TopicDetailPage'
 import { TopicListPage } from '@/features/learning-path/pages/TopicListPage'
@@ -52,7 +50,7 @@ function AppContent() {
         <Route path="courses/:courseId" element={<TopicListPage />} />
         <Route path="topics/:topicId" element={<TopicDetailPage />} />
         <Route path="lessons/:lessonId" element={<LessonPage />} />
-        <Route path="lessons/:lessonId/practice" element={<PracticePage />} />
+        <Route path="lessons/:lessonId/practice" element={<LessonPracticeRedirect />} />
         <Route path="reviews/:reviewId" element={<ReviewPage />} />
         <Route path="tests/:attemptId" element={<TopicTestPage />} />
         <Route path="tests/:attemptId/result" element={<TopicTestResultPage />} />
@@ -106,7 +104,7 @@ function AppContent() {
       <Route path="/reset-password" element={<GuestOnly><ResetPasswordPage /></GuestOnly>} />
       <Route path="/auth/oauth/callback" element={<GuestOnly><OAuthCallbackPage /></GuestOnly>} />
       <Route path="/classes/:classCode/join" element={<RouteStatusPage title="Phòng học trực tuyến" />} />
-      <Route path="/lessons/:lessonId" element={<RequireAuth><LessonWorkspacePage /></RequireAuth>} />
+      <Route path="/lessons/:lessonId" element={<LessonRedirect />} />
       <Route path="/mentors/:mentorSlug" element={<RouteStatusPage title="Liên hệ Mentor" />} />
       <Route path="/terms" element={<RouteStatusPage title="Điều khoản sử dụng" />} />
       <Route path="/privacy" element={<RouteStatusPage title="Chính sách bảo mật" />} />
@@ -116,6 +114,18 @@ function AppContent() {
       <SiteFooter />
     </>
   )
+}
+
+/** Lessons live in the learning area; the old top-level lesson URL forwards there. */
+function LessonRedirect() {
+  const { lessonId } = useParams()
+  return <Navigate to={`/learn/lessons/${lessonId}`} replace />
+}
+
+/** The Practice is a tab of the lesson page. */
+function LessonPracticeRedirect() {
+  const { lessonId } = useParams()
+  return <Navigate to={`/learn/lessons/${lessonId}?view=practice`} replace />
 }
 
 function PracticeTestRouteWrapper({ onExit }: { onExit: () => void }) {

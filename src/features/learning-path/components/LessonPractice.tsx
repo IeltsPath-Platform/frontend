@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { AlertTriangle, ArrowLeft, ArrowRight, Dumbbell, Loader2, Lock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type {
@@ -11,11 +11,11 @@ import type {
   PracticeSubmissionResult,
 } from '~types/learningPath'
 import { learningApi, toApiError } from '../api'
-import { AudioBlock } from '../components/blocks/AudioBlock'
-import { ExerciseBlock } from '../components/blocks/ExerciseBlock'
-import { PassageBlock } from '../components/blocks/PassageBlock'
-import { ApiErrorState, LoadingState } from '../components/PageState'
-import { StatusBadge } from '../components/StatusBadge'
+import { AudioBlock } from './blocks/AudioBlock'
+import { ExerciseBlock } from './blocks/ExerciseBlock'
+import { PassageBlock } from './blocks/PassageBlock'
+import { ApiErrorState, LoadingState } from './PageState'
+import { StatusBadge } from './StatusBadge'
 import { newRequestId } from '../lib/requestId'
 import { reportApiError, setPendingReviews } from '../lib/reviewGate'
 import { useApiResource } from '../lib/useApiResource'
@@ -34,8 +34,8 @@ const PRACTICE_STATUS_TEXT: Record<string, string> = {
   LOCKED: 'Chưa mở',
 }
 
-export function PracticePage() {
-  const { lessonId = '' } = useParams()
+/** The Practice of a lesson, shown inside the lesson page. */
+export function LessonPractice({ lessonId }: { lessonId: string }) {
   const resource = useApiResource(`practice:${lessonId}`, () => learningApi.getLessonPracticeSets(lessonId))
 
   if (resource.status === 'loading') return <LoadingState label="Đang tải luyện thêm…" />
@@ -101,13 +101,13 @@ function PracticeView({ catalog, onReload }: { catalog: LessonPracticeSets; onRe
       ? Math.round(submission.percent * (submission.percent <= 1 ? 100 : 1))
       : null
     return (
-      <article className="lp-page" aria-labelledby="lp-practice-attempt-title">
+      <section className="lp-practice" aria-labelledby="lp-practice-attempt-title">
         <button className="lp-back" type="button" onClick={() => { setActive(null); setSubmission(null); onReload() }}>
           <ArrowLeft aria-hidden="true" size={16} />Danh sách luyện thêm
         </button>
         <header className="lp-lesson-head">
           <p className="lp-eyebrow">Luyện thêm · {active.item.code}</p>
-          <h1 id="lp-practice-attempt-title">{active.item.title}</h1>
+          <h2 id="lp-practice-attempt-title">{active.item.title}</h2>
           {active.item.revealed ? (
             <p className="lp-hint lp-hint--warn" role="status">
               <AlertTriangle aria-hidden="true" size={16} /> Bộ này đã lộ đáp án trước đó nên lần nộp này không được tính.
@@ -155,7 +155,7 @@ function PracticeView({ catalog, onReload }: { catalog: LessonPracticeSets; onRe
             ) : null}
           </div>
         </section>
-      </article>
+      </section>
     )
   }
 
@@ -164,13 +164,10 @@ function PracticeView({ catalog, onReload }: { catalog: LessonPracticeSets; onRe
     ?? openItems.find((item) => item.status === 'AVAILABLE' || item.status === 'ATTEMPTED'))?.packageId
 
   return (
-    <article className="lp-page" aria-labelledby="lp-practice-title">
-      <Link className="lp-back" to={`/learn/lessons/${catalog.lessonId}`}>
-        <ArrowLeft aria-hidden="true" size={16} />Về bài học
-      </Link>
+    <section className="lp-practice" aria-labelledby="lp-practice-title">
       <header className="lp-lesson-head">
-        <p className="lp-eyebrow">Luyện thêm</p>
-        <h1 id="lp-practice-title">Củng cố trước khi mở bài kiểm tra chặng</h1>
+        <p className="lp-eyebrow">Luyện tập</p>
+        <h2 id="lp-practice-title">Củng cố trước khi mở bài kiểm tra chặng</h2>
         <p className="lp-lesson-head__lead">
           {PRACTICE_STATUS_TEXT[catalog.practiceStatus] ?? catalog.practiceStatus}
           {catalog.practicePassReason ? ` · ${catalog.practicePassReason}` : ''}
@@ -230,7 +227,7 @@ function PracticeView({ catalog, onReload }: { catalog: LessonPracticeSets; onRe
           <Button asChild className="lp-btn lp-btn--quiet" variant="outline"><Link to="/learn">Về lộ trình</Link></Button>
         </div>
       ) : null}
-    </article>
+    </section>
   )
 }
 

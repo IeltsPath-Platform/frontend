@@ -9,24 +9,16 @@ import type {
   ReviewDetail,
   ReviewSet,
   ReviewSubmissionResult,
-  TheoryCheckResult,
 } from '~types/learningPath'
 import { learningApi, toApiError } from '../api'
 import { AudioBlock } from '../components/blocks/AudioBlock'
-import { BlockList } from '../components/blocks/BlockList'
-import type { BlockRenderContext } from '../components/blocks/blockRegistry'
 import { ExerciseBlock } from '../components/blocks/ExerciseBlock'
 import { PassageBlock } from '../components/blocks/PassageBlock'
 import { ApiErrorState, LoadingState } from '../components/PageState'
+import { Markdown } from '../components/resources/Markdown'
 import { newRequestId } from '../lib/requestId'
 import { reportApiError, resolvePendingReview } from '../lib/reviewGate'
 import { useApiResource } from '../lib/useApiResource'
-
-const THEORY_CONTEXT: BlockRenderContext = {
-  pointsBalance: 0,
-  submitExercise: () => Promise.reject(new Error('Phần lý thuyết không có bài tập.')),
-  submitEssay: () => Promise.reject(new Error('Phần lý thuyết không có bài luận.')),
-}
 
 export function ReviewPage() {
   const { reviewId = '' } = useParams()
@@ -68,9 +60,10 @@ function toExerciseBlock(title: string, questions: Question[], code: string, set
 
 function ReviewView({ review, onReload }: { review: ReviewDetail; onReload: () => void }) {
   const [result, setResult] = useState<ReviewSubmissionResult | null>(null)
-  const [theoryResult, setTheoryResult] = useState<TheoryCheckResult | null>(null)
+  const [confirming, setConfirming] = useState(false)
+  const [confirmError, setConfirmError] = useState<string | null>(null)
   const status = result?.status ?? review.status
-  const stage = theoryResult?.stage ?? result?.stage ?? review.stage
+  const stage = result?.stage ?? review.stage
   const set = review.status === 'PENDING' && stage === 'PRACTICE' ? review.set : null
   const showTheoryGate = review.status === 'PENDING' && stage === 'THEORY'
 
@@ -93,25 +86,19 @@ function ReviewView({ review, onReload }: { review: ReviewDetail; onReload: () =
     }
   }
 
-  async function submitTheoryCheck(answers: AnswerInput[]) {
+  /** The theory is the lesson summary, so confirming that it was read is all the theory step asks. */
+  async function confirmTheory() {
+    setConfirming(true)
+    setConfirmError(null)
     try {
-      const outcome = await learningApi.submitTheoryCheck(review.reviewId, {
-        requestId: newRequestId(),
-        answers,
-      })
-      setTheoryResult(outcome)
+      await learningApi.submitTheoryCheck(review.reviewId, { requestId: newRequestId(), answers: [] })
       onReload()
-      return {
-        passed: outcome.total > 0 ? outcome.correct === outcome.total : true,
-        percent: outcome.total === 0 ? 100 : Math.round((outcome.correct / outcome.total) * 100),
-        correctCount: outcome.correct,
-        totalCount: outcome.total,
-        results: outcome.results,
-      }
     } catch (reason) {
       const error = toApiError(reason)
       reportApiError(error)
-      throw error
+      setConfirmError(error.message)
+    } finally {
+      setConfirming(false)
     }
   }
 
@@ -128,7 +115,7 @@ function ReviewView({ review, onReload }: { review: ReviewDetail; onReload: () =
         <h1 id="lp-review-title">{review.knowledgePoint.title}</h1>
         <p>
           {showTheoryGate
-            ? 'Đọc lại lý thuyết rồi trả lời vài câu kiểm tra nhanh để mở bộ luyện ôn.'
+            ? 'Đọc lại phần tóm tắt lý thuyết của bài rồi sang bộ luyện ôn.'
             : 'Làm bộ câu hỏi ôn. Đạt là hoàn thành; chưa đạt thì đọc lại lý thuyết hoặc làm bộ khác.'}
           {review.status === 'PENDING' && review.failedSets > 0
             ? ` Số bộ chưa đạt: ${review.failedSets}/${review.maxFailedSets}.`
@@ -141,37 +128,22 @@ function ReviewView({ review, onReload }: { review: ReviewDetail; onReload: () =
       {review.theory.length > 0 ? (
         <section className="lp-theory" aria-labelledby="lp-theory-title">
           <h2 id="lp-theory-title"><BookOpenCheck aria-hidden="true" size={20} />Lý thuyết cần nhớ</h2>
-          <BlockList blocks={review.theory} context={THEORY_CONTEXT} />
+          <Markdown>{review.theory.join('\n\n')}</Markdown>
         </section>
       ) : null}
 
       {showTheoryGate ? (
-        <section className="lp-split" aria-label="Quick-check lý thuyết">
-          <div className="lp-split__work" style={{ gridColumn: '1 / -1' }}>
-            {review.quickCheck.length > 0 ? (
-              <ExerciseBlock
-                allowResubmit={false}
-                block={toExerciseBlock(
-                  'Kiểm tra nhanh lý thuyết',
-                  review.quickCheck,
-                  review.knowledgePoint.code,
-                  `theory-check:${review.reviewId}`,
-                )}
-                onSubmit={submitTheoryCheck}
-              />
-            ) : (
-              <div className="lp-complete-bar">
-                <p>Không có câu kiểm tra nhanh. Xác nhận đã đọc lý thuyết để sang bước luyện tập.</p>
-                <Button
-                  className="lp-btn lp-btn--accent lp-btn--cta"
-                  type="button"
-                  onClick={() => void submitTheoryCheck([])}
-                >
-                  Tiếp tục luyện ôn
-                </Button>
-              </div>
-            )}
-          </div>
+        <section className="lp-complete-bar" aria-label="Xác nhận đã đọc lý thuyết">
+          <p>Xác nhận đã đọc lý thuyết để sang bước luyện tập.</p>
+          <Button
+            className="lp-btn lp-btn--accent lp-btn--cta"
+            disabled={confirming}
+            type="button"
+            onClick={() => void confirmTheory()}
+          >
+            Tiếp tục luyện ôn
+          </Button>
+          {confirmError ? <p className="lp-error" role="alert">{confirmError}</p> : null}
         </section>
       ) : null}
 

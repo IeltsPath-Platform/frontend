@@ -1,4 +1,3 @@
-import { WRITING_REQUEST_TIMEOUT_MS } from '@/lib/env'
 import { apiRequest, HttpError } from '@/lib/httpClient'
 import type { LearningApi } from './learningApi'
 import { ApiError, type ApiErrorCode } from './apiError'
@@ -6,7 +5,6 @@ import {
   mapAttemptResult,
   mapAttemptStructure,
   mapCourseSummary,
-  mapExerciseSubmission,
   mapLessonCompletion,
   mapLessonDetail,
   mapLessonPracticeSets,
@@ -22,7 +20,6 @@ import {
   toStartAttemptBody,
   toWireAnswers,
   type CourseSummaryDto,
-  type ExerciseSubmissionResultDto,
   type LearnerAttemptResultDto,
   type LessonCompletionDto,
   type LessonDetailDto,
@@ -41,7 +38,6 @@ import type {
   AttemptItemResponse,
   AttemptResult,
   AttemptStructure,
-  ExerciseSubmissionRequest,
   LessonCompletionResult,
   LearnerSubmissionRequest,
   LearningGoal,
@@ -60,6 +56,7 @@ import type {
   TopicLessonsResponse,
   TopicSummary,
 } from '~types/learningPath'
+import type { LessonResourcesResponse } from '~types/lesson'
 
 const LEARNING = '/api/learning'
 const ASSESSMENTS = '/api/assessments'
@@ -82,7 +79,6 @@ const CODE_MAP: Record<string, ApiErrorCode> = {
   INSUFFICIENT_POINTS: 'INSUFFICIENT_POINTS',
   GRADING_UNAVAILABLE: 'GRADING_UNAVAILABLE',
   DAILY_LIMIT_REACHED: 'DAILY_LIMIT_REACHED',
-  ESSAY_BLOCK: 'ESSAY_BLOCK',
   PLACEMENT_ALREADY_DONE: 'PLACEMENT_ALREADY_DONE',
   NO_PLACEMENT_TEST: 'NO_PLACEMENT_TEST',
 }
@@ -215,6 +211,10 @@ export function createHttpLearningApi(): LearningApi {
       return mapLessonDetail(dto, topic.title)
     },
 
+    async getLessonResources(lessonId: string): Promise<LessonResourcesResponse> {
+      return learningRequest<LessonResourcesResponse>(`/lessons/${lessonId}/resources`)
+    },
+
     async getLessonPracticeSets(lessonId: string) {
       const dto = await learningRequest<LessonPracticeSetsDto>(`/lessons/${lessonId}/practice-sets`)
       return mapLessonPracticeSets(dto)
@@ -247,33 +247,6 @@ export function createHttpLearningApi(): LearningApi {
         },
       })
       return mapPracticeSubmission(dto)
-    },
-
-    async submitExercise(lessonId, blockId, request: ExerciseSubmissionRequest) {
-      const dto = await learningRequest<ExerciseSubmissionResultDto>(
-        `/lessons/${lessonId}/exercises/${blockId}/submissions`,
-        {
-          method: 'POST',
-          body: {
-            requestId: request.requestId,
-            answers: toWireAnswers(request.answers),
-          },
-        },
-      )
-      return mapExerciseSubmission(blockId, request, dto)
-    },
-
-    async submitEssay(lessonId, blockId, request) {
-      try {
-        return await apiRequest(`${LEARNING}/lessons/${lessonId}/essays/${blockId}/submissions`, {
-          method: 'POST',
-          body: request,
-          auth: true,
-          timeoutMs: WRITING_REQUEST_TIMEOUT_MS,
-        })
-      } catch (error) {
-        throwLearningError(error)
-      }
     },
 
     async getWritingSubmission(submissionId) {

@@ -1,18 +1,12 @@
-import type { AnswerMap, AttemptResult, AttemptStatus, ExerciseState, ReviewStatus } from '~types/learningPath'
+import type { AttemptResult, AttemptStatus, ReviewStatus } from '~types/learningPath'
 
-export const MOCK_STORAGE_KEY = 'ieltspath.learning-path.mock.v2'
-const STATE_VERSION = 2
+export const MOCK_STORAGE_KEY = 'ieltspath.learning-path.mock.v3'
+const STATE_VERSION = 3
 
 export interface KeyValueStorage {
   getItem(key: string): string | null
   setItem(key: string, value: string): void
   removeItem(key: string): void
-}
-
-export interface ExerciseProgress {
-  state: ExerciseState
-  attempts: number
-  savedAnswers: AnswerMap | null
 }
 
 export interface ReviewRecord {
@@ -65,9 +59,6 @@ export interface MockState {
   version: typeof STATE_VERSION
   seq: number
   completedLessons: string[]
-  exercises: Record<string, ExerciseProgress>
-  /** Knowledge points answered wrongly on a block's first submission, waiting for the lesson to finish. */
-  flaggedKps: Record<string, string[]>
   reviews: ReviewRecord[]
   topicTests: Record<string, TopicTestRecord>
   courseTests: Record<string, TopicTestRecord>
@@ -81,8 +72,6 @@ export function createInitialState(): MockState {
     version: STATE_VERSION,
     seq: 1,
     completedLessons: [],
-    exercises: {},
-    flaggedKps: {},
     reviews: [],
     topicTests: {},
     courseTests: {},

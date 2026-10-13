@@ -116,17 +116,12 @@ export interface MediaAudio {
   transcript?: string | null
 }
 
-/** Blocks arrive untyped from the API; renderers narrow them with the guards in `blockGuards.ts`. */
+/** Shapes shared by the exercise, passage and audio components. */
 export interface RawBlock {
   id: string
   sortOrder: number
   type: string
   [field: string]: unknown
-}
-
-export interface TextBlockData extends RawBlock {
-  type: 'TEXT'
-  text: string
 }
 
 export interface PassageBlockData extends RawBlock, Passage {
@@ -153,32 +148,6 @@ export interface ExerciseBlockData extends RawBlock {
   state: ExerciseState
   savedAnswers: AnswerMap | null
   solutions: QuestionResult[] | null
-}
-
-export interface EssayImage {
-  mediaUrl: string
-  altText: string
-}
-
-export interface EssayLatestSubmission {
-  id: string
-  status: string
-  overallBand: number | null
-  passed: boolean | null
-}
-
-export interface EssayBlockData extends RawBlock {
-  type: 'EXERCISE'
-  blockKind: 'ESSAY'
-  title: string
-  questionVersionId: string
-  stem: string
-  task: string
-  minWords: number
-  passBand: number
-  images: EssayImage[]
-  latestSubmission: EssayLatestSubmission | null
-  sampleAnswer: string | null
 }
 
 export interface WritingCriterion {
@@ -210,11 +179,7 @@ export interface WritingSubmissionResult {
   failureCode?: string
 }
 
-export interface EssaySubmissionRequest {
-  requestId: string
-  essayText: string
-}
-
+/** A lesson and its status. Its summary, slides and documents are read separately (see `types/lesson.ts`). */
 export interface LessonDetail {
   id: string
   topicId: string
@@ -222,24 +187,6 @@ export interface LessonDetail {
   title: string
   sortOrder: number
   status: LessonStatus
-  blocks: RawBlock[]
-  nextLessonId: string | null
-  pendingReviews: ReviewRef[]
-}
-
-export interface ExerciseSubmissionRequest {
-  requestId: string
-  answers: AnswerInput[]
-}
-
-export interface ExerciseSubmissionResult {
-  blockId: string
-  passed: boolean
-  correctCount: number
-  totalCount: number
-  percent: number
-  results: QuestionResult[]
-  lessonCompleted: boolean
   nextLessonId: string | null
   pendingReviews: ReviewRef[]
 }
@@ -267,9 +214,9 @@ export interface ReviewDetail {
   stage: ReviewStage
   knowledgePoint: { code: string; title: string }
   sourceLessonTitle: string
-  theory: RawBlock[]
+  /** Markdown: the summary of the lesson that teaches the knowledge point. */
+  theory: string[]
   set: ReviewSet | null
-  quickCheck: Question[]
   failedSets: number
   maxFailedSets: number
   theoryReason: string | null
