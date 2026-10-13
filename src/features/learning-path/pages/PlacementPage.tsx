@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useState } from 'react'
+import { useEffect, useEffectEvent, useMemo, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -13,12 +13,13 @@ import { useAttemptAnswers } from '../lib/useAttemptAnswers'
 import { ObjectiveSectionRunner } from '../placement/ObjectiveSectionRunner'
 import { PlacementDashboard } from '../placement/PlacementDashboard'
 import type { SectionRunnerProps } from '../placement/PlacementExamShell'
+import { groupSections } from '../placement/placementGroups'
 import { PlacementResultView } from '../placement/PlacementResultView'
 import { PlacementStepper } from '../placement/PlacementStepper'
 import { PlacementSurvey } from '../placement/PlacementSurvey'
 import { SpeakingSectionRunner } from '../placement/SpeakingSectionRunner'
 import { WritingSectionRunner } from '../placement/WritingSectionRunner'
-import { skillOf, type SectionTiming } from '../placement/placementSkills'
+import type { SectionTiming } from '../placement/placementSkills'
 import '../placement/placement.css'
 
 const POLL_INTERVAL_MS = 2_000
@@ -131,8 +132,10 @@ function PlacementTest({ attempt, onProgress, onSubmitted, onRedoSurvey }: Place
 
 function PlacementHub({ attempt, data, onProgress, onSubmitted, onRedoSurvey }: PlacementTestProps & { data: TestData }) {
   const { sections } = data
+  // Each skill is one entry on the dashboard; its parts (sections) are completed together.
+  const groups = useMemo(() => groupSections(sections), [sections])
   const { answers, saveStates, saveAnswer, setAnswer } = useAttemptAnswers(attempt.id, data.responses)
-  const [activeSectionId, setActiveSectionId] = useState<string | null>(null)
+  const [activeGroupId, setActiveGroupId] = useState<string | null>(null)
   const [completedIds, setCompletedIds] = useState<ReadonlySet<string>>(
     () => new Set(sections.filter((section) => section.completedAt).map((section) => section.id)),
   )
@@ -143,13 +146,13 @@ function PlacementHub({ attempt, data, onProgress, onSubmitted, onRedoSurvey }: 
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const reportProgress = useEffectEvent(onProgress)
-  const completedShare = sections.length ? completedIds.size / sections.length : 0
+  const completedShare = groups.length ? groups.filter((group) => group.sections.every((section) => completedIds.has(section.id))).length / groups.length : 0
 
   useEffect(() => {
     reportProgress(completedShare)
   }, [completedShare])
 
-  /** Submits the whole attempt; runs on its own once the last section is completed. */
+  /** Submits the whole attempt; runs on its own once every section is completed. */
   async function submit() {
     setSubmitting(true)
     setError(null)
@@ -163,42 +166,50 @@ function PlacementHub({ attempt, data, onProgress, onSubmitted, onRedoSurvey }: 
     }
   }
 
-  /** Opens a section and tells the server when the learner first did; that is the start of its clock. */
+  /** Tells the server when the learner first opened a part; that is the start of its clock. */
   function openSection(sectionId: string) {
-    setActiveSectionId(sectionId)
     if (timings[sectionId]?.startedAt) return
     setTimings((previous) => ({ ...previous, [sectionId]: { startedAt: new Date().toISOString(), completedAt: null } }))
-    // The clock is only a note beside the finished section, so a failed call must not stop the learner.
+    // The clock is only a note beside the finished skill, so a failed call must not stop the learner.
     learningApi.startAttemptSection(attempt.id, sectionId).catch(() => {})
   }
 
-  /** Hands a section in on the server, closes it and submits the test when no section is left open. */
-  async function completeSection(sectionId: string) {
-    await learningApi.completeAttemptSection(attempt.id, sectionId)
-    setTimings((previous) => ({
-      ...previous,
-      [sectionId]: { startedAt: previous[sectionId]?.startedAt ?? null, completedAt: new Date().toISOString() },
-    }))
-    const next = new Set(completedIds).add(sectionId)
-    setCompletedIds(next)
-    setActiveSectionId(null)
-    if (sections.every((section) => next.has(section.id))) await submit()
+  /** Hands in every open part of a skill, one after another, and submits the test when no section is left open. */
+  async function completeGroup(groupId: string) {
+    const group = groups.find((candidate) => candidate.id === groupId)
+    if (!group) return
+    const done = new Set(completedIds)
+    for (const section of group.sections) {
+      if (done.has(section.id)) continue
+      // A part the learner never opened still gets its clock started, so it can be completed.
+      if (!timings[section.id]?.startedAt) {
+        await learningApi.startAttemptSection(attempt.id, section.id).catch(() => {})
+        setTimings((previous) => ({ ...previous, [section.id]: { startedAt: new Date().toISOString(), completedAt: null } }))
+      }
+      await learningApi.completeAttemptSection(attempt.id, section.id)
+      done.add(section.id)
+      setTimings((previous) => ({
+        ...previous,
+        [section.id]: { startedAt: previous[section.id]?.startedAt ?? null, completedAt: new Date().toISOString() },
+      }))
+      setCompletedIds(new Set(done))
+    }
+    setActiveGroupId(null)
+    if (sections.every((section) => done.has(section.id))) await submit()
   }
 
-  const activeIndex = sections.findIndex((section) => section.id === activeSectionId)
-  const active = sections[activeIndex]
-  const runnerProps: SectionRunnerProps | null = active ? {
+  const activeGroup = groups.find((group) => group.id === activeGroupId)
+  const runnerProps: SectionRunnerProps | null = activeGroup ? {
     attemptId: attempt.id,
-    section: active,
-    partNumber: activeIndex + 1,
+    group: activeGroup,
     answers,
     saveStates,
     setAnswer,
     saveAnswer,
-    onExit: () => setActiveSectionId(null),
-    onComplete: () => completeSection(active.id),
+    onOpenPart: openSection,
+    onExit: () => setActiveGroupId(null),
+    onComplete: () => completeGroup(activeGroup.id),
   } : null
-  const skill = active ? skillOf(active) : null
 
   return (
     <>
@@ -206,17 +217,17 @@ function PlacementHub({ attempt, data, onProgress, onSubmitted, onRedoSurvey }: 
         answers={answers}
         completedIds={completedIds}
         error={error}
-        onOpenSection={openSection}
+        groups={groups}
+        onOpenGroup={setActiveGroupId}
         onRedoSurvey={onRedoSurvey}
         onRetrySubmit={() => void submit()}
-        sections={sections}
         startedAt={attempt.startedAt}
         submitting={submitting}
         timings={timings}
       />
-      {runnerProps && skill === 'WRITING' ? <WritingSectionRunner key={runnerProps.section.id} {...runnerProps} /> : null}
-      {runnerProps && skill === 'SPEAKING' ? <SpeakingSectionRunner key={runnerProps.section.id} {...runnerProps} /> : null}
-      {runnerProps && skill !== 'WRITING' && skill !== 'SPEAKING' ? <ObjectiveSectionRunner key={runnerProps.section.id} {...runnerProps} /> : null}
+      {runnerProps && runnerProps.group.skill === 'WRITING' ? <WritingSectionRunner key={runnerProps.group.id} {...runnerProps} /> : null}
+      {runnerProps && runnerProps.group.skill === 'SPEAKING' ? <SpeakingSectionRunner key={runnerProps.group.id} {...runnerProps} /> : null}
+      {runnerProps && runnerProps.group.skill !== 'WRITING' && runnerProps.group.skill !== 'SPEAKING' ? <ObjectiveSectionRunner key={runnerProps.group.id} {...runnerProps} /> : null}
     </>
   )
 }

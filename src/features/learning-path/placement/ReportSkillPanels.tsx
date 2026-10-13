@@ -20,49 +20,77 @@ function ReportPanel({ skill, title, band, children }: { skill: PlacementSkill; 
   )
 }
 
-/** Listening / Reading: every question with the learner's answer and the expected one. */
-export function ObjectiveReport({ skill, band, questions }: { skill: PlacementSkill; band: number | null; questions: PlacementReportQuestion[] }) {
-  const correct = questions.filter((question) => question.correct).length
+/** One part of a Listening / Reading test as the report shows it; question numbers restart in every part. */
+export interface ReportPart {
+  name: string
+  questions: PlacementReportQuestion[]
+}
+
+/** Listening / Reading: every question with the learner's answer and the expected one, numbered across the parts. */
+export function ObjectiveReport({ skill, band, parts }: { skill: PlacementSkill; band: number | null; parts: ReportPart[] }) {
+  const all = parts.flatMap((part) => part.questions)
+  const correct = all.filter((question) => question.correct).length
   return (
     <ReportPanel band={band} skill={skill} title={SKILL_META[skill].label}>
       <p className="pl-report-summary">
-        Bạn trả lời đúng <strong>{correct}/{questions.length}</strong> câu.
-        {questions.length - correct > 0 ? ` Xem lại ${questions.length - correct} câu sai bên dưới cùng đáp án đúng.` : ' Rất tốt!'}
+        Bạn trả lời đúng <strong>{correct}/{all.length}</strong> câu.
+        {all.length - correct > 0 ? ` Xem lại ${all.length - correct} câu sai bên dưới cùng đáp án đúng.` : ' Rất tốt!'}
       </p>
-      <div className="pl-report-table-wrap">
-        <table className="pl-report-table pl-report-table--answers">
-          <thead>
-            <tr><th scope="col">Câu</th><th scope="col">Câu hỏi</th><th scope="col">Bạn trả lời</th><th scope="col">Đáp án</th><th scope="col"><span className="sr-only">Kết quả</span></th></tr>
-          </thead>
-          <tbody>
-            {questions.map((question) => (
-              <tr data-correct={question.correct} key={question.number}>
-                <td className="pl-report-num">{question.number}</td>
-                <td>
-                  {question.prompt}
-                  {question.explanation && !question.correct ? <small className="pl-report-explain">{question.explanation}</small> : null}
-                </td>
-                <td className="pl-report-answer">{question.learnerAnswer ?? <em>Bỏ trống</em>}</td>
-                <td className="pl-report-answer">{question.correctAnswer ?? '–'}</td>
-                <td className="pl-report-mark">
-                  {question.correct
-                    ? <CircleCheck aria-label="Đúng" className="pl-report-mark--ok" size={20} />
-                    : <CircleX aria-label="Sai" className="pl-report-mark--bad" size={20} />}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {parts.map((part, partIndex) => {
+        const start = parts.slice(0, partIndex).reduce((total, earlier) => total + earlier.questions.length, 0)
+        return (
+          <div key={partIndex}>
+            {parts.length > 1 ? <h4 className="pl-report-label">{part.name}</h4> : null}
+            <div className="pl-report-table-wrap">
+              <table className="pl-report-table pl-report-table--answers">
+                <thead>
+                  <tr><th scope="col">Câu</th><th scope="col">Câu hỏi</th><th scope="col">Bạn trả lời</th><th scope="col">Đáp án</th><th scope="col"><span className="sr-only">Kết quả</span></th></tr>
+                </thead>
+                <tbody>
+                  {part.questions.map((question, index) => (
+                    <tr data-correct={question.correct} key={index}>
+                      <td className="pl-report-num">{start + index + 1}</td>
+                      <td>
+                        {question.prompt}
+                        {question.explanation && !question.correct ? <small className="pl-report-explain">{question.explanation}</small> : null}
+                      </td>
+                      <td className="pl-report-answer">{question.learnerAnswer ?? <em>Bỏ trống</em>}</td>
+                      <td className="pl-report-answer">{question.correctAnswer ?? '–'}</td>
+                      <td className="pl-report-mark">
+                        {question.correct
+                          ? <CircleCheck aria-label="Đúng" className="pl-report-mark--ok" size={20} />
+                          : <CircleX aria-label="Sai" className="pl-report-mark--bad" size={20} />}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )
+      })}
     </ReportPanel>
   )
 }
 
-/** Writing task: the LLM examiner's overall comment, one row per criterion and what to study next. */
-export function EssayReport({ title, essay }: { title: string; essay: PlacementReportEssay }) {
+/** Writing: the skill's band in the header, then each task with its own band and the examiner's feedback. */
+export function WritingReport({ band, tasks }: { band: number | null; tasks: { title: string; essay: PlacementReportEssay }[] }) {
+  return (
+    <ReportPanel band={band} skill="WRITING" title="Writing">
+      {tasks.map(({ title, essay }, index) => (
+        <section key={index}>
+          <h4 className="pl-report-label">{title}{essay.band !== null ? <span className="pl-report-band">{essay.band.toFixed(1)}</span> : null}</h4>
+          <EssayBody essay={essay} />
+        </section>
+      ))}
+    </ReportPanel>
+  )
+}
+
+function EssayBody({ essay }: { essay: PlacementReportEssay }) {
   const feedback = essay.feedback
   return (
-    <ReportPanel band={essay.band} skill="WRITING" title={title}>
+    <>
       {!essay.submitted ? (
         <p className="pl-report-summary">Bạn đã nộp phần này mà chưa viết bài nên phần này được tính 0 điểm.</p>
       ) : essay.band === null ? (
@@ -97,7 +125,7 @@ export function EssayReport({ title, essay }: { title: string; essay: PlacementR
           <p className="pl-report-note"><Info aria-hidden="true" size={14} />Nhận xét do AI chấm theo band descriptor công khai, mang tính tham khảo.</p>
         </>
       )}
-    </ReportPanel>
+    </>
   )
 }
 

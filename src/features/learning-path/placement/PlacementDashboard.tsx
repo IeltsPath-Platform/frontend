@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react'
 import { CircleCheckBig, Loader2, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { AnswerMap } from '~types/learningPath'
-import type { TestSection } from '../lib/attemptSnapshot'
-import { SKILL_META, answeredCount, minutesSpent, questionItems, sectionIcon, skillOf, type SectionTiming } from './placementSkills'
+import { groupAnsweredCount, groupQuestionCount, isGroupDone, type TestGroup } from './placementGroups'
+import { SKILL_META, minutesSpent, type SectionTiming } from './placementSkills'
 
 interface PlacementDashboardProps {
-  sections: TestSection[]
+  /** The skills of the test, each made of one or more parts. */
+  groups: TestGroup[]
   answers: AnswerMap
-  /** Sections the server reports as completed; they cannot be reopened. */
+  /** Parts the server reports as completed; a skill with every part completed cannot be reopened. */
   completedIds: ReadonlySet<string>
   /** Per section: when it was opened and handed in, for the time noted beside a finished one. */
   timings: Record<string, SectionTiming>
@@ -16,7 +17,7 @@ interface PlacementDashboardProps {
   /** The attempt is being submitted after the last section was completed. */
   submitting: boolean
   error: string | null
-  onOpenSection: (sectionId: string) => void
+  onOpenGroup: (groupId: string) => void
   /** Retries the automatic submit when it failed. */
   onRetrySubmit: () => void
   onRedoSurvey: () => void
@@ -32,15 +33,24 @@ function useElapsedSeconds(startedAt: string) {
   return Number.isFinite(start) ? Math.max(0, Math.floor((now - start) / 1000)) : 0
 }
 
+/** From the first part opened to the last one handed in. */
+function groupTiming(group: TestGroup, timings: Record<string, SectionTiming>): SectionTiming {
+  const times = (key: keyof SectionTiming) => group.sections
+    .map((section) => timings[section.id]?.[key])
+    .filter((value): value is string => Boolean(value))
+    .sort()
+  return { startedAt: times('startedAt')[0] ?? null, completedAt: times('completedAt').at(-1) ?? null }
+}
+
 const pad = (value: number) => String(value).padStart(2, '0')
 
 /** The test hub: time since the learner started and every section with its own entry point. */
 export function PlacementDashboard({
-  sections, answers, completedIds, timings, startedAt, submitting, error, onOpenSection, onRetrySubmit, onRedoSurvey,
+  groups, answers, completedIds, timings, startedAt, submitting, error, onOpenGroup, onRetrySubmit, onRedoSurvey,
 }: PlacementDashboardProps) {
   const elapsed = useElapsedSeconds(startedAt)
-  const done = sections.filter((section) => completedIds.has(section.id)).length
-  const allDone = sections.length > 0 && done === sections.length
+  const done = groups.filter((group) => isGroupDone(group, completedIds)).length
+  const allDone = groups.length > 0 && done === groups.length
   const clock = [Math.floor(elapsed / 3600), Math.floor((elapsed % 3600) / 60), elapsed % 60]
 
   return (
@@ -64,25 +74,23 @@ export function PlacementDashboard({
       <section className="pl-card pl-parts" aria-labelledby="pl-parts-title">
         <header className="pl-parts__head">
           <h2 className="pl-card__title" id="pl-parts-title">Phần thi của bạn</h2>
-          <span className="pl-parts__count">{done}/{sections.length} đã hoàn thành</span>
+          <span className="pl-parts__count">{done}/{groups.length} đã hoàn thành</span>
         </header>
         <ol className="pl-parts__list">
-          {sections.map((section) => {
-            const meta = SKILL_META[skillOf(section)]
-            const Icon = sectionIcon(section)
-            const total = questionItems(section).length
-            const answered = answeredCount(section, answers)
-            const isDone = completedIds.has(section.id)
-            // Only the task number tells the two Writing parts apart; the topic of the section stays inside the test.
-            const task = /Task\s*\d/i.exec(section.snapshot?.title ?? '')?.[0]
-            const minutes = isDone ? minutesSpent(timings[section.id]) : null
+          {groups.map((group) => {
+            const meta = SKILL_META[group.skill]
+            const Icon = meta.icon
+            const total = groupQuestionCount(group)
+            const answered = groupAnsweredCount(group, answers)
+            const isDone = isGroupDone(group, completedIds)
+            const minutes = isDone ? minutesSpent(groupTiming(group, timings)) : null
             return (
-              <li className="pl-parts__row" data-done={isDone} key={section.id}>
+              <li className="pl-parts__row" data-done={isDone} key={group.id}>
                 <span className="pl-parts__check" aria-hidden="true">
                   {isDone ? <CircleCheckBig size={26} strokeWidth={1.9} /> : <Icon size={26} strokeWidth={1.75} />}
                 </span>
                 <span className="pl-parts__name">
-                  <strong>{task ? `${meta.label} ${task}` : meta.label}</strong>
+                  <strong>{meta.label}</strong>
                 </span>
                 {isDone ? (
                   <span className="pl-parts__done">
@@ -92,7 +100,7 @@ export function PlacementDashboard({
                   <span className="pl-parts__qty">{total} câu</span>
                 )}
                 <Button className="pl-btn pl-btn--accent pl-btn--sm" disabled={isDone || submitting}
-                  onClick={() => onOpenSection(section.id)} type="button">
+                  onClick={() => onOpenGroup(group.id)} type="button">
                   {answered > 0 && !isDone ? 'Làm tiếp' : 'Làm bài'}
                 </Button>
               </li>

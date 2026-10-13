@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import { ArrowRight, Check, Mic, RotateCcw, SkipForward, Square } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { learningApi, toApiError } from '../api'
 import { reportApiError } from '../lib/reviewGate'
 import { PlacementExamShell, type SectionRunnerProps } from './PlacementExamShell'
+import { partLabel } from './placementGroups'
 import { questionItems, readSpokenSeconds, spokenAnswer } from './placementSkills'
 import { useMicRecorder } from './useMicRecorder'
 
@@ -24,8 +25,11 @@ const clock = (seconds: number) => `${String(Math.floor(seconds / 60)).padStart(
  * listens back to every take before handing the section in.
  */
 export function SpeakingSectionRunner(props: SectionRunnerProps) {
-  const { attemptId, section, partNumber, answers, setAnswer, saveAnswer, onExit, onComplete } = props
-  const items = questionItems(section)
+  const { attemptId, group, answers, setAnswer, saveAnswer, onOpenPart, onExit, onComplete } = props
+  // The parts are taken as one run of questions; each item remembers which part it belongs to.
+  const parts = group.sections.map((section, index) => ({ section, label: partLabel(section, index), items: questionItems(section) }))
+  const items = parts.flatMap((part) => part.items)
+  const partOf = (itemId: string) => parts.find((part) => part.items.some((item) => item.id === itemId)) ?? parts[0]
   const recorder = useMicRecorder()
   const [phase, setPhase] = useState<Phase>({ kind: 'guide' })
   const [error, setError] = useState<string | null>(null)
@@ -36,6 +40,14 @@ export function SpeakingSectionRunner(props: SectionRunnerProps) {
   const takeUrls = useRef<string[]>([])
 
   useEffect(() => () => { takeUrls.current.forEach((url) => URL.revokeObjectURL(url)) }, [])
+
+  // A part's clock starts when its first question comes up.
+  const openPart = useEffectEvent(onOpenPart)
+  const activeItemId = phase.kind === 'question' ? items[phase.index]?.id : undefined
+  const activeSectionId = activeItemId ? partOf(activeItemId).section.id : undefined
+  useEffect(() => {
+    if (activeSectionId) openPart(activeSectionId)
+  }, [activeSectionId])
 
   function keepTake(itemId: string, recording: Blob) {
     const url = URL.createObjectURL(recording)
@@ -103,20 +115,25 @@ export function SpeakingSectionRunner(props: SectionRunnerProps) {
   }, [phase])
 
   const current = phase.kind === 'question' ? items[phase.index] : undefined
+  const shownPart = partOf((current ?? items[firstOpen])?.id ?? '')
 
   const footer = (
     <>
       <nav className="pl-qnav" aria-label="Tiến độ phần Speaking">
-        <span className="pl-qnav__label">Part {partNumber}</span>
-        <div className="pl-qnav__numbers">
-          <span className="pl-qnav__chip" data-answered={phase.kind !== 'guide'}>Intro</span>
-          {items.map((item, index) => (
-            <span aria-current={phase.kind === 'question' && phase.index === index ? 'true' : undefined} className="pl-qnav__num"
-              data-answered={isRecorded(item.id)} key={item.id}>
-              {item.question?.number ?? index + 1}
-            </span>
-          ))}
-        </div>
+        <span className="pl-qnav__chip" data-answered={phase.kind !== 'guide'}>Intro</span>
+        {parts.map((part) => (
+          <div className="pl-qnav__part" key={part.section.id}>
+            <span className="pl-qnav__label">{part.label}</span>
+            <div className="pl-qnav__numbers">
+              {part.items.map((item) => (
+                <span aria-current={current?.id === item.id ? 'true' : undefined} className="pl-qnav__num"
+                  data-answered={isRecorded(item.id)} key={item.id}>
+                  {item.question?.number}
+                </span>
+              ))}
+            </div>
+          </div>
+        ))}
       </nav>
       {recorder.state === 'unavailable' ? (
         <div className="pl-exam__actions">
@@ -136,7 +153,8 @@ export function SpeakingSectionRunner(props: SectionRunnerProps) {
   )
 
   return (
-    <PlacementExamShell footer={footer} onExit={() => { recorder.reset(); onExit() }} partNumber={partNumber} section={section}>
+    <PlacementExamShell footer={footer} group={group} instructions={shownPart.section.snapshot?.instructions} partLabel={shownPart.label}
+      onExit={() => { recorder.reset(); onExit() }}>
       <div className="pl-speaking">
         {recorder.state === 'unavailable' ? (
           <p className="pl-speaking__warn" role="alert">
@@ -223,7 +241,7 @@ export function SpeakingSectionRunner(props: SectionRunnerProps) {
 
         {phase.kind === 'question' && current ? (
           <section className="pl-speaking__stage" aria-live="polite" aria-labelledby="pl-speaking-question">
-            <p className="pl-speaking__count">Câu {phase.index + 1}/{items.length}</p>
+            <p className="pl-speaking__count">{shownPart.label} · Câu {phase.index + 1}/{items.length}</p>
             <h2 className="pl-speaking__question" id="pl-speaking-question">{current.question?.prompt}</h2>
             {phase.stage === 'countdown' ? (
               <div className="pl-speaking__countdown">
