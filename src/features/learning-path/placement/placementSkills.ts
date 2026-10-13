@@ -1,4 +1,4 @@
-import { BookOpenText, ChartColumnBig, Headphones, MicVocal, NotebookPen, type LucideIcon } from 'lucide-react'
+import { BookOpenText, Headphones, MicVocal, NotebookPen, type LucideIcon } from 'lucide-react'
 import type { AnswerMap } from '~types/learningPath'
 import type { TestSection } from '../lib/attemptSnapshot'
 
@@ -10,14 +10,6 @@ export const SKILL_META: Record<SectionSkill, { label: string; icon: LucideIcon 
   WRITING: { label: 'Writing', icon: NotebookPen },
   SPEAKING: { label: 'Speaking', icon: MicVocal },
   OTHER: { label: 'Phần thi', icon: BookOpenText },
-}
-
-/** Writing Task 1 comes with data to describe (a passage), so it gets a chart icon instead of the essay one. */
-export function sectionIcon(section: TestSection): LucideIcon {
-  const skill = skillOf(section)
-  const passage = section.snapshot?.passage
-  if (skill === 'WRITING' && passage && passage.paragraphs.length > 0) return ChartColumnBig
-  return SKILL_META[skill].icon
 }
 
 export function skillOf(section: TestSection): SectionSkill {

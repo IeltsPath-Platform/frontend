@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useEffectEvent, useState } from 'react'
 import { Check, CloudOff, Loader2, PenLine } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -8,6 +8,7 @@ import { learningApi, toApiError } from '../api'
 import { reportApiError } from '../lib/reviewGate'
 import { DictionaryPanel } from './DictionaryPanel'
 import { PlacementExamShell, type SectionRunnerProps } from './PlacementExamShell'
+import { partLabel } from './placementGroups'
 import { TASK_1_PARTS, WRITING_PARTS, countWords, joinWritingParts, questionItems, readWritingParts } from './placementSkills'
 import { formatHoursMinutesSeconds, useSectionSeconds } from './sectionClock'
 
@@ -19,18 +20,24 @@ const TARGET_WORDS = 150
  * handing the section in sends the joined essay for grading.
  */
 export function WritingSectionRunner(props: SectionRunnerProps) {
-  const { attemptId, section, partNumber, answers, saveStates, setAnswer, saveAnswer, onExit, onComplete } = props
-  const items = questionItems(section)
+  const { attemptId, group, answers, saveStates, setAnswer, saveAnswer, onOpenPart, onExit, onComplete } = props
+  // Every task is one section with its own item; the learner moves between tasks from the bottom bar.
+  const entries = group.sections.flatMap((section, sectionIndex) =>
+    questionItems(section).map((item) => ({ section, item, label: partLabel(section, sectionIndex) })))
   const seconds = useSectionSeconds()
+  const [taskIndex, setTaskIndex] = useState(0)
   const [finishing, setFinishing] = useState(false)
   const [confirming, setConfirming] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const essays = items.map((item) => joinWritingParts(readWritingParts(answers[item.id])))
+  const essays = entries.map(({ item }) => joinWritingParts(readWritingParts(answers[item.id])))
   const emptyEssays = essays.filter((essay) => essay === '').length
-  const passage = section.snapshot?.passage
-  const data = passage && passage.paragraphs.length > 0 ? passage : null
-  const labels = data ? TASK_1_PARTS : WRITING_PARTS
-  const dataTitle = (section.snapshot?.title ?? '').replace(/^.*?:\s*/, '')
+  const task = entries[taskIndex]
+  const openPart = useEffectEvent(onOpenPart)
+  const taskSectionId = task?.section.id
+
+  useEffect(() => {
+    if (taskSectionId) openPart(taskSectionId)
+  }, [taskSectionId])
 
   function changePart(itemId: string, index: number, value: string) {
     const parts = readWritingParts(answers[itemId])
@@ -41,14 +48,14 @@ export function WritingSectionRunner(props: SectionRunnerProps) {
   async function finish() {
     setFinishing(true)
     setError(null)
-    const saved = await Promise.all(items.map((item) => saveAnswer(item.id, answers[item.id] ?? '')))
+    const saved = await Promise.all(entries.map(({ item }) => saveAnswer(item.id, answers[item.id] ?? '')))
     if (saved.includes(false)) {
       setError('Chưa lưu được bài viết. Kiểm tra kết nối rồi nộp lại.')
       setFinishing(false)
       return
     }
     try {
-      for (const [index, item] of items.entries()) {
+      for (const [index, { item }] of entries.entries()) {
         if (!essays[index]) continue
         await learningApi.submitLearnerSubmission({
           attemptItemId: item.id,
@@ -67,62 +74,78 @@ export function WritingSectionRunner(props: SectionRunnerProps) {
     }
   }
 
+  if (!task) return null
+  const { section, item } = task
+  const passage = section.snapshot?.passage
+  const data = passage && passage.paragraphs.length > 0 ? passage : null
+  const labels = data ? TASK_1_PARTS : WRITING_PARTS
+  const dataTitle = (section.snapshot?.title ?? '').replace(/^.*?:\s*/, '')
+  const parts = readWritingParts(answers[item.id])
+  const words = countWords(essays[taskIndex])
+  const isLast = taskIndex === entries.length - 1
+
+  const footer = entries.length > 1 ? (
+    <nav className="pl-qbar" aria-label="Chuyển giữa các task">
+      {entries.map((entry, index) => (
+        <button aria-current={index === taskIndex ? 'true' : undefined} className="pl-qbar__tab" key={entry.item.id}
+          onClick={() => setTaskIndex(index)} type="button">
+          <strong>{entry.label}</strong>
+          <span>{countWords(essays[index])} words</span>
+        </button>
+      ))}
+    </nav>
+  ) : undefined
+
   return (
-    <PlacementExamShell onExit={onExit} partNumber={partNumber} section={section}>
-      {items.map((item, itemIndex) => {
-        const parts = readWritingParts(answers[item.id])
-        const words = countWords(essays[itemIndex])
-        const isLast = itemIndex === items.length - 1
-        return (
-          <div className="pl-writing" key={item.id}>
-            <section className="pl-panel pl-writing__task" aria-label="Đề bài">
-              <div className="pl-panel__scroll">
-                <p className="pl-writing__prompt">{item.question?.prompt}</p>
-                {data ? <TaskData passage={data} title={dataTitle} /> : null}
-              </div>
-            </section>
-
-            <section className="pl-panel pl-writing__editor" aria-label="Bài viết">
-              <header className="pl-panel__head pl-panel__head--end">
-                <span className="pl-writing__count" aria-live="polite">
-                  <PenLine aria-hidden="true" size={16} />
-                  <span>Word count: <strong>{words}</strong>/{TARGET_WORDS}</span>
-                </span>
-              </header>
-              <div className="pl-panel__scroll">
-                {labels.map((label, index) => (
-                  <label className="pl-writing__part" key={label}>
-                    <span>{label}</span>
-                    <Textarea
-                      className="pl-writing__input"
-                      disabled={finishing}
-                      onBlur={() => void saveAnswer(item.id, answers[item.id] ?? '')}
-                      onChange={(event) => changePart(item.id, index, event.target.value)}
-                      placeholder="Nhập phần viết của bạn ở đây"
-                      rows={index === 0 || index === labels.length - 1 ? 3 : 5}
-                      value={parts[index]}
-                    />
-                  </label>
-                ))}
-                {saveStates[item.id] === 'error' ? (
-                  <p className="lp-save lp-save--error"><CloudOff aria-hidden="true" size={14} />Chưa lưu được bản nháp, sẽ thử lại khi bạn nộp</p>
-                ) : null}
-              </div>
-              {isLast ? (
-                <footer className="pl-writing__foot">
-                  <p className="pl-writing__time">Thời gian:<strong>{formatHoursMinutesSeconds(seconds)}</strong></p>
-                  <Button className="pl-writing__done" disabled={finishing} onClick={() => setConfirming(true)} type="button">
-                    {finishing ? <Loader2 aria-hidden="true" className="lp-spin" /> : <Check aria-hidden="true" />}Hoàn thành
-                  </Button>
-                  {error ? <p className="pl-writing__error lp-error" role="alert">{error}</p> : null}
-                </footer>
-              ) : null}
-            </section>
-
-            <DictionaryPanel />
+    <PlacementExamShell footer={footer} footerClassName="pl-exam__foot--qbar" group={group} instructions={section.snapshot?.instructions}
+      onExit={onExit} partLabel={task.label}>
+      <div className="pl-writing" key={item.id}>
+        <section className="pl-panel pl-writing__task" aria-label="Đề bài">
+          <div className="pl-panel__scroll">
+            <p className="pl-writing__prompt">{item.question?.prompt}</p>
+            {data ? <TaskData passage={data} title={dataTitle} /> : null}
           </div>
-        )
-      })}
+        </section>
+
+        <section className="pl-panel pl-writing__editor" aria-label="Bài viết">
+          <header className="pl-panel__head pl-panel__head--end">
+            <span className="pl-writing__count" aria-live="polite">
+              <PenLine aria-hidden="true" size={16} />
+              <span>Word count: <strong>{words}</strong>/{TARGET_WORDS}</span>
+            </span>
+          </header>
+          <div className="pl-panel__scroll">
+            {labels.map((label, index) => (
+              <label className="pl-writing__part" key={label}>
+                <span>{label}</span>
+                <Textarea
+                  className="pl-writing__input"
+                  disabled={finishing}
+                  onBlur={() => void saveAnswer(item.id, answers[item.id] ?? '')}
+                  onChange={(event) => changePart(item.id, index, event.target.value)}
+                  placeholder="Nhập phần viết của bạn ở đây"
+                  rows={index === 0 || index === labels.length - 1 ? 3 : 5}
+                  value={parts[index]}
+                />
+              </label>
+            ))}
+            {saveStates[item.id] === 'error' ? (
+              <p className="lp-save lp-save--error"><CloudOff aria-hidden="true" size={14} />Chưa lưu được bản nháp, sẽ thử lại khi bạn nộp</p>
+            ) : null}
+          </div>
+          {isLast ? (
+            <footer className="pl-writing__foot">
+              <p className="pl-writing__time">Thời gian:<strong>{formatHoursMinutesSeconds(seconds)}</strong></p>
+              <Button className="pl-writing__done" disabled={finishing} onClick={() => setConfirming(true)} type="button">
+                {finishing ? <Loader2 aria-hidden="true" className="lp-spin" /> : <Check aria-hidden="true" />}Hoàn thành
+              </Button>
+              {error ? <p className="pl-writing__error lp-error" role="alert">{error}</p> : null}
+            </footer>
+          ) : null}
+        </section>
+
+        <DictionaryPanel />
+      </div>
 
       <Dialog open={confirming} onOpenChange={setConfirming}>
         <DialogContent className="lp-tokens pl-confirm">

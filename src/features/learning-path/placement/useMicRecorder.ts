@@ -15,7 +15,7 @@ export function useMicRecorder() {
   const timer = useRef<number | null>(null)
   const startedAt = useRef(0)
   const chunks = useRef<Blob[]>([])
-  const onStopped = useRef<((length: number) => void) | null>(null)
+  const onStopped = useRef<((length: number, recording: Blob) => void) | null>(null)
   const urlRef = useRef<string | null>(null)
 
   function clearTimer() {
@@ -34,8 +34,13 @@ export function useMicRecorder() {
     releaseUrl()
   }, [])
 
-  /** @param maxSeconds stops on its own after this long. @returns false when the microphone cannot be used. */
-  async function start(maxSeconds: number, whenStopped?: (length: number) => void): Promise<boolean> {
+  /**
+   * @param maxSeconds stops on its own after this long.
+   * @param whenStopped gets the length and the audio of the finished take; the hook's own `audioUrl` is replaced by the
+   * next take, so a caller that must keep several takes holds on to the blob itself.
+   * @returns false when the microphone cannot be used.
+   */
+  async function start(maxSeconds: number, whenStopped?: (length: number, recording: Blob) => void): Promise<boolean> {
     if (typeof MediaRecorder === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
       setState('unavailable')
       return false
@@ -56,11 +61,12 @@ export function useMicRecorder() {
       clearTimer()
       stream.current?.getTracks().forEach((track) => track.stop())
       const length = Math.max(1, Math.round((Date.now() - startedAt.current) / 1000))
-      urlRef.current = URL.createObjectURL(new Blob(chunks.current, { type: next.mimeType || 'audio/webm' }))
+      const recording = new Blob(chunks.current, { type: next.mimeType || 'audio/webm' })
+      urlRef.current = URL.createObjectURL(recording)
       setAudioUrl(urlRef.current)
       setSeconds(length)
       setState('recorded')
-      onStopped.current?.(length)
+      onStopped.current?.(length, recording)
     }
     recorder.current = next
     startedAt.current = Date.now()

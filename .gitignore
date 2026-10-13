@@ -47,3 +47,6 @@ plans/
 __pycache__/
 *.pyc
 _tmp_report_extract.txt
+
+# graphify knowledge graph output
+graphify-out/

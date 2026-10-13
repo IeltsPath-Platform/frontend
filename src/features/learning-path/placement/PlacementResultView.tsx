@@ -7,8 +7,9 @@ import { learningApi } from '../api'
 import { ApiErrorState, LoadingState } from '../components/PageState'
 import { useApiResource } from '../lib/useApiResource'
 import { BAND_STEPS, bandStep, daysUntil, feasibility, hoursPerWeek, stepLabel } from './placementReport'
+import { titleLabel, titleTopic } from './placementGroups'
 import { SKILL_META } from './placementSkills'
-import { EssayReport, ObjectiveReport, SpeakingReport } from './ReportSkillPanels'
+import { ObjectiveReport, SpeakingReport, WritingReport } from './ReportSkillPanels'
 
 const SKILL_ORDER = ['READING', 'LISTENING', 'WRITING', 'SPEAKING'] as const
 
@@ -111,17 +112,26 @@ export function PlacementResultView({ attemptId }: { attemptId: string }) {
           <p className="lp-hint">Chưa có dữ liệu chi tiết cho bài làm này.</p>
         ) : (
           <div className="pl-report__panels">
-            {result.sections.map((section, index) => {
-              if (section.skill === 'READING' || section.skill === 'LISTENING') {
-                return <ObjectiveReport band={bySkill.get(section.skill) ?? null} key={index} questions={section.questions} skill={section.skill} />
+            {SKILL_ORDER.map((skill) => {
+              // One block per skill however many parts the test split it into; its band comes from the skill list.
+              const sections = result.sections.filter((section) => section.skill === skill)
+              if (sections.length === 0 && !bySkill.has(skill)) return null
+              const band = bySkill.get(skill) ?? null
+              if (skill === 'READING' || skill === 'LISTENING') {
+                const parts = sections.map((section, index) => ({
+                  name: titleTopic(section.title) || titleLabel(section.title, index),
+                  questions: section.questions,
+                }))
+                return <ObjectiveReport band={band} key={skill} parts={parts} skill={skill} />
               }
-              if (section.skill === 'WRITING') {
-                return section.essays.map((essay, essayIndex) => {
-                  const label = essay.task === 'TASK_1' ? 'Writing Task 1' : essay.task === 'TASK_2' ? 'Writing Task 2' : 'Writing'
-                  return <EssayReport essay={essay} key={`${index}-${essayIndex}`} title={label} />
-                })
+              if (skill === 'WRITING') {
+                const tasks = sections.flatMap((section) => section.essays).map((essay, index) => ({
+                  title: essay.task === 'TASK_1' ? 'Task 1' : essay.task === 'TASK_2' ? 'Task 2' : `Task ${index + 1}`,
+                  essay,
+                }))
+                return <WritingReport band={band} key={skill} tasks={tasks} />
               }
-              return <SpeakingReport band={bySkill.get('SPEAKING') ?? null} key={index} />
+              return <SpeakingReport band={band} key={skill} />
             })}
           </div>
         )}

@@ -57,6 +57,8 @@ function instruction(group: QuestionGroup) {
   if (group.kind === 'gap') return 'Complete the sentences below. Write your answer in each gap.'
   if (group.kind === 'choice') {
     const letters = group.entries[0].item.question?.options?.map((option) => option.value) ?? []
+    // Matching Headings keys its list i–viii, so there is no letter to pick.
+    if (letters.some((letter) => /^[ivx]{2,}$/i.test(letter))) return 'Choose the correct heading for each paragraph from the list below.'
     return `Choose the correct letter, ${listLetters(letters)}.`
   }
   return LEGENDS[group.kind]?.intro ?? ''
