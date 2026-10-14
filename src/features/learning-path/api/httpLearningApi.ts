@@ -67,7 +67,6 @@ const CODE_MAP: Record<string, ApiErrorCode> = {
   TEST_LOCKED: 'TEST_LOCKED',
   TEST_UNAVAILABLE: 'TEST_UNAVAILABLE',
   PRACTICE_REQUIRED: 'PRACTICE_REQUIRED',
-  PRACTICE_LOCKED: 'PRACTICE_REQUIRED',
   REVIEW_REQUIRED: 'REVIEW_REQUIRED',
   REVIEW_SET_CLOSED: 'REVIEW_SET_CLOSED',
   THEORY_REQUIRED: 'REVIEW_REQUIRED',
@@ -176,11 +175,13 @@ export function createHttpLearningApi(): LearningApi {
         lessonId: string
         skill?: string
         stage?: string
+        sourcePackageId?: string | null
       }>>('/reviews?status=PENDING&limit=50')
       return rows.map((row) => mapReviewRef({
         reviewId: row.reviewId,
         lessonId: row.lessonId,
         knowledgePointId: row.knowledgePointId,
+        sourcePackageId: row.sourcePackageId,
       }))
     },
 

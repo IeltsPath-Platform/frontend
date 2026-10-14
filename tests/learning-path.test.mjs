@@ -126,6 +126,7 @@ describe('Lan demo scenario', () => {
     const detail = await api.getTopicLessons('topic-demo-reading')
     assert.deepEqual(statusesOf(detail), ['COMPLETED', 'COMPLETED', 'LOCKED', 'LOCKED'])
     assert.match(detail.lessons[2].lockedReason, /bài ôn/)
+    assert.deepEqual(detail.lessons.map((lesson) => lesson.blockingReviewId ?? null), [null, null, reviewId, reviewId])
     await assert.rejects(api.getLesson('lesson-l3'), (error) => error.code === 'REVIEW_REQUIRED' && error.details.reviews[0].reviewId === reviewId)
     await assert.rejects(api.getLessonResources('lesson-l3'), { code: 'REVIEW_REQUIRED' })
     await assert.rejects(api.createTestAssignment('topic-demo-reading'), { code: 'REVIEW_REQUIRED' })
@@ -317,28 +318,91 @@ describe('learning path rendering', () => {
   const renderLesson = (props, path = '/learn/lessons/lesson-l1') =>
     render('/src/features/learning-path/pages/LessonPage.tsx', 'LessonView', { lesson: lesson(props) }, path)
 
-  test('the lesson page lists its four parts, marks the open one and offers completion', async () => {
+  test('the lesson page lists its three theory parts and no Practice tab', async () => {
     const html = await renderLesson({}, '/learn/lessons/lesson-l1?view=summary')
 
     assert.match(html, /<h1 id="lp-lesson-title">Nhận diện paraphrase<\/h1>/)
     assert.match(html, /Bài <!-- -->1<!-- --> · <!-- -->Đọc hiểu nền tảng/)
-    for (const label of ['Slide bài giảng', 'Lesson Summary', 'Tài liệu bài khoá', 'Luyện tập']) assert.match(html, new RegExp(label))
+    for (const label of ['Slide bài giảng', 'Lesson Summary', 'Tài liệu bài khoá']) assert.match(html, new RegExp(label))
     assert.match(html, /href="\/learn\/lessons\/lesson-l1"/, 'slides are the default part, so they have no query')
     assert.match(html, /href="\/learn\/lessons\/lesson-l1\?view=documents"/)
-    assert.match(html, /href="\/learn\/lessons\/lesson-l1\?view=practice"/)
+    assert.doesNotMatch(html, /view=practice/)
+    assert.doesNotMatch(html, /Luyện tập/)
     assert.match(html, /<a[^>]*class="lp-res-nav__link is-active"[^>]*href="\/learn\/lessons\/lesson-l1\?view=summary"|<a[^>]*aria-current="page"[^>]*href="\/learn\/lessons\/lesson-l1\?view=summary"/)
-    assert.match(html, /Hoàn thành bài/)
     assert.doesNotMatch(html, /Bài tập|Đến phần bài tập|Homework|Mentor/)
     assert.doesNotMatch(html, /Bài tiếp theo/)
   })
 
-  test('a completed lesson offers the next lesson and the Practice instead of completion', async () => {
+  test('the lesson page waits for the topic before offering completion, since Practice decides it', async () => {
+    // Server rendering has not loaded the topic's lessons: the page cannot tell whether the lesson has required Practice.
+    const html = await renderLesson({})
+
+    assert.doesNotMatch(html, /Hoàn thành bài</)
+  })
+
+  test('a completed lesson offers the next lesson instead of completion', async () => {
     const html = await renderLesson({ status: 'COMPLETED' })
 
     assert.match(html, /href="\/learn\/lessons\/lesson-l2"/)
     assert.match(html, /Bài tiếp theo/)
-    assert.match(html, /Luyện tập bài này/)
     assert.doesNotMatch(html, /Hoàn thành bài</)
+  })
+
+  test('the Practice is a part of the lesson page: the lesson stays around it and it takes the place of the other parts', async () => {
+    const html = await renderLesson({}, '/learn/lessons/lesson-l1?view=practice')
+
+    assert.match(html, /<h1 id="lp-lesson-title">Nhận diện paraphrase<\/h1>/, 'the lesson page is still there')
+    assert.match(html, /Nội dung bài học/, 'with its side navigation')
+    assert.match(html, /Đang tải luyện thêm/, 'and the Practice where the other parts would be')
+    assert.match(html, /<a[^>]*title="Bài 1 · Nhận diện paraphrase"[^>]*href="\/learn\/lessons\/lesson-l1"/, 'the trail leads back to the lesson')
+    assert.match(html, /<span aria-current="page" title="Luyện tập">Luyện tập<\/span>/, 'and ends at the Practice')
+    assert.doesNotMatch(html, /<h2>Slide bài giảng<\/h2>/)
+  })
+
+  test('lessons with required Practice are told apart from lessons without', async () => {
+    const { hasRequiredPractice, lessonPracticePath } = await server.ssrLoadModule('/src/features/learning-path/lib/lessonPractice.ts')
+
+    assert.equal(hasRequiredPractice({ practiceStatus: 'REQUIRED', practicePassReason: null }), true)
+    assert.equal(hasRequiredPractice({ practiceStatus: 'LOCKED', practicePassReason: null }), true)
+    assert.equal(hasRequiredPractice({ practiceStatus: 'PASSED', practicePassReason: 'FIRST_SUBMISSION' }), true)
+    assert.equal(hasRequiredPractice({ practiceStatus: 'PASSED', practicePassReason: 'NO_PRACTICE' }), false)
+    assert.equal(hasRequiredPractice({ practiceStatus: null, practicePassReason: null }), false)
+    assert.equal(lessonPracticePath('l1'), '/learn/lessons/l1?view=practice')
+  })
+
+  test('a pending review leaves its own lesson open and only the lessons it holds back say why they wait', async () => {
+    const lessons = [
+      { id: 'l1', title: 'Một', sortOrder: 1, status: 'AVAILABLE', estimatedMinutes: 10, lockedReason: null, blockingReviewId: null },
+      { id: 'l2', title: 'Hai', sortOrder: 2, status: 'LOCKED', estimatedMinutes: 10, lockedReason: 'Mở sau khi hoàn thành bài ôn.', blockingReviewId: 'rv1' },
+      { id: 'l3', title: 'Ba', sortOrder: 3, status: 'LOCKED', estimatedMinutes: 10, lockedReason: 'Mở sau khi hoàn thành bài ôn.', blockingReviewId: 'rv1' },
+    ]
+    const html = await render('/src/features/learning-path/components/TopicLessonsPanel.tsx', 'TopicLessonsView', {
+      lessons, finalTest: { title: 'Kiểm tra', testStatus: 'LOCKED', questionCount: 0, lastPercent: null }, topicId: 't', onChanged: () => {},
+    })
+
+    assert.match(html, /href="\/learn\/lessons\/l1"/, 'the lesson that created the review can still be opened')
+    assert.doesNotMatch(html, /href="\/learn\/lessons\/l2"/)
+    assert.doesNotMatch(html, /href="\/learn\/lessons\/l3"/)
+    assert.equal((html.match(/Mở sau khi hoàn thành bài ôn\./g) ?? []).length, 2)
+    assert.doesNotMatch(html, /\/learn\/reviews\//, 'the review is listed with the lesson\'s Practice, not on the trail')
+    assert.doesNotMatch(html, /Luyện tập/)
+  })
+
+  test('the trail lists lessons only and never a Practice step', async () => {
+    const lessons = [
+      { id: 'l1', title: 'Một', sortOrder: 1, status: 'AVAILABLE', estimatedMinutes: 10, lockedReason: null, practiceStatus: 'REQUIRED', practicePassReason: null },
+      { id: 'l2', title: 'Hai', sortOrder: 2, status: 'LOCKED', estimatedMinutes: 10, lockedReason: 'Chưa mở', practiceStatus: 'LOCKED', practicePassReason: null },
+      { id: 'l3', title: 'Ba', sortOrder: 3, status: 'COMPLETED', estimatedMinutes: 10, lockedReason: null, practiceStatus: 'PASSED', practicePassReason: 'FIRST_SUBMISSION' },
+    ]
+    const html = await render('/src/features/learning-path/components/TopicLessonsPanel.tsx', 'TopicLessonsView', {
+      lessons, finalTest: { title: 'Kiểm tra', testStatus: 'LOCKED', questionCount: 0, lastPercent: null }, topicId: 't', onChanged: () => {},
+    })
+
+    assert.match(html, /href="\/learn\/lessons\/l1"/)
+    assert.match(html, /href="\/learn\/lessons\/l3"/)
+    assert.doesNotMatch(html, /Luyện tập/)
+    assert.doesNotMatch(html, /\/practice/)
+    assert.doesNotMatch(html, /view=practice/)
   })
 
   test('a Google Slides deck is embedded and downloaded through its own links', async () => {

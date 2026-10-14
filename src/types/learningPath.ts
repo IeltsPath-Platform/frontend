@@ -43,10 +43,14 @@ export interface LessonSummary {
   title: string
   sortOrder: number
   status: LessonStatus
-  estimatedMinutes: number
+  /** Null when the author has not set a duration; the UI then shows none. */
+  estimatedMinutes: number | null
   lockedReason: string | null
+  /** The oldest pending review that blocks this lesson; the lesson opens once it is done. */
+  blockingReviewId?: string | null
   /** From BE topic lessons; omitted/null in mock when unused. */
   practiceStatus?: PracticeStatus | null
+  practicePassReason?: string | null
 }
 
 export interface FinalTestSummary {
@@ -58,6 +62,9 @@ export interface FinalTestSummary {
 
 export interface ReviewRef {
   reviewId: string
+  lessonId?: string
+  /** The Practice set whose attempt created the review; absent for reviews from assessments. */
+  sourcePackageId?: string | null
   knowledgePointCode: string
   knowledgePointTitle: string
 }
@@ -201,7 +208,7 @@ export interface ReviewSet {
   setId: string
   packageCode: string
   attemptNumber: number
-  maxAttempts: number
+  maxAttempts: number | null
   passage: Passage
   audio: MediaAudio | null
   questions: Question[]
@@ -218,7 +225,7 @@ export interface ReviewDetail {
   theory: string[]
   set: ReviewSet | null
   failedSets: number
-  maxFailedSets: number
+  maxFailedSets: number | null
   theoryReason: string | null
   resumeLessonId: string | null
 }

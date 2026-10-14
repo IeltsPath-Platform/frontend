@@ -62,16 +62,18 @@ export function topicStatus(state: MockState, topic: MockTopic): TopicStatus {
   return !previous || state.topicTests[previous.id]?.passed ? 'IN_PROGRESS' : 'LOCKED'
 }
 
-export function lessonStatus(state: MockState, lesson: MockLesson): { status: LessonStatus; lockedReason: string | null } {
+export function lessonStatus(state: MockState, lesson: MockLesson): { status: LessonStatus; lockedReason: string | null; blockingReviewId?: string } {
   if (state.completedLessons.includes(lesson.id)) return { status: 'COMPLETED', lockedReason: null }
   const topic = requireTopic(lesson.topicId)
   if (topicStatus(state, topic) === 'LOCKED') return { status: 'LOCKED', lockedReason: 'Topic này chưa mở.' }
+  // Like the real gate, a pending review comes before the order of the lessons.
+  const blocking = pendingReviews(state)[0]
+  if (blocking) return { status: 'LOCKED', lockedReason: 'Mở sau khi hoàn thành bài ôn.', blockingReviewId: blocking.id }
   const lessons = topicLessons(topic)
   const previous = lessons[lessons.findIndex((candidate) => candidate.id === lesson.id) - 1]
   if (previous && !state.completedLessons.includes(previous.id)) {
     return { status: 'LOCKED', lockedReason: `Hoàn thành "${previous.title}" để mở bài này.` }
   }
-  if (pendingReviews(state).length > 0) return { status: 'LOCKED', lockedReason: 'Cần làm bài ôn trước khi học tiếp.' }
   return { status: 'AVAILABLE', lockedReason: null }
 }
 

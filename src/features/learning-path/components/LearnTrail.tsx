@@ -6,6 +6,8 @@ export interface TrailItem {
   label: string
   /** Omit on the last item: it is the page the learner is on. */
   to?: string
+  /** Runs when the learner follows the link, for a step that changes the page without leaving it. */
+  onClick?: () => void
 }
 
 /** Back button plus the pages the learner passed through, ending at the current page. */
@@ -19,7 +21,7 @@ export function LearnTrail({ items }: { items: TrailItem[] }) {
   return (
     <nav aria-label="Đường dẫn trang" className="lp-trail">
       {back?.to ? (
-        <Link aria-label={`Quay lại: ${back.label}`} className="lp-trail__back" title={`Quay lại: ${back.label}`} to={back.to}>
+        <Link aria-label={`Quay lại: ${back.label}`} className="lp-trail__back" onClick={back.onClick} title={`Quay lại: ${back.label}`} to={back.to}>
           <ArrowLeft aria-hidden="true" size={18} />
         </Link>
       ) : null}
@@ -30,7 +32,7 @@ export function LearnTrail({ items }: { items: TrailItem[] }) {
               {index === last || !item.to ? (
                 <span aria-current={index === last ? 'page' : undefined} title={item.label}>{item.label}</span>
               ) : (
-                <Link title={item.label} to={item.to}>{item.label}</Link>
+                <Link onClick={item.onClick} title={item.label} to={item.to}>{item.label}</Link>
               )}
             </li>
             {index < last ? (

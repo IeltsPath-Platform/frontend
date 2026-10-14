@@ -8,6 +8,7 @@ import { ApiErrorState, LoadingState } from '../components/PageState'
 import { SegmentMeter } from '../components/SegmentMeter'
 import { TopicLessonsView } from '../components/TopicLessonsPanel'
 import { skillLabel } from '../lib/courseMeta'
+import { totalLessonMinutes } from '../lib/lessonMinutes'
 import { courseTopicPath } from '../lib/routes'
 import { useApiResource } from '../lib/useApiResource'
 import { useSyncPendingReviews } from '../lib/useSyncPendingReviews'
@@ -26,7 +27,7 @@ export function TopicPage() {
   const course = topic.course
   const number = String(topic.sequenceOrder).padStart(2, '0')
   const skill = skillLabel(topic.skill)
-  const minutes = lessons.reduce((sum, lesson) => sum + (lesson.estimatedMinutes || 0), 0)
+  const minutes = totalLessonMinutes(lessons)
   const completed = lessons.filter((lesson) => lesson.status === 'COMPLETED').length
 
   const facts: HeroFact[] = [

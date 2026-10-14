@@ -32,6 +32,7 @@ export type TopicSummaryDto = {
   sequenceOrder: number
   status: TopicStatus
   completedLessonCount: number
+  totalLessonCount: number
   accessLevel?: 'FREE' | 'PREMIUM'
   skill?: string | null
   course?: { courseId: string; code: string; name: string; bandLevel: number } | null
@@ -56,6 +57,8 @@ export type LessonSummaryDto = {
   status: LessonStatus
   practiceStatus?: 'LOCKED' | 'REQUIRED' | 'PASSED' | null
   practicePassReason?: string | null
+  estimatedMinutes?: number | null
+  blockingReviewId?: string | null
 }
 
 export type TopicLessonsDto = {
@@ -97,6 +100,7 @@ export type ReviewRefDto = {
   reviewId: string
   lessonId: string
   knowledgePointId: string
+  sourcePackageId?: string | null
 }
 
 export type ReviewSetDto = {
@@ -118,7 +122,7 @@ export type ReviewDetailDto = {
   theoryReason?: string | null
   theoryScope?: string | null
   failedSets?: number
-  maxFailedSets?: number
+  maxFailedSets?: number | null
   knowledgePointId?: string
   skill?: string
 }
@@ -277,7 +281,7 @@ export function mapTopicSummary(dto: TopicSummaryDto): TopicSummary {
     sequenceOrder: dto.sequenceOrder,
     status: premium && dto.status !== 'PASSED' ? 'LOCKED' : dto.status,
     completedLessons: dto.completedLessonCount,
-    totalLessons: Math.max(dto.completedLessonCount, 0),
+    totalLessons: dto.totalLessonCount,
     lockedReason: premium && dto.status !== 'PASSED'
       ? 'Topic Premium — chưa mở trong giai đoạn này.'
       : dto.status === 'LOCKED'
@@ -294,9 +298,12 @@ export function mapTopicLessons(dto: TopicLessonsDto, topic: TopicSummary): Topi
     title: lesson.title,
     sortOrder: lesson.sortOrder,
     status: lesson.status,
-    estimatedMinutes: 10,
-    lockedReason: lesson.status === 'LOCKED' ? 'Hoàn thành bài trước để mở.' : null,
+    estimatedMinutes: lesson.estimatedMinutes ?? null,
+    lockedReason: lesson.status !== 'LOCKED' ? null
+      : lesson.blockingReviewId ? 'Mở sau khi hoàn thành bài ôn.' : 'Hoàn thành bài trước để mở.',
+    blockingReviewId: lesson.blockingReviewId ?? null,
     practiceStatus: lesson.practiceStatus ?? null,
+    practicePassReason: lesson.practicePassReason ?? null,
   }))
   const completed = lessons.filter((lesson) => lesson.status === 'COMPLETED').length
   return {
@@ -340,6 +347,8 @@ export function mapLessonCompletion(dto: LessonCompletionDto): LessonCompletionR
 export function mapReviewRef(dto: ReviewRefDto): ReviewRef {
   return {
     reviewId: dto.reviewId,
+    lessonId: dto.lessonId,
+    sourcePackageId: dto.sourcePackageId ?? null,
     knowledgePointCode: dto.knowledgePointId.slice(0, 8),
     knowledgePointTitle: 'Bài ôn bắt buộc',
   }
@@ -364,14 +373,14 @@ function mapPassageField(
 export function mapReviewDetail(dto: ReviewDetailDto, topicId: string): ReviewDetail {
   const theory = dto.theory ?? []
   const failedSets = dto.failedSets ?? 0
-  const maxFailedSets = dto.maxFailedSets ?? 2
+  const maxFailedSets = dto.maxFailedSets ?? null
   const stage = dto.stage ?? (dto.set ? 'PRACTICE' : 'THEORY')
 
   const set = dto.set
     ? {
         setId: dto.set.reviewSetId,
         packageCode: dto.set.packageId.slice(0, 8),
-        attemptNumber: Math.min(failedSets + 1, maxFailedSets),
+        attemptNumber: maxFailedSets === null ? failedSets + 1 : Math.min(failedSets + 1, maxFailedSets),
         maxAttempts: maxFailedSets,
         passage: mapPassageField(dto.set.passage),
         audio: dto.set.audio?.mediaUrl

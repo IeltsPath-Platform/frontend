@@ -29,15 +29,17 @@
   .lp-res-rail {
     order: 0;
     position: sticky;
-    top: 1.5rem;
+    top: var(--lp-sticky-top);
   }
   .lp-res-progress {
     display: grid;
   }
 }
 
-/* The lesson title is a card as wide as the content under it, not bare text over the page background */
-.lp-res-main > .lp-lesson-head {
+/* The lesson title is a card as wide as the content under it, not bare text over the page background.
+   The heading of a Practice set is a card too, since the workspace under it has no card around it. */
+.lp-res-main > .lp-lesson-head,
+.lp-practice-attempt-head {
   padding: 1.25rem;
   border: 1px solid var(--lp-line);
   border-radius: var(--lp-radius);
@@ -45,6 +47,10 @@
   box-shadow: var(--lp-shadow);
 }
 
+.lp-practice:has(.lp-split) {
+  display: grid;
+  gap: 1rem;
+}
 .lp-res-card {
   display: grid;
   gap: 1rem;
@@ -96,6 +102,25 @@
   box-shadow: inset 3px 0 var(--lp-accent);
   color: var(--lp-accent-ink);
   font-weight: 750;
+}
+/* A pending review of the lesson: the Practice entry carries a small red warning under its name */
+.lp-res-nav__text {
+  display: grid;
+  gap: .1rem;
+  min-width: 0;
+}
+.lp-res-nav__warn {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  color: var(--lp-danger);
+  font-size: .74rem;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1.3;
+}
+.lp-res-nav__link.has-review > svg {
+  color: var(--lp-danger);
 }
 .lp-res-nav__link small {
   margin-left: auto;

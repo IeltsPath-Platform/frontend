@@ -1,15 +1,12 @@
 import { useRef, useState, type CSSProperties } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowRight, Check, Clock3, Dumbbell, Flag, Loader2, Lock, Trophy } from 'lucide-react'
+import { ArrowRight, Check, Clock3, Flag, Loader2, Lock, Trophy } from 'lucide-react'
 import type { FinalTestSummary, LessonSummary } from '~types/learningPath'
 import { learningApi, toApiError } from '../api'
+import { totalLessonMinutes } from '../lib/lessonMinutes'
 import { reportApiError, usePendingReviews } from '../lib/reviewGate'
 import { useApiResource } from '../lib/useApiResource'
 import { lessonStatusMeta } from '../lib/statusMeta'
-
-function needsPractice(lesson: LessonSummary) {
-  return lesson.status === 'COMPLETED' && lesson.practiceStatus === 'REQUIRED'
-}
 
 /** Lessons of one topic, shown inside its expanded card on the course screen. Mount it only once the card is first opened. */
 export function TopicLessonsPanel({ topicId }: { topicId: string }) {
@@ -34,7 +31,14 @@ export function TopicLessonsPanel({ topicId }: { topicId: string }) {
     )
   }
 
-  return <TopicLessonsView finalTest={resource.data.finalTest} lessons={resource.data.lessons} onChanged={resource.reload} topicId={topicId} />
+  return (
+    <TopicLessonsView
+      finalTest={resource.data.finalTest}
+      lessons={resource.data.lessons}
+      onChanged={resource.reload}
+      topicId={topicId}
+    />
+  )
 }
 
 /** The lessons and the topic test of one topic, once loaded. */
@@ -55,8 +59,8 @@ export function TopicLessonsView({
   const lessons = [...unsorted].sort((a, b) => a.sortOrder - b.sortOrder)
   if (lessons.length === 0) return <p className="lp-mini__empty">Chặng này chưa có bài học.</p>
 
-  const nextId = (lessons.find((lesson) => lesson.status === 'AVAILABLE') ?? lessons.find(needsPractice))?.id ?? null
-  const totalMinutes = lessons.reduce((sum, lesson) => sum + (lesson.estimatedMinutes || 0), 0)
+  const nextId = lessons.find((lesson) => lesson.status === 'AVAILABLE')?.id ?? null
+  const totalMinutes = totalLessonMinutes(lessons)
 
   return (
     <>
@@ -86,9 +90,8 @@ export function TopicLessonsView({
 function LessonTile({ lesson, isNext, index }: { lesson: LessonSummary; isNext: boolean; index: number }) {
   const locked = lesson.status === 'LOCKED'
   const completed = lesson.status === 'COMPLETED'
-  const practice = needsPractice(lesson)
   const reasonId = `${lesson.id}-tile-reason`
-  const action = practice ? 'Luyện thêm' : isNext ? 'Học tiếp' : completed ? 'Xem lại' : 'Mở bài'
+  const action = isNext ? 'Học tiếp' : completed ? 'Xem lại' : 'Mở bài'
 
   const inner = (
     <>
@@ -99,18 +102,14 @@ function LessonTile({ lesson, isNext, index }: { lesson: LessonSummary; isNext: 
       <span className="lp-ltile__main">
         <span className="lp-ltile__title">{lesson.title}</span>
         <span className="lp-ltile__meta">
-          <span className="lp-ltile__time">
-            <Clock3 aria-hidden="true" size={13} />
-            {lesson.estimatedMinutes} phút
-          </span>
-          {isNext && !practice ? <span className="lp-ltile__badge">Tiếp theo</span> : null}
-          {completed && !practice ? <span className="lp-ltile__badge is-done">Đã xong</span> : null}
-          {practice ? (
-            <span className="lp-ltile__badge is-practice">
-              <Dumbbell aria-hidden="true" size={11} />
-              Cần luyện thêm
+          {lesson.estimatedMinutes ? (
+            <span className="lp-ltile__time">
+              <Clock3 aria-hidden="true" size={13} />
+              {lesson.estimatedMinutes} phút
             </span>
           ) : null}
+          {isNext ? <span className="lp-ltile__badge">Tiếp theo</span> : null}
+          {completed ? <span className="lp-ltile__badge is-done">Đã xong</span> : null}
           {locked ? <span className="lp-ltile__reason" id={reasonId}>{lesson.lockedReason ?? 'Chưa mở'}</span> : null}
         </span>
       </span>
@@ -138,7 +137,7 @@ function LessonTile({ lesson, isNext, index }: { lesson: LessonSummary; isNext: 
         <Link
           aria-current={isNext ? 'step' : undefined}
           className={className}
-          to={practice ? `/learn/lessons/${lesson.id}?view=practice` : `/learn/lessons/${lesson.id}`}
+          to={`/learn/lessons/${lesson.id}`}
         >
           {inner}
         </Link>
@@ -189,7 +188,7 @@ function SummitTile({
         const names = titled.length > 0
           ? titled.map((lesson) => `Bài ${lesson.sortOrder}`).join(', ')
           : `${ids.size || 'một số'} bài`
-        setMessage(`Cần luyện thêm trước khi mở đề: ${names}. Mở bài học tương ứng và hoàn thành phần luyện thêm.`)
+        setMessage(`Cần luyện thêm trước khi mở đề: ${names}. Mở bài học tương ứng và đạt phần Luyện tập.`)
         onChanged()
       } else if (error.code === 'REVIEW_REQUIRED') {
         const first = error.details.reviews?.[0] ?? pendingReviews[0]

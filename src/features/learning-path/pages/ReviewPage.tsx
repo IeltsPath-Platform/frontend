@@ -163,7 +163,7 @@ function ReviewView({ review, onReload }: { review: ReviewDetail; onReload: () =
             <ExerciseBlock
               allowResubmit={false}
               block={toExerciseBlock(
-                `Bộ ${set.attemptNumber}/${set.maxAttempts} · ${set.packageCode}`,
+                `Bộ ${set.attemptNumber}${set.maxAttempts ? `/${set.maxAttempts}` : ''} · ${set.packageCode}`,
                 set.questions,
                 review.knowledgePoint.code,
                 set.setId,

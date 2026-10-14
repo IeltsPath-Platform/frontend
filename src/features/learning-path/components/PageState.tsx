@@ -164,7 +164,7 @@ export function ApiErrorState({ error, onRetry }: { error: ApiError; onRetry: ()
 function lockRedirect(error: ApiError): { to: string; notice: string } | null {
   if (error.code === 'TOPIC_LOCKED') return { to: '/learn', notice: 'Topic đó chưa mở. Hãy hoàn thành chặng trước.' }
   const topicPath = error.details.topicId ? topicPagePath(error.details.topicId) : '/learn'
-  if (error.code === 'LESSON_LOCKED') return { to: topicPath, notice: 'Bài học đó chưa mở. Hãy học theo thứ tự.' }
+  if (error.code === 'LESSON_LOCKED') return { to: topicPath, notice: 'Bài này mở khi bạn đạt phần Luyện tập của bài trước.' }
   if (error.code === 'TEST_LOCKED') return { to: topicPath, notice: 'Bài kiểm tra chưa mở. Hoàn thành mọi bài học trước.' }
   return null
 }

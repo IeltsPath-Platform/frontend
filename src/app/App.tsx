@@ -122,7 +122,7 @@ function LessonRedirect() {
   return <Navigate to={`/learn/lessons/${lessonId}`} replace />
 }
 
-/** The Practice is a tab of the lesson page. */
+/** The Practice is a part of the lesson page; the old Practice URL forwards there. */
 function LessonPracticeRedirect() {
   const { lessonId } = useParams()
   return <Navigate to={`/learn/lessons/${lessonId}?view=practice`} replace />
