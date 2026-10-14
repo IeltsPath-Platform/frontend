@@ -4,6 +4,7 @@ import { ErrorBoundary } from '@/app/ErrorBoundary'
 import { SiteNavbar } from '@/components/SiteNavbar'
 import { isMockLearning, learningApi } from '../api'
 import { setPendingReviews } from '../lib/reviewGate'
+import { useScrollToTop } from '../lib/useScrollToTop'
 import { DemoControls } from './DemoControls'
 import { ReviewGateBanner } from './ReviewGateBanner'
 import '../learning-path.css'
@@ -11,6 +12,7 @@ import '../lesson-resources.css'
 
 export function LearnLayout() {
   const { pathname } = useLocation()
+  useScrollToTop()
 
   useEffect(() => {
     if (!isMockLearning) return

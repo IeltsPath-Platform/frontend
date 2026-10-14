@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { AlertTriangle, FileQuestion, Loader2, Lock, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { ApiError } from '../api/apiError'
+import { topicPagePath } from '../lib/routes'
 
 export function LoadingState({ label = 'Đang tải…' }: { label?: string }) {
   return (
@@ -131,7 +132,7 @@ export function ApiErrorState({ error, onRetry }: { error: ApiError; onRetry: ()
   if (error.code === 'NOT_FOUND') return <NotFoundState />
   if (error.code === 'REVIEW_REQUIRED') {
     const review = error.details.reviews?.[0]
-    const topicPath = error.details.topicId ? `/learn/topics/${error.details.topicId}` : '/learn'
+    const topicPath = error.details.topicId ? topicPagePath(error.details.topicId) : '/learn'
     return (
       <section className="lp-state lp-state--panel" aria-labelledby="lp-review-required">
         <Lock aria-hidden="true" size={26} />
@@ -162,7 +163,7 @@ export function ApiErrorState({ error, onRetry }: { error: ApiError; onRetry: ()
 
 function lockRedirect(error: ApiError): { to: string; notice: string } | null {
   if (error.code === 'TOPIC_LOCKED') return { to: '/learn', notice: 'Topic đó chưa mở. Hãy hoàn thành chặng trước.' }
-  const topicPath = error.details.topicId ? `/learn/topics/${error.details.topicId}` : '/learn'
+  const topicPath = error.details.topicId ? topicPagePath(error.details.topicId) : '/learn'
   if (error.code === 'LESSON_LOCKED') return { to: topicPath, notice: 'Bài học đó chưa mở. Hãy học theo thứ tự.' }
   if (error.code === 'TEST_LOCKED') return { to: topicPath, notice: 'Bài kiểm tra chưa mở. Hoàn thành mọi bài học trước.' }
   return null

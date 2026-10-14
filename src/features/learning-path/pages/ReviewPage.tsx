@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ArrowLeft, ArrowRight, BookOpenCheck, RefreshCw, SkipForward } from 'lucide-react'
+import { ArrowRight, BookOpenCheck, RefreshCw, SkipForward } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { LearnTrail } from '../components/LearnTrail'
+import { topicPagePath } from '../lib/routes'
 import type {
   AnswerInput,
   ExerciseBlockData,
@@ -39,7 +41,7 @@ export function ReviewPage() {
 
 function resumePath(review: Pick<ReviewDetail, 'resumeLessonId' | 'topicId'>) {
   if (review.resumeLessonId) return `/learn/lessons/${review.resumeLessonId}`
-  if (review.topicId) return `/learn/topics/${review.topicId}`
+  if (review.topicId) return topicPagePath(review.topicId)
   return '/learn'
 }
 
@@ -104,9 +106,13 @@ function ReviewView({ review, onReload }: { review: ReviewDetail; onReload: () =
 
   return (
     <article className="lp-page lp-review-page" aria-labelledby="lp-review-title">
-      <Link className="lp-back" to={resumePath(review)}>
-        <ArrowLeft aria-hidden="true" size={16} />Về lộ trình học
-      </Link>
+      <LearnTrail
+        items={[
+          { label: 'Khóa học', to: '/learn' },
+          { label: 'Lộ trình học', to: resumePath(review) },
+          { label: `Bài ôn · ${review.knowledgePoint.title}` },
+        ]}
+      />
       <header className="lp-review-head">
         <p className="lp-eyebrow">
           Bài ôn bắt buộc

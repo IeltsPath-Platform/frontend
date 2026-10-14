@@ -283,21 +283,31 @@ describe('learning path rendering', () => {
     const topics = await createMockLearningApi().listTopics()
     const html = await render('/src/features/learning-path/pages/TopicListPage.tsx', 'TopicTrail', { topics })
 
-    assert.match(html, /href="\/learn\/topics\/topic-demo-reading"/)
-    assert.doesNotMatch(html, /href="\/learn\/topics\/topic-tfng-skills"/)
+    // Topics have no page of their own: an open one expands in place (collapsed at first), a locked one cannot.
+    assert.doesNotMatch(html, /href="\/learn\/topics\//)
+    assert.match(html, /aria-expanded="false"/)
+    assert.match(html, /Xem bài học/)
     assert.match(html, /aria-disabled="true"/)
     assert.match(html, /Đạt bài kiểm tra cuối của/)
     assert.match(html, /0<!-- -->\/<!-- -->4<!-- --> bài/)
   })
 
-  test('topic detail only links open lessons and keeps the final test locked', async () => {
-    const detail = await createMockLearningApi().getTopicLessons('topic-demo-reading')
-    const html = await render('/src/features/learning-path/pages/TopicDetailPage.tsx', 'TopicDetailView', { detail, onChanged: () => {} })
+  test('an expanded topic only links open lessons and keeps the final test locked', async () => {
+    const { lessons, finalTest } = await createMockLearningApi().getTopicLessons('topic-demo-reading')
+    const html = await render('/src/features/learning-path/components/TopicLessonsPanel.tsx', 'TopicLessonsView', {
+      lessons, finalTest, topicId: 'topic-demo-reading', onChanged: () => {},
+    })
 
     assert.match(html, /href="\/learn\/lessons\/lesson-l1"/)
     assert.doesNotMatch(html, /href="\/learn\/lessons\/lesson-l2"/)
-    assert.match(html, /Bài kiểm tra cuối/)
+    assert.match(html, /Bài kiểm tra chặng/)
     assert.doesNotMatch(html, /Làm bài kiểm tra/)
+  })
+
+  test('a lesson steps back to its topic page, and a topic back to its course with that topic open', async () => {
+    const { topicPagePath, courseTopicPath } = await server.ssrLoadModule('/src/features/learning-path/lib/routes.ts')
+    assert.equal(topicPagePath('t1'), '/learn/topics/t1')
+    assert.equal(courseTopicPath('c9', 't1'), '/learn/courses/c9?topic=t1')
   })
 
   const lesson = (overrides = {}) => ({
@@ -358,13 +368,64 @@ describe('learning path rendering', () => {
       markdown: '## Learning Outcomes\n\n1. Describe\n\n| Từ | Nghĩa |\n| --- | --- |\n| nature | thiên nhiên |\n\n<script>alert(1)</script>\n\n[Cambridge](https://dictionary.cambridge.org)',
     })
 
-    assert.match(html, /<h2>Learning Outcomes<\/h2>/)
-    assert.match(html, /<ol>/)
+    assert.match(html, /<h3>Learning Outcomes<\/h3>/)
+    assert.match(html, /<ol class="lp-sum-steps">/)
     assert.match(html, /<table>/)
     assert.doesNotMatch(html, /<script>/)
     assert.match(html, /<a href="https:\/\/dictionary\.cambridge\.org"[^>]*target="_blank"[^>]*rel="noopener noreferrer"/)
     assert.match(await resources('LessonSummary', { markdown: null }), /chưa có phần tóm tắt/)
     assert.match(await resources('LessonSummary', { markdown: '   ' }), /chưa có phần tóm tắt/)
+  })
+
+  test('a summary is laid out by the shape of its Markdown, for any lesson', async () => {
+    const markdown = [
+      '## Learning Outcomes', '', '1. First', '2. Second', '',
+      '## Grammar Core', '', '- **Present Simple**: facts and habits. *"I walk."*', '- **There is**: a place. *"There is a lake."*', '',
+      '## Vocabulary Core', '', '- **Environment:** nature, forest, river', '- **Problems:** pollution, dirty', '',
+      '## Collocations', '', '- fresh air', '- green landscape', '',
+      '## Một mục tự đặt', '', 'Chỉ có đoạn văn.', '',
+      '> **IELTS Note:** Một ghi chú.',
+    ].join('\n')
+    const html = await resources('LessonSummary', { markdown, topicTitle: 'Nature & Environment' })
+
+    assert.match(html, /lp-sum__banner[\s\S]*Nature &amp; Environment/)
+    assert.match(html, /Section A[\s\S]*Section E/)
+    assert.match(html, /class="lp-sum-steps"/)
+    assert.match(html, /class="lp-sum-cards"/)
+    assert.match(html, /class="lp-sum-group lp-sum-group--blue"/)
+    assert.match(html, /class="lp-sum-chips"/)
+    assert.match(html, /class="lp-sum-checks"/)
+    assert.match(html, /class="lp-sum-note"/)
+    assert.match(html, /Một mục tự đặt/)
+    // Without any heading it is plain Markdown, not a stack of sections.
+    const plain = await resources('LessonSummary', { markdown: 'Chỉ một đoạn.\n\n- một\n- hai' })
+    assert.match(plain, /lp-res-markdown/)
+    assert.doesNotMatch(plain, /lp-sum__sections/)
+  })
+
+  test('summary splitting and list shapes follow the content, not a fixed list of headings', async () => {
+    const { splitSections, classifyList, listItems } = await server.ssrLoadModule('/src/features/learning-path/components/resources/summary-shapes.ts')
+
+    const split = splitSections('Intro\n\n## One\nbody 1\n\n```\n## not a heading\n```\n\n## Two\nbody 2')
+    assert.equal(split.intro, 'Intro')
+    assert.deepEqual(split.sections.map((section) => section.title), ['One', 'Two'])
+    assert.match(split.sections[0].body, /## not a heading/)
+
+    const text = (value) => ({ type: 'text', value })
+    const el = (tagName, ...children) => ({ type: 'element', tagName, children })
+    const shape = (title, ...lis) => classifyList(listItems(el('ul', ...lis)), title).kind
+
+    // Bold lead + short comma-separated words: a word group.
+    assert.equal(shape('', el('li', el('strong', text('Colors:')), text(' red, green, blue'))), 'chips')
+    // Bold lead + a sentence with an italic example: a card.
+    assert.equal(shape('', el('li', el('strong', text('Rule')), text(': use it well. '), el('em', text('"Example"')))), 'cards')
+    // A sentence that merely contains commas is not a word group...
+    assert.equal(shape('', el('li', el('strong', text('Use')), text(': facts, habits and preferences.'))), 'cards')
+    // ...unless the section is about vocabulary.
+    assert.equal(shape('Vocabulary Core', el('li', el('strong', text('Use')), text(': facts, habits and preferences.'))), 'chips')
+    // Short plain lines: a tick grid; long sentences: bullets.
+    assert.equal(shape('', el('li', text('fresh air')), el('li', text('green landscape'))), 'checks')
+    assert.equal(shape('', el('li', text('This is a much longer sentence than eight words allow.')), el('li', text('Another sentence that is also quite long indeed.'))), 'bullets')
   })
 
   test('documents open in a new tab and an empty list says so', async () => {

@@ -1,13 +1,16 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { CSSProperties } from 'react'
-import { ArrowRight, GraduationCap } from 'lucide-react'
+import { ArrowRight, Gauge, Route } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import mascotImage from '@/assets/triceratops-class-mascot.png'
 import type { CourseSummary } from '~types/learningPath'
 import { learningApi } from '../api'
 import { NoticeBanner } from '../components/NoticeBanner'
+import { CourseArt } from '../components/CourseArt'
+import { SegmentMeter } from '../components/SegmentMeter'
 import { ApiErrorState, CourseCatalogSkeleton, EmptyState } from '../components/PageState'
+import { entryBand } from '../lib/courseMeta'
 import { useApiResource } from '../lib/useApiResource'
 
 type CourseFilter = 'ALL' | 'RECOMMENDED' | 'IN_PROGRESS' | 'PASSED'
@@ -27,8 +30,11 @@ export function CourseListPage() {
     () => (courses.data ? [...courses.data].sort((a, b) => a.bandLevel - b.bandLevel) : null),
     [courses.data],
   )
+  // The hero only suggests a course when there is a reason to: an unfinished course,
+  // or a placement-based recommendation. Otherwise it asks the learner to take the placement test.
   const activeCourse = sorted?.find(isInProgress) ?? null
-  const spotlight = activeCourse ?? sorted?.find((course) => course.recommended) ?? sorted?.[0] ?? null
+  const recommendedCourse = sorted?.find((course) => course.recommended) ?? null
+  const focusCourse = activeCourse ?? recommendedCourse
 
   const tabs = FILTERS
     .map((tab) => ({ ...tab, count: sorted?.filter(tab.match).length ?? 0 }))
@@ -43,17 +49,20 @@ export function CourseListPage() {
       <header className="lp-pagehead">
         <p className="lp-eyebrow">Khóa học</p>
         <h1>Lộ trình IELTS theo band mục tiêu</h1>
-        <p className="lp-pagehead__lead">
-          Mỗi khóa gồm các chặng topic ngắn. Học xong các bài trong chặng và đạt bài kiểm tra chặng để mở chặng kế tiếp.
-        </p>
       </header>
 
-      {spotlight ? <CourseSpotlight course={spotlight} resuming={spotlight === activeCourse} /> : null}
+      {courses.status === 'success' ? (
+        focusCourse ? (
+          <CourseSpotlight course={focusCourse} resuming={focusCourse === activeCourse} />
+        ) : (
+          <PlacementSpotlight />
+        )
+      ) : null}
 
       <section className="lp-section" aria-labelledby="lp-courses-title">
-        <div className="lp-section__head">
-          <h2 id="lp-courses-title">Tất cả khóa học</h2>
-          {tabs.length > 1 ? (
+        <h2 className="lp-sr-only" id="lp-courses-title">Danh sách khóa học</h2>
+        {tabs.length > 1 ? (
+          <div className="lp-section__head lp-section__head--end">
             <div className="lp-segment" role="group" aria-label="Lọc khóa học">
               {tabs.map((tab) => (
                 <button
@@ -67,8 +76,8 @@ export function CourseListPage() {
                 </button>
               ))}
             </div>
-          ) : null}
-        </div>
+          </div>
+        ) : null}
 
         {courses.status === 'loading' ? <CourseCatalogSkeleton /> : null}
         {courses.status === 'error' && courses.error ? <ApiErrorState error={courses.error} onRetry={courses.reload} /> : null}
@@ -83,11 +92,15 @@ export function CourseListPage() {
         ) : null}
 
         {courses.status === 'success' && visible.length > 0 ? (
-          <ul className="lp-course-grid" aria-label="Danh sách khóa học">
+          <ul className="lp-tiles" aria-label="Danh sách khóa học theo band">
             {visible.map((course, index) => (
-              <CourseCard course={course} index={index} key={course.id} />
+              <CourseTile
+                course={course}
+                focused={course.id === focusCourse?.id}
+                index={index}
+                key={course.id}
+              />
             ))}
-            {filter === 'ALL' ? <PlacementCard index={visible.length} /> : null}
           </ul>
         ) : null}
       </section>
@@ -99,8 +112,8 @@ function isInProgress(course: CourseSummary) {
   return course.passedTopicCount > 0 && course.testStatus !== 'PASSED'
 }
 
-function entryBand(course: CourseSummary) {
-  return Math.max(course.bandLevel - 1, 3.5).toFixed(1)
+function progressPct(course: CourseSummary) {
+  return course.topicCount === 0 ? 0 : Math.round((course.passedTopicCount / course.topicCount) * 100)
 }
 
 function courseCta(course: CourseSummary): string {
@@ -119,8 +132,7 @@ function courseChip(course: CourseSummary): { label: string; tone: 'success' | '
 }
 
 function CourseSpotlight({ course, resuming }: { course: CourseSummary; resuming: boolean }) {
-  const pct = course.topicCount === 0 ? 0 : Math.round((course.passedTopicCount / course.topicCount) * 100)
-  const label = resuming ? 'Đang học dở' : course.recommended ? 'Gợi ý cho bạn' : 'Gợi ý bắt đầu'
+  const pct = progressPct(course)
 
   return (
     <section className="lp-spotlight" aria-labelledby="lp-spotlight-title">
@@ -130,10 +142,10 @@ function CourseSpotlight({ course, resuming }: { course: CourseSummary; resuming
       </div>
 
       <div className="lp-spotlight__body">
-        <p className="lp-spotlight__label">{label}</p>
+        <p className="lp-spotlight__label">{resuming ? 'Đang học dở' : 'Gợi ý từ bài test đầu vào'}</p>
         <h2 id="lp-spotlight-title">{course.title}</h2>
         <p className="lp-spotlight__meta">
-          {course.topicCount} chặng topic · đầu vào khuyến nghị ~{entryBand(course)} · kết thúc bằng bài thi cuối khóa
+          {course.topicCount} chặng topic · đầu vào khuyến nghị ~{entryBand(course.bandLevel)} · kết thúc bằng bài thi cuối khóa
         </p>
         {course.passedTopicCount > 0 ? (
           <div className="lp-meter lp-spotlight__meter">
@@ -154,56 +166,79 @@ function CourseSpotlight({ course, resuming }: { course: CourseSummary; resuming
   )
 }
 
-function CourseCard({ course, index }: { course: CourseSummary; index: number }) {
-  const pct = course.topicCount === 0 ? 0 : Math.round((course.passedTopicCount / course.topicCount) * 100)
-  const chip = courseChip(course)
-
+function PlacementSpotlight() {
   return (
-    <li className="lp-ccard" style={{ '--i': index } as CSSProperties}>
-      <Link className="lp-ccard__link" to={`/learn/courses/${course.id}`}>
-        <div className="lp-ccard__top">
-          <span className="lp-ccard__band">
-            <small>Band</small>
-            {course.bandLevel.toFixed(1)}
-          </span>
-          {chip ? <span className={`lp-chip lp-chip--${chip.tone}`}>{chip.label}</span> : null}
-        </div>
-        <h3 className="lp-ccard__title">{course.title}</h3>
-        <p className="lp-ccard__meta">{course.topicCount} chặng topic · đầu vào ~{entryBand(course)}</p>
-        <div className="lp-ccard__progress">
-          {course.passedTopicCount > 0 ? (
-            <>
-              <progress className="lp-progress" max={100} value={pct}>{pct}%</progress>
-              <span>{course.passedTopicCount}/{course.topicCount} chặng</span>
-            </>
-          ) : (
-            <span className="lp-ccard__fresh">Chưa bắt đầu</span>
-          )}
-        </div>
-        <span className="lp-ccard__cta">
-          {courseCta(course)}
-          <ArrowRight aria-hidden="true" size={16} />
-        </span>
-      </Link>
-    </li>
+    <section className="lp-spotlight lp-spotlight--placement" aria-labelledby="lp-spotlight-title">
+      <div className="lp-band-ticket lp-band-ticket--unknown" aria-hidden="true">
+        <span>Band</span>
+        <strong>?</strong>
+      </div>
+
+      <div className="lp-spotlight__body">
+        <p className="lp-spotlight__label">Chưa biết bắt đầu từ đâu</p>
+        <h2 id="lp-spotlight-title">Làm test đầu vào để biết band hiện tại</h2>
+        <p className="lp-spotlight__meta">
+          Bài test 4 kỹ năng miễn phí, khoảng 15–20 phút. Xong bài, hệ thống gợi ý khóa vừa sức với bạn.
+        </p>
+      </div>
+
+      <Button asChild className="lp-btn lp-btn--accent lp-btn--cta lp-spotlight__action">
+        <Link to="/learn/placement">
+          Làm test đầu vào
+          <ArrowRight aria-hidden="true" size={18} />
+        </Link>
+      </Button>
+    </section>
   )
 }
 
-function PlacementCard({ index }: { index: number }) {
+function CourseTile({ course, focused, index }: { course: CourseSummary; focused: boolean; index: number }) {
+  const chip = courseChip(course)
+  const passed = course.testStatus === 'PASSED'
+  const started = course.passedTopicCount > 0
+
   return (
-    <li className="lp-ccard lp-ccard--placement" style={{ '--i': index } as CSSProperties}>
-      <Link className="lp-ccard__link" to="/placement">
-        <span className="lp-ccard__icon" aria-hidden="true">
-          <GraduationCap size={22} />
-        </span>
-        <h3 className="lp-ccard__title">Chưa biết nên chọn band nào?</h3>
-        <p className="lp-ccard__meta">
-          Làm bài test đầu vào 4 kỹ năng miễn phí trong 15–20 phút để được gợi ý khóa phù hợp.
-        </p>
-        <span className="lp-ccard__cta">
-          Làm test đầu vào
-          <ArrowRight aria-hidden="true" size={16} />
-        </span>
+    <li
+      className={`lp-tile${focused ? ' is-focused' : ''}${passed ? ' is-passed' : ''}`}
+      style={{ '--i': index } as CSSProperties}
+    >
+      <Link className="lp-tile__link" to={`/learn/courses/${course.id}`}>
+        <div className="lp-tile__art">
+          <CourseArt band={course.bandLevel} />
+          <span className="lp-tile__band">
+            <small>Band</small>
+            {course.bandLevel.toFixed(1)}
+          </span>
+          {chip ? <span className={`lp-chip lp-chip--${chip.tone} lp-tile__chip`}>{chip.label}</span> : null}
+        </div>
+
+        <div className="lp-tile__body">
+          <h3 className="lp-tile__title">{course.title}</h3>
+          <ul className="lp-tile__facts" aria-label="Thông tin khóa học">
+            <li>
+              <Route aria-hidden="true" size={14} />
+              {course.topicCount} chặng topic
+            </li>
+            <li>
+              <Gauge aria-hidden="true" size={14} />
+              Đầu vào ~{entryBand(course.bandLevel)}
+            </li>
+          </ul>
+
+          <div className="lp-tile__progress">
+            <SegmentMeter done={course.passedTopicCount} total={course.topicCount} unit="chặng" />
+            <span className="lp-tile__count">
+              {started ? `${course.passedTopicCount}/${course.topicCount} chặng` : 'Chưa bắt đầu'}
+            </span>
+          </div>
+
+          <span className="lp-tile__cta">
+            {courseCta(course)}
+            <span className="lp-tile__go" aria-hidden="true">
+              <ArrowRight size={15} />
+            </span>
+          </span>
+        </div>
       </Link>
     </li>
   )

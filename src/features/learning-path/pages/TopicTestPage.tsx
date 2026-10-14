@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, Check, CloudOff, Infinity as InfinityIcon, Loader2, Send } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { AnswerMap } from '~types/learningPath'
@@ -8,6 +8,8 @@ import { AudioBlock } from '../components/blocks/AudioBlock'
 import { PassageBlock } from '../components/blocks/PassageBlock'
 import { QuestionField } from '../components/blocks/QuestionField'
 import { UnsupportedBlock } from '../components/blocks/UnsupportedBlock'
+import { LearnTrail } from '../components/LearnTrail'
+import { topicPagePath } from '../lib/routes'
 import { ApiErrorState, LoadingState } from '../components/PageState'
 import { parseAttemptStructure, type TestItem, type TestSection } from '../lib/attemptSnapshot'
 import { reportApiError } from '../lib/reviewGate'
@@ -71,7 +73,7 @@ function TestRunner({
   const unanswered = answerable.length - answeredCount
   const section = sections[active]
   const backPath = topicId
-    ? `/learn/topics/${topicId}`
+    ? topicPagePath(topicId)
     : courseId
       ? `/learn/courses/${courseId}`
       : '/learn'
@@ -147,10 +149,13 @@ function TestRunner({
 
   return (
     <article className="lp-page lp-test-page" aria-labelledby="lp-test-title">
-      <Link className="lp-back" to={backPath}>
-        <ArrowLeft aria-hidden="true" size={16} />
-        {courseId ? 'Về khóa học' : 'Về topic'}
-      </Link>
+      <LearnTrail
+        items={[
+          { label: 'Khóa học', to: '/learn' },
+          ...(topicId || courseId ? [{ label: courseId ? 'Lộ trình khóa học' : 'Chặng học', to: backPath }] : []),
+          { label: courseId ? 'Thi cuối khóa' : 'Bài kiểm tra chặng' },
+        ]}
+      />
       <header className="lp-test-head">
         <div>
           <p className="lp-eyebrow">{courseId ? 'Thi cuối khóa' : 'Bài kiểm tra cuối'}</p>

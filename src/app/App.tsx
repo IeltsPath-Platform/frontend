@@ -24,7 +24,7 @@ import { CourseListPage } from '@/features/learning-path/pages/CourseListPage'
 import { LessonPage } from '@/features/learning-path/pages/LessonPage'
 import { PlacementPage } from '@/features/learning-path/pages/PlacementPage'
 import { ReviewPage } from '@/features/learning-path/pages/ReviewPage'
-import { TopicDetailPage } from '@/features/learning-path/pages/TopicDetailPage'
+import { TopicPage } from '@/features/learning-path/pages/TopicPage'
 import { TopicListPage } from '@/features/learning-path/pages/TopicListPage'
 import { TopicTestPage } from '@/features/learning-path/pages/TopicTestPage'
 import { TopicTestResultPage } from '@/features/learning-path/pages/TopicTestResultPage'
@@ -48,7 +48,7 @@ function AppContent() {
         <Route index element={<CourseListPage />} />
         <Route path="placement" element={<PlacementPage />} />
         <Route path="courses/:courseId" element={<TopicListPage />} />
-        <Route path="topics/:topicId" element={<TopicDetailPage />} />
+        <Route path="topics/:topicId" element={<TopicPage />} />
         <Route path="lessons/:lessonId" element={<LessonPage />} />
         <Route path="lessons/:lessonId/practice" element={<LessonPracticeRedirect />} />
         <Route path="reviews/:reviewId" element={<ReviewPage />} />

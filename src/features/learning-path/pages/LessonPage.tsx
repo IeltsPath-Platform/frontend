@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import {
-  ArrowLeft,
   ArrowRight,
   BookOpenText,
   CheckCircle2,
@@ -20,6 +19,8 @@ import type { LessonResourcesResponse, LessonTab } from '~types/lesson'
 import { learningApi, toApiError } from '../api'
 import { USE_MOCK_LEARNING } from '@/lib/env'
 import { LessonPractice } from '../components/LessonPractice'
+import { LearnTrail } from '../components/LearnTrail'
+import { courseTopicPath, topicPagePath } from '../lib/routes'
 import { NoticeBanner } from '../components/NoticeBanner'
 import { ApiErrorState, LoadingState } from '../components/PageState'
 import { LessonDocuments } from '../components/resources/LessonDocuments'
@@ -124,7 +125,7 @@ export function LessonView({ lesson }: { lesson: LessonDetail }) {
     ?? null
   const needsPractice = (self?.practiceStatus ?? (lesson as unknown as { practiceStatus?: string }).practiceStatus) === 'REQUIRED'
   const hasNext = nextLessonId ? true : siblings.status === 'loading' ? null : false
-  const topicPath = `/learn/topics/${lesson.topicId}`
+  const topicPath = topicPagePath(lesson.topicId)
   const lessonPath = `/learn/lessons/${lesson.id}`
   const practicePath = `${lessonPath}?view=practice`
 
@@ -170,7 +171,7 @@ export function LessonView({ lesson }: { lesson: LessonDetail }) {
       return <ApiErrorState error={resources.error} onRetry={resources.reload} />
     }
     if (!resources.data) return null
-    if (tab === 'summary') return <LessonSummary markdown={resources.data.summaryMarkdown} />
+    if (tab === 'summary') return <LessonSummary markdown={resources.data.summaryMarkdown} topicTitle={lesson.topicTitle} />
     if (tab === 'documents') return <LessonDocuments documents={resources.data.documents} />
     return <LessonSlides slides={resources.data.slides} />
   }
@@ -183,10 +184,16 @@ export function LessonView({ lesson }: { lesson: LessonDetail }) {
 
       <div className="lp-res-layout">
         <div className="lp-res-main">
-          <Link className="lp-back" to={topicPath}>
-            <ArrowLeft aria-hidden="true" size={16} />
-            {lesson.topicTitle}
-          </Link>
+          <LearnTrail
+            items={[
+              { label: 'Khóa học', to: '/learn' },
+              ...(siblings.data?.topic.course
+                ? [{ label: siblings.data.topic.course.title, to: courseTopicPath(siblings.data.topic.course.id, lesson.topicId) }]
+                : []),
+              { label: lesson.topicTitle, to: topicPath },
+              { label: `Bài ${lesson.sortOrder} · ${lesson.title}` },
+            ]}
+          />
 
           <header className="lp-lesson-head">
             <p className="lp-eyebrow">Bài {lesson.sortOrder} · {lesson.topicTitle}</p>
