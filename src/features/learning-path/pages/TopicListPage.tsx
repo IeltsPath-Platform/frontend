@@ -181,6 +181,9 @@ function TopicStop({
 }) {
   const locked = topic.status === 'LOCKED'
   const passed = topic.status === 'PASSED'
+  const progress = passed ? 1 : locked || topic.totalLessons <= 0
+    ? 0
+    : Math.min(1, Math.max(0, topic.completedLessons / topic.totalLessons))
   const premium = topic.accessLevel === 'PREMIUM' || topic.lockedReason?.includes('Premium')
   const reasonId = `${topic.id}-reason`
   const panelId = `${topic.id}-lessons`
@@ -230,7 +233,7 @@ function TopicStop({
   return (
     <li
       className={`lp-stop lp-stop--${topic.status.toLowerCase()}${isNext ? ' is-next' : ''}${open && !locked ? ' is-open' : ''}`}
-      style={{ '--i': index } as CSSProperties}
+      style={{ '--i': index, '--topic-progress': progress } as CSSProperties}
     >
       <span className="lp-stop__node" aria-hidden="true">
         {locked ? <Lock size={15} /> : passed ? <Check size={17} strokeWidth={2.75} /> : topic.sequenceOrder}

@@ -1,7 +1,7 @@
 import { useRef, useState, type CSSProperties } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ArrowRight, Check, Clock3, Flag, Loader2, Lock, Trophy } from 'lucide-react'
-import type { FinalTestSummary, LessonSummary } from '~types/learningPath'
+import type { FinalTestSummary, LessonSummary, ReviewRef } from '~types/learningPath'
 import { learningApi, toApiError } from '../api'
 import { totalLessonMinutes } from '../lib/lessonMinutes'
 import { reportApiError, usePendingReviews } from '../lib/reviewGate'
@@ -36,6 +36,7 @@ export function TopicLessonsPanel({ topicId }: { topicId: string }) {
       finalTest={resource.data.finalTest}
       lessons={resource.data.lessons}
       onChanged={resource.reload}
+      pendingReviews={resource.data.pendingReviews}
       topicId={topicId}
     />
   )
@@ -47,12 +48,15 @@ export function TopicLessonsView({
   finalTest,
   topicId,
   onChanged,
+  pendingReviews = [],
   showCounts = true,
 }: {
   lessons: LessonSummary[]
   finalTest: FinalTestSummary
   topicId: string
   onChanged: () => void
+  /** Pending reviews are announced in the lesson's accessible label. */
+  pendingReviews?: ReviewRef[]
   /** The "4 bài học · khoảng 40 phút" line; off where the page already says it. */
   showCounts?: boolean
 }) {
@@ -60,6 +64,7 @@ export function TopicLessonsView({
   if (lessons.length === 0) return <p className="lp-mini__empty">Chặng này chưa có bài học.</p>
 
   const nextId = lessons.find((lesson) => lesson.status === 'AVAILABLE')?.id ?? null
+  const lessonsWithReview = new Set(pendingReviews.flatMap((review) => (review.lessonId ? [review.lessonId] : [])))
   const totalMinutes = totalLessonMinutes(lessons)
 
   return (
@@ -78,7 +83,13 @@ export function TopicLessonsView({
 
       <ol className="lp-lgrid" aria-label="Danh sách bài học">
         {lessons.map((lesson, index) => (
-          <LessonTile index={index} isNext={lesson.id === nextId} key={lesson.id} lesson={lesson} />
+          <LessonTile
+            hasReview={lessonsWithReview.has(lesson.id)}
+            index={index}
+            isNext={lesson.id === nextId}
+            key={lesson.id}
+            lesson={lesson}
+          />
         ))}
       </ol>
 
@@ -87,7 +98,12 @@ export function TopicLessonsView({
   )
 }
 
-function LessonTile({ lesson, isNext, index }: { lesson: LessonSummary; isNext: boolean; index: number }) {
+function LessonTile({ lesson, isNext, hasReview, index }: {
+  lesson: LessonSummary
+  isNext: boolean
+  hasReview: boolean
+  index: number
+}) {
   const locked = lesson.status === 'LOCKED'
   const completed = lesson.status === 'COMPLETED'
   const reasonId = `${lesson.id}-tile-reason`
@@ -108,8 +124,6 @@ function LessonTile({ lesson, isNext, index }: { lesson: LessonSummary; isNext: 
               {lesson.estimatedMinutes} phút
             </span>
           ) : null}
-          {isNext ? <span className="lp-ltile__badge">Tiếp theo</span> : null}
-          {completed ? <span className="lp-ltile__badge is-done">Đã xong</span> : null}
           {locked ? <span className="lp-ltile__reason" id={reasonId}>{lesson.lockedReason ?? 'Chưa mở'}</span> : null}
         </span>
       </span>
@@ -120,7 +134,9 @@ function LessonTile({ lesson, isNext, index }: { lesson: LessonSummary; isNext: 
           <ArrowRight aria-hidden="true" size={14} />
         </span>
       ) : null}
-      <span className="lp-sr-only">Bài {lesson.sortOrder}, {lessonStatusMeta(lesson.status).label}</span>
+      <span className="lp-sr-only">
+        Bài {lesson.sortOrder}, {lessonStatusMeta(lesson.status).label}{hasReview ? ', có bài ôn' : ''}
+      </span>
     </>
   )
 

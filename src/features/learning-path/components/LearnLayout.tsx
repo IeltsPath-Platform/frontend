@@ -6,7 +6,6 @@ import { isMockLearning, learningApi } from '../api'
 import { setPendingReviews } from '../lib/reviewGate'
 import { useScrollToTop } from '../lib/useScrollToTop'
 import { DemoControls } from './DemoControls'
-import { ReviewGateBanner } from './ReviewGateBanner'
 import '../learning-path.css'
 import '../lesson-resources.css'
 
@@ -19,7 +18,7 @@ export function LearnLayout() {
     let active = true
     learningApi.getPendingReviews().then(
       (reviews) => { if (active) setPendingReviews(reviews) },
-      () => { /* A cold hydrate failure leaves the banner empty until a later response. */ },
+      () => { /* Pending reviews will sync again from a later learning response. */ },
     )
     return () => { active = false }
   }, [])
@@ -29,7 +28,6 @@ export function LearnLayout() {
       <a className="skip-link" href="#main-content">Chuyển đến nội dung chính</a>
       <SiteNavbar />
       <div className="lp-root">
-        <ReviewGateBanner />
         <main id="main-content" tabIndex={-1} className="lp-main lp-shell">
           <ErrorBoundary key={pathname} title="Không thể hiển thị lộ trình học">
             <Outlet />

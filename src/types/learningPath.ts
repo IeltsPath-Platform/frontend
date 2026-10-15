@@ -17,6 +17,11 @@ export interface CourseRef {
 export interface CourseSummary extends CourseRef {
   topicCount: number
   passedTopicCount: number
+  /** Lessons of the course's topics the learner completed, and how many there are. */
+  completedLessons: number
+  totalLessons: number
+  /** ISO time the learner last opened a lesson or submitted a practice set of the course; null if never. */
+  lastStudiedAt: string | null
   /** Placement guidance only; every course stays open. */
   recommended: boolean
   testStatus: TestStatus

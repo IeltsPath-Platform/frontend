@@ -6,7 +6,6 @@ import {
   CheckCircle2,
   CircleDot,
   Dumbbell,
-  Flag,
   FolderOpen,
   Loader2,
   MonitorPlay,
@@ -18,9 +17,9 @@ import type { LessonCompletionResult, LessonDetail, ReviewRef } from '~types/lea
 import type { LessonResourcesResponse, LessonTab } from '~types/lesson'
 import { learningApi, toApiError } from '../api'
 import { USE_MOCK_LEARNING } from '@/lib/env'
-import { LearnTrail, type TrailItem } from '../components/LearnTrail'
+import { LearnTrail } from '../components/LearnTrail'
 import { LessonPractice } from '../components/LessonPractice'
-import { courseTopicPath, topicPagePath } from '../lib/routes'
+import { courseTopicPath, topicPagePath, type ReviewOrigin } from '../lib/routes'
 import { hasRequiredPractice, lessonPath, lessonPracticePath } from '../lib/lessonPractice'
 import { NoticeBanner } from '../components/NoticeBanner'
 import { ApiErrorState, LoadingState } from '../components/PageState'
@@ -107,9 +106,6 @@ export function LessonView({ lesson }: { lesson: LessonDetail }) {
   const [completing, setCompleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const completeInFlight = useRef(false)
-  // The Practice set being worked on, shown in the trail; stepping back to the list remounts the Practice.
-  const [openSet, setOpenSet] = useState<{ code: string; title: string } | null>(null)
-  const [practiceKey, setPracticeKey] = useState(0)
   const pendingReviews = usePendingReviews()
   const activeReview = pendingReviews[0]
 
@@ -136,12 +132,21 @@ export function LessonView({ lesson }: { lesson: LessonDetail }) {
   const topicPath = topicPagePath(lesson.topicId)
   const path = lessonPath(lesson.id)
   const practicePath = lessonPracticePath(lesson.id)
+  const lessonCrumb = `Bài ${lesson.sortOrder} · ${lesson.title}`
+  const reviewOrigin: ReviewOrigin = {
+    lessonId: lesson.id,
+    lessonLabel: lessonCrumb,
+    topicId: lesson.topicId,
+    topicTitle: lesson.topicTitle,
+    course: siblings.data?.topic.course ?? null,
+  }
 
   const hasReview = Boolean(lessonReviews.data?.length)
   const state: LessonState = activeReview ? 'review' : done ? 'done' : requiresPractice ? 'practice' : 'reading'
   const copy = stateCopy(state, activeReview, hasNext)
-  // A lesson waiting for its Practice has no status card: the Practice entry of the side navigation is the way in.
-  const showProgress = state !== 'practice'
+  // Practice and review actions are available in the lesson's Practice section, and a completed lesson needs no card:
+  // the card only carries the "Hoàn thành bài" action of a lesson being read.
+  const showProgress = state === 'reading'
   const StateIcon = copy.icon
 
   async function completeLesson() {
@@ -170,12 +175,11 @@ export function LessonView({ lesson }: { lesson: LessonDetail }) {
   const action = requiresPractice === null && !done && !activeReview ? null : (
     <PrimaryAction
       completing={completing}
-      nextLessonId={nextLessonId}
       onComplete={completeLesson}
       practicePath={practicePath}
       reviewId={activeReview?.reviewId}
+      reviewOrigin={activeReview?.lessonId === lesson.id ? reviewOrigin : undefined}
       state={state}
-      topicPath={topicPath}
     />
   )
 
@@ -188,7 +192,7 @@ export function LessonView({ lesson }: { lesson: LessonDetail }) {
 
   function panel() {
     if (tab === 'practice') {
-      return <LessonPractice key={`${lesson.id}:${practiceKey}`} lessonId={lesson.id} onChanged={practiceChanged} onSetChange={setOpenSet} />
+      return <LessonPractice lessonId={lesson.id} onChanged={practiceChanged} reviewOrigin={reviewOrigin} />
     }
     if (resources.status === 'loading') return <LoadingState label="Đang tải…" />
     if (resources.status === 'error' && resources.error) {
@@ -201,11 +205,6 @@ export function LessonView({ lesson }: { lesson: LessonDetail }) {
   }
 
   const current = TABS.find((entry) => entry.tab === tab) ?? { label: 'Luyện tập' }
-  const lessonCrumb = `Bài ${lesson.sortOrder} · ${lesson.title}`
-  const trailTail: TrailItem[] = tab !== 'practice' ? [{ label: lessonCrumb }]
-    : openSet
-      ? [{ label: lessonCrumb, to: path }, { label: 'Luyện tập', to: practicePath, onClick: () => setPracticeKey((key) => key + 1) }, { label: openSet.code }]
-      : [{ label: lessonCrumb, to: path }, { label: 'Luyện tập' }]
 
   return (
     <article className="lp-page lp-lesson-page lp-res-page" aria-labelledby="lp-lesson-title">
@@ -220,7 +219,7 @@ export function LessonView({ lesson }: { lesson: LessonDetail }) {
                 ? [{ label: siblings.data.topic.course.title, to: courseTopicPath(siblings.data.topic.course.id, lesson.topicId) }]
                 : []),
               { label: lesson.topicTitle, to: topicPath },
-              ...trailTail,
+              { label: lessonCrumb },
             ]}
           />
 
@@ -234,16 +233,7 @@ export function LessonView({ lesson }: { lesson: LessonDetail }) {
             {panel()}
           </section>
 
-          {done ? (
-            <CompletionPanel
-              fresh={completion !== null}
-              requiresPractice={requiresPractice}
-              nextLessonId={nextLessonId}
-              practicePath={practicePath}
-              review={activeReview}
-              topicPath={topicPath}
-            />
-          ) : null}
+          {done && activeReview ? <ReviewNeededPanel review={activeReview} topicPath={topicPath} /> : null}
         </div>
 
         <aside className="lp-res-rail" aria-label="Nội dung và tiến độ bài học">
@@ -318,24 +308,22 @@ export function LessonView({ lesson }: { lesson: LessonDetail }) {
 function PrimaryAction({
   state,
   reviewId,
-  nextLessonId,
+  reviewOrigin,
   completing,
   practicePath,
-  topicPath,
   onComplete,
 }: {
   state: LessonState
   reviewId?: string
-  nextLessonId: string | null
+  reviewOrigin?: ReviewOrigin
   completing: boolean
   practicePath: string
-  topicPath: string
   onComplete: () => void
 }) {
   if (state === 'review' && reviewId) {
     return (
       <Button asChild className="lp-btn lp-btn--accent lp-btn--cta lp-btn--block">
-        <Link to={`/learn/reviews/${reviewId}`}>
+        <Link to={`/learn/reviews/${reviewId}`} state={reviewOrigin ? { reviewOrigin } : undefined}>
           Làm bài ôn
           <ArrowRight aria-hidden="true" size={16} />
         </Link>
@@ -354,24 +342,6 @@ function PrimaryAction({
     )
   }
 
-  if (state === 'done') {
-    return (
-      <Button asChild className="lp-btn lp-btn--accent lp-btn--cta lp-btn--block">
-        {nextLessonId ? (
-          <Link to={`/learn/lessons/${nextLessonId}`}>
-            Bài tiếp theo
-            <ArrowRight aria-hidden="true" size={16} />
-          </Link>
-        ) : (
-          <Link to={topicPath}>
-            <Flag aria-hidden="true" size={16} />
-            Về chặng làm bài kiểm tra
-          </Link>
-        )}
-      </Button>
-    )
-  }
-
   return (
     <Button
       className="lp-btn lp-btn--accent lp-btn--cta lp-btn--block"
@@ -385,38 +355,18 @@ function PrimaryAction({
   )
 }
 
-function CompletionPanel({
-  fresh,
-  review,
-  requiresPractice,
-  nextLessonId,
-  practicePath,
-  topicPath,
-}: {
-  fresh: boolean
-  review?: ReviewRef
-  requiresPractice: boolean | null
-  nextLessonId: string | null
-  practicePath: string
-  topicPath: string
-}) {
-  const warning = Boolean(review)
-  const message = review
-    ? <>Bạn cần củng cố lại <strong>“{review.knowledgePointTitle}”</strong> trước khi học tiếp. Bài ôn gồm phần tóm tắt lý thuyết và vài câu hỏi ngắn.</>
-    : nextLessonId
-      ? 'Bạn đã đạt bài này. Có thể luyện thêm hoặc sang bài tiếp theo.'
-      : 'Bạn đã học xong bài cuối của chặng. Quay về chặng để làm bài kiểm tra.'
-
+/** A completed lesson says nothing more, unless a review still holds the learner back. */
+function ReviewNeededPanel({ review, topicPath }: { review: ReviewRef; topicPath: string }) {
   return (
-    <section className={`lp-done${warning ? ' lp-done--review' : ''}`} role="status" aria-labelledby="lp-done-title">
-      <span className="lp-done__icon" aria-hidden="true">
-        {warning ? <ShieldAlert size={22} /> : <CheckCircle2 size={22} />}
-      </span>
+    <section className="lp-done lp-done--review" role="status" aria-labelledby="lp-done-title">
+      <span className="lp-done__icon" aria-hidden="true"><ShieldAlert size={22} /></span>
       <div className="lp-done__body">
-        <h2 id="lp-done-title">{fresh ? 'Bạn đã hoàn thành bài này' : 'Bài này đã hoàn thành'}</h2>
-        <p>{message}</p>
+        <h2 id="lp-done-title">Còn bài ôn cần làm</h2>
+        <p>
+          Bạn cần củng cố lại <strong>“{review.knowledgePointTitle}”</strong> trước khi học tiếp. Bài ôn gồm phần tóm tắt
+          lý thuyết và vài câu hỏi ngắn.
+        </p>
         <div className="lp-done__links">
-          {!warning && requiresPractice ? <Link to={practicePath}>Luyện tập bài này</Link> : null}
           <Link to={topicPath}>Về danh sách bài</Link>
         </div>
       </div>

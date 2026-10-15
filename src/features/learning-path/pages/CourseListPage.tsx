@@ -11,6 +11,7 @@ import { CourseArt } from '../components/CourseArt'
 import { SegmentMeter } from '../components/SegmentMeter'
 import { ApiErrorState, CourseCatalogSkeleton, EmptyState } from '../components/PageState'
 import { entryBand } from '../lib/courseMeta'
+import { timeAgo } from '../lib/relativeTime'
 import { useApiResource } from '../lib/useApiResource'
 
 type CourseFilter = 'ALL' | 'RECOMMENDED' | 'IN_PROGRESS' | 'PASSED'
@@ -32,7 +33,8 @@ export function CourseListPage() {
   )
   // The hero only suggests a course when there is a reason to: an unfinished course,
   // or a placement-based recommendation. Otherwise it asks the learner to take the placement test.
-  const activeCourse = sorted?.find(isInProgress) ?? null
+  const recentCourse = sorted ? lastStudied(sorted) : null
+  const activeCourse = (recentCourse && isInProgress(recentCourse) ? recentCourse : sorted?.find(isInProgress)) ?? null
   const recommendedCourse = sorted?.find((course) => course.recommended) ?? null
   const focusCourse = activeCourse ?? recommendedCourse
 
@@ -98,6 +100,7 @@ export function CourseListPage() {
                 course={course}
                 focused={course.id === focusCourse?.id}
                 index={index}
+                lastVisited={course.id === recentCourse?.id}
                 key={course.id}
               />
             ))}
@@ -108,18 +111,38 @@ export function CourseListPage() {
   )
 }
 
+/** A course is started once the learner opened one of its lessons, not only once a whole topic was passed. */
+function isStarted(course: CourseSummary) {
+  return course.passedTopicCount > 0 || course.completedLessons > 0 || course.lastStudiedAt !== null
+}
+
 function isInProgress(course: CourseSummary) {
-  return course.passedTopicCount > 0 && course.testStatus !== 'PASSED'
+  return isStarted(course) && course.testStatus !== 'PASSED'
+}
+
+/** The course the learner studied most recently, if any. */
+function lastStudied(courses: CourseSummary[]) {
+  return courses.reduce<CourseSummary | null>((latest, course) => {
+    if (!course.lastStudiedAt) return latest
+    return !latest?.lastStudiedAt || course.lastStudiedAt > latest.lastStudiedAt ? course : latest
+  }, null)
 }
 
 function progressPct(course: CourseSummary) {
+  if (course.totalLessons > 0) return Math.round((course.completedLessons / course.totalLessons) * 100)
   return course.topicCount === 0 ? 0 : Math.round((course.passedTopicCount / course.topicCount) * 100)
+}
+
+function progressText(course: CourseSummary) {
+  if (course.passedTopicCount > 0) return `${course.passedTopicCount}/${course.topicCount} chặng`
+  if (course.completedLessons > 0) return `${course.completedLessons}/${course.totalLessons} bài đã học`
+  return course.lastStudiedAt ? 'Đã bắt đầu học' : 'Chưa bắt đầu'
 }
 
 function courseCta(course: CourseSummary): string {
   if (course.testStatus === 'PASSED') return 'Xem lại lộ trình'
   if (course.testStatus === 'AVAILABLE') return 'Làm bài thi cuối khóa'
-  if (course.passedTopicCount > 0) return 'Học tiếp'
+  if (isStarted(course)) return 'Học tiếp'
   return 'Bắt đầu học'
 }
 
@@ -147,10 +170,10 @@ function CourseSpotlight({ course, resuming }: { course: CourseSummary; resuming
         <p className="lp-spotlight__meta">
           {course.topicCount} chặng topic · đầu vào khuyến nghị ~{entryBand(course.bandLevel)} · kết thúc bằng bài thi cuối khóa
         </p>
-        {course.passedTopicCount > 0 ? (
+        {isStarted(course) ? (
           <div className="lp-meter lp-spotlight__meter">
             <progress className="lp-progress" max={100} value={pct}>{pct}%</progress>
-            <span className="lp-meter__value">{course.passedTopicCount}/{course.topicCount} chặng</span>
+            <span className="lp-meter__value">{progressText(course)}</span>
           </div>
         ) : null}
         <Button asChild className="lp-btn lp-btn--accent lp-btn--cta lp-spotlight__cta">
@@ -192,10 +215,17 @@ function PlacementSpotlight() {
   )
 }
 
-function CourseTile({ course, focused, index }: { course: CourseSummary; focused: boolean; index: number }) {
-  const chip = courseChip(course)
+function CourseTile({ course, focused, index, lastVisited }: {
+  course: CourseSummary
+  focused: boolean
+  index: number
+  /** The course the learner studied most recently: it says when, from the server's own record. */
+  lastVisited: boolean
+}) {
+  const chip = lastVisited && course.lastStudiedAt
+    ? { label: `Lần cuối vào · ${timeAgo(course.lastStudiedAt)}`, tone: 'primary' as const }
+    : courseChip(course)
   const passed = course.testStatus === 'PASSED'
-  const started = course.passedTopicCount > 0
 
   return (
     <li
@@ -227,9 +257,7 @@ function CourseTile({ course, focused, index }: { course: CourseSummary; focused
 
           <div className="lp-tile__progress">
             <SegmentMeter done={course.passedTopicCount} total={course.topicCount} unit="chặng" />
-            <span className="lp-tile__count">
-              {started ? `${course.passedTopicCount}/${course.topicCount} chặng` : 'Chưa bắt đầu'}
-            </span>
+            <span className="lp-tile__count">{progressText(course)}</span>
           </div>
 
           <span className="lp-tile__cta">

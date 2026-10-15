@@ -23,7 +23,7 @@ export function TopicPage() {
   if (resource.status === 'error' && resource.error) return <ApiErrorState error={resource.error} onRetry={resource.reload} />
   if (!resource.data) return null
 
-  const { topic, lessons, finalTest } = resource.data
+  const { topic, lessons, finalTest, pendingReviews } = resource.data
   const course = topic.course
   const number = String(topic.sequenceOrder).padStart(2, '0')
   const skill = skillLabel(topic.skill)
@@ -69,7 +69,14 @@ export function TopicPage() {
       <section className="lp-section" aria-labelledby="lp-topic-lessons">
         <h2 id="lp-topic-lessons">Bài học trong chặng</h2>
         <div className="lp-topic-sheet">
-          <TopicLessonsView finalTest={finalTest} lessons={lessons} onChanged={resource.reload} showCounts={false} topicId={topic.id} />
+          <TopicLessonsView
+            finalTest={finalTest}
+            lessons={lessons}
+            onChanged={resource.reload}
+            pendingReviews={pendingReviews}
+            showCounts={false}
+            topicId={topic.id}
+          />
         </div>
       </section>
     </div>

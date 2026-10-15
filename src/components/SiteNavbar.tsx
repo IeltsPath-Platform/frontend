@@ -14,12 +14,14 @@ function findActiveItem(items: readonly NavItem[], pathname: string) {
     ?? items.find((item) => item.children?.some((child) => child.to.split('?')[0] === pathname))
 }
 
-/** A child is current when its path matches and every query pair it carries is present in the URL. */
-function isChildActive(child: NavChild, pathname: string, search: string) {
-  const [path, query = ''] = child.to.split('?')
-  if (path !== pathname) return false
+/** Nested routes belong to their closest matching section; query-specific sections must match too. */
+function findActiveChild(children: readonly NavChild[], pathname: string, search: string) {
   const current = new URLSearchParams(search)
-  return [...new URLSearchParams(query)].every(([key, value]) => current.get(key) === value)
+  return children.filter((child) => {
+    const [path, query = ''] = child.to.split('?')
+    if (path !== pathname && !pathname.startsWith(`${path}/`)) return false
+    return [...new URLSearchParams(query)].every(([key, value]) => current.get(key) === value)
+  }).sort((a, b) => b.to.split('?')[0].length - a.to.split('?')[0].length)[0]
 }
 
 const practiceSkills: readonly NavChild[] = [
@@ -94,6 +96,7 @@ export function SiteNavbar({ isLoggedIn, userName }: SiteNavbarProps) {
   const [previewItem, setPreviewItem] = useState<NavItem | null>(null)
   const previewResetTimer = useRef<number | undefined>(undefined)
   const subnavItem = previewItem?.children ? previewItem : activeItem
+  const activeChild = subnavItem?.children ? findActiveChild(subnavItem.children, pathname, search) : undefined
   // Without a baseline row (e.g. Trang chủ for guests) a previewed row floats over the page instead of pushing it down.
   const subnavFloats = !activeItem?.children
   const linksRef = useRef<HTMLDivElement>(null)
@@ -210,7 +213,7 @@ export function SiteNavbar({ isLoggedIn, userName }: SiteNavbarProps) {
         <nav className={`site-subnav${subnavFloats ? ' site-subnav--floating' : ''}`} aria-label={subnavItem.label}>
           <div key={subnavItem.to} className="site-subnav-inner">
             {subnavItem.children.map((child) => {
-              const active = isChildActive(child, pathname, search)
+              const active = child === activeChild
               return (
                 <Link key={child.to} to={child.to} className={active ? 'active' : undefined}
                   aria-current={active ? 'page' : undefined} onClick={() => setPreviewItem(null)}>

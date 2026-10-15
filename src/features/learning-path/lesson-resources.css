@@ -37,9 +37,10 @@
 }
 
 /* The lesson title is a card as wide as the content under it, not bare text over the page background.
-   The heading of a Practice set is a card too, since the workspace under it has no card around it. */
+   The heading of a Practice set is a card too, since the workspace under it has no card around it; so is a review's. */
 .lp-res-main > .lp-lesson-head,
-.lp-practice-attempt-head {
+.lp-practice-attempt-head,
+.lp-review-head {
   padding: 1.25rem;
   border: 1px solid var(--lp-line);
   border-radius: var(--lp-radius);

@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useEffectEvent, useState } from 'react'
+import { Fragment, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AlertTriangle, ArrowRight, CheckCircle2, CircleDot, Loader2, Lock, ShieldAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -19,12 +19,25 @@ import { ApiErrorState, LoadingState } from './PageState'
 import { newRequestId } from '../lib/requestId'
 import { reportApiError, setPendingReviews } from '../lib/reviewGate'
 import { useApiResource } from '../lib/useApiResource'
+import type { ReviewOrigin } from '../lib/routes'
 
-const ITEM_META: Partial<Record<PracticeSetItem['status'], { label: string; tone: 'success' | 'accent' | 'locked'; icon: typeof Lock }>> = {
+type ItemMeta = { label: string; tone: 'success' | 'accent' | 'locked'; icon: typeof Lock }
+
+const ITEM_META: Partial<Record<PracticeSetItem['status'], ItemMeta>> = {
   IN_PROGRESS: { label: 'Đang làm', tone: 'accent', icon: CircleDot },
   PASSED: { label: 'Đã đạt', tone: 'success', icon: CheckCircle2 },
-  ATTEMPTED: { label: 'Đã thử', tone: 'locked', icon: CircleDot },
   LOCKED: { label: 'Chưa mở', tone: 'locked', icon: Lock },
+}
+
+/**
+ * A submitted set has done its part for the lesson, passed or not: a failed one only waits for the review it created.
+ * Once that review is finished, the set is done and is never required again.
+ */
+function itemMeta(item: PracticeSetItem, waitsForReview: boolean): ItemMeta | undefined {
+  if (item.status !== 'ATTEMPTED') return ITEM_META[item.status]
+  return waitsForReview
+    ? { label: 'Cần làm bài ôn', tone: 'accent', icon: ShieldAlert }
+    : { label: 'Đã xong', tone: 'success', icon: CheckCircle2 }
 }
 
 const PRACTICE_STATUS_TEXT: Record<string, string> = {
@@ -34,11 +47,10 @@ const PRACTICE_STATUS_TEXT: Record<string, string> = {
 }
 
 /** The Practice of a lesson: the pending reviews it created, then its sets. */
-export function LessonPractice({ lessonId, onChanged, onSetChange }: {
+export function LessonPractice({ lessonId, onChanged, reviewOrigin }: {
   lessonId: string
   onChanged?: () => void
-  /** The set the learner is working on, or null on the list: the lesson page shows it in its trail. */
-  onSetChange?: (set: { code: string; title: string } | null) => void
+  reviewOrigin?: ReviewOrigin
 }) {
   const resource = useApiResource(`practice:${lessonId}`, () => learningApi.getLessonPracticeSets(lessonId))
   const reviews = useApiResource(`practice-reviews:${lessonId}`, async () =>
@@ -52,23 +64,16 @@ export function LessonPractice({ lessonId, onChanged, onSetChange }: {
   if (resource.status === 'loading') return <LoadingState label="Đang tải luyện thêm…" />
   if (resource.status === 'error' && resource.error) return <ApiErrorState error={resource.error} onRetry={resource.reload} />
   if (!resource.data) return null
-  return <PracticeView catalog={resource.data} onReload={reloadAll} onSetChange={onSetChange} reviews={reviews.data ?? []} />
+  return <PracticeView catalog={resource.data} onReload={reloadAll} reviewOrigin={reviewOrigin} reviews={reviews.data ?? []} />
 }
 
-function PracticeView({ catalog, onReload, onSetChange, reviews }: {
+function PracticeView({ catalog, onReload, reviewOrigin, reviews }: {
   catalog: LessonPracticeSets
   onReload: () => void
-  onSetChange?: (set: { code: string; title: string } | null) => void
+  reviewOrigin?: ReviewOrigin
   reviews: ReviewRef[]
 }) {
   const [active, setActive] = useState<{ item: PracticeSetItem; attempt: PracticeAttemptView } | null>(null)
-  const reportSet = useEffectEvent((set: { code: string; title: string } | null) => onSetChange?.(set))
-  const activeCode = active?.item.code
-  const activeTitle = active?.item.title
-  useEffect(() => {
-    reportSet(activeCode && activeTitle ? { code: activeCode, title: activeTitle } : null)
-    return () => reportSet(null)
-  }, [activeCode, activeTitle])
   const [startingId, setStartingId] = useState<string | null>(null)
   const [submission, setSubmission] = useState<PracticeSubmissionResult | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -148,7 +153,7 @@ function PracticeView({ catalog, onReload, onSetChange, reviews }: {
               block={toExerciseBlock(active)}
               failedFooter={submission && !submission.passed ? (
                 <div className="lp-review-retry">
-                  <p>Chưa đạt ({percentDisplay}%). Có thể chọn bộ khác hoặc làm bài ôn nếu được tạo.</p>
+                  <p>Chọn một bộ khác, hoặc làm bài ôn nếu hệ thống đã tạo cho bạn.</p>
                   <Button className="lp-btn" onClick={() => { setActive(null); setSubmission(null); onReload() }} type="button">
                     Về danh sách
                   </Button>
@@ -160,7 +165,7 @@ function PracticeView({ catalog, onReload, onSetChange, reviews }: {
               <div className="lp-done lp-done--review" role="status">
                 <p>Đã tạo bài ôn bắt buộc sau lần luyện này.</p>
                 <Button asChild className="lp-btn lp-btn--accent lp-btn--cta">
-                  <Link to={`/learn/reviews/${submission.reviewsCreated[0].reviewId}`}>
+                  <Link to={`/learn/reviews/${submission.reviewsCreated[0].reviewId}`} state={reviewOrigin ? { reviewOrigin } : undefined}>
                     Làm bài ôn<ArrowRight aria-hidden="true" />
                   </Link>
                 </Button>
@@ -193,8 +198,9 @@ function PracticeView({ catalog, onReload, onSetChange, reviews }: {
     }
   }
   const openItems = catalog.items.filter((item) => item.accessLevel !== 'PREMIUM')
+  // The highlighted set is the one the learner still owes: a set already submitted is never the next step.
   const primaryId = (openItems.find((item) => item.status === 'IN_PROGRESS')
-    ?? openItems.find((item) => item.status === 'AVAILABLE' || item.status === 'ATTEMPTED'))?.packageId
+    ?? openItems.find((item) => item.status === 'AVAILABLE'))?.packageId
 
   return (
     <section className="lp-practice" aria-labelledby="lp-practice-title">
@@ -212,9 +218,9 @@ function PracticeView({ catalog, onReload, onSetChange, reviews }: {
         <p className="lp-empty">Bài này không có bộ luyện thêm.</p>
       ) : (
         <ul className="lp-practice-list" aria-label="Bài ôn và các bộ luyện thêm">
-          {looseReviews.map((review) => <ReviewCard key={review.reviewId} review={review} />)}
+          {looseReviews.map((review) => <ReviewCard key={review.reviewId} review={review} reviewOrigin={reviewOrigin} />)}
           {catalog.items.map((item) => {
-            const meta = ITEM_META[item.status]
+            const meta = itemMeta(item, reviewsBySet.has(item.packageId))
             const StateIcon = meta?.icon
             const withoutLabel = item.title.replace(/^(?:Luyện thêm|Luyện tập)\s+/i, '')
             const title = withoutLabel.startsWith(`${item.code}:`)
@@ -227,7 +233,7 @@ function PracticeView({ catalog, onReload, onSetChange, reviews }: {
               ? 'Premium'
               : item.status === 'LOCKED'
                 ? 'Khóa'
-                : item.status === 'PASSED'
+                : item.status === 'PASSED' || item.status === 'ATTEMPTED'
                   ? 'Làm lại'
                   : startingId === item.packageId
                     ? 'Đang mở…'
@@ -241,7 +247,9 @@ function PracticeView({ catalog, onReload, onSetChange, reviews }: {
                   <span className="lp-practice-card__code">{item.code}</span>
                   <h3>{title}</h3>
                   <p>{item.questionCount} câu{item.bestPercent != null ? ` · điểm cao nhất ${Math.round(item.bestPercent * (item.bestPercent <= 1 ? 100 : 1))}%` : ''}</p>
-                  {item.revealed ? <p className="lp-hint lp-hint--warn">Đã lộ đáp án nên không được tính.</p> : null}
+                  {item.revealed && (item.status === 'AVAILABLE' || item.status === 'IN_PROGRESS') ? (
+                    <p className="lp-hint lp-hint--warn">Đáp án bộ này đã hiện ở bài ôn, nên lần làm này không được tính điểm.</p>
+                  ) : null}
                   {premium ? <p className="lp-hint">Bộ Premium, chưa mở trong giai đoạn này.</p> : null}
                 </div>
                 <div className="lp-practice-card__aside">
@@ -262,24 +270,18 @@ function PracticeView({ catalog, onReload, onSetChange, reviews }: {
                   </Button>}
                 </div>
               </li>
-              {reviewsBySet.get(item.packageId)?.map((review) => <ReviewCard key={review.reviewId} review={review} />)}
+              {reviewsBySet.get(item.packageId)?.map((review) => <ReviewCard key={review.reviewId} review={review} reviewOrigin={reviewOrigin} />)}
             </Fragment>
             )
           })}
         </ul>
       )}
-      {catalog.practiceStatus === 'PASSED' ? (
-        <div className="lp-done" role="status">
-          <p>Bạn đã đạt phần luyện thêm. Quay lại chặng để làm bài kiểm tra (nếu không còn bài ôn).</p>
-          <Button asChild className="lp-btn lp-btn--quiet" variant="outline"><Link to="/learn">Về lộ trình</Link></Button>
-        </div>
-      ) : null}
     </section>
   )
 }
 
 /** A pending review of the lesson, in the list of its Practice. */
-function ReviewCard({ review }: { review: ReviewRef }) {
+function ReviewCard({ review, reviewOrigin }: { review: ReviewRef; reviewOrigin?: ReviewOrigin }) {
   return (
     <li className="lp-practice-card is-review">
       <div className="lp-practice-card__body">
@@ -293,7 +295,7 @@ function ReviewCard({ review }: { review: ReviewRef }) {
           Cần làm
         </span>
         <Button asChild className="lp-btn lp-practice-card__action is-primary" variant="ghost">
-          <Link to={`/learn/reviews/${review.reviewId}`}>
+          <Link to={`/learn/reviews/${review.reviewId}`} state={reviewOrigin ? { reviewOrigin } : undefined}>
             Làm bài ôn<ArrowRight aria-hidden="true" />
           </Link>
         </Button>

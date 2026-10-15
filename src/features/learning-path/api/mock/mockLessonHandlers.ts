@@ -42,6 +42,10 @@ export function listCourses(state: MockState): CourseSummary[] {
     ...MOCK_COURSE,
     topicCount: topics.length,
     passedTopicCount,
+    completedLessons: topics.reduce((sum, topic) => sum + topic.completedLessons, 0),
+    totalLessons: topics.reduce((sum, topic) => sum + topic.totalLessons, 0),
+    // The mock keeps no study times, so it never claims a last visit.
+    lastStudiedAt: null,
     recommended: true,
     testStatus,
   }]

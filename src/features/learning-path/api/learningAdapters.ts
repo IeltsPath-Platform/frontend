@@ -45,6 +45,9 @@ export type CourseSummaryDto = {
   bandLevel: number
   topicCount: number
   passedTopicCount: number
+  completedLessonCount?: number
+  totalLessonCount?: number
+  lastStudiedAt?: string | null
   recommended: boolean
   testStatus: TestStatus
 }
@@ -263,6 +266,9 @@ export function mapCourseSummary(dto: CourseSummaryDto): CourseSummary {
     bandLevel: Number(dto.bandLevel),
     topicCount: dto.topicCount,
     passedTopicCount: dto.passedTopicCount,
+    completedLessons: dto.completedLessonCount ?? 0,
+    totalLessons: dto.totalLessonCount ?? 0,
+    lastStudiedAt: dto.lastStudiedAt ?? null,
     recommended: dto.recommended,
     testStatus: dto.testStatus,
   }
@@ -354,13 +360,22 @@ export function mapReviewRef(dto: ReviewRefDto): ReviewRef {
   }
 }
 
+/**
+ * A passage sent as plain text keeps one paragraph per line. A paragraph that opens with a capital letter and a dot
+ * ("A. Desert plants…") gets that letter as its label, the way IELTS passages name their paragraphs.
+ */
+export function splitPassage(text: string) {
+  return text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean).map((line) => {
+    const label = /^([A-Z])\.\s+/.exec(line)
+    return label ? { label: label[1], text: line.slice(label[0].length) } : { label: null, text: line }
+  })
+}
+
 function mapPassageField(
   passage?: string | { title?: string; paragraphs?: Array<{ label?: string | null; text: string }> } | null,
 ) {
   if (!passage) return { title: '', paragraphs: [] as Array<{ label: string | null; text: string }> }
-  if (typeof passage === 'string') {
-    return { title: '', paragraphs: [{ label: null, text: passage }] }
-  }
+  if (typeof passage === 'string') return { title: '', paragraphs: splitPassage(passage) }
   return {
     title: passage.title ?? '',
     paragraphs: (passage.paragraphs ?? []).map((paragraph) => ({

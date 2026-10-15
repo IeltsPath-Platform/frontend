@@ -131,13 +131,28 @@ test('Shared navbar swaps the guest menu for member sections after sign-in', asy
   const member = { isLoggedIn: true, userName: 'Minh Anh' }
 
   const guestHome = await renderNavbar(guest, '/home')
-  for (const label of ['Trang chủ', 'Khóa học Intensive 7.0', 'Luyện tập 4 kỹ năng', 'Bài mẫu Writing 8.0+', 'Kết quả học viên', 'Đăng nhập', 'Đăng ký']) assert.match(guestHome, new RegExp(label))
+  for (const label of ['Trang chủ', 'Khóa học', 'Luyện tập 4 kỹ năng', 'Bài mẫu Writing 8.0+', 'Kết quả học viên', 'Đăng nhập', 'Đăng ký']) assert.match(guestHome, new RegExp(label))
   for (const label of ['Dashboard', 'Lịch sử nộp bài', 'Khóa học của tôi', 'Sổ từ vựng', 'Flashcard của tôi', '0 Points', 'Đăng xuất']) assert.doesNotMatch(guestHome, new RegExp(label))
   assert.doesNotMatch(guestHome, /site-subnav/)
 
   // The second row lists the sections of whichever primary item owns the route.
   const guestCourses = await renderNavbar(guest, '/learn')
   assert.match(guestCourses, /Test đầu vào 4 kỹ năng FREE/)
+  for (const account of [guest, member]) {
+    for (const path of ['/learn', '/learn/courses/c1', '/learn/topics/t1', '/learn/lessons/l1?view=practice', '/learn/reviews/r1']) {
+      const page = await renderNavbar(account, path)
+      const subnav = page.match(/<nav class="site-subnav[^>]*>[\s\S]*?<\/nav>/)?.[0]
+      assert.ok(subnav)
+      assert.match(subnav, /<a(?=[^>]*class="active")(?=[^>]*aria-current="page")(?=[^>]*href="\/learn")[^>]*>Khóa học<\/a>/, path)
+    }
+    for (const path of ['/learn/placement', '/learn/placement/results']) {
+      const page = await renderNavbar(account, path)
+      const subnav = page.match(/<nav class="site-subnav[^>]*>[\s\S]*?<\/nav>/)?.[0]
+      assert.ok(subnav)
+      assert.match(subnav, /<a(?=[^>]*class="active")(?=[^>]*href="\/learn\/placement")[^>]*>/, path)
+      assert.doesNotMatch(subnav, /<a(?=[^>]*class="active")(?=[^>]*href="\/learn")[^>]*>/, path)
+    }
+  }
   const guestPractice = await renderNavbar(guest, '/practice-tests?skill=writing')
   for (const skill of ['listening', 'reading', 'writing', 'speaking']) assert.match(guestPractice, new RegExp(`href="/practice-tests[?]skill=${skill}"`))
   assert.match(guestPractice, /aria-current="page"[^>]*href="\/practice-tests\?skill=writing"|class="active"[^>]*aria-current="page"[^>]*href="\/practice-tests\?skill=writing"/)
