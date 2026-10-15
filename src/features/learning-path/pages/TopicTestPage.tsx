@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { StudyActivityTracker } from '@/features/study-time/StudyActivityTracker'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, Check, CloudOff, Infinity as InfinityIcon, Loader2, Send } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -147,6 +148,7 @@ function TestRunner({
 
   return (
     <article className="lp-page lp-test-page" aria-labelledby="lp-test-title">
+      <StudyActivityTracker sourceType="ASSESSMENT" sourceId={attemptId} />
       <Link className="lp-back" to={backPath}>
         <ArrowLeft aria-hidden="true" size={16} />
         {courseId ? 'Về khóa học' : 'Về topic'}

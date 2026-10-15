@@ -70,6 +70,7 @@ export function setDemoTier(tier: UserTier) {
 }
 
 export function clearAuthSession() {
+  window.dispatchEvent(new Event('study-session-ending'))
   clearAccessToken()
   session = { ...GUEST_SESSION, hydrated: true }
   emitChange()
@@ -118,6 +119,7 @@ export async function registerWithPassword(input: {
 }
 
 export async function logoutSession() {
+  window.dispatchEvent(new Event('study-session-ending'))
   try {
     await authApi.logout()
   } catch {

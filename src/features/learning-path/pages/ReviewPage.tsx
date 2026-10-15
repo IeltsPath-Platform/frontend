@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { StudyActivityTracker } from '@/features/study-time/StudyActivityTracker'
 import { Link, useParams } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, BookOpenCheck, RefreshCw, SkipForward } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -117,6 +118,7 @@ function ReviewView({ review, onReload }: { review: ReviewDetail; onReload: () =
 
   return (
     <article className="lp-page lp-review-page" aria-labelledby="lp-review-title">
+      <StudyActivityTracker sourceType="REVIEW" sourceId={review.reviewId} enabled={status === 'PENDING'} />
       <Link className="lp-back" to={resumePath(review)}>
         <ArrowLeft aria-hidden="true" size={16} />Về lộ trình học
       </Link>
