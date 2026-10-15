@@ -11,6 +11,7 @@ import { WritingPage } from '@/features/practice/pages/WritingPage'
 import { SpeakingPage } from '@/features/practice/pages/SpeakingPage'
 import { HomePage } from '@/features/home/HomePage'
 import { VocabularyPage } from '@/features/vocabulary/pages/VocabularyPage'
+import { VocabularyReviewPage } from '@/features/vocabulary/pages/VocabularyReviewPage'
 import { AuthPage } from '@/features/auth/pages/AuthPage'
 import { useAuthSession } from '@/features/auth/authSession'
 import { SiteFooter } from '@/components/SiteFooter'
@@ -45,6 +46,7 @@ function AppContent() {
       <Route path="/" element={<Navigate replace to={isLoggedIn ? '/overview' : '/home'} />} />
       <Route path="/home" element={<HomePage />} />
       <Route path="/overview" element={<RequireAuth><OverviewPage /></RequireAuth>} />
+      <Route path="/vocabulary/review" element={<RequireAuth><VocabularyReviewPage /></RequireAuth>} />
       <Route path="/classroom" element={<RequireAuth><ClassroomPage /></RequireAuth>} />
       <Route path="/learn" element={<RequireAuth><LearnLayout /></RequireAuth>}>
         <Route index element={<CourseListPage />} />
