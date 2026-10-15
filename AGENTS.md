@@ -12,7 +12,7 @@ Repository này là một ứng dụng frontend React/Vite cho IeltsPath Platfor
 
 - Trước khi sửa, MUST đọc [`README.md`](./README.md), phần mã và cấu hình liên quan, rồi đọc [Constitution](./.sdd/global/constitution.md), [Global Constraints](./.sdd/constraints/global.md) và kế hoạch trong [`plans/`](./plans/) nếu task chạm đến các quyết định ở đó. Dùng `package.json`, lockfile và code hiện tại để xác minh fact; kế hoạch cũ cung cấp bối cảnh, không thay thế trạng thái hiện tại.
 - Với task có spec/plan được phê duyệt, MUST giữ scope và hành vi đã duyệt. Plan có trạng thái `proposed` không đồng nghĩa với approval. Nếu yêu cầu hiện tại, spec/plan và code mâu thuẫn, MUST nêu xung đột và hỏi trước khi đổi hợp đồng hoặc quyết định của sản phẩm.
-- Repository có Constitution, Global Constraints và [System Architecture](./.sdd/global/system-architecture.md) trong `.sdd/`; chưa có `CLAUDE.md`, ADR/RFC hay `.sdd/global/security.md`. MUST áp dụng thứ tự ưu tiên ghi trong Constitution; không tự đặt ra ngoại lệ.
+- Repository có Constitution, Global Constraints và [System Architecture](./.sdd/global/system-architecture.md) trong `.sdd/`; `CLAUDE.md` chỉ nạp lại file này cho Claude Code; chưa có ADR/RFC hay `.sdd/global/security.md`. MUST áp dụng thứ tự ưu tiên ghi trong Constitution; không tự đặt ra ngoại lệ.
 
 ## 3. Tech stack và ràng buộc kỹ thuật
 
@@ -33,6 +33,7 @@ Repository này là một ứng dụng frontend React/Vite cho IeltsPath Platfor
 
 ## 5. Quy trình làm việc và spec/skill
 
+- MUST định hướng bằng Graphify trước khi đọc source để tiết kiệm token. Khi `graphify-out/graph.json` tồn tại, MUST chạy `graphify query "<câu hỏi>"`, `graphify explain "<symbol>"`, `graphify path "<A>" "<B>"` hoặc `graphify affected "<symbol>"` trước khi grep hay đọc file; MUST NOT quét thư mục hoặc đọc nhiều file để "tìm hiểu codebase" khi chưa query, chỉ mở file nguồn của node mà graph trả về. Tên trùng nhau thì dùng dạng `path::Symbol`. Chỉ đọc `graphify-out/GRAPH_REPORT.md` khi query/explain/path chưa đủ; chỉ chạy full build `graphify .` khi graph chưa có, bị lỗi hoặc được yêu cầu. Sau khi sửa code, chạy `graphify update .` (thêm `--force` khi số node giảm có chủ đích). MUST NOT tự cài Graphify hay commit `graphify-out/`.
 - MUST chỉ sửa các file cần cho task. Không refactor, đổi format hàng loạt, đổi public contract hay cập nhật tài liệu khác ngoài scope để tiện tay. Nếu gặp lỗi ngoài scope, báo riêng.
 - Trước khi thay đổi behavior, MUST kiểm tra yêu cầu và plan/spec liên quan. Chỉ theo plan đã được phê duyệt; không coi `tasks` hay báo cáo cũ là quyền tự mở rộng scope. Nếu cần làm khác spec, MUST dừng phần phụ thuộc và làm rõ.
 - Repository hiện chưa có `.sdd/specs/` hoặc `.sdd/skills/`; các ràng buộc kỹ thuật hiện có nằm trong [Global Constraints](./.sdd/constraints/global.md). Nếu môi trường Agent cung cấp skill phù hợp, MUST đọc `SKILL.md` của đúng skill trước khi áp dụng workflow/checklist; không tải skill không liên quan. Nếu registry hoặc constraints khác được thêm sau này, MUST kiểm tra chúng trước khi lập plan hoặc sửa code liên quan.
