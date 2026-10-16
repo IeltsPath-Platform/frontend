@@ -7,6 +7,14 @@ interface PracticeModeModalProps {
   isOpen: boolean
   onClose: () => void
   onConfirmMode: (mode: 'exam' | 'practice') => void
+  /** Mode preselected when the dialog mounts. */
+  defaultMode?: 'exam' | 'practice'
+  /** When set, "Thi thật" cannot be chosen and this text explains why. */
+  examDisabledReason?: string
+  /** True while the attempt is being created. */
+  busy?: boolean
+  /** Failure of the last start attempt. */
+  error?: string
 }
 
 export const PracticeModeModal: React.FC<PracticeModeModalProps> = ({
@@ -14,13 +22,17 @@ export const PracticeModeModal: React.FC<PracticeModeModalProps> = ({
   isOpen,
   onClose,
   onConfirmMode,
+  defaultMode = 'practice',
+  examDisabledReason,
+  busy = false,
+  error,
 }) => {
-  const [selectedMode, setSelectedMode] = useState<'exam' | 'practice'>('practice')
+  const [selectedMode, setSelectedMode] = useState<'exam' | 'practice'>(examDisabledReason ? 'practice' : defaultMode)
 
   if (!isOpen || !card) return null
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose() }}>
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open && !busy) onClose() }}>
       <DialogContent className="practice-screen2-dialog practice-mode-dialog">
         {/* Top White Header with Blue Title & Close */}
         <div className="screen2-top-header">
@@ -29,30 +41,10 @@ export const PracticeModeModal: React.FC<PracticeModeModalProps> = ({
 
         {/* Deep Royal Blue Body */}
         <div className="screen2-blue-body">
-          <DialogDescription className="screen2-section-heading">Lựa chọn chế độ làm bài</DialogDescription>
+          <DialogDescription className="screen2-section-heading">Chọn giao diện làm bài</DialogDescription>
 
           <div className="screen2-cards-grid">
-            {/* Option 1: Giao diện Thi thật */}
-            <button type="button" aria-pressed={selectedMode === 'exam'}
-              className={`screen2-mode-card ${selectedMode === 'exam' ? 'selected' : ''}`}
-              onClick={() => setSelectedMode('exam')}
-            >
-              <span className="exam-similarity-badge">Thi thử</span>
-              {/* Preview mockup */}
-              <div className="mode-preview-img-box">
-                <div className="mock-exam-header" />
-                <div className="mock-exam-content">
-                  <div className="mock-col-left" />
-                  <div className="mock-col-right" />
-                </div>
-              </div>
-              <span className="mode-title block">Thi thử</span>
-              <p className="mode-description">
-                Tập trung như phòng thi thật. Không có Highlight, Note, tra từ hay Flashcard.
-              </p>
-            </button>
-
-            {/* Option 2: Giao diện Luyện tập */}
+            {/* Option 1: Giao diện Luyện tập */}
             <button type="button" aria-pressed={selectedMode === 'practice'}
               className={`screen2-mode-card ${selectedMode === 'practice' ? 'selected' : ''}`}
               onClick={() => setSelectedMode('practice')}
@@ -66,21 +58,45 @@ export const PracticeModeModal: React.FC<PracticeModeModalProps> = ({
                   <div className="mock-p-questions" />
                 </div>
               </div>
-              <span className="mode-title block">Luyện tập</span>
+              <span className="mode-title block">Giao diện Luyện tập</span>
               <p className="mode-description">
-                Học chủ động với các hỗ trợ phù hợp cho từng kỹ năng và xem lại tiến độ của bạn.
+                Hỗ trợ tối đa các chức năng: Highlight, ghi chú, tra từ vựng, Flashcard… Phù hợp để luyện tập.
               </p>
+            </button>
+
+            {/* Option 2: Giao diện Thi thật */}
+            <button type="button" aria-pressed={selectedMode === 'exam'}
+              disabled={Boolean(examDisabledReason)}
+              className={`screen2-mode-card ${selectedMode === 'exam' ? 'selected' : ''}`}
+              onClick={() => setSelectedMode('exam')}
+            >
+              <span className="exam-similarity-badge">Giống 100%</span>
+              {/* Preview mockup */}
+              <div className="mode-preview-img-box">
+                <div className="mock-exam-header" />
+                <div className="mock-exam-content">
+                  <div className="mock-col-left" />
+                  <div className="mock-col-right" />
+                </div>
+              </div>
+              <span className="mode-title block">Giao diện Thi thật</span>
+              <p className="mode-description">
+                Mô phỏng 100% giao diện thi máy, giúp các bạn quen với chức năng khi thi thật.
+              </p>
+              {examDisabledReason && <p className="mode-description" role="note">{examDisabledReason}</p>}
             </button>
           </div>
 
           {/* Orange CTA Button */}
           <div className="screen2-action-footer">
+            {error && <p className="mode-description" role="alert">{error}</p>}
             <button
               type="button"
               className="screen2-start-cta"
+              disabled={busy}
               onClick={() => onConfirmMode(selectedMode)}
             >
-              BẮT ĐẦU LÀM BÀI
+              {busy ? 'ĐANG TẠO BÀI LÀM…' : 'BẮT ĐẦU LÀM BÀI'}
             </button>
           </div>
         </div>

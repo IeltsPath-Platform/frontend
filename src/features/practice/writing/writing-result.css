@@ -1,0 +1,81 @@
+/* Writing result: A top bar, B band and criteria, C detail by criterion, D the essay with its marks. */
+
+.wr-page {
+  --wr-ink: #111827;
+  --wr-muted: #64748b;
+  --wr-line: #d9dee5;
+  --wr-accent: #1d4ed8;
+  min-height: 100vh;
+  background: #f1f3f5;
+  color: var(--wr-ink);
+}
+
+.wr-top { display: flex; align-items: center; padding: 0.6rem 1rem; background: #f1f5f9; border-bottom: 1px solid var(--wr-line); }
+.wr-main { display: grid; gap: 1rem; max-width: 80rem; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+.wr-muted { margin: 0; color: var(--wr-muted); font-size: 0.78rem; }
+
+.wr-hero { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1fr); gap: 1.2rem; }
+.wr-band { display: grid; align-content: center; justify-items: center; gap: 0.4rem; padding: 1.6rem 1.2rem; border-radius: 14px; background: var(--wr-accent); color: #ffffff; text-align: center; }
+.wr-band p { margin: 0; font-size: 1rem; font-weight: 700; }
+.wr-band strong { font-size: 4.2rem; line-height: 1; }
+.wr-band small { font-size: 0.82rem; }
+.wr-band b { font-size: 0.9rem; }
+.wr-band .wr-band-note { margin-top: 0.8rem; font-size: 0.92rem; font-weight: 500; }
+
+.wr-card { display: grid; gap: 0.7rem; padding: 1.1rem 1.3rem; border: 1px solid var(--wr-line); border-radius: 14px; background: #ffffff; }
+.wr-card header { display: flex; justify-content: space-between; gap: 1rem; padding-bottom: 0.6rem; border-bottom: 1px solid var(--wr-line); }
+.wr-card h2 { margin: 0; font-size: 1rem; }
+.wr-card header span { color: var(--wr-muted); font-size: 0.8rem; }
+.wr-row { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) 2.2rem 8.2rem; align-items: center; gap: 0.7rem; font-size: 0.86rem; }
+.wr-row > span { font-weight: 700; }
+.wr-row > b { text-align: right; }
+.wr-bar { display: block; height: 0.5rem; border-radius: 999px; background: #e2e8f0; overflow: hidden; }
+.wr-bar u { display: block; height: 100%; background: var(--wr-accent); text-decoration: none; }
+.wr-badge { display: inline-block; margin-left: 0.5rem; padding: 0.1rem 0.6rem; border-radius: 999px; background: #334155; color: #ffffff; font-size: 0.66rem; font-style: normal; font-weight: 700; }
+.wr-summary { margin: 0; padding: 0.6rem 0.8rem; border-radius: 8px; background: #f1f5f9; font-size: 0.84rem; line-height: 1.5; }
+.wr-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; }
+.wr-primary,
+.wr-secondary { padding: 0.5rem 1.2rem; border-radius: 6px; font-size: 0.84rem; font-weight: 600; }
+.wr-primary { border: 1px solid var(--wr-accent); background: var(--wr-accent); color: #ffffff; }
+.wr-secondary { border: 1px solid var(--wr-line); background: #ffffff; color: var(--wr-ink); }
+.wr-time { margin-left: auto; color: var(--wr-muted); font-size: 0.8rem; }
+
+.wr-metrics { padding: 0.9rem 1.2rem; border: 1px solid var(--wr-line); border-radius: 14px; background: #ffffff; }
+.wr-metrics > div { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1rem; margin-top: 0.5rem; }
+.wr-metrics dl { display: grid; gap: 0.1rem; margin: 0; }
+.wr-metrics dt { color: var(--wr-muted); font-size: 0.72rem; }
+.wr-metrics dd { margin: 0; font-size: 1.3rem; font-weight: 800; }
+.wr-metrics small { color: var(--wr-muted); font-size: 0.68rem; }
+
+.wr-h2 { margin: 0.6rem 0 0; font-size: 1.25rem; font-weight: 800; }
+.wr-criteria { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.wr-criterion { display: grid; grid-template-columns: 4rem minmax(0, 1fr); gap: 0.4rem 1rem; padding: 1.1rem; border: 1px solid var(--wr-line); border-radius: 14px; background: #ffffff; }
+.wr-criterion.is-worst { border: 2px solid var(--wr-accent); }
+.wr-criterion-band { display: grid; place-items: center; width: 4rem; height: 4rem; border: 1px solid var(--wr-accent); border-radius: 50%; background: #eff6ff; color: var(--wr-accent); font-size: 1.15rem; font-weight: 800; }
+.wr-criterion h3 { margin: 0; font-size: 0.95rem; }
+.wr-points { grid-column: 1 / -1; display: grid; gap: 0.3rem; margin: 0; padding: 0; list-style: none; font-size: 0.82rem; line-height: 1.45; }
+
+.wr-essay { padding: 1.2rem 1.4rem; border: 1px solid var(--wr-line); border-radius: 14px; background: #ffffff; line-height: 1.8; white-space: pre-wrap; }
+.wr-legend { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0 0 0.8rem; }
+.wr-mark { padding: 0.05rem 0.35rem; border-radius: 4px; font-size: inherit; color: inherit; }
+.wr-legend .wr-mark { font-size: 0.7rem; font-weight: 700; }
+.wr-mark-grammar { background: #fde68a; }
+.wr-mark-vocabulary { background: #dbeafe; }
+.wr-mark-coherence { background: #e2e8f0; }
+.wr-mark-task { background: #fecdd3; }
+
+.wr-fixes { padding: 1rem 1.3rem; border: 1px solid var(--wr-line); border-radius: 14px; background: #ffffff; }
+.wr-fixes h3 { margin: 0 0 0.5rem; font-size: 0.95rem; }
+.wr-fixes ul { display: grid; gap: 0.5rem; margin: 0; padding: 0; list-style: none; font-size: 0.84rem; line-height: 1.5; }
+.wr-fixes .wr-mark { margin-right: 0.4rem; font-size: 0.7rem; font-weight: 700; }
+.wr-sample { padding: 1rem 1.3rem; border: 1px solid var(--wr-line); border-radius: 14px; background: #ffffff; }
+.wr-sample summary { cursor: pointer; font-weight: 700; }
+.wr-sample p { margin: 0.7rem 0 0; line-height: 1.7; white-space: pre-wrap; }
+
+@media (max-width: 900px) {
+  .wr-hero,
+  .wr-criteria { grid-template-columns: minmax(0, 1fr); }
+  .wr-metrics > div { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .wr-row { grid-template-columns: minmax(0, 1fr) 2.2rem; }
+  .wr-row .wr-bar { grid-column: 1 / -1; order: 3; }
+}

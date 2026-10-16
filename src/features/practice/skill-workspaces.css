@@ -159,3 +159,5 @@
   .single-question-view, .recording-microphone.is-recording { animation: none; }
   .audio-visualizer span { transition: none; }
 }
+.writing-points-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: .65rem; width: min(100% - 2rem, 1480px); margin: .8rem auto; padding: .7rem .9rem; border: 1px solid var(--border); border-radius: .75rem; background: var(--card); }
+.writing-points-bar p { margin: 0 auto 0 0; }

@@ -30,7 +30,7 @@ export function QuestionField({ question, value, onChange, onBlur, disabled, res
             return (
               <label className="lp-option" data-checked={value === option.value} htmlFor={optionId} key={option.value}>
                 <RadioGroupItem id={optionId} value={option.value} />
-                {option.label !== option.value ? <span className="lp-option__key">{option.value}</span> : null}
+                {option.label !== option.value && option.value.length <= 2 ? <span className="lp-option__key">{option.value}</span> : null}
                 <span>{option.label}</span>
               </label>
             )
