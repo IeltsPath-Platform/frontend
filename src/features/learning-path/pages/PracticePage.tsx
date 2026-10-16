@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { StudyActivityTracker } from '@/features/study-time/StudyActivityTracker'
 import { Link, useParams } from 'react-router-dom'
 import { AlertTriangle, ArrowLeft, ArrowRight, Dumbbell, Loader2, Lock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -102,6 +103,7 @@ function PracticeView({ catalog, onReload }: { catalog: LessonPracticeSets; onRe
       : null
     return (
       <article className="lp-page" aria-labelledby="lp-practice-attempt-title">
+        <StudyActivityTracker sourceType="PRACTICE" sourceId={active.attempt.attemptId} enabled={!submission} />
         <button className="lp-back" type="button" onClick={() => { setActive(null); setSubmission(null); onReload() }}>
           <ArrowLeft aria-hidden="true" size={16} />Danh sách luyện thêm
         </button>

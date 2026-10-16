@@ -1,325 +1,77 @@
-import React, { useState } from 'react'
-import {
-  MOCK_SKILL_PROGRESS,
-  MOCK_MY_COURSES,
-} from '@/mocks/overviewData'
+import { useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
+import { Button } from '@/components/ui/button'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { overviewApi, type BandSkill, type SeriesKind } from '../api/overviewApi'
+import { useStatisticsResource } from '../hooks/useStatisticsResource'
+import { StatisticsCard } from './StatisticsCard'
+import { BandHistoryChart, SkillCompletionChart, StudyTimeChart } from './StatisticsCharts'
+import { percentLabel, skillLabels } from '../statisticsFormat'
+import '../statistics.css'
 
-export const OverviewDetailedStats: React.FC = () => {
-  const [timeFilter, setTimeFilter] = useState<'week' | 'month' | 'course'>('week')
-  const [selectedForwardSkill, setSelectedForwardSkill] = useState<'Overall' | 'Listening' | 'Reading' | 'Writing' | 'Speaking'>('Overall')
-
-  return (
-    <div className="detailed-stats-root">
-      {/* 1. TOP LINE CHART: Biểu đồ thời gian học */}
-      <section className="detailed-chart-card">
-        <div className="chart-header-row">
-          <div>
-            <h3 className="chart-title">Biểu đồ thời gian học</h3>
-            <span className="chart-date-subtitle">Từ 01/9/2026 đến 7/9/2026</span>
-          </div>
-
-          <div className="chart-controls-right">
-            <div className="chart-legend">
-              <span className="legend-item"><span className="legend-line blue" /> Thực tế</span>
-              <span className="legend-item"><span className="legend-line orange-dash" /> Kế hoạch</span>
-            </div>
-
-            <div className="chart-filter-pills">
-              <button
-                type="button"
-                className={`filter-pill ${timeFilter === 'week' ? 'active' : ''}`}
-                onClick={() => setTimeFilter('week')}
-              >
-                Tuần
-              </button>
-              <button
-                type="button"
-                className={`filter-pill ${timeFilter === 'month' ? 'active' : ''}`}
-                onClick={() => setTimeFilter('month')}
-              >
-                Tháng
-              </button>
-              <button
-                type="button"
-                className={`filter-pill ${timeFilter === 'course' ? 'active' : ''}`}
-                onClick={() => setTimeFilter('course')}
-              >
-                Khoá
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* SVG Time Chart */}
-        <div className="chart-svg-wrapper">
-          <svg viewBox="0 0 800 120" className="time-chart-svg">
-            {/* Target dashed line */}
-            <line x1="40" y1="45" x2="760" y2="45" stroke="#f97316" strokeWidth="2" strokeDasharray="6 4" />
-            {/* Actual line */}
-            <path
-              d="M 50 60 Q 150 55, 250 50 T 450 35 T 600 55 T 750 48"
-              fill="none"
-              stroke="#2563eb"
-              strokeWidth="3"
-            />
-            {/* Points */}
-            <circle cx="50" cy="60" r="4.5" fill="#2563eb" stroke="#ffffff" strokeWidth="2" />
-            <circle cx="170" cy="53" r="4.5" fill="#2563eb" stroke="#ffffff" strokeWidth="2" />
-            <circle cx="290" cy="50" r="4.5" fill="#2563eb" stroke="#ffffff" strokeWidth="2" />
-            <circle cx="410" cy="38" r="4.5" fill="#2563eb" stroke="#ffffff" strokeWidth="2" />
-            <circle cx="530" cy="55" r="4.5" fill="#2563eb" stroke="#ffffff" strokeWidth="2" />
-            <circle cx="650" cy="46" r="4.5" fill="#2563eb" stroke="#ffffff" strokeWidth="2" />
-            <circle cx="750" cy="48" r="4.5" fill="#2563eb" stroke="#ffffff" strokeWidth="2" />
-          </svg>
-          <div className="chart-days-axis">
-            <span>T2</span><span>T3</span><span>T4</span><span>T5</span><span>T6</span><span>T7</span><span>CN</span>
-          </div>
-        </div>
-      </section>
-
-      {/* 2. ROW 2: Tiến Độ 4 Kỹ Năng & You're moving forward */}
-      <div className="detailed-two-cols-row">
-        {/* Left: Tiến Độ 4 Kỹ Năng */}
-        <section className="detailed-skills-card">
-          <div className="flex items-center justify-between mb-1">
-            <h3 className="section-title-bold">Tiến Độ 4 Kỹ Năng</h3>
-            <button type="button" className="text-xs text-blue-600 font-semibold hover:underline">
-              Chi tiết &gt;
-            </button>
-          </div>
-          <p className="text-xs text-slate-400 mb-3">AI đánh giá so với kế hoạch lộ trình</p>
-
-          <div className="skills-radar-and-bars">
-            {/* Radar diagram */}
-            <div className="radar-diagram-box">
-              <svg viewBox="0 0 160 160" className="radar-svg">
-                <polygon points="80,10 150,80 80,150 10,80" fill="none" stroke="#e2e8f0" strokeWidth="1.5" />
-                <polygon points="80,45 115,80 80,115 45,80" fill="none" stroke="#e2e8f0" strokeWidth="1" />
-                <polygon points="80,25 130,80 80,135 60,80" fill="rgba(37, 99, 235, 0.2)" stroke="#2563eb" strokeWidth="2" />
-                <text x="80" y="8" textAnchor="middle" fontSize="9" fill="#64748b">Listening</text>
-                <text x="155" y="83" textAnchor="start" fontSize="9" fill="#64748b">Reading</text>
-                <text x="80" y="158" textAnchor="middle" fontSize="9" fill="#64748b">Writing</text>
-                <text x="5" y="83" textAnchor="end" fontSize="9" fill="#64748b">Speaking</text>
-              </svg>
-            </div>
-
-            {/* Bars List */}
-            <div className="skills-bars-list">
-              {MOCK_SKILL_PROGRESS.map((sp) => (
-                <div key={sp.skill} className="skill-bar-row">
-                  <span className="skill-row-name">{sp.skill}</span>
-                  <div className="skill-track-line">
-                    <div
-                      className={`skill-fill-line fill-${sp.statusType}`}
-                      style={{ width: `${sp.percent}%` }}
-                    />
-                  </div>
-                  <strong className="skill-percent-text">{sp.percent}%</strong>
-                  <span className={`skill-status-tag tag-${sp.statusType}`}>
-                    {sp.status}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* AI Recommendation box */}
-          <div className="ai-feedback-banner">
-            <p className="text-xs text-slate-700 leading-relaxed">
-              <strong>AI nhận xét:</strong> Bạn đang làm rất tốt ở Reading (80%) và giữ
-              phong độ ổn định với Listening (62%). Tuy nhiên, Writing (48%) và đặc biệt là
-              Speaking (20%) đang tụt lại khá xa so với lộ trình. Để tránh nguy cơ lệch
-              mục tiêu chung, hãy dành ít nhất 60% thời gian học tuần tới tập trung trả lời
-              câu hỏi Speaking.
-            </p>
-          </div>
-        </section>
-
-        {/* Right: You're moving forward (Dark Blue Card) */}
-        <section className="moving-forward-card">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="forward-title">You're moving forward</h3>
-            <span className="band-increase-pill">+1.0 BAND <small>in 8 weeks</small></span>
-          </div>
-
-          {/* Tabs: Overall, Listening, Reading, Writing, Speaking */}
-          <div className="forward-tabs-row">
-            {(['Overall', 'Listening', 'Reading', 'Writing', 'Speaking'] as const).map((tab) => (
-              <button
-                key={tab}
-                type="button"
-                className={`forward-tab-pill ${selectedForwardSkill === tab ? 'active' : ''}`}
-                onClick={() => setSelectedForwardSkill(tab)}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
-
-          {/* Line Chart */}
-          <div className="forward-chart-wrapper">
-            <svg viewBox="0 0 320 120" className="forward-svg">
-              <line x1="20" y1="30" x2="300" y2="30" stroke="rgba(255, 255, 255, 0.25)" strokeDasharray="4 4" />
-              <path
-                d="M 20 95 L 75 95 L 140 80 L 210 75 L 290 60"
-                fill="none"
-                stroke="#60a5fa"
-                strokeWidth="3"
-              />
-              <circle cx="20" cy="95" r="4" fill="#60a5fa" />
-              <circle cx="75" cy="95" r="4" fill="#60a5fa" />
-              <circle cx="140" cy="80" r="4" fill="#60a5fa" />
-              <circle cx="210" cy="75" r="4" fill="#60a5fa" />
-              <circle cx="290" cy="60" r="4" fill="#60a5fa" />
-            </svg>
-            <div className="forward-axis-dates">
-              <span>20 Jun</span><span>03</span><span>28</span><span>05 Aug</span><span>12 Aug</span>
-            </div>
-          </div>
-
-          {/* Bottom On Track summary */}
-          <div className="forward-bottom-summary">
-            <div>
-              <span className="big-band-score">5.5</span>
-              <span className="text-xs text-blue-200 ml-1">Latest (from 4.5 on 20 Jun)</span>
-            </div>
-            <div className="on-track-badge">
-              <span className="status-dot green" />
-              <span>On track: At your current pace, you're moving toward IELTS 6.5.</span>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      {/* 3. ROW 3: Từ Vựng Cần Ôn & Phản Hồi Từ Mentor */}
-      <div className="detailed-two-cols-row">
-        {/* Left: Từ Vựng Cần Ôn */}
-        <section className="vocabulary-review-card">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="section-title-bold">Từ Vựng Cần Ôn</h3>
-            <button type="button" className="text-xs text-blue-600 font-semibold hover:underline">
-              Chi tiết &gt;
-            </button>
-          </div>
-
-          <div className="vocabulary-content-row">
-            {/* Donut Chart */}
-            <div className="donut-chart-box">
-              <svg viewBox="0 0 100 100" className="donut-svg">
-                <circle cx="50" cy="50" r="38" fill="none" stroke="#e2e8f0" strokeWidth="10" />
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="38"
-                  fill="none"
-                  stroke="#10b981"
-                  strokeWidth="10"
-                  strokeDasharray="238.7"
-                  strokeDashoffset={238.7 * (1 - 0.34)}
-                  transform="rotate(-90 50 50)"
-                />
-              </svg>
-              <div className="donut-inner-text">
-                <span className="donut-percent">34%</span>
-              </div>
-              <div className="donut-legend">
-                <div className="text-xs"><span className="dot-green" /> Đã học: 110</div>
-                <div className="text-xs"><span className="dot-gray" /> Chưa học: 142</div>
-              </div>
-              <button type="button" className="donut-action-btn">
-                Ôn ngay ➔
-              </button>
-            </div>
-
-            {/* Spaced Repetition Bubbles */}
-            <div className="spaced-repetition-bubbles">
-              <div className="bubble-item bubble-blue">
-                <strong>12</strong>
-                <small>Từ mới</small>
-              </div>
-              <div className="bubble-item bubble-green">
-                <strong>25</strong>
-                <small>Ôn lần 1</small>
-              </div>
-              <div className="bubble-item bubble-yellow">
-                <strong>34</strong>
-                <small>Ôn lần 2</small>
-              </div>
-              <div className="bubble-item bubble-orange">
-                <strong>20</strong>
-                <small>Ôn lần 3</small>
-              </div>
-              <div className="bubble-item bubble-purple">
-                <strong>110</strong>
-                <small>Đã thuộc</small>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Right: Phản Hồi Từ Mentor */}
-        <section className="mentor-feedback-card">
-          <h3 className="section-title-bold mb-3">Phản Hồi Từ Mentor</h3>
-
-          <div className="mentor-feedback-item">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="mentor-badge-circle">M</div>
-              <strong className="text-sm text-slate-800">Ms. Lan</strong>
-              <span className="mentor-skill-tag">Speaking</span>
-            </div>
-
-            <p className="mentor-feedback-body">
-              Phát âm của em tuần này đã có sự cải thiện vô cùng rõ rệt! Điểm sáng lớn
-              nhất nằm ở độ tròn và rõ của các âm cuối (ending sounds), cùng khả năng
-              kiểm soát luồng hơi tốt hơn hẳn so với tuần trước. Những đoạn câu dài không
-              còn bị đứt đoạn hay hụt hơi, và quan trọng nhất là ngữ điệu (intonation) đã
-              bắt đầu có sự tự nhiên.
-            </p>
-
-            <div className="flex items-center justify-between mt-3 text-xs text-slate-400">
-              <span>Updated: 11 Aug 2026</span>
-              <button type="button" className="text-blue-600 font-bold hover:underline">
-                View Feedback &gt;
-              </button>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      {/* 4. ROW 4: Các Khoá Học Của Tôi */}
-      <section className="my-courses-card">
-        <div className="flex items-center justify-between mb-1">
-          <div>
-            <h3 className="courses-title">Các Khoá Học Của Tôi</h3>
-            <p className="courses-sub">Tất cả khoá đang theo học</p>
-          </div>
-          <button type="button" className="text-xs text-blue-200 hover:text-white font-semibold">
-            Xem tất cả &gt;
-          </button>
-        </div>
-
-        <div className="courses-cards-grid">
-          {MOCK_MY_COURSES.map((course) => (
-            <div key={course.id} className="course-card-item">
-              <div className="flex items-center justify-between mb-1">
-                <h4 className="course-title-text">{course.title}</h4>
-                <span className="course-level-pill">{course.badgeText}</span>
-              </div>
-              <p className="course-sub-text">{course.subtitle}</p>
-              <div className="course-progress-track">
-                <div
-                  className="course-progress-fill"
-                  style={{ width: `${course.progressPercent}%` }}
-                />
-              </div>
-              <div className="course-progress-footer">
-                <span>{course.progressText}</span>
-                <strong>{course.progressPercent}%</strong>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+function dayString(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
+function currentRange(period: string) {
+  const start = new Date()
+  const end = new Date(start)
+  if (period === 'month') { start.setDate(1); end.setMonth(end.getMonth() + 1, 0) }
+  else { start.setDate(start.getDate() - (start.getDay() + 6) % 7); end.setTime(start.getTime()); end.setDate(end.getDate() + 6) }
+  return { from: dayString(start), to: dayString(end) }
+}
+export function OverviewDetailedStats() {
+  const [params, setParams] = useSearchParams()
+  const period = params.get('period') === 'month' ? 'month' : 'week'
+  const courseId = params.get('course') ?? ''
+  const requestedSkill = params.get('skill') ?? 'OVERALL'
+  const skill: BandSkill = Object.hasOwn(skillLabels, requestedSkill) ? requestedSkill as BandSkill : 'OVERALL'
+  const requestedSeries = params.get('series')
+  const series: SeriesKind = requestedSeries === 'MOCK' || requestedSeries === 'OFFICIAL_PRACTICE' ? requestedSeries : 'PLACEMENT'
+  const { from, to } = currentRange(period)
+  const [coursePage, setCoursePage] = useState(0)
+  const [cursorState, setCursorState] = useState({ key: '', stack: [''] })
+  const bandKey = `${from}:${to}:${series}:${skill}`
+  const cursors = cursorState.key === bandKey ? cursorState.stack : ['']
+  const cursor = cursors.at(-1) ?? ''
+  const page = courseId ? 0 : coursePage
+  const time = useStatisticsResource(`time:${from}:${to}:${courseId}`, (signal) => overviewApi.time(from, to, courseId, signal))
+  const progress = useStatisticsResource(`progress:${page}:${courseId}`, (signal) => overviewApi.progress(page, courseId, signal))
+  const bands = useStatisticsResource(`bands:${bandKey}:${cursor}`, (signal) => overviewApi.bands(from, to, skill, series, cursor, signal))
+  const vocabulary = useStatisticsResource('vocabulary', overviewApi.vocabulary)
+  function filter(name: string, value: string) {
+    setParams((previous) => {
+      const next = new URLSearchParams(previous)
+      next.set('tab', 'detailed-stats')
+      if (value) next.set(name, value); else next.delete(name)
+      return next
+    })
+  }
+  return <div className="statistics-dashboard">
+    <header className="statistics-heading"><div><h1>Dữ liệu chi tiết</h1><p>Theo dõi hoạt động và kết quả học của bạn.</p></div><div className="statistics-controls" aria-label="Bộ lọc thời gian">
+      <Button variant={period === 'week' ? 'default' : 'outline'} onClick={() => filter('period', 'week')}>Tuần này</Button><Button variant={period === 'month' ? 'default' : 'outline'} onClick={() => filter('period', 'month')}>Tháng này</Button>
+    </div></header>
+    <p className="statistics-muted">{from} — {to}. Tiến độ bài học và từ vựng là số liệu hiện tại; bộ lọc thời gian áp dụng cho thời gian học và lịch sử band.</p>
+    {courseId && <div className="statistics-controls"><p>Khóa: {progress.data?.courses[0]?.name ?? 'đã chọn'} (thời gian học và tiến độ).</p><Button variant="outline" onClick={() => filter('course', '')}>Tất cả khóa đã bắt đầu</Button></div>}
+    <StatisticsCard title="Biểu đồ thời gian học" resource={time}>{(data) => <><StudyTimeChart days={data.days} /><p className="statistics-muted">Chỉ ghi nhận lúc học có hoạt động trên tab hiển thị. Ngày thống kê theo múi giờ được ghi tại thời điểm học.{courseId ? ' Mục tiêu chung không áp dụng riêng cho khóa.' : ''}</p></>}</StatisticsCard>
+    <div className="statistics-two-columns">
+      <StatisticsCard title="Tiến độ 4 kỹ năng" resource={progress}>{(data) => <><p className="statistics-muted">Bài học hoàn thành / nội dung hiện đang xuất bản của {courseId ? 'khóa đã chọn' : 'các khóa đã bắt đầu'}. Bài nhiều kỹ năng được tính cho từng kỹ năng.</p><SkillCompletionChart skills={data.skills} />{data.totalCourses === 0 && <Button asChild><Link to="/learn">Bắt đầu học</Link></Button>}</>}</StatisticsCard>
+      <StatisticsCard title="Lịch sử band" resource={bands} controls={<div className="statistics-controls">
+        <Select value={series} onValueChange={(value) => filter('series', value)}><SelectTrigger aria-label="Loại bài thi"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="PLACEMENT">Đầu vào</SelectItem><SelectItem value="MOCK">Thi thử</SelectItem><SelectItem value="OFFICIAL_PRACTICE">Luyện thi chính thức</SelectItem></SelectContent></Select>
+        <Select value={skill} onValueChange={(value) => filter('skill', value)}><SelectTrigger aria-label="Kỹ năng band"><SelectValue /></SelectTrigger><SelectContent>{Object.entries(skillLabels).map(([key, label]) => <SelectItem key={key} value={key}>{label}</SelectItem>)}</SelectContent></Select>
+      </div>}>{(data) => <>
+        {data.points.length ? <><BandHistoryChart points={data.points} /><p>Đầu kỳ: <strong>{data.baseline?.toFixed(1) ?? '—'}</strong> · Gần nhất: <strong>{data.latest?.toFixed(1) ?? '—'}</strong> · Thay đổi: {data.delta === null ? '—' : `${data.delta > 0 ? '+' : ''}${data.delta.toFixed(1)}`}</p></> : <p>Chưa có kết quả đủ điều kiện trong khoảng thời gian này. Overall cần cả 4 kỹ năng được đo trong cùng một lần thi.</p>}
+        <p className="statistics-muted">Chỉ kết quả đã đo; loại trừ band mặc định và dữ liệu cũ không rõ nguồn. Chấm lại cập nhật điểm của lần thi gốc.</p>
+        <div className="statistics-controls"><Button variant="outline" disabled={cursors.length === 1} onClick={() => setCursorState({ key: bandKey, stack: cursors.slice(0, -1) })}>Trang trước</Button><Button variant="outline" disabled={!data.nextCursor} onClick={() => { if (data.nextCursor) setCursorState({ key: bandKey, stack: [...cursors, data.nextCursor] }) }}>Trang tiếp</Button></div>
+      </>}</StatisticsCard>
     </div>
-  )
+    <StatisticsCard title="Từ vựng cần ôn" resource={vocabulary}>{(data) => <>
+      <p><strong className="statistics-number">{percentLabel(data.retainedPercent)}</strong> đã ghi nhớ · {data.retained}/{data.total} nghĩa từ · {data.dueCount} đến hạn ôn</p>
+      <ul className="statistics-buckets">{data.buckets.map((bucket) => <li key={bucket.state}><strong>{bucket.count}</strong><span>{bucket.state === 'NEW' ? 'Từ mới' : bucket.state === 'RETAINED' ? 'Đã ghi nhớ' : `Cấp ${bucket.state.slice(1)}`}</span></li>)}</ul>
+      <p className="statistics-muted">Mỗi nghĩa từ chỉ tính một lần. Mức ghi nhớ dựa trên tự đánh giá sau khi lật đáp án.</p><Button asChild><Link to="/vocabulary/review">{data.total ? 'Ôn ngay / thêm từ' : 'Thêm từ để bắt đầu'}</Link></Button>
+    </>}</StatisticsCard>
+    <StatisticsCard title="Các khóa học của tôi" resource={progress}>{(data) => <>
+      {data.courses.length === 0 ? <p>Chưa bắt đầu khóa học nào. <Link to="/learn">Khám phá khóa học</Link></p> : <div className="statistics-course-grid">{data.courses.map((course) => <article className="statistics-course" key={course.courseId}><h3>{course.name}</h3><p>{course.completedLessons}/{course.totalLessons} bài · {percentLabel(course.percent)}</p>{course.percent !== null && <progress max={100} value={course.percent} aria-label={`Tiến độ ${course.name}`} />}<p className="statistics-muted">Học gần nhất: {course.lastStudiedAt ? new Date(course.lastStudiedAt).toLocaleString('vi-VN') : 'Chưa có lịch sử thời gian'}</p><div className="statistics-controls"><Button asChild><Link to={`/learn/courses/${course.resumeTarget.courseId}`}>Tiếp tục học</Link></Button><Button variant="outline" onClick={() => filter('course', course.courseId)}>Xem số liệu</Button></div></article>)}</div>}
+      {!courseId && <div className="statistics-controls statistics-pagination"><Button variant="outline" disabled={page === 0} onClick={() => setCoursePage(page - 1)}>Trước</Button><span>Trang {page + 1} · {data.totalCourses} khóa</span><Button variant="outline" disabled={!data.hasNext} onClick={() => setCoursePage(page + 1)}>Tiếp</Button></div>}
+    </>}</StatisticsCard>
+  </div>
 }

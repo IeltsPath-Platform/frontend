@@ -17,6 +17,13 @@ export function useMicRecorder() {
   const chunks = useRef<Blob[]>([])
   const onStopped = useRef<((length: number, recording: Blob) => void) | null>(null)
   const urlRef = useRef<string | null>(null)
+  const recordingId = useRef(crypto.randomUUID())
+
+  useEffect(() => {
+    const id = recordingId.current
+    window.dispatchEvent(new CustomEvent('study-recording', { detail: { id, active: state === 'recording' } }))
+    return () => { window.dispatchEvent(new CustomEvent('study-recording', { detail: { id, active: false } })) }
+  }, [state])
 
   function clearTimer() {
     if (timer.current !== null) window.clearInterval(timer.current)

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { StudyActivityTracker } from '@/features/study-time/StudyActivityTracker'
 import { Link, useParams } from 'react-router-dom'
 import { ArrowDown, ArrowLeft, ArrowRight, CheckCircle2, CircleDot, Flag, Loader2, ShieldAlert, type LucideIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -168,6 +169,7 @@ function LessonView({ lesson }: { lesson: LessonDetail }) {
 
   return (
     <article className="lp-page lp-lesson-page" aria-labelledby="lp-lesson-title">
+      <StudyActivityTracker sourceType="LESSON" sourceId={lesson.id} />
       <NoticeBanner />
 
       <div className="lp-lesson-layout">

@@ -542,7 +542,7 @@
   }
 }
 
-.detailed-skills-card, .vocabulary-review-card, .mentor-feedback-card {
+.detailed-skills-card, .vocabulary-review-card {
   background: #ffffff;
   border-radius: 20px;
   padding: 1.5rem;
@@ -807,36 +807,6 @@
 .bubble-item strong {
   font-size: 0.95rem;
   line-height: 1;
-}
-
-/* Mentor Feedback Card */
-.mentor-badge-circle {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: #ff7100;
-  color: white;
-  font-size: 0.75rem;
-  font-weight: 800;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.mentor-skill-tag {
-  background: #ffedd5;
-  color: #ea580c;
-  font-size: 0.65rem;
-  font-weight: 700;
-  padding: 1px 6px;
-  border-radius: 4px;
-}
-
-.mentor-feedback-body {
-  font-size: 0.785rem;
-  color: #475569;
-  line-height: 1.55;
-  margin: 0;
 }
 
 /* My Courses Card */

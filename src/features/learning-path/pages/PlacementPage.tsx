@@ -1,4 +1,5 @@
 import { useEffect, useEffectEvent, useMemo, useState } from 'react'
+import { StudyActivityTracker } from '@/features/study-time/StudyActivityTracker'
 import { Navigate } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -213,6 +214,7 @@ function PlacementHub({ attempt, data, onProgress, onSubmitted, onRedoSurvey }: 
 
   return (
     <>
+      <StudyActivityTracker sourceType="ASSESSMENT" sourceId={attempt.id} />
       <PlacementDashboard
         answers={answers}
         completedIds={completedIds}
