@@ -3,7 +3,6 @@ import type {
   HeadingItem,
   ParagraphQuestion,
   ListeningQuestion,
-  SpeakingCue,
   WritingTaskPrompt,
 } from '@/types/practice'
 
@@ -45,18 +44,6 @@ export const MOCK_WRITING_TASK: WritingTaskPrompt = {
   timeLimitSeconds: 20 * 60,
 }
 
-export const MOCK_SPEAKING_CUE: SpeakingCue = {
-  part: 'Speaking Part 2',
-  title: 'Describe a place you enjoy visiting.',
-  preparationSeconds: 60,
-  speakingSeconds: 120,
-  prompts: [
-    'You should say where it is',
-    'how often you go there',
-    'what you do there',
-    'and explain why you enjoy visiting this place',
-  ],
-}
 
 export const MOCK_INITIAL_NOTES: PracticeNote[] = [
   {

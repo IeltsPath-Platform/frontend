@@ -90,10 +90,3 @@ export interface WritingTaskPrompt {
   timeLimitSeconds: number
 }
 
-export interface SpeakingCue {
-  part: string
-  title: string
-  preparationSeconds: number
-  speakingSeconds: number
-  prompts: string[]
-}

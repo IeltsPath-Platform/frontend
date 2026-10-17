@@ -8,7 +8,7 @@ import { PracticeCatalogPage } from '@/features/practice/pages/PracticeCatalogPa
 import { ListeningPracticePage } from '@/features/practice/listening/ListeningPracticePage'
 import { WritingWorkspacePage } from '@/features/practice/writing/WritingWorkspacePage'
 import { WritingResultPage } from '@/features/practice/writing/WritingResultPage'
-import { SpeakingPage } from '@/features/practice/pages/SpeakingPage'
+import { SpeakingWorkspacePage } from '@/features/practice/speaking/SpeakingWorkspacePage'
 import { ReadingPracticePage } from '@/features/practice/reading/ReadingPracticePage'
 import { ReadingResultPage } from '@/features/practice/reading/ReadingResultPage'
 import { ReadingHistoryPage } from '@/features/practice/reading/ReadingHistoryPage'
@@ -98,10 +98,8 @@ function AppContent() {
         path="/practice/test"
         element={<RequireAuth><Navigate replace to="/practice-tests?skill=reading" /></RequireAuth>}
       />
-      <Route
-        path="/practice/speaking/:cueId"
-        element={<RequireAuth><SpeakingPage onExit={() => navigate('/practice-tests')} /></RequireAuth>}
-      />
+      <Route path="/practice/speaking/tasks/:packageVersionId/:sectionId" element={<RequireAuth><SpeakingWorkspacePage /></RequireAuth>} />
+      <Route path="/practice/speaking/:cueId" element={<Navigate replace to="/practice-tests?skill=speaking" />} />
       <Route path="/vocabulary" element={<VocabularyPage />} />
       <Route path="/submission-history" element={<RequireAuth><RouteStatusPage title="Lịch sử nộp bài" /></RequireAuth>} />
       <Route path="/flashcards" element={<RequireAuth><RouteStatusPage title="Flashcard của tôi" /></RequireAuth>} />
