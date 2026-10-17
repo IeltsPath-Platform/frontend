@@ -14,23 +14,7 @@ export interface PassageSelection {
   ranges: TextHighlight[]
 }
 
-export interface PracticeFlashcard {
-  id: string
-  testId: string
-  word: string
-  meaning: string
-  example: string
-  image?: string
-  createdAt: string
-}
-
 export type ReadingFilterType = 'all' | 'uncompleted' | 'completed'
-
-export type ReadingSubcategory =
-  | 'passage-1'
-  | 'passage-2'
-  | 'passage-3'
-  | 'full-test'
 
 export type ResourceSource =
   | 'ielts-space-pro'
@@ -43,10 +27,10 @@ export interface PracticeCard {
   title: string
   subtitle?: string
   passageBadge: string // 'Passage 1', 'Passage 2', 'Passage 3'
-  tag: 'MIỄN PHÍ' | 'PRO'
   skill: SkillType
   readingType?: 'passage-1' | 'passage-2' | 'passage-3' | 'full'
-  imageUrl: string
+  /** Cover of the test as the library stores it; absent when the test has none. */
+  imageUrl?: string
   bulletPoints: string[]
   questionsCount?: number
   partsCount?: number
@@ -54,6 +38,16 @@ export interface PracticeCard {
   votesCount?: number
   isCompleted?: boolean
   source?: ResourceSource
+}
+
+export interface PracticeFlashcard {
+  id: string
+  testId: string
+  word: string
+  meaning: string
+  example: string
+  image?: string
+  createdAt: string
 }
 
 export interface PracticeNote {
