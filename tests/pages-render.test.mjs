@@ -313,11 +313,41 @@ test('Writing provides a split prompt and editor with live writing aids', async 
   assert.doesNotMatch(html, /data-scroll-parallax/)
 })
 
-test('Speaking renders cue, controls and recording feedback without accessing a microphone on SSR', async () => {
-  const html = await render('/src/features/practice/pages/SpeakingPage.tsx', 'SpeakingPage', { onExit() {} }, '/practice/speaking/favourite-place')
-  assert.match(html, /Describe a place you enjoy visiting/)
+test('Speaking renders the library questions, controls and recording feedback without accessing a microphone on SSR', async () => {
+  const task = {
+    packageId: 'p', packageVersionId: 'v', sectionId: 's', packageTitle: 'Speaking Practice Test 1',
+    title: 'Part 2: Technology', partNo: 2, timeLimitSeconds: 240,
+    instructions: 'You have one minute to prepare, then speak for one to two minutes on the topic on the card.',
+    questions: [{
+      questionVersionId: 'q1', sortOrder: 1, durationSeconds: 120,
+      prompt: 'Describe a piece of technology you use every day. You should say: what it is, how often you use it, and explain why it is important to you.',
+    }],
+  }
+  const html = await render('/src/features/practice/pages/SpeakingPage.tsx', 'SpeakingPage', { task, onExit() {} }, '/practice/speaking/tasks/v/s')
+  assert.match(html, /Describe a piece of technology you use every day\./)
+  assert.match(html, /how often you use it/)
+  assert.match(html, /Part 2: Technology/)
+  assert.match(html, /up to 2 minutes/)
+  assert.doesNotMatch(html, /Describe a place you enjoy visiting/)
   for (const label of ['Start Recording', 'Stop', 'Playback', 'Speaking time']) assert.ok(html.includes(label))
   assert.doesNotMatch(html, /data-scroll-parallax/)
+})
+
+test('a Speaking part with several questions shows one at a time and moves between them', async () => {
+  const task = {
+    packageId: 'p', packageVersionId: 'v', sectionId: 's', packageTitle: 'Speaking Practice Test 1',
+    title: 'Part 1: Hometown', partNo: 1, timeLimitSeconds: 300, instructions: 'Answer each question in about 20-30 seconds.',
+    questions: [
+      { questionVersionId: 'q1', sortOrder: 1, durationSeconds: 30, prompt: 'Where is your hometown?' },
+      { questionVersionId: 'q2', sortOrder: 2, durationSeconds: 30, prompt: 'What do you like about it?' },
+    ],
+  }
+  const html = await render('/src/features/practice/pages/SpeakingPage.tsx', 'SpeakingPage', { task, onExit() {}, nextPartPath: '/practice/speaking/tasks/v/next' }, '/practice/speaking/tasks/v/s')
+  assert.match(html, /Where is your hometown\?/)
+  assert.doesNotMatch(html, /What do you like about it\?/)
+  assert.match(html, /Question 1 \/ 2/)
+  assert.match(html, /Câu sau/)
+  assert.doesNotMatch(html, /Sang phần tiếp theo/)
 })
 
 test('workspace uses document scroll and keeps desktop side panels sticky without scroll animation', () => {

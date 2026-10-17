@@ -115,6 +115,9 @@
 .speaking-cue-card ul { display: grid; gap: .7rem; margin: 1.5rem 0 0; padding: 0; list-style: none; }
 .speaking-cue-card li { display: flex; align-items: baseline; gap: .6rem; color: var(--site-text-dark); line-height: 1.55; }
 .speaking-cue-card li::before { inline-size: .5rem; block-size: .5rem; flex: 0 0 auto; border-radius: 50%; background: var(--site-blue); content: ''; }
+.speaking-question-nav { display: flex; flex-wrap: wrap; gap: .75rem; margin-block-start: 1.5rem; }
+.speaking-next-part { margin: 1rem 0 0; }
+.speaking-next-part a { color: var(--site-blue); font-weight: 700; }
 .recording-interface { display: grid; justify-items: center; gap: 1rem; text-align: center; }
 .recording-interface h2 { margin: 0; color: var(--site-text-dark); font-size: 1.5rem; }
 .recording-microphone { display: grid; place-items: center; inline-size: 7.5rem; block-size: 7.5rem; border: 1px solid var(--classroom-border); border-radius: 50%; background: var(--classroom-soft); color: var(--site-blue); }
