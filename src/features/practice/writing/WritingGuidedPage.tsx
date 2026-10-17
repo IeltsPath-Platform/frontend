@@ -8,8 +8,8 @@ import { useGradeFlow } from './useGradeFlow'
 
 const CATALOG_PATH = '/practice-tests?skill=writing'
 
-/** The hint panel: theory, a sentence frame and useful phrases of the current step, and on request a sample. */
-function HintPanel({ step, sampleShown, onShowSample, complete }: { step: GuideStep; sampleShown: boolean; onShowSample: () => void; complete: boolean }) {
+/** The hint panel: the theory of the current step. Sentence frame, useful phrases and sample are not shown yet; they will come from the API. */
+function HintPanel({ step, complete }: { step: GuideStep; complete: boolean }) {
   if (complete) {
     return (
       <div className="ww-hint">
@@ -23,13 +23,6 @@ function HintPanel({ step, sampleShown, onShowSample, complete }: { step: GuideS
       <h2 className="ww-hint-title"><Lightbulb size={15} aria-hidden="true" /> Gợi ý · Bước {step.no}</h2>
       <h3>LÝ THUYẾT</h3>
       <p>{step.theory}</p>
-      <h3>CẤU TRÚC GỢI Ý</h3>
-      <p className="ww-hint-frame">{step.structure}</p>
-      <h3>TỪ VỰNG GỢI Ý</h3>
-      <ul className="ww-chips">{step.vocabulary.map((item) => <li key={item.en} title={item.vi}>{item.en}</li>)}</ul>
-      {sampleShown
-        ? <blockquote className="ww-sample">{step.example}</blockquote>
-        : <button type="button" className="ww-link" onClick={onShowSample}>Xem câu mẫu ›</button>}
     </div>
   )
 }
@@ -40,12 +33,10 @@ export function WritingGuidedPage({ task, steps }: { task: WritingTask; steps: G
   const initial = useMemo(() => loadDraft(draftKey), [draftKey])
   const [sentences, setSentences] = useState<string[]>(() => steps.map((_, index) => initial?.texts[index] ?? ''))
   const [current, setCurrent] = useState(() => Math.min(initial?.step ?? 0, steps.length))
-  const [hints, setHints] = useState(initial?.hints ?? 0)
-  const [sampleFor, setSampleFor] = useState<number | null>(null)
   const [seconds, setSeconds] = useState(initial?.seconds ?? 0)
   const [eyeComfort, setEyeComfort] = useState(false)
   const [fontSize, setFontSize] = useState<WorkspaceFontSize>('medium')
-  const stateRef = useRef({ sentences, current, hints, seconds })
+  const stateRef = useRef({ sentences, current, seconds })
   const essay = joinSteps(steps, sentences)
   const words = countWords(essay)
   const complete = current >= steps.length
@@ -55,11 +46,10 @@ export function WritingGuidedPage({ task, steps }: { task: WritingTask; steps: G
     benefits: ['Band tổng và điểm 4 tiêu chí', 'Bài viết được đánh dấu lỗi và đối chiếu với từng bước', 'Gợi ý sửa và việc nên làm trước'],
     extraChecks: [
       { text: `${Math.min(current, steps.length)}/${steps.length} bước hoàn thành`, ok: complete },
-      { text: `Đã dùng ${hints} lần Gợi ý`, ok: true },
     ],
   })
 
-  useEffect(() => { stateRef.current = { sentences, current, hints, seconds } }, [sentences, current, hints, seconds])
+  useEffect(() => { stateRef.current = { sentences, current, seconds } }, [sentences, current, seconds])
   useEffect(() => {
     const id = window.setInterval(() => setSeconds((value) => value + 1), 1000)
     return () => window.clearInterval(id)
@@ -67,24 +57,18 @@ export function WritingGuidedPage({ task, steps }: { task: WritingTask; steps: G
   useEffect(() => {
     const id = window.setInterval(() => {
       const state = stateRef.current
-      saveDraft(draftKey, { texts: state.sentences, seconds: state.seconds, step: state.current, hints: state.hints })
+      saveDraft(draftKey, { texts: state.sentences, seconds: state.seconds, step: state.current })
     }, 5000)
     return () => window.clearInterval(id)
   }, [draftKey])
 
-  function showSample(index: number) {
-    if (sampleFor !== index) setHints((value) => value + 1)
-    setSampleFor(index)
-  }
-
   function next() {
     if (!sentences[current]?.trim()) return
-    setSampleFor(null)
     setCurrent((value) => Math.min(steps.length, Math.max(value, current + 1)))
   }
 
   function finish() {
-    saveDraft(draftKey, { texts: sentences, seconds, step: current, hints })
+    saveDraft(draftKey, { texts: sentences, seconds, step: current })
     grade.start()
   }
 
@@ -118,7 +102,7 @@ export function WritingGuidedPage({ task, steps }: { task: WritingTask; steps: G
                   <span className="ww-step-dot" aria-hidden="true">{done ? '✓' : locked ? <Lock size={10} /> : step.no}</span>
                   <div className="ww-step-body">
                     <p className="ww-step-name"><span>{step.no} · {step.section}</span> — {step.title}
-                      {done && <button type="button" className="ww-edit" onClick={() => { setCurrent(index); setSampleFor(null) }}><Pencil size={11} aria-hidden="true" /> Sửa</button>}
+                      {done && <button type="button" className="ww-edit" onClick={() => setCurrent(index)}><Pencil size={11} aria-hidden="true" /> Sửa</button>}
                     </p>
                     {done && <p className="ww-step-text">{sentences[index]}</p>}
                     {isCurrent && (
@@ -128,7 +112,6 @@ export function WritingGuidedPage({ task, steps }: { task: WritingTask; steps: G
                           onChange={(event) => setSentences((values) => values.map((value, i) => (i === index ? event.target.value : value)))} />
                         <div className="ww-step-foot">
                           <span className="ww-muted">{countWords(sentences[index] ?? '')} từ</span>
-                          <button type="button" className="ww-secondary" onClick={() => showSample(index)}><Lightbulb size={13} aria-hidden="true" /> Gợi ý</button>
                           <button type="button" className="ww-primary" disabled={!sentences[index]?.trim()} onClick={next}>Tiếp tục</button>
                         </div>
                       </>
@@ -145,7 +128,7 @@ export function WritingGuidedPage({ task, steps }: { task: WritingTask; steps: G
         </section>
 
         <WritingDictionaryPanel>
-          <HintPanel step={complete ? steps[steps.length - 1]! : active} complete={complete} sampleShown={!complete && sampleFor === current} onShowSample={() => showSample(current)} />
+          <HintPanel step={complete ? steps[steps.length - 1]! : active} complete={complete} />
         </WritingDictionaryPanel>
       </div>
       {grade.dialogs}
