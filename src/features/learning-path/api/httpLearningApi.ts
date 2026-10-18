@@ -7,6 +7,7 @@ import {
   mapCourseSummary,
   mapLessonCompletion,
   mapLessonDetail,
+  mapLessonExerciseResult,
   mapLessonPracticeSets,
   mapPracticeAttemptView,
   mapPracticeSubmission,
@@ -23,6 +24,7 @@ import {
   type LearnerAttemptResultDto,
   type LessonCompletionDto,
   type LessonDetailDto,
+  type LessonExerciseResultDto,
   type LessonPracticeSetsDto,
   type PracticeAttemptViewDto,
   type PracticeSubmissionResultDto,
@@ -329,6 +331,14 @@ export function createHttpLearningApi(): LearningApi {
         body: {},
       })
       return mapLessonCompletion(dto)
+    },
+
+    async submitLessonExercise(lessonId, blockId, request) {
+      const dto = await learningRequest<LessonExerciseResultDto>(
+        `/lessons/${lessonId}/exercises/${blockId}/submissions`,
+        { method: 'POST', body: { requestId: request.requestId, answers: toWireAnswers(request.answers) } },
+      )
+      return mapLessonExerciseResult(dto)
     },
 
     async getReview(reviewId: string): Promise<ReviewDetail> {

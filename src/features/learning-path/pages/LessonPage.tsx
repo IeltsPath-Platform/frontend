@@ -6,6 +6,7 @@ import {
   BookOpenText,
   CheckCircle2,
   CircleDot,
+  ClipboardList,
   Dumbbell,
   FolderOpen,
   Loader2,
@@ -19,6 +20,7 @@ import type { LessonResourcesResponse, LessonTab } from '~types/lesson'
 import { learningApi, toApiError } from '../api'
 import { USE_MOCK_LEARNING } from '@/lib/env'
 import { LearnTrail } from '../components/LearnTrail'
+import { LessonExercises } from '../components/LessonExercises'
 import { LessonPractice } from '../components/LessonPractice'
 import { courseTopicPath, topicPagePath, type ReviewOrigin } from '../lib/routes'
 import { hasRequiredPractice, lessonPath, lessonPracticePath } from '../lib/lessonPractice'
@@ -46,7 +48,7 @@ const TABS: readonly TabEntry[] = [
 ]
 
 function parseTab(value: string | null): LessonTab {
-  return value === 'summary' || value === 'documents' || value === 'practice' ? value : 'slides'
+  return value === 'summary' || value === 'documents' || value === 'exercises' || value === 'practice' ? value : 'slides'
 }
 
 export function LessonPage() {
@@ -57,10 +59,10 @@ export function LessonPage() {
   if (resource.status === 'loading') return <LoadingState label="Đang tải bài học…" />
   if (resource.status === 'error' && resource.error) return <ApiErrorState error={resource.error} onRetry={resource.reload} />
   if (!resource.data) return null
-  return <LessonView key={resource.data.id} lesson={resource.data} />
+  return <LessonView key={resource.data.id} lesson={resource.data} onLessonChanged={resource.reload} />
 }
 
-type LessonState = 'review' | 'practice' | 'done' | 'reading'
+type LessonState = 'review' | 'exercises' | 'practice' | 'done' | 'reading'
 
 interface StateCopy {
   label: string
@@ -77,6 +79,13 @@ function stateCopy(state: LessonState, review: ReviewRef | undefined, hasNext: b
         hint: `Hoàn thành bài ôn “${review?.knowledgePointTitle ?? ''}” để học tiếp.`,
         tone: 'warning',
         icon: ShieldAlert,
+      }
+    case 'exercises':
+      return {
+        label: 'Cần làm bài tập',
+        hint: 'Làm đạt các bài tập của bài để hoàn thành bài và mở phần tiếp theo.',
+        tone: 'warning',
+        icon: ClipboardList,
       }
     case 'practice':
       return { label: 'Cần đạt phần Luyện tập', hint: 'Đạt phần Luyện tập để hoàn thành bài và mở bài tiếp theo.', tone: 'warning', icon: ShieldAlert }
@@ -99,7 +108,7 @@ function stateCopy(state: LessonState, review: ReviewRef | undefined, hasNext: b
   }
 }
 
-export function LessonView({ lesson }: { lesson: LessonDetail }) {
+export function LessonView({ lesson, onLessonChanged }: { lesson: LessonDetail; onLessonChanged?: () => void }) {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const tab = parseTab(searchParams.get('view'))
@@ -143,11 +152,16 @@ export function LessonView({ lesson }: { lesson: LessonDetail }) {
   }
 
   const hasReview = Boolean(lessonReviews.data?.length)
-  const state: LessonState = activeReview ? 'review' : done ? 'done' : requiresPractice ? 'practice' : 'reading'
+  // A lesson with exercises is completed by passing them; the "Hoàn thành bài" confirmation is only for the others.
+  const exerciseCount = (lesson.blocks ?? []).filter((block) => block.type === 'EXERCISE').length
+  const hasExercises = exerciseCount > 0
+  const exercisesPath = `${path}?view=exercises`
+  const state: LessonState = activeReview ? 'review' : done ? 'done'
+    : hasExercises ? 'exercises' : requiresPractice ? 'practice' : 'reading'
   const copy = stateCopy(state, activeReview, hasNext)
   // Practice and review actions are available in the lesson's Practice section, and a completed lesson needs no card:
   // the card only carries the "Hoàn thành bài" action of a lesson being read.
-  const showProgress = state === 'reading'
+  const showProgress = state === 'reading' || state === 'exercises'
   const StateIcon = copy.icon
 
   async function completeLesson() {
@@ -165,6 +179,10 @@ export function LessonView({ lesson }: { lesson: LessonDetail }) {
         navigate(practicePath)
         return
       }
+      if (apiError.code === 'LESSON_HAS_EXERCISES') {
+        navigate(exercisesPath)
+        return
+      }
       reportApiError(apiError)
       setError(`${apiError.message} Hãy thử lại.`)
       completeInFlight.current = false
@@ -176,6 +194,7 @@ export function LessonView({ lesson }: { lesson: LessonDetail }) {
   const action = requiresPractice === null && !done && !activeReview ? null : (
     <PrimaryAction
       completing={completing}
+      exercisesPath={exercisesPath}
       onComplete={completeLesson}
       practicePath={practicePath}
       reviewId={activeReview?.reviewId}
@@ -183,6 +202,12 @@ export function LessonView({ lesson }: { lesson: LessonDetail }) {
       state={state}
     />
   )
+
+  // An exercise reports back here: passing the last one completes the lesson, which the page and its siblings show.
+  function exercisesChanged() {
+    onLessonChanged?.()
+    reloadSiblings()
+  }
 
   // The Practice reports back here, so the side navigation and the lesson's state follow what the learner just did.
   function practiceChanged() {
@@ -192,6 +217,9 @@ export function LessonView({ lesson }: { lesson: LessonDetail }) {
   }
 
   function panel() {
+    if (tab === 'exercises') {
+      return <LessonExercises blocks={lesson.blocks ?? []} lessonId={lesson.id} onChanged={exercisesChanged} />
+    }
     if (tab === 'practice') {
       return <LessonPractice lessonId={lesson.id} onChanged={practiceChanged} reviewOrigin={reviewOrigin} />
     }
@@ -205,7 +233,7 @@ export function LessonView({ lesson }: { lesson: LessonDetail }) {
     return <LessonSlides slides={resources.data.slides} />
   }
 
-  const current = TABS.find((entry) => entry.tab === tab) ?? { label: 'Luyện tập' }
+  const current = TABS.find((entry) => entry.tab === tab) ?? { label: tab === 'exercises' ? 'Bài tập' : 'Luyện tập' }
 
   return (
     <article className="lp-page lp-lesson-page lp-res-page" aria-labelledby="lp-lesson-title">
@@ -257,6 +285,18 @@ export function LessonView({ lesson }: { lesson: LessonDetail }) {
                 </Link>
               )
             })}
+            {hasExercises || tab === 'exercises' ? (
+              <Link
+                className={`lp-res-nav__link${tab === 'exercises' ? ' is-active' : ''}`}
+                to={exercisesPath}
+                replace
+                aria-current={tab === 'exercises' ? 'page' : undefined}
+              >
+                <ClipboardList aria-hidden="true" size={17} />
+                <span>Bài tập</span>
+                {exerciseCount ? <small>{exerciseCount}</small> : null}
+              </Link>
+            ) : null}
             {requiresPractice || tab === 'practice' ? (
               <Link
                 className={`lp-res-nav__link${tab === 'practice' ? ' is-active' : ''}${hasReview ? ' has-review' : ''}`}
@@ -312,6 +352,7 @@ function PrimaryAction({
   reviewId,
   reviewOrigin,
   completing,
+  exercisesPath,
   practicePath,
   onComplete,
 }: {
@@ -319,6 +360,7 @@ function PrimaryAction({
   reviewId?: string
   reviewOrigin?: ReviewOrigin
   completing: boolean
+  exercisesPath: string
   practicePath: string
   onComplete: () => void
 }) {
@@ -327,6 +369,17 @@ function PrimaryAction({
       <Button asChild className="lp-btn lp-btn--accent lp-btn--cta lp-btn--block">
         <Link to={`/learn/reviews/${reviewId}`} state={reviewOrigin ? { reviewOrigin } : undefined}>
           Làm bài ôn
+          <ArrowRight aria-hidden="true" size={16} />
+        </Link>
+      </Button>
+    )
+  }
+
+  if (state === 'exercises') {
+    return (
+      <Button asChild className="lp-btn lp-btn--accent lp-btn--cta lp-btn--block">
+        <Link to={exercisesPath}>
+          Làm bài tập
           <ArrowRight aria-hidden="true" size={16} />
         </Link>
       </Button>

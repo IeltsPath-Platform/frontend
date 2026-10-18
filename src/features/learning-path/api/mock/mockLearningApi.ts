@@ -90,6 +90,9 @@ export function createMockLearningApi({ storage = null, latencyMs = 0, now = () 
       practicePassReason: 'NO_PRACTICE',
       items: [],
     }),
+    submitLessonExercise: async () => {
+      throw new ApiError(404, 'NOT_FOUND', 'Mock learning không có bài tập trong bài học. Dùng HTTP thật để làm bài tập.')
+    },
     startPracticeAttempt: async () => {
       throw new ApiError(404, 'NOT_FOUND', 'Mock learning không có practice set. Dùng HTTP thật để luyện thêm.')
     },

@@ -1,0 +1,87 @@
+import { useState } from 'react'
+import type {
+  AnswerInput,
+  AudioBlockData,
+  ExerciseBlockData,
+  GamificationSummary,
+  LessonBlock,
+  PassageBlockData,
+} from '~types/learningPath'
+import { learningApi, toApiError } from '../api'
+import { newRequestId } from '../lib/requestId'
+import { reportApiError } from '../lib/reviewGate'
+import { useApiResource } from '../lib/useApiResource'
+import { AudioBlock } from './blocks/AudioBlock'
+import { ExerciseBlock, type GradedOutcome } from './blocks/ExerciseBlock'
+import { PassageBlock } from './blocks/PassageBlock'
+import { HeartsPanel } from './HeartsPanel'
+import { RewardSummary } from './RewardSummary'
+
+interface LessonExercisesProps {
+  lessonId: string
+  blocks: LessonBlock[]
+  /** Called after an answer was graded, so the page can refresh the lesson and the side navigation. */
+  onChanged: () => void
+}
+
+/** The lesson's passages, audio and exercises, in the order Content gives them. Passing every exercise completes the lesson. */
+export function LessonExercises({ lessonId, blocks, onChanged }: LessonExercisesProps) {
+  // The hearts are an extra: if they cannot be read, the exercises still open and the server refuses them when needed.
+  const hearts = useApiResource('hearts', () => learningApi.getHearts())
+  const [rewards, setRewards] = useState<Record<string, GamificationSummary | null>>({})
+
+  async function submit(block: ExerciseBlockData, answers: AnswerInput[]): Promise<GradedOutcome> {
+    try {
+      const result = await learningApi.submitLessonExercise(lessonId, block.id, { requestId: newRequestId(), answers })
+      setRewards((current) => ({ ...current, [block.id]: result.gamification }))
+      // Wrong answers cost hearts, so what is left has changed.
+      if ((result.gamification?.heartsLost ?? 0) > 0) hearts.reload()
+      onChanged()
+      const correctCount = result.results.filter((item) => item.correct).length
+      const totalCount = block.questions.length
+      return {
+        passed: result.blockPassed,
+        percent: totalCount === 0 ? 0 : Math.round((correctCount / totalCount) * 100),
+        correctCount,
+        totalCount,
+        results: result.results,
+      }
+    } catch (reason) {
+      const apiError = toApiError(reason)
+      reportApiError(apiError)
+      if (apiError.code === 'HEARTS_DEPLETED') hearts.reload()
+      throw apiError
+    }
+  }
+
+  const exercises = blocks.filter(isExercise)
+  if (exercises.length === 0) {
+    return <p className="lp-empty">Bài học này chưa có bài tập. Bấm “Hoàn thành bài” để ghi nhận tiến độ.</p>
+  }
+
+  return (
+    <div className="lp-lesson-exercises">
+      {hearts.data?.hearts === 0 ? <HeartsPanel onChanged={hearts.reload} status={hearts.data} /> : null}
+      {blocks.map((block) => {
+        if (isExercise(block)) {
+          return (
+            <div key={block.id}>
+              <ExerciseBlock block={block} onSubmit={(answers) => submit(block, answers)} />
+              <RewardSummary gamification={rewards[block.id] ?? null} />
+            </div>
+          )
+        }
+        if (isAudio(block)) return <AudioBlock key={block.id} audio={block} />
+        return <PassageBlock key={block.id} passage={block as PassageBlockData} />
+      })}
+    </div>
+  )
+}
+
+function isExercise(block: LessonBlock): block is ExerciseBlockData {
+  return block.type === 'EXERCISE'
+}
+
+function isAudio(block: LessonBlock): block is AudioBlockData {
+  return block.type === 'ASSET' && block.assetType === 'AUDIO'
+}
