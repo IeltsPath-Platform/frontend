@@ -32,6 +32,9 @@ import { TopicListPage } from '@/features/learning-path/pages/TopicListPage'
 import { TopicTestPage } from '@/features/learning-path/pages/TopicTestPage'
 import { TopicTestResultPage } from '@/features/learning-path/pages/TopicTestResultPage'
 import { getPracticeMode } from '@/features/practice/lib/passageTools'
+import { CommunityPage } from '@/features/community/pages/CommunityPage'
+import { NotificationPreferencesPage } from '@/features/community/pages/NotificationPreferencesPage'
+import { ContentReportsAdminPage } from '@/features/community/pages/ContentReportsAdminPage'
 import type { PracticeMode, SkillType } from '@/types/practice'
 import './app.css'
 import '@/features/practice/practice.css'
@@ -46,6 +49,11 @@ function AppContent() {
       <Route path="/" element={<Navigate replace to={isLoggedIn ? '/overview' : '/home'} />} />
       <Route path="/home" element={<HomePage />} />
       <Route path="/overview" element={<RequireAuth><OverviewPage /></RequireAuth>} />
+      <Route path="/community" element={<RequireAuth><CommunityPage /></RequireAuth>} />
+      <Route path="/community/admin/reports" element={<RequireAuth><ContentReportsAdminPage /></RequireAuth>} />
+      <Route path="/notifications/preferences" element={<RequireAuth><NotificationPreferencesPage /></RequireAuth>} />
+      <Route path="/community/posts/:postId" element={<RequireAuth><CommunityPage /></RequireAuth>} />
+      <Route path="/community/users/:userId" element={<RequireAuth><CommunityPage /></RequireAuth>} />
       <Route path="/vocabulary/review" element={<RequireAuth><VocabularyReviewPage /></RequireAuth>} />
       <Route path="/classroom" element={<RequireAuth><ClassroomPage /></RequireAuth>} />
       <Route path="/learn" element={<RequireAuth><LearnLayout /></RequireAuth>}>

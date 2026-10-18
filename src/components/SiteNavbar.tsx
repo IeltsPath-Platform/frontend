@@ -4,6 +4,7 @@ import { Menu, X } from 'lucide-react'
 import { BRAND_LOGO_URL } from './brandLogo'
 import { UserTierDropdown } from './UserTierDropdown'
 import { logoutSession, setDemoTier, useAuthSession } from '@/features/auth/authSession'
+import { NotificationBell } from '@/features/community/components/NotificationBell'
 
 interface NavChild { to: string; label: string }
 interface NavItem { to: string; label: string; children?: readonly NavChild[] }
@@ -49,6 +50,7 @@ const guestNavigation: readonly NavItem[] = [
 ]
 
 const memberNavigation: readonly NavItem[] = [
+  { to: '/community', label: 'Cộng đồng' },
   {
     to: '/home',
     label: 'Trang chủ',
@@ -183,6 +185,9 @@ export function SiteNavbar({ isLoggedIn, userName }: SiteNavbarProps) {
             ))}
           </div>
           <div className="site-nav-actions">
+            {activeIsLoggedIn ? (
+              <NotificationBell enabled={activeIsLoggedIn} />
+            ) : null}
             {activeIsLoggedIn ? (
               <UserTierDropdown
                 className="site-user-tier-dropdown"
