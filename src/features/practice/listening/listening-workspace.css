@@ -1,0 +1,69 @@
+/* Listening practice workspace: the Reading frame with the recording bar under the top bar and a single column of questions. */
+
+.lw-root { grid-template-rows: auto auto minmax(0, 1fr) auto; }
+
+.lw-audio {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0 0.9rem 0.6rem;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--rw-line);
+  border-radius: 999px;
+  background: var(--rw-surface);
+}
+
+.lw-audio-play {
+  display: inline-grid;
+  place-items: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  border: 0;
+  border-radius: 50%;
+  background: var(--rw-accent);
+  color: #ffffff;
+}
+
+.lw-audio-play:disabled { background: #94a3b8; cursor: not-allowed; }
+
+.lw-audio-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.25rem 0.4rem;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--rw-ink);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.lw-audio-step:hover { background: #eff6ff; }
+.lw-audio-time { min-width: 2.6rem; color: var(--rw-muted); font-size: 0.76rem; font-variant-numeric: tabular-nums; text-align: center; }
+.lw-audio-seek { flex: 1; min-width: 4rem; accent-color: var(--rw-accent); }
+.lw-audio-volume { display: inline-flex; align-items: center; gap: 0.3rem; color: var(--rw-muted); }
+.lw-audio-volume input { width: 5rem; accent-color: var(--rw-accent); }
+.lw-audio-rate { padding: 0.2rem 0.3rem; border: 1px solid var(--rw-line); border-radius: 6px; background: var(--rw-surface); color: var(--rw-ink); font-size: 0.76rem; }
+.lw-audio-error { color: #b91c1c; font-size: 0.78rem; }
+
+.lw-body { grid-template-columns: 6.5rem minmax(0, 1fr); }
+.lw-body.rw-body-exam { grid-template-columns: minmax(0, 1fr); }
+
+.lw-main {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  min-height: 0;
+  min-width: 0;
+}
+
+.lw-title { margin: 0 0 0.3rem; font-size: 1.05rem; font-weight: 700; }
+.lw-instructions { margin: 0 0 0.6rem; color: var(--rw-muted); font-size: calc(var(--rw-text-size) - 0.08rem); line-height: 1.5; }
+.lw-main .rw-questions { grid-row: 3; }
+.lw-tool-on { background: #fef3c7; border-color: #f59e0b; }
+
+@media (max-width: 900px) {
+  .lw-audio { flex-wrap: wrap; border-radius: 12px; margin: 0 0.6rem 0.5rem; }
+  .lw-audio-seek { order: 5; flex-basis: 100%; }
+  .lw-body, .lw-body.rw-body-exam { grid-template-columns: minmax(0, 1fr); }
+}

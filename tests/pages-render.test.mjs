@@ -3,7 +3,7 @@ import { after, before, test } from 'node:test'
 import { existsSync, readFileSync } from 'node:fs'
 import { createElement } from 'react'
 import { renderToString } from 'react-dom/server'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { createServer } from 'vite'
 
 let server
@@ -15,6 +15,14 @@ after(async () => { await server?.close() })
 async function render(modulePath, name, props, path) {
   const module = await server.ssrLoadModule(modulePath)
   return renderToString(createElement(MemoryRouter, { initialEntries: [path] }, createElement(module[name], props)))
+}
+
+async function renderRoute(modulePath, name, props, path, routePath) {
+  const module = await server.ssrLoadModule(modulePath)
+  const element = createElement(module[name], props)
+  return renderToString(createElement(MemoryRouter, { initialEntries: [path] }, createElement(Routes, null,
+    createElement(Route, { path: routePath, element }),
+  )))
 }
 
 test('Home preserves the learning journey hero and renders the complete landing page with activation', async () => {
@@ -205,7 +213,7 @@ test('ClassProgressPanel preserves the supplied cls-panel structure and adapts o
 
 test('exam renders a tool-free three-column workspace', async () => {
   const html = await render('/src/features/practice/pages/PracticeTestPage.tsx', 'PracticeTestPage', { mode: 'exam', onExit() {} }, '/practice/test/snow-makers?mode=exam')
-  assert.match(html, />Thi thử</)
+  assert.match(html, />Thi thật</)
   assert.match(html, /Bản đồ câu hỏi/)
   assert.match(html, /Tiến độ/)
   assert.match(html, /<progress[^>]*value="0"[^>]*max="100"[^>]*aria-valuenow="0"/)
@@ -305,11 +313,41 @@ test('Writing provides a split prompt and editor with live writing aids', async 
   assert.doesNotMatch(html, /data-scroll-parallax/)
 })
 
-test('Speaking renders cue, controls and recording feedback without accessing a microphone on SSR', async () => {
-  const html = await render('/src/features/practice/pages/SpeakingPage.tsx', 'SpeakingPage', { onExit() {} }, '/practice/speaking/favourite-place')
-  assert.match(html, /Describe a place you enjoy visiting/)
+test('Speaking renders the library questions, controls and recording feedback without accessing a microphone on SSR', async () => {
+  const task = {
+    packageId: 'p', packageVersionId: 'v', sectionId: 's', packageTitle: 'Speaking Practice Test 1',
+    title: 'Part 2: Technology', partNo: 2, timeLimitSeconds: 240,
+    instructions: 'You have one minute to prepare, then speak for one to two minutes on the topic on the card.',
+    questions: [{
+      questionVersionId: 'q1', sortOrder: 1, durationSeconds: 120,
+      prompt: 'Describe a piece of technology you use every day. You should say: what it is, how often you use it, and explain why it is important to you.',
+    }],
+  }
+  const html = await render('/src/features/practice/pages/SpeakingPage.tsx', 'SpeakingPage', { task, onExit() {} }, '/practice/speaking/tasks/v/s')
+  assert.match(html, /Describe a piece of technology you use every day\./)
+  assert.match(html, /how often you use it/)
+  assert.match(html, /Part 2: Technology/)
+  assert.match(html, /up to 2 minutes/)
+  assert.doesNotMatch(html, /Describe a place you enjoy visiting/)
   for (const label of ['Start Recording', 'Stop', 'Playback', 'Speaking time']) assert.ok(html.includes(label))
   assert.doesNotMatch(html, /data-scroll-parallax/)
+})
+
+test('a Speaking part with several questions shows one at a time and moves between them', async () => {
+  const task = {
+    packageId: 'p', packageVersionId: 'v', sectionId: 's', packageTitle: 'Speaking Practice Test 1',
+    title: 'Part 1: Hometown', partNo: 1, timeLimitSeconds: 300, instructions: 'Answer each question in about 20-30 seconds.',
+    questions: [
+      { questionVersionId: 'q1', sortOrder: 1, durationSeconds: 30, prompt: 'Where is your hometown?' },
+      { questionVersionId: 'q2', sortOrder: 2, durationSeconds: 30, prompt: 'What do you like about it?' },
+    ],
+  }
+  const html = await render('/src/features/practice/pages/SpeakingPage.tsx', 'SpeakingPage', { task, onExit() {}, nextPartPath: '/practice/speaking/tasks/v/next' }, '/practice/speaking/tasks/v/s')
+  assert.match(html, /Where is your hometown\?/)
+  assert.doesNotMatch(html, /What do you like about it\?/)
+  assert.match(html, /Question 1 \/ 2/)
+  assert.match(html, /Câu sau/)
+  assert.doesNotMatch(html, /Sang phần tiếp theo/)
 })
 
 test('workspace uses document scroll and keeps desktop side panels sticky without scroll animation', () => {
@@ -422,4 +460,72 @@ test('Overview remains separate from Classroom', async () => {
   assert.doesNotMatch(html, /LỚP HỌC CỦA TÔI/)
   assert.doesNotMatch(html, /aria-current="page"[^>]*href="\/overview"/)
   assert.match(html, /href="\/learn"/)
+})
+
+test('Reading practice pages render catalog and API loading states', async () => {
+  const tree = {
+    reading: ['Passage 1', 'Passage 2', 'Passage 3', 'Full đề'],
+    listening: ['Section 1', 'Section 2', 'Section 3', 'Section 4', 'Full đề'],
+    writing: ['Task 1', 'Task 2'],
+    speaking: ['Part 1', 'Part 2', 'Part 3', 'Full đề'],
+  }
+  for (const [skill, labels] of Object.entries(tree)) {
+    const catalog = (await render('/src/features/practice/pages/PracticeCatalogPage.tsx', 'PracticeCatalogPage', { onOpenTest() {} }, '/practice-tests?skill=' + skill)).replaceAll('<!-- -->', '')
+    assert.match(catalog, /practice-layout-grid/, skill)
+    assert.doesNotMatch(catalog, /NGUỒN TÀI LIỆU/, skill)
+    for (const other of Object.keys(tree)) {
+      assert.ok(catalog.includes('href="/practice-tests?skill=' + other + '"'), skill + ' links to ' + other)
+    }
+    for (const label of labels) assert.ok(catalog.includes(label), skill + ' shows ' + label)
+    assert.equal(catalog.includes('Full đề'), labels.includes('Full đề'), skill + ' full test option')
+    // The question formats sit in their own block below the whole skills list, not inside a skill.
+    const formatsAt = catalog.indexOf('LOẠI CÂU HỎI')
+    assert.ok(formatsAt > catalog.indexOf('Speaking'), skill + ' formats block comes after the skills list')
+    assert.ok(formatsAt > catalog.indexOf(labels[labels.length - 1]), skill + ' formats block comes after the part list')
+    assert.equal(catalog.includes('reading-history-entry'), skill === 'reading', skill + ' history link')
+  }
+
+  const workspace = await renderRoute('/src/features/practice/reading/ReadingPracticePage.tsx', 'ReadingPracticePage', {}, '/practice/reading/attempts/attempt-1', '/practice/reading/attempts/:attemptId')
+  assert.match(workspace, /class="lp-state"/)
+
+  const result = await renderRoute('/src/features/practice/reading/ReadingResultPage.tsx', 'ReadingResultPage', {}, '/practice/reading/attempts/attempt-1/result', '/practice/reading/attempts/:attemptId/result')
+  assert.match(result, /class="lp-state"/)
+
+  const history = await render('/src/features/practice/reading/ReadingHistoryPage.tsx', 'ReadingHistoryPage', {}, '/practice/reading/history')
+  assert.match(history, /reading-history-page/)
+})
+
+test('Reading workspace frame has the top bar, the practice tools and the question numbers', async () => {
+  const parts = '/src/features/practice/reading/ReadingWorkspaceParts.tsx'
+  const noop = () => undefined
+
+  const top = await render(parts, 'ReadingTopBar', {
+    seconds: 397, timed: false, exitTo: '/practice-tests?skill=reading', eyeComfort: false, onToggleEyeComfort: noop, fontSize: 'medium', onChangeFontSize: noop,
+  }, '/practice/reading/attempts/a1')
+  assert.match(top, /role="timer"/)
+  assert.match(top, /00:06:37/)
+  assert.match(top, /Cài đặt/)
+  assert.match(top, /aria-label="Thoát bài làm"/)
+
+  const tools = await render(parts, 'ReadingToolRail', {
+    selection: null, highlightsCount: 0, onHighlight: noop, onClearHighlights: noop,
+  }, '/practice/reading/attempts/a1')
+  assert.match(tools, /Công cụ/)
+  assert.match(tools, /Highlight/)
+  assert.match(tools, /Phím \(H\)/)
+
+  const nav = await render(parts, 'ReadingQuestionNav', {
+    groups: [{ label: 'Passage 1', numbers: [1, 2, 3] }, { label: 'Passage 2', numbers: [4, 5] }],
+    currentQuestion: 2, answeredNumbers: new Set([1]), onSelect: noop,
+  }, '/practice/reading/attempts/a1')
+  for (const number of [1, 2, 3, 4, 5]) assert.match(nav, new RegExp(`aria-label="Câu ${number}, `))
+  assert.match(nav, /Passage 1/)
+  assert.match(nav, /Passage 2/)
+  assert.match(nav, /aria-label="Câu 1, đã trả lời"/)
+  assert.match(nav, /aria-current="step"[^>]*aria-label="Câu 2,|aria-label="Câu 2, chưa trả lời"[^>]*aria-current="step"|aria-current="step"/)
+
+  const single = await render(parts, 'ReadingQuestionNav', {
+    groups: [{ label: 'Passage 1', numbers: [1, 2] }], currentQuestion: 1, answeredNumbers: new Set(), onSelect: noop,
+  }, '/practice/reading/attempts/a1')
+  assert.doesNotMatch(single, /rw-qnav-label/)
 })

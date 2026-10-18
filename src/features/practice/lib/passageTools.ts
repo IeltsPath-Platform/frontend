@@ -26,8 +26,13 @@ export function mergeHighlights(ranges: TextHighlight[]): TextHighlight[] {
 export function readPassageSelection(root: HTMLElement | null): PassageSelection | null {
   const selection = window.getSelection()
   if (!root || !selection || selection.isCollapsed || !selection.rangeCount) return null
-  const range = selection.getRangeAt(0)
-  if (!root.contains(range.startContainer) || !root.contains(range.endContainer)) return null
+  const range = selection.getRangeAt(0).cloneRange()
+  const startInside = root.contains(range.startContainer)
+  const endInside = root.contains(range.endContainer)
+  // A drag that began or ended outside the passage keeps the part that lies inside it.
+  if (!startInside && !endInside) return null
+  if (!startInside) range.setStart(root, 0)
+  if (!endInside) range.setEnd(root, root.childNodes.length)
   const ranges: TextHighlight[] = []
   const parts: string[] = []
   root.querySelectorAll<HTMLElement>('[data-passage-text]').forEach((paragraph) => {

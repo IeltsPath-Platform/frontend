@@ -23,7 +23,13 @@ function answerOf(payload: string): string | null {
  * `saved` are the responses the server already holds (GET .../responses); a resumed attempt starts from them and
  * sends their revisions, so its next save does not conflict.
  */
-export function useAttemptAnswers(attemptId: string, saved: AttemptItemResponse[] = []) {
+export function useAttemptAnswers(
+  attemptId: string,
+  saved: AttemptItemResponse[] = [],
+  saveResponse: (attemptId: string, itemId: string, answer: string, expectedRevision: number) => Promise<{ revision: number }> = async (id, itemId, answer, expectedRevision) => learningApi.saveItemResponse(id, itemId, {
+    payload: JSON.stringify({ answer }), schemaVersion: 1, expectedRevision,
+  }),
+) {
   const [initial] = useState(() => {
     const answers: AnswerMap = {}
     const revisions: Record<string, number> = {}
@@ -53,11 +59,7 @@ export function useAttemptAnswers(attemptId: string, saved: AttemptItemResponse[
       if (!value || savedValues.current[itemId] === value) return true
       if (mounted.current) setSaveStates((current) => ({ ...current, [itemId]: 'saving' }))
       try {
-        const response = await learningApi.saveItemResponse(attemptId, itemId, {
-          payload: JSON.stringify({ answer: value }),
-          schemaVersion: 1,
-          expectedRevision: revisions.current[itemId] ?? 0,
-        })
+        const response = await saveResponse(attemptId, itemId, value, revisions.current[itemId] ?? 0)
         revisions.current[itemId] = response.revision
         savedValues.current[itemId] = value
         if (mounted.current) setSaveStates((current) => ({ ...current, [itemId]: 'saved' }))
