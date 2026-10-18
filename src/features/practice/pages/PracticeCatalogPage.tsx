@@ -194,8 +194,21 @@ function PracticeCatalog({ skill, onOpenTest }: PracticeCatalogPageProps & { ski
     navigate(`/practice/writing/tasks/${card.packageVersionId}/${target.sectionId}?mode=${mode}`)
   }
 
+  /** A Speaking part opens the recording workspace; a full test lists its parts so each leads to the next. */
+  function startSpeaking(card: ReadingTestCard) {
+    const ordered = [...card.parts].sort((a, b) => (a.partNo ?? 0) - (b.partNo ?? 0))
+    const target = card.scope === 'PART' ? ordered.find((item) => item.partNo === partNo) ?? ordered[0] : ordered[0]
+    if (!target) return
+    const parts = card.scope === 'PART' ? '' : `?parts=${ordered.map((item) => item.sectionId).join(',')}`
+    navigate(`/practice/speaking/tasks/${card.packageVersionId}/${target.sectionId}${parts}`)
+  }
+
   function startTest(card: ReadingTestCard, mode: PracticeMode) {
-    // Reading and Listening run on real attempts; Writing and Speaking still open their sample workspaces.
+    if (skill === 'speaking') {
+      startSpeaking(card)
+      return
+    }
+    // Reading and Listening run on real attempts; any other skill opens its own workspace.
     if (skill !== 'reading' && skill !== 'listening') {
       onOpenTest(skill, card.packageId, mode)
       return
