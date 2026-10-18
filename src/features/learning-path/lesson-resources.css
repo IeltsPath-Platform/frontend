@@ -1,0 +1,707 @@
+/* The lesson page: slides, summary, documents and the embedded Practice. Uses the .lp-root tokens. */
+
+.lp-res-layout {
+  display: grid;
+  gap: 1.5rem;
+}
+@media (min-width: 1025px) {
+  .lp-res-layout {
+    grid-template-columns: minmax(0, 1fr) 18.5rem;
+    align-items: start;
+    gap: 2.5rem;
+  }
+}
+.lp-res-main {
+  display: grid;
+  gap: 1.25rem;
+  min-width: 0;
+}
+/* The content links come first on small screens, then the lesson; the progress card is replaced there by the bottom bar. */
+.lp-res-rail {
+  display: grid;
+  gap: 1rem;
+  order: -1;
+}
+.lp-res-progress {
+  display: none;
+}
+@media (min-width: 1025px) {
+  .lp-res-rail {
+    order: 0;
+    position: sticky;
+    top: var(--lp-sticky-top);
+  }
+  .lp-res-progress {
+    display: grid;
+  }
+}
+
+/* The lesson title is a card as wide as the content under it, not bare text over the page background.
+   The heading of a Practice set is a card too, since the workspace under it has no card around it; so is a review's. */
+.lp-res-main > .lp-lesson-head,
+.lp-practice-attempt-head,
+.lp-review-head {
+  padding: 1.25rem;
+  border: 1px solid var(--lp-line);
+  border-radius: var(--lp-radius);
+  background: var(--lp-surface);
+  box-shadow: var(--lp-shadow);
+}
+
+.lp-practice:has(.lp-split) {
+  display: grid;
+  gap: 1rem;
+}
+.lp-res-card {
+  display: grid;
+  gap: 1rem;
+  padding: 1.25rem;
+  border: 1px solid var(--lp-line);
+  border-radius: var(--lp-radius);
+  background: var(--lp-surface);
+  box-shadow: var(--lp-shadow);
+}
+
+.lp-res-nav {
+  display: grid;
+  gap: .35rem;
+  padding: 1rem;
+  border: 1px solid var(--lp-line);
+  border-radius: var(--lp-radius);
+  background: var(--lp-surface);
+  box-shadow: var(--lp-shadow);
+}
+.lp-res-nav__label {
+  margin: 0 0 .25rem;
+  color: var(--lp-accent);
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.lp-res-nav__link {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  min-height: 44px;
+  padding: .5rem .7rem;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: var(--lp-muted);
+  font-size: .9rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background .16s ease, color .16s ease;
+}
+.lp-res-nav__link:hover {
+  background: var(--lp-soft);
+  color: var(--lp-primary);
+}
+.lp-res-nav__link.is-active {
+  border-color: #ffd9bd;
+  background: var(--lp-accent-soft);
+  box-shadow: inset 3px 0 var(--lp-accent);
+  color: var(--lp-accent-ink);
+  font-weight: 750;
+}
+/* A pending review of the lesson: the Practice entry carries a small red warning under its name */
+.lp-res-nav__text {
+  display: grid;
+  gap: .1rem;
+  min-width: 0;
+}
+.lp-res-nav__warn {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  color: var(--lp-danger);
+  font-size: .74rem;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1.3;
+}
+.lp-res-nav__link.has-review > svg {
+  color: var(--lp-danger);
+}
+.lp-res-nav__link small {
+  margin-left: auto;
+  padding: .1rem .5rem;
+  border-radius: 999px;
+  background: var(--lp-locked-soft);
+  color: var(--lp-muted);
+  font-size: .72rem;
+  font-weight: 700;
+}
+
+.lp-res-empty {
+  margin: 0;
+  padding: 1.25rem;
+  border: 1px dashed var(--lp-line);
+  border-radius: 12px;
+  color: var(--lp-muted);
+  text-align: center;
+}
+
+.lp-res-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: .6rem;
+}
+.lp-res-toolbar__title {
+  color: var(--lp-muted);
+  font-size: .9rem;
+  font-weight: 650;
+}
+.lp-res-tabs,
+.lp-res-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+}
+.lp-res-tab,
+.lp-res-action {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  min-height: 38px;
+  padding: .4rem .8rem;
+  border: 1px solid var(--lp-line);
+  border-radius: 10px;
+  background: var(--lp-surface);
+  color: var(--lp-muted);
+  font: inherit;
+  font-size: .85rem;
+  font-weight: 650;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background .16s ease, color .16s ease, border-color .16s ease;
+}
+.lp-res-tab:hover,
+.lp-res-action:hover {
+  background: var(--lp-soft);
+  color: var(--lp-primary);
+}
+.lp-res-tab.is-active {
+  border-color: var(--lp-primary);
+  background: var(--lp-soft);
+  color: var(--lp-primary);
+}
+.lp-res-frame {
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 1px solid var(--lp-line);
+  border-radius: 12px;
+  background: var(--lp-canvas);
+}
+.lp-res-iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+.lp-res-fallback {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: .75rem;
+  height: 100%;
+  color: var(--lp-muted);
+}
+.lp-res-fallback p {
+  margin: 0;
+}
+
+.lp-res-docs {
+  display: grid;
+  gap: .6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.lp-res-doc {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  min-height: 52px;
+  padding: .7rem 1rem;
+  border: 1px solid var(--lp-line);
+  border-radius: 12px;
+  background: var(--lp-surface);
+  color: var(--lp-ink);
+  font-weight: 600;
+  text-decoration: none;
+  transition: border-color .16s ease, background .16s ease;
+}
+.lp-res-doc:hover {
+  border-color: var(--lp-primary);
+  background: var(--lp-soft);
+}
+.lp-res-doc > span:first-of-type {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.lp-res-doc__action {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  color: var(--lp-primary);
+  font-size: .85rem;
+}
+
+.lp-res-markdown {
+  color: var(--lp-ink);
+  font-size: .98rem;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.lp-res-markdown > :first-child {
+  margin-top: 0;
+}
+.lp-res-markdown h1,
+.lp-res-markdown h2,
+.lp-res-markdown h3 {
+  margin: 1.6rem 0 .6rem;
+  padding-left: .7rem;
+  border-left: 4px solid var(--lp-accent);
+  font-family: var(--lp-display);
+  font-weight: 750;
+  line-height: 1.3;
+}
+.lp-res-markdown h1,
+.lp-res-markdown h2 {
+  font-size: 1.15rem;
+}
+.lp-res-markdown h3 {
+  font-size: 1.02rem;
+}
+.lp-res-markdown p,
+.lp-res-markdown ul,
+.lp-res-markdown ol {
+  margin: .6rem 0;
+}
+.lp-res-markdown ul,
+.lp-res-markdown ol {
+  padding-left: 1.4rem;
+}
+.lp-res-markdown li {
+  margin: .25rem 0;
+}
+.lp-res-markdown table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+}
+.lp-res-markdown th,
+.lp-res-markdown td {
+  padding: .5rem .8rem;
+  border: 1px solid var(--lp-line);
+  text-align: left;
+}
+.lp-res-markdown th {
+  background: var(--lp-soft);
+  color: var(--lp-primary);
+}
+.lp-res-markdown blockquote {
+  margin: 1rem 0;
+  padding: .8rem 1rem;
+  border-radius: 12px;
+  background: var(--lp-primary);
+  color: #fff;
+}
+.lp-res-markdown blockquote p {
+  margin: 0;
+}
+.lp-res-markdown code {
+  padding: .1em .35em;
+  border-radius: 6px;
+  background: var(--lp-soft);
+  font-size: .9em;
+}
+.lp-res-markdown a {
+  color: var(--lp-primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-res-nav__link,
+  .lp-res-tab,
+  .lp-res-action,
+  .lp-res-doc {
+    transition: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Lesson summary: a banner and one collapsible card per heading. Shapes come from the Markdown
+   (see components/resources/summary-shapes.ts), so any lesson's summary uses the same look.
+   --------------------------------------------------------------------------------------------- */
+.lp-sum {
+  display: grid;
+  gap: 1.1rem;
+  min-width: 0;
+}
+.lp-sum__banner {
+  display: grid;
+  gap: .15rem;
+  padding: 1.1rem 1.4rem 1.2rem;
+  border-radius: 18px;
+  color: #fff;
+  background:
+    radial-gradient(120% 140% at 100% 0, rgb(255 255 255 / 26%), transparent 55%),
+    linear-gradient(100deg, #ff6a1a, #f4b042);
+  box-shadow: 0 10px 26px rgb(255 118 36 / 22%);
+}
+.lp-sum__banner span {
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  opacity: .85;
+}
+.lp-sum__banner strong {
+  font-family: var(--lp-display);
+  font-size: clamp(1.3rem, 2.6vw, 1.7rem);
+  line-height: 1.2;
+}
+.lp-sum__banner p {
+  margin: 0;
+  font-size: .9rem;
+  opacity: .92;
+}
+
+.lp-sum__sections {
+  overflow: hidden;
+  border: 1px solid var(--lp-line);
+  border-radius: 18px;
+  background: var(--lp-surface);
+}
+.lp-sum__section + .lp-sum__section {
+  border-top: 1px solid var(--lp-line);
+}
+.lp-sum__head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: .75rem;
+  width: 100%;
+  margin: 0;
+  padding: 1rem 1.25rem;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  background: none;
+  cursor: pointer;
+  transition: background-color .15s ease;
+}
+.lp-sum__head:hover {
+  background: color-mix(in srgb, var(--lp-soft) 55%, transparent);
+}
+.lp-sum__heading {
+  display: grid;
+  gap: .1rem;
+  min-width: 0;
+}
+.lp-sum__heading small {
+  color: var(--lp-muted);
+  font-size: .68rem;
+  font-weight: 750;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.lp-root .lp-sum__heading h3 {
+  margin: 0;
+  font-size: 1.12rem;
+  line-height: 1.3;
+}
+.lp-sum__count {
+  padding: .2rem .65rem;
+  border-radius: 999px;
+  color: var(--lp-muted);
+  font-size: .78rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  background: var(--lp-locked-soft);
+  white-space: nowrap;
+}
+.lp-sum__chevron {
+  color: var(--lp-primary);
+  transition: transform .25s var(--lp-ease);
+}
+.lp-sum__section.is-open .lp-sum__chevron {
+  transform: rotate(180deg);
+}
+.lp-sum__panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows .28s var(--lp-ease);
+}
+.lp-sum__panel[data-open='true'] {
+  grid-template-rows: 1fr;
+}
+.lp-sum__panel-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+.lp-sum__body {
+  display: grid;
+  gap: .9rem;
+  padding: .1rem 1.25rem 1.3rem;
+  color: var(--lp-ink);
+  font-size: .96rem;
+  line-height: 1.65;
+}
+.lp-sum__body > p {
+  margin: 0;
+}
+.lp-root .lp-sum__sub {
+  margin: .3rem 0 0;
+  font-size: .98rem;
+}
+.lp-sum__body a {
+  color: var(--lp-primary);
+  text-underline-offset: 3px;
+}
+.lp-sum__body code {
+  padding: .05rem .35rem;
+  border-radius: 6px;
+  font-size: .9em;
+  background: var(--lp-soft);
+}
+
+/* Numbered steps */
+.lp-sum-steps {
+  display: grid;
+  gap: .55rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+}
+.lp-sum-steps > li {
+  display: grid;
+  grid-template-columns: 1.7rem minmax(0, 1fr);
+  align-items: start;
+  gap: .75rem;
+  counter-increment: step;
+}
+.lp-sum-steps > li::before {
+  content: counter(step);
+  display: grid;
+  place-items: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 50%;
+  color: var(--lp-primary);
+  font-size: .8rem;
+  font-weight: 800;
+  background: var(--lp-soft);
+}
+
+/* Definition cards (grammar points, idioms, key points) */
+.lp-sum-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+  gap: .75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.lp-sum-card {
+  display: grid;
+  align-content: start;
+  gap: .45rem;
+  padding: .85rem .95rem;
+  border: 1px solid var(--lp-line);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--lp-soft) 35%, var(--lp-surface));
+}
+.lp-sum-card__head {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  margin: 0;
+}
+.lp-sum-card__no {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 1.45rem;
+  height: 1.45rem;
+  border-radius: 7px;
+  color: var(--lp-primary);
+  font-size: .76rem;
+  font-weight: 800;
+  background: var(--lp-soft);
+}
+.lp-sum-card__text {
+  margin: 0;
+  color: var(--lp-muted);
+  font-size: .9rem;
+  line-height: 1.5;
+}
+.lp-sum-card__example {
+  display: block;
+  padding: .35rem .6rem;
+  border-left: 3px solid var(--lp-primary);
+  border-radius: 6px;
+  color: var(--lp-primary-strong);
+  font-size: .88rem;
+  font-style: italic;
+  background: var(--lp-soft);
+}
+.lp-sum-card__example::before { content: '\201C'; }
+.lp-sum-card__example::after { content: '\201D'; }
+
+/* Word groups */
+.lp-sum-groups {
+  display: grid;
+  gap: .9rem;
+}
+.lp-sum-group {
+  --tone: #2447c0;
+  --tone-soft: #e7edff;
+  display: grid;
+  gap: .45rem;
+}
+.lp-sum-group--green { --tone: #13845a; --tone-soft: #e3f5ec; }
+.lp-sum-group--red { --tone: #c2332b; --tone-soft: #fdeceb; }
+.lp-sum-group--violet { --tone: #6b4fcf; --tone-soft: #efeaff; }
+.lp-sum-group--amber { --tone: #a95a00; --tone-soft: #fff1d9; }
+.lp-sum-group__label {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin: 0;
+  font-size: .9rem;
+  font-weight: 750;
+}
+.lp-sum-group__label i {
+  width: .55rem;
+  height: .55rem;
+  border-radius: 50%;
+  background: var(--tone);
+}
+.lp-sum-group__label span {
+  color: var(--lp-muted);
+  font-weight: 600;
+}
+.lp-sum-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.lp-sum-chips li {
+  padding: .22rem .8rem;
+  border-radius: 999px;
+  color: var(--tone);
+  font-size: .86rem;
+  font-weight: 600;
+  background: var(--tone-soft);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tone) 18%, transparent);
+}
+
+/* Tick grid (collocations) */
+.lp-sum-checks {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+  gap: .5rem .75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.lp-sum-checks li {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  padding: .5rem .8rem;
+  border-radius: 10px;
+  font-size: .92rem;
+  background: color-mix(in srgb, var(--lp-soft) 45%, var(--lp-surface));
+}
+.lp-sum-checks svg {
+  flex: none;
+  color: var(--lp-success);
+}
+
+/* Plain bullets */
+.lp-sum-bullets {
+  display: grid;
+  gap: .4rem;
+  margin: 0;
+  padding: 0 0 0 1.1rem;
+  list-style: disc;
+}
+.lp-sum-bullets li::marker {
+  color: var(--lp-primary);
+}
+.lp-sum__nested {
+  margin: .3rem 0 0;
+  padding-left: 1.1rem;
+}
+
+/* Table */
+.lp-sum-table {
+  overflow-x: auto;
+  border: 1px solid var(--lp-line);
+  border-radius: 12px;
+}
+.lp-sum-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .92rem;
+}
+.lp-sum-table th,
+.lp-sum-table td {
+  padding: .55rem .8rem;
+  text-align: left;
+}
+.lp-sum-table th {
+  color: var(--lp-muted);
+  font-size: .76rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  background: color-mix(in srgb, var(--lp-soft) 60%, var(--lp-surface));
+}
+.lp-sum-table tbody tr + tr td {
+  border-top: 1px solid var(--lp-line);
+}
+
+/* Note (blockquote) */
+.lp-sum-note {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: .75rem;
+  padding: .95rem 1.1rem;
+  border-radius: 14px;
+  color: #e9eeff;
+  background: linear-gradient(110deg, #0d2b8d, #1b47d6);
+}
+.lp-sum-note svg {
+  margin-top: .15rem;
+  color: #ffd9a3;
+}
+.lp-sum-note p {
+  margin: 0;
+  font-size: .92rem;
+  line-height: 1.6;
+}
+.lp-sum-note strong {
+  color: #fff;
+}
+.lp-sum-note a {
+  color: #fff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-sum__panel,
+  .lp-sum__chevron {
+    transition: none;
+  }
+}

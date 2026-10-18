@@ -4,14 +4,11 @@ import type {
   AttemptItemResponse,
   AttemptResult,
   AttemptStructure,
-  ExerciseSubmissionRequest,
-  ExerciseSubmissionResult,
   LessonCompletionResult,
   LessonDetail,
   LessonStatus,
   Question,
   QuestionResult,
-  RawBlock,
   ReviewDetail,
   ReviewRef,
   ReviewStatus,
@@ -35,6 +32,7 @@ export type TopicSummaryDto = {
   sequenceOrder: number
   status: TopicStatus
   completedLessonCount: number
+  totalLessonCount: number
   accessLevel?: 'FREE' | 'PREMIUM'
   skill?: string | null
   course?: { courseId: string; code: string; name: string; bandLevel: number } | null
@@ -47,6 +45,9 @@ export type CourseSummaryDto = {
   bandLevel: number
   topicCount: number
   passedTopicCount: number
+  completedLessonCount?: number
+  totalLessonCount?: number
+  lastStudiedAt?: string | null
   recommended: boolean
   testStatus: TestStatus
 }
@@ -59,6 +60,8 @@ export type LessonSummaryDto = {
   status: LessonStatus
   practiceStatus?: 'LOCKED' | 'REQUIRED' | 'PASSED' | null
   practicePassReason?: string | null
+  estimatedMinutes?: number | null
+  blockingReviewId?: string | null
 }
 
 export type TopicLessonsDto = {
@@ -81,48 +84,6 @@ export type QuestionDto = {
   hint?: string | null
 }
 
-export type SolutionDto = {
-  questionVersionId: string
-  correctAnswer: string
-  explanation: string
-}
-
-export type AssetDto = {
-  id?: string
-  assetType: string
-  textContent?: string | null
-  mediaUrl?: string | null
-  durationSeconds?: number | null
-  transcript?: string | null
-}
-
-export type LessonBlockDto = {
-  blockId: string
-  blockType: string
-  blockKind?: string
-  sortOrder: number
-  passed?: boolean
-  textContent?: string
-  asset?: AssetDto
-  questions?: QuestionDto[]
-  solutions?: SolutionDto[]
-  question?: {
-    questionVersionId: string
-    stem: string
-    task: string
-    minWords: number
-    passBand: number
-    images?: Array<{ mediaUrl: string; altText: string }>
-  }
-  latestSubmission?: {
-    id: string
-    status: string
-    overallBand: number | null
-    passed: boolean | null
-  } | null
-  sampleAnswer?: string | null
-}
-
 export type LessonDetailDto = {
   lessonId: string
   topicId: string
@@ -131,19 +92,6 @@ export type LessonDetailDto = {
   summary?: string | null
   sortOrder: number
   status: LessonStatus
-  blocks: LessonBlockDto[]
-}
-
-export type ExerciseSubmissionResultDto = {
-  blockPassed: boolean
-  lessonCompleted: boolean
-  results: Array<{
-    questionVersionId: string
-    correct: boolean
-    correctAnswer?: string
-    explanation?: string
-    hint?: string | null
-  }>
 }
 
 export type LessonCompletionDto = {
@@ -155,6 +103,7 @@ export type ReviewRefDto = {
   reviewId: string
   lessonId: string
   knowledgePointId: string
+  sourcePackageId?: string | null
 }
 
 export type ReviewSetDto = {
@@ -176,16 +125,42 @@ export type ReviewDetailDto = {
   theoryReason?: string | null
   theoryScope?: string | null
   failedSets?: number
-  maxFailedSets?: number
-  quickCheck?: QuestionDto[] | null
+  maxFailedSets?: number | null
   knowledgePointId?: string
   skill?: string
+}
+
+/** `gamification` of a submission response; the hearts fields are null or absent for a submission that costs no hearts. */
+export type GamificationDto = {
+  xpEarned: number
+  xpCapped?: boolean
+  totalXp: number
+  level: number
+  leveledUp?: boolean
+  heartsLost?: number | null
+  heartsRemaining?: number | null
+  nextHeartAt?: string | null
+}
+
+export function mapGamification(dto: GamificationDto | null | undefined): import('~types/learningPath').GamificationSummary | null {
+  if (!dto) return null
+  return {
+    xpEarned: dto.xpEarned,
+    xpCapped: dto.xpCapped === true,
+    totalXp: dto.totalXp,
+    level: dto.level,
+    leveledUp: dto.leveledUp === true,
+    heartsLost: dto.heartsLost ?? null,
+    heartsRemaining: dto.heartsRemaining ?? null,
+    nextHeartAt: dto.nextHeartAt ?? null,
+  }
 }
 
 export type ReviewSubmissionResultDto = {
   reviewStatus: ReviewStatus
   stage?: 'PRACTICE' | 'THEORY'
   failedSets?: number
+  gamification?: GamificationDto | null
   results: Array<{
     questionVersionId: string
     correct: boolean
@@ -253,6 +228,7 @@ export type PracticeSubmissionResultDto = {
     hint?: string | null
   }>
   reviewsCreated?: Array<{ reviewId: string; knowledgePointId: string; stage?: string }>
+  gamification?: GamificationDto | null
 }
 
 export type TestAssignmentDto = {
@@ -310,108 +286,6 @@ function mapQuestionResult(dto: {
   }
 }
 
-function mapSolution(dto: SolutionDto): QuestionResult {
-  return mapQuestionResult({
-    questionVersionId: dto.questionVersionId,
-    correct: true,
-    correctAnswer: dto.correctAnswer,
-    explanation: dto.explanation,
-  })
-}
-
-function mapBlock(dto: LessonBlockDto): RawBlock {
-  if (dto.blockType === 'TEXT') {
-    return {
-      id: dto.blockId,
-      sortOrder: dto.sortOrder,
-      type: 'TEXT',
-      text: dto.textContent ?? '',
-    }
-  }
-
-  if (dto.blockType === 'ASSET') {
-    const asset = dto.asset
-    const assetType = asset?.assetType ?? 'PASSAGE'
-    if (assetType === 'PASSAGE') {
-      const text = asset?.textContent ?? ''
-      return {
-        id: dto.blockId,
-        sortOrder: dto.sortOrder,
-        type: 'ASSET',
-        assetType: 'PASSAGE',
-        mediaUrl: null,
-        title: '',
-        paragraphs: text ? [{ label: null, text }] : [],
-      }
-    }
-    if (assetType === 'AUDIO' && asset?.mediaUrl) {
-      return {
-        id: dto.blockId,
-        sortOrder: dto.sortOrder,
-        type: 'ASSET',
-        assetType: 'AUDIO',
-        mediaUrl: asset.mediaUrl,
-        durationSeconds: asset.durationSeconds ?? null,
-        transcript: asset.transcript ?? null,
-      }
-    }
-    return {
-      id: dto.blockId,
-      sortOrder: dto.sortOrder,
-      type: 'ASSET',
-      assetType,
-      mediaUrl: asset?.mediaUrl ?? null,
-      title: '',
-      paragraphs: [],
-    }
-  }
-
-  if (dto.blockType === 'EXERCISE' && dto.blockKind === 'ESSAY' && dto.question) {
-    return {
-      id: dto.blockId,
-      sortOrder: dto.sortOrder,
-      type: 'EXERCISE',
-      blockKind: 'ESSAY',
-      title: 'Bài luận Writing',
-      questionVersionId: dto.question.questionVersionId,
-      stem: dto.question.stem,
-      task: dto.question.task,
-      minWords: dto.question.minWords,
-      passBand: dto.question.passBand,
-      images: (dto.question.images ?? []).map((image) => ({
-        mediaUrl: image.mediaUrl,
-        altText: image.altText,
-      })),
-      latestSubmission: dto.latestSubmission ?? null,
-      sampleAnswer: dto.sampleAnswer ?? null,
-    }
-  }
-
-  if (dto.blockType === 'EXERCISE') {
-    const questions = (dto.questions ?? []).map(mapQuestion)
-    const passed = dto.passed === true
-    return {
-      id: dto.blockId,
-      sortOrder: dto.sortOrder,
-      type: 'EXERCISE',
-      blockKind: 'EXERCISE',
-      title: 'Bài tập',
-      instructions: '',
-      knowledgePointCode: '',
-      questions,
-      state: passed ? 'PASSED' : 'NOT_ATTEMPTED',
-      savedAnswers: null,
-      solutions: passed && dto.solutions ? dto.solutions.map(mapSolution) : null,
-    }
-  }
-
-  return {
-    id: dto.blockId,
-    sortOrder: dto.sortOrder,
-    type: dto.blockType,
-  }
-}
-
 export function mapCourseSummary(dto: CourseSummaryDto): CourseSummary {
   return {
     id: dto.courseId,
@@ -420,6 +294,9 @@ export function mapCourseSummary(dto: CourseSummaryDto): CourseSummary {
     bandLevel: Number(dto.bandLevel),
     topicCount: dto.topicCount,
     passedTopicCount: dto.passedTopicCount,
+    completedLessons: dto.completedLessonCount ?? 0,
+    totalLessons: dto.totalLessonCount ?? 0,
+    lastStudiedAt: dto.lastStudiedAt ?? null,
     recommended: dto.recommended,
     testStatus: dto.testStatus,
   }
@@ -438,7 +315,7 @@ export function mapTopicSummary(dto: TopicSummaryDto): TopicSummary {
     sequenceOrder: dto.sequenceOrder,
     status: premium && dto.status !== 'PASSED' ? 'LOCKED' : dto.status,
     completedLessons: dto.completedLessonCount,
-    totalLessons: Math.max(dto.completedLessonCount, 0),
+    totalLessons: dto.totalLessonCount,
     lockedReason: premium && dto.status !== 'PASSED'
       ? 'Topic Premium — chưa mở trong giai đoạn này.'
       : dto.status === 'LOCKED'
@@ -455,9 +332,12 @@ export function mapTopicLessons(dto: TopicLessonsDto, topic: TopicSummary): Topi
     title: lesson.title,
     sortOrder: lesson.sortOrder,
     status: lesson.status,
-    estimatedMinutes: 10,
-    lockedReason: lesson.status === 'LOCKED' ? 'Hoàn thành bài trước để mở.' : null,
+    estimatedMinutes: lesson.estimatedMinutes ?? null,
+    lockedReason: lesson.status !== 'LOCKED' ? null
+      : lesson.blockingReviewId ? 'Mở sau khi hoàn thành bài ôn.' : 'Hoàn thành bài trước để mở.',
+    blockingReviewId: lesson.blockingReviewId ?? null,
     practiceStatus: lesson.practiceStatus ?? null,
+    practicePassReason: lesson.practicePassReason ?? null,
   }))
   const completed = lessons.filter((lesson) => lesson.status === 'COMPLETED').length
   return {
@@ -485,28 +365,6 @@ export function mapLessonDetail(dto: LessonDetailDto, topicTitle: string): Lesso
     title: dto.title,
     sortOrder: dto.sortOrder,
     status: dto.status,
-    blocks: dto.blocks.map(mapBlock),
-    nextLessonId: null,
-    pendingReviews: [],
-  }
-}
-
-export function mapExerciseSubmission(
-  blockId: string,
-  request: ExerciseSubmissionRequest,
-  dto: ExerciseSubmissionResultDto,
-): ExerciseSubmissionResult {
-  const results = dto.results.map(mapQuestionResult)
-  const correctCount = results.filter((result) => result.correct).length
-  const totalCount = results.length || request.answers.length
-  return {
-    blockId,
-    passed: dto.blockPassed,
-    correctCount,
-    totalCount,
-    percent: totalCount === 0 ? 0 : Math.round((correctCount / totalCount) * 100),
-    results,
-    lessonCompleted: dto.lessonCompleted,
     nextLessonId: null,
     pendingReviews: [],
   }
@@ -523,18 +381,29 @@ export function mapLessonCompletion(dto: LessonCompletionDto): LessonCompletionR
 export function mapReviewRef(dto: ReviewRefDto): ReviewRef {
   return {
     reviewId: dto.reviewId,
+    lessonId: dto.lessonId,
+    sourcePackageId: dto.sourcePackageId ?? null,
     knowledgePointCode: dto.knowledgePointId.slice(0, 8),
     knowledgePointTitle: 'Bài ôn bắt buộc',
   }
+}
+
+/**
+ * A passage sent as plain text keeps one paragraph per line. A paragraph that opens with a capital letter and a dot
+ * ("A. Desert plants…") gets that letter as its label, the way IELTS passages name their paragraphs.
+ */
+export function splitPassage(text: string) {
+  return text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean).map((line) => {
+    const label = /^([A-Z])\.\s+/.exec(line)
+    return label ? { label: label[1], text: line.slice(label[0].length) } : { label: null, text: line }
+  })
 }
 
 function mapPassageField(
   passage?: string | { title?: string; paragraphs?: Array<{ label?: string | null; text: string }> } | null,
 ) {
   if (!passage) return { title: '', paragraphs: [] as Array<{ label: string | null; text: string }> }
-  if (typeof passage === 'string') {
-    return { title: '', paragraphs: [{ label: null, text: passage }] }
-  }
+  if (typeof passage === 'string') return { title: '', paragraphs: splitPassage(passage) }
   return {
     title: passage.title ?? '',
     paragraphs: (passage.paragraphs ?? []).map((paragraph) => ({
@@ -545,21 +414,16 @@ function mapPassageField(
 }
 
 export function mapReviewDetail(dto: ReviewDetailDto, topicId: string): ReviewDetail {
-  const theory = (dto.theory ?? []).map((text, index) => ({
-    id: `theory-${index}`,
-    sortOrder: index + 1,
-    type: 'TEXT',
-    text,
-  }))
+  const theory = dto.theory ?? []
   const failedSets = dto.failedSets ?? 0
-  const maxFailedSets = dto.maxFailedSets ?? 2
+  const maxFailedSets = dto.maxFailedSets ?? null
   const stage = dto.stage ?? (dto.set ? 'PRACTICE' : 'THEORY')
 
   const set = dto.set
     ? {
         setId: dto.set.reviewSetId,
         packageCode: dto.set.packageId.slice(0, 8),
-        attemptNumber: Math.min(failedSets + 1, maxFailedSets),
+        attemptNumber: maxFailedSets === null ? failedSets + 1 : Math.min(failedSets + 1, maxFailedSets),
         maxAttempts: maxFailedSets,
         passage: mapPassageField(dto.set.passage),
         audio: dto.set.audio?.mediaUrl
@@ -585,7 +449,6 @@ export function mapReviewDetail(dto: ReviewDetailDto, topicId: string): ReviewDe
     sourceLessonTitle: 'Bài học trước',
     theory,
     set,
-    quickCheck: (dto.quickCheck ?? []).map(mapQuestion),
     failedSets,
     maxFailedSets,
     theoryReason: dto.theoryReason ?? null,
@@ -645,6 +508,7 @@ export function mapPracticeSubmission(dto: PracticeSubmissionResultDto): import(
       knowledgePointId: review.knowledgePointId,
       stage: (review.stage === 'THEORY' ? 'THEORY' : 'PRACTICE') as import('~types/learningPath').ReviewStage,
     })),
+    gamification: mapGamification(dto.gamification),
   }
 }
 
@@ -685,6 +549,7 @@ export function mapReviewSubmission(
     results,
     resumeLessonId,
     topicId,
+    gamification: mapGamification(dto.gamification),
   }
 }
 

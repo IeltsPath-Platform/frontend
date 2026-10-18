@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import type { AttemptItemResult, AttemptResult } from '~types/learningPath'
 import { learningApi } from '../api'
 import { ApiErrorState, LoadingState } from '../components/PageState'
+import { topicPagePath } from '../lib/routes'
 import { useApiResource } from '../lib/useApiResource'
 
 export function TopicTestResultPage() {
@@ -67,7 +68,7 @@ type ResultViewModel = AttemptResult & {
 function ResultView({ result }: { result: ResultViewModel }) {
   const isCourse = Boolean(result.courseId)
   const retryPath = result.topicId
-    ? `/learn/topics/${result.topicId}`
+    ? topicPagePath(result.topicId)
     : result.courseId
       ? `/learn/courses/${result.courseId}`
       : '/learn'
@@ -103,7 +104,7 @@ function ResultView({ result }: { result: ResultViewModel }) {
           <div className="lp-score__actions">
             {result.passed && result.nextTopicId ? (
               <Button asChild className="lp-btn lp-btn--accent">
-                <Link to={`/learn/topics/${result.nextTopicId}`}>
+                <Link to={topicPagePath(result.nextTopicId)}>
                   <Trophy aria-hidden="true" />Sang chặng tiếp theo<ArrowRight aria-hidden="true" />
                 </Link>
               </Button>

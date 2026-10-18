@@ -2,7 +2,9 @@ import { ApiError } from '../apiError'
 import type { LearningApi, MockLearningControls } from '../learningApi'
 import * as lessons from './mockLessonHandlers'
 import { clearState, createInitialState, loadState, saveState, type KeyValueStorage, type MockState } from './mockState'
+import { createMockGamification } from './mockGamification'
 import { pendingReviewRefs } from './mockProgress'
+import { MOCK_TREE_POINTS } from './mockTree'
 import * as tests from './mockTestHandlers'
 
 export interface MockLearningApiOptions {
@@ -16,6 +18,7 @@ export type MockLearningApi = LearningApi & MockLearningControls
 export function createMockLearningApi({ storage = null, latencyMs = 0, now = () => new Date() }: MockLearningApiOptions = {}): MockLearningApi {
   let state: MockState = loadState(storage)
   let serverFailing = false
+  const gamification = createMockGamification()
 
   async function respond<T>(handler: (current: MockState) => T): Promise<T> {
     if (latencyMs > 0) await new Promise((resolve) => setTimeout(resolve, latencyMs))
@@ -63,9 +66,17 @@ export function createMockLearningApi({ storage = null, latencyMs = 0, now = () 
     getPendingReviews: () => respond(pendingReviewRefs),
     getTopicLessons: (topicId) => respond((s) => lessons.getTopicLessons(s, topicId)),
     getLesson: (lessonId) => respond((s) => lessons.getLesson(s, lessonId)),
-    submitExercise: (lessonId, blockId, request) => idempotent(request.requestId, (s) => lessons.submitExercise(s, lessonId, blockId, request)),
-    submitEssay: async () => {
-      throw new ApiError(503, 'GRADING_UNAVAILABLE', 'Mock learning chưa hỗ trợ chấm bài luận. Bật HTTP thật để thử Writing.')
+    getLessonResources: (lessonId) => respond((s) => lessons.getLessonResources(s, lessonId)),
+    ...gamification,
+    // A small fixed tree so the tree screen can be worked on offline; the mock has no practice sets to start from it.
+    getLearnerTree: async (courseId) => ({ courseId, knowledgePoints: MOCK_TREE_POINTS }),
+    startFreePractice: async () => {
+      throw new ApiError(404, 'NOT_FOUND', 'Mock learning không có practice set. Dùng HTTP thật để luyện tự do.')
+    },
+    // The mock has no Practice, so nothing ever costs a heart: the hearts stay full.
+    getHearts: async () => ({ hearts: 5, maxHearts: 5, nextHeartAt: null, refillCost: 5 }),
+    refillHearts: async () => {
+      throw new ApiError(409, 'HEARTS_FULL', 'Tim đã đầy.')
     },
     getWritingSubmission: async () => {
       throw new ApiError(404, 'NOT_FOUND', 'Mock learning không có writing submission.')

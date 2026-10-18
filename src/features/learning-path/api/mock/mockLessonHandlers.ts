@@ -1,25 +1,19 @@
 import type {
   CourseSummary,
-  ExerciseBlockData,
-  ExerciseSubmissionRequest,
-  ExerciseSubmissionResult,
   LessonCompletionResult,
   LessonDetail,
-  RawBlock,
   ReviewDetail,
   ReviewSubmissionRequest,
   ReviewSubmissionResult,
   TopicLessonsResponse,
   TopicSummary,
 } from '~types/learningPath'
-import type { MockLesson, MockLessonBlock } from '@/mocks/learning-path/contentTypes'
+import type { LessonResourcesResponse } from '~types/lesson'
 import { MOCK_TOPICS } from '@/mocks/learning-path/topics'
 import { ApiError } from '../apiError'
 import { answersToMap, gradeAnswers, hasCompleteAnswers, toPublicQuestion } from './grading'
 import {
   assertLessonAccessible,
-  exerciseBlocks,
-  isMockExercise,
   lessonStatus,
   MOCK_COURSE,
   nextLessonId,
@@ -48,6 +42,10 @@ export function listCourses(state: MockState): CourseSummary[] {
     ...MOCK_COURSE,
     topicCount: topics.length,
     passedTopicCount,
+    completedLessons: topics.reduce((sum, topic) => sum + topic.completedLessons, 0),
+    totalLessons: topics.reduce((sum, topic) => sum + topic.totalLessons, 0),
+    // The mock keeps no study times, so it never claims a last visit.
+    lastStudiedAt: null,
     recommended: true,
     testStatus,
   }]
@@ -80,25 +78,6 @@ export function getTopicLessons(state: MockState, topicId: string): TopicLessons
   }
 }
 
-function toPublicBlock(state: MockState, block: MockLessonBlock): RawBlock {
-  if (!isMockExercise(block)) return structuredClone(block)
-  const progress = state.exercises[block.id]
-  const passedAnswers = progress?.state === 'PASSED' ? progress.savedAnswers : null
-  const exercise: ExerciseBlockData = {
-    id: block.id,
-    sortOrder: block.sortOrder,
-    type: 'EXERCISE',
-    title: block.title,
-    instructions: block.instructions,
-    knowledgePointCode: block.knowledgePointCode,
-    questions: block.questions.map(toPublicQuestion),
-    state: progress?.state ?? 'NOT_ATTEMPTED',
-    savedAnswers: passedAnswers ? { ...passedAnswers } : null,
-    solutions: passedAnswers ? gradeAnswers(block.questions, passedAnswers).results : null,
-  }
-  return exercise
-}
-
 export function getLesson(state: MockState, lessonId: string): LessonDetail {
   const lesson = requireLesson(lessonId)
   assertLessonAccessible(state, lesson)
@@ -109,71 +88,27 @@ export function getLesson(state: MockState, lessonId: string): LessonDetail {
     title: lesson.title,
     sortOrder: lesson.sortOrder,
     status: lessonStatus(state, lesson).status,
-    blocks: [...lesson.blocks].sort((a, b) => a.sortOrder - b.sortOrder).map((block) => toPublicBlock(state, block)),
     nextLessonId: nextLessonId(lesson),
     pendingReviews: pendingReviewRefs(state),
   }
 }
 
-function markLessonCompleted(state: MockState, lesson: MockLesson) {
-  state.completedLessons.push(lesson.id)
-  for (const kpCode of state.flaggedKps[lesson.id] ?? []) {
-    if (state.reviews.some((review) => review.kpCode === kpCode)) continue
-    const createdSeq = state.seq++
-    state.reviews.push({
-      id: `review-${kpCode.toLowerCase()}-${createdSeq}`,
-      topicId: lesson.topicId,
-      kpCode,
-      resumeLessonId: nextLessonId(lesson),
-      status: 'PENDING',
-      setIndex: 0,
-      createdSeq,
-    })
-  }
-  delete state.flaggedKps[lesson.id]
-}
-
-export function submitExercise(state: MockState, lessonId: string, blockId: string, request: ExerciseSubmissionRequest): ExerciseSubmissionResult {
+export function getLessonResources(state: MockState, lessonId: string): LessonResourcesResponse {
   const lesson = requireLesson(lessonId)
   assertLessonAccessible(state, lesson)
-  const block = exerciseBlocks(lesson).find((candidate) => candidate.id === blockId)
-  if (!block) throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy khối bài tập.')
-  const progress = state.exercises[block.id] ?? { state: 'NOT_ATTEMPTED', attempts: 0, savedAnswers: null }
-  if (progress.state === 'PASSED') throw new ApiError(422, 'VALIDATION_FAILED', 'Khối bài tập này đã đạt.')
-  const answers = answersToMap(request.answers)
-  if (!hasCompleteAnswers(block.questions, answers)) throw new ApiError(422, 'VALIDATION_FAILED', INCOMPLETE_ANSWERS)
-
-  const outcome = gradeAnswers(block.questions, answers)
-  const isFirstAttempt = progress.attempts === 0
-  if (isFirstAttempt && outcome.correctCount < outcome.totalCount && reviewPackFor(block.knowledgePointCode).length > 0) {
-    state.flaggedKps[lesson.id] = [...new Set([...(state.flaggedKps[lesson.id] ?? []), block.knowledgePointCode])]
-  }
-  state.exercises[block.id] = {
-    state: outcome.passed ? 'PASSED' : 'FAILED',
-    attempts: progress.attempts + 1,
-    savedAnswers: outcome.passed ? answers : null,
-  }
-
-  const allPassed = exerciseBlocks(lesson).every((candidate) => state.exercises[candidate.id]?.state === 'PASSED')
-  const lessonCompleted = outcome.passed && allPassed && !state.completedLessons.includes(lesson.id)
-  if (lessonCompleted) markLessonCompleted(state, lesson)
-
+  const links = (items: typeof lesson.slides) => items.map((item, index) => ({ ...item, sortOrder: index }))
   return {
-    blockId: block.id,
-    ...outcome,
-    lessonCompleted,
-    nextLessonId: nextLessonId(lesson),
-    pendingReviews: pendingReviewRefs(state),
+    lessonId: lesson.id,
+    summaryMarkdown: lesson.summaryMarkdown,
+    slides: links(lesson.slides),
+    documents: links(lesson.documents),
   }
 }
 
 export function completeLesson(state: MockState, lessonId: string): LessonCompletionResult {
   const lesson = requireLesson(lessonId)
   assertLessonAccessible(state, lesson)
-  if (exerciseBlocks(lesson).length > 0) {
-    throw new ApiError(422, 'VALIDATION_FAILED', 'Bài này có bài tập, hãy nộp các khối bài tập để hoàn thành.')
-  }
-  if (!state.completedLessons.includes(lesson.id)) markLessonCompleted(state, lesson)
+  if (!state.completedLessons.includes(lesson.id)) state.completedLessons.push(lesson.id)
   return { lessonCompleted: true, nextLessonId: nextLessonId(lesson), pendingReviews: pendingReviewRefs(state) }
 }
 
@@ -198,7 +133,7 @@ export function getReview(state: MockState, reviewId: string): ReviewDetail {
     stage: 'PRACTICE',
     knowledgePoint: { code: kp.code, title: kp.title },
     sourceLessonTitle: theoryLesson.title,
-    theory: theoryLesson.blocks.filter((block) => block.type === 'TEXT').map((block) => structuredClone(block)),
+    theory: theoryLesson.summaryMarkdown ? [theoryLesson.summaryMarkdown] : [],
     set: set
       ? {
           setId: currentSetId(review),
@@ -210,7 +145,6 @@ export function getReview(state: MockState, reviewId: string): ReviewDetail {
           questions: set.questions.map(toPublicQuestion),
         }
       : null,
-    quickCheck: [],
     failedSets: review.setIndex,
     maxFailedSets: pack.length,
     theoryReason: null,
@@ -242,5 +176,6 @@ export function submitReview(state: MockState, reviewId: string, request: Review
     failedSets: review.setIndex,
     resumeLessonId: review.resumeLessonId,
     topicId: review.topicId,
+    gamification: null,
   }
 }

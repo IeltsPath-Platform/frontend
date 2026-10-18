@@ -7,10 +7,12 @@ import { createServer } from 'vite'
 
 let server
 let createMockLearningApi
+let MOCK_STORAGE_KEY
 
 before(async () => {
   server = await createServer({ server: { middlewareMode: true }, appType: 'custom' })
   ;({ createMockLearningApi } = await server.ssrLoadModule('/src/features/learning-path/api/mock/mockLearningApi.ts'))
+  ;({ MOCK_STORAGE_KEY } = await server.ssrLoadModule('/src/features/learning-path/api/mock/mockState.ts'))
 })
 after(async () => { await server?.close() })
 
@@ -18,34 +20,32 @@ let requestCounter = 0
 const nextRequestId = () => `req-${++requestCounter}`
 const toAnswers = (map) => Object.entries(map).map(([questionId, answer]) => ({ questionId, answer }))
 
-const CORRECT = {
-  'l1-ex': { 'q-l1-1': 'B', 'q-l1-2': 'B', 'q-l1-3': ' Independence ' },
-  'l2-ex': { 'q-l2-4': 'sixteen', 'q-l2-5': 'B', 'q-l2-6': '1869' },
-  'l3-ex-main': { 'q-l3-7': 'C', 'q-l3-8': 'B' },
-  'l3-ex-gap': { 'q-l3-9': 'structural' },
-  'l4-ex': { 'q-l4-10': 'TRUE', 'q-l4-11': 'FALSE' },
-}
-const LESSON_BLOCKS = { 'lesson-l1': ['l1-ex'], 'lesson-l2': ['l2-ex'], 'lesson-l3': ['l3-ex-main', 'l3-ex-gap'], 'lesson-l4': ['l4-ex'] }
+const LESSON_IDS = ['lesson-l1', 'lesson-l2', 'lesson-l3', 'lesson-l4']
 const REVIEW_KP1 = {
   'PS-KP1-A': { right: { 'r-kp1a-1': '1916', 'r-kp1a-2': 'A' }, wrong: { 'r-kp1a-1': '1891', 'r-kp1a-2': 'A' } },
   'PS-KP1-B': { wrong: { 'r-kp1b-1': '18038', 'r-kp1b-2': 'B' } },
   'PS-KP1-C': { wrong: { 'r-kp1c-1': '80', 'r-kp1c-2': 'C' } },
 }
 
-const submit = (api, lessonId, blockId, answers, requestId = nextRequestId()) =>
-  api.submitExercise(lessonId, blockId, { requestId, answers: toAnswers(answers) })
-
-async function passLesson(api, lessonId) {
-  let last
-  for (const blockId of LESSON_BLOCKS[lessonId]) last = await submit(api, lessonId, blockId, CORRECT[blockId])
-  return last
+const memoryStorage = () => {
+  const memory = new Map()
+  return { memory, getItem: (key) => memory.get(key) ?? null, setItem: (key, value) => memory.set(key, value), removeItem: (key) => memory.delete(key) }
 }
 
-async function finishL2WithReview(api) {
-  await passLesson(api, 'lesson-l1')
-  const failed = await submit(api, 'lesson-l2', 'l2-ex', { ...CORRECT['l2-ex'], 'q-l2-5': 'A' })
-  const fixed = await submit(api, 'lesson-l2', 'l2-ex', CORRECT['l2-ex'])
-  return { failed, fixed }
+/** Reviews come from practice and tests, which the mock does not run, so a learner with one is stored directly. */
+function storageWithPendingReview() {
+  const storage = memoryStorage()
+  storage.setItem(MOCK_STORAGE_KEY, JSON.stringify({
+    version: 3,
+    seq: 2,
+    completedLessons: ['lesson-l1', 'lesson-l2'],
+    reviews: [{ id: 'review-kp1-1', topicId: 'topic-demo-reading', kpCode: 'KP1', resumeLessonId: 'lesson-l3', status: 'PENDING', setIndex: 0, createdSeq: 1 }],
+  }))
+  return storage
+}
+
+async function completeLessons(api, ids = LESSON_IDS) {
+  for (const lessonId of ids) await api.completeLesson(lessonId)
 }
 
 async function takeTest(api, topicId, answersByNumber) {
@@ -75,67 +75,28 @@ describe('Lan demo scenario', () => {
     assert.deepEqual(statusesOf(detail), ['AVAILABLE', 'LOCKED', 'LOCKED', 'LOCKED'])
     assert.equal(detail.finalTest.testStatus, 'LOCKED')
     await assert.rejects(api.getLesson('lesson-l2'), { code: 'LESSON_LOCKED', status: 403 })
+    await assert.rejects(api.getLessonResources('lesson-l2'), { code: 'LESSON_LOCKED', status: 403 })
     await assert.rejects(api.getTopicLessons('topic-tfng-skills'), { code: 'TOPIC_LOCKED' })
 
     const l1 = await api.getLesson('lesson-l1')
-    assert.deepEqual(l1.blocks.map((block) => block.type), ['TEXT', 'ASSET', 'EXERCISE'])
-    assert.doesNotMatch(JSON.stringify(l1), /accepted|explanation|correctAnswer/)
-    const l1Result = await passLesson(api, 'lesson-l1')
-    assert.equal(l1Result.lessonCompleted, true)
-    assert.equal(l1Result.nextLessonId, 'lesson-l2')
-    assert.deepEqual(l1Result.pendingReviews, [])
+    assert.equal('blocks' in l1, false, 'a lesson has no blocks; its content is read from the resources')
+    assert.equal(l1.status, 'AVAILABLE')
+    const resources = await api.getLessonResources('lesson-l1')
+    assert.equal(resources.lessonId, 'lesson-l1')
+    assert.match(resources.summaryMarkdown, /paraphrase/)
+    assert.equal(resources.slides.length, 1)
+    assert.match(resources.slides[0].url, /^https:\/\/docs\.google\.com\/presentation\/d\//)
+    assert.deepEqual(resources.documents.map((doc) => doc.sortOrder), [0, 1])
 
-    const l2Fail = await submit(api, 'lesson-l2', 'l2-ex', { ...CORRECT['l2-ex'], 'q-l2-5': 'A' })
-    assert.equal(l2Fail.passed, false)
-    assert.equal(l2Fail.percent, 67)
-    assert.deepEqual(l2Fail.results.map((result) => result.correct), [true, false, true])
-    assert.ok(l2Fail.results.every((result) => !('correctAnswer' in result) && !('explanation' in result)))
-    assert.equal(l2Fail.lessonCompleted, false)
-
-    const l2Pass = await submit(api, 'lesson-l2', 'l2-ex', CORRECT['l2-ex'])
-    assert.equal(l2Pass.passed, true)
-    assert.equal(l2Pass.lessonCompleted, true)
-    assert.equal(l2Pass.results[1].correctAnswer, 'B. Taeping')
-    assert.match(l2Pass.results[1].explanation, /Taeping/)
-    assert.equal(l2Pass.pendingReviews.length, 1)
-    assert.equal(l2Pass.pendingReviews[0].knowledgePointCode, 'KP1')
-    const reviewId = l2Pass.pendingReviews[0].reviewId
-
+    const l1Done = await api.completeLesson('lesson-l1')
+    assert.deepEqual(l1Done, { lessonCompleted: true, nextLessonId: 'lesson-l2', pendingReviews: [] })
     detail = await api.getTopicLessons('topic-demo-reading')
-    assert.deepEqual(statusesOf(detail), ['COMPLETED', 'COMPLETED', 'LOCKED', 'LOCKED'])
-    assert.match(detail.lessons[2].lockedReason, /bài ôn/)
-    await assert.rejects(api.getLesson('lesson-l3'), (error) => error.code === 'REVIEW_REQUIRED' && error.details.reviews[0].reviewId === reviewId)
-    await assert.rejects(api.createTestAssignment('topic-demo-reading'), { code: 'REVIEW_REQUIRED' })
-    const reopened = await api.getLesson('lesson-l2')
-    const reopenedBlock = reopened.blocks.find((block) => block.type === 'EXERCISE')
-    assert.equal(reopenedBlock.state, 'PASSED')
-    assert.equal(reopenedBlock.savedAnswers['q-l2-5'], 'B')
-    assert.equal(reopenedBlock.solutions.length, 3)
+    assert.deepEqual(statusesOf(detail), ['COMPLETED', 'AVAILABLE', 'LOCKED', 'LOCKED'])
 
-    const review = await api.getReview(reviewId)
-    assert.equal(review.status, 'PENDING')
-    assert.equal(review.set.packageCode, 'PS-KP1-A')
-    assert.equal(review.sourceLessonTitle, 'Scanning: tìm thông tin cụ thể')
-    assert.ok(review.theory.length > 0 && review.theory.every((block) => block.type === 'TEXT'))
-    assert.match(review.theory[0].text, /Scanning/)
-    const reviewPass = await api.submitReview(reviewId, { requestId: nextRequestId(), setId: review.set.setId, answers: toAnswers(REVIEW_KP1['PS-KP1-A'].right) })
-    assert.equal(reviewPass.status, 'DONE')
-    assert.ok(reviewPass.results.every((result) => typeof result.correctAnswer === 'string'))
-    assert.equal(reviewPass.resumeLessonId, 'lesson-l3')
-
-    detail = await api.getTopicLessons('topic-demo-reading')
-    assert.deepEqual(statusesOf(detail), ['COMPLETED', 'COMPLETED', 'AVAILABLE', 'LOCKED'])
-    const l3 = await api.getLesson('lesson-l3')
-    assert.ok(l3.blocks.some((block) => block.type === 'VOCABULARY'))
-    const l3First = await submit(api, 'lesson-l3', 'l3-ex-main', CORRECT['l3-ex-main'])
-    assert.equal(l3First.passed, true)
-    assert.equal(l3First.lessonCompleted, false, 'the second exercise block is still open')
-    await submit(api, 'lesson-l3', 'l3-ex-gap', CORRECT['l3-ex-gap'])
-    const l4 = await api.getLesson('lesson-l4')
-    assert.ok(l4.blocks.some((block) => block.type === 'ASSET' && block.mediaUrl))
-    const l4Result = await passLesson(api, 'lesson-l4')
-    assert.equal(l4Result.lessonCompleted, true)
-    assert.equal(l4Result.nextLessonId, null)
+    await api.completeLesson('lesson-l2')
+    await api.completeLesson('lesson-l3')
+    const l4Done = await api.completeLesson('lesson-l4')
+    assert.equal(l4Done.nextLessonId, null)
 
     detail = await api.getTopicLessons('topic-demo-reading')
     assert.equal(detail.finalTest.testStatus, 'AVAILABLE')
@@ -156,10 +117,42 @@ describe('Lan demo scenario', () => {
     assert.equal((await api.getTopicLessons('topic-demo-reading')).finalTest.testStatus, 'PASSED')
   })
 
+  test('a pending review blocks new lessons and the final test but not lessons already completed', async () => {
+    const api = createMockLearningApi({ storage: storageWithPendingReview() })
+    const [pending] = await api.getPendingReviews()
+    assert.equal(pending.knowledgePointCode, 'KP1')
+    const reviewId = pending.reviewId
+
+    const detail = await api.getTopicLessons('topic-demo-reading')
+    assert.deepEqual(statusesOf(detail), ['COMPLETED', 'COMPLETED', 'LOCKED', 'LOCKED'])
+    assert.match(detail.lessons[2].lockedReason, /bài ôn/)
+    assert.deepEqual(detail.lessons.map((lesson) => lesson.blockingReviewId ?? null), [null, null, reviewId, reviewId])
+    await assert.rejects(api.getLesson('lesson-l3'), (error) => error.code === 'REVIEW_REQUIRED' && error.details.reviews[0].reviewId === reviewId)
+    await assert.rejects(api.getLessonResources('lesson-l3'), { code: 'REVIEW_REQUIRED' })
+    await assert.rejects(api.createTestAssignment('topic-demo-reading'), { code: 'REVIEW_REQUIRED' })
+    const reopened = await api.getLesson('lesson-l2')
+    assert.equal(reopened.status, 'COMPLETED')
+    assert.equal(reopened.pendingReviews[0].reviewId, reviewId)
+    assert.match((await api.getLessonResources('lesson-l2')).summaryMarkdown, /Scanning/)
+
+    const review = await api.getReview(reviewId)
+    assert.equal(review.status, 'PENDING')
+    assert.equal(review.set.packageCode, 'PS-KP1-A')
+    assert.equal(review.sourceLessonTitle, 'Scanning: tìm thông tin cụ thể')
+    assert.ok(review.theory.length > 0 && review.theory.every((text) => typeof text === 'string'))
+    assert.match(review.theory[0], /Scanning/)
+    assert.equal('quickCheck' in review, false)
+    const reviewPass = await api.submitReview(reviewId, { requestId: nextRequestId(), setId: review.set.setId, answers: toAnswers(REVIEW_KP1['PS-KP1-A'].right) })
+    assert.equal(reviewPass.status, 'DONE')
+    assert.ok(reviewPass.results.every((result) => typeof result.correctAnswer === 'string'))
+    assert.equal(reviewPass.resumeLessonId, 'lesson-l3')
+
+    assert.deepEqual(statusesOf(await api.getTopicLessons('topic-demo-reading')), ['COMPLETED', 'COMPLETED', 'AVAILABLE', 'LOCKED'])
+  })
+
   test('failing three review sets marks the review SKIPPED and still unlocks the next lesson', async () => {
-    const api = createMockLearningApi()
-    const { fixed } = await finishL2WithReview(api)
-    const reviewId = fixed.pendingReviews[0].reviewId
+    const api = createMockLearningApi({ storage: storageWithPendingReview() })
+    const [{ reviewId }] = await api.getPendingReviews()
 
     let review = await api.getReview(reviewId)
     const staleSetId = review.set.setId
@@ -186,43 +179,36 @@ describe('Lan demo scenario', () => {
     assert.deepEqual(detail.pendingReviews, [])
   })
 
-  test('a learner who answers everything right first time never meets a review', async () => {
+  test('completing lessons never creates a review', async () => {
     const api = createMockLearningApi()
-    for (const lessonId of Object.keys(LESSON_BLOCKS)) {
-      const outcome = await passLesson(api, lessonId)
+    for (const lessonId of LESSON_IDS) {
+      const outcome = await api.completeLesson(lessonId)
       assert.deepEqual(outcome.pendingReviews, [], lessonId)
     }
+    assert.deepEqual(await api.getPendingReviews(), [])
     const { result } = await takeTest(api, 'topic-demo-reading', { 12: 'B', 13: 'TRUE', 14: 'oil', 15: 'NOT GIVEN' })
     assert.equal(result.percent, 100)
-  })
-
-  test('a first-attempt mistake on KP5 (no practice pack) never inserts a review', async () => {
-    const api = createMockLearningApi()
-    for (const lessonId of ['lesson-l1', 'lesson-l2', 'lesson-l3']) await passLesson(api, lessonId)
-    await submit(api, 'lesson-l4', 'l4-ex', { 'q-l4-10': 'TRUE', 'q-l4-11': 'NOT GIVEN' })
-    const outcome = await submit(api, 'lesson-l4', 'l4-ex', CORRECT['l4-ex'])
-    assert.equal(outcome.lessonCompleted, true)
-    assert.deepEqual(outcome.pendingReviews, [])
   })
 })
 
 describe('mock API contract', () => {
-  test('replaying a requestId returns the stored outcome without grading twice', async () => {
+  test('lessons have no exercise or essay submissions any more', () => {
     const api = createMockLearningApi()
-    const first = await submit(api, 'lesson-l1', 'l1-ex', CORRECT['l1-ex'], 'same-request')
-    const replay = await submit(api, 'lesson-l1', 'l1-ex', CORRECT['l1-ex'], 'same-request')
-    assert.deepEqual(replay, first)
-    await assert.rejects(submit(api, 'lesson-l1', 'l1-ex', CORRECT['l1-ex']), { code: 'VALIDATION_FAILED' })
+    assert.equal(api.submitExercise, undefined)
+    assert.equal(api.submitEssay, undefined)
   })
 
-  test('incomplete answers are rejected with 422', async () => {
+  test('completing a lesson twice returns the same completion', async () => {
     const api = createMockLearningApi()
-    await assert.rejects(submit(api, 'lesson-l1', 'l1-ex', { 'q-l1-1': 'B', 'q-l1-2': 'B', 'q-l1-3': '  ' }), { code: 'VALIDATION_FAILED', status: 422 })
+    const first = await api.completeLesson('lesson-l1')
+    const again = await api.completeLesson('lesson-l1')
+    assert.deepEqual(again, first)
+    await assert.rejects(api.completeLesson('lesson-l3'), { code: 'LESSON_LOCKED' })
   })
 
   test('a failed final test is retaken with a different package and hides solutions', async () => {
     const api = createMockLearningApi()
-    for (const lessonId of Object.keys(LESSON_BLOCKS)) await passLesson(api, lessonId)
+    await completeLessons(api)
     const first = await takeTest(api, 'topic-demo-reading', { 12: 'A', 13: 'FALSE', 14: 'water', 15: 'NOT GIVEN' })
     assert.equal(first.result.passed, false)
     assert.ok(first.result.items.every((item) => !('correctAnswer' in item) && !('explanation' in item)))
@@ -232,17 +218,14 @@ describe('mock API contract', () => {
     assert.equal(second.packageCode, 'X2')
   })
 
-  test('topic without packages reports TEST_UNAVAILABLE and text-only lessons complete explicitly', async () => {
+  test('topic without packages reports TEST_UNAVAILABLE once its lessons are complete', async () => {
     const api = createMockLearningApi()
-    for (const lessonId of Object.keys(LESSON_BLOCKS)) await passLesson(api, lessonId)
+    await completeLessons(api)
     await takeTest(api, 'topic-demo-reading', { 12: 'B', 13: 'TRUE', 14: 'oil', 15: 'NOT GIVEN' })
 
-    await assert.rejects(api.completeLesson('lesson-l1'), { code: 'VALIDATION_FAILED' })
-    const tfng1 = await api.getLesson('lesson-tfng-1')
-    assert.ok(tfng1.blocks.every((block) => block.type === 'TEXT'))
     const completion = await api.completeLesson('lesson-tfng-1')
     assert.deepEqual(completion, { lessonCompleted: true, nextLessonId: 'lesson-tfng-2', pendingReviews: [] })
-    await submit(api, 'lesson-tfng-2', 'tfng2-ex', { 'q-tfng2-1': 'TRUE', 'q-tfng2-2': 'FALSE', 'q-tfng2-3': 'NOT GIVEN' })
+    await api.completeLesson('lesson-tfng-2')
     assert.equal((await api.getTopicLessons('topic-tfng-skills')).finalTest.testStatus, 'AVAILABLE')
     await assert.rejects(api.createTestAssignment('topic-tfng-skills'), { code: 'TEST_UNAVAILABLE' })
   })
@@ -250,6 +233,7 @@ describe('mock API contract', () => {
   test('unknown ids are NOT_FOUND and a locked final test is TEST_LOCKED', async () => {
     const api = createMockLearningApi()
     await assert.rejects(api.getLesson('lesson-missing'), { code: 'NOT_FOUND', status: 404 })
+    await assert.rejects(api.getLessonResources('lesson-missing'), { code: 'NOT_FOUND', status: 404 })
     await assert.rejects(api.getReview('review-missing'), { code: 'NOT_FOUND' })
     await assert.rejects(api.createTestAssignment('topic-demo-reading'), { code: 'TEST_LOCKED' })
   })
@@ -258,19 +242,16 @@ describe('mock API contract', () => {
     const api = createMockLearningApi()
     api.setServerFailing(true)
     await assert.rejects(api.listTopics(), { code: 'SERVER_ERROR', status: 500 })
-    await assert.rejects(submit(api, 'lesson-l1', 'l1-ex', CORRECT['l1-ex']), { code: 'SERVER_ERROR' })
+    await assert.rejects(api.completeLesson('lesson-l1'), { code: 'SERVER_ERROR' })
     api.setServerFailing(false)
     assert.equal((await api.listTopics()).length, 3)
     assert.equal((await api.getTopicLessons('topic-demo-reading')).lessons[0].status, 'AVAILABLE')
   })
 
   test('pending reviews survive a cold hydrate after localStorage restore', async () => {
-    const memory = new Map()
-    const storage = { getItem: (key) => memory.get(key) ?? null, setItem: (key, value) => memory.set(key, value), removeItem: (key) => memory.delete(key) }
+    const storage = storageWithPendingReview()
     const api = createMockLearningApi({ storage })
-    await finishL2WithReview(api)
     assert.equal((await api.getPendingReviews()).length, 1)
-    assert.equal((await api.getPendingReviews())[0].knowledgePointCode, 'KP1')
 
     const restored = createMockLearningApi({ storage })
     assert.equal((await restored.getPendingReviews()).length, 1)
@@ -278,102 +259,317 @@ describe('mock API contract', () => {
   })
 
   test('progress persists through storage and reset clears it', async () => {
-    const memory = new Map()
-    const storage = { getItem: (key) => memory.get(key) ?? null, setItem: (key, value) => memory.set(key, value), removeItem: (key) => memory.delete(key) }
+    const storage = memoryStorage()
     const api = createMockLearningApi({ storage })
-    await passLesson(api, 'lesson-l1')
+    await api.completeLesson('lesson-l1')
 
     const restored = createMockLearningApi({ storage })
     assert.equal((await restored.getTopicLessons('topic-demo-reading')).lessons[1].status, 'AVAILABLE')
     restored.reset()
-    assert.equal(memory.size, 0)
+    assert.equal(storage.memory.size, 0)
     assert.equal((await restored.getTopicLessons('topic-demo-reading')).lessons[1].status, 'LOCKED')
   })
 })
 
 describe('learning path rendering', () => {
-  const noopContext = { submitExercise: () => Promise.reject(new Error('not used')) }
-
   async function render(modulePath, name, props, path = '/learn') {
     const module = await server.ssrLoadModule(modulePath)
     return renderToString(createElement(MemoryRouter, { initialEntries: [path] }, createElement(module[name], props)))
   }
 
-  const renderBlocks = (blocks) => render('/src/features/learning-path/components/blocks/BlockList.tsx', 'BlockList', { blocks, context: noopContext })
+  const resources = (name, props) => render(`/src/features/learning-path/components/resources/${name}.tsx`, name, props)
+  const DECK = 'https://docs.google.com/presentation/d/1rky9iPmndXAGDhwcMSI8QM2jN1QaVyelycgAsloB7kM/edit?slide=id.p#slide=id.p'
 
   test('topic trail links open topics and explains locked ones without a link', async () => {
     const topics = await createMockLearningApi().listTopics()
     const html = await render('/src/features/learning-path/pages/TopicListPage.tsx', 'TopicTrail', { topics })
 
-    assert.match(html, /href="\/learn\/topics\/topic-demo-reading"/)
-    assert.doesNotMatch(html, /href="\/learn\/topics\/topic-tfng-skills"/)
+    // Topics have no page of their own: an open one expands in place (collapsed at first), a locked one cannot.
+    assert.doesNotMatch(html, /href="\/learn\/topics\//)
+    assert.match(html, /aria-expanded="false"/)
+    assert.match(html, /Xem bài học/)
     assert.match(html, /aria-disabled="true"/)
     assert.match(html, /Đạt bài kiểm tra cuối của/)
-    assert.match(html, /0<!-- -->\/<!-- -->4<!-- --> bài đã xong/)
+    assert.match(html, /0<!-- -->\/<!-- -->4<!-- --> bài/)
+
+    const progressHtml = await render('/src/features/learning-path/pages/TopicListPage.tsx', 'TopicTrail', {
+      topics: [
+        { ...topics[0], status: 'PASSED', completedLessons: 4, totalLessons: 4 },
+        { ...topics[1], status: 'IN_PROGRESS', completedLessons: 1, totalLessons: 4 },
+        topics[2],
+      ],
+    })
+    assert.match(progressHtml, /lp-stop--passed[^>]*style="--i:0;--topic-progress:1"/)
+    assert.match(progressHtml, /lp-stop--in_progress[^>]*style="--i:1;--topic-progress:0.25"/)
+    assert.match(progressHtml, /lp-stop--locked[^>]*style="--i:2;--topic-progress:0"/)
   })
 
-  test('topic detail only links open lessons and keeps the final test locked', async () => {
-    const detail = await createMockLearningApi().getTopicLessons('topic-demo-reading')
-    const html = await render('/src/features/learning-path/pages/TopicDetailPage.tsx', 'TopicDetailView', { detail, onChanged: () => {} })
+  test('an expanded topic only links open lessons and keeps the final test locked', async () => {
+    const { lessons, finalTest } = await createMockLearningApi().getTopicLessons('topic-demo-reading')
+    const html = await render('/src/features/learning-path/components/TopicLessonsPanel.tsx', 'TopicLessonsView', {
+      lessons, finalTest, topicId: 'topic-demo-reading', onChanged: () => {},
+    })
 
     assert.match(html, /href="\/learn\/lessons\/lesson-l1"/)
     assert.doesNotMatch(html, /href="\/learn\/lessons\/lesson-l2"/)
-    assert.match(html, /Bài kiểm tra cuối/)
+    assert.match(html, /Bài kiểm tra chặng/)
     assert.doesNotMatch(html, /Làm bài kiểm tra/)
   })
 
-  test('lesson blocks keep line breaks, split passages and render radio and text answers', async () => {
-    const lesson = await createMockLearningApi().getLesson('lesson-l1')
-    const html = await renderBlocks(lesson.blocks)
-
-    assert.match(html, /class="lp-text">[^<]*\n\nCách làm:\n1\./)
-    assert.match(html, /class="lp-split"/)
-    assert.match(html, /aria-label="Đoạn A"/)
-    assert.match(html, /role="radio"/)
-    assert.match(html, /placeholder="Nhập câu trả lời"/)
-    const submitButton = html.match(/<button[^>]*type="submit"[^>]*>/)?.[0]
-    assert.ok(submitButton, 'submit button rendered')
-    assert.match(submitButton, /disabled=""/)
-    assert.match(html, /Còn <!-- -->3<!-- --> câu chưa trả lời/)
+  test('a course carries the lessons studied and the last study time the server recorded', async () => {
+    const { mapCourseSummary } = await server.ssrLoadModule('/src/features/learning-path/api/learningAdapters.ts')
+    const course = mapCourseSummary({
+      courseId: 'c1', code: 'IELTS_5_5', name: 'IELTS 5.5', bandLevel: 5.5, topicCount: 7, passedTopicCount: 0,
+      completedLessonCount: 1, totalLessonCount: 20, lastStudiedAt: '2026-10-15T09:30:00Z', recommended: false,
+      testStatus: 'LOCKED',
+    })
+    assert.equal(course.completedLessons, 1)
+    assert.equal(course.totalLessons, 20)
+    assert.equal(course.lastStudiedAt, '2026-10-15T09:30:00Z')
+    const older = mapCourseSummary({
+      courseId: 'c2', code: 'X', name: 'X', bandLevel: 6.5, topicCount: 3, passedTopicCount: 0, recommended: false,
+      testStatus: 'LOCKED',
+    })
+    assert.equal(older.lastStudiedAt, null, 'a server without the field means never studied, not a made-up time')
   })
 
-  async function openLessonL4() {
-    const api = createMockLearningApi()
-    for (const lessonId of ['lesson-l1', 'lesson-l2', 'lesson-l3']) await passLesson(api, lessonId)
-    return api.getLesson('lesson-l4')
-  }
-
-  test('TFNG questions render three radio options', async () => {
-    const lesson = await openLessonL4()
-    const exercise = lesson.blocks.find((block) => block.type === 'EXERCISE')
-    const html = await renderBlocks([exercise])
-    assert.equal(html.match(/role="radio"/g)?.length, exercise.questions.length * 3)
-    assert.match(html, /NOT GIVEN/)
+  test('the last study time reads as a relative time', async () => {
+    const { timeAgo } = await server.ssrLoadModule('/src/features/learning-path/lib/relativeTime.ts')
+    const now = new Date('2026-10-15T10:00:00Z')
+    assert.equal(timeAgo('2026-10-15T09:59:40Z', now), 'vừa xong')
+    assert.match(timeAgo('2026-10-15T09:55:00Z', now), /5 phút trước/)
+    assert.match(timeAgo('2026-10-15T07:00:00Z', now), /3 giờ trước/)
   })
 
-  test('unknown blocks render a placeholder instead of crashing', async () => {
-    const lesson = await openLessonL4()
-    const html = await renderBlocks([
-      ...lesson.blocks,
-      { id: 'vocab', sortOrder: 9, type: 'VOCABULARY', words: [] },
-      { id: 'essay', sortOrder: 10, type: 'ESSAY' },
-      { id: 'broken', sortOrder: 11, type: 'EXERCISE', questions: 'oops' },
+  test('a plain-text passage keeps one paragraph per line and takes its letters as labels', async () => {
+    const { splitPassage } = await server.ssrLoadModule('/src/features/learning-path/api/learningAdapters.ts')
+    assert.deepEqual(splitPassage('A. Desert plants survive.\n\nB. Some avoid the dry season.\r\nC. Roots matter.\n'), [
+      { label: 'A', text: 'Desert plants survive.' },
+      { label: 'B', text: 'Some avoid the dry season.' },
+      { label: 'C', text: 'Roots matter.' },
     ])
-    // L4 AUDIO is rendered by AudioBlock; only the 3 injected unknown kinds stay unsupported.
-    assert.equal(html.match(/Nội dung chưa hỗ trợ/g)?.length, 3)
-    assert.match(html, /lp-audio__player|Bài nghe|Nghe giảng/)
-    assert.doesNotMatch(html, /ASSET · AUDIO/)
+    assert.deepEqual(splitPassage('No labels here.'), [{ label: null, text: 'No labels here.' }])
   })
 
-  test('a passed exercise reopens with saved answers and solutions', async () => {
-    const api = createMockLearningApi()
-    await passLesson(api, 'lesson-l1')
-    const lesson = await api.getLesson('lesson-l1')
-    const html = await renderBlocks(lesson.blocks)
+  test('a lesson steps back to its topic page, and a topic back to its course with that topic open', async () => {
+    const { topicPagePath, courseTopicPath } = await server.ssrLoadModule('/src/features/learning-path/lib/routes.ts')
+    assert.equal(topicPagePath('t1'), '/learn/topics/t1')
+    assert.equal(courseTopicPath('c9', 't1'), '/learn/courses/c9?topic=t1')
+  })
 
-    assert.match(html, /Đã đạt/)
-    assert.match(html, /Đáp án:/)
-    assert.match(html, /value="\s*[Ii]ndependence\s*"/)
-    assert.doesNotMatch(html, /type="submit"/)
+  const lesson = (overrides = {}) => ({
+    id: 'lesson-l1', topicId: 'topic-demo-reading', topicTitle: 'Đọc hiểu nền tảng', title: 'Nhận diện paraphrase',
+    sortOrder: 1, status: 'AVAILABLE', nextLessonId: 'lesson-l2', pendingReviews: [], ...overrides,
+  })
+  const renderLesson = (props, path = '/learn/lessons/lesson-l1') =>
+    render('/src/features/learning-path/pages/LessonPage.tsx', 'LessonView', { lesson: lesson(props) }, path)
+
+  test('the lesson page lists its three theory parts and no Practice tab', async () => {
+    const html = await renderLesson({}, '/learn/lessons/lesson-l1?view=summary')
+
+    assert.match(html, /<h1 id="lp-lesson-title">Nhận diện paraphrase<\/h1>/)
+    assert.match(html, /Bài <!-- -->1<!-- --> · <!-- -->Đọc hiểu nền tảng/)
+    for (const label of ['Slide bài giảng', 'Lesson Summary', 'Tài liệu bài khoá']) assert.match(html, new RegExp(label))
+    assert.match(html, /href="\/learn\/lessons\/lesson-l1"/, 'slides are the default part, so they have no query')
+    assert.match(html, /href="\/learn\/lessons\/lesson-l1\?view=documents"/)
+    assert.doesNotMatch(html, /view=practice/)
+    assert.doesNotMatch(html, /Luyện tập/)
+    assert.match(html, /<a[^>]*class="lp-res-nav__link is-active"[^>]*href="\/learn\/lessons\/lesson-l1\?view=summary"|<a[^>]*aria-current="page"[^>]*href="\/learn\/lessons\/lesson-l1\?view=summary"/)
+    assert.doesNotMatch(html, /Bài tập|Đến phần bài tập|Homework|Mentor/)
+    assert.doesNotMatch(html, /Bài tiếp theo/)
+  })
+
+  test('the lesson page waits for the topic before offering completion, since Practice decides it', async () => {
+    // Server rendering has not loaded the topic's lessons: the page cannot tell whether the lesson has required Practice.
+    const html = await renderLesson({})
+
+    assert.doesNotMatch(html, /Hoàn thành bài</)
+  })
+
+  test('a completed lesson shows no progress card: neither completion nor a next-lesson button', async () => {
+    const html = await renderLesson({ status: 'COMPLETED' })
+
+    assert.doesNotMatch(html, /lp-res-progress/)
+    assert.doesNotMatch(html, /Bài tiếp theo/)
+    assert.doesNotMatch(html, /Hoàn thành bài</)
+  })
+
+  test('the Practice is a part of the lesson page: the lesson stays around it and it takes the place of the other parts', async () => {
+    const html = await renderLesson({}, '/learn/lessons/lesson-l1?view=practice')
+
+    assert.match(html, /<h1 id="lp-lesson-title">Nhận diện paraphrase<\/h1>/, 'the lesson page is still there')
+    assert.match(html, /Nội dung bài học/, 'with its side navigation')
+    assert.match(html, /Đang tải luyện thêm/, 'and the Practice where the other parts would be')
+    const trail = html.match(/<nav aria-label="Đường dẫn trang"[\s\S]*?<\/nav>/)?.[0]
+    assert.ok(trail)
+    assert.match(trail, /<span aria-current="page" title="Bài 1 · Nhận diện paraphrase">Bài 1 · Nhận diện paraphrase<\/span>/)
+    assert.match(trail, /aria-label="Quay lại: Đọc hiểu nền tảng"[^>]*href="\/learn\/topics\/topic-demo-reading"/)
+    assert.doesNotMatch(trail, /Luyện tập/)
+    assert.doesNotMatch(html, /<h2>Slide bài giảng<\/h2>/)
+
+    for (const view of ['slides', 'summary', 'documents']) {
+      const section = await renderLesson({}, `/learn/lessons/lesson-l1?view=${view}`)
+      assert.equal(section.match(/<nav aria-label="Đường dẫn trang"[\s\S]*?<\/nav>/)?.[0], trail)
+    }
+  })
+
+  test('lessons with required Practice are told apart from lessons without', async () => {
+    const { hasRequiredPractice, lessonPracticePath } = await server.ssrLoadModule('/src/features/learning-path/lib/lessonPractice.ts')
+
+    assert.equal(hasRequiredPractice({ practiceStatus: 'REQUIRED', practicePassReason: null }), true)
+    assert.equal(hasRequiredPractice({ practiceStatus: 'LOCKED', practicePassReason: null }), true)
+    assert.equal(hasRequiredPractice({ practiceStatus: 'PASSED', practicePassReason: 'FIRST_SUBMISSION' }), true)
+    assert.equal(hasRequiredPractice({ practiceStatus: 'PASSED', practicePassReason: 'NO_PRACTICE' }), false)
+    assert.equal(hasRequiredPractice({ practiceStatus: null, practicePassReason: null }), false)
+    assert.equal(lessonPracticePath('l1'), '/learn/lessons/l1?view=practice')
+  })
+
+  test('a pending review leaves its own lesson open and only the lessons it holds back say why they wait', async () => {
+    const lessons = [
+      { id: 'l1', title: 'Một', sortOrder: 1, status: 'AVAILABLE', estimatedMinutes: 10, lockedReason: null, blockingReviewId: null },
+      { id: 'l2', title: 'Hai', sortOrder: 2, status: 'LOCKED', estimatedMinutes: 10, lockedReason: 'Mở sau khi hoàn thành bài ôn.', blockingReviewId: 'rv1' },
+      { id: 'l3', title: 'Ba', sortOrder: 3, status: 'LOCKED', estimatedMinutes: 10, lockedReason: 'Mở sau khi hoàn thành bài ôn.', blockingReviewId: 'rv1' },
+    ]
+    const html = await render('/src/features/learning-path/components/TopicLessonsPanel.tsx', 'TopicLessonsView', {
+      lessons, finalTest: { title: 'Kiểm tra', testStatus: 'LOCKED', questionCount: 0, lastPercent: null }, topicId: 't', onChanged: () => {},
+    })
+
+    assert.match(html, /href="\/learn\/lessons\/l1"/, 'the lesson that created the review can still be opened')
+    assert.doesNotMatch(html, /href="\/learn\/lessons\/l2"/)
+    assert.doesNotMatch(html, /href="\/learn\/lessons\/l3"/)
+    assert.equal((html.match(/Mở sau khi hoàn thành bài ôn\./g) ?? []).length, 2)
+    assert.doesNotMatch(html, /\/learn\/reviews\//, 'the review is listed with the lesson\'s Practice, not on the trail')
+    assert.doesNotMatch(html, /Luyện tập/)
+  })
+
+  test('the trail lists lessons only and never a Practice step', async () => {
+    const lessons = [
+      { id: 'l1', title: 'Một', sortOrder: 1, status: 'AVAILABLE', estimatedMinutes: 10, lockedReason: null, practiceStatus: 'REQUIRED', practicePassReason: null },
+      { id: 'l2', title: 'Hai', sortOrder: 2, status: 'LOCKED', estimatedMinutes: 10, lockedReason: 'Chưa mở', practiceStatus: 'LOCKED', practicePassReason: null },
+      { id: 'l3', title: 'Ba', sortOrder: 3, status: 'COMPLETED', estimatedMinutes: 10, lockedReason: null, practiceStatus: 'PASSED', practicePassReason: 'FIRST_SUBMISSION' },
+    ]
+    const html = await render('/src/features/learning-path/components/TopicLessonsPanel.tsx', 'TopicLessonsView', {
+      lessons, finalTest: { title: 'Kiểm tra', testStatus: 'LOCKED', questionCount: 0, lastPercent: null }, topicId: 't', onChanged: () => {},
+    })
+
+    assert.match(html, /href="\/learn\/lessons\/l1"/)
+    assert.match(html, /href="\/learn\/lessons\/l3"/)
+    assert.doesNotMatch(html, /Luyện tập/)
+    assert.doesNotMatch(html, /\/practice/)
+    assert.doesNotMatch(html, /view=practice/)
+  })
+
+  test('a lesson with a pending review says so to assistive technology and shows no "Tiếp theo"', async () => {
+    const lessons = [
+      { id: 'l1', title: 'Một', sortOrder: 1, status: 'AVAILABLE', estimatedMinutes: 10, lockedReason: null },
+      { id: 'l2', title: 'Hai', sortOrder: 2, status: 'LOCKED', estimatedMinutes: 10, lockedReason: 'Mở sau khi hoàn thành bài ôn.', blockingReviewId: 'rv1' },
+    ]
+    const finalTest = { title: 'Kiểm tra', testStatus: 'LOCKED', questionCount: 0, lastPercent: null }
+    const withReview = await render('/src/features/learning-path/components/TopicLessonsPanel.tsx', 'TopicLessonsView', {
+      lessons, finalTest, topicId: 't', onChanged: () => {},
+      pendingReviews: [{ reviewId: 'rv1', lessonId: 'l1', knowledgePointCode: 'KP', knowledgePointTitle: 'Câu chủ đề' }],
+    })
+    assert.match(withReview, /có bài ôn/)
+    assert.doesNotMatch(withReview, /Tiếp theo/)
+
+    const without = await render('/src/features/learning-path/components/TopicLessonsPanel.tsx', 'TopicLessonsView', {
+      lessons, finalTest, topicId: 't', onChanged: () => {},
+    })
+    assert.doesNotMatch(without, /có bài ôn/)
+  })
+
+  test('a Google Slides deck is embedded and downloaded through its own links', async () => {
+    const html = await resources('LessonSlides', { slides: [{ id: 's1', title: 'Slide bài giảng', url: DECK, sortOrder: 0 }] })
+
+    assert.match(html, /<iframe[^>]*src="https:\/\/docs\.google\.com\/presentation\/d\/1rky9iPmndXAGDhwcMSI8QM2jN1QaVyelycgAsloB7kM\/embed\?start=false&amp;loop=false"/)
+    assert.match(html, /allowFullScreen=""|allowfullscreen=""/)
+    assert.match(html, /href="https:\/\/docs\.google\.com\/presentation\/d\/1rky9iPmndXAGDhwcMSI8QM2jN1QaVyelycgAsloB7kM\/export\/pdf"/)
+    assert.match(html, /Mở rộng/)
+  })
+
+  test('a published deck keeps its own link for download and other links are never embedded', async () => {
+    const published = await resources('LessonSlides', { slides: [{ id: 's1', title: 'Deck', url: 'https://docs.google.com/presentation/d/e/2PACX-abc/pub', sortOrder: 0 }] })
+    assert.match(published, /src="https:\/\/docs\.google\.com\/presentation\/d\/e\/2PACX-abc\/embed\?/)
+    assert.match(published, /href="https:\/\/docs\.google\.com\/presentation\/d\/e\/2PACX-abc\/pub"/)
+
+    const other = await resources('LessonSlides', { slides: [{ id: 's2', title: 'Deck', url: 'https://example.com/deck.pdf', sortOrder: 0 }] })
+    assert.doesNotMatch(other, /<iframe/)
+    assert.match(other, /Mở trong tab mới/)
+    assert.match(other, /rel="noopener noreferrer"/)
+
+    assert.match(await resources('LessonSlides', { slides: [] }), /chưa có slide/)
+  })
+
+  test('the lesson summary renders Markdown and never raw HTML', async () => {
+    const html = await resources('LessonSummary', {
+      markdown: '## Learning Outcomes\n\n1. Describe\n\n| Từ | Nghĩa |\n| --- | --- |\n| nature | thiên nhiên |\n\n<script>alert(1)</script>\n\n[Cambridge](https://dictionary.cambridge.org)',
+    })
+
+    assert.match(html, /<h3>Learning Outcomes<\/h3>/)
+    assert.match(html, /<ol class="lp-sum-steps">/)
+    assert.match(html, /<table>/)
+    assert.doesNotMatch(html, /<script>/)
+    assert.match(html, /<a href="https:\/\/dictionary\.cambridge\.org"[^>]*target="_blank"[^>]*rel="noopener noreferrer"/)
+    assert.match(await resources('LessonSummary', { markdown: null }), /chưa có phần tóm tắt/)
+    assert.match(await resources('LessonSummary', { markdown: '   ' }), /chưa có phần tóm tắt/)
+  })
+
+  test('a summary is laid out by the shape of its Markdown, for any lesson', async () => {
+    const markdown = [
+      '## Learning Outcomes', '', '1. First', '2. Second', '',
+      '## Grammar Core', '', '- **Present Simple**: facts and habits. *"I walk."*', '- **There is**: a place. *"There is a lake."*', '',
+      '## Vocabulary Core', '', '- **Environment:** nature, forest, river', '- **Problems:** pollution, dirty', '',
+      '## Collocations', '', '- fresh air', '- green landscape', '',
+      '## Một mục tự đặt', '', 'Chỉ có đoạn văn.', '',
+      '> **IELTS Note:** Một ghi chú.',
+    ].join('\n')
+    const html = await resources('LessonSummary', { markdown, topicTitle: 'Nature & Environment' })
+
+    assert.match(html, /lp-sum__banner[\s\S]*Nature &amp; Environment/)
+    assert.match(html, /Section A[\s\S]*Section E/)
+    assert.match(html, /class="lp-sum-steps"/)
+    assert.match(html, /class="lp-sum-cards"/)
+    assert.match(html, /class="lp-sum-group lp-sum-group--blue"/)
+    assert.match(html, /class="lp-sum-chips"/)
+    assert.match(html, /class="lp-sum-checks"/)
+    assert.match(html, /class="lp-sum-note"/)
+    assert.match(html, /Một mục tự đặt/)
+    // Without any heading it is plain Markdown, not a stack of sections.
+    const plain = await resources('LessonSummary', { markdown: 'Chỉ một đoạn.\n\n- một\n- hai' })
+    assert.match(plain, /lp-res-markdown/)
+    assert.doesNotMatch(plain, /lp-sum__sections/)
+  })
+
+  test('summary splitting and list shapes follow the content, not a fixed list of headings', async () => {
+    const { splitSections, classifyList, listItems } = await server.ssrLoadModule('/src/features/learning-path/components/resources/summary-shapes.ts')
+
+    const split = splitSections('Intro\n\n## One\nbody 1\n\n```\n## not a heading\n```\n\n## Two\nbody 2')
+    assert.equal(split.intro, 'Intro')
+    assert.deepEqual(split.sections.map((section) => section.title), ['One', 'Two'])
+    assert.match(split.sections[0].body, /## not a heading/)
+
+    const text = (value) => ({ type: 'text', value })
+    const el = (tagName, ...children) => ({ type: 'element', tagName, children })
+    const shape = (title, ...lis) => classifyList(listItems(el('ul', ...lis)), title).kind
+
+    // Bold lead + short comma-separated words: a word group.
+    assert.equal(shape('', el('li', el('strong', text('Colors:')), text(' red, green, blue'))), 'chips')
+    // Bold lead + a sentence with an italic example: a card.
+    assert.equal(shape('', el('li', el('strong', text('Rule')), text(': use it well. '), el('em', text('"Example"')))), 'cards')
+    // A sentence that merely contains commas is not a word group...
+    assert.equal(shape('', el('li', el('strong', text('Use')), text(': facts, habits and preferences.'))), 'cards')
+    // ...unless the section is about vocabulary.
+    assert.equal(shape('Vocabulary Core', el('li', el('strong', text('Use')), text(': facts, habits and preferences.'))), 'chips')
+    // Short plain lines: a tick grid; long sentences: bullets.
+    assert.equal(shape('', el('li', text('fresh air')), el('li', text('green landscape'))), 'checks')
+    assert.equal(shape('', el('li', text('This is a much longer sentence than eight words allow.')), el('li', text('Another sentence that is also quite long indeed.'))), 'bullets')
+  })
+
+  test('documents open in a new tab and an empty list says so', async () => {
+    const html = await resources('LessonDocuments', { documents: [{ id: 'd1', title: 'Tài liệu 1 Giáo trình', url: 'https://drive.google.com/file/d/1', sortOrder: 0 }] })
+
+    assert.match(html, /<a class="lp-res-doc" href="https:\/\/drive\.google\.com\/file\/d\/1" target="_blank" rel="noopener noreferrer"/)
+    assert.match(html, /Tài liệu 1 Giáo trình/)
+    assert.match(await resources('LessonDocuments', { documents: [] }), /chưa có tài liệu/)
   })
 })

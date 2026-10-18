@@ -17,6 +17,11 @@ export interface CourseRef {
 export interface CourseSummary extends CourseRef {
   topicCount: number
   passedTopicCount: number
+  /** Lessons of the course's topics the learner completed, and how many there are. */
+  completedLessons: number
+  totalLessons: number
+  /** ISO time the learner last opened a lesson or submitted a practice set of the course; null if never. */
+  lastStudiedAt: string | null
   /** Placement guidance only; every course stays open. */
   recommended: boolean
   testStatus: TestStatus
@@ -43,10 +48,14 @@ export interface LessonSummary {
   title: string
   sortOrder: number
   status: LessonStatus
-  estimatedMinutes: number
+  /** Null when the author has not set a duration; the UI then shows none. */
+  estimatedMinutes: number | null
   lockedReason: string | null
+  /** The oldest pending review that blocks this lesson; the lesson opens once it is done. */
+  blockingReviewId?: string | null
   /** From BE topic lessons; omitted/null in mock when unused. */
   practiceStatus?: PracticeStatus | null
+  practicePassReason?: string | null
 }
 
 export interface FinalTestSummary {
@@ -58,6 +67,9 @@ export interface FinalTestSummary {
 
 export interface ReviewRef {
   reviewId: string
+  lessonId?: string
+  /** The Practice set whose attempt created the review; absent for reviews from assessments. */
+  sourcePackageId?: string | null
   knowledgePointCode: string
   knowledgePointTitle: string
 }
@@ -118,17 +130,12 @@ export interface MediaAudio {
   transcript?: string | null
 }
 
-/** Blocks arrive untyped from the API; renderers narrow them with the guards in `blockGuards.ts`. */
+/** Shapes shared by the exercise, passage and audio components. */
 export interface RawBlock {
   id: string
   sortOrder: number
   type: string
   [field: string]: unknown
-}
-
-export interface TextBlockData extends RawBlock {
-  type: 'TEXT'
-  text: string
 }
 
 export interface PassageBlockData extends RawBlock, Passage {
@@ -155,32 +162,6 @@ export interface ExerciseBlockData extends RawBlock {
   state: ExerciseState
   savedAnswers: AnswerMap | null
   solutions: QuestionResult[] | null
-}
-
-export interface EssayImage {
-  mediaUrl: string
-  altText: string
-}
-
-export interface EssayLatestSubmission {
-  id: string
-  status: string
-  overallBand: number | null
-  passed: boolean | null
-}
-
-export interface EssayBlockData extends RawBlock {
-  type: 'EXERCISE'
-  blockKind: 'ESSAY'
-  title: string
-  questionVersionId: string
-  stem: string
-  task: string
-  minWords: number
-  passBand: number
-  images: EssayImage[]
-  latestSubmission: EssayLatestSubmission | null
-  sampleAnswer: string | null
 }
 
 export interface WritingCriterion {
@@ -212,11 +193,7 @@ export interface WritingSubmissionResult {
   failureCode?: string
 }
 
-export interface EssaySubmissionRequest {
-  requestId: string
-  essayText: string
-}
-
+/** A lesson and its status. Its summary, slides and documents are read separately (see `types/lesson.ts`). */
 export interface LessonDetail {
   id: string
   topicId: string
@@ -224,24 +201,6 @@ export interface LessonDetail {
   title: string
   sortOrder: number
   status: LessonStatus
-  blocks: RawBlock[]
-  nextLessonId: string | null
-  pendingReviews: ReviewRef[]
-}
-
-export interface ExerciseSubmissionRequest {
-  requestId: string
-  answers: AnswerInput[]
-}
-
-export interface ExerciseSubmissionResult {
-  blockId: string
-  passed: boolean
-  correctCount: number
-  totalCount: number
-  percent: number
-  results: QuestionResult[]
-  lessonCompleted: boolean
   nextLessonId: string | null
   pendingReviews: ReviewRef[]
 }
@@ -256,7 +215,7 @@ export interface ReviewSet {
   setId: string
   packageCode: string
   attemptNumber: number
-  maxAttempts: number
+  maxAttempts: number | null
   passage: Passage
   audio: MediaAudio | null
   questions: Question[]
@@ -269,11 +228,11 @@ export interface ReviewDetail {
   stage: ReviewStage
   knowledgePoint: { code: string; title: string }
   sourceLessonTitle: string
-  theory: RawBlock[]
+  /** Markdown: the summary of the lesson that teaches the knowledge point. */
+  theory: string[]
   set: ReviewSet | null
-  quickCheck: Question[]
   failedSets: number
-  maxFailedSets: number
+  maxFailedSets: number | null
   theoryReason: string | null
   resumeLessonId: string | null
 }
@@ -282,6 +241,31 @@ export interface ReviewSubmissionRequest {
   requestId: string
   setId: string
   answers: AnswerInput[]
+}
+
+/**
+ * What one submission did to the learner's XP and hearts. `heartsLost`, `heartsRemaining` and `nextHeartAt` are `null`
+ * for a submission that costs no hearts, such as a review set.
+ */
+export interface GamificationSummary {
+  xpEarned: number
+  /** True when an answer went past the daily XP cap, so part of the XP did not count. */
+  xpCapped: boolean
+  totalXp: number
+  level: number
+  leveledUp: boolean
+  heartsLost: number | null
+  heartsRemaining: number | null
+  nextHeartAt: string | null
+}
+
+/** The learner's hearts (`GET /api/learning/me/hearts`). `nextHeartAt` is `null` while the hearts are full. */
+export interface HeartsStatus {
+  hearts: number
+  maxHearts: number
+  nextHeartAt: string | null
+  /** Points a full refill costs. */
+  refillCost: number
 }
 
 export interface ReviewSubmissionResult {
@@ -295,6 +279,7 @@ export interface ReviewSubmissionResult {
   results: QuestionResult[]
   resumeLessonId: string | null
   topicId: string
+  gamification: GamificationSummary | null
 }
 
 export interface TheoryCheckRequest {
@@ -360,6 +345,125 @@ export interface PracticeSubmissionResult {
   countedAsEvidence: boolean
   results: QuestionResult[]
   reviewsCreated: PracticeReviewCreated[]
+  gamification: GamificationSummary | null
+}
+
+/** `GET /api/learning/me/progress`: XP counted toward the level, and today's use of the daily XP cap. */
+export interface LearnerProgress {
+  totalXp: number
+  level: number
+  nextLevelAt: number
+  xpToNextLevel: number
+  xpToday: number
+  dailyCap: number
+}
+
+/** `GET /api/learning/me/streak`. After a break `currentDays` is 0 and `lostStreakDays` is the length that was lost. */
+export interface StreakStatus {
+  currentDays: number
+  longestDays: number
+  freezeAvailable: boolean
+  /** Points the next freeze costs: 10 times the consecutive frozen days counting this one. */
+  nextFreezeCost: number
+  activeToday: boolean
+  lostStreakDays: number
+}
+
+export type QuestType = 'PRACTICE' | 'PRACTICE_PLUS' | 'WEAKNESS' | 'STREAK'
+
+export interface QuestTarget {
+  knowledgePointId: string
+  code: string
+  name: string
+}
+
+export interface Quest {
+  type: QuestType
+  required: number
+  progress: number
+  completed: boolean
+  xpReward: number
+  pointsReward: number
+  /** The knowledge point of a `WEAKNESS` quest; `null` for the others. */
+  target: QuestTarget | null
+}
+
+/** `GET /api/learning/me/quests`: three quests for the learner's local day. Rewards are paid when a quest completes. */
+export interface DailyQuests {
+  date: string
+  completed: number
+  quests: Quest[]
+}
+
+export interface Badge {
+  code: string
+  name: string
+  description: string
+  rewardPoints: number
+  awarded: boolean
+  awardedAt: string | null
+  /** Present for badges that count something; `null` for the others. */
+  progress: { current: number; target: number } | null
+}
+
+export type LeagueTier = 'BRONZE' | 'SILVER' | 'GOLD' | 'SAPPHIRE' | 'DIAMOND' | 'RUBY' | 'AMETHYST'
+export type LeagueZone = 'PROMOTION' | 'SAFE' | 'DEMOTION'
+export type LeagueOutcome = 'PROMOTED' | 'STAYED' | 'DEMOTED'
+
+export interface LeagueRow {
+  rank: number
+  /** `null` when User Service could not give the name. */
+  displayName: string | null
+  weeklyXp: number
+  you: boolean
+  zone: LeagueZone
+}
+
+/** `GET /api/learning/me/league`. `table` is empty and `joined` false until the learner earns XP this week. */
+export interface League {
+  tier: LeagueTier
+  weekStart: string
+  closesAt: string
+  joined: boolean
+  table: LeagueRow[]
+  groupSize: number
+  promoteTop: number
+  demoteFrom: number
+}
+
+export interface LeagueHistoryEntry {
+  weekStart: string
+  tier: LeagueTier
+  weeklyXp: number
+  finalRank: number
+  outcome: LeagueOutcome
+}
+
+/** Where a point stands for the learner. `INSUFFICIENT` is "not enough data to judge yet". */
+export type MasteryTier = 'PRIORITY' | 'CONSOLIDATE' | 'MAINTAIN' | 'INSUFFICIENT'
+
+/** One knowledge point of the learner's tree (`GET /api/learning/tree`). */
+export interface TreePoint {
+  knowledgePointId: string
+  code: string
+  name: string
+  skill: string | null
+  kind: string | null
+  cefrLevel: string | null
+  canDo: string | null
+  /** 0–1; `null` for a point the learner has not touched. */
+  mastery: number | null
+  tier: MasteryTier | null
+  evidenceCount: number
+  nextReviewAt: string | null
+  prerequisiteIds: string[]
+  /** An upper bound: the start route can still answer `FREE_PRACTICE_EXHAUSTED`. */
+  practiceAvailable: boolean
+}
+
+export interface LearnerTree {
+  courseId: string
+  knowledgePoints: TreePoint[]
 }
 
 export interface TestAssignment {

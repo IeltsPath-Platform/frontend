@@ -4,11 +4,10 @@ import { GameSetupPage } from '@/features/games/pages/GameSetupPage'
 import { GameRoomPage } from '@/features/games/pages/GameRoomPage'
 import { WordlyPlayPage } from '@/features/games/pages/WordlyPlayPage'
 import { GameResultPage } from '@/features/games/pages/GameResultPage'
-import { BrowserRouter, Navigate, Routes, Route, useNavigate } from 'react-router-dom'
+import { BrowserRouter, Navigate, Routes, Route, useNavigate, useParams } from 'react-router-dom'
 import { ErrorBoundary } from './ErrorBoundary'
 import { NotFoundPage, RouteStatusPage } from './RouteStatusPage'
 import { ClassroomPage } from '~features/classroom/ClassroomPage'
-import { LessonWorkspacePage } from '~features/classroom/pages/LessonWorkspacePage'
 import { OverviewPage } from '@/features/overview/pages/OverviewPage'
 import { PracticeCatalogPage } from '@/features/practice/pages/PracticeCatalogPage'
 import { ListeningPracticePage } from '@/features/practice/listening/ListeningPracticePage'
@@ -32,11 +31,13 @@ import { GuestOnly, RequireAuth } from '@/features/auth/AuthGuards'
 import { LearnLayout } from '@/features/learning-path/components/LearnLayout'
 import { NotFoundState } from '@/features/learning-path/components/PageState'
 import { CourseListPage } from '@/features/learning-path/pages/CourseListPage'
+import { FreePracticePage } from '@/features/learning-path/pages/FreePracticePage'
+import { KnowledgeTreePage } from '@/features/learning-path/pages/KnowledgeTreePage'
 import { LessonPage } from '@/features/learning-path/pages/LessonPage'
 import { PlacementPage } from '@/features/learning-path/pages/PlacementPage'
-import { PracticePage } from '@/features/learning-path/pages/PracticePage'
+import { ProgressPage } from '@/features/learning-path/pages/ProgressPage'
 import { ReviewPage } from '@/features/learning-path/pages/ReviewPage'
-import { TopicDetailPage } from '@/features/learning-path/pages/TopicDetailPage'
+import { TopicPage } from '@/features/learning-path/pages/TopicPage'
 import { TopicListPage } from '@/features/learning-path/pages/TopicListPage'
 import { TopicTestPage } from '@/features/learning-path/pages/TopicTestPage'
 import { TopicTestResultPage } from '@/features/learning-path/pages/TopicTestResultPage'
@@ -74,10 +75,13 @@ function AppContent() {
       <Route path="/learn" element={<RequireAuth><LearnLayout /></RequireAuth>}>
         <Route index element={<CourseListPage />} />
         <Route path="placement" element={<PlacementPage />} />
+        <Route path="progress" element={<ProgressPage />} />
         <Route path="courses/:courseId" element={<TopicListPage />} />
-        <Route path="topics/:topicId" element={<TopicDetailPage />} />
+        <Route path="courses/:courseId/tree" element={<KnowledgeTreePage />} />
+        <Route path="practice/:attemptId" element={<FreePracticePage />} />
+        <Route path="topics/:topicId" element={<TopicPage />} />
         <Route path="lessons/:lessonId" element={<LessonPage />} />
-        <Route path="lessons/:lessonId/practice" element={<PracticePage />} />
+        <Route path="lessons/:lessonId/practice" element={<LessonPracticeRedirect />} />
         <Route path="reviews/:reviewId" element={<ReviewPage />} />
         <Route path="tests/:attemptId" element={<TopicTestPage />} />
         <Route path="tests/:attemptId/result" element={<TopicTestResultPage />} />
@@ -132,7 +136,7 @@ function AppContent() {
       <Route path="/reset-password" element={<GuestOnly><ResetPasswordPage /></GuestOnly>} />
       <Route path="/auth/oauth/callback" element={<GuestOnly><OAuthCallbackPage /></GuestOnly>} />
       <Route path="/classes/:classCode/join" element={<RouteStatusPage title="Phòng học trực tuyến" />} />
-      <Route path="/lessons/:lessonId" element={<RequireAuth><LessonWorkspacePage /></RequireAuth>} />
+      <Route path="/lessons/:lessonId" element={<LessonRedirect />} />
       <Route path="/mentors/:mentorSlug" element={<RouteStatusPage title="Liên hệ Mentor" />} />
       <Route path="/terms" element={<RouteStatusPage title="Điều khoản sử dụng" />} />
       <Route path="/privacy" element={<RouteStatusPage title="Chính sách bảo mật" />} />
@@ -142,6 +146,18 @@ function AppContent() {
       <SiteFooter />
     </>
   )
+}
+
+/** Lessons live in the learning area; the old top-level lesson URL forwards there. */
+function LessonRedirect() {
+  const { lessonId } = useParams()
+  return <Navigate to={`/learn/lessons/${lessonId}`} replace />
+}
+
+/** The Practice is a part of the lesson page; the old Practice URL forwards there. */
+function LessonPracticeRedirect() {
+  const { lessonId } = useParams()
+  return <Navigate to={`/learn/lessons/${lessonId}?view=practice`} replace />
 }
 
 function PracticeCatalogRoute({ onOpenTest }: { onOpenTest: (skill: SkillType, id: string, mode: PracticeMode) => void }) {

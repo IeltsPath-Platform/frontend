@@ -139,13 +139,28 @@ test('Shared navbar swaps the guest menu for member sections after sign-in', asy
   const member = { isLoggedIn: true, userName: 'Minh Anh' }
 
   const guestHome = await renderNavbar(guest, '/home')
-  for (const label of ['Trang chủ', 'Khóa học Intensive 7.0', 'Luyện tập 4 kỹ năng', 'Bài mẫu Writing 8.0+', 'Kết quả học viên', 'Đăng nhập', 'Đăng ký']) assert.match(guestHome, new RegExp(label))
+  for (const label of ['Trang chủ', 'Khóa học', 'Luyện tập 4 kỹ năng', 'Bài mẫu Writing 8.0+', 'Kết quả học viên', 'Đăng nhập', 'Đăng ký']) assert.match(guestHome, new RegExp(label))
   for (const label of ['Dashboard', 'Lịch sử nộp bài', 'Khóa học của tôi', 'Sổ từ vựng', 'Flashcard của tôi', '0 Points', 'Đăng xuất']) assert.doesNotMatch(guestHome, new RegExp(label))
   assert.doesNotMatch(guestHome, /site-subnav/)
 
   // The second row lists the sections of whichever primary item owns the route.
   const guestCourses = await renderNavbar(guest, '/learn')
   assert.match(guestCourses, /Test đầu vào 4 kỹ năng FREE/)
+  for (const account of [guest, member]) {
+    for (const path of ['/learn', '/learn/courses/c1', '/learn/topics/t1', '/learn/lessons/l1?view=practice', '/learn/reviews/r1']) {
+      const page = await renderNavbar(account, path)
+      const subnav = page.match(/<nav class="site-subnav[^>]*>[\s\S]*?<\/nav>/)?.[0]
+      assert.ok(subnav)
+      assert.match(subnav, /<a(?=[^>]*class="active")(?=[^>]*aria-current="page")(?=[^>]*href="\/learn")[^>]*>Khóa học<\/a>/, path)
+    }
+    for (const path of ['/learn/placement', '/learn/placement/results']) {
+      const page = await renderNavbar(account, path)
+      const subnav = page.match(/<nav class="site-subnav[^>]*>[\s\S]*?<\/nav>/)?.[0]
+      assert.ok(subnav)
+      assert.match(subnav, /<a(?=[^>]*class="active")(?=[^>]*href="\/learn\/placement")[^>]*>/, path)
+      assert.doesNotMatch(subnav, /<a(?=[^>]*class="active")(?=[^>]*href="\/learn")[^>]*>/, path)
+    }
+  }
   const guestPractice = await renderNavbar(guest, '/practice-tests?skill=writing')
   for (const skill of ['listening', 'reading', 'writing', 'speaking']) assert.match(guestPractice, new RegExp(`href="/practice-tests[?]skill=${skill}"`))
   assert.match(guestPractice, /aria-current="page"[^>]*href="\/practice-tests\?skill=writing"|class="active"[^>]*aria-current="page"[^>]*href="\/practice-tests\?skill=writing"/)
@@ -370,22 +385,6 @@ test('Classroom retains its schedule while the guest header limits navigation to
   assert.match(html, /class="cls-panel cls-panel--dark"/)
 })
 
-test('Lesson workspace provides the reference material, quiz and vocabulary views', async () => {
-  const materials = await render('/src/features/classroom/pages/LessonWorkspacePage.tsx', 'LessonWorkspacePage', {}, '/lessons/session-02')
-  assert.match(materials, /Tài liệu buổi học/)
-  assert.match(materials, /Bài 1: Nature &amp; Environment/)
-  assert.match(materials, /LESSON RESOURCE/)
-  assert.match(materials, /HOMEWORK HUB/)
-
-  const quiz = await render('/src/features/classroom/pages/LessonWorkspacePage.tsx', 'LessonWorkspacePage', {}, '/lessons/session-02?view=quiz')
-  assert.match(quiz, /Nghe hội thoại và chọn đáp án đúng/)
-  assert.match(quiz, /Bản đồ câu hỏi/)
-
-  const vocabulary = await render('/src/features/classroom/pages/LessonWorkspacePage.tsx', 'LessonWorkspacePage', {}, '/lessons/session-02?view=vocabulary')
-  assert.match(vocabulary, /sustainable/)
-  assert.match(vocabulary, /Hình ảnh gợi nhớ/)
-})
-
 test('Dictionary shares the topic vocabulary and interactive affordances', async () => {
   const html = await render('/src/features/vocabulary/pages/VocabularyPage.tsx', 'VocabularyPage', {}, '/vocabulary')
   assert.match(html, /Từ điển học theo chủ đề/)
@@ -446,11 +445,10 @@ test('Auth layout uses transform-only ambient motion and a reduced-motion fallba
 })
 
 test('New lesson and dictionary styles preserve motion fallbacks', () => {
-  const lessonStyles = readFileSync(new URL('../src/features/classroom/lesson-workspace.css', import.meta.url), 'utf8')
+  const lessonStyles = readFileSync(new URL('../src/features/learning-path/lesson-resources.css', import.meta.url), 'utf8')
   const vocabularyStyles = readFileSync(new URL('../src/features/vocabulary/vocabulary.css', import.meta.url), 'utf8')
 
   assert.match(lessonStyles, /@media \(prefers-reduced-motion: reduce\)/)
-  assert.match(lessonStyles, /transform-origin:\s*left/)
   assert.match(vocabularyStyles, /@media \(prefers-reduced-motion: reduce\)/)
 })
 

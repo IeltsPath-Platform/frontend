@@ -5,6 +5,7 @@ import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { AssessmentAttempt, AttemptItemResponse } from '~types/learningPath'
 import { learningApi, toApiError } from '../api'
+import { LearnTrail } from '../components/LearnTrail'
 import { NoticeBanner } from '../components/NoticeBanner'
 import { ApiErrorState, LoadingState } from '../components/PageState'
 import { parseAttemptStructure, type TestSection } from '../lib/attemptSnapshot'
@@ -80,6 +81,7 @@ function PlacementFlow({ initialAttempt }: { initialAttempt: AssessmentAttempt |
   return (
     <div className="lp-page pl-page">
       <NoticeBanner />
+      <LearnTrail items={[{ label: 'Khóa học', to: '/learn' }, { label: 'Test đầu vào' }]} />
       <PlacementStepper current={step} wide={view === 'result'} progress={view === 'survey' ? surveyProgress : view === 'test' ? testProgress : view === 'result' ? 1 : 0} />
 
       {view === 'survey' ? (

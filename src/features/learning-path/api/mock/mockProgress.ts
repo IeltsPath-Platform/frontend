@@ -1,5 +1,5 @@
 import type { CourseRef, LessonStatus, ReviewRef, TestStatus, TopicStatus, TopicSummary } from '~types/learningPath'
-import type { MockExerciseBlock, MockKnowledgePoint, MockLesson, MockTopic } from '@/mocks/learning-path/contentTypes'
+import type { MockKnowledgePoint, MockLesson, MockTopic } from '@/mocks/learning-path/contentTypes'
 import { MOCK_LESSONS } from '@/mocks/learning-path/lessons'
 import { MOCK_REVIEW_PACKS } from '@/mocks/learning-path/reviewPacks'
 import { MOCK_TEST_PACKAGES } from '@/mocks/learning-path/topicTests'
@@ -29,14 +29,6 @@ export function requireKnowledgePoint(code: string): MockKnowledgePoint {
   const kp = findKnowledgePoint(code)
   if (!kp) throw new ApiError(404, 'NOT_FOUND', 'Không tìm thấy điểm kiến thức.')
   return kp
-}
-
-export function isMockExercise(block: MockLesson['blocks'][number]): block is MockExerciseBlock {
-  return block.type === 'EXERCISE' && Array.isArray(block.questions)
-}
-
-export function exerciseBlocks(lesson: MockLesson) {
-  return lesson.blocks.filter(isMockExercise)
 }
 
 export function topicLessons(topic: MockTopic) {
@@ -70,16 +62,18 @@ export function topicStatus(state: MockState, topic: MockTopic): TopicStatus {
   return !previous || state.topicTests[previous.id]?.passed ? 'IN_PROGRESS' : 'LOCKED'
 }
 
-export function lessonStatus(state: MockState, lesson: MockLesson): { status: LessonStatus; lockedReason: string | null } {
+export function lessonStatus(state: MockState, lesson: MockLesson): { status: LessonStatus; lockedReason: string | null; blockingReviewId?: string } {
   if (state.completedLessons.includes(lesson.id)) return { status: 'COMPLETED', lockedReason: null }
   const topic = requireTopic(lesson.topicId)
   if (topicStatus(state, topic) === 'LOCKED') return { status: 'LOCKED', lockedReason: 'Topic này chưa mở.' }
+  // Like the real gate, a pending review comes before the order of the lessons.
+  const blocking = pendingReviews(state)[0]
+  if (blocking) return { status: 'LOCKED', lockedReason: 'Mở sau khi hoàn thành bài ôn.', blockingReviewId: blocking.id }
   const lessons = topicLessons(topic)
   const previous = lessons[lessons.findIndex((candidate) => candidate.id === lesson.id) - 1]
   if (previous && !state.completedLessons.includes(previous.id)) {
     return { status: 'LOCKED', lockedReason: `Hoàn thành "${previous.title}" để mở bài này.` }
   }
-  if (pendingReviews(state).length > 0) return { status: 'LOCKED', lockedReason: 'Cần làm bài ôn trước khi học tiếp.' }
   return { status: 'AVAILABLE', lockedReason: null }
 }
 

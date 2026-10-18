@@ -1,22 +1,20 @@
 import { useRef, useState, type CSSProperties, type ReactNode } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, ArrowRight, Check, CheckCircle2, Crown, Flag, Loader2, Lock, Trophy } from 'lucide-react'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Check, CheckCircle2, ChevronDown, Crown, Flag, Loader2, Lock, Network, Trophy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { CourseSummary, TopicSummary } from '~types/learningPath'
 import { learningApi, toApiError } from '../api'
+import { CourseHero } from '../components/CourseHero'
+import { LearnTrail } from '../components/LearnTrail'
 import { NoticeBanner } from '../components/NoticeBanner'
+import { SegmentMeter } from '../components/SegmentMeter'
+import { TopicLessonsPanel } from '../components/TopicLessonsPanel'
 import { ApiErrorState, TopicListSkeleton } from '../components/PageState'
 import { reportApiError } from '../lib/reviewGate'
+import { knowledgeTreePath } from '../lib/routes'
 import { topicStatusMeta } from '../lib/statusMeta'
+import { skillLabel } from '../lib/courseMeta'
 import { useApiResource } from '../lib/useApiResource'
-
-const SKILL_LABEL: Record<string, string> = {
-  READING: 'Reading',
-  LISTENING: 'Listening',
-  WRITING: 'Writing',
-  SPEAKING: 'Speaking',
-  OTHER: 'Khác',
-}
 
 const SKILL_ORDER = ['LISTENING', 'READING', 'WRITING', 'SPEAKING']
 
@@ -32,57 +30,26 @@ export function TopicListPage() {
   const error = topicsResource.error ?? coursesResource.error
   const passed = topics?.filter((topic) => topic.status === 'PASSED').length ?? 0
   const total = topics?.length ?? 0
-  const pct = total === 0 ? 0 : Math.round((passed / total) * 100)
   const nextTopic = topics?.find((topic) => topic.status === 'IN_PROGRESS') ?? null
 
   return (
     <div className="lp-page lp-course-page">
       <NoticeBanner />
-      <Link className="lp-back" to="/learn">
-        <ArrowLeft aria-hidden="true" size={16} />
-        Tất cả khóa học
-      </Link>
+      <LearnTrail items={[{ label: 'Khóa học', to: '/learn' }, { label: course?.title ?? 'Lộ trình khóa học' }]} />
 
-      <header className="lp-overview">
-        <div className="lp-overview__text">
-          <p className="lp-eyebrow">{course ? `Band ${course.bandLevel.toFixed(1)} · Lộ trình khóa học` : 'Lộ trình khóa học'}</p>
-          <h1>{course?.title ?? 'Lộ trình khóa học'}</h1>
-          <p className="lp-overview__lead">
-            Học lần lượt từng chặng. Hoàn thành các bài học và đạt bài kiểm tra chặng (từ 70%) để mở chặng tiếp theo.
-          </p>
-        </div>
+      <CourseHero
+        course={course}
+        done={total > 0 && passed === total}
+        topicCount={total}
+      />
 
-        {topics && total > 0 ? (
-          <div className="lp-overview__panel">
-            <div className="lp-meter">
-              <div className="lp-meter__row">
-                <span><strong>{passed}/{total}</strong> chặng đã qua</span>
-                <span className="lp-meter__value">{pct}%</span>
-              </div>
-              <progress className="lp-progress" max={100} value={pct}>{pct}%</progress>
-            </div>
-            {nextTopic ? (
-              <>
-                <p className="lp-overview__next">
-                  <span>Tiếp theo</span>
-                  Chặng {nextTopic.sequenceOrder}: {nextTopic.title}
-                </p>
-                <Button asChild className="lp-btn lp-btn--accent lp-btn--cta lp-overview__cta">
-                  <Link to={`/learn/topics/${nextTopic.id}`}>
-                    {nextTopic.completedLessons > 0 ? 'Học tiếp' : 'Bắt đầu chặng'}
-                    <ArrowRight aria-hidden="true" size={18} />
-                  </Link>
-                </Button>
-              </>
-            ) : passed === total ? (
-              <p className="lp-overview__done">
-                <CheckCircle2 aria-hidden="true" size={18} />
-                Bạn đã qua tất cả các chặng.
-              </p>
-            ) : null}
-          </div>
-        ) : null}
-      </header>
+      {total > 0 ? (
+        <p className="lp-course-tree-link">
+          <Button asChild className="lp-btn">
+            <Link to={knowledgeTreePath(courseId)}><Network aria-hidden="true" size={16} />Cây kiến thức và luyện tự do</Link>
+          </Button>
+        </p>
+      ) : null}
 
       {loading ? <TopicListSkeleton /> : null}
       {error ? (
@@ -118,11 +85,6 @@ function skillKey(topic: TopicSummary) {
   return topic.skill?.toUpperCase() || 'OTHER'
 }
 
-function skillLabel(skill: string | null | undefined) {
-  if (!skill) return null
-  return SKILL_LABEL[skill.toUpperCase()] ?? skill
-}
-
 function orderedSkills(topics: TopicSummary[]) {
   const present = new Set(topics.map(skillKey))
   return [
@@ -150,10 +112,25 @@ function TopicCatalog({
   finish?: ReactNode
 }) {
   const [filter, setFilter] = useState('ALL')
+  // Topics start collapsed so the whole route is visible at a glance. Only a topic named in `?topic=`
+  // (coming back from one of its lessons or tests) starts open.
+  const [searchParams] = useSearchParams()
+  const [openIds, setOpenIds] = useState<ReadonlySet<string>>(() => {
+    const requested = searchParams.get('topic')
+    return new Set(requested ? [requested] : [])
+  })
   const skills = orderedSkills(topics)
   const visible = (filter === 'ALL' ? topics : topics.filter((topic) => skillKey(topic) === filter))
     .slice()
     .sort((a, b) => a.sequenceOrder - b.sequenceOrder)
+
+  function toggleTopic(topicId: string) {
+    setOpenIds((current) => {
+      const next = new Set(current)
+      if (!next.delete(topicId)) next.add(topicId)
+      return next
+    })
+  }
 
   return (
     <section className="lp-section" aria-labelledby="lp-topics-title">
@@ -179,6 +156,8 @@ function TopicCatalog({
               index={index}
               isNext={topic.id === nextTopicId}
               key={topic.id}
+              onToggle={() => toggleTopic(topic.id)}
+              open={openIds.has(topic.id)}
               quietReason={repeatsReason}
               topic={topic}
             />
@@ -198,22 +177,31 @@ function TopicStop({
   topic,
   index,
   isNext,
+  open,
+  onToggle,
   quietReason = false,
 }: {
   topic: TopicSummary
   index: number
   isNext: boolean
+  open: boolean
+  onToggle: () => void
   quietReason?: boolean
 }) {
   const locked = topic.status === 'LOCKED'
   const passed = topic.status === 'PASSED'
+  const progress = passed ? 1 : locked || topic.totalLessons <= 0
+    ? 0
+    : Math.min(1, Math.max(0, topic.completedLessons / topic.totalLessons))
   const premium = topic.accessLevel === 'PREMIUM' || topic.lockedReason?.includes('Premium')
   const reasonId = `${topic.id}-reason`
-  const lessonPct = topic.totalLessons === 0 ? 0 : Math.round((topic.completedLessons / topic.totalLessons) * 100)
+  const panelId = `${topic.id}-lessons`
   const skill = skillLabel(topic.skill)
-  const cta = passed ? 'Xem lại' : topic.completedLessons > 0 ? 'Học tiếp' : 'Vào chặng'
+  // Lessons load the first time a card opens and stay mounted afterwards, so closing and reopening costs nothing.
+  const [loaded, setLoaded] = useState(open)
+  if (open && !loaded) setLoaded(true)
 
-  const body = (
+  const summary = (
     <>
       <div className="lp-stop__head">
         <p className="lp-stop__kicker">
@@ -242,16 +230,10 @@ function TopicStop({
           </span>
         ) : (
           <span className="lp-stop__stat">
-            <progress className="lp-progress lp-progress--mini" max={100} value={lessonPct}>{lessonPct}%</progress>
+            <SegmentMeter done={topic.completedLessons} total={topic.totalLessons} unit="bài" />
             {topic.completedLessons}/{topic.totalLessons} bài
           </span>
         )}
-        {!locked ? (
-          <span className="lp-stop__go">
-            {cta}
-            <ArrowRight aria-hidden="true" size={15} />
-          </span>
-        ) : null}
       </div>
       <span className="lp-sr-only">Trạng thái: {topicStatusMeta(topic.status).label}</span>
     </>
@@ -259,18 +241,44 @@ function TopicStop({
 
   return (
     <li
-      className={`lp-stop lp-stop--${topic.status.toLowerCase()}${isNext ? ' is-next' : ''}`}
-      style={{ '--i': index } as CSSProperties}
+      className={`lp-stop lp-stop--${topic.status.toLowerCase()}${isNext ? ' is-next' : ''}${open && !locked ? ' is-open' : ''}`}
+      style={{ '--i': index, '--topic-progress': progress } as CSSProperties}
     >
       <span className="lp-stop__node" aria-hidden="true">
         {locked ? <Lock size={15} /> : passed ? <Check size={17} strokeWidth={2.75} /> : topic.sequenceOrder}
       </span>
+
       {locked ? (
-        <div className="lp-stop__card" aria-describedby={reasonId} aria-disabled="true">{body}</div>
+        <div className="lp-stop__card" aria-describedby={reasonId} aria-disabled="true">
+          <div className="lp-stop__summary">
+            <div className="lp-stop__toggle">{summary}</div>
+          </div>
+        </div>
       ) : (
-        <Link aria-current={isNext ? 'step' : undefined} className="lp-stop__card" to={`/learn/topics/${topic.id}`}>
-          {body}
-        </Link>
+        <div className="lp-stop__card">
+          <div className="lp-stop__summary">
+            <button
+              aria-controls={panelId}
+              aria-current={isNext ? 'step' : undefined}
+              aria-expanded={open}
+              className="lp-stop__toggle"
+              onClick={onToggle}
+              type="button"
+            >
+              {summary}
+              <span className="lp-stop__chevron" aria-hidden="true">
+                <span>{open ? 'Thu gọn' : 'Xem bài học'}</span>
+                <ChevronDown size={16} />
+              </span>
+            </button>
+          </div>
+
+          <div className="lp-stop__panel" data-open={open} id={panelId} inert={!open}>
+            <div className="lp-stop__panel-inner">
+              {loaded ? <TopicLessonsPanel topicId={topic.id} /> : null}
+            </div>
+          </div>
+        </div>
       )}
     </li>
   )

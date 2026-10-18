@@ -1,4 +1,4 @@
-import type { Passage, PassageBlockData, Question, RawBlock, TextBlockData } from '~types/learningPath'
+import type { Passage, Question } from '~types/learningPath'
 
 /** `accepted[0]` is the canonical answer; free-text answers compare case-insensitively. */
 export interface MockQuestion extends Question {
@@ -6,15 +6,11 @@ export interface MockQuestion extends Question {
   explanation: string
 }
 
-export interface MockExerciseBlock extends RawBlock {
-  type: 'EXERCISE'
+export interface MockResourceLink {
+  id: string
   title: string
-  instructions: string
-  knowledgePointCode: string
-  questions: MockQuestion[]
+  url: string
 }
-
-export type MockLessonBlock = TextBlockData | PassageBlockData | MockExerciseBlock | RawBlock
 
 export interface MockLesson {
   id: string
@@ -22,7 +18,9 @@ export interface MockLesson {
   title: string
   sortOrder: number
   estimatedMinutes: number
-  blocks: MockLessonBlock[]
+  summaryMarkdown: string
+  slides: MockResourceLink[]
+  documents: MockResourceLink[]
 }
 
 export interface MockTopic {
@@ -70,18 +68,10 @@ export const TFNG_OPTIONS = [
   { value: 'NOT GIVEN', label: 'NOT GIVEN' },
 ]
 
-export function text(id: string, sortOrder: number, body: string): TextBlockData {
-  return { id, sortOrder, type: 'TEXT', text: body }
-}
-
 type ParagraphSource = [label: string | null, body: string]
 
 export function toPassage(title: string, paragraphs: ParagraphSource[]): Passage {
   return { title, paragraphs: paragraphs.map(([label, body]) => ({ label, text: body })) }
-}
-
-export function passage(id: string, sortOrder: number, title: string, paragraphs: ParagraphSource[]): PassageBlockData {
-  return { id, sortOrder, type: 'ASSET', assetType: 'PASSAGE', mediaUrl: null, ...toPassage(title, paragraphs) }
 }
 
 export function choice(

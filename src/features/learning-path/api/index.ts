@@ -20,6 +20,6 @@ export const learningDemoControls: MockLearningControls | null = USE_MOCK_LEARNI
 
 export const isMockLearning = USE_MOCK_LEARNING
 
-export { ApiError, isApiError, toApiError } from './apiError'
+export { ApiError, isApiError, toApiError, userMessage } from './apiError'
 export type { ApiErrorCode } from './apiError'
 export type { LearningApi } from './learningApi'
