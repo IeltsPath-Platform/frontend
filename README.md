@@ -70,6 +70,31 @@ src/
 - [`plans/261002-2048-fe-auth-learning/`](./plans/261002-2048-fe-auth-learning/)
 - BE: `backend/docs/fe-main-flow-guide.md`, `backend/docs/contracts/lesson-learning-v1.md`
 
+
+### Trò chơi Wordly
+
+Vào **Trò Chơi** trên navbar hoặc `/games` sau khi đăng nhập. Module nằm ở
+`src/features/games/`, chia `pages`, `components`, `hooks`, `api`, `types` và `lib`.
+
+- Catalog lấy từ backend; Tên lửa chưa khả dụng. Chọn Wordly mở popup chọn chế độ.
+- Tạo phòng: 3–6 mạng, hữu hạn tối thiểu5 từ hoặc vô hạn; chơi đơn có tùy chọn timer.
+- Sảnh phòng hiển thị thành viên thật, sẵn sàng và popup sửa cấu hình cho chủ phòng khi WAITING.
+- Chơi đơn dùng bảng N cột/N+1 hàng, hint1 lần/từ, điểm/chuỗi/mạng do backend quyết định.
+- Gửi lại lượt đoán đang chờ giữ nguyên requestId/payload; tải lại khôi phục trạng thái từ server.
+- Multiplayer dùng WebSocket ticket một lần (không đưa JWT lên URL), tự xin ticket mới khi nối lại; REST định kỳ 2.5s phục hồi trạng thái với abort/khóa chống ghi đè response cũ.
+- Kết thúc đọc kết quả chính thức; chơi lại trở về phòng khi phòng còn tồn tại.
+- Tổng kết bỏ số mạng còn lại và cột mạng; ranking chuyển thành thẻ khi vùng hiển thị hẹp. Khi đang chơi multiplayer, ranking nằm cạnh phải khu chơi trên desktop và xuống dưới trên màn nhỏ. Bảng chữ và bàn phím co theo chiều rộng màn hình.
+- Multiplayer tối đa 4 người: ready/start, host kick khi WAITING, bảng riêng, ranking trực tiếp, hết mạng/hoàn thành chuyển sang theo dõi, tổng kết giữ người đã rời trận.
+- Host rời giữa trận không đóng trận; cuối trận hiển thị ranking rồi popup đóng phòng. Cache trong sessionStorage chỉ lưu UUID host theo match để khôi phục thông báo trong tab, không chứa token.
+- Mở kết quả bằng tab mới chưa từng vào phòng có thể chỉ hiện thông báo phòng không khả dụng: API kết quả hiện chưa trả host/closure metadata.
+
+Không thêm thư viện. Cấu hình `VITE_API_BASE_URL` trỏ Gateway đang chạy; local hiện dùng18080. Mở FE bằng `http://localhost:5173/games` khi Gateway dùng
+`http://localhost:18080` để cookie refresh có cùng hostname.
+Kiểm tra: `npm run lint`, `npm run typecheck`, `npm run build`,
+`node --test tests/games-render.test.mjs`.
+
+Wordly hiển thị từ không tồn tại bằng popup giữa bảng tự ẩn sau3giây. Nhập chữ/phím có hiệu ứng nảy; gửi đáp án lật lần lượt từng ô rồi mới chuyển từ hoặc mở kết quả. Hiệu ứng tuân prefers-reduced-motion; không thay đổi cách backend tính điểm hoặc deadline.
+
 ### P-43 practice
 
 `/practice-tests?skill=reading` uses the content catalog and assessment attempt APIs through the Gateway. Reading requires authenticated backend services and does not use `VITE_USE_MOCK_LEARNING`; saved responses, submissions, results, and Reading history are loaded from backend APIs. Listening and Writing keep their existing mock practice screens because the backend does not currently publish standalone P-43 practice content for those skills. Writing's Points balance and activation key dialog use the access-service APIs; essay grading remains unavailable for this standalone screen.

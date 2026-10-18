@@ -47,6 +47,7 @@ const guestNavigation: readonly NavItem[] = [
   practice,
   { to: '/writing-samples', label: 'Bài mẫu Writing 8.0+' },
   studentResults,
+  { to: '/games', label: 'Trò Chơi' },
 ]
 
 const memberNavigation: readonly NavItem[] = [
@@ -72,6 +73,7 @@ const memberNavigation: readonly NavItem[] = [
     ],
   },
   studentResults,
+  { to: '/games', label: 'Trò Chơi' },
 ]
 
 export interface SiteNavbarProps {

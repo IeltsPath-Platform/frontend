@@ -1,3 +1,9 @@
+import { GameLayout } from '@/features/games/components/GameLayout'
+import { GameCatalogPage } from '@/features/games/pages/GameCatalogPage'
+import { GameSetupPage } from '@/features/games/pages/GameSetupPage'
+import { GameRoomPage } from '@/features/games/pages/GameRoomPage'
+import { WordlyPlayPage } from '@/features/games/pages/WordlyPlayPage'
+import { GameResultPage } from '@/features/games/pages/GameResultPage'
 import { BrowserRouter, Navigate, Routes, Route, useNavigate } from 'react-router-dom'
 import { ErrorBoundary } from './ErrorBoundary'
 import { NotFoundPage, RouteStatusPage } from './RouteStatusPage'
@@ -49,6 +55,13 @@ function AppContent() {
     <>
       <Routes>
       <Route path="/" element={<Navigate replace to={isLoggedIn ? '/overview' : '/home'} />} />
+      <Route path="/games" element={<RequireAuth><GameLayout /></RequireAuth>}>
+        <Route index element={<GameCatalogPage />} />
+        <Route path="wordly/setup" element={<GameSetupPage />} />
+        <Route path="rooms/:roomId" element={<GameRoomPage />} />
+        <Route path="matches/:matchId/play" element={<WordlyPlayPage />} />
+        <Route path="matches/:matchId/result" element={<GameResultPage />} />
+      </Route>
       <Route path="/home" element={<HomePage />} />
       <Route path="/overview" element={<RequireAuth><OverviewPage /></RequireAuth>} />
       <Route path="/community" element={<RequireAuth><CommunityPage /></RequireAuth>} />
