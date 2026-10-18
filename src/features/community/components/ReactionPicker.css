@@ -1,0 +1,448 @@
+/* ==========================================================================
+   Reaction Picker & Summary Styles (Facebook-style Reaction Bar)
+   ========================================================================== */
+
+/* Container wrapper for the reaction button & popup */
+.reaction-picker-container {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* Nút cảm xúc chính trên thanh hành động */
+.reaction-main-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 44px;
+  min-width: 44px;
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  border-radius: 0.55rem;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #374151; /* WCAG AAA: 9.03:1 contrast ratio on white */
+  font-weight: 650;
+  font-size: 0.875rem;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
+  transition: background-color 0.16s ease, color 0.16s ease, transform 0.12s ease;
+}
+
+.reaction-main-text {
+  color: inherit;
+  white-space: nowrap;
+}
+
+.reaction-main-button:hover {
+  background: var(--community-hover-bg, #f0f4fc);
+  color: var(--community-text, #111827);
+}
+
+.reaction-main-button:focus-visible {
+  outline: 2px solid var(--color-focus, #005fcc);
+  outline-offset: 2px;
+}
+
+.reaction-main-button:active {
+  transform: scale(0.96);
+}
+
+/* Biến thể màu sắc khi nút chính đang ở trạng thái đã chọn */
+.reaction-main-button.is-active-like {
+  color: #1877f2;
+  font-weight: 700;
+}
+.reaction-main-button.is-active-love {
+  color: #e41e3f;
+  font-weight: 700;
+}
+.reaction-main-button.is-active-helpful {
+  color: #d97706;
+  font-weight: 700;
+}
+.reaction-main-button.is-active-accurate {
+  color: #059669;
+  font-weight: 700;
+}
+
+.reaction-main-button.is-active {
+  background: var(--community-selected-bg, #eef4ff);
+}
+
+/* Icon bên trong nút chính */
+.reaction-main-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.16s ease;
+}
+
+.reaction-main-button:hover .reaction-main-icon {
+  transform: scale(1.1);
+}
+
+/* ==========================================================================
+   Popup nổi chứa 4 cảm xúc (Floating Popup)
+   ========================================================================== */
+.reaction-popup {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.55rem;
+  background: #ffffff;
+  border: 1px solid rgba(220, 226, 237, 0.9);
+  border-radius: 999px;
+  box-shadow: 0 10px 30px -4px rgba(16, 36, 94, 0.2), 0 4px 10px -2px rgba(16, 36, 94, 0.1);
+  transform-origin: bottom left;
+  animation: reaction-popup-pop 0.24s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Tam giác nhỏ hướng xuống dưới popup */
+.reaction-popup::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 20px;
+  width: 12px;
+  height: 12px;
+  background: #ffffff;
+  border-right: 1px solid rgba(220, 226, 237, 0.9);
+  border-bottom: 1px solid rgba(220, 226, 237, 0.9);
+  transform: rotate(45deg);
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   Icon cảm xúc trong popup
+   ========================================================================== */
+.reaction-item-btn {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  touch-action: manipulation;
+  outline: none;
+  transform-origin: bottom center;
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.18s ease;
+}
+
+/* Stagger animation khi mở popup: từng icon nảy nhẹ lên */
+.reaction-item-btn:nth-child(1) {
+  animation: reaction-icon-stagger 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) 0.02s both;
+}
+.reaction-item-btn:nth-child(2) {
+  animation: reaction-icon-stagger 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) 0.06s both;
+}
+.reaction-item-btn:nth-child(3) {
+  animation: reaction-icon-stagger 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) 0.10s both;
+}
+.reaction-item-btn:nth-child(4) {
+  animation: reaction-icon-stagger 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) 0.14s both;
+}
+
+/* Khi hover vào icon: phóng to và nhấc lên */
+.reaction-item-btn:hover,
+.reaction-item-btn:focus-visible {
+  transform: scale(1.35) translateY(-8px);
+  z-index: 10;
+}
+
+/* Focus ring cho bàn phím */
+.reaction-item-btn:focus-visible {
+  outline: 2px solid var(--color-focus, #005fcc);
+  outline-offset: 4px;
+}
+
+/* Icon đang là lựa chọn hiện tại: có vòng sáng bao quanh */
+.reaction-item-btn.is-active {
+  box-shadow: 0 0 0 3px #ffffff, 0 0 0 5px var(--active-ring-color, #1877f2);
+}
+
+/* ==========================================================================
+   Tooltip nhãn tên phía trên từng icon (hiện khi hover/focus)
+   ========================================================================== */
+.reaction-item-label {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  padding: 0.25rem 0.55rem;
+  background: rgba(17, 24, 39, 0.92);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  border-radius: 999px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.14s ease, transform 0.14s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.reaction-item-btn:hover .reaction-item-label,
+.reaction-item-btn:focus-visible .reaction-item-label {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ==========================================================================
+   Hiệu ứng bắn lên (Burst Particle Effect) khi chọn
+   ========================================================================== */
+.reaction-burst-container {
+  position: absolute;
+  pointer-events: none;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.reaction-burst-particle {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  animation: reaction-burst-fly 0.5s cubic-bezier(0.12, 0.8, 0.32, 1) forwards;
+}
+
+@keyframes reaction-burst-fly {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--burst-x, 0px), var(--burst-y, -25px)) scale(0.2);
+  }
+}
+
+/* ==========================================================================
+   Keyframe Animations
+   ========================================================================== */
+@keyframes reaction-popup-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.85);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes reaction-icon-stagger {
+  0% {
+    opacity: 0;
+    transform: translateY(16px) scale(0.5);
+  }
+  70% {
+    transform: translateY(-4px) scale(1.1);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ==========================================================================
+   Reaction Summary (Dòng tóm tắt tổng số cảm xúc)
+   ========================================================================== */
+.reaction-summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.45rem 0.2rem 0.55rem;
+  border-bottom: 1px solid var(--community-border, #edf0f5);
+  font-size: 0.85rem;
+  color: var(--community-muted, #475467);
+  min-height: 28px;
+}
+
+.reaction-summary-left {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  cursor: default;
+}
+
+/* Chồng icon lên nhau (stacked icons) */
+.reaction-summary-stack {
+  display: inline-flex;
+  align-items: center;
+  flex-direction: row;
+}
+
+.reaction-summary-stack-item {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1.5px solid #ffffff;
+  background: #ffffff;
+  margin-left: -6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  transition: transform 0.15s ease;
+}
+
+.reaction-summary-stack-item:first-child {
+  margin-left: 0;
+  z-index: 3;
+}
+.reaction-summary-stack-item:nth-child(2) {
+  z-index: 2;
+}
+.reaction-summary-stack-item:nth-child(3) {
+  z-index: 1;
+}
+
+.reaction-summary-left:hover .reaction-summary-stack-item {
+  transform: translateY(-2px);
+}
+
+.reaction-summary-total {
+  font-weight: 600;
+  color: var(--community-text, #1f2937);
+  font-size: 0.85rem;
+  letter-spacing: -0.01em;
+}
+
+/* Tooltip chi tiết breakdown từng loại cảm xúc */
+.reaction-summary-tooltip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  z-index: 40;
+  padding: 0.35rem 0.65rem;
+  background: rgba(17, 24, 39, 0.95);
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+  border-radius: 0.45rem;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+.reaction-summary-left:hover .reaction-summary-tooltip,
+.reaction-summary-left:focus-within .reaction-summary-tooltip {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ==========================================================================
+   Prefers Reduced Motion (Tôn trọng thiết lập giảm chuyển động)
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .reaction-popup {
+    animation: none !important;
+    transition: opacity 0.05s linear !important;
+  }
+
+  .reaction-item-btn {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .reaction-item-btn:hover,
+  .reaction-item-btn:focus-visible {
+    transform: none !important;
+  }
+
+  .reaction-item-label {
+    transition: none !important;
+    transform: translateX(-50%) !important;
+  }
+
+  .reaction-burst-particle {
+    display: none !important;
+    animation: none !important;
+  }
+
+  .reaction-main-button:hover .reaction-main-icon {
+    transform: none !important;
+  }
+}
+
+/* ==========================================================================
+   Mobile Action Bar & Layout Overrides (No-wrap, 44px touch, CTA clearance)
+   ========================================================================== */
+@media (max-width: 680px) {
+  .community-post-footer {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    flex-wrap: nowrap !important;
+    gap: 0.2rem !important;
+    width: 100% !important;
+  }
+
+  .community-action-btn {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    min-height: 44px !important;
+    padding: 0.4rem 0.25rem !important;
+    white-space: nowrap !important;
+    font-size: 0.82rem !important;
+  }
+
+  .community-btn-word {
+    display: none !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .community-layout {
+    padding-bottom: 8rem !important;
+  }
+
+  body:has(.community-page) .site-footer-consultation,
+  body:has(.community-layout) .site-footer-consultation {
+    bottom: 0.65rem !important;
+    right: 0.65rem !important;
+    width: 2.75rem !important;
+    height: 2.75rem !important;
+    min-height: 2.75rem !important;
+    padding: 0 !important;
+    justify-content: center !important;
+  }
+}
+
+@media (max-width: 390px) {
+  .community-action-btn,
+  .reaction-main-button {
+    padding: 0.4rem 0.15rem !important;
+    font-size: 0.76rem !important;
+    gap: 0.2rem !important;
+  }
+
+  .reaction-main-button svg,
+  .community-action-btn svg {
+    width: 16px !important;
+    height: 16px !important;
+  }
+}
+
