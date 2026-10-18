@@ -12,6 +12,8 @@ export interface AuthSessionSnapshot {
   tier: UserTier
   userName: string
   email: string | null
+  userId: string | null
+  roles: string[]
 }
 
 const GUEST_SESSION: AuthSessionSnapshot = {
@@ -21,6 +23,8 @@ const GUEST_SESSION: AuthSessionSnapshot = {
   tier: 'FREE',
   userName: 'Học viên',
   email: null,
+  userId: null,
+  roles: [],
 }
 
 let session = GUEST_SESSION
@@ -56,6 +60,8 @@ function applyUser(user: UserResponse) {
     hydrated: true,
     userName: user.fullName || user.email.split('@')[0] || GUEST_SESSION.userName,
     email: user.email,
+    userId: user.id,
+    roles: user.roles.map((role) => role.name),
   }
   emitChange()
 }
