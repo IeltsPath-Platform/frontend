@@ -1,3 +1,4 @@
+import { StudyActivityTracker } from '@/features/study-time/StudyActivityTracker'
 import { Fragment, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AlertTriangle, ArrowRight, CheckCircle2, CircleDot, Loader2, Lock, ShieldAlert } from 'lucide-react'
@@ -152,6 +153,7 @@ function PracticeView({ catalog, hearts, onHeartsChanged, onReload, reviewOrigin
       : null
     return (
       <section className="lp-practice" aria-labelledby="lp-practice-attempt-title">
+        <StudyActivityTracker sourceType="PRACTICE" sourceId={active.attempt.attemptId} enabled={!submission} />
         <header className="lp-lesson-head lp-practice-attempt-head">
           <p className="lp-eyebrow">Luyện thêm · {active.item.code}</p>
           <h2 id="lp-practice-attempt-title">{active.item.title}</h2>

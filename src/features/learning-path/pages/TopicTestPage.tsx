@@ -1,3 +1,4 @@
+import { StudyActivityTracker } from '@/features/study-time/StudyActivityTracker'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, Check, CloudOff, Infinity as InfinityIcon, Loader2, Send } from 'lucide-react'
@@ -149,6 +150,7 @@ function TestRunner({
 
   return (
     <article className="lp-page lp-test-page" aria-labelledby="lp-test-title">
+      <StudyActivityTracker sourceType="ASSESSMENT" sourceId={attemptId} />
       <LearnTrail
         items={[
           { label: 'Khóa học', to: '/learn' },

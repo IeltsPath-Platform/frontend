@@ -12,6 +12,8 @@ export interface AuthSessionSnapshot {
   tier: UserTier
   userName: string
   email: string | null
+  userId: string | null
+  roles: string[]
 }
 
 const GUEST_SESSION: AuthSessionSnapshot = {
@@ -21,6 +23,8 @@ const GUEST_SESSION: AuthSessionSnapshot = {
   tier: 'FREE',
   userName: 'Học viên',
   email: null,
+  userId: null,
+  roles: [],
 }
 
 let session = GUEST_SESSION
@@ -56,6 +60,8 @@ function applyUser(user: UserResponse) {
     hydrated: true,
     userName: user.fullName || user.email.split('@')[0] || GUEST_SESSION.userName,
     email: user.email,
+    userId: user.id,
+    roles: user.roles.map((role) => role.name),
   }
   emitChange()
 }
@@ -70,6 +76,7 @@ export function setDemoTier(tier: UserTier) {
 }
 
 export function clearAuthSession() {
+  window.dispatchEvent(new Event('study-session-ending'))
   clearAccessToken()
   session = { ...GUEST_SESSION, hydrated: true }
   emitChange()
@@ -118,6 +125,7 @@ export async function registerWithPassword(input: {
 }
 
 export async function logoutSession() {
+  window.dispatchEvent(new Event('study-session-ending'))
   try {
     await authApi.logout()
   } catch {

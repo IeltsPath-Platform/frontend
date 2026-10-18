@@ -1,3 +1,4 @@
+import { StudyActivityTracker } from '@/features/study-time/StudyActivityTracker'
 import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import { ArrowRight, BookOpenCheck, Loader2, RefreshCw, SkipForward } from 'lucide-react'
@@ -169,6 +170,7 @@ function ReviewView({ review, onAdvance, onReload, reviewOrigin }: {
 
   return (
     <article className="lp-page lp-review-page" aria-labelledby="lp-review-title">
+      <StudyActivityTracker sourceType="REVIEW" sourceId={review.reviewId} enabled={status === 'PENDING'} />
       <LearnTrail
         items={[
           ...parents,

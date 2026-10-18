@@ -1,15 +1,25 @@
-import { BrowserRouter, Navigate, Routes, Route, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { GameLayout } from '@/features/games/components/GameLayout'
+import { GameCatalogPage } from '@/features/games/pages/GameCatalogPage'
+import { GameSetupPage } from '@/features/games/pages/GameSetupPage'
+import { GameRoomPage } from '@/features/games/pages/GameRoomPage'
+import { WordlyPlayPage } from '@/features/games/pages/WordlyPlayPage'
+import { GameResultPage } from '@/features/games/pages/GameResultPage'
+import { BrowserRouter, Navigate, Routes, Route, useNavigate, useParams } from 'react-router-dom'
 import { ErrorBoundary } from './ErrorBoundary'
 import { NotFoundPage, RouteStatusPage } from './RouteStatusPage'
 import { ClassroomPage } from '~features/classroom/ClassroomPage'
 import { OverviewPage } from '@/features/overview/pages/OverviewPage'
 import { PracticeCatalogPage } from '@/features/practice/pages/PracticeCatalogPage'
-import { PracticeTestPage } from '@/features/practice/pages/PracticeTestPage'
-import { ListeningPage } from '@/features/practice/pages/ListeningPage'
-import { WritingPage } from '@/features/practice/pages/WritingPage'
-import { SpeakingPage } from '@/features/practice/pages/SpeakingPage'
+import { ListeningPracticePage } from '@/features/practice/listening/ListeningPracticePage'
+import { WritingWorkspacePage } from '@/features/practice/writing/WritingWorkspacePage'
+import { WritingResultPage } from '@/features/practice/writing/WritingResultPage'
+import { SpeakingWorkspacePage } from '@/features/practice/speaking/SpeakingWorkspacePage'
+import { ReadingPracticePage } from '@/features/practice/reading/ReadingPracticePage'
+import { ReadingResultPage } from '@/features/practice/reading/ReadingResultPage'
+import { ReadingHistoryPage } from '@/features/practice/reading/ReadingHistoryPage'
 import { HomePage } from '@/features/home/HomePage'
 import { VocabularyPage } from '@/features/vocabulary/pages/VocabularyPage'
+import { VocabularyReviewPage } from '@/features/vocabulary/pages/VocabularyReviewPage'
 import { AuthPage } from '@/features/auth/pages/AuthPage'
 import { useAuthSession } from '@/features/auth/authSession'
 import { SiteFooter } from '@/components/SiteFooter'
@@ -31,7 +41,9 @@ import { TopicPage } from '@/features/learning-path/pages/TopicPage'
 import { TopicListPage } from '@/features/learning-path/pages/TopicListPage'
 import { TopicTestPage } from '@/features/learning-path/pages/TopicTestPage'
 import { TopicTestResultPage } from '@/features/learning-path/pages/TopicTestResultPage'
-import { getPracticeMode } from '@/features/practice/lib/passageTools'
+import { CommunityPage } from '@/features/community/pages/CommunityPage'
+import { NotificationPreferencesPage } from '@/features/community/pages/NotificationPreferencesPage'
+import { ContentReportsAdminPage } from '@/features/community/pages/ContentReportsAdminPage'
 import type { PracticeMode, SkillType } from '@/types/practice'
 import './app.css'
 import '@/features/practice/practice.css'
@@ -44,8 +56,21 @@ function AppContent() {
     <>
       <Routes>
       <Route path="/" element={<Navigate replace to={isLoggedIn ? '/overview' : '/home'} />} />
+      <Route path="/games" element={<RequireAuth><GameLayout /></RequireAuth>}>
+        <Route index element={<GameCatalogPage />} />
+        <Route path="wordly/setup" element={<GameSetupPage />} />
+        <Route path="rooms/:roomId" element={<GameRoomPage />} />
+        <Route path="matches/:matchId/play" element={<WordlyPlayPage />} />
+        <Route path="matches/:matchId/result" element={<GameResultPage />} />
+      </Route>
       <Route path="/home" element={<HomePage />} />
       <Route path="/overview" element={<RequireAuth><OverviewPage /></RequireAuth>} />
+      <Route path="/community" element={<RequireAuth><CommunityPage /></RequireAuth>} />
+      <Route path="/community/admin/reports" element={<RequireAuth><ContentReportsAdminPage /></RequireAuth>} />
+      <Route path="/notifications/preferences" element={<RequireAuth><NotificationPreferencesPage /></RequireAuth>} />
+      <Route path="/community/posts/:postId" element={<RequireAuth><CommunityPage /></RequireAuth>} />
+      <Route path="/community/users/:userId" element={<RequireAuth><CommunityPage /></RequireAuth>} />
+      <Route path="/vocabulary/review" element={<RequireAuth><VocabularyReviewPage /></RequireAuth>} />
       <Route path="/classroom" element={<RequireAuth><ClassroomPage /></RequireAuth>} />
       <Route path="/learn" element={<RequireAuth><LearnLayout /></RequireAuth>}>
         <Route index element={<CourseListPage />} />
@@ -70,35 +95,36 @@ function AppContent() {
         path="/practice-tests"
         element={
           <RequireAuth>
-            <PracticeCatalogPage
-              onOpenTest={(skill: SkillType, id: string, mode: PracticeMode) => {
-                const route = skill === 'reading' ? `/practice/test/${id}` : `/practice/${skill}/${id}`
-                navigate(`${route}?mode=${mode}`)
-              }}
-            />
+            <PracticeCatalogRoute onOpenTest={(skill: SkillType, id: string, mode: PracticeMode) => {
+              const route = `/practice/${skill}/${id}`
+              navigate(`${route}?mode=${mode}`)
+            }} />
           </RequireAuth>
         }
       />
+      <Route path="/practice/reading" element={<Navigate replace to="/practice-tests?skill=reading" />} />
+      <Route path="/practice/reading/attempts/:attemptId" element={<RequireAuth><ReadingPracticePage /></RequireAuth>} />
+      <Route path="/practice/reading/attempts/:attemptId/result" element={<RequireAuth><ReadingResultPage /></RequireAuth>} />
+      <Route path="/practice/reading/attempts/:attemptId/review" element={<RequireAuth><ReadingResultPage review /></RequireAuth>} />
+      <Route path="/practice/listening/attempts/:attemptId" element={<RequireAuth><ListeningPracticePage /></RequireAuth>} />
+      <Route path="/practice/listening/attempts/:attemptId/result" element={<RequireAuth><ReadingResultPage skill="listening" /></RequireAuth>} />
+      <Route path="/practice/listening/attempts/:attemptId/review" element={<RequireAuth><ReadingResultPage skill="listening" review /></RequireAuth>} />
+      <Route path="/practice/writing/tasks/:packageVersionId/:sectionId" element={<RequireAuth><WritingWorkspacePage /></RequireAuth>} />
+      <Route path="/practice/writing/submissions/:submissionId/result" element={<RequireAuth><WritingResultPage /></RequireAuth>} />
+      <Route path="/practice/listening/:testId" element={<Navigate replace to="/practice-tests?skill=listening" />} />
+      <Route path="/practice/writing/:taskId" element={<Navigate replace to="/practice-tests?skill=writing" />} />
+      <Route path="/practice/reading/history" element={<RequireAuth><ReadingHistoryPage /></RequireAuth>} />
+      <Route path="/practice/reading/:packageId" element={<Navigate replace to="/practice-tests?skill=reading" />} />
       <Route
         path="/practice/test/:testId"
-        element={<RequireAuth><PracticeTestRouteWrapper onExit={() => navigate('/practice-tests')} /></RequireAuth>}
+        element={<RequireAuth><Navigate replace to="/practice-tests?skill=reading" /></RequireAuth>}
       />
       <Route
         path="/practice/test"
-        element={<RequireAuth><PracticeTestRouteWrapper onExit={() => navigate('/practice-tests')} /></RequireAuth>}
+        element={<RequireAuth><Navigate replace to="/practice-tests?skill=reading" /></RequireAuth>}
       />
-      <Route
-        path="/practice/listening/:testId"
-        element={<RequireAuth><ListeningPage onExit={() => navigate('/practice-tests')} /></RequireAuth>}
-      />
-      <Route
-        path="/practice/writing/:taskId"
-        element={<RequireAuth><WritingPage onExit={() => navigate('/practice-tests')} /></RequireAuth>}
-      />
-      <Route
-        path="/practice/speaking/:cueId"
-        element={<RequireAuth><SpeakingPage onExit={() => navigate('/practice-tests')} /></RequireAuth>}
-      />
+      <Route path="/practice/speaking/tasks/:packageVersionId/:sectionId" element={<RequireAuth><SpeakingWorkspacePage /></RequireAuth>} />
+      <Route path="/practice/speaking/:cueId" element={<Navigate replace to="/practice-tests?skill=speaking" />} />
       <Route path="/vocabulary" element={<VocabularyPage />} />
       <Route path="/submission-history" element={<RequireAuth><RouteStatusPage title="Lịch sử nộp bài" /></RequireAuth>} />
       <Route path="/flashcards" element={<RequireAuth><RouteStatusPage title="Flashcard của tôi" /></RequireAuth>} />
@@ -134,11 +160,8 @@ function LessonPracticeRedirect() {
   return <Navigate to={`/learn/lessons/${lessonId}?view=practice`} replace />
 }
 
-function PracticeTestRouteWrapper({ onExit }: { onExit: () => void }) {
-  const { testId } = useParams()
-  const [search] = useSearchParams()
-  const mode = getPracticeMode(search.get('mode'))
-  return <PracticeTestPage key={`${testId ?? 'snow-makers'}-${mode}`} testId={testId} mode={mode} onExit={onExit} />
+function PracticeCatalogRoute({ onOpenTest }: { onOpenTest: (skill: SkillType, id: string, mode: PracticeMode) => void }) {
+  return <PracticeCatalogPage onOpenTest={onOpenTest} />
 }
 
 export default function App() {

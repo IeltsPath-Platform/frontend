@@ -1,3 +1,4 @@
+import { StudyActivityTracker } from '@/features/study-time/StudyActivityTracker'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
@@ -208,6 +209,7 @@ export function LessonView({ lesson }: { lesson: LessonDetail }) {
 
   return (
     <article className="lp-page lp-lesson-page lp-res-page" aria-labelledby="lp-lesson-title">
+      <StudyActivityTracker sourceType="LESSON" sourceId={lesson.id} />
       <NoticeBanner />
 
       <div className="lp-res-layout">

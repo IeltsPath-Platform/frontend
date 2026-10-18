@@ -10,6 +10,7 @@ export interface TestItem {
 export interface TestSection {
   id: string
   sortOrder: number
+  partNo: number | null
   snapshot: SectionSnapshot | null
   items: TestItem[]
   startedAt: string | null
@@ -72,6 +73,8 @@ function toSectionSnapshot(raw: string): SectionSnapshot | null {
       skill: typeof value.skill === 'string' ? value.skill : undefined,
       passage: { title: '', paragraphs: [] },
       audio: null,
+      partNo: typeof value.partNo === 'number' ? value.partNo : undefined,
+      groups: toGroups(value.groups),
     }
   }
   return {
@@ -80,7 +83,20 @@ function toSectionSnapshot(raw: string): SectionSnapshot | null {
     skill: typeof value.skill === 'string' ? value.skill : undefined,
     passage,
     audio,
+    partNo: typeof value.partNo === 'number' ? value.partNo : undefined,
+    groups: toGroups(value.groups),
   }
+}
+
+function toGroups(value: unknown): NonNullable<SectionSnapshot['groups']> {
+  if (!Array.isArray(value)) return []
+  return value.filter((group): group is Record<string, unknown> => isRecord(group) && typeof group.groupId === 'string')
+    .map((group) => ({
+      groupId: String(group.groupId),
+      sortOrder: typeof group.sortOrder === 'number' ? group.sortOrder : 0,
+      formatCode: typeof group.formatCode === 'string' ? group.formatCode : 'OTHER',
+      instructions: typeof group.instructions === 'string' ? group.instructions : null,
+    }))
 }
 
 function toOptions(value: unknown): QuestionOption[] | null | undefined {
@@ -122,6 +138,7 @@ function toQuestion(itemId: string, raw: string, sortOrderFallback = 0): Questio
     prompt,
     options,
     hint: typeof value.hint === 'string' ? value.hint : null,
+    groupId: typeof value.groupId === 'string' ? value.groupId : null,
   }
 }
 
@@ -131,6 +148,7 @@ export function parseAttemptStructure(structure: AttemptStructure): TestSection[
     .map((section) => ({
       id: section.id,
       sortOrder: section.sortOrder,
+      partNo: section.partNo ?? null,
       snapshot: toSectionSnapshot(section.snapshot),
       startedAt: section.startedAt ?? null,
       completedAt: section.completedAt ?? null,

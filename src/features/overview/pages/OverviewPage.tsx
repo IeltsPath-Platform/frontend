@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import React from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { PracticeNavbar } from '@/features/practice/components/PracticeNavbar'
 import { OverviewSidebar } from '../components/OverviewSidebar'
 import { OverviewHeroBanner } from '../components/OverviewHeroBanner'
@@ -23,8 +23,15 @@ import '../overview.css'
 
 export const OverviewPage: React.FC = () => {
   const navigate = useNavigate()
-  const [activeSidebarTab, setActiveSidebarTab] =
-    useState<OverviewSidebarTab>('overview')
+  const [params, setParams] = useSearchParams()
+  const tab = params.get('tab')
+  const tabs: OverviewSidebarTab[] = ['overview', 'detailed-stats', 'favorites', 'history', 'orders', 'support', 'profile', 'ranking']
+  const activeSidebarTab = tabs.includes(tab as OverviewSidebarTab) ? tab as OverviewSidebarTab : 'overview'
+  const setActiveSidebarTab = (value: OverviewSidebarTab) => setParams((previous) => {
+    const next = new URLSearchParams(previous)
+    next.set('tab', value)
+    return next
+  })
 
   const handleStartPractice = () => {
     navigate('/practice-tests')

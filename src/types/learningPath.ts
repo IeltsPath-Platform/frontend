@@ -94,6 +94,8 @@ export interface Question {
   options: QuestionOption[] | null
   /** Present when BE reveals a hint (after a wrong answer while block unpassed). */
   hint?: string | null
+  /** Content group identifier used to reconstruct question-format headings in practice tests. */
+  groupId?: string | null
 }
 
 export type AnswerMap = Record<string, string>
@@ -591,6 +593,7 @@ export interface AttemptSection {
   startedAt: string | null
   /** Set once the learner finished the section; it then takes no more responses. */
   completedAt: string | null
+  partNo?: number | null
 }
 
 export interface AttemptItem {
@@ -608,6 +611,8 @@ export interface SectionSnapshot {
   skill?: string
   passage: Passage | null
   audio: MediaAudio | null
+  partNo?: number | null
+  groups?: Array<{ groupId: string; sortOrder: number; formatCode: string; instructions: string | null }>
 }
 
 export interface QuestionSnapshot {
