@@ -241,6 +241,31 @@ export interface ReviewSubmissionRequest {
   answers: AnswerInput[]
 }
 
+/**
+ * What one submission did to the learner's XP and hearts. `heartsLost`, `heartsRemaining` and `nextHeartAt` are `null`
+ * for a submission that costs no hearts, such as a review set.
+ */
+export interface GamificationSummary {
+  xpEarned: number
+  /** True when an answer went past the daily XP cap, so part of the XP did not count. */
+  xpCapped: boolean
+  totalXp: number
+  level: number
+  leveledUp: boolean
+  heartsLost: number | null
+  heartsRemaining: number | null
+  nextHeartAt: string | null
+}
+
+/** The learner's hearts (`GET /api/learning/me/hearts`). `nextHeartAt` is `null` while the hearts are full. */
+export interface HeartsStatus {
+  hearts: number
+  maxHearts: number
+  nextHeartAt: string | null
+  /** Points a full refill costs. */
+  refillCost: number
+}
+
 export interface ReviewSubmissionResult {
   status: ReviewStatus
   stage: ReviewStage
@@ -252,6 +277,7 @@ export interface ReviewSubmissionResult {
   results: QuestionResult[]
   resumeLessonId: string | null
   topicId: string
+  gamification: GamificationSummary | null
 }
 
 export interface TheoryCheckRequest {
@@ -317,6 +343,125 @@ export interface PracticeSubmissionResult {
   countedAsEvidence: boolean
   results: QuestionResult[]
   reviewsCreated: PracticeReviewCreated[]
+  gamification: GamificationSummary | null
+}
+
+/** `GET /api/learning/me/progress`: XP counted toward the level, and today's use of the daily XP cap. */
+export interface LearnerProgress {
+  totalXp: number
+  level: number
+  nextLevelAt: number
+  xpToNextLevel: number
+  xpToday: number
+  dailyCap: number
+}
+
+/** `GET /api/learning/me/streak`. After a break `currentDays` is 0 and `lostStreakDays` is the length that was lost. */
+export interface StreakStatus {
+  currentDays: number
+  longestDays: number
+  freezeAvailable: boolean
+  /** Points the next freeze costs: 10 times the consecutive frozen days counting this one. */
+  nextFreezeCost: number
+  activeToday: boolean
+  lostStreakDays: number
+}
+
+export type QuestType = 'PRACTICE' | 'PRACTICE_PLUS' | 'WEAKNESS' | 'STREAK'
+
+export interface QuestTarget {
+  knowledgePointId: string
+  code: string
+  name: string
+}
+
+export interface Quest {
+  type: QuestType
+  required: number
+  progress: number
+  completed: boolean
+  xpReward: number
+  pointsReward: number
+  /** The knowledge point of a `WEAKNESS` quest; `null` for the others. */
+  target: QuestTarget | null
+}
+
+/** `GET /api/learning/me/quests`: three quests for the learner's local day. Rewards are paid when a quest completes. */
+export interface DailyQuests {
+  date: string
+  completed: number
+  quests: Quest[]
+}
+
+export interface Badge {
+  code: string
+  name: string
+  description: string
+  rewardPoints: number
+  awarded: boolean
+  awardedAt: string | null
+  /** Present for badges that count something; `null` for the others. */
+  progress: { current: number; target: number } | null
+}
+
+export type LeagueTier = 'BRONZE' | 'SILVER' | 'GOLD' | 'SAPPHIRE' | 'DIAMOND' | 'RUBY' | 'AMETHYST'
+export type LeagueZone = 'PROMOTION' | 'SAFE' | 'DEMOTION'
+export type LeagueOutcome = 'PROMOTED' | 'STAYED' | 'DEMOTED'
+
+export interface LeagueRow {
+  rank: number
+  /** `null` when User Service could not give the name. */
+  displayName: string | null
+  weeklyXp: number
+  you: boolean
+  zone: LeagueZone
+}
+
+/** `GET /api/learning/me/league`. `table` is empty and `joined` false until the learner earns XP this week. */
+export interface League {
+  tier: LeagueTier
+  weekStart: string
+  closesAt: string
+  joined: boolean
+  table: LeagueRow[]
+  groupSize: number
+  promoteTop: number
+  demoteFrom: number
+}
+
+export interface LeagueHistoryEntry {
+  weekStart: string
+  tier: LeagueTier
+  weeklyXp: number
+  finalRank: number
+  outcome: LeagueOutcome
+}
+
+/** Where a point stands for the learner. `INSUFFICIENT` is "not enough data to judge yet". */
+export type MasteryTier = 'PRIORITY' | 'CONSOLIDATE' | 'MAINTAIN' | 'INSUFFICIENT'
+
+/** One knowledge point of the learner's tree (`GET /api/learning/tree`). */
+export interface TreePoint {
+  knowledgePointId: string
+  code: string
+  name: string
+  skill: string | null
+  kind: string | null
+  cefrLevel: string | null
+  canDo: string | null
+  /** 0–1; `null` for a point the learner has not touched. */
+  mastery: number | null
+  tier: MasteryTier | null
+  evidenceCount: number
+  nextReviewAt: string | null
+  prerequisiteIds: string[]
+  /** An upper bound: the start route can still answer `FREE_PRACTICE_EXHAUSTED`. */
+  practiceAvailable: boolean
+}
+
+export interface LearnerTree {
+  courseId: string
+  knowledgePoints: TreePoint[]
 }
 
 export interface TestAssignment {

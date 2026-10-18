@@ -3,9 +3,16 @@ import type {
   AttemptItemResponse,
   AttemptResult,
   AttemptStructure,
+  Badge,
   CourseSummary,
+  DailyQuests,
+  HeartsStatus,
+  League,
+  LeagueHistoryEntry,
+  LearnerProgress,
   LearnerSubmissionRequest,
   LearningGoal,
+  LearnerTree,
   LearningGoalRequest,
   LessonCompletionResult,
   LessonDetail,
@@ -21,6 +28,7 @@ import type {
   ReviewSubmissionResult,
   SaveItemResponseRequest,
   StartAttemptRequest,
+  StreakStatus,
   TestAssignment,
   TheoryCheckRequest,
   TheoryCheckResult,
@@ -59,6 +67,32 @@ export interface LearningApi {
   startPracticeAttempt(lessonId: string, packageId: string): Promise<PracticeAttemptView>
   getPracticeAttempt(attemptId: string): Promise<PracticeAttemptView | PracticeSubmissionResult>
   submitPracticeAttempt(attemptId: string, request: PracticeSubmissionRequest): Promise<PracticeSubmissionResult>
+  /** The learner's knowledge tree for one course. Rejects with `COURSE_NOT_OPEN` or `COURSE_NOT_JOINED`. */
+  getLearnerTree(courseId: string): Promise<LearnerTree>
+  /**
+   * Starts free practice on one point. Costs hearts like Practice. Rejects with `HEARTS_DEPLETED`, `REVIEW_REQUIRED`,
+   * `FREE_PRACTICE_EXHAUSTED` or `FREE_PRACTICE_UNAVAILABLE`. Answers go through `submitPracticeAttempt`.
+   */
+  startFreePractice(knowledgePointId: string): Promise<PracticeAttemptView>
+  /** The learner's hearts. A set that costs hearts is refused with `HEARTS_DEPLETED` once they reach zero. */
+  getHearts(): Promise<HeartsStatus>
+  /**
+   * Fills the hearts for `HeartsStatus.refillCost` points. The same `requestId` is charged once. Rejects with
+   * `HEARTS_FULL`, `INSUFFICIENT_POINTS` or `ACCESS_UNAVAILABLE` (nothing charged).
+   */
+  refillHearts(requestId: string): Promise<HeartsStatus>
+  getProgress(): Promise<LearnerProgress>
+  getStreak(): Promise<StreakStatus>
+  /**
+   * Buys a streak freeze with points; the same `requestId` is charged once. Rejects with `FREEZE_ALREADY_OWNED`,
+   * `NO_STREAK_TO_PROTECT`, `FREEZE_LIMIT`, `INSUFFICIENT_POINTS` or `ACCESS_UNAVAILABLE` (nothing charged).
+   */
+  buyStreakFreeze(requestId: string): Promise<StreakStatus>
+  getQuests(): Promise<DailyQuests>
+  getBadges(): Promise<Badge[]>
+  getLeague(): Promise<League>
+  /** Closed weeks, newest first. `weeks` is 1 to 26. */
+  getLeagueHistory(weeks: number): Promise<LeagueHistoryEntry[]>
   getWritingSubmission(submissionId: string): Promise<WritingSubmissionResult>
   completeLesson(lessonId: string): Promise<LessonCompletionResult>
   getReview(reviewId: string): Promise<ReviewDetail>

@@ -21,8 +21,11 @@ import { GuestOnly, RequireAuth } from '@/features/auth/AuthGuards'
 import { LearnLayout } from '@/features/learning-path/components/LearnLayout'
 import { NotFoundState } from '@/features/learning-path/components/PageState'
 import { CourseListPage } from '@/features/learning-path/pages/CourseListPage'
+import { FreePracticePage } from '@/features/learning-path/pages/FreePracticePage'
+import { KnowledgeTreePage } from '@/features/learning-path/pages/KnowledgeTreePage'
 import { LessonPage } from '@/features/learning-path/pages/LessonPage'
 import { PlacementPage } from '@/features/learning-path/pages/PlacementPage'
+import { ProgressPage } from '@/features/learning-path/pages/ProgressPage'
 import { ReviewPage } from '@/features/learning-path/pages/ReviewPage'
 import { TopicPage } from '@/features/learning-path/pages/TopicPage'
 import { TopicListPage } from '@/features/learning-path/pages/TopicListPage'
@@ -47,7 +50,10 @@ function AppContent() {
       <Route path="/learn" element={<RequireAuth><LearnLayout /></RequireAuth>}>
         <Route index element={<CourseListPage />} />
         <Route path="placement" element={<PlacementPage />} />
+        <Route path="progress" element={<ProgressPage />} />
         <Route path="courses/:courseId" element={<TopicListPage />} />
+        <Route path="courses/:courseId/tree" element={<KnowledgeTreePage />} />
+        <Route path="practice/:attemptId" element={<FreePracticePage />} />
         <Route path="topics/:topicId" element={<TopicPage />} />
         <Route path="lessons/:lessonId" element={<LessonPage />} />
         <Route path="lessons/:lessonId/practice" element={<LessonPracticeRedirect />} />

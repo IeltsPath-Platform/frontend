@@ -176,5 +176,6 @@ export function submitReview(state: MockState, reviewId: string, request: Review
     failedSets: review.setIndex,
     resumeLessonId: review.resumeLessonId,
     topicId: review.topicId,
+    gamification: null,
   }
 }

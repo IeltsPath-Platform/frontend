@@ -13,6 +13,8 @@ const SKILL_LABEL: Record<string, string> = {
   LISTENING: 'Listening',
   WRITING: 'Writing',
   SPEAKING: 'Speaking',
+  GRAMMAR: 'Grammar',
+  VOCABULARY: 'Vocabulary',
   OTHER: 'Khác',
 }
 

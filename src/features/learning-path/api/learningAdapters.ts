@@ -130,10 +130,37 @@ export type ReviewDetailDto = {
   skill?: string
 }
 
+/** `gamification` of a submission response; the hearts fields are null or absent for a submission that costs no hearts. */
+export type GamificationDto = {
+  xpEarned: number
+  xpCapped?: boolean
+  totalXp: number
+  level: number
+  leveledUp?: boolean
+  heartsLost?: number | null
+  heartsRemaining?: number | null
+  nextHeartAt?: string | null
+}
+
+export function mapGamification(dto: GamificationDto | null | undefined): import('~types/learningPath').GamificationSummary | null {
+  if (!dto) return null
+  return {
+    xpEarned: dto.xpEarned,
+    xpCapped: dto.xpCapped === true,
+    totalXp: dto.totalXp,
+    level: dto.level,
+    leveledUp: dto.leveledUp === true,
+    heartsLost: dto.heartsLost ?? null,
+    heartsRemaining: dto.heartsRemaining ?? null,
+    nextHeartAt: dto.nextHeartAt ?? null,
+  }
+}
+
 export type ReviewSubmissionResultDto = {
   reviewStatus: ReviewStatus
   stage?: 'PRACTICE' | 'THEORY'
   failedSets?: number
+  gamification?: GamificationDto | null
   results: Array<{
     questionVersionId: string
     correct: boolean
@@ -201,6 +228,7 @@ export type PracticeSubmissionResultDto = {
     hint?: string | null
   }>
   reviewsCreated?: Array<{ reviewId: string; knowledgePointId: string; stage?: string }>
+  gamification?: GamificationDto | null
 }
 
 export type TestAssignmentDto = {
@@ -480,6 +508,7 @@ export function mapPracticeSubmission(dto: PracticeSubmissionResultDto): import(
       knowledgePointId: review.knowledgePointId,
       stage: (review.stage === 'THEORY' ? 'THEORY' : 'PRACTICE') as import('~types/learningPath').ReviewStage,
     })),
+    gamification: mapGamification(dto.gamification),
   }
 }
 
@@ -520,6 +549,7 @@ export function mapReviewSubmission(
     results,
     resumeLessonId,
     topicId,
+    gamification: mapGamification(dto.gamification),
   }
 }
 

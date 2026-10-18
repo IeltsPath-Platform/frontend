@@ -5,17 +5,20 @@ import { Button } from '@/components/ui/button'
 import type {
   AnswerInput,
   ExerciseBlockData,
+  HeartsStatus,
   LessonPracticeSets,
   PracticeAttemptView,
   PracticeSetItem,
   PracticeSubmissionResult,
   ReviewRef,
 } from '~types/learningPath'
-import { learningApi, toApiError } from '../api'
+import { learningApi, toApiError, userMessage } from '../api'
 import { AudioBlock } from './blocks/AudioBlock'
 import { ExerciseBlock } from './blocks/ExerciseBlock'
 import { PassageBlock } from './blocks/PassageBlock'
+import { HeartsPanel } from './HeartsPanel'
 import { ApiErrorState, LoadingState } from './PageState'
+import { RewardSummary } from './RewardSummary'
 import { newRequestId } from '../lib/requestId'
 import { reportApiError, setPendingReviews } from '../lib/reviewGate'
 import { useApiResource } from '../lib/useApiResource'
@@ -55,20 +58,34 @@ export function LessonPractice({ lessonId, onChanged, reviewOrigin }: {
   const resource = useApiResource(`practice:${lessonId}`, () => learningApi.getLessonPracticeSets(lessonId))
   const reviews = useApiResource(`practice-reviews:${lessonId}`, async () =>
     (await learningApi.getPendingReviews()).filter((review) => review.lessonId === lessonId))
+  // The hearts are an extra: if they cannot be read, the sets still open and the server refuses them when needed.
+  const hearts = useApiResource('hearts', () => learningApi.getHearts())
   const reloadAll = () => {
     resource.reload()
     reviews.reload()
+    hearts.reload()
     onChanged?.()
   }
 
   if (resource.status === 'loading') return <LoadingState label="Đang tải luyện thêm…" />
   if (resource.status === 'error' && resource.error) return <ApiErrorState error={resource.error} onRetry={resource.reload} />
   if (!resource.data) return null
-  return <PracticeView catalog={resource.data} onReload={reloadAll} reviewOrigin={reviewOrigin} reviews={reviews.data ?? []} />
+  return (
+    <PracticeView
+      catalog={resource.data}
+      hearts={hearts.data}
+      onHeartsChanged={hearts.reload}
+      onReload={reloadAll}
+      reviewOrigin={reviewOrigin}
+      reviews={reviews.data ?? []}
+    />
+  )
 }
 
-function PracticeView({ catalog, onReload, reviewOrigin, reviews }: {
+function PracticeView({ catalog, hearts, onHeartsChanged, onReload, reviewOrigin, reviews }: {
   catalog: LessonPracticeSets
+  hearts: HeartsStatus | null
+  onHeartsChanged: () => void
   onReload: () => void
   reviewOrigin?: ReviewOrigin
   reviews: ReviewRef[]
@@ -89,7 +106,8 @@ function PracticeView({ catalog, onReload, reviewOrigin, reviews }: {
     } catch (reason) {
       const apiError = toApiError(reason)
       reportApiError(apiError)
-      setError(apiError.message)
+      setError(userMessage(apiError))
+      if (apiError.code === 'HEARTS_DEPLETED') onHeartsChanged()
     } finally {
       setStartingId(null)
     }
@@ -103,6 +121,8 @@ function PracticeView({ catalog, onReload, reviewOrigin, reviews }: {
         answers,
       })
       setSubmission(outcome)
+      // Wrong answers cost hearts, so what is left has changed.
+      if ((outcome.gamification?.heartsLost ?? 0) > 0) onHeartsChanged()
       if (outcome.reviewsCreated.length > 0) {
         setPendingReviews(outcome.reviewsCreated.map((review) => ({
           reviewId: review.reviewId,
@@ -121,6 +141,7 @@ function PracticeView({ catalog, onReload, reviewOrigin, reviews }: {
     } catch (reason) {
       const apiError = toApiError(reason)
       reportApiError(apiError)
+      if (apiError.code === 'HEARTS_DEPLETED') onHeartsChanged()
       throw apiError
     }
   }
@@ -148,6 +169,7 @@ function PracticeView({ catalog, onReload, reviewOrigin, reviews }: {
               : null}
           </div>
           <div className="lp-split__work">
+            {hearts?.hearts === 0 ? <HeartsPanel onChanged={onHeartsChanged} status={hearts} /> : null}
             <ExerciseBlock
               allowResubmit={false}
               block={toExerciseBlock(active)}
@@ -161,6 +183,7 @@ function PracticeView({ catalog, onReload, reviewOrigin, reviews }: {
               ) : null}
               onSubmit={submit}
             />
+            <RewardSummary gamification={submission?.gamification ?? null} />
             {submission?.reviewsCreated[0] ? (
               <div className="lp-done lp-done--review" role="status">
                 <p>Đã tạo bài ôn bắt buộc sau lần luyện này.</p>
@@ -213,6 +236,7 @@ function PracticeView({ catalog, onReload, reviewOrigin, reviews }: {
           {PRACTICE_STATUS_TEXT[catalog.practiceStatus] ?? catalog.practiceStatus}
         </p>
       </header>
+      {hearts ? <HeartsPanel onChanged={onHeartsChanged} status={hearts} /> : null}
       {error ? <p className="lp-error" role="alert">{error}</p> : null}
       {catalog.items.length === 0 && reviews.length === 0 ? (
         <p className="lp-empty">Bài này không có bộ luyện thêm.</p>

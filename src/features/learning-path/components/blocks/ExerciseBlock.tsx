@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } fr
 import { CheckCircle2, Loader2, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { AnswerInput, AnswerMap, ExerciseBlockData, QuestionResult } from '~types/learningPath'
-import { toApiError } from '../../api/apiError'
+import { toApiError, userMessage } from '../../api/apiError'
 import { StatusBadge } from '../StatusBadge'
 import { QuestionField } from './QuestionField'
 
@@ -109,7 +109,11 @@ export function ExerciseBlock({ block, onSubmit, allowResubmit = true, failedFoo
       const outcome = await onSubmit(block.questions.map((question) => ({ questionId: question.id, answer: snapshot[question.id].trim() })))
       if (mounted.current) setGraded({ outcome, answers: snapshot })
     } catch (reason) {
-      if (mounted.current) setError(`${toApiError(reason).message} Hãy thử nộp lại.`)
+      if (mounted.current) {
+        const apiError = toApiError(reason)
+        // Out of hearts: retrying at once changes nothing, and the page offers the refill.
+        setError(apiError.code === 'HEARTS_DEPLETED' ? userMessage(apiError) : `${apiError.message} Hãy thử nộp lại.`)
+      }
     } finally {
       inFlight.current = false
       if (mounted.current) setSubmitting(false)

@@ -1,6 +1,6 @@
 import { apiRequest, HttpError } from '@/lib/httpClient'
 import type { LearningApi } from './learningApi'
-import { ApiError, type ApiErrorCode } from './apiError'
+import { ApiError, heartsDetails, type ApiErrorCode } from './apiError'
 import {
   mapAttemptResult,
   mapAttemptStructure,
@@ -38,6 +38,13 @@ import type {
   AttemptItemResponse,
   AttemptResult,
   AttemptStructure,
+  Badge,
+  DailyQuests,
+  HeartsStatus,
+  League,
+  LeagueHistoryEntry,
+  LearnerProgress,
+  LearnerTree,
   LessonCompletionResult,
   LearnerSubmissionRequest,
   LearningGoal,
@@ -52,6 +59,7 @@ import type {
   ReviewSubmissionResult,
   SaveItemResponseRequest,
   StartAttemptRequest,
+  StreakStatus,
   TestAssignment,
   TopicLessonsResponse,
   TopicSummary,
@@ -80,6 +88,16 @@ const CODE_MAP: Record<string, ApiErrorCode> = {
   DAILY_LIMIT_REACHED: 'DAILY_LIMIT_REACHED',
   PLACEMENT_ALREADY_DONE: 'PLACEMENT_ALREADY_DONE',
   NO_PLACEMENT_TEST: 'NO_PLACEMENT_TEST',
+  HEARTS_DEPLETED: 'HEARTS_DEPLETED',
+  HEARTS_FULL: 'HEARTS_FULL',
+  ACCESS_UNAVAILABLE: 'ACCESS_UNAVAILABLE',
+  COURSE_NOT_OPEN: 'COURSE_NOT_OPEN',
+  COURSE_NOT_JOINED: 'COURSE_NOT_JOINED',
+  FREE_PRACTICE_EXHAUSTED: 'FREE_PRACTICE_EXHAUSTED',
+  FREE_PRACTICE_UNAVAILABLE: 'FREE_PRACTICE_UNAVAILABLE',
+  FREEZE_ALREADY_OWNED: 'FREEZE_ALREADY_OWNED',
+  NO_STREAK_TO_PROTECT: 'NO_STREAK_TO_PROTECT',
+  FREEZE_LIMIT: 'FREEZE_LIMIT',
 }
 
 function statusFallback(status: number): ApiErrorCode {
@@ -96,6 +114,8 @@ function throwLearningError(error: unknown): never {
       message?: string
       code?: string
       lessonIds?: string[]
+      nextHeartAt?: string
+      refillCost?: number
       reviews?: Array<{ reviewId: string; lessonId: string; knowledgePointId: string }>
     }
     const code = (body.code && CODE_MAP[body.code]) || statusFallback(error.status)
@@ -103,6 +123,7 @@ function throwLearningError(error: unknown): never {
     throw new ApiError(error.status, code, body.detail || body.message || error.message, {
       reviews,
       lessonIds: body.lessonIds,
+      ...heartsDetails(body),
     })
   }
   throw new ApiError(0, 'SERVER_ERROR', 'Không kết nối được máy chủ.')
@@ -248,6 +269,54 @@ export function createHttpLearningApi(): LearningApi {
         },
       })
       return mapPracticeSubmission(dto)
+    },
+
+    async getLearnerTree(courseId: string) {
+      return learningRequest<LearnerTree>(`/tree?courseId=${encodeURIComponent(courseId)}`)
+    },
+
+    async startFreePractice(knowledgePointId: string) {
+      const dto = await learningRequest<PracticeAttemptViewDto>(`/knowledge-points/${knowledgePointId}/free-practice`, {
+        method: 'POST',
+        body: {},
+      })
+      return mapPracticeAttemptView(dto)
+    },
+
+    async getHearts() {
+      return learningRequest<HeartsStatus>('/me/hearts')
+    },
+
+    async refillHearts(requestId: string) {
+      return learningRequest<HeartsStatus>('/me/hearts/refill', { method: 'POST', body: { requestId } })
+    },
+
+    async getProgress() {
+      return learningRequest<LearnerProgress>('/me/progress')
+    },
+
+    async getStreak() {
+      return learningRequest<StreakStatus>('/me/streak')
+    },
+
+    async buyStreakFreeze(requestId: string) {
+      return learningRequest<StreakStatus>('/me/streak/freeze', { method: 'POST', body: { requestId } })
+    },
+
+    async getQuests() {
+      return learningRequest<DailyQuests>('/me/quests')
+    },
+
+    async getBadges() {
+      return learningRequest<Badge[]>('/me/badges')
+    },
+
+    async getLeague() {
+      return learningRequest<League>('/me/league')
+    },
+
+    async getLeagueHistory(weeks: number) {
+      return learningRequest<LeagueHistoryEntry[]>(`/me/league/history?weeks=${weeks}`)
     },
 
     async getWritingSubmission(submissionId) {

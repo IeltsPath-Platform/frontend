@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { CSSProperties } from 'react'
-import { ArrowRight, Gauge, Route } from 'lucide-react'
+import { ArrowRight, Gauge, Route, Trophy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import mascotImage from '@/assets/triceratops-class-mascot.png'
 import type { CourseSummary } from '~types/learningPath'
@@ -51,6 +51,9 @@ export function CourseListPage() {
       <header className="lp-pagehead">
         <p className="lp-eyebrow">Khóa học</p>
         <h1>Lộ trình IELTS theo band mục tiêu</h1>
+        <Button asChild className="lp-btn lp-pagehead__link">
+          <Link to="/learn/progress"><Trophy aria-hidden="true" size={16} />Thành tích của tôi</Link>
+        </Button>
       </header>
 
       {courses.status === 'success' ? (

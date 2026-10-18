@@ -16,6 +16,7 @@ import type {
 import { learningApi, toApiError } from '../api'
 import { AudioBlock } from '../components/blocks/AudioBlock'
 import { ExerciseBlock } from '../components/blocks/ExerciseBlock'
+import { RewardSummary } from '../components/RewardSummary'
 import { PassageBlock } from '../components/blocks/PassageBlock'
 import { ApiErrorState, LoadingState } from '../components/PageState'
 import { LessonSummary } from '../components/resources/LessonSummary'
@@ -243,6 +244,7 @@ function ReviewView({ review, onAdvance, onReload, reviewOrigin }: {
               ) : null}
               onSubmit={(answers) => submitPractice(set, answers)}
             />
+            <RewardSummary gamification={result?.gamification ?? null} />
           </div>
         </section>
       ) : null}

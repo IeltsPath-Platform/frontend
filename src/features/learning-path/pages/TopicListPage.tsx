@@ -1,6 +1,6 @@
 import { useRef, useState, type CSSProperties, type ReactNode } from 'react'
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { Check, CheckCircle2, ChevronDown, Crown, Flag, Loader2, Lock, Trophy } from 'lucide-react'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Check, CheckCircle2, ChevronDown, Crown, Flag, Loader2, Lock, Network, Trophy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { CourseSummary, TopicSummary } from '~types/learningPath'
 import { learningApi, toApiError } from '../api'
@@ -11,6 +11,7 @@ import { SegmentMeter } from '../components/SegmentMeter'
 import { TopicLessonsPanel } from '../components/TopicLessonsPanel'
 import { ApiErrorState, TopicListSkeleton } from '../components/PageState'
 import { reportApiError } from '../lib/reviewGate'
+import { knowledgeTreePath } from '../lib/routes'
 import { topicStatusMeta } from '../lib/statusMeta'
 import { skillLabel } from '../lib/courseMeta'
 import { useApiResource } from '../lib/useApiResource'
@@ -41,6 +42,14 @@ export function TopicListPage() {
         done={total > 0 && passed === total}
         topicCount={total}
       />
+
+      {total > 0 ? (
+        <p className="lp-course-tree-link">
+          <Button asChild className="lp-btn">
+            <Link to={knowledgeTreePath(courseId)}><Network aria-hidden="true" size={16} />Cây kiến thức và luyện tự do</Link>
+          </Button>
+        </p>
+      ) : null}
 
       {loading ? <TopicListSkeleton /> : null}
       {error ? (
