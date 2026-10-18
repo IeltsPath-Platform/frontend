@@ -194,6 +194,9 @@ export interface WritingSubmissionResult {
 }
 
 /** A lesson and its status. Its summary, slides and documents are read separately (see `types/lesson.ts`). */
+/** The parts of a lesson a learner reads or answers: passages, audio and the auto-graded exercises. */
+export type LessonBlock = PassageBlockData | AudioBlockData | ExerciseBlockData
+
 export interface LessonDetail {
   id: string
   topicId: string
@@ -203,6 +206,16 @@ export interface LessonDetail {
   status: LessonStatus
   nextLessonId: string | null
   pendingReviews: ReviewRef[]
+  /** Passages, audio and exercises of the lesson, in order. Empty when the lesson has no exercise. */
+  blocks?: LessonBlock[]
+}
+
+/** The answer to one exercise block: the verdict, what to show per question, and whether it finished the lesson. */
+export interface LessonExerciseResult {
+  blockPassed: boolean
+  lessonCompleted: boolean
+  results: QuestionResult[]
+  gamification: GamificationSummary | null
 }
 
 export interface LessonCompletionResult {
@@ -235,6 +248,11 @@ export interface ReviewDetail {
   maxFailedSets: number | null
   theoryReason: string | null
   resumeLessonId: string | null
+}
+
+export interface ExerciseSubmissionRequest {
+  requestId: string
+  answers: AnswerInput[]
 }
 
 export interface ReviewSubmissionRequest {

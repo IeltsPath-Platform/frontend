@@ -14,8 +14,10 @@ import type {
   LearningGoal,
   LearnerTree,
   LearningGoalRequest,
+  ExerciseSubmissionRequest,
   LessonCompletionResult,
   LessonDetail,
+  LessonExerciseResult,
   LessonPracticeSets,
   PlacementResult,
   PlacementTest,
@@ -95,6 +97,8 @@ export interface LearningApi {
   getLeagueHistory(weeks: number): Promise<LeagueHistoryEntry[]>
   getWritingSubmission(submissionId: string): Promise<WritingSubmissionResult>
   completeLesson(lessonId: string): Promise<LessonCompletionResult>
+  /** Answers every question of one exercise block of the lesson; the server grades it and tells if the lesson is done. */
+  submitLessonExercise(lessonId: string, blockId: string, request: ExerciseSubmissionRequest): Promise<LessonExerciseResult>
   getReview(reviewId: string): Promise<ReviewDetail>
   submitReview(reviewId: string, request: ReviewSubmissionRequest): Promise<ReviewSubmissionResult>
   submitTheoryCheck(reviewId: string, request: TheoryCheckRequest): Promise<TheoryCheckResult>

@@ -7,6 +7,8 @@ export type ApiErrorCode =
   | 'TEST_LOCKED'
   | 'TEST_UNAVAILABLE'
   | 'PRACTICE_REQUIRED'
+  /** The lesson has exercise blocks: it is completed by passing them, not by the confirmation button. */
+  | 'LESSON_HAS_EXERCISES'
   | 'REVIEW_REQUIRED'
   | 'REVIEW_SET_CLOSED'
   | 'NOT_FOUND'
@@ -107,6 +109,7 @@ const CODE_MAP: Record<string, ApiErrorCode> = {
   TEST_LOCKED: 'TEST_LOCKED',
   TEST_UNAVAILABLE: 'TEST_UNAVAILABLE',
   PRACTICE_REQUIRED: 'PRACTICE_REQUIRED',
+  LESSON_HAS_EXERCISES: 'LESSON_HAS_EXERCISES',
   REVIEW_REQUIRED: 'REVIEW_REQUIRED',
   REVIEW_SET_CLOSED: 'REVIEW_SET_CLOSED',
   THEORY_REQUIRED: 'REVIEW_REQUIRED',

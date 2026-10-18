@@ -4,8 +4,10 @@ import type {
   AttemptItemResponse,
   AttemptResult,
   AttemptStructure,
+  LessonBlock,
   LessonCompletionResult,
   LessonDetail,
+  LessonExerciseResult,
   LessonStatus,
   Question,
   QuestionResult,
@@ -84,6 +86,23 @@ export type QuestionDto = {
   hint?: string | null
 }
 
+export type LessonBlockDto = {
+  blockId: string
+  blockType: string
+  blockKind?: string
+  sortOrder: number
+  asset?: {
+    assetType: string
+    textContent?: string | null
+    mediaUrl?: string | null
+    durationSeconds?: number | null
+    transcript?: string | null
+  } | null
+  passed?: boolean
+  questions?: QuestionDto[] | null
+  solutions?: Array<{ questionVersionId: string; correctAnswer: string; explanation?: string }> | null
+}
+
 export type LessonDetailDto = {
   lessonId: string
   topicId: string
@@ -92,6 +111,20 @@ export type LessonDetailDto = {
   summary?: string | null
   sortOrder: number
   status: LessonStatus
+  blocks?: LessonBlockDto[]
+}
+
+export type LessonExerciseResultDto = {
+  blockPassed: boolean
+  lessonCompleted: boolean
+  results: Array<{
+    questionVersionId: string
+    correct: boolean
+    correctAnswer?: string
+    explanation?: string
+    hint?: string | null
+  }>
+  gamification?: GamificationDto | null
 }
 
 export type LessonCompletionDto = {
@@ -357,6 +390,70 @@ export function mapTopicLessons(dto: TopicLessonsDto, topic: TopicSummary): Topi
   }
 }
 
+/** Passages, audio and auto-graded exercises of a lesson; essay and text blocks are not part of the exercises tab. */
+export function mapLessonBlocks(blocks: LessonBlockDto[] | undefined): LessonBlock[] {
+  const mapped: LessonBlock[] = []
+  let exerciseNumber = 0
+  for (const block of [...(blocks ?? [])].sort((a, b) => a.sortOrder - b.sortOrder)) {
+    if (block.blockType === 'ASSET' && block.asset?.assetType === 'PASSAGE') {
+      mapped.push({
+        id: block.blockId,
+        sortOrder: block.sortOrder,
+        type: 'ASSET',
+        assetType: 'PASSAGE',
+        mediaUrl: null,
+        ...mapPassageField(block.asset.textContent),
+      })
+    } else if (block.blockType === 'ASSET' && block.asset?.assetType === 'AUDIO' && block.asset.mediaUrl) {
+      mapped.push({
+        id: block.blockId,
+        sortOrder: block.sortOrder,
+        type: 'ASSET',
+        assetType: 'AUDIO',
+        mediaUrl: block.asset.mediaUrl,
+        durationSeconds: block.asset.durationSeconds ?? null,
+        transcript: block.asset.transcript ?? null,
+      })
+    } else if (block.blockType === 'EXERCISE' && (block.blockKind ?? 'EXERCISE') === 'EXERCISE' && block.questions) {
+      exerciseNumber += 1
+      const solutions = block.passed && block.solutions
+        ? block.solutions.map((solution) => mapQuestionResult({
+          questionVersionId: solution.questionVersionId,
+          correct: true,
+          correctAnswer: solution.correctAnswer,
+          explanation: solution.explanation,
+        }))
+        : null
+      mapped.push({
+        id: block.blockId,
+        sortOrder: block.sortOrder,
+        type: 'EXERCISE',
+        blockKind: 'EXERCISE',
+        title: `Bài tập ${exerciseNumber}`,
+        instructions: 'Trả lời mọi câu hỏi. Cần đúng từ 70% số câu để đạt.',
+        knowledgePointCode: '',
+        questions: [...block.questions].sort((a, b) => a.sortOrder - b.sortOrder).map(mapQuestion),
+        state: block.passed ? 'PASSED' : 'NOT_ATTEMPTED',
+        // A passed block shows its answers again; the server keeps no copy of what was typed, so the key stands in.
+        savedAnswers: solutions
+          ? Object.fromEntries(solutions.map((solution) => [solution.questionId, solution.correctAnswer ?? '']))
+          : null,
+        solutions,
+      })
+    }
+  }
+  return mapped
+}
+
+export function mapLessonExerciseResult(dto: LessonExerciseResultDto): LessonExerciseResult {
+  return {
+    blockPassed: dto.blockPassed,
+    lessonCompleted: dto.lessonCompleted,
+    results: dto.results.map(mapQuestionResult),
+    gamification: mapGamification(dto.gamification),
+  }
+}
+
 export function mapLessonDetail(dto: LessonDetailDto, topicTitle: string): LessonDetail {
   return {
     id: dto.lessonId,
@@ -367,6 +464,7 @@ export function mapLessonDetail(dto: LessonDetailDto, topicTitle: string): Lesso
     status: dto.status,
     nextLessonId: null,
     pendingReviews: [],
+    blocks: mapLessonBlocks(dto.blocks),
   }
 }
 
