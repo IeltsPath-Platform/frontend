@@ -1,0 +1,19 @@
+import { HttpError } from '@/lib/httpClient'
+const messages: Record<string, string> = {
+  WORD_NOT_FOUND:
+    'Từ không có trong kho. Hãy thử từ khác; bạn không mất lượt đoán.',
+  INVALID_GUESS_LENGTH: 'Hãy nhập đủ số chữ của từ hiện tại.',
+  INVALID_CHARACTERS: 'Chỉ nhập chữ cái tiếng Anh A–Z.',
+  WORD_EXPIRED: 'Từ đã hết giờ. Đang đồng bộ lượt chơi tiếp theo.',
+  WORD_NOT_CURRENT: 'Lượt chơi đã thay đổi. Hãy dùng từ hiện tại.',
+  MATCH_FINISHED: 'Phiên chơi đã kết thúc.',
+  REQUEST_ID_CONFLICT:
+    'Lượt đoán này đã được dùng với dữ liệu khác. Hãy đồng bộ lại.',
+}
+export function gameErrorMessage(reason: unknown) {
+  if (reason instanceof HttpError && reason.code && messages[reason.code])
+    return messages[reason.code]
+  return reason instanceof Error
+    ? reason.message
+    : 'Không thực hiện được. Vui lòng thử lại.'
+}
