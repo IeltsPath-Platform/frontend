@@ -79,6 +79,24 @@ describe('assessment structure snapshots from Gateway', () => {
   })
 })
 
+test('practice snapshots retain part and question group metadata', () => {
+  const [section] = parseAttemptStructure({
+    sections: [{
+      id: 'sec-2', contentSectionId: 'content-2', sortOrder: 2, partNo: 2,
+      snapshot: JSON.stringify({
+        title: 'Passage 2', skill: 'READING', partNo: 2, passage: 'Passage text',
+        groups: [{ groupId: 'group-a', sortOrder: 1, formatCode: 'MULTIPLE_CHOICE', instructions: 'Questions 1-2. Choose an answer.' }],
+      }),
+      items: [{ id: 'item-2', sortOrder: 1, questionSnapshot: JSON.stringify({ stem: 'Question', options: null, groupId: 'group-a' }) }],
+      startedAt: null, completedAt: null,
+    }],
+  })
+
+  assert.equal(section.partNo, 2)
+  assert.equal(section.snapshot.groups[0].formatCode, 'MULTIPLE_CHOICE')
+  assert.equal(section.items[0].question.groupId, 'group-a')
+})
+
 test('a plain-text passage from the assessment snapshot keeps its lettered paragraphs', () => {
   const [section] = parseAttemptStructure(mapAttemptStructure({
     sections: [{

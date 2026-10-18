@@ -10,8 +10,6 @@ export const PracticeTestCard: React.FC<PracticeTestCardProps> = ({
   card,
   onClick,
 }) => {
-  const isPro = card.tag === 'PRO'
-
   return (
     <div
       className="practice-visual-card"
@@ -27,17 +25,16 @@ export const PracticeTestCard: React.FC<PracticeTestCardProps> = ({
     >
       {/* Top Image Section */}
       <div className="card-image-box">
-        <img
-          src={card.imageUrl}
-          alt={card.title}
-          className="card-photo"
-          loading="lazy"
-        />
-
-        {/* Diagonal Ribbon */}
-        <div className={`corner-ribbon ${isPro ? 'ribbon-orange' : 'ribbon-green'}`}>
-          <span>{card.tag}</span>
-        </div>
+        {card.imageUrl ? (
+          <img
+            src={card.imageUrl}
+            alt=""
+            className="card-photo"
+            loading="lazy"
+          />
+        ) : (
+          <div className="card-photo card-photo-empty" aria-hidden="true" />
+        )}
       </div>
 
       {/* Bottom Royal Blue Box */}
