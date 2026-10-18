@@ -1499,6 +1499,168 @@
 }
 
 /* ==========================================================================
+   Quick Composer Bar & Background Post Box & IELTS Tips
+   ========================================================================== */
+
+.community-quick-composer-card {
+  background: var(--community-surface);
+  border: 1px solid var(--community-border);
+  border-radius: 1rem;
+  box-shadow: var(--community-shadow-sm);
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.community-quick-composer-top {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.community-quick-composer-input {
+  flex: 1;
+  height: 42px;
+  border-radius: 2rem;
+  border: 1px solid var(--community-border);
+  background: #f1f5f9;
+  color: #64748b;
+  padding: 0 1.25rem;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: background 0.15s ease, color 0.15s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.community-quick-composer-input:hover {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.community-quick-composer-divider {
+  height: 1px;
+  background: var(--community-border);
+  margin: 0 -0.25rem;
+}
+
+.community-quick-composer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: 0.5rem;
+}
+
+.community-quick-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 38px;
+  border: none;
+  background: transparent;
+  border-radius: 0.5rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.community-quick-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.community-quick-icon-green {
+  color: #10b981;
+}
+
+.community-quick-icon-red {
+  color: #ef4444;
+}
+
+.community-quick-icon-yellow {
+  color: #f59e0b;
+}
+
+/* PostCard Gradient Background Content */
+.community-post-background-box {
+  min-height: 180px;
+  border-radius: 0.75rem;
+  padding: 2rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  margin: 0.75rem 0;
+  box-shadow: inset 0 0 35px rgba(0, 0, 0, 0.12);
+}
+
+.community-post-background-text {
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1.45;
+  margin: 0;
+  word-break: break-word;
+  max-width: 90%;
+}
+
+/* IELTS Tips Static Card */
+.community-ielts-tips-card {
+  border-top: 1px solid var(--community-border);
+  margin-top: 1rem;
+  padding-top: 1rem;
+}
+
+.community-ielts-tips-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.community-ielts-tips-header h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--community-text);
+}
+
+.community-ielts-tips-icon {
+  color: #f59e0b;
+}
+
+.community-ielts-tips-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  font-size: 0.82rem;
+  color: var(--community-text-secondary);
+  line-height: 1.5;
+}
+
+.community-ielts-tips-list strong {
+  color: var(--community-text);
+}
+
+/* Interactive scale down on buttons */
+.community-primary:active,
+.community-secondary:active,
+.community-action-btn:active,
+.community-quick-btn:active {
+  transform: scale(0.97);
+}
+
+/* ==========================================================================
    Prefers Reduced Motion (Accessibility Support)
    ========================================================================== */
 @media (prefers-reduced-motion: reduce) {

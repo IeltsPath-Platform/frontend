@@ -17,6 +17,9 @@ const { communityApiMock, authSessionMock } = vi.hoisted(() => ({
     reportContent: vi.fn(),
     react: vi.fn(),
     removeReaction: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
   },
   authSessionMock: vi.fn(),
 }))
@@ -208,4 +211,53 @@ describe('CommunityPage feed and profile tabs', () => {
     expect(screen.queryByText(/0 Hữu ích/)).not.toBeInTheDocument()
     expect(screen.queryByText(/0 Chính xác/)).not.toBeInTheDocument()
   })
+
+  it('opens modal via QuickComposerBar, chooses background, and submits post with background to API', async () => {
+    communityApiMock.create.mockResolvedValue({
+      id: 'post-new-1',
+      authorId: 'current-user',
+      category: 'GENERAL',
+      title: null,
+      body: 'Chia sẻ ngắn có nền',
+      createdAt: '2026-10-18T12:00:00Z',
+      imageUrls: [],
+      videoUrl: null,
+      background: 'VIOLET',
+      reactionCounts: {},
+      commentCount: 0,
+      bookmarkedByMe: false,
+      followingAuthor: false,
+    })
+
+    renderCommunity('/community')
+
+    // Bấm ô giả trên QuickComposerBar
+    const quickInput = await screen.findByRole('button', { name: 'Tạo bài viết mới' })
+    fireEvent.click(quickInput)
+
+    // Modal xuất hiện
+    expect(screen.getByRole('dialog', { name: 'Tạo bài viết' })).toBeInTheDocument()
+
+    // Nhập nội dung
+    const textarea = screen.getByPlaceholderText(/Học viên, bạn đang nghĩ gì thế\?/)
+    fireEvent.change(textarea, { target: { value: 'Chia sẻ ngắn có nền' } })
+
+    // Chọn màu nền Tím mộng mơ
+    const violetSwatch = screen.getByRole('radio', { name: 'Tím mộng mơ' })
+    fireEvent.click(violetSwatch)
+
+    // Bấm Đăng
+    const submitBtn = screen.getByRole('button', { name: 'Đăng' })
+    fireEvent.click(submitBtn)
+
+    await waitFor(() => {
+      expect(communityApiMock.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          body: 'Chia sẻ ngắn có nền',
+          background: 'VIOLET',
+        }),
+      )
+    })
+  })
 })
+

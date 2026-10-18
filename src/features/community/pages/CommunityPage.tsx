@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { Bookmark, Plus, Search, Users } from 'lucide-react'
+import { Bookmark, Lightbulb, Plus, Search, Users } from 'lucide-react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { SiteNavbar } from '@/components/SiteNavbar'
 import { useAuthSession } from '@/features/auth/authSession'
@@ -13,6 +13,12 @@ import { CommentSection } from '../components/CommentSection'
 import { PostComposerModal, type PostFormValues } from '../components/PostComposerModal'
 import { ReportDialog } from '../components/ReportDialog'
 import { FeedSkeleton } from '../components/FeedSkeleton'
+import { QuickComposerBar } from '../components/QuickComposerBar'
+import {
+  COMPOSER_BACKGROUND_KEYS,
+  MAX_BACKGROUND_POST_LENGTH,
+  isComposerBackgroundKey,
+} from '../components/composerBackgrounds'
 import { CATEGORY_LABELS, type ReactionType } from '../utils/communityFormat'
 import './community.css'
 
@@ -32,6 +38,7 @@ const postFormSchema = z.object({
   imageUrls: z.string(),
   videoUrl: z.string(),
   targetBand: z.string(),
+  background: z.enum(COMPOSER_BACKGROUND_KEYS).nullable().optional(),
 }).superRefine((v, ctx) => {
   const urls = v.imageUrls.split('\n').map((x) => x.trim()).filter(Boolean)
   if (urls.length > 4) ctx.addIssue({ code: 'custom', path: ['imageUrls'], message: 'Tối đa 4 ảnh.' })
@@ -46,6 +53,14 @@ const postFormSchema = z.object({
   }
   if (v.targetBand && (Number(v.targetBand) < 0 || Number(v.targetBand) > 9)) {
     ctx.addIssue({ code: 'custom', path: ['targetBand'], message: 'Band mục tiêu từ 0 đến 9.' })
+  }
+  if (v.background) {
+    if (urls.length > 0 || v.videoUrl.trim()) {
+      ctx.addIssue({ code: 'custom', path: ['background'], message: 'Bài viết có màu nền không được đính kèm ảnh hoặc video.' })
+    }
+    if (v.body.trim().length > MAX_BACKGROUND_POST_LENGTH) {
+      ctx.addIssue({ code: 'custom', path: ['background'], message: `Bài viết có màu nền tối đa ${MAX_BACKGROUND_POST_LENGTH} ký tự.` })
+    }
   }
 })
 
@@ -142,6 +157,7 @@ export function CommunityPage() {
       imageUrls: '',
       videoUrl: '',
       targetBand: '',
+      background: null,
     },
   })
 
@@ -384,6 +400,7 @@ export function CommunityPage() {
         imageUrls: value.imageUrls.split('\n').map((x) => x.trim()).filter(Boolean),
         videoUrl: value.videoUrl || undefined,
         targetBand: value.targetBand ? Number(value.targetBand) : undefined,
+        background: value.background ?? null,
       }
       const saved = editingPost
         ? await communityApi.update(editingPost.id, payload)
@@ -745,17 +762,10 @@ export function CommunityPage() {
           )}
 
           {!postId && !userId && !isBookmarks && (
-            <button
-              className="community-compose-prompt"
-              type="button"
-              onClick={() => setComposer(true)}
-            >
-              <span className="community-avatar">
-                {userName.slice(0, 1).toUpperCase()}
-              </span>
-              <span>Chia sẻ điều bạn đang học...</span>
-              <Plus size={18} />
-            </button>
+            <QuickComposerBar
+              userName={userName}
+              onOpenComposer={() => setComposer(true)}
+            />
           )}
 
           {/* Followers / Following Profile List */}
@@ -818,6 +828,7 @@ export function CommunityPage() {
                   imageUrls: p.imageUrls.join('\n'),
                   videoUrl: p.videoUrl ?? '',
                   targetBand: p.targetBand?.toString() ?? '',
+                  background: isComposerBackgroundKey(p.background) ? p.background : null,
                 })
                 setComposer(true)
               }}
@@ -1000,6 +1011,24 @@ export function CommunityPage() {
               ))}
             </ul>
           </section>
+
+          <section className="community-ielts-tips-card">
+            <div className="community-ielts-tips-header">
+              <Lightbulb size={18} className="community-ielts-tips-icon" />
+              <h2>Mẹo luyện thi IELTS</h2>
+            </div>
+            <ul className="community-ielts-tips-list">
+              <li>
+                <strong>Writing Task 2:</strong> Lập dàn ý 5 phút trước khi viết để đảm bảo mạch lạc (Coherence & Cohesion).
+              </li>
+              <li>
+                <strong>Speaking Part 2:</strong> Áp dụng cấu trúc <em>Past - Present - Future</em> để mở rộng câu trả lời tự nhiên.
+              </li>
+              <li>
+                <strong>Listening:</strong> Đọc trước câu hỏi và gạch chân từ khóa trong 30 giây chuẩn bị mỗi phần.
+              </li>
+            </ul>
+          </section>
         </aside>
 
         {/* Composer Modal */}
@@ -1009,6 +1038,7 @@ export function CommunityPage() {
           form={form}
           formValidationError={formValidationError}
           categories={categories}
+          userName={userName}
           onSubmit={submitPost}
           onClose={() => {
             setComposer(false)
