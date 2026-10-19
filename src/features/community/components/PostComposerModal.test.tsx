@@ -77,6 +77,22 @@ describe('PostComposerModal', () => {
     expect(submitBtn).toBeEnabled()
   })
 
+  it('keeps focus in the title field while typing instead of jumping back to the body', async () => {
+    vi.useFakeTimers()
+    try {
+      render(<TestWrapper defaultValues={{ title: '' }} />)
+      await vi.advanceTimersByTimeAsync(100) // let the initial focus on the body settle
+      fireEvent.click(screen.getByRole('button', { name: /tiêu đề/i }))
+      const title = screen.getByPlaceholderText(/Tiêu đề bài viết/)
+      title.focus()
+      fireEvent.change(title, { target: { value: 'T' } })
+      await vi.advanceTimersByTimeAsync(200)
+      expect(document.activeElement).toBe(title)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('calls onClose when clicking close button on clean form', () => {
     const onClose = vi.fn()
     render(<TestWrapper onClose={onClose} defaultValues={{ body: '' }} />)

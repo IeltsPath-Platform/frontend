@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import type { UseFormReturn } from 'react-hook-form'
-import { Image, Smile, Target, Sparkles, Loader2, X } from 'lucide-react'
+import { Image, Smile, Sparkles, Loader2, X } from 'lucide-react'
 import { CATEGORY_LABELS } from '../utils/communityFormat'
 import {
   getComposerBackground,
@@ -55,7 +55,6 @@ export function PostComposerModal({
   const titleValue = watch('title') || ''
   const imageUrlsValue = watch('imageUrls') || ''
   const videoUrlValue = watch('videoUrl') || ''
-  const targetBandValue = watch('targetBand') || ''
   const categoryValue = watch('category') || 'GENERAL'
   const backgroundValue = watch('background') ?? null
 
@@ -113,6 +112,11 @@ export function PostComposerModal({
     }
   }
 
+  // The effect below must run only when the dialog opens or closes. Reading the latest close handler
+  // through a ref keeps typing (which changes isDirty) from re-running it and stealing focus.
+  const safeCloseRef = useRef(handleSafeClose)
+  useEffect(() => { safeCloseRef.current = handleSafeClose }, [handleSafeClose])
+
   // Focus restoration & Escape handling
   useEffect(() => {
     if (!isOpen) return
@@ -123,7 +127,7 @@ export function PostComposerModal({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault()
-        handleSafeClose()
+        safeCloseRef.current()
       }
       if (e.key === 'Tab' && modalRef.current) {
         const focusable = modalRef.current.querySelectorAll<HTMLElement>(
@@ -148,7 +152,7 @@ export function PostComposerModal({
       document.removeEventListener('keydown', handleKeyDown)
       previousActiveElementRef.current?.focus()
     }
-  }, [isOpen, handleSafeClose])
+  }, [isOpen])
 
   if (!isOpen) return null
 
@@ -236,20 +240,6 @@ export function PostComposerModal({
                     {categories.map((cat) => (
                       <option key={cat} value={cat}>
                         {CATEGORY_LABELS[cat] ?? cat}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                {/* Target Band select pill */}
-                <label className="composer-select-pill" title="Mục tiêu band điểm IELTS">
-                  <Target size={13} />
-                  <span>{targetBandValue ? `Band ${targetBandValue}` : 'Chọn Band'}</span>
-                  <select {...register('targetBand')} aria-label="Chọn band mục tiêu">
-                    <option value="">Không đặt band</option>
-                    {[4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0].map((b) => (
-                      <option key={b} value={b}>
-                        Band {b.toFixed(1)}
                       </option>
                     ))}
                   </select>
