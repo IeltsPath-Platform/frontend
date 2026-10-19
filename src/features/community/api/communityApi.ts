@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { apiRequest } from '@/lib/httpClient'
+import { apiRequest, HttpError } from '@/lib/httpClient'
 
 const profileSchema = z.object({ id: z.string().guid(), displayName: z.string(), avatarUrl: z.string().nullable().optional(), bio: z.string().nullable().optional(), targetBand: z.number().nullable().optional(), streak: z.number().optional() })
 export type PublicProfile = z.infer<typeof profileSchema>
@@ -15,6 +15,83 @@ const contentReportSchema = z.object({ id: z.string().guid(), contentType: z.enu
 export type ContentReport = z.infer<typeof contentReportSchema>
 const reportQueueItemSchema = z.object({ id: z.string().guid(), reporterId: z.string().guid(), reporterDisplayName: z.string().nullable().optional(), contentType: z.enum(['POST', 'COMMENT']), contentId: z.string().guid(), contentAuthorId: z.string().guid().nullable(), contentAuthorDisplayName: z.string().nullable().optional(), contentPreview: z.string().nullable(), reason: z.string(), status: z.literal('PENDING'), createdAt: z.string() })
 const reportQueueSchema = z.object({ content: z.array(reportQueueItemSchema), page: z.number(), size: z.number(), totalElements: z.number(), totalPages: z.number(), sort: z.string() })
+
+const IMAGE_MAX_SIZE = 5 * 1024 * 1024
+const VIDEO_MAX_SIZE = 50 * 1024 * 1024
+const IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
+const VIDEO_TYPES = new Set(['video/mp4', 'video/webm', 'video/quicktime'])
+const uploadedImageSchema = z.object({ url: z.string().url(), key: z.string(), contentType: z.string(), size: z.number() })
+const videoUploadUrlSchema = z.object({ uploadUrl: z.string().url(), key: z.string(), publicUrl: z.string().url() })
+
+export class MediaUploadError extends Error {
+  readonly status?: number
+
+  constructor(message: string, status?: number) {
+    super(message)
+    this.name = 'MediaUploadError'
+    this.status = status
+  }
+}
+
+function validateMediaFile(file: File, types: Set<string>, maxSize: number, label: string) {
+  if (!types.has(file.type)) {
+    throw new MediaUploadError(`Tệp ${label} không được hỗ trợ. Vui lòng chọn đúng định dạng.`)
+  }
+  if (file.size <= 0) throw new MediaUploadError(`Tệp ${label} đang trống.`)
+  if (file.size > maxSize) {
+    throw new MediaUploadError(`Tệp ${label} vượt quá dung lượng tối đa ${label === 'ảnh' ? '5 MB' : '50 MB'}.`)
+  }
+}
+
+function uploadError(error: unknown): MediaUploadError {
+  if (error instanceof MediaUploadError) return error
+  if (error instanceof HttpError) {
+    const messages: Record<number, string> = {
+      400: 'Tệp không hợp lệ hoặc bị lỗi. Hãy chọn tệp khác.',
+      413: 'Tệp vượt quá dung lượng cho phép.',
+      415: 'Định dạng tệp này chưa được hỗ trợ.',
+      429: 'Bạn đã tải lên quá nhiều lần. Vui lòng thử lại sau.',
+      503: 'Tải tệp từ máy tạm thời chưa khả dụng, hãy dùng đường dẫn URL.',
+    }
+    return new MediaUploadError(messages[error.status] ?? 'Không thể tải tệp lên. Vui lòng thử lại.', error.status)
+  }
+  return new MediaUploadError('Không thể tải tệp lên. Vui lòng kiểm tra kết nối và thử lại.')
+}
+
+export function getMediaUploadErrorMessage(error: unknown) {
+  return uploadError(error).message
+}
+
+function uploadVideoFile(url: string, file: File, signal?: AbortSignal, onProgress?: (percent: number) => void) {
+  return new Promise<void>((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    const abort = () => xhr.abort()
+    xhr.open('PUT', url)
+    xhr.setRequestHeader('Content-Type', file.type)
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) onProgress?.(Math.round((event.loaded / event.total) * 100))
+    }
+    xhr.onload = () => {
+      signal?.removeEventListener('abort', abort)
+      if (xhr.status >= 200 && xhr.status < 300) resolve()
+      else reject(new MediaUploadError('Không thể lưu video lên kho tệp. Vui lòng thử lại.', xhr.status))
+    }
+    xhr.onerror = () => {
+      signal?.removeEventListener('abort', abort)
+      reject(new MediaUploadError('Không thể kết nối tới kho tệp. Vui lòng thử lại.'))
+    }
+    xhr.onabort = () => {
+      signal?.removeEventListener('abort', abort)
+      reject(new DOMException('Đã hủy tải tệp.', 'AbortError'))
+    }
+    if (signal?.aborted) {
+      xhr.abort()
+      return
+    }
+    signal?.addEventListener('abort', abort, { once: true })
+    xhr.send(file)
+  })
+}
 export type ContentReportQueueItem = z.infer<typeof reportQueueItemSchema>
 export type ContentReportQueue = z.infer<typeof reportQueueSchema>
 
@@ -29,9 +106,37 @@ export const communityApi = {
   follows: async (id: string, direction: 'followers' | 'following', cursor?: string) => profilePageSchema.parse(await apiRequest(`/api/community/users/${id}/${direction}?size=10${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`, { auth: true })),
   create: (body: { category: string; title?: string; body: string; imageUrls?: string[]; videoUrl?: string; targetBand?: number; background?: string | null }) => apiRequest<CommunityPost>('/api/community/posts', { method: 'POST', auth: true, body }),
   update: (id: string, body: { category: string; title?: string; body: string; imageUrls?: string[]; videoUrl?: string; targetBand?: number; background?: string | null }) => apiRequest<CommunityPost>(`/api/community/posts/${id}`, { method: 'PUT', auth: true, body }),
-  uploadMedia: async (_file: File): Promise<string> => {
-    void _file
-    throw new Error('Tính năng tải tệp lên từ máy tính chưa được hỗ trợ')
+  uploadImage: async (file: File, signal?: AbortSignal): Promise<{ url: string }> => {
+    try {
+      validateMediaFile(file, IMAGE_TYPES, IMAGE_MAX_SIZE, 'ảnh')
+      const formData = new FormData()
+      formData.append('file', file)
+      const result = uploadedImageSchema.parse(await apiRequest('/api/community/media/images', {
+        method: 'POST', auth: true, body: formData, signal,
+      }))
+      return { url: result.url }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') throw error
+      throw uploadError(error)
+    }
+  },
+  uploadVideo: async (
+    file: File,
+    options: { signal?: AbortSignal; onProgress?: (percent: number) => void } = {},
+  ): Promise<{ url: string }> => {
+    try {
+      validateMediaFile(file, VIDEO_TYPES, VIDEO_MAX_SIZE, 'video')
+      const result = videoUploadUrlSchema.parse(await apiRequest('/api/community/media/videos/upload-url', {
+        method: 'POST', auth: true,
+        body: { contentType: file.type, size: file.size },
+        signal: options.signal,
+      }))
+      await uploadVideoFile(result.uploadUrl, file, options.signal, options.onProgress)
+      return { url: result.publicUrl }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') throw error
+      throw uploadError(error)
+    }
   },
   delete: (id: string) => apiRequest<void>(`/api/community/posts/${id}`, { method: 'DELETE', auth: true }),
   react: (id: string, type: string) => apiRequest<void>(`/api/community/posts/${id}/reactions/${type}`, { method: 'PUT', auth: true }),

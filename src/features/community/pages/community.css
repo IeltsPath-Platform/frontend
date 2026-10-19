@@ -582,6 +582,24 @@
   background: #eef1f7;
 }
 
+.community-images-1 {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.community-images-3 button:first-child {
+  grid-row: span 2;
+}
+
+.community-image-fallback {
+  display: grid;
+  min-height: 9rem;
+  place-items: center;
+  padding: 1rem;
+  color: #64748b;
+  background: #eef1f7;
+  cursor: default;
+}
+
 .community-video {
   position: relative;
   aspect-ratio: 16 / 9;
@@ -590,6 +608,13 @@
   border-radius: 0.75rem;
   background: #101828;
   box-shadow: var(--community-shadow-sm);
+}
+
+.community-video video {
+  display: block;
+  width: 100%;
+  max-height: 34rem;
+  background: #0f172a;
 }
 
 .community-video iframe {

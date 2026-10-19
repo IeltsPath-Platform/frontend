@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Bookmark, Edit3, Flag, MessageCircle, Trash2 } from 'lucide-react'
 import type { CommunityPost } from '../api/communityApi'
@@ -11,6 +12,24 @@ import {
   type ReactionType,
 } from '../utils/communityFormat'
 import { getComposerBackground } from './composerBackgrounds'
+
+function PostImage({ url, index, onClick }: { url: string; index: number; onClick: (url: string) => void }) {
+  const [failed, setFailed] = useState(false)
+  return (
+    <button type="button" onClick={() => onClick(url)} aria-label={`Phóng to ảnh đính kèm ${index + 1}`}>
+      {failed ? <span className="community-image-fallback" role="img" aria-label={`Ảnh ${index + 1} không tải được`}>Không thể tải ảnh</span> : <img src={url} alt={`Ảnh đính kèm bài viết ${index + 1}`} loading="lazy" referrerPolicy="no-referrer" onError={() => setFailed(true)} />}
+    </button>
+  )
+}
+
+function isUploadedVideo(raw: string) {
+  try {
+    const url = new URL(raw)
+    return url.protocol === 'https:' && (/\.(mp4|webm|mov)$/i.test(url.pathname) || (url.hostname.endsWith('.supabase.co') && url.pathname.includes('/community/videos/')))
+  } catch {
+    return false
+  }
+}
 
 export interface PostCardProps {
   post: CommunityPost
@@ -147,22 +166,8 @@ export function PostCard({
 
       {/* Images Lightbox */}
       {post.imageUrls.length > 0 && (
-        <div className="community-images">
-          {post.imageUrls.map((url) => (
-            <button
-              type="button"
-              key={url}
-              onClick={() => onImageClick(url)}
-              aria-label="Phóng to ảnh đính kèm"
-            >
-              <img
-                src={url}
-                alt="Ảnh đính kèm bài viết"
-                loading="lazy"
-                referrerPolicy="no-referrer"
-              />
-            </button>
-          ))}
+        <div className={`community-images community-images-${Math.min(post.imageUrls.length, 4)}`}>
+          {post.imageUrls.map((url, index) => <PostImage key={url} url={url} index={index} onClick={onImageClick} />)}
         </div>
       )}
 
@@ -179,6 +184,8 @@ export function PostCard({
               allowFullScreen
             />
           </div>
+        ) : isUploadedVideo(post.videoUrl) ? (
+          <div className="community-video"><video src={post.videoUrl} controls preload="metadata" aria-label="Video trong bài viết" /></div>
         ) : (
           <p>
             <a

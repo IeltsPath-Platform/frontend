@@ -121,6 +121,7 @@ export function CommunityPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [composer, setComposer] = useState(false)
+  const [composerMediaIntent, setComposerMediaIntent] = useState<'IMAGE' | 'VIDEO' | null>(null)
   const [editingPost, setEditingPost] = useState<CommunityPost | null>(null)
   const [activeCategory, setActiveCategory] = useState(search.get('category') ?? '')
   const [commentPost, setCommentPost] = useState<string | null>(null)
@@ -424,6 +425,7 @@ export function CommunityPage() {
         : await communityApi.create(payload)
       setPosts((current) => [saved, ...current.filter((item) => item.id !== saved.id)])
       setComposer(false)
+      setComposerMediaIntent(null)
       setEditingPost(null)
       form.reset()
     } catch (error) {
@@ -781,7 +783,10 @@ export function CommunityPage() {
           {!postId && !userId && !isBookmarks && (
             <QuickComposerBar
               userName={userName}
-              onOpenComposer={() => setComposer(true)}
+              onOpenComposer={(mediaType) => {
+                setComposerMediaIntent(mediaType ?? null)
+                setComposer(true)
+              }}
             />
           )}
 
@@ -1069,7 +1074,10 @@ export function CommunityPage() {
 
         {/* Composer Modal */}
         <PostComposerModal
+          key={`${composer ? 'open' : 'closed'}-${composerMediaIntent ?? 'default'}`}
           isOpen={composer}
+          initialMediaType={composerMediaIntent ?? undefined}
+          openMediaOnOpen={Boolean(composerMediaIntent)}
           isEditing={Boolean(editingPost)}
           form={form}
           formValidationError={formValidationError}
@@ -1078,6 +1086,7 @@ export function CommunityPage() {
           onSubmit={submitPost}
           onClose={() => {
             setComposer(false)
+            setComposerMediaIntent(null)
             setEditingPost(null)
             form.reset()
           }}
