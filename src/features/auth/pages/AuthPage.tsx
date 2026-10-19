@@ -65,7 +65,7 @@ export function AuthPage({ mode }: AuthPageProps) {
   }
 
   return (
-    <AuthShell>
+    <AuthShell showNavbar={false}>
       <AuthForm
         mode={mode}
         statusMessage={statusMessage}
