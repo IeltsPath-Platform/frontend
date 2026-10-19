@@ -17,17 +17,19 @@ interface AuthShellProps {
   children: ReactNode
   ambientTitle?: string
   ambientBody?: string
+  showNavbar?: boolean
 }
 
 export function AuthShell({
   children,
   ambientTitle = 'Mỗi ngày một bước. Gần hơn band mục tiêu.',
   ambientBody = 'Giữ bài học, lộ trình và từ vựng trong một không gian tập trung.',
+  showNavbar = true,
 }: AuthShellProps) {
   return (
     <div className="auth-page">
       <a className="skip-link" href="#auth-main-content">Đi tới biểu mẫu xác thực</a>
-      <SiteNavbar />
+      {showNavbar && <SiteNavbar />}
       <main id="auth-main-content" className="auth-main" tabIndex={-1}>
         <InteractiveCanvasBackground particleCount={160} interactionRadius={150} />
         <div className="auth-backdrop" aria-hidden="true">

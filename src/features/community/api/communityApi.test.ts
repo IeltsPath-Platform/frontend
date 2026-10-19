@@ -26,5 +26,51 @@ describe('community API schemas', () => {
 
     expect(post.authorId).toBe(learnerId)
     expect(notification.actorId).toBe(adminId)
+    expect(post.background).toBeUndefined()
+  })
+
+  it('accepts and validates optional background key in post payload', () => {
+    const postWithBg = postSchema.parse({
+      id: '00000000-0000-0000-0000-000000000003',
+      authorId: '00000000-0000-0000-0000-000000000001',
+      category: 'GENERAL',
+      title: null,
+      body: 'Post with violet background',
+      createdAt: '2026-10-18T00:00:00Z',
+      background: 'VIOLET',
+    })
+    expect(postWithBg.background).toBe('VIOLET')
+
+    const postWithNullBg = postSchema.parse({
+      id: '00000000-0000-0000-0000-000000000003',
+      authorId: '00000000-0000-0000-0000-000000000001',
+      category: 'GENERAL',
+      title: null,
+      body: 'Post with null background',
+      createdAt: '2026-10-18T00:00:00Z',
+      background: null,
+    })
+    expect(postWithNullBg.background).toBeNull()
+
+    expect(() =>
+      postSchema.parse({
+        id: '00000000-0000-0000-0000-000000000003',
+        authorId: '00000000-0000-0000-0000-000000000001',
+        category: 'GENERAL',
+        title: null,
+        body: 'Invalid background',
+        createdAt: '2026-10-18T00:00:00Z',
+        background: 'INVALID_BG',
+      }),
+    ).toThrow()
+  })
+
+  it('throws descriptive error on uploadMedia placeholder call', async () => {
+    const { communityApi } = await import('./communityApi')
+    const fakeFile = new File(['hello'], 'test.png', { type: 'image/png' })
+    await expect(communityApi.uploadMedia(fakeFile)).rejects.toThrow(
+      'Tính năng tải tệp lên từ máy tính chưa được hỗ trợ',
+    )
   })
 })
+

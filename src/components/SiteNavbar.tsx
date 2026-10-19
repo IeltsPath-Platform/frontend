@@ -53,7 +53,6 @@ const guestNavigation: readonly NavItem[] = [
 ]
 
 const memberNavigation: readonly NavItem[] = [
-  { to: '/community', label: 'Cộng đồng' },
   {
     to: '/home',
     label: 'Trang chủ',
@@ -63,6 +62,7 @@ const memberNavigation: readonly NavItem[] = [
       { to: '/learn', label: 'Khóa học của tôi' },
     ],
   },
+  { to: '/community', label: 'Cộng đồng' },
   coursesNav,
   practice,
   {

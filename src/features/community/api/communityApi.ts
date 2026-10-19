@@ -3,7 +3,7 @@ import { apiRequest } from '@/lib/httpClient'
 
 const profileSchema = z.object({ id: z.string().guid(), displayName: z.string(), avatarUrl: z.string().nullable().optional(), bio: z.string().nullable().optional(), targetBand: z.number().nullable().optional(), streak: z.number().optional() })
 export type PublicProfile = z.infer<typeof profileSchema>
-export const postSchema = z.object({ id: z.string().guid(), authorId: z.string().guid(), category: z.string(), title: z.string().nullable(), body: z.string(), createdAt: z.string(), imageUrls: z.array(z.string()).default([]), videoUrl: z.string().nullable().optional(), targetBand: z.number().nullable().optional(), author: profileSchema.nullable().optional(), reactionCounts: z.record(z.string(), z.number()).default({}), myReaction: z.string().nullable().optional(), commentCount: z.number().default(0), bookmarkedByMe: z.boolean().default(false), followingAuthor: z.boolean().default(false) })
+export const postSchema = z.object({ id: z.string().guid(), authorId: z.string().guid(), category: z.string(), title: z.string().nullable(), body: z.string(), createdAt: z.string(), imageUrls: z.array(z.string()).default([]), videoUrl: z.string().nullable().optional(), targetBand: z.number().nullable().optional(), background: z.enum(['VIOLET', 'CRIMSON', 'MIDNIGHT', 'SUNSET', 'OCEAN', 'FOREST', 'ROSE', 'AURORA']).nullable().optional(), author: profileSchema.nullable().optional(), reactionCounts: z.record(z.string(), z.number()).default({}), myReaction: z.string().nullable().optional(), commentCount: z.number().default(0), bookmarkedByMe: z.boolean().default(false), followingAuthor: z.boolean().default(false) })
 export type CommunityPost = z.infer<typeof postSchema>
 export const cursorPageSchema = z.object({ content: z.array(postSchema), nextCursor: z.string().nullable(), hasNext: z.boolean(), size: z.number() })
 const profilePageSchema = z.object({ content: z.array(profileSchema), nextCursor: z.string().nullable(), hasNext: z.boolean(), size: z.number() })
@@ -27,8 +27,12 @@ export const communityApi = {
   profile: async (id: string) => profileSchema.parse(await apiRequest(`/api/users/${id}/public-profile`, { auth: true })),
   mentionSuggestions: async (query: string) => z.array(profileSchema).parse(await apiRequest(`/api/community/users/mention-suggestions?q=${encodeURIComponent(query)}`, { auth: true })),
   follows: async (id: string, direction: 'followers' | 'following', cursor?: string) => profilePageSchema.parse(await apiRequest(`/api/community/users/${id}/${direction}?size=10${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`, { auth: true })),
-  create: (body: { category: string; title?: string; body: string; imageUrls?: string[]; videoUrl?: string; targetBand?: number }) => apiRequest<CommunityPost>('/api/community/posts', { method: 'POST', auth: true, body }),
-  update: (id: string, body: { category: string; title?: string; body: string; imageUrls?: string[]; videoUrl?: string; targetBand?: number }) => apiRequest<CommunityPost>(`/api/community/posts/${id}`, { method: 'PUT', auth: true, body }),
+  create: (body: { category: string; title?: string; body: string; imageUrls?: string[]; videoUrl?: string; targetBand?: number; background?: string | null }) => apiRequest<CommunityPost>('/api/community/posts', { method: 'POST', auth: true, body }),
+  update: (id: string, body: { category: string; title?: string; body: string; imageUrls?: string[]; videoUrl?: string; targetBand?: number; background?: string | null }) => apiRequest<CommunityPost>(`/api/community/posts/${id}`, { method: 'PUT', auth: true, body }),
+  uploadMedia: async (_file: File): Promise<string> => {
+    void _file
+    throw new Error('Tính năng tải tệp lên từ máy tính chưa được hỗ trợ')
+  },
   delete: (id: string) => apiRequest<void>(`/api/community/posts/${id}`, { method: 'DELETE', auth: true }),
   react: (id: string, type: string) => apiRequest<void>(`/api/community/posts/${id}/reactions/${type}`, { method: 'PUT', auth: true }),
   removeReaction: (id: string, type: string) => apiRequest<void>(`/api/community/posts/${id}/reactions/${type}`, { method: 'DELETE', auth: true }),

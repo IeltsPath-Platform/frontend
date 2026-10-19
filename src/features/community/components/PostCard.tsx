@@ -10,6 +10,7 @@ import {
   safeVideoEmbed,
   type ReactionType,
 } from '../utils/communityFormat'
+import { getComposerBackground } from './composerBackgrounds'
 
 export interface PostCardProps {
   post: CommunityPost
@@ -54,6 +55,9 @@ export function PostCard({
     hour: '2-digit',
     minute: '2-digit',
   })
+
+  const bgConfig = getComposerBackground(post.background)
+  const isBackgroundPost = Boolean(bgConfig && post.imageUrls.length === 0 && !post.videoUrl)
 
   return (
     <article className="community-post" key={post.id}>
@@ -126,7 +130,20 @@ export function PostCard({
 
       {/* Post Content */}
       {post.title && <h2 className="community-post-title">{post.title}</h2>}
-      <p className="community-post-body">{post.body}</p>
+      {isBackgroundPost && bgConfig ? (
+        <div
+          className="community-post-background-box"
+          style={{
+            background: bgConfig.gradient,
+            color: bgConfig.textColor,
+            textShadow: bgConfig.textShadow,
+          }}
+        >
+          <p className="community-post-background-text">{post.body}</p>
+        </div>
+      ) : (
+        <p className="community-post-body">{post.body}</p>
+      )}
 
       {/* Images Lightbox */}
       {post.imageUrls.length > 0 && (

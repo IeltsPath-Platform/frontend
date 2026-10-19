@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { Bookmark, Plus, Search, Users } from 'lucide-react'
-import { Link, useParams, useSearchParams } from 'react-router-dom'
+import { Bookmark, Lightbulb, Plus, Search, Users } from 'lucide-react'
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { SiteNavbar } from '@/components/SiteNavbar'
 import { useAuthSession } from '@/features/auth/authSession'
 import { HttpError } from '@/lib/httpClient'
@@ -13,6 +13,13 @@ import { CommentSection } from '../components/CommentSection'
 import { PostComposerModal, type PostFormValues } from '../components/PostComposerModal'
 import { ReportDialog } from '../components/ReportDialog'
 import { FeedSkeleton } from '../components/FeedSkeleton'
+import { QuickComposerBar } from '../components/QuickComposerBar'
+import { SandTransition } from '../components/SandTransition'
+import {
+  COMPOSER_BACKGROUND_KEYS,
+  MAX_BACKGROUND_POST_LENGTH,
+  isComposerBackgroundKey,
+} from '../components/composerBackgrounds'
 import { CATEGORY_LABELS, type ReactionType } from '../utils/communityFormat'
 import './community.css'
 
@@ -32,6 +39,7 @@ const postFormSchema = z.object({
   imageUrls: z.string(),
   videoUrl: z.string(),
   targetBand: z.string(),
+  background: z.enum(COMPOSER_BACKGROUND_KEYS).nullable().optional(),
 }).superRefine((v, ctx) => {
   const urls = v.imageUrls.split('\n').map((x) => x.trim()).filter(Boolean)
   if (urls.length > 4) ctx.addIssue({ code: 'custom', path: ['imageUrls'], message: 'Tối đa 4 ảnh.' })
@@ -46,6 +54,14 @@ const postFormSchema = z.object({
   }
   if (v.targetBand && (Number(v.targetBand) < 0 || Number(v.targetBand) > 9)) {
     ctx.addIssue({ code: 'custom', path: ['targetBand'], message: 'Band mục tiêu từ 0 đến 9.' })
+  }
+  if (v.background) {
+    if (urls.length > 0 || v.videoUrl.trim()) {
+      ctx.addIssue({ code: 'custom', path: ['background'], message: 'Bài viết có màu nền không được đính kèm ảnh hoặc video.' })
+    }
+    if (v.body.trim().length > MAX_BACKGROUND_POST_LENGTH) {
+      ctx.addIssue({ code: 'custom', path: ['background'], message: `Bài viết có màu nền tối đa ${MAX_BACKGROUND_POST_LENGTH} ký tự.` })
+    }
   }
 })
 
@@ -85,6 +101,8 @@ function logCommunityFailure(operation: string, error: unknown) {
 }
 
 export function CommunityPage() {
+  const location = useLocation()
+  const navigate = useNavigate()
   const { postId, userId } = useParams()
   const [search, setSearch] = useSearchParams()
   const searchQuery = search.get('q')?.trim() ?? ''
@@ -124,10 +142,24 @@ export function CommunityPage() {
   const [reportTarget, setReportTarget] = useState<{ type: 'POST' | 'COMMENT'; id: string } | null>(null)
   const [reportReason, setReportReason] = useState('')
   const [reportMessage, setReportMessage] = useState('')
+  const [showSandTransition, setShowSandTransition] = useState(() => {
+    const navigationState = location.state as { communityLoginTransition?: boolean } | null
+    return Boolean(navigationState?.communityLoginTransition)
+      && !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  })
   const [relationship, setRelationship] = useState<{ following: boolean; followerCount: number; followingCount: number } | null>(null)
   const observerRef = useRef<HTMLDivElement>(null)
   const loadRef = useRef<(resetList?: boolean) => Promise<void>>(async () => undefined)
   const loadingRef = useRef(false)
+
+  useEffect(() => {
+    const navigationState = location.state as { communityLoginTransition?: boolean } | null
+    if (!navigationState?.communityLoginTransition) return
+
+    navigate(`${location.pathname}${location.search}${location.hash}`, { replace: true, state: null })
+  }, [location.hash, location.pathname, location.search, location.state, navigate])
+
+  const completeSandTransition = useCallback(() => setShowSandTransition(false), [])
 
   const scopeKey = `${postId ?? 'feed'}:${userId ?? 'all'}:${isBookmarks ? 'bookmarks' : 'posts'}:${profileTab}:${isFollowingFeed ? 'following' : 'all'}:${activeCategory}:${searchQuery}`
   const activeScopeRef = useRef(scopeKey)
@@ -142,6 +174,7 @@ export function CommunityPage() {
       imageUrls: '',
       videoUrl: '',
       targetBand: '',
+      background: null,
     },
   })
 
@@ -384,6 +417,7 @@ export function CommunityPage() {
         imageUrls: value.imageUrls.split('\n').map((x) => x.trim()).filter(Boolean),
         videoUrl: value.videoUrl || undefined,
         targetBand: value.targetBand ? Number(value.targetBand) : undefined,
+        background: value.background ?? null,
       }
       const saved = editingPost
         ? await communityApi.update(editingPost.id, payload)
@@ -534,7 +568,7 @@ export function CommunityPage() {
     <div className="community-page">
       <SiteNavbar />
 
-      <div className="community-layout">
+      <div className={`community-layout${showSandTransition ? ' community-transition-enter' : ''}`}>
         {/* Left Rail */}
         <aside className="community-rail community-left">
           <section className="community-welcome">
@@ -745,17 +779,10 @@ export function CommunityPage() {
           )}
 
           {!postId && !userId && !isBookmarks && (
-            <button
-              className="community-compose-prompt"
-              type="button"
-              onClick={() => setComposer(true)}
-            >
-              <span className="community-avatar">
-                {userName.slice(0, 1).toUpperCase()}
-              </span>
-              <span>Chia sẻ điều bạn đang học...</span>
-              <Plus size={18} />
-            </button>
+            <QuickComposerBar
+              userName={userName}
+              onOpenComposer={() => setComposer(true)}
+            />
           )}
 
           {/* Followers / Following Profile List */}
@@ -818,6 +845,7 @@ export function CommunityPage() {
                   imageUrls: p.imageUrls.join('\n'),
                   videoUrl: p.videoUrl ?? '',
                   targetBand: p.targetBand?.toString() ?? '',
+                  background: isComposerBackgroundKey(p.background) ? p.background : null,
                 })
                 setComposer(true)
               }}
@@ -975,16 +1003,35 @@ export function CommunityPage() {
                     Object.values(a.reactionCounts).reduce((x, y) => x + y, 0),
                 )
                 .slice(0, 3)
-                .map((post) => (
-                  <li key={post.id}>
-                    <Link to={`/community/posts/${post.id}`}>
-                      {post.title || post.body.slice(0, 65)}
-                    </Link>
-                    <span>
-                      {Object.values(post.reactionCounts).reduce((x, y) => x + y, 0)} cảm xúc
-                    </span>
-                  </li>
-                ))}
+                .map((post, index) => {
+                  const title = post.title || post.body.slice(0, 65)
+                  const reactionCount = Object.values(post.reactionCounts).reduce((x, y) => x + y, 0)
+                  return (
+                    <li key={post.id}>
+                      <Link className="community-trending-link" to={`/community/posts/${post.id}`}>
+                        <span className="community-trending-rank" aria-hidden="true">{index + 1}</span>
+                        <span className="community-trending-content">
+                          <span
+                            className="community-trending-title"
+                            title={title}
+                            style={{
+                              display: '-webkit-box',
+                              overflow: 'hidden',
+                              overflowWrap: 'anywhere',
+                              textOverflow: 'ellipsis',
+                              wordBreak: 'break-word',
+                              WebkitBoxOrient: 'vertical',
+                              WebkitLineClamp: 2,
+                            }}
+                          >
+                            {title}
+                          </span>
+                          <span className="community-trending-reactions">{reactionCount} cảm xúc</span>
+                        </span>
+                      </Link>
+                    </li>
+                  )
+                })}
             </ol>
           </section>
 
@@ -1000,6 +1047,24 @@ export function CommunityPage() {
               ))}
             </ul>
           </section>
+
+          <section className="community-ielts-tips-card">
+            <div className="community-ielts-tips-header">
+              <Lightbulb size={18} className="community-ielts-tips-icon" />
+              <h2>Mẹo luyện thi IELTS</h2>
+            </div>
+            <ul className="community-ielts-tips-list">
+              <li>
+                <strong>Writing Task 2:</strong> Lập dàn ý 5 phút trước khi viết để đảm bảo mạch lạc (Coherence & Cohesion).
+              </li>
+              <li>
+                <strong>Speaking Part 2:</strong> Áp dụng cấu trúc <em>Past - Present - Future</em> để mở rộng câu trả lời tự nhiên.
+              </li>
+              <li>
+                <strong>Listening:</strong> Đọc trước câu hỏi và gạch chân từ khóa trong 30 giây chuẩn bị mỗi phần.
+              </li>
+            </ul>
+          </section>
         </aside>
 
         {/* Composer Modal */}
@@ -1009,6 +1074,7 @@ export function CommunityPage() {
           form={form}
           formValidationError={formValidationError}
           categories={categories}
+          userName={userName}
           onSubmit={submitPost}
           onClose={() => {
             setComposer(false)
@@ -1078,6 +1144,7 @@ export function CommunityPage() {
           onClose={() => setReportTarget(null)}
         />
       </div>
+      {showSandTransition && <SandTransition onComplete={completeSandTransition} />}
     </div>
   )
 }
