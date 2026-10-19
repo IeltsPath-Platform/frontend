@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
 import { PostCard } from './PostCard'
@@ -101,6 +101,29 @@ describe('PostCard', () => {
     )
 
     expect(document.querySelector('.community-post-background-box')).toBeNull()
-    expect(screen.getByAltText('Ảnh đính kèm bài viết')).toBeInTheDocument()
+    expect(screen.getByAltText('Ảnh đính kèm bài viết 1')).toBeInTheDocument()
+  })
+
+  it('renders uploaded video with native controls and metadata preload', () => {
+    render(
+      <MemoryRouter>
+        <PostCard post={{ ...basePost, videoUrl: 'https://bucket.supabase.co/storage/v1/object/public/community/videos/demo.mp4' }} isCommentsOpen={false} onToggleComments={vi.fn()} onReaction={vi.fn()} onToggleBookmark={vi.fn()} onEditPost={vi.fn()} onDeletePost={vi.fn()} onFollowAuthor={vi.fn()} onOpenReport={vi.fn()} onImageClick={vi.fn()} />
+      </MemoryRouter>,
+    )
+    const video = screen.getByLabelText('Video trong bài viết')
+    expect(video.tagName).toBe('VIDEO')
+    expect(video).toHaveAttribute('preload', 'metadata')
+    expect(video).toHaveAttribute('controls')
+  })
+
+  it('shows a fallback if an attached image fails to load', async () => {
+    render(
+      <MemoryRouter>
+        <PostCard post={{ ...basePost, imageUrls: ['https://bucket.supabase.co/missing.png'] }} isCommentsOpen={false} onToggleComments={vi.fn()} onReaction={vi.fn()} onToggleBookmark={vi.fn()} onEditPost={vi.fn()} onDeletePost={vi.fn()} onFollowAuthor={vi.fn()} onOpenReport={vi.fn()} onImageClick={vi.fn()} />
+      </MemoryRouter>,
+    )
+    const image = screen.getByAltText('Ảnh đính kèm bài viết 1')
+    fireEvent(image, new Event('error'))
+    await waitFor(() => expect(screen.getByText('Không thể tải ảnh')).toBeInTheDocument())
   })
 })

@@ -32,6 +32,8 @@ export interface PostComposerModalProps {
   userName?: string
   onSubmit: (event: FormEvent) => void
   onClose: () => void
+  initialMediaType?: 'IMAGE' | 'VIDEO'
+  openMediaOnOpen?: boolean
 }
 
 export function PostComposerModal({
@@ -43,6 +45,8 @@ export function PostComposerModal({
   userName = 'Bạn',
   onSubmit,
   onClose,
+  initialMediaType,
+  openMediaOnOpen = false,
 }: PostComposerModalProps) {
   const {
     register,
@@ -58,10 +62,11 @@ export function PostComposerModal({
   const categoryValue = watch('category') || 'GENERAL'
   const backgroundValue = watch('background') ?? null
 
-  const [showMediaPanel, setShowMediaPanel] = useState(false)
+  const [showMediaPanel, setShowMediaPanel] = useState(openMediaOnOpen)
   const [showEmojiPopover, setShowEmojiPopover] = useState(false)
   const [showTitleInput, setShowTitleInput] = useState(false)
   const [warningMessage, setWarningMessage] = useState('')
+  const [uploadsInProgress, setUploadsInProgress] = useState(false)
 
   const modalRef = useRef<HTMLElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
@@ -316,6 +321,9 @@ export function PostComposerModal({
               videoUrl={videoUrlValue}
               onUpdateVideoUrl={handleUpdateVideoUrl}
               onClose={() => setShowMediaPanel(false)}
+              defaultMediaType={initialMediaType ?? 'IMAGE'}
+              defaultSourceTab={openMediaOnOpen ? 'upload' : 'url'}
+              onUploadingChange={setUploadsInProgress}
             />
           )}
 
@@ -367,8 +375,8 @@ export function PostComposerModal({
           {/* Submit button */}
           <button
             type="submit"
-            disabled={isBodyEmpty || isSubmitting}
-            className={`composer-submit-btn ${isBodyEmpty || isSubmitting ? 'is-disabled' : 'is-active'}`}
+            disabled={isBodyEmpty || isSubmitting || uploadsInProgress}
+            className={`composer-submit-btn ${isBodyEmpty || isSubmitting || uploadsInProgress ? 'is-disabled' : 'is-active'}`}
           >
             {isSubmitting ? (
               <>

@@ -65,12 +65,12 @@ describe('community API schemas', () => {
     ).toThrow()
   })
 
-  it('throws descriptive error on uploadMedia placeholder call', async () => {
+  it('rejects unsupported and oversized image files before making a request', async () => {
     const { communityApi } = await import('./communityApi')
-    const fakeFile = new File(['hello'], 'test.png', { type: 'image/png' })
-    await expect(communityApi.uploadMedia(fakeFile)).rejects.toThrow(
-      'Tính năng tải tệp lên từ máy tính chưa được hỗ trợ',
-    )
+    const unsupported = new File(['binary'], 'bad.exe', { type: 'application/octet-stream' })
+    const oversized = new File([new Uint8Array(5 * 1024 * 1024 + 1)], 'large.png', { type: 'image/png' })
+    await expect(communityApi.uploadImage(unsupported)).rejects.toThrow('Tệp ảnh không được hỗ trợ')
+    await expect(communityApi.uploadImage(oversized)).rejects.toThrow('vượt quá dung lượng tối đa 5 MB')
   })
 })
 

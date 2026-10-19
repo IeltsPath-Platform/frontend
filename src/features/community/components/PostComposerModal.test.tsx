@@ -1,7 +1,17 @@
-import { render, screen, fireEvent } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { useForm } from 'react-hook-form'
 import { PostComposerModal, type PostFormValues } from './PostComposerModal'
+
+const uploadImageMock = vi.hoisted(() => vi.fn())
+vi.mock('../api/communityApi', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../api/communityApi')>()
+  return {
+    ...actual,
+    getMediaUploadErrorMessage: actual.getMediaUploadErrorMessage,
+    communityApi: { ...actual.communityApi, uploadImage: uploadImageMock },
+  }
+})
 
 const CATEGORIES = [
   'GENERAL',
@@ -53,6 +63,9 @@ function TestWrapper({
 }
 
 describe('PostComposerModal', () => {
+  beforeEach(() => {
+    uploadImageMock.mockReset()
+  })
   it('does not render when isOpen is false', () => {
     render(<TestWrapper isOpen={false} />)
     expect(screen.queryByRole('dialog')).toBeNull()
@@ -149,19 +162,53 @@ describe('PostComposerModal', () => {
     expect(screen.getByText(/Màu nền chỉ hỗ trợ bài viết tối đa 280 ký tự/)).toBeInTheDocument()
   })
 
-  it('renders disabled "Từ máy tính" tab with "Sắp có" badge in media panel', () => {
+  it('uploads an image and adds its URL to the form while keeping URL entry available', async () => {
+    uploadImageMock.mockResolvedValue({ url: 'https://bucket.supabase.co/storage/v1/object/public/community/images/a.png' })
     render(<TestWrapper />)
     const mediaToolbarBtn = screen.getByRole('button', { name: 'Đính kèm ảnh hoặc video' })
     fireEvent.click(mediaToolbarBtn)
 
-    const uploadTab = screen.getByRole('button', { name: /Từ máy tính/ })
-    fireEvent.click(uploadTab)
-
-    expect(screen.getByText('Sắp có')).toBeInTheDocument()
-    const disabledFileBtn = screen.getByRole('button', { name: /Chọn tệp từ máy tính/ })
-    expect(disabledFileBtn).toBeDisabled()
-    expect(disabledFileBtn).toHaveAttribute('aria-disabled', 'true')
+    fireEvent.click(screen.getByRole('tab', { name: /Từ máy tính/ }))
+    const file = new File(['png'], 'a.png', { type: 'image/png' })
+    fireEvent.change(screen.getByLabelText('Chọn ảnh từ máy tính'), { target: { files: [file] } })
+    await waitFor(() => expect(screen.getByAltText('Ảnh đính kèm 1')).toBeInTheDocument())
+    expect(uploadImageMock).toHaveBeenCalledWith(file, expect.any(AbortSignal))
+    expect(screen.getByRole('tab', { name: /Nhập URL/ })).toBeInTheDocument()
   })
+
+  it('enforces the four image limit before calling upload', () => {
+    render(<TestWrapper defaultValues={{ imageUrls: ['https://images.unsplash.com/1', 'https://images.unsplash.com/2', 'https://images.unsplash.com/3', 'https://images.unsplash.com/4'].join('\n') }} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Đính kèm ảnh hoặc video' }))
+    fireEvent.click(screen.getByRole('tab', { name: /Từ máy tính/ }))
+    fireEvent.change(screen.getByLabelText('Chọn ảnh từ máy tính'), { target: { files: [new File(['png'], '5.png', { type: 'image/png' })] } })
+    expect(screen.getByRole('alert')).toHaveTextContent('tối đa 4 hình ảnh')
+    expect(uploadImageMock).not.toHaveBeenCalled()
+  })
+
+  it('shows the URL fallback hint when storage is unavailable', async () => {
+    const { MediaUploadError } = await import('../api/communityApi')
+    uploadImageMock.mockRejectedValue(new MediaUploadError('Tải tệp từ máy tạm thời chưa khả dụng, hãy dùng đường dẫn URL', 503))
+    render(<TestWrapper />)
+    fireEvent.click(screen.getByRole('button', { name: 'Đính kèm ảnh hoặc video' }))
+    fireEvent.click(screen.getByRole('tab', { name: /Từ máy tính/ }))
+    fireEvent.change(screen.getByLabelText('Chọn ảnh từ máy tính'), { target: { files: [new File(['png'], 'a.png', { type: 'image/png' })] } })
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Tải tệp từ máy tạm thời chưa khả dụng'))
+    fireEvent.click(screen.getByRole('button', { name: /Chuyển sang tab Nhập URL/ }))
+    expect(screen.getByLabelText('Đường dẫn media')).toBeInTheDocument()
+  })
+
+  it('blocks submit while a media upload is in progress', async () => {
+    let resolveUpload!: (value: { url: string }) => void
+    uploadImageMock.mockReturnValue(new Promise((resolve) => { resolveUpload = resolve }))
+    render(<TestWrapper defaultValues={{ body: 'Bài viết thử nghiệm' }} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Đính kèm ảnh hoặc video' }))
+    fireEvent.click(screen.getByRole('tab', { name: /Từ máy tính/ }))
+    fireEvent.change(screen.getByLabelText('Chọn ảnh từ máy tính'), { target: { files: [new File(['png'], 'a.png', { type: 'image/png' })] } })
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Đăng' })).toBeDisabled())
+    resolveUpload({ url: 'https://bucket.supabase.co/a.png' })
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Đăng' })).toBeEnabled())
+  })
+
 
   it('validates URL and adds image preview, and removes background when media is added', () => {
     render(
@@ -175,7 +222,7 @@ describe('PostComposerModal', () => {
     const mediaToolbarBtn = screen.getByRole('button', { name: 'Đính kèm ảnh hoặc video' })
     fireEvent.click(mediaToolbarBtn)
 
-    const urlTab = screen.getByRole('button', { name: /Nhập URL/ })
+    const urlTab = screen.getByRole('tab', { name: /Nhập URL/ })
     fireEvent.click(urlTab)
 
     const urlInput = screen.getByPlaceholderText(/Dán URL ảnh HTTPS/)

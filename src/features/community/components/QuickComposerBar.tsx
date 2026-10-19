@@ -2,7 +2,7 @@ import { Image, Video, Smile } from 'lucide-react'
 
 export interface QuickComposerBarProps {
   userName: string
-  onOpenComposer: () => void
+  onOpenComposer: (mediaType?: 'IMAGE' | 'VIDEO') => void
 }
 
 export function QuickComposerBar({
@@ -20,7 +20,7 @@ export function QuickComposerBar({
         <button
           type="button"
           className="community-quick-composer-input"
-          onClick={onOpenComposer}
+          onClick={() => onOpenComposer()}
           aria-label="Tạo bài viết mới"
         >
           {userName}, bạn đang nghĩ gì thế?
@@ -33,7 +33,7 @@ export function QuickComposerBar({
         <button
           type="button"
           className="community-quick-btn community-quick-btn-image"
-          onClick={onOpenComposer}
+          onClick={() => onOpenComposer('IMAGE')}
           aria-label="Đăng ảnh"
         >
           <Image size={18} className="community-quick-icon-green" />
@@ -43,7 +43,7 @@ export function QuickComposerBar({
         <button
           type="button"
           className="community-quick-btn community-quick-btn-video"
-          onClick={onOpenComposer}
+          onClick={() => onOpenComposer('VIDEO')}
           aria-label="Đăng video"
         >
           <Video size={18} className="community-quick-icon-red" />
@@ -53,7 +53,7 @@ export function QuickComposerBar({
         <button
           type="button"
           className="community-quick-btn community-quick-btn-emoji"
-          onClick={onOpenComposer}
+          onClick={() => onOpenComposer()}
           aria-label="Cảm xúc"
         >
           <Smile size={18} className="community-quick-icon-yellow" />

@@ -65,7 +65,8 @@ export function onSessionExpired(listener: (() => void) | null) {
 
 async function send(path: string, options: RequestOptions, bearer?: string | null): Promise<Response> {
   const headers: Record<string, string> = { Accept: 'application/json' }
-  if (options.body !== undefined) headers['Content-Type'] = 'application/json'
+  const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData
+  if (options.body !== undefined && !isFormData) headers['Content-Type'] = 'application/json'
   if (bearer) headers.Authorization = `Bearer ${bearer}`
 
   const controller = new AbortController()
@@ -76,11 +77,16 @@ async function send(path: string, options: RequestOptions, bearer?: string | nul
     return await fetch(`${API_BASE_URL}${path}`, {
       method: options.method ?? 'GET',
       headers,
-      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      body: options.body === undefined
+        ? undefined
+        : isFormData
+          ? options.body as FormData
+          : JSON.stringify(options.body),
       credentials: 'include',
       signal: controller.signal,
     })
   } catch {
+    if (controller.signal.aborted) throw new DOMException('Yêu cầu đã bị hủy.', 'AbortError')
     throw new HttpError(0, NETWORK_ERROR_MESSAGE)
   } finally {
     clearTimeout(timeout)
