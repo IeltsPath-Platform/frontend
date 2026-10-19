@@ -25,18 +25,36 @@ export function GameSettingsForm({
   return (
     <div className="game-settings-fields">
       <div className="game-field">
-        <label htmlFor="game-lives">Số mạng cho mỗi người</label>
+        <label htmlFor="game-lives">
+          {value.playerMode === 'SOLO'
+            ? 'Số mạng của tôi'
+            : 'Số mạng cho mỗi người'}
+        </label>
         <Select
           value={String(value.initialLives)}
           onValueChange={(v) => onChange({ ...value, initialLives: Number(v) })}
           disabled={disabled}
         >
-          <SelectTrigger id="game-lives" className="min-h-11 w-full">
+          <SelectTrigger
+            id="game-lives"
+            className="min-h-12 w-full rounded-xl bg-background px-4 text-base"
+          >
             <SelectValue />
           </SelectTrigger>
-          <SelectContent className="z-[90]">
+          <SelectContent
+            position="popper"
+            side="bottom"
+            align="start"
+            sideOffset={6}
+            avoidCollisions={false}
+            className="z-[90] w-[var(--radix-select-trigger-width)] rounded-xl border border-border bg-popover p-1.5 shadow-lg"
+          >
             {[3, 4, 5, 6].map((lives) => (
-              <SelectItem key={lives} value={String(lives)}>
+              <SelectItem
+                key={lives}
+                value={String(lives)}
+                className="min-h-11 cursor-pointer rounded-lg px-3 text-base focus:bg-primary/10 focus:text-primary data-[state=checked]:bg-primary/10 data-[state=checked]:font-semibold data-[state=checked]:text-primary"
+              >
                 {lives} mạng
               </SelectItem>
             ))}
