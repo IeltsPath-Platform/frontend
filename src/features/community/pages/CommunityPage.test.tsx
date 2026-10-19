@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { CommunityPage } from './CommunityPage'
 
@@ -43,11 +43,16 @@ const post = {
   followingAuthor: true,
 }
 
-function renderCommunity(initialEntry: string) {
+function LocationStateProbe() {
+  const location = useLocation()
+  return <output data-testid="location-state">{JSON.stringify(location.state)}</output>
+}
+
+function renderCommunity(initialEntry: string | { pathname: string; state?: unknown }) {
   return render(
     <MemoryRouter initialEntries={[initialEntry]}>
       <Routes>
-        <Route path="/community" element={<CommunityPage />} />
+        <Route path="/community" element={<><CommunityPage /><LocationStateProbe /></>} />
         <Route path="/community/users/:userId" element={<CommunityPage />} />
       </Routes>
     </MemoryRouter>,
@@ -79,6 +84,44 @@ describe('CommunityPage feed and profile tabs', () => {
       disconnect() {}
       unobserve() {}
     })
+    Object.defineProperty(window, 'matchMedia', { configurable: true, value: vi.fn(() => ({ matches: false })) })
+    const canvasContext = { arc() {}, beginPath() {}, clearRect() {}, fill() {}, scale() {} }
+    Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
+      configurable: true,
+      value: vi.fn(() => canvasContext),
+    })
+    Object.defineProperty(window, 'requestAnimationFrame', { configurable: true, value: vi.fn(() => 1) })
+    Object.defineProperty(window, 'cancelAnimationFrame', { configurable: true, value: vi.fn() })
+  })
+
+  it('contains a long unbroken title in a titled, clamped highlights link', async () => {
+    const title = 'y'.repeat(200)
+    communityApiMock.feed.mockResolvedValue({ ...emptyPage, content: [{ ...post, title, reactionCounts: { LIKE: 12 } }] })
+    renderCommunity('/community')
+
+    const titleElement = await screen.findByTitle(title)
+    expect(titleElement).toHaveClass('community-trending-title')
+    expect(titleElement).toHaveStyle({ overflowWrap: 'anywhere', WebkitLineClamp: '2' })
+    expect(titleElement.closest('a')).toHaveAttribute('href', '/community/posts/post-1')
+    expect(screen.getByText('12 cảm xúc')).toBeInTheDocument()
+  })
+
+  it('shows the transition once for a login navigation and clears its history state', async () => {
+    renderCommunity({ pathname: '/community', state: { communityLoginTransition: true } })
+
+    expect(await screen.findByTestId('community-sand-transition')).toHaveClass('community-sand-transition')
+    await waitFor(() => expect(screen.getByTestId('location-state')).toHaveTextContent('null'))
+  })
+
+  it('does not show the transition for a direct community visit', () => {
+    renderCommunity('/community')
+    expect(document.querySelector('.community-sand-transition')).toBeNull()
+  })
+
+  it('skips the transition when reduced motion is enabled', () => {
+    Object.defineProperty(window, 'matchMedia', { configurable: true, value: vi.fn(() => ({ matches: true })) })
+    renderCommunity({ pathname: '/community', state: { communityLoginTransition: true } })
+    expect(document.querySelector('.community-sand-transition')).toBeNull()
   })
 
   it('loads the following feed and shows its empty state with follow suggestions', async () => {

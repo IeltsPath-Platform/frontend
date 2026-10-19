@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { Bookmark, Lightbulb, Plus, Search, Users } from 'lucide-react'
-import { Link, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { SiteNavbar } from '@/components/SiteNavbar'
 import { useAuthSession } from '@/features/auth/authSession'
 import { HttpError } from '@/lib/httpClient'
@@ -14,6 +14,7 @@ import { PostComposerModal, type PostFormValues } from '../components/PostCompos
 import { ReportDialog } from '../components/ReportDialog'
 import { FeedSkeleton } from '../components/FeedSkeleton'
 import { QuickComposerBar } from '../components/QuickComposerBar'
+import { SandTransition } from '../components/SandTransition'
 import {
   COMPOSER_BACKGROUND_KEYS,
   MAX_BACKGROUND_POST_LENGTH,
@@ -100,6 +101,8 @@ function logCommunityFailure(operation: string, error: unknown) {
 }
 
 export function CommunityPage() {
+  const location = useLocation()
+  const navigate = useNavigate()
   const { postId, userId } = useParams()
   const [search, setSearch] = useSearchParams()
   const searchQuery = search.get('q')?.trim() ?? ''
@@ -139,10 +142,24 @@ export function CommunityPage() {
   const [reportTarget, setReportTarget] = useState<{ type: 'POST' | 'COMMENT'; id: string } | null>(null)
   const [reportReason, setReportReason] = useState('')
   const [reportMessage, setReportMessage] = useState('')
+  const [showSandTransition, setShowSandTransition] = useState(() => {
+    const navigationState = location.state as { communityLoginTransition?: boolean } | null
+    return Boolean(navigationState?.communityLoginTransition)
+      && !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  })
   const [relationship, setRelationship] = useState<{ following: boolean; followerCount: number; followingCount: number } | null>(null)
   const observerRef = useRef<HTMLDivElement>(null)
   const loadRef = useRef<(resetList?: boolean) => Promise<void>>(async () => undefined)
   const loadingRef = useRef(false)
+
+  useEffect(() => {
+    const navigationState = location.state as { communityLoginTransition?: boolean } | null
+    if (!navigationState?.communityLoginTransition) return
+
+    navigate(`${location.pathname}${location.search}${location.hash}`, { replace: true, state: null })
+  }, [location.hash, location.pathname, location.search, location.state, navigate])
+
+  const completeSandTransition = useCallback(() => setShowSandTransition(false), [])
 
   const scopeKey = `${postId ?? 'feed'}:${userId ?? 'all'}:${isBookmarks ? 'bookmarks' : 'posts'}:${profileTab}:${isFollowingFeed ? 'following' : 'all'}:${activeCategory}:${searchQuery}`
   const activeScopeRef = useRef(scopeKey)
@@ -551,7 +568,7 @@ export function CommunityPage() {
     <div className="community-page">
       <SiteNavbar />
 
-      <div className="community-layout">
+      <div className={`community-layout${showSandTransition ? ' community-transition-enter' : ''}`}>
         {/* Left Rail */}
         <aside className="community-rail community-left">
           <section className="community-welcome">
@@ -986,16 +1003,35 @@ export function CommunityPage() {
                     Object.values(a.reactionCounts).reduce((x, y) => x + y, 0),
                 )
                 .slice(0, 3)
-                .map((post) => (
-                  <li key={post.id}>
-                    <Link to={`/community/posts/${post.id}`}>
-                      {post.title || post.body.slice(0, 65)}
-                    </Link>
-                    <span>
-                      {Object.values(post.reactionCounts).reduce((x, y) => x + y, 0)} cảm xúc
-                    </span>
-                  </li>
-                ))}
+                .map((post, index) => {
+                  const title = post.title || post.body.slice(0, 65)
+                  const reactionCount = Object.values(post.reactionCounts).reduce((x, y) => x + y, 0)
+                  return (
+                    <li key={post.id}>
+                      <Link className="community-trending-link" to={`/community/posts/${post.id}`}>
+                        <span className="community-trending-rank" aria-hidden="true">{index + 1}</span>
+                        <span className="community-trending-content">
+                          <span
+                            className="community-trending-title"
+                            title={title}
+                            style={{
+                              display: '-webkit-box',
+                              overflow: 'hidden',
+                              overflowWrap: 'anywhere',
+                              textOverflow: 'ellipsis',
+                              wordBreak: 'break-word',
+                              WebkitBoxOrient: 'vertical',
+                              WebkitLineClamp: 2,
+                            }}
+                          >
+                            {title}
+                          </span>
+                          <span className="community-trending-reactions">{reactionCount} cảm xúc</span>
+                        </span>
+                      </Link>
+                    </li>
+                  )
+                })}
             </ol>
           </section>
 
@@ -1108,6 +1144,7 @@ export function CommunityPage() {
           onClose={() => setReportTarget(null)}
         />
       </div>
+      {showSandTransition && <SandTransition onComplete={completeSandTransition} />}
     </div>
   )
 }

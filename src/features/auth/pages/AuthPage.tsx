@@ -33,7 +33,12 @@ export function AuthPage({ mode }: AuthPageProps) {
       } else {
         await loginWithPassword(payload.email, payload.password)
       }
-      navigate(redirectTo, { replace: true })
+      navigate(redirectTo, {
+        replace: true,
+        state: mode === 'sign-in' && redirectTo.startsWith('/community')
+          ? { communityLoginTransition: true }
+          : null,
+      })
     } catch (error) {
       setStatusMessage(
         mode === 'sign-up'
