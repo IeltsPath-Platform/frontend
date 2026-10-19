@@ -109,14 +109,17 @@ function LessonTile({ lesson, isNext, review, index }: {
   const hasReview = Boolean(review)
   // A finished lesson with a review still owed is not "done": it must not wear the green tick.
   const needsReview = completed && hasReview
+  // Likewise a lesson whose exercises are passed but whose Practice is not: the next lesson stays closed until it is.
+  const needsPractice = completed && !hasReview && lesson.practiceStatus === 'REQUIRED'
+  const pending = needsReview || needsPractice
   const reasonId = `${lesson.id}-tile-reason`
-  const action = isNext ? 'Học tiếp' : completed ? 'Xem lại' : 'Mở bài'
+  const action = isNext ? 'Học tiếp' : needsPractice ? 'Luyện tập' : completed ? 'Xem lại' : 'Mở bài'
 
   const inner = (
     <>
       <span className="lp-ltile__node" aria-hidden="true">
         {locked ? <Lock size={14} />
-          : needsReview ? <RotateCcw size={15} strokeWidth={2.5} />
+          : pending ? <RotateCcw size={15} strokeWidth={2.5} />
             : completed ? <Check size={16} strokeWidth={3} /> : lesson.sortOrder}
       </span>
 
@@ -130,6 +133,7 @@ function LessonTile({ lesson, isNext, review, index }: {
             </span>
           ) : null}
           {needsReview ? <span className="lp-ltile__badge is-review">Cần làm bài ôn</span> : null}
+          {needsPractice ? <span className="lp-ltile__badge is-review">Cần đạt phần Luyện tập</span> : null}
           {locked ? <span className="lp-ltile__reason" id={reasonId}>{lesson.lockedReason ?? 'Chưa mở'}</span> : null}
         </span>
       </span>
@@ -146,7 +150,7 @@ function LessonTile({ lesson, isNext, review, index }: {
     </>
   )
 
-  const className = `lp-ltile${isNext ? ' is-next' : ''}${completed && !needsReview ? ' is-done' : ''}${needsReview ? ' is-review' : ''}${locked ? ' is-locked' : ''}`
+  const className = `lp-ltile${isNext ? ' is-next' : ''}${completed && !pending ? ' is-done' : ''}${pending ? ' is-review' : ''}${locked ? ' is-locked' : ''}`
   const style = { '--i': index } as CSSProperties
 
   return (

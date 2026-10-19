@@ -360,14 +360,16 @@ export function mapTopicSummary(dto: TopicSummaryDto): TopicSummary {
 }
 
 export function mapTopicLessons(dto: TopicLessonsDto, topic: TopicSummary): TopicLessonsResponse {
-  const lessons = dto.lessons.map((lesson) => ({
+  const lessons = dto.lessons.map((lesson, index) => ({
     id: lesson.lessonId,
     title: lesson.title,
     sortOrder: lesson.sortOrder,
     status: lesson.status,
     estimatedMinutes: lesson.estimatedMinutes ?? null,
     lockedReason: lesson.status !== 'LOCKED' ? null
-      : lesson.blockingReviewId ? 'Mở sau khi hoàn thành bài ôn.' : 'Hoàn thành bài trước để mở.',
+      : lesson.blockingReviewId ? 'Mở sau khi hoàn thành bài ôn.'
+        : dto.lessons[index - 1]?.practiceStatus === 'REQUIRED' ? 'Đạt phần Luyện tập của bài trước để mở.'
+          : 'Hoàn thành bài trước để mở.',
     blockingReviewId: lesson.blockingReviewId ?? null,
     practiceStatus: lesson.practiceStatus ?? null,
     practicePassReason: lesson.practicePassReason ?? null,

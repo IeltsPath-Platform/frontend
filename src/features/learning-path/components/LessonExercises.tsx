@@ -59,18 +59,39 @@ export function LessonExercises({ lessonId, blocks, onChanged }: LessonExercises
     return <p className="lp-empty">Bài học này chưa có bài tập. Bấm “Hoàn thành bài” để ghi nhận tiến độ.</p>
   }
 
+  const hasPassage = blocks.some((block) => !isExercise(block) && !isAudio(block))
+  const heartsNotice = hearts.data?.hearts === 0 ? <HeartsPanel onChanged={hearts.reload} status={hearts.data} /> : null
+  const exerciseNodes = (block: ExerciseBlockData) => (
+    <div key={block.id}>
+      <ExerciseBlock block={block} onSubmit={(answers) => submit(block, answers)} />
+      <RewardSummary gamification={rewards[block.id] ?? null} />
+    </div>
+  )
+
+  // With a passage, the text stays in a sticky column beside the exercises, as in Practice, so the learner can
+  // re-read it while answering instead of scrolling back up.
+  if (hasPassage) {
+    return (
+      <section className="lp-split" aria-label="Bài đọc và bài tập">
+        <div className="lp-split__passage">
+          {blocks.filter(isAudio).map((block) => <AudioBlock key={block.id} audio={block} />)}
+          {blocks.filter((block) => !isExercise(block) && !isAudio(block)).map((block) => (
+            <PassageBlock key={block.id} passage={block as PassageBlockData} />
+          ))}
+        </div>
+        <div className="lp-split__work">
+          {heartsNotice}
+          {blocks.filter(isExercise).map(exerciseNodes)}
+        </div>
+      </section>
+    )
+  }
+
   return (
     <div className="lp-lesson-exercises">
-      {hearts.data?.hearts === 0 ? <HeartsPanel onChanged={hearts.reload} status={hearts.data} /> : null}
+      {heartsNotice}
       {blocks.map((block) => {
-        if (isExercise(block)) {
-          return (
-            <div key={block.id}>
-              <ExerciseBlock block={block} onSubmit={(answers) => submit(block, answers)} />
-              <RewardSummary gamification={rewards[block.id] ?? null} />
-            </div>
-          )
-        }
+        if (isExercise(block)) return exerciseNodes(block)
         if (isAudio(block)) return <AudioBlock key={block.id} audio={block} />
         return <PassageBlock key={block.id} passage={block as PassageBlockData} />
       })}
