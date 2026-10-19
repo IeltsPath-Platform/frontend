@@ -274,7 +274,8 @@ describe('mock API contract', () => {
 describe('learning path rendering', () => {
   async function render(modulePath, name, props, path = '/learn') {
     const module = await server.ssrLoadModule(modulePath)
-    return renderToString(createElement(MemoryRouter, { initialEntries: [path] }, createElement(module[name], props)))
+    const { ToastProvider } = await server.ssrLoadModule('/src/components/toast/ToastProvider.tsx')
+    return renderToString(createElement(ToastProvider, null, createElement(MemoryRouter, { initialEntries: [path] }, createElement(module[name], props))))
   }
 
   const resources = (name, props) => render(`/src/features/learning-path/components/resources/${name}.tsx`, name, props)

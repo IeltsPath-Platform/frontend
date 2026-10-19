@@ -19,6 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { useToast } from '@/components/toast/toastContext'
 import { apiRequest, HttpError } from '@/lib/httpClient'
 import { useAuthSession } from '@/features/auth/authSession'
 import type { UserResponse } from '@/features/auth/api/types'
@@ -38,10 +39,10 @@ export function GameRoomPage() {
 function GameRoomContent() {
   const { roomId } = useParams()
   const navigate = useNavigate()
+  const { toast } = useToast()
   const [room, setRoom] = useState<GameRoom | null>(null)
   const [userId, setUserId] = useState('')
   const [error, setError] = useState('')
-  const [notice, setNotice] = useState('')
   const [retry, setRetry] = useState(0)
   const [pending, setPending] = useState(false)
   const [editing, setEditing] = useState(false)
@@ -166,7 +167,6 @@ function GameRoomContent() {
     generation.current += 1
     setPending(true)
     setError('')
-    setNotice('')
     try {
       await action()
     } catch (cause) {
@@ -295,9 +295,9 @@ function GameRoomContent() {
             onClick={async () => {
               try {
                 await navigator.clipboard.writeText(room.roomCode)
-                setNotice('Đã sao chép mã phòng.')
+                toast({ title: 'Đã sao chép mã phòng.', tone: 'success' })
               } catch {
-                setNotice(`Mã phòng: ${room.roomCode}`)
+                toast({ title: `Mã phòng: ${room.roomCode}`, tone: 'info' })
               }
             }}
           >
@@ -345,11 +345,6 @@ function GameRoomContent() {
             Tải lại phòng
           </Button>
         </div>
-      )}
-      {notice && (
-        <p className="game-note" role="status">
-          {notice}
-        </p>
       )}
       {room.status === 'CLOSED' ? (
         <section className="game-panel game-state" role="status">
@@ -487,7 +482,7 @@ function GameRoomContent() {
           onSaved={(next) => {
             generation.current += 1
             updateRoom(next)
-            setNotice('Đã lưu cấu hình. Mọi người cần sẵn sàng lại.')
+            toast({ title: 'Đã lưu cấu hình. Mọi người cần sẵn sàng lại.', tone: 'success' })
           }}
         />
       )}

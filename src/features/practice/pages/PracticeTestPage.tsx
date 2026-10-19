@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ArrowLeft, Clock, Settings, StickyNote } from 'lucide-react'
 import { SiteNavbar } from '@/components/SiteNavbar'
+import { useToast } from '@/components/toast/toastContext'
 import { PracticeSettingsPopover } from '../components/PracticeSettingsPopover'
 import { PracticeAnswers } from '../components/PracticeAnswers'
 import { PracticePassage } from '../components/PracticePassage'
@@ -43,7 +44,7 @@ export function PracticeTestPage({ testId = 'snow-makers', mode = 'practice', on
   const [flagged, setFlagged] = useState<Record<number, boolean>>({})
   const [currentQuestion, setCurrentQuestion] = useState(QUESTION_NUMBERS[0])
   const [questionTransitionDirection, setQuestionTransitionDirection] = useState<QuestionTransitionDirection>('forward')
-  const [message, setMessage] = useState('')
+  const { toast } = useToast()
   const noteToggle = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
@@ -54,11 +55,11 @@ export function PracticeTestPage({ testId = 'snow-makers', mode = 'practice', on
 
   function runAction(action: PassageAction, selected = selection) {
     if (!canUsePassageAction(mode, action)) return
-    if (!selected) { setMessage('Hãy bôi đen một đoạn trong bài đọc trước khi chọn công cụ.'); return }
+    if (!selected) { toast({ title: 'Hãy bôi đen một đoạn trong bài đọc trước khi chọn công cụ.', tone: 'info' }); return }
     setSelection(selected)
     if (action === 'highlight') {
       setHighlights((current) => mergeHighlights([...current, ...selected.ranges]))
-      setMessage('Đã Highlight đoạn được chọn.')
+      toast({ title: 'Đã Highlight đoạn được chọn.', tone: 'success' })
     } else if (action === 'note') {
       setNoteSelection(selected)
       setNoteView('expanded')
@@ -118,9 +119,8 @@ export function PracticeTestPage({ testId = 'snow-makers', mode = 'practice', on
               navigation={<QuestionNavigation questionNumbers={QUESTION_NUMBERS} currentQuestion={currentQuestion} onPrevious={() => moveQuestion(-1)} onNext={() => moveQuestion(1)} />} />
           </div>
           <div className="screen3-center-column">
-            {mode === 'practice' && <PassageTools selection={selection} highlightsCount={highlights.length} onAction={runAction} onClearHighlights={() => { setHighlights([]); setMessage('Đã bỏ Highlight.') }} onOpenLibrary={() => setLibraryOpen(true)} />}
+            {mode === 'practice' && <PassageTools selection={selection} highlightsCount={highlights.length} onAction={runAction} onClearHighlights={() => { setHighlights([]); toast({ title: 'Đã bỏ Highlight.', tone: 'info' }) }} onOpenLibrary={() => setLibraryOpen(true)} />}
             <PracticePassage mode={mode} highlights={highlights} onSelection={setSelection} onAction={runAction} />
-            <p className="practice-feedback" role="status" aria-live="polite">{message}</p>
           </div>
           <PracticeAnswers answers={answers} flagged={flagged} currentQuestion={currentQuestion}
             transitionDirection={questionTransitionDirection}
@@ -136,7 +136,7 @@ export function PracticeTestPage({ testId = 'snow-makers', mode = 'practice', on
             createdAt: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
           }, ...current])}
           onDelete={(id) => setNotes((current) => current.filter((note) => note.id !== id))} />
-        {flashcardText !== null && <FlashcardDialog text={flashcardText} testId={testId} onClose={() => setFlashcardText(null)} onSaved={() => setMessage('Đã lưu Flashcard trên trình duyệt này. Mở “Thẻ đã lưu” để xem.')} />}
+        {flashcardText !== null && <FlashcardDialog text={flashcardText} testId={testId} onClose={() => setFlashcardText(null)} onSaved={() => toast({ title: 'Đã lưu Flashcard trên trình duyệt này. Mở “Thẻ đã lưu” để xem.', tone: 'success' })} />}
         {dictionaryText !== null && <DictionaryDialog text={dictionaryText} onClose={() => setDictionaryText(null)} />}
         {libraryOpen && <FlashcardLibrary onClose={() => setLibraryOpen(false)} />}
       </>}

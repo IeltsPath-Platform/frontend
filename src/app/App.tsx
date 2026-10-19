@@ -27,6 +27,7 @@ import { ForgotPasswordPage } from '@/features/auth/pages/ForgotPasswordPage'
 import { OAuthCallbackPage } from '@/features/auth/pages/OAuthCallbackPage'
 import { ResetPasswordPage } from '@/features/auth/pages/ResetPasswordPage'
 import { AuthProvider } from '@/features/auth/AuthProvider'
+import { ToastProvider } from '@/components/toast/ToastProvider'
 import { GuestOnly, RequireAuth } from '@/features/auth/AuthGuards'
 import { LearnLayout } from '@/features/learning-path/components/LearnLayout'
 import { NotFoundState } from '@/features/learning-path/components/PageState'
@@ -36,6 +37,7 @@ import { KnowledgeTreePage } from '@/features/learning-path/pages/KnowledgeTreeP
 import { LessonPage } from '@/features/learning-path/pages/LessonPage'
 import { PlacementPage } from '@/features/learning-path/pages/PlacementPage'
 import { ProgressPage } from '@/features/learning-path/pages/ProgressPage'
+import { ReviewBasketPage } from '@/features/learning-path/pages/ReviewBasketPage'
 import { ReviewPage } from '@/features/learning-path/pages/ReviewPage'
 import { TopicPage } from '@/features/learning-path/pages/TopicPage'
 import { TopicListPage } from '@/features/learning-path/pages/TopicListPage'
@@ -76,6 +78,7 @@ function AppContent() {
         <Route index element={<CourseListPage />} />
         <Route path="placement" element={<PlacementPage />} />
         <Route path="progress" element={<ProgressPage />} />
+        <Route path="review-basket" element={<ReviewBasketPage />} />
         <Route path="courses/:courseId" element={<TopicListPage />} />
         <Route path="courses/:courseId/tree" element={<KnowledgeTreePage />} />
         <Route path="practice/:attemptId" element={<FreePracticePage />} />
@@ -167,11 +170,13 @@ function PracticeCatalogRoute({ onOpenTest }: { onOpenTest: (skill: SkillType, i
 export default function App() {
   return (
     <ErrorBoundary>
-      <BrowserRouter>
-        <AuthProvider>
-          <AppContent />
-        </AuthProvider>
-      </BrowserRouter>
+      <ToastProvider>
+        <BrowserRouter>
+          <AuthProvider>
+            <AppContent />
+          </AuthProvider>
+        </BrowserRouter>
+      </ToastProvider>
     </ErrorBoundary>
   )
 }

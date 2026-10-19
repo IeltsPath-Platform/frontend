@@ -10,6 +10,8 @@ interface Session { sessionId: string; epoch: number; serverStartedAt: string; s
 interface Payload { epoch: number; sequence: number; intervals: ActiveInterval[] }
 type State = { message: string; retry: boolean; conflict: boolean }
 const STARTING: State = { message: 'Đang kết nối bộ ghi thời gian học…', retry: false, conflict: false }
+/** Healthy recording is silent; the banner renders only when the learner must act or the tracker is failing. */
+const RECORDING: State = { message: 'Đang ghi thời gian học khi bạn hoạt động trên tab này.', retry: false, conflict: false }
 
 /** Telemetry failure never blocks answering. Every retry retains its original sequence and payload. */
 export function StudyActivityTracker({ sourceType, sourceId, enabled = true }: { sourceType: SourceType; sourceId: string; enabled?: boolean }) {
@@ -78,7 +80,7 @@ export function StudyActivityTracker({ sourceType, sourceId, enabled = true }: {
         sequence++
         pending = null
         lastSuccess = performance.now()
-        report({ message: 'Đang ghi thời gian học khi bạn hoạt động trên tab này.', retry: false, conflict: false })
+        report(RECORDING)
         return true
       }).catch((reason: unknown) => {
         if (sessionIsInvalid(reason)) {
@@ -127,7 +129,7 @@ export function StudyActivityTracker({ sourceType, sourceId, enabled = true }: {
           lastSuccess = anchor
           collector = new ActiveIntervals(Math.floor(baseOffset))
           if (disposed || ending || document.visibilityState !== 'visible') { await close(); return }
-          report({ message: 'Đang ghi thời gian học khi bạn hoạt động trên tab này.', retry: false, conflict: false })
+          report(RECORDING)
           return
         } catch (reason) {
           if (!sessionIsInUse(reason) || retry === SESSION_IN_USE_RETRY_DELAYS_MS.length) { fail(reason); return }
@@ -178,6 +180,6 @@ export function StudyActivityTracker({ sourceType, sourceId, enabled = true }: {
       lifecycle = lifecycle.then(close)
     }
   }, [active, email, sourceType, sourceId, attempt])
-  if (!active) return null
+  if (!active || state === RECORDING) return null
   return <div className="lp-hint" role="status"><span>{state.message}</span>{state.retry && <Button variant="outline" size="sm" onClick={() => setAttempt((value) => ({ version: value.version + 1, takeover: state.conflict }))}>{state.conflict ? 'Ghi thời gian tại đây' : 'Thử lại bộ ghi'}</Button>}</div>
 }

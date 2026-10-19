@@ -35,6 +35,12 @@ import {
   type TopicLessonsDto,
   type TopicSummaryDto,
 } from './learningAdapters'
+import {
+  mapReviewBasket,
+  mapSuggestions,
+  type ReviewBasketDto,
+  type SuggestionsDto,
+} from './masteryGuideAdapters'
 import type {
   AssessmentAttempt,
   AttemptItemResponse,
@@ -283,6 +289,22 @@ export function createHttpLearningApi(): LearningApi {
         body: {},
       })
       return mapPracticeAttemptView(dto)
+    },
+
+    async getSuggestions() {
+      return mapSuggestions(await learningRequest<SuggestionsDto>('/suggestions'))
+    },
+
+    async getReviewBasket() {
+      return mapReviewBasket(await learningRequest<ReviewBasketDto>('/review-basket'))
+    },
+
+    async startBasketReview(knowledgePointId: string) {
+      const dto = await learningRequest<{ reviewId: string }>(
+        `/review-basket/${encodeURIComponent(knowledgePointId)}/start`,
+        { method: 'POST', body: {} },
+      )
+      return { reviewId: dto.reviewId }
     },
 
     async getHearts() {

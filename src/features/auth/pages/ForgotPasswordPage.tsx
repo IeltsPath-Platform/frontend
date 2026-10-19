@@ -2,12 +2,13 @@ import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { HttpError } from '@/lib/httpClient'
+import { useToast } from '@/components/toast/toastContext'
 import { authApi } from '../api/authApi'
 import { AuthShell } from '../components/AuthShell'
 import { InputField } from '../components/InputField'
 
 export function ForgotPasswordPage() {
-  const [statusMessage, setStatusMessage] = useState('')
+  const { toast } = useToast()
   const [submitting, setSubmitting] = useState(false)
   const [sent, setSent] = useState(false)
 
@@ -18,16 +19,20 @@ export function ForgotPasswordPage() {
     if (typeof email !== 'string' || !email.trim()) return
 
     setSubmitting(true)
-    setStatusMessage('')
     try {
       const result = await authApi.forgotPassword(email.trim())
       setSent(true)
-      setStatusMessage(
-        result.message
+      toast({
+        title: 'Đã gửi yêu cầu',
+        description: result.message
           || 'Nếu email tồn tại, mã đặt lại đã được tạo. (Môi trường demo: lấy mã từ log/Swagger BE.)',
-      )
+        tone: 'success',
+      })
     } catch (error) {
-      setStatusMessage(error instanceof HttpError ? error.message : 'Không gửi được yêu cầu. Thử lại.')
+      toast({
+        title: error instanceof HttpError ? error.message : 'Không gửi được yêu cầu. Thử lại.',
+        tone: 'error',
+      })
     } finally {
       setSubmitting(false)
     }
@@ -62,7 +67,6 @@ export function ForgotPasswordPage() {
           <Button type="submit" className="auth-submit-button" disabled={submitting}>
             {submitting ? 'Đang gửi…' : sent ? 'Gửi lại mã' : 'Gửi mã đặt lại'}
           </Button>
-          <p className="auth-status" role="status" aria-live="polite">{statusMessage}</p>
         </form>
         <p className="auth-mode-toggle">
           {sent ? <Link to="/reset-password">Tôi đã có mã — đặt lại mật khẩu</Link> : null}

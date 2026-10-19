@@ -24,6 +24,7 @@ import type {
   PracticeAttemptView,
   PracticeSubmissionRequest,
   PracticeSubmissionResult,
+  ReviewBasket,
   ReviewDetail,
   ReviewRef,
   ReviewSubmissionRequest,
@@ -31,6 +32,7 @@ import type {
   SaveItemResponseRequest,
   StartAttemptRequest,
   StreakStatus,
+  Suggestion,
   TestAssignment,
   TheoryCheckRequest,
   TheoryCheckResult,
@@ -76,6 +78,15 @@ export interface LearningApi {
    * `FREE_PRACTICE_EXHAUSTED` or `FREE_PRACTICE_UNAVAILABLE`. Answers go through `submitPracticeAttempt`.
    */
   startFreePractice(knowledgePointId: string): Promise<PracticeAttemptView>
+  /** At most five optional things worth doing next. They never block the learning path; an empty list is normal. */
+  getSuggestions(): Promise<Suggestion[]>
+  /** Reviews the learner owes, and weak or due points they may review when they choose. */
+  getReviewBasket(): Promise<ReviewBasket>
+  /**
+   * Starts (or returns) an optional review of the point and gives its first set; resolves with the review to open.
+   * Rejects with `REVIEW_REQUIRED` while a required review is open.
+   */
+  startBasketReview(knowledgePointId: string): Promise<{ reviewId: string }>
   /** The learner's hearts. A set that costs hearts is refused with `HEARTS_DEPLETED` once they reach zero. */
   getHearts(): Promise<HeartsStatus>
   /**

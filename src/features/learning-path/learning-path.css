@@ -1799,6 +1799,9 @@ a.lp-ltile:hover {
 .lp-ltile.is-done {
   border-color: color-mix(in srgb, var(--lp-success) 28%, var(--lp-line));
 }
+.lp-ltile.is-review {
+  border-color: color-mix(in srgb, var(--lp-danger) 32%, var(--lp-line));
+}
 .lp-ltile.is-locked {
   border-style: dashed;
   background: color-mix(in srgb, var(--lp-surface) 55%, transparent);
@@ -1827,10 +1830,34 @@ a.lp-ltile:hover {
   background: var(--lp-success);
   box-shadow: none;
 }
+.lp-ltile.is-review .lp-ltile__node {
+  color: var(--lp-danger);
+  background: var(--lp-danger-soft);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--lp-danger) 38%, transparent);
+}
 .lp-ltile.is-locked .lp-ltile__node {
   color: var(--lp-locked);
   background: var(--lp-locked-soft);
   box-shadow: none;
+}
+.lp-ltile__lesson-link {
+  display: grid;
+  grid-column: 1 / span 2;
+  grid-template-columns: 2.1rem minmax(0, 1fr);
+  align-items: center;
+  gap: .9rem;
+  min-width: 0;
+  min-height: 44px;
+  color: inherit;
+  text-decoration: none;
+}
+.lp-ltile__lesson-link:hover .lp-ltile__title {
+  color: var(--lp-primary);
+}
+.lp-ltile__lesson-link:focus-visible {
+  outline: 2px solid var(--lp-primary);
+  outline-offset: 3px;
+  border-radius: .4rem;
 }
 .lp-ltile__main {
   display: grid;
@@ -1900,6 +1927,20 @@ a.lp-ltile:hover {
 }
 .lp-ltile.is-done .lp-ltile__go {
   color: var(--lp-muted);
+}
+/* The review action belongs to the lesson that created the pending review. */
+.lp-ltile__go--review {
+  min-height: 44px;
+  color: var(--lp-accent-ink);
+  text-decoration: none;
+}
+.lp-ltile__go--review:hover {
+  text-decoration: underline;
+}
+.lp-ltile__go--review:focus-visible {
+  outline: 2px solid var(--lp-accent-ink);
+  outline-offset: 3px;
+  border-radius: .25rem;
 }
 .lp-ltile__go svg {
   transition: transform .18s ease;

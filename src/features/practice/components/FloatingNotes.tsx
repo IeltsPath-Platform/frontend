@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { ArrowLeftToLine, ArrowRightToLine, GripHorizontal, Maximize2, Minus, StickyNote, Trash2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+import { useToast } from '@/components/toast/toastContext'
 import type { PassageSelection, PracticeNote } from '@/types/practice'
 import { useFloatingPosition } from '../hooks/useFloatingPosition'
 
@@ -18,7 +19,7 @@ interface FloatingNotesProps {
 
 export function FloatingNotes({ open, minimized, onMinimize, selection, notes, onClose, onAdd, onDelete }: FloatingNotesProps) {
   const [draft, setDraft] = useState('')
-  const [message, setMessage] = useState('')
+  const { toast } = useToast()
   const input = useRef<HTMLTextAreaElement>(null)
   const { ref: widgetRef, position, dock, handlePointerDown, handlePointerMove, handlePointerEnd, handleKeyDown } = useFloatingPosition()
 
@@ -32,7 +33,7 @@ export function FloatingNotes({ open, minimized, onMinimize, selection, notes, o
     if (!draft.trim()) return
     onAdd(draft.trim())
     setDraft('')
-    setMessage('Đã lưu ghi chú trong phiên làm bài này.')
+    toast({ title: 'Đã lưu ghi chú trong phiên làm bài này.', tone: 'success' })
   }
 
   return (
@@ -57,7 +58,6 @@ export function FloatingNotes({ open, minimized, onMinimize, selection, notes, o
           <Button type="submit" disabled={!draft.trim()} className="practice-primary-button">Lưu ghi chú</Button>
         </form>
         <p className="note-session-hint">Ghi chú giữ trong phiên làm bài; tải lại trang sẽ xóa.</p>
-        <p className="sr-only" role="status">{message}</p>
         <div className="floating-note-list">
           {notes.length === 0 && <p className="note-session-hint">Chưa có ghi chú. Chọn một đoạn văn và viết điều cần nhớ.</p>}
           {notes.map((note) => <article key={note.id}><div className="flex items-start justify-between gap-2"><strong>{note.paragraphLabel}</strong><Button variant="ghost" size="icon" aria-label={`Xóa ghi chú ${note.createdAt}`} onClick={() => onDelete(note.id)}><Trash2 /></Button></div>{note.selectedText && <blockquote>{note.selectedText}</blockquote>}<p>{note.noteText}</p><time>{note.createdAt}</time></article>)}

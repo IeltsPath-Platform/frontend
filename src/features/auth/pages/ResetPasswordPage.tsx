@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
+import { useToast } from '@/components/toast/toastContext'
 import { authApi } from '../api/authApi'
 import { AuthShell } from '../components/AuthShell'
 import { InputField } from '../components/InputField'
@@ -18,9 +19,11 @@ import {
 export function ResetPasswordPage() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
+  const { toast } = useToast()
   const tokenFromUrl = (searchParams.get('token') ?? '').trim()
 
-  const [statusMessage, setStatusMessage] = useState('')
+  // Field validation stays under the form; the submit result is announced as a toast.
+  const [validationMessage, setValidationMessage] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const redirectTimer = useRef<number | null>(null)
 
@@ -37,22 +40,25 @@ export function ResetPasswordPage() {
 
     if (!token || !newPassword) return
     if (!isPasswordLengthValid(newPassword)) {
-      setStatusMessage(PASSWORD_LENGTH_MESSAGE)
+      setValidationMessage(PASSWORD_LENGTH_MESSAGE)
       return
     }
     if (newPassword !== confirmPassword) {
-      setStatusMessage(PASSWORD_MISMATCH_MESSAGE)
+      setValidationMessage(PASSWORD_MISMATCH_MESSAGE)
       return
     }
 
     setSubmitting(true)
-    setStatusMessage('')
+    setValidationMessage('')
     try {
       const result = await authApi.resetPassword({ token, newPassword })
-      setStatusMessage(result.message || 'Đặt lại mật khẩu thành công. Đang chuyển tới đăng nhập…')
+      toast({ title: result.message || 'Đặt lại mật khẩu thành công. Đang chuyển tới đăng nhập…', tone: 'success' })
       redirectTimer.current = window.setTimeout(() => navigate('/login', { replace: true }), 900)
     } catch (error) {
-      setStatusMessage(mapAuthPasswordHttpError(error, 'Không đặt lại được mật khẩu. Kiểm tra mã và thử lại.'))
+      toast({
+        title: mapAuthPasswordHttpError(error, 'Không đặt lại được mật khẩu. Kiểm tra mã và thử lại.'),
+        tone: 'error',
+      })
     } finally {
       setSubmitting(false)
     }
@@ -110,7 +116,7 @@ export function ResetPasswordPage() {
           <Button type="submit" className="auth-submit-button" disabled={submitting}>
             {submitting ? 'Đang xử lý…' : 'Đặt lại mật khẩu'}
           </Button>
-          <p className="auth-status" role="status" aria-live="polite">{statusMessage}</p>
+          <p className="auth-status" role="status" aria-live="polite">{validationMessage}</p>
         </form>
         <p className="auth-mode-toggle">
           Chưa có mã? <Link to="/forgot-password">Yêu cầu lại</Link>

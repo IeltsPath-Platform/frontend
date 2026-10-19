@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { useToast } from '@/components/toast/toastContext'
 import { useAuthSession } from '@/features/auth/authSession'
 import { StudyActivityTracker } from '@/features/study-time/StudyActivityTracker'
 import { HttpError } from '@/lib/httpClient'
@@ -22,7 +23,7 @@ function VocabularyReviewContent() {
   const [revealed, setRevealed] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [notice, setNotice] = useState<string | null>(null)
+  const { toast } = useToast()
   const [pending, setPending] = useState<ReviewAnswer | null>(null)
   const [expired, setExpired] = useState(false)
   const startRequest = useRef<string | null>(null)
@@ -50,14 +51,14 @@ function VocabularyReviewContent() {
   }
   async function add(id: string) {
     if (busy) return
-    setBusy(true); setError(null); setNotice(null)
-    try { await vocabularyReviewApi.add(id); changed(); if (live.current) setNotice('Đã thêm nghĩa từ vào danh sách học. Thêm lại không tạo bản trùng.') }
+    setBusy(true); setError(null)
+    try { await vocabularyReviewApi.add(id); changed(); if (live.current) toast({ title: 'Đã thêm nghĩa từ vào danh sách học. Thêm lại không tạo bản trùng.', tone: 'success' }) }
     catch (reason) { if (live.current) setError(errorMessage(reason)) }
     finally { if (live.current) setBusy(false) }
   }
   async function start() {
     if (busy) return
-    setBusy(true); setError(null); setNotice(null)
+    setBusy(true); setError(null)
     startRequest.current ??= crypto.randomUUID()
     try {
       const created = await vocabularyReviewApi.start(startRequest.current)
@@ -77,7 +78,7 @@ function VocabularyReviewContent() {
       changed()
       if (!live.current) return
       setPending(null); setIndex((value) => value + 1); setRevealed(false)
-      setNotice(`Đã ghi nhận. Lần ôn tiếp: ${result.nextReviewAt ? new Date(result.nextReviewAt).toLocaleString('vi-VN') : 'chưa lên lịch'}.`)
+      toast({ title: `Đã ghi nhận. Lần ôn tiếp: ${result.nextReviewAt ? new Date(result.nextReviewAt).toLocaleString('vi-VN') : 'chưa lên lịch'}.`, tone: 'success' })
     } catch (reason) {
       if (!live.current) return
       if (reason instanceof HttpError && (reason.status === 409 || reason.status === 404)) {
@@ -90,7 +91,7 @@ function VocabularyReviewContent() {
     <Link to="/overview?tab=detailed-stats">← Về dữ liệu chi tiết</Link>
     <h1 className="text-2xl font-bold">Ôn từ vựng của tôi</h1>
     <p>Từ mới và từ đến hạn được chọn từ danh sách của bạn. Hãy tự nhớ nghĩa trước khi lật đáp án; kết quả là mức ghi nhớ tự đánh giá.</p>
-    {error && <p role="alert">{error}</p>}{notice && <p role="status">{notice}</p>}
+    {error && <p role="alert">{error}</p>}
     <section aria-label="Lượt ôn" className="vocabulary-review-answer">
       {!session || !item || expired ? <>
         <p>{expired ? 'Phiên ôn đã kết thúc hoặc cần đồng bộ lại.' : session ? items.length ? 'Bạn đã hoàn thành lượt ôn này.' : 'Chưa có từ mới hoặc từ đến hạn. Bạn có thể thêm từ bên dưới.' : 'Mỗi lượt có tối đa 20 nghĩa từ.'}</p>

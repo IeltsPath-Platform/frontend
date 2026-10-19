@@ -1,0 +1,36 @@
+.stats {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: .65rem;
+  color: var(--tier-text, var(--classroom-text));
+}
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-inline-size: 0;
+  min-block-size: 7.5rem;
+  padding: .85rem .75rem;
+  border: 1px solid color-mix(in srgb, var(--stat-accent) 13%, transparent);
+  border-radius: .9rem;
+  background: color-mix(in srgb, var(--stat-accent) 5%, var(--classroom-surface));
+}
+.hearts { --stat-accent: var(--destructive); }
+.xp { --stat-accent: var(--classroom-warning); }
+.label { display: flex; align-items: center; gap: .35rem; color: color-mix(in srgb, var(--stat-accent) 65%, var(--classroom-text)); }
+.label svg { color: var(--stat-accent); fill: color-mix(in srgb, var(--stat-accent) 16%, transparent); stroke-width: 2.2; }
+.label h3 { margin: 0; font-size: .7rem; font-weight: 650; }
+.value { margin: .55rem 0 .25rem; font-size: 1.55rem; font-weight: 800; letter-spacing: -.055em; line-height: 1.2; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.value span { color: var(--color-text-muted); font-size: .75rem; font-weight: 500; letter-spacing: 0; }
+.caption { margin: auto 0 0; color: var(--color-text-muted); font-size: .62rem; line-height: 1.6; text-wrap: pretty; }
+.loading { margin: .8rem 0 0; color: var(--color-text-muted); font-size: .72rem; line-height: 1.5; }
+.unavailable { display: grid; margin-block-start: .5rem; }
+.unavailable p { margin: 0; color: var(--color-text-muted); font-size: .66rem; }
+.retry { justify-content: flex-start; gap: .3rem; min-block-size: 44px; height: auto; padding: .25rem 0; color: var(--classroom-primary); font-size: .65rem; }
+.retry:hover { background: transparent; text-decoration: underline; text-underline-offset: 3px; }
+
+.streak { --stat-accent: var(--classroom-warning); grid-column: 1 / -1; flex-direction: row; align-items: center; justify-content: space-between; gap: .75rem; min-block-size: 0; padding-block: .7rem; }
+.streakCopy { display: grid; gap: .3rem; min-inline-size: 0; }
+.streakCount { flex: 0 0 auto; text-align: end; }
+.streakCount .value { margin: 0 0 .15rem; font-size: 1.35rem; }
+.streak .loading, .streak .unavailable { margin-block-start: 0; }

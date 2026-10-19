@@ -460,6 +460,67 @@ export interface LeagueHistoryEntry {
 /** Where a point stands for the learner. `INSUFFICIENT` is "not enough data to judge yet". */
 export type MasteryTier = 'PRIORITY' | 'CONSOLIDATE' | 'MAINTAIN' | 'INSUFFICIENT'
 
+export type SuggestionType = 'PRACTICE_SET' | 'PRACTICE_TEST' | 'LESSON'
+
+/** Why a suggestion is offered: the point is weak, a review is due, or it builds on points the learner holds firmly. */
+export type SuggestionReason = 'CONSOLIDATE' | 'DUE' | 'NEXT_IN_TREE'
+
+/**
+ * What choosing a suggestion does. The API names the route that starts it; the adapter turns that into one of these
+ * so no page parses routes: open a lesson, start an optional review of the point, or leave it to the course list.
+ */
+export type SuggestionAction =
+  | { kind: 'LESSON'; lessonId: string }
+  | { kind: 'BASKET_REVIEW'; knowledgePointId: string }
+  | { kind: 'COURSE_LIST' }
+
+/** One of at most five optional suggestions (`GET /api/learning/suggestions`); they never block the learning path. */
+export interface Suggestion {
+  type: SuggestionType
+  id: string
+  title: string
+  knowledgePointId: string
+  knowledgePointCode: string | null
+  reason: SuggestionReason
+  /** The course band the content belongs to; `null` when the content has none. */
+  band: number | null
+  skill: string | null
+  action: SuggestionAction
+}
+
+/** A review the learner must finish; it locks lessons until it is done. */
+export interface BasketRequiredItem {
+  reviewId: string
+  knowledgePointId: string
+  code: string
+  name: string
+  lessonId: string | null
+  skill: string | null
+}
+
+/** A weak or due point the learner may review when they choose (`GET /api/learning/review-basket`). */
+export interface BasketOptionalItem {
+  knowledgePointId: string
+  code: string
+  name: string
+  skill: string | null
+  tier: MasteryTier
+  /** 0–1. */
+  mastery: number
+  dueAt: string | null
+  reason: 'CONSOLIDATE' | 'DUE'
+  /** False when Content has no set the learner has not seen, so the review cannot start. */
+  hasUnrevealedSet: boolean
+  /** Set when the learner already started an optional review of the point. */
+  reviewId: string | null
+}
+
+export interface ReviewBasket {
+  required: BasketRequiredItem[]
+  consolidate: BasketOptionalItem[]
+  due: BasketOptionalItem[]
+}
+
 /** One knowledge point of the learner's tree (`GET /api/learning/tree`). */
 export interface TreePoint {
   knowledgePointId: string
