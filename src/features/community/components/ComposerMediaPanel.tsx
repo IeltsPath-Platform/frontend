@@ -15,14 +15,13 @@ export interface ComposerMediaPanelProps {
 }
 
 const ALLOWED_IMAGE_HOSTS = ['images.unsplash.com', 'i.imgur.com', 'supabase.co']
-const ALLOWED_VIDEO_HOSTS = ['youtube.com', 'youtu.be', 'www.youtube.com', 'loom.com', 'www.loom.com', 'drive.google.com', 'supabase.co']
+const ALLOWED_VIDEO_HOSTS = ['youtube.com', 'youtu.be', 'www.youtube.com', 'loom.com', 'www.loom.com', 'drive.google.com']
 const IMAGE_ACCEPT = 'image/jpeg,image/png,image/webp,image/gif'
-const VIDEO_ACCEPT = 'video/mp4,video/webm,video/quicktime'
 
 type UploadItem = {
   id: number
   file: File
-  type: 'IMAGE' | 'VIDEO'
+  type: 'IMAGE'
   status: 'pending' | 'uploading' | 'done' | 'error' | 'cancelled'
   progress: number
   url?: string
@@ -46,6 +45,8 @@ export function ComposerMediaPanel({
 }: ComposerMediaPanelProps) {
   const [sourceTab, setSourceTab] = useState<'upload' | 'url'>(defaultSourceTab)
   const [mediaType, setMediaType] = useState<'IMAGE' | 'VIDEO'>(defaultMediaType)
+  // Videos are never uploaded: they can only be attached as an HTTPS link.
+  const activeSource = mediaType === 'VIDEO' ? 'url' : sourceTab
   const [urlInput, setUrlInput] = useState('')
   const [error, setError] = useState('')
   const [items, setItems] = useState<UploadItem[]>([])
@@ -90,7 +91,7 @@ export function ComposerMediaPanel({
       onUpdateImageUrls([...imageUrls, trimmed])
     } else {
       const hostAllowed = ALLOWED_VIDEO_HOSTS.some((host) => parsed.hostname === host || parsed.hostname.endsWith(`.${host}`))
-      if (!hostAllowed) return setError('Chỉ chấp nhận video từ YouTube, Loom, Google Drive hoặc kho media đã tải lên.')
+      if (!hostAllowed) return setError('Chỉ chấp nhận video từ YouTube, Loom hoặc Google Drive.')
       onUpdateVideoUrl(trimmed)
     }
     setUrlInput('')
@@ -102,11 +103,10 @@ export function ComposerMediaPanel({
       return
     }
     setError('')
-    const type = mediaType
-    const existingCount = type === 'IMAGE' ? imageUrls.length : Number(Boolean(videoUrl))
-    const capacity = (type === 'IMAGE' ? 4 : 1) - existingCount
+    const type = 'IMAGE' as const
+    const capacity = 4 - imageUrlsRef.current.length
     if (capacity <= 0) {
-      setError(type === 'IMAGE' ? 'Bạn chỉ được đính kèm tối đa 4 hình ảnh.' : 'Bài viết chỉ được đính kèm tối đa 1 video.')
+      setError('Bạn chỉ được đính kèm tối đa 4 hình ảnh.')
       return
     }
     const candidates = files.slice(0, capacity)
@@ -118,7 +118,7 @@ export function ComposerMediaPanel({
       progress: 0,
     }))
     setItems((current) => [...current, ...created])
-    if (files.length > capacity) setError(type === 'IMAGE' ? 'Bạn chỉ được đính kèm tối đa 4 hình ảnh.' : 'Bài viết chỉ được đính kèm tối đa 1 video.')
+    if (files.length > capacity) setError('Bạn chỉ được đính kèm tối đa 4 hình ảnh.')
     activeBatch.current = true
     let index = 0
     const worker = async () => {
@@ -132,23 +132,15 @@ export function ComposerMediaPanel({
         controllers.current.set(item.id, controller)
         setItems((current) => current.map((entry) => entry.id === item.id ? { ...entry, status: 'uploading' } : entry))
         try {
-          const result = item.type === 'IMAGE'
-            ? await communityApi.uploadImage(item.file, controller.signal)
-            : await communityApi.uploadVideo(item.file, {
-                signal: controller.signal,
-                onProgress: (progress) => setItems((current) => current.map((entry) => entry.id === item.id ? { ...entry, progress } : entry)),
-              })
+          const result = await communityApi.uploadImage(item.file, controller.signal)
           if (controller.signal.aborted) {
             setItems((current) => current.map((entry) => entry.id === item.id ? { ...entry, status: 'cancelled' } : entry))
             continue
           }
           setItems((current) => current.map((entry) => entry.id === item.id ? { ...entry, status: 'done', progress: 100, url: result.url } : entry))
-          if (item.type === 'IMAGE') {
-            const nextUrls = imageUrlsRef.current.includes(result.url) ? imageUrlsRef.current : [...imageUrlsRef.current, result.url]
-            imageUrlsRef.current = nextUrls
-            onUpdateImageUrls(nextUrls)
-          }
-          else onUpdateVideoUrl(result.url)
+          const nextUrls = imageUrlsRef.current.includes(result.url) ? imageUrlsRef.current : [...imageUrlsRef.current, result.url]
+          imageUrlsRef.current = nextUrls
+          onUpdateImageUrls(nextUrls)
         } catch (cause) {
           if (isAbort(cause)) {
             setItems((current) => current.map((entry) => entry.id === item.id ? { ...entry, status: 'cancelled' } : entry))
@@ -179,8 +171,7 @@ export function ComposerMediaPanel({
     controllers.current.get(id)?.abort()
   }
   const removeUploadedItem = (item: UploadItem) => {
-    if (item.type === 'IMAGE' && item.url) onUpdateImageUrls(imageUrls.filter((url) => url !== item.url))
-    if (item.type === 'VIDEO' && item.url === videoUrl) onUpdateVideoUrl('')
+    if (item.url) onUpdateImageUrls(imageUrls.filter((url) => url !== item.url))
     setItems((current) => current.filter((entry) => entry.id !== item.id))
   }
 
@@ -215,25 +206,25 @@ export function ComposerMediaPanel({
         <button type="button" className="composer-media-close" onClick={onClose} aria-label="Đóng bảng đính kèm media"><X size={16} /></button>
       </div>
 
-      <div className="composer-media-source-tabs" role="tablist" aria-label="Nguồn tệp">
+      {mediaType === 'IMAGE' && <div className="composer-media-source-tabs" role="tablist" aria-label="Nguồn tệp">
         <button type="button" role="tab" aria-selected={sourceTab === 'upload'} className={`composer-source-tab ${sourceTab === 'upload' ? 'is-active' : ''}`} onClick={() => setSourceTab('upload')}><UploadCloud size={15} /><span>Từ máy tính</span></button>
         <button type="button" role="tab" aria-selected={sourceTab === 'url'} className={`composer-source-tab ${sourceTab === 'url' ? 'is-active' : ''}`} onClick={() => setSourceTab('url')}><LinkIcon size={15} /><span>Nhập URL</span></button>
-      </div>
+      </div>}
 
-      {sourceTab === 'upload' && (
+      {activeSource === 'upload' && (
         <div className="composer-upload-area">
-          <input ref={fileInputRef} id="composer-media-file" className="composer-file-input" type="file" accept={mediaType === 'IMAGE' ? IMAGE_ACCEPT : VIDEO_ACCEPT} multiple={mediaType === 'IMAGE'} disabled={uploading} aria-label={mediaType === 'IMAGE' ? 'Chọn ảnh từ máy tính' : 'Chọn video từ máy tính'} onChange={(event) => handleFiles(event.currentTarget.files)} />
+          <input ref={fileInputRef} id="composer-media-file" className="composer-file-input" type="file" accept={IMAGE_ACCEPT} multiple disabled={uploading} aria-label="Chọn ảnh từ máy tính" onChange={(event) => handleFiles(event.currentTarget.files)} />
           <label htmlFor="composer-media-file" className={`composer-dropzone ${isDragging ? 'is-dragging' : ''}`} tabIndex={uploading ? -1 : 0} aria-disabled={uploading} onKeyDown={(event) => { if (!uploading && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); fileInputRef.current?.click() } }} onDragOver={(event) => { event.preventDefault(); if (!uploading) setIsDragging(true) }} onDragLeave={() => setIsDragging(false)} onDrop={(event) => { event.preventDefault(); setIsDragging(false); handleFiles(event.dataTransfer.files) }}>
             <UploadCloud size={32} className="composer-upload-icon" />
-            <span className="composer-upload-title">Kéo thả {mediaType === 'IMAGE' ? 'ảnh' : 'video'} vào đây hoặc chọn từ máy</span>
-            <span className="composer-upload-desc">{mediaType === 'IMAGE' ? 'JPG, PNG, WebP, GIF · tối đa 5 MB mỗi ảnh · tối đa 4 ảnh' : 'MP4, WebM, MOV · tối đa 50 MB'}</span>
-            <span className="composer-upload-btn">Chọn {mediaType === 'IMAGE' ? 'ảnh' : 'video'}</span>
+            <span className="composer-upload-title">Kéo thả ảnh vào đây hoặc chọn từ máy</span>
+            <span className="composer-upload-desc">JPG, PNG, WebP, GIF · tối đa 5 MB mỗi ảnh · tối đa 4 ảnh</span>
+            <span className="composer-upload-btn">Chọn ảnh</span>
           </label>
           {error && <p className="composer-media-error" role="alert">{error}</p>}
           {items.filter((item) => item.type === mediaType).map((item) => (
             <div key={item.id} className="composer-upload-item">
               <span className="composer-upload-file-name">{item.file.name}</span>
-              {item.status === 'uploading' || item.status === 'pending' ? <><span role="status">{item.status === 'pending' ? 'Đang chờ' : item.type === 'VIDEO' ? `Đang tải ${item.progress}%` : <><Loader2 size={14} className="composer-upload-spinner" /> Đang tải…</>}</span><progress aria-label={`Tiến trình tải ${item.file.name}`} max="100" value={item.type === 'VIDEO' ? item.progress : undefined} /><button type="button" onClick={() => cancelUpload(item.id)} aria-label={`Hủy tải ${item.file.name}`}>Hủy</button></> : null}
+              {item.status === 'uploading' || item.status === 'pending' ? <><span role="status">{item.status === 'pending' ? 'Đang chờ' : <><Loader2 size={14} className="composer-upload-spinner" /> Đang tải…</>}</span><progress aria-label={`Tiến trình tải ${item.file.name}`} max="100" /><button type="button" onClick={() => cancelUpload(item.id)} aria-label={`Hủy tải ${item.file.name}`}>Hủy</button></> : null}
               {item.status === 'done' && <><span role="status">Đã tải xong</span><button type="button" onClick={() => removeUploadedItem(item)} aria-label={`Xóa ${item.file.name}`}><X size={15} /></button></>}
               {item.status === 'cancelled' && <span role="status">Đã hủy</span>}
               {item.status === 'error' && <div role="alert" className="composer-upload-error">{item.error}{item.fallback && <> <button type="button" onClick={() => setSourceTab('url')}>Chuyển sang tab Nhập URL</button></>}</div>}
@@ -243,7 +234,7 @@ export function ComposerMediaPanel({
         </div>
       )}
 
-      {sourceTab === 'url' && (
+      {activeSource === 'url' && (
         <div className="composer-url-area">
           <div className="composer-url-form">
             <input type="url" value={urlInput} aria-label="Đường dẫn media" onChange={(event) => { setUrlInput(event.target.value); if (error) setError('') }} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); handleAddUrl() } }} placeholder={mediaType === 'IMAGE' ? 'Dán URL ảnh HTTPS (images.unsplash.com, i.imgur.com)' : 'Dán URL video HTTPS (YouTube, Loom, Google Drive)'} maxLength={500} className="composer-url-input" />

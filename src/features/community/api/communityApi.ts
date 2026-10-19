@@ -17,11 +17,8 @@ const reportQueueItemSchema = z.object({ id: z.string().guid(), reporterId: z.st
 const reportQueueSchema = z.object({ content: z.array(reportQueueItemSchema), page: z.number(), size: z.number(), totalElements: z.number(), totalPages: z.number(), sort: z.string() })
 
 const IMAGE_MAX_SIZE = 5 * 1024 * 1024
-const VIDEO_MAX_SIZE = 50 * 1024 * 1024
 const IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
-const VIDEO_TYPES = new Set(['video/mp4', 'video/webm', 'video/quicktime'])
 const uploadedImageSchema = z.object({ url: z.string().url(), key: z.string(), contentType: z.string(), size: z.number() })
-const videoUploadUrlSchema = z.object({ uploadUrl: z.string().url(), key: z.string(), publicUrl: z.string().url() })
 
 export class MediaUploadError extends Error {
   readonly status?: number
@@ -39,7 +36,7 @@ function validateMediaFile(file: File, types: Set<string>, maxSize: number, labe
   }
   if (file.size <= 0) throw new MediaUploadError(`Tệp ${label} đang trống.`)
   if (file.size > maxSize) {
-    throw new MediaUploadError(`Tệp ${label} vượt quá dung lượng tối đa ${label === 'ảnh' ? '5 MB' : '50 MB'}.`)
+    throw new MediaUploadError(`Tệp ${label} vượt quá dung lượng tối đa ${Math.round(maxSize / (1024 * 1024))} MB.`)
   }
 }
 
@@ -62,36 +59,6 @@ export function getMediaUploadErrorMessage(error: unknown) {
   return uploadError(error).message
 }
 
-function uploadVideoFile(url: string, file: File, signal?: AbortSignal, onProgress?: (percent: number) => void) {
-  return new Promise<void>((resolve, reject) => {
-    const xhr = new XMLHttpRequest()
-    const abort = () => xhr.abort()
-    xhr.open('PUT', url)
-    xhr.setRequestHeader('Content-Type', file.type)
-    xhr.upload.onprogress = (event) => {
-      if (event.lengthComputable) onProgress?.(Math.round((event.loaded / event.total) * 100))
-    }
-    xhr.onload = () => {
-      signal?.removeEventListener('abort', abort)
-      if (xhr.status >= 200 && xhr.status < 300) resolve()
-      else reject(new MediaUploadError('Không thể lưu video lên kho tệp. Vui lòng thử lại.', xhr.status))
-    }
-    xhr.onerror = () => {
-      signal?.removeEventListener('abort', abort)
-      reject(new MediaUploadError('Không thể kết nối tới kho tệp. Vui lòng thử lại.'))
-    }
-    xhr.onabort = () => {
-      signal?.removeEventListener('abort', abort)
-      reject(new DOMException('Đã hủy tải tệp.', 'AbortError'))
-    }
-    if (signal?.aborted) {
-      xhr.abort()
-      return
-    }
-    signal?.addEventListener('abort', abort, { once: true })
-    xhr.send(file)
-  })
-}
 export type ContentReportQueueItem = z.infer<typeof reportQueueItemSchema>
 export type ContentReportQueue = z.infer<typeof reportQueueSchema>
 
@@ -115,24 +82,6 @@ export const communityApi = {
         method: 'POST', auth: true, body: formData, signal,
       }))
       return { url: result.url }
-    } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') throw error
-      throw uploadError(error)
-    }
-  },
-  uploadVideo: async (
-    file: File,
-    options: { signal?: AbortSignal; onProgress?: (percent: number) => void } = {},
-  ): Promise<{ url: string }> => {
-    try {
-      validateMediaFile(file, VIDEO_TYPES, VIDEO_MAX_SIZE, 'video')
-      const result = videoUploadUrlSchema.parse(await apiRequest('/api/community/media/videos/upload-url', {
-        method: 'POST', auth: true,
-        body: { contentType: file.type, size: file.size },
-        signal: options.signal,
-      }))
-      await uploadVideoFile(result.uploadUrl, file, options.signal, options.onProgress)
-      return { url: result.publicUrl }
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') throw error
       throw uploadError(error)

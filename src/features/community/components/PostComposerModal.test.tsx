@@ -4,13 +4,12 @@ import { useForm } from 'react-hook-form'
 import { PostComposerModal, type PostFormValues } from './PostComposerModal'
 
 const uploadImageMock = vi.hoisted(() => vi.fn())
-const uploadVideoMock = vi.hoisted(() => vi.fn())
 vi.mock('../api/communityApi', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../api/communityApi')>()
   return {
     ...actual,
     getMediaUploadErrorMessage: actual.getMediaUploadErrorMessage,
-    communityApi: { ...actual.communityApi, uploadImage: uploadImageMock, uploadVideo: uploadVideoMock },
+    communityApi: { ...actual.communityApi, uploadImage: uploadImageMock },
   }
 })
 
@@ -66,7 +65,6 @@ function TestWrapper({
 describe('PostComposerModal', () => {
   beforeEach(() => {
     uploadImageMock.mockReset()
-    uploadVideoMock.mockReset()
   })
   it('does not render when isOpen is false', () => {
     render(<TestWrapper isOpen={false} />)
