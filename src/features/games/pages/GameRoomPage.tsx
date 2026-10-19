@@ -26,6 +26,7 @@ import { gameApi } from '../api/gameApi'
 import type { GameRoom } from '../types/game'
 import { RoomSettingsDialog } from '../components/RoomSettingsDialog'
 import { GameNoticeDialog } from '../components/GameNoticeDialog'
+import { SoloGameEntry } from '../components/SoloGameEntry'
 import { useGameConnection } from '../hooks/useGameConnection'
 import '../games-room.css'
 
@@ -216,8 +217,9 @@ function GameRoomContent() {
         </div>
       </main>
     )
+  if (room.playerMode === 'SOLO') return <SoloGameEntry roomId={room.id} />
+
   const host = room.hostUserId === userId
-  const solo = room.playerMode === 'SOLO'
   const waiting = room.status === 'WAITING'
   const activeMembers = room.members.filter(
     (member) => member.status !== 'LEFT',
@@ -233,7 +235,7 @@ function GameRoomContent() {
     (a, b) => (a.slotNumber ?? 99) - (b.slotNumber ?? 99),
   )
   const slots = Array.from(
-    { length: solo ? 1 : Math.max(room.maxPlayers, activeMembers.length) },
+    { length: Math.max(room.maxPlayers, activeMembers.length) },
     () => null as (typeof orderedMembers)[number] | null,
   )
   for (const member of orderedMembers) {
@@ -251,18 +253,14 @@ function GameRoomContent() {
         message={removed}
         onClose={() => navigate('/games', { replace: true })}
       />
-      {!solo && (
-        <p className="game-note" role="status">
-          {connected
-            ? 'Đã kết nối trực tiếp với phòng.'
-            : 'Đang nối lại kết nối trực tiếp. Phòng vẫn được đồng bộ định kỳ.'}
-        </p>
-      )}
+      <p className="game-note" role="status">
+        {connected
+          ? 'Đã kết nối trực tiếp với phòng.'
+          : 'Đang nối lại kết nối trực tiếp. Phòng vẫn được đồng bộ định kỳ.'}
+      </p>
       <header className="game-lobby-heading">
         <div>
-          <span className="game-eyebrow">
-            WORDLY · {solo ? 'CHƠI ĐƠN' : 'NHIỀU NGƯỜI'}
-          </span>
+          <span className="game-eyebrow">WORDLY · NHIỀU NGƯỜI</span>
           <h1>
             {waiting
               ? 'Sẵn sàng khám phá từ mới?'
@@ -270,11 +268,7 @@ function GameRoomContent() {
                 ? 'Phòng đã đóng'
                 : 'Phòng đã bắt đầu'}
           </h1>
-          <p>
-            {solo
-              ? 'Kiểm tra cấu hình rồi bắt đầu lượt chơi của bạn.'
-              : 'Mời bạn bè bằng mã phòng và cùng sẵn sàng.'}
-          </p>
+          <p>Mời bạn bè bằng mã phòng và cùng sẵn sàng.</p>
         </div>
         <Button
           variant="outline"
@@ -361,7 +355,7 @@ function GameRoomContent() {
       ) : (
         <>
           <section
-            className={`game-player-grid ${solo ? 'game-player-grid-solo' : ''}`}
+            className="game-player-grid"
             aria-label="Người chơi trong phòng"
           >
             {slots.map((member, i) => (
@@ -461,21 +455,15 @@ function GameRoomContent() {
             <p>
               {!waiting
                 ? 'Phòng không còn ở trạng thái chờ.'
-                : solo
-                  ? isReady
-                    ? 'Bạn đã sẵn sàng. Bắt đầu khi bạn muốn.'
-                    : 'Bấm Sẵn sàng trước khi bắt đầu.'
-                  : host
-                    ? room.canStart
-                      ? 'Mọi người đã sẵn sàng. Bạn có thể bắt đầu.'
-                      : 'Cần ít nhất 2 người và tất cả đều sẵn sàng.'
-                    : 'Sẵn sàng rồi chờ chủ phòng bắt đầu.'}
+                : host
+                  ? room.canStart
+                    ? 'Mọi người đã sẵn sàng. Bạn có thể bắt đầu.'
+                    : 'Cần ít nhất 2 người và tất cả đều sẵn sàng.'
+                  : 'Sẵn sàng rồi chờ chủ phòng bắt đầu.'}
             </p>
           </section>
           <p className="game-lobby-footnote">
-            {solo
-              ? 'Bạn có thể chỉnh cấu hình trước khi bắt đầu.'
-              : `Tối đa ${room.maxPlayers} người. Chủ phòng rời sẽ đóng phòng với mọi người.`}{' '}
+            {`Tối đa ${room.maxPlayers} người. Chủ phòng rời sẽ đóng phòng với mọi người.`}{' '}
             Lưu cấu hình sẽ hủy trạng thái sẵn sàng.
           </p>
         </>

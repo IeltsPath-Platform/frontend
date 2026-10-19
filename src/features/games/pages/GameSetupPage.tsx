@@ -1,11 +1,13 @@
 import { GameNoticeDialog } from '../components/GameNoticeDialog'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, Heart, Play } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { GameSettingsForm } from '../components/GameSettingsForm'
 import { gameApi } from '../api/gameApi'
-import type { CreateRoomInput } from '../types/game'
+import type { CreateRoomInput, GameRoom } from '../types/game'
+import { HttpError } from '@/lib/httpClient'
+import { startSoloRoom } from '../lib/startSoloRoom'
 import '../games-room.css'
 
 export function GameSetupPage() {
@@ -23,6 +25,13 @@ export function GameSetupPage() {
   const [pending, setPending] = useState(false)
   const [error, setError] = useState('')
   const submitting = useRef(false)
+  const pendingSoloRoom = useRef<GameRoom | null>(null)
+  const lifetime = useRef<AbortController | null>(null)
+  useEffect(() => {
+    const controller = new AbortController()
+    lifetime.current = controller
+    return () => controller.abort()
+  }, [])
   return (
     <main className="game-room-page game-setup-page">
       <Link className="game-back" to="/games">
@@ -65,18 +74,65 @@ export function GameSetupPage() {
                 return
               }
               submitting.current = true
+              const signal = lifetime.current?.signal
               setPending(true)
               setError('')
               try {
+                if (playerMode === 'SOLO') {
+                  let room = pendingSoloRoom.current
+                  if (room) {
+                    try {
+                      room = await gameApi.room(room.id)
+                      signal?.throwIfAborted()
+                    } catch (cause) {
+                      if (
+                        !(cause instanceof HttpError) ||
+                        cause.status !== 404
+                      ) {
+                        throw cause
+                      }
+                      pendingSoloRoom.current = null
+                      room = null
+                    }
+                  }
+                  if (
+                    room?.status === 'WAITING' &&
+                    (room.settings?.initialLives !== value.initialLives ||
+                      room.settings?.playMode !== value.playMode ||
+                      room.settings?.wordLimit !== value.wordLimit ||
+                      room.settings?.timeEnabled !== value.timeEnabled)
+                  ) {
+                    await gameApi.leaveRoom(room.id)
+                    signal?.throwIfAborted()
+                    pendingSoloRoom.current = null
+                    room = null
+                  }
+                  if (!room) {
+                    room = await gameApi.createRoom({ ...value, playerMode })
+                    pendingSoloRoom.current = room
+                    signal?.throwIfAborted()
+                  }
+                  const match = await startSoloRoom(room, signal)
+                  signal?.throwIfAborted()
+                  pendingSoloRoom.current = null
+                  navigate(`/games/matches/${match.matchId}/play`, {
+                    replace: true,
+                  })
+                  return
+                }
                 const room = await gameApi.createRoom({ ...value, playerMode })
+                signal?.throwIfAborted()
                 navigate(`/games/rooms/${room.id}`)
               } catch {
+                if (signal?.aborted) return
                 setError(
-                  'Không tạo được phòng. Vui lòng kiểm tra kết nối và thử lại.',
+                  playerMode === 'SOLO'
+                    ? 'Chưa bắt đầu được lượt chơi. Vui lòng kiểm tra kết nối và thử lại.'
+                    : 'Không tạo được phòng. Vui lòng kiểm tra kết nối và thử lại.',
                 )
               } finally {
                 submitting.current = false
-                setPending(false)
+                if (!signal?.aborted) setPending(false)
               }
             }}
           >
@@ -92,7 +148,13 @@ export function GameSetupPage() {
               className="game-primary-action"
             >
               <Play size={18} />
-              {pending ? 'Đang tạo phòng…' : 'Tạo phòng chơi'}
+              {playerMode === 'SOLO'
+                ? pending
+                  ? 'Đang bắt đầu…'
+                  : 'Bắt đầu chơi'
+                : pending
+                  ? 'Đang tạo phòng…'
+                  : 'Tạo phòng chơi'}
             </Button>
           </form>
         </section>

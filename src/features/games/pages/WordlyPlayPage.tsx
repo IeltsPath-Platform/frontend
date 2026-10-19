@@ -1,6 +1,6 @@
 import { useEffect, useEffectEvent, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { Flame, Heart, Lightbulb, Timer, Trophy } from 'lucide-react'
+import { Flame, Heart, Lightbulb, LogOut, Timer, Trophy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -114,7 +114,8 @@ function WordlyPlayContent({ matchId }: WordlyPlayContentProps) {
             disabled={game.busy}
             onClick={() => setLeaveOpen(true)}
           >
-            Rời phiên
+            <LogOut aria-hidden="true" />
+            Thoát trò chơi
           </Button>
         )}
       </header>
@@ -344,31 +345,33 @@ function WordlyPlayContent({ matchId }: WordlyPlayContentProps) {
         </DialogContent>
       </Dialog>
       <Dialog open={leaveOpen} onOpenChange={setLeaveOpen}>
-        <DialogContent>
+        <DialogContent className="gap-6 p-6 sm:p-8">
           <DialogHeader>
-            <DialogTitle>Rời phiên chơi?</DialogTitle>
-            <DialogDescription>
+            <DialogTitle>Thoát trò chơi?</DialogTitle>
+            <DialogDescription className="leading-relaxed">
               {multiplayer
                 ? 'Bạn giữ điểm và vẫn có tên trong bảng xếp hạng với trạng thái đã rời trận. Những người còn lại tiếp tục chơi theo điều kiện kết thúc trận.'
-                : 'Phiên chơi sẽ kết thúc. Bạn giữ nguyên số điểm đã đạt.'}
+                : 'Trò chơi sẽ kết thúc. Bạn giữ nguyên số điểm đã đạt.'}
             </DialogDescription>
           </DialogHeader>
-          <div className="games-actions">
+          <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
             <Button
               variant="outline"
+              className="min-h-12 w-full rounded-xl px-5 text-base sm:w-auto"
               disabled={game.busy}
               onClick={() => setLeaveOpen(false)}
             >
               Tiếp tục chơi
             </Button>
             <Button
+              className="min-h-12 w-full rounded-xl px-5 text-base font-semibold sm:w-auto"
               disabled={game.busy}
               onClick={async () => {
                 await game.leave()
                 setLeaveOpen(false)
               }}
             >
-              Xác nhận rời phiên
+              {game.busy ? 'Đang thoát…' : 'Thoát trò chơi'}
             </Button>
           </div>
           {game.error && <p role="alert">{game.error}</p>}

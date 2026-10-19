@@ -34,7 +34,10 @@ function ResultContent({ matchId }: ResultContentProps) {
         setResult(data)
         setError(null)
         let recoveredHostId = recalledMatchHost(matchId)
-        if (data.endReason !== 'PLAYER_LEFT') {
+        if (
+          data.playerMode === 'MULTIPLAYER' &&
+          data.endReason !== 'PLAYER_LEFT'
+        ) {
           try {
             const match = await gameApi.match(matchId, controller.signal)
             const room = await gameApi.room(match.roomId, controller.signal)
@@ -99,7 +102,7 @@ function ResultContent({ matchId }: ResultContentProps) {
               : result.endReason === 'WORD_LIMIT_REACHED'
                 ? 'Hoàn thành bộ từ!'
                 : result.endReason === 'PLAYER_LEFT'
-                  ? 'Đã rời phiên chơi'
+                  ? 'Đã thoát trò chơi'
                   : 'Bạn đã hết mạng'}
         </h1>
         <Trophy size={40} aria-hidden="true" />
@@ -170,12 +173,18 @@ function ResultContent({ matchId }: ResultContentProps) {
             <Button asChild>
               <Link
                 to={
-                  roomId
-                    ? `/games/rooms/${roomId}`
-                    : `/games/wordly/setup?mode=${result.playerMode}`
+                  result.playerMode === 'SOLO'
+                    ? '/games/wordly/setup?mode=SOLO'
+                    : roomId
+                      ? `/games/rooms/${roomId}`
+                      : `/games/wordly/setup?mode=${result.playerMode}`
                 }
               >
-                {roomId ? 'Về phòng chờ' : 'Tạo phòng mới'}
+                {result.playerMode === 'SOLO'
+                  ? 'Chơi lại'
+                  : roomId
+                    ? 'Về phòng chờ'
+                    : 'Tạo phòng mới'}
               </Link>
             </Button>
             <Button asChild variant="outline">
