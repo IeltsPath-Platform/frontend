@@ -88,11 +88,12 @@ Vào **Trò Chơi** trên navbar hoặc `/games` sau khi đăng nhập. Module n
 
 - Catalog lấy từ backend; Tên lửa chưa khả dụng. Chọn Wordly mở popup chọn chế độ.
 - Tạo phòng: 3–6 mạng, hữu hạn tối thiểu5 từ hoặc vô hạn; chơi đơn có tùy chọn timer.
-- Sảnh phòng hiển thị thành viên thật, sẵn sàng và popup sửa cấu hình cho chủ phòng khi WAITING.
+- Chơi đơn: bấm **Bắt đầu chơi** ở màn cấu hình sẽ tự tạo phiên, sẵn sàng và bắt đầu bằng API hiện có, rồi vào thẳng bảng chữ. Không hiển thị mã phòng hoặc sảnh chờ. Nếu bắt đầu lỗi, bấm lại sẽ tái sử dụng phòng vừa tạo; phản hồi start bị mất sẽ được khôi phục từ trận đang chạy.
+- Sảnh nhiều người hiển thị thành viên thật, sẵn sàng và popup sửa cấu hình cho chủ phòng khi WAITING. Link phòng đơn cũ tự chuyển vào game và chỉ hiển thị trạng thái bắt đầu/thử lại.
 - Chơi đơn dùng bảng N cột/N+1 hàng, hint1 lần/từ, điểm/chuỗi/mạng do backend quyết định.
 - Gửi lại lượt đoán đang chờ giữ nguyên requestId/payload; tải lại khôi phục trạng thái từ server.
 - Multiplayer dùng WebSocket ticket một lần (không đưa JWT lên URL), tự xin ticket mới khi nối lại; REST định kỳ 2.5s phục hồi trạng thái với abort/khóa chống ghi đè response cũ.
-- Kết thúc đọc kết quả chính thức; chơi lại trở về phòng khi phòng còn tồn tại.
+- Kết thúc đọc kết quả chính thức; chơi đơn bấm **Chơi lại** về cấu hình chơi đơn. Nhiều người trở về phòng chờ khi phòng còn tồn tại.
 - Tổng kết bỏ số mạng còn lại và cột mạng; ranking chuyển thành thẻ khi vùng hiển thị hẹp. Khi đang chơi multiplayer, ranking nằm cạnh phải khu chơi trên desktop và xuống dưới trên màn nhỏ. Bảng chữ và bàn phím co theo chiều rộng màn hình.
 - Multiplayer tối đa 4 người: ready/start, host kick khi WAITING, bảng riêng, ranking trực tiếp, hết mạng/hoàn thành chuyển sang theo dõi, tổng kết giữ người đã rời trận.
 - Host rời giữa trận không đóng trận; cuối trận hiển thị ranking rồi popup đóng phòng. Cache trong sessionStorage chỉ lưu UUID host theo match để khôi phục thông báo trong tab, không chứa token.
