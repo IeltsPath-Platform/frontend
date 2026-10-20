@@ -10,8 +10,8 @@ vi.mock('@/components/InteractiveCanvasBackground', () => ({
   InteractiveCanvasBackground: () => null,
 }))
 
-vi.mock('@/components/ClassMascot', () => ({
-  ClassMascot: () => null,
+vi.mock('@/components/OwlHero', () => ({
+  OwlHero: () => null,
 }))
 
 describe('AuthShell header visibility', () => {

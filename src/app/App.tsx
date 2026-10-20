@@ -7,7 +7,6 @@ import { GameResultPage } from '@/features/games/pages/GameResultPage'
 import { BrowserRouter, Navigate, Routes, Route, useNavigate, useParams } from 'react-router-dom'
 import { ErrorBoundary } from './ErrorBoundary'
 import { NotFoundPage, RouteStatusPage } from './RouteStatusPage'
-import { ClassroomPage } from '~features/classroom/ClassroomPage'
 import { OverviewPage } from '@/features/overview/pages/OverviewPage'
 import { PracticeCatalogPage } from '@/features/practice/pages/PracticeCatalogPage'
 import { ListeningPracticePage } from '@/features/practice/listening/ListeningPracticePage'
@@ -23,7 +22,6 @@ import { VocabularyReviewPage } from '@/features/vocabulary/pages/VocabularyRevi
 import { AuthPage } from '@/features/auth/pages/AuthPage'
 import { useAuthSession } from '@/features/auth/authSession'
 import { SiteFooter } from '@/components/SiteFooter'
-import { OwlMascot } from '@/components/OwlMascot'
 import { ForgotPasswordPage } from '@/features/auth/pages/ForgotPasswordPage'
 import { OAuthCallbackPage } from '@/features/auth/pages/OAuthCallbackPage'
 import { ResetPasswordPage } from '@/features/auth/pages/ResetPasswordPage'
@@ -74,7 +72,6 @@ function AppContent() {
       <Route path="/community/posts/:postId" element={<RequireAuth><CommunityPage /></RequireAuth>} />
       <Route path="/community/users/:userId" element={<RequireAuth><CommunityPage /></RequireAuth>} />
       <Route path="/vocabulary/review" element={<RequireAuth><VocabularyReviewPage /></RequireAuth>} />
-      <Route path="/classroom" element={<RequireAuth><ClassroomPage /></RequireAuth>} />
       <Route path="/learn" element={<RequireAuth><LearnLayout /></RequireAuth>}>
         <Route index element={<CourseListPage />} />
         <Route path="placement" element={<PlacementPage />} />
@@ -148,7 +145,6 @@ function AppContent() {
       <Route path="*" element={<NotFoundPage />} />
       </Routes>
       <SiteFooter />
-      <OwlMascot />
     </>
   )
 }

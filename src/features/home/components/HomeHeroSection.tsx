@@ -1,6 +1,6 @@
 import { ArrowRight, BookOpen, Check, Headphones, Mic, PenLine, Sparkles } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { ClassMascot } from '@/components/ClassMascot'
+import { OwlHero } from '@/components/OwlHero'
 import { Button } from '@/components/ui/button'
 
 const HERO_SKILLS = [
@@ -31,7 +31,7 @@ export function HomeHeroSection() {
 
         <div className="home-hero-journey" aria-label="Bốn kỹ năng hướng tới mục tiêu IELTS">
           <div className="home-hero-orbit" aria-hidden="true" />
-          <ClassMascot className="home-hero-mascot" size="md" imageAlt="Khủng long mascot IELTS Space" />
+          <OwlHero alt="Cú mascot IELTS Space" className="home-hero-mascot" poses={['idea', 'cheer', 'wave']} size="md" />
           {HERO_SKILLS.map(({ label, icon: Icon }) => (
             <div key={label} className={`home-hero-skill home-hero-skill-${label.toLowerCase()}`}>
               <Icon aria-hidden="true" /><span>{label}</span>

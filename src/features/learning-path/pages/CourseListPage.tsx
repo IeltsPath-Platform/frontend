@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import type { CSSProperties } from 'react'
 import { ArrowRight, ClipboardCheck, Route, Trophy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import mascotImage from '@/assets/triceratops-class-mascot.png'
+import { OwlHero } from '@/components/OwlHero'
 import type { CourseSummary } from '~types/learningPath'
 import { learningApi } from '../api'
 import { NoticeBanner } from '../components/NoticeBanner'
@@ -195,7 +195,7 @@ function CourseSpotlight({ course, resuming }: { course: CourseSummary; resuming
         </Button>
       </div>
 
-      <img alt="" aria-hidden="true" className="lp-spotlight__mascot" src={mascotImage} />
+      <OwlHero className="lp-spotlight__mascot" decor={false} enter="right" pose="confident" size="sm" />
     </section>
   )
 }

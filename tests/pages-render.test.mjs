@@ -59,7 +59,7 @@ test('Home preserves the learning journey hero and renders the complete landing 
   assert.match(html, /Mỗi ngày một bước/)
   assert.match(html, /home-hero-shell/)
   assert.ok((html.match(/data-home-reveal="true"/g) || []).length >= 12)
-  assert.match(html, /triceratops-class-mascot/)
+  assert.match(html, /hero-idea\.webp/)
   assert.doesNotMatch(html, /YOUR IELTS SPACE/)
 })
 
@@ -184,15 +184,17 @@ test('Auth routes hide guest account links while retaining public navigation', a
   }
 })
 
-test('ClassMascot packages the image, floating orbit and twinkle motion independently', async () => {
-  const html = await render('/src/components/ClassMascot.tsx', 'ClassMascot', { size: 'lg' }, '/home')
-  const source = readFileSync(new URL('../src/components/ClassMascot.tsx', import.meta.url), 'utf8')
-  const styles = readFileSync(new URL('../src/components/ClassMascot.module.css', import.meta.url), 'utf8')
+test('OwlHero layers its own entrance, float, breathe and sway motion with a reduced-motion fallback', async () => {
+  const html = await render('/src/components/OwlHero.tsx', 'OwlHero', { poses: ['idea', 'cheer'], size: 'lg' }, '/home')
+  const styles = readFileSync(new URL('../src/components/OwlHero.module.css', import.meta.url), 'utf8')
 
-  assert.match(html, /triceratops-class-mascot/)
-  assert.match(source, /imageSrc = defaultMascotImage/)
-  assert.ok(existsSync(new URL('../src/assets/triceratops-class-mascot.png', import.meta.url)))
-  for (const animation of ['cls-float', 'cls-orbit', 'cls-twinkle']) assert.ok(styles.includes(animation))
+  assert.match(html, /hero-idea\.webp/)
+  assert.match(html, /hero-cheer\.webp/)
+  assert.match(html, /aria-hidden="true"/)
+  for (const pose of ['idea', 'cheer', 'party', 'confused', 'confident', 'wave', 'tired', 'desk', 'laptop']) {
+    assert.ok(existsSync(new URL(`../src/assets/owl/hero-${pose}.webp`, import.meta.url)))
+  }
+  for (const animation of ['owl-enter-up', 'owl-float', 'owl-breathe', 'owl-sway', 'owl-wiggle', 'owl-waddle', 'owl-orbit', 'owl-twinkle']) assert.ok(styles.includes(animation))
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/)
 })
 
@@ -374,17 +376,6 @@ test('workspace uses document scroll and keeps desktop side panels sticky withou
   assert.match(styles, /\.workspace-left-column,[\s\S]*?\.practice-workspace-root \.screen3-questions-card\s*\{\s*position:\s*sticky;/)
 })
 
-test('Classroom retains its schedule while the guest header limits navigation to public routes', async () => {
-  const html = await render('/src/features/classroom/ClassroomPage.tsx', 'ClassroomPage', {}, '/classroom')
-  assert.match(html, /LỚP HỌC CỦA TÔI/)
-  assert.match(html, /href="\/home"/)
-  assert.match(html, /href="\/learn"/)
-  assert.doesNotMatch(html, /aria-current="page"[^>]*href="\/classroom"/)
-  assert.match(html, /id="schedule"/)
-  assert.match(html, /triceratops-class-mascot/)
-  assert.match(html, /class="cls-panel cls-panel--dark"/)
-})
-
 test('Dictionary shares the topic vocabulary and interactive affordances', async () => {
   const html = await render('/src/features/vocabulary/pages/VocabularyPage.tsx', 'VocabularyPage', {}, '/vocabulary')
   assert.match(html, /Từ điển học theo chủ đề/)
@@ -409,7 +400,7 @@ test('Sign-in form has password-manager semantics and only safe non-submit contr
   assert.match(html, /href="\/register"/)
   assert.match(html, /auth-backdrop/)
   assert.match(html, /auth-floating-icon/)
-  assert.match(html, /triceratops-class-mascot/)
+  assert.match(html, /hero-wave\.webp/)
   assert.doesNotMatch(html, /auth-brand-panel/)
 })
 
@@ -439,7 +430,7 @@ test('Auth layout uses transform-only ambient motion and a reduced-motion fallba
   const sessionSource = readFileSync(new URL('../src/features/auth/authSession.ts', import.meta.url), 'utf8')
   for (const animation of ['auth-float-a', 'auth-float-b', 'auth-float-c', 'auth-float-d']) assert.ok(styles.includes(animation))
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/)
-  assert.match(shellSource, /ClassMascot/)
+  assert.match(shellSource, /OwlHero/)
   assert.match(sessionSource, /useSyncExternalStore/)
   assert.doesNotMatch(sessionSource, /localStorage|sessionStorage/)
 })

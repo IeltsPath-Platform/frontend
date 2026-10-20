@@ -124,7 +124,8 @@
   max-inline-size: 29rem;
 }
 
-.auth-mascot {
+/* Scoped under the shell so `position: absolute` wins over the owl's own module styles. */
+.auth-shell .auth-mascot {
   inset-block-end: clamp(-2rem, 1vw, 1rem);
   inset-inline-start: calc(25% - var(--mascot-size) / 2);
   pointer-events: none;

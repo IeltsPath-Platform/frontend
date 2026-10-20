@@ -1,0 +1,92 @@
+/* The rocket owl art has its own night-sky background, so it sits in a rounded window that clips the drift. */
+.community-owl-banner {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 720 / 611;
+  margin: -.25rem -.25rem .85rem;
+  border-radius: .9rem;
+  background: #0b2a8a;
+  box-shadow: 0 10px 24px -8px rgb(11 42 138 / 55%);
+  isolation: isolate;
+  animation: community-owl-banner-in .8s cubic-bezier(.22, 1.25, .36, 1) both;
+}
+
+.community-owl-banner__art {
+  position: absolute;
+  inset: -6%;
+  inline-size: 112%;
+  block-size: 112%;
+  object-fit: cover;
+  animation: community-owl-fly 5.2s ease-in-out infinite;
+}
+
+/* A warm glow pulsing behind the rocket's exhaust. */
+.community-owl-banner__flame {
+  position: absolute;
+  inset-block-end: 22%;
+  inset-inline-start: 16%;
+  inline-size: 22%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(255 190 90 / 75%), transparent);
+  mix-blend-mode: screen;
+  animation: community-owl-flame .45s ease-in-out infinite alternate, community-owl-fly 5.2s ease-in-out infinite;
+}
+
+.community-owl-banner__star {
+  position: absolute;
+  inline-size: .7rem;
+  block-size: .7rem;
+  background: #fff;
+  clip-path: polygon(50% 0%, 61% 38%, 100% 50%, 61% 62%, 50% 100%, 39% 62%, 0% 50%, 39% 38%);
+  filter: drop-shadow(0 0 .35rem rgb(255 255 255 / 90%));
+  animation: community-owl-twinkle 2.2s ease-in-out infinite;
+}
+
+.community-owl-banner__star--a { inset-block-start: 10%; inset-inline-start: 12%; }
+.community-owl-banner__star--b { inset-block-start: 58%; inset-inline-end: 8%; inline-size: .5rem; block-size: .5rem; animation-delay: .8s; }
+.community-owl-banner__star--c { inset-block-start: 26%; inset-inline-end: 30%; inline-size: .4rem; block-size: .4rem; background: #ffd66b; animation-delay: 1.4s; }
+
+/* A soft light sweep across the window now and then. */
+.community-owl-banner__shine {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 35%, rgb(255 255 255 / 22%) 50%, transparent 65%);
+  transform: translateX(-120%);
+  animation: community-owl-shine 6s ease-in-out 1.2s infinite;
+}
+
+.community-owl-banner:hover .community-owl-banner__art { animation-duration: 1.6s; }
+
+@keyframes community-owl-banner-in {
+  from { opacity: 0; transform: translateY(1rem) scale(.94); }
+}
+
+@keyframes community-owl-fly {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  30% { transform: translate(2%, -3%) rotate(-1.5deg); }
+  65% { transform: translate(-1.5%, 2%) rotate(1deg); }
+}
+
+@keyframes community-owl-flame {
+  from { opacity: .55; scale: .85; }
+  to { opacity: 1; scale: 1.15; }
+}
+
+@keyframes community-owl-twinkle {
+  0%, 100% { opacity: .3; transform: scale(.6) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1.2) rotate(30deg); }
+}
+
+@keyframes community-owl-shine {
+  0%, 70% { transform: translateX(-120%); }
+  100% { transform: translateX(120%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .community-owl-banner,
+  .community-owl-banner__art,
+  .community-owl-banner__flame,
+  .community-owl-banner__star,
+  .community-owl-banner__shine { animation: none; }
+}

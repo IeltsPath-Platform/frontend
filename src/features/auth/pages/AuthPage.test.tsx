@@ -26,6 +26,10 @@ vi.mock('../components/AuthShell', () => ({
   AuthShell: ({ children }: { children: ReactNode }) => <>{children}</>,
 }))
 
+vi.mock('@/components/toast/toastContext', () => ({
+  useToast: () => ({ toast: vi.fn(), dismiss: vi.fn(), toasts: [] }),
+}))
+
 function LocationProbe() {
   const location = useLocation()
   return <output data-testid="community-state">{JSON.stringify(location.state)}</output>

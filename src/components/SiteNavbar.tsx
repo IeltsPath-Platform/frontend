@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, useLocation, useMatch, useNavigate } from 'react-router-dom'
 import { Menu, X } from 'lucide-react'
 import { BRAND_LOGO_URL } from './brandLogo'
+import { NavOwl } from './NavOwl'
+import type { NavOwlHandle } from './NavOwl'
 import { UserTierDropdown } from './UserTierDropdown'
 import { logoutSession, setDemoTier, useAuthSession } from '@/features/auth/authSession'
 import { NotificationBell } from '@/features/community/components/NotificationBell'
@@ -24,6 +26,9 @@ function findActiveChild(children: readonly NavChild[], pathname: string, search
     return [...new URLSearchParams(query)].every(([key, value]) => current.get(key) === value)
   }).sort((a, b) => b.to.split('?')[0].length - a.to.split('?')[0].length)[0]
 }
+
+/** How far in from the right end of the selected item the mini owl stands (px), inside the item's padding. */
+const NAV_OWL_INSET = 2
 
 const practiceSkills: readonly NavChild[] = [
   { to: '/practice-tests?skill=listening', label: 'Listening' },
@@ -106,11 +111,12 @@ export function SiteNavbar({ isLoggedIn, userName }: SiteNavbarProps) {
   const linksRef = useRef<HTMLDivElement>(null)
   const indicatorRef = useRef<HTMLSpanElement>(null)
   const indicatorPlaced = useRef(false)
+  const owlRef = useRef<NavOwlHandle>(null)
 
   useEffect(() => () => window.clearTimeout(previewResetTimer.current), [])
 
-  // Slide the highlight tab under the current (or hovered) primary item. It is moved through the DOM
-  // because it mirrors layout measurements rather than React state.
+  // Slide the highlight tab under the current (or hovered) primary item, and walk the mini owl on top of it.
+  // Both are moved through the DOM because they mirror layout measurements rather than React state.
   useEffect(() => {
     const links = linksRef.current
     const indicator = indicatorRef.current
@@ -118,10 +124,14 @@ export function SiteNavbar({ isLoggedIn, userName }: SiteNavbarProps) {
     const place = () => {
       const current = links.querySelector<HTMLElement>('a.active')
       indicator.style.opacity = current ? '1' : '0'
-      if (!current) return
+      if (!current) {
+        owlRef.current?.hide()
+        return
+      }
       indicator.style.width = `${current.offsetWidth}px`
       indicator.style.transform = `translateX(${current.offsetLeft}px)`
       indicator.classList.toggle('has-sections', Boolean(subnavItem?.children))
+      owlRef.current?.moveTo(current.offsetLeft + current.offsetWidth - NAV_OWL_INSET)
     }
     if (indicatorPlaced.current) {
       place()
@@ -181,6 +191,7 @@ export function SiteNavbar({ isLoggedIn, userName }: SiteNavbarProps) {
           </Link>
           <div id="site-navigation" ref={linksRef} className={`site-nav-links ${menuOpen ? 'is-open' : ''}`}>
             <span ref={indicatorRef} className="site-nav-indicator" aria-hidden="true" />
+            <NavOwl ref={owlRef} />
             {visibleNavigation.map((item) => (
               <NavLink key={item.to} to={item.to} onClick={() => setMenuOpen(false)}
                 onMouseEnter={() => previewSections(item)} onFocus={() => previewSections(item)}
