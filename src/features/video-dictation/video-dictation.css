@@ -1,0 +1,548 @@
+/* Video dictation library (P-48). Colours come from the shared classroom tokens in styles/globals.css. */
+
+.vd-page {
+  min-height: 100dvh;
+  background: var(--classroom-canvas);
+  color: var(--classroom-text);
+}
+
+.vd-main {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 4rem;
+}
+
+.vd-header h1 {
+  margin: 0.25rem 0 0.5rem;
+  font-size: clamp(1.6rem, 4vw, 2.1rem);
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.vd-eyebrow {
+  margin: 0;
+  color: var(--classroom-primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.vd-lead {
+  margin: 0;
+  color: var(--classroom-text-muted);
+}
+
+/* ---- continue watching ------------------------------------------------ */
+.vd-continue {
+  display: grid;
+  grid-template-columns: minmax(120px, 200px) 1fr;
+  gap: 1rem;
+  align-items: center;
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border: 1px solid var(--classroom-border);
+  border-radius: 1rem;
+  background: var(--classroom-surface);
+  box-shadow: var(--classroom-shadow);
+}
+
+.vd-continue__body {
+  min-width: 0;
+}
+
+.vd-continue__title {
+  margin: 0.4rem 0 0.15rem;
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.vd-continue__meta {
+  margin: 0 0 0.6rem;
+  color: var(--classroom-text-muted);
+  font-size: 0.875rem;
+}
+
+.vd-continue__cta {
+  grid-column: 1 / -1;
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0 1.5rem;
+  border-radius: 0.75rem;
+  background: var(--classroom-primary);
+  color: #fff;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.vd-continue__cta:hover {
+  background: var(--classroom-primary-strong);
+}
+
+.vd-pill {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  background: var(--classroom-primary);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* ---- level filter + search ------------------------------------------- */
+.vd-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+  margin: 1.5rem 0 0.5rem;
+}
+
+.vd-levels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.vd-chip {
+  min-height: 2.25rem;
+  min-width: 3.5rem;
+  padding: 0 1rem;
+  border: 1px solid var(--classroom-border);
+  border-radius: 999px;
+  background: var(--classroom-surface);
+  color: var(--classroom-text);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.vd-chip[aria-pressed='true'] {
+  border-color: var(--classroom-primary);
+  background: var(--classroom-primary);
+  color: #fff;
+}
+
+.vd-search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: min(100%, 20rem);
+  min-height: 2.5rem;
+  padding: 0 0.9rem;
+  border: 1px solid var(--classroom-border);
+  border-radius: 999px;
+  background: var(--classroom-surface);
+  color: var(--classroom-text-muted);
+}
+
+.vd-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--classroom-text);
+  font-size: 0.875rem;
+  outline: none;
+}
+
+.vd-search:focus-within,
+.vd-chip:focus-visible,
+.vd-card__link:focus-visible,
+.vd-continue__cta:focus-visible {
+  outline: 2px solid var(--classroom-primary);
+  outline-offset: 2px;
+}
+
+/* ---- level groups + cards -------------------------------------------- */
+.vd-group {
+  margin-top: 2rem;
+}
+
+.vd-group__title {
+  margin: 0 0 0.75rem;
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.vd-group__level {
+  color: var(--classroom-primary);
+}
+
+.vd-group__count {
+  color: var(--classroom-text-muted);
+  font-weight: 500;
+}
+
+.vd-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 1.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.vd-card {
+  overflow: hidden;
+  border: 1px solid var(--classroom-border);
+  border-radius: 0.875rem;
+  background: var(--classroom-surface);
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+
+.vd-card:hover {
+  box-shadow: var(--classroom-shadow);
+  transform: translateY(-2px);
+}
+
+.vd-card__link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.vd-card__thumb {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: #e5e7eb;
+}
+
+.vd-continue .vd-card__thumb {
+  border-radius: 0.75rem;
+}
+
+.vd-card__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.vd-card__thumb-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--classroom-text-muted);
+}
+
+.vd-card__duration {
+  position: absolute;
+  right: 0.5rem;
+  bottom: 0.5rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.25rem;
+  background: rgb(17 24 39 / 85%);
+  color: #fff;
+  font-size: 0.6875rem;
+  font-weight: 700;
+}
+
+.vd-card__body {
+  padding: 0.75rem 0.9rem 0.9rem;
+}
+
+.vd-card__title {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.vd-card__meta,
+.vd-card__fresh {
+  margin: 0.2rem 0 0;
+  color: var(--classroom-text-muted);
+  font-size: 0.75rem;
+}
+
+.vd-card__progress {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+  color: var(--classroom-text-muted);
+  font-size: 0.75rem;
+}
+
+.vd-card__progress .vd-progress {
+  flex: 1;
+}
+
+.vd-progress {
+  height: 0.5rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e5e7eb;
+}
+
+.vd-progress > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--classroom-primary);
+}
+
+/* ---- loading / error / empty ------------------------------------------ */
+.vd-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 2rem;
+  padding: 2.5rem 1rem;
+  border: 1px dashed var(--classroom-border);
+  border-radius: 1rem;
+  background: var(--classroom-surface);
+  color: var(--classroom-text-muted);
+  text-align: center;
+}
+
+.vd-spin {
+  animation: vd-spin 1s linear infinite;
+}
+
+@keyframes vd-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vd-spin { animation: none; }
+  .vd-card { transition: none; }
+  .vd-card:hover { transform: none; }
+}
+
+@media (min-width: 720px) {
+  .vd-continue {
+    grid-template-columns: 200px 1fr auto;
+  }
+
+  .vd-continue__cta {
+    grid-column: auto;
+  }
+}
+
+/* ---- phones: a compact list instead of a grid of big thumbnails ---------- */
+@media (max-width: 559px) {
+  .vd-main {
+    padding: 1rem 0.75rem 3rem;
+  }
+
+  .vd-continue {
+    grid-template-columns: 7.5rem minmax(0, 1fr);
+    gap: 0.75rem;
+    padding: 0.75rem;
+  }
+
+  .vd-continue__title {
+    font-size: 1rem;
+    overflow-wrap: anywhere;
+  }
+
+  .vd-toolbar {
+    gap: 0.6rem;
+  }
+
+  /* One row of level chips that scrolls sideways, instead of wrapping onto two lines. */
+  .vd-levels {
+    width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 0.25rem;
+    scrollbar-width: none;
+  }
+
+  .vd-chip {
+    flex: none;
+  }
+
+  .vd-search {
+    width: 100%;
+  }
+
+  .vd-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.75rem;
+  }
+
+  .vd-card__link {
+    display: grid;
+    grid-template-columns: 9.5rem minmax(0, 1fr);
+  }
+
+  .vd-card__thumb {
+    min-height: 5.5rem;
+    aspect-ratio: auto;
+  }
+
+  .vd-card__body {
+    align-self: center;
+    padding: 0.6rem 0.75rem;
+  }
+
+  .vd-card__title {
+    display: -webkit-box;
+    overflow: hidden;
+    font-size: 0.875rem;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+}
+
+/* ---- many videos: "Xem thêm" pages through the grid of one level -------- */
+.vd-more {
+  display: flex;
+  min-height: 2.5rem;
+  margin: 1rem auto 0;
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+.vd-more__left {
+  margin-left: 0.35rem;
+  color: var(--classroom-text-muted);
+  font-weight: 500;
+}
+
+/* A card far below the screen is not drawn until it is scrolled near, which keeps a long library light. */
+.vd-card {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 17rem;
+}
+/* ---- one swipeable row per level (while browsing all levels) ------------ */
+.vd-row {
+  position: relative;
+}
+
+.vd-track {
+  display: grid;
+  margin: 0;
+  padding: 0.25rem 0 0.9rem;
+  grid-auto-columns: calc((100% - 3 * 1.25rem) / 4);
+  grid-auto-flow: column;
+  gap: 1.25rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  list-style: none;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+}
+
+.vd-track::-webkit-scrollbar {
+  display: none;
+}
+
+.vd-track > .vd-card {
+  scroll-snap-align: start;
+}
+
+/* The arrows sit on the thumbnails' height and only exist where there is more to scroll to; a finger does not need them. */
+.vd-row__arrow {
+  position: absolute;
+  top: 30%;
+  z-index: 2;
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--classroom-surface);
+  box-shadow: 0 2px 10px rgb(32 55 115 / 25%);
+  color: var(--classroom-primary);
+  cursor: pointer;
+  transform: translateY(-50%);
+  transition: background-color 0.15s;
+}
+
+.vd-row__arrow:hover {
+  background: var(--classroom-soft);
+}
+
+.vd-row__arrow:focus-visible {
+  outline: 2px solid var(--classroom-primary);
+  outline-offset: 2px;
+}
+
+.vd-row__arrow--prev {
+  left: 0.4rem;
+}
+
+.vd-row__arrow--next {
+  right: 0.4rem;
+}
+
+@media (hover: none) {
+  .vd-row__arrow {
+    display: none;
+  }
+}
+
+/* The last card of a row opens the whole level. */
+.vd-card--all {
+  display: grid;
+  border-style: dashed;
+  background: transparent;
+}
+
+.vd-card__all {
+  min-height: 12rem;
+  padding: 1rem;
+  border: 0;
+  background: transparent;
+  color: var(--classroom-primary);
+  font: inherit;
+  font-weight: 800;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.vd-card__all:hover {
+  background: var(--classroom-soft);
+}
+
+.vd-card__all:focus-visible {
+  outline: 2px solid var(--classroom-primary);
+  outline-offset: -4px;
+}
+
+@media (max-width: 1100px) {
+  .vd-track {
+    grid-auto-columns: calc((100% - 2 * 1.25rem) / 3);
+  }
+}
+
+@media (max-width: 720px) {
+  .vd-track {
+    grid-auto-columns: calc((100% - 1.25rem) / 2.15); /* the next card peeks in, telling the row can be swiped */
+  }
+}
+
+/* On a phone the cards of a row go back to image on top (the list layout above is for the grid). */
+@media (max-width: 559px) {
+  .vd-track {
+    grid-auto-columns: 72%;
+    gap: 0.75rem;
+  }
+
+  .vd-track .vd-card__link {
+    display: block;
+  }
+
+  .vd-track .vd-card__thumb {
+    min-height: 0;
+    aspect-ratio: 16 / 9;
+  }
+
+  .vd-track .vd-card__body {
+    padding: 0.65rem 0.8rem 0.8rem;
+  }
+}

@@ -70,6 +70,7 @@ const memberNavigation: readonly NavItem[] = [
   { to: '/community', label: 'Cộng đồng' },
   coursesNav,
   practice,
+  { to: '/video-dictation', label: 'Nghe chép' },
   {
     to: '/vocabulary',
     label: 'Sổ từ vựng',
