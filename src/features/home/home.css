@@ -285,7 +285,7 @@
   position: relative;
   isolation: isolate;
   display: grid;
-  min-height: 22rem;
+  min-height: clamp(22rem, 62vw, 27rem);
   place-items: center;
 }
 
@@ -331,7 +331,9 @@
   box-shadow: 0 0 .9rem rgb(255 255 255 / 80%);
 }
 
-.home-hero-mascot {
+/* Scoped under the journey so the size wins over the owl's own module styles. */
+.home-hero-journey .home-hero-mascot {
+  --mascot-size: clamp(14rem, 58vw, 20rem);
   position: relative;
   z-index: 2;
 }

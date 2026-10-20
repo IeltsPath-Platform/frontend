@@ -1822,3 +1822,31 @@
     background: #f1f4f9 !important;
   }
 }
+
+/* Owl heroes. Scoped under their card so these sizes win over the owl's own module styles. */
+.community-heading .community-heading-owl {
+  --mascot-size: 6.5rem;
+  flex: none;
+  margin-inline-start: auto;
+  margin-block: -1.75rem -.6rem;
+}
+
+.community-empty-state .community-empty-owl {
+  --mascot-size: 7.5rem;
+  margin: 0 auto;
+}
+
+.community-ielts-tips-card { position: relative; }
+.community-ielts-tips-header { padding-inline-end: 3.75rem; }
+
+/* The cool owl leans on the corner of the tips card. */
+.community-ielts-tips-card .community-tips-owl {
+  --mascot-size: 5rem;
+  position: absolute;
+  inset-block-start: -.6rem;
+  inset-inline-end: -.5rem;
+}
+
+@media (max-width: 640px) {
+  .community-heading .community-heading-owl { display: none; }
+}

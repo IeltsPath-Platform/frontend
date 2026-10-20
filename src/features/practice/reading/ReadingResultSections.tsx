@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { RotateCcw } from 'lucide-react'
-import { ClassMascot } from '@/components/ClassMascot'
+import { OwlHero } from '@/components/OwlHero'
+import type { OwlPose } from '@/components/owlPoses'
 import type { ReadingResultView } from '../lib/readingResultView'
 import { practiceFormatLabel } from '../lib/practiceFormatLabels'
 import {
@@ -21,13 +22,31 @@ function Bar({ percent, tone }: { percent: number; tone?: string }) {
   return <span className={`rr-bar${tone ? ` rr-bar-${tone}` : ''}`} aria-hidden="true"><i style={{ width: `${clampPercent(percent)}%` }} /></span>
 }
 
+/** Percent from which a result counts as good news: the owl parties and throws confetti. */
+const CELEBRATE_FROM_PERCENT = 75
+
+/** The owl's mood for a score, in step with the sentence of `mascotMessage`. */
+function resultPose(percent: number): OwlPose {
+  if (percent >= CELEBRATE_FROM_PERCENT) return 'party'
+  if (percent >= 50) return 'cheer'
+  if (percent >= 25) return 'confused'
+  return 'tired'
+}
+
 /** Area A: the mascot's sentence and the band (full test) or the accuracy (one passage). */
 export function ResultHero({ view }: { view: ReadingResultView }) {
   const percent = Math.round(view.percent)
+  const celebrate = view.percent >= CELEBRATE_FROM_PERCENT
   return (
     <div className="rr-hero">
       <div className="rr-mascot-card">
-        <ClassMascot size="md" />
+        <OwlHero
+          celebrateKey={celebrate ? 'result' : null}
+          decor={celebrate}
+          motion={celebrate ? 'hop' : 'calm'}
+          pose={resultPose(view.percent)}
+          size="md"
+        />
         <p>{mascotMessage(view.percent)}</p>
       </div>
       <div className="rr-band-card" aria-label={view.band !== null ? 'Band Score ước tính' : 'Tỉ lệ đúng'}>

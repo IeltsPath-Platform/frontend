@@ -1,0 +1,228 @@
+/*
+ * Owl hero. Each motion lives on its own nested layer so transforms never fight:
+ * stage (slide in) > float (bob) > react (hover wiggle, click hop) > lean (toward the mouse) > sway (head tilt) > body (breathe).
+ * `--mascot-size` keeps the name the page styles already override.
+ */
+.root {
+  --owl-glow: color-mix(in srgb, var(--classroom-hero-end, #1647d6) 30%, transparent);
+  --owl-orbit: color-mix(in srgb, var(--home-hero-accent, #bdd8ff) 82%, transparent);
+  --owl-spark: var(--classroom-warning, #ff7624);
+  --lean-x: 0;
+  --lean-y: 0;
+  position: relative;
+  display: grid;
+  inline-size: var(--mascot-size);
+  block-size: var(--mascot-size);
+  place-items: center;
+  isolation: isolate;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.xs { --mascot-size: clamp(5.5rem, 9vw, 8.5rem); }
+.sm { --mascot-size: 8rem; }
+.md { --mascot-size: 13rem; }
+.lg { --mascot-size: 18rem; }
+
+.stage,
+.float,
+.react,
+.lean,
+.sway,
+.body {
+  position: absolute;
+  inset: 0;
+  display: block;
+  transform-origin: 50% 100%;
+}
+
+.stage { z-index: 2; animation: owl-enter-up .95s cubic-bezier(.22, 1.25, .36, 1) both; }
+.root[data-enter='left'] .stage { animation-name: owl-enter-left; }
+.root[data-enter='right'] .stage { animation-name: owl-enter-right; }
+
+.float { animation: owl-float 4.2s ease-in-out .95s infinite; }
+.root:hover .react { animation: owl-wiggle .85s ease-in-out; }
+.lean {
+  transform: perspective(40rem) rotateY(calc(var(--lean-x) * 16deg)) rotateX(calc(var(--lean-y) * -10deg)) translateX(calc(var(--lean-x) * 5%));
+  transition: transform .35s ease-out;
+}
+.sway { animation: owl-sway 6.4s ease-in-out infinite; }
+.body { animation: owl-breathe 3.2s ease-in-out infinite; }
+
+/* Every pose stays mounted so a swap never waits on a decode; the new one pops in with a springy scale. */
+.frame {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: contain;
+  opacity: 0;
+  filter: drop-shadow(0 .8rem 1rem color-mix(in srgb, var(--classroom-hero-start, #061c64) 24%, transparent));
+  transform: scale(.82) translateY(6%) rotate(-3deg);
+  transition: opacity .45s ease, transform .65s cubic-bezier(.34, 1.56, .64, 1);
+  pointer-events: none;
+}
+
+.visible { opacity: 1; transform: none; }
+
+/* Ground shadow shrinks while the owl is up. */
+.shadow {
+  position: absolute;
+  z-index: 1;
+  inset-block-end: 1%;
+  inset-inline: 24%;
+  block-size: 7%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(6 28 100 / 30%), transparent);
+  animation: owl-shadow-in .95s ease both, owl-shadow 4.2s ease-in-out .95s infinite;
+}
+
+.halo {
+  position: absolute;
+  z-index: 0;
+  inset: 8%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, var(--owl-glow), transparent);
+  animation: owl-decor-in .9s .35s ease both, owl-halo 3.6s ease-in-out 1.25s infinite;
+}
+
+.orbit {
+  position: absolute;
+  z-index: 0;
+  inline-size: 96%;
+  block-size: 34%;
+  inset-block-start: 46%;
+  border: 2px solid var(--owl-orbit);
+  border-radius: 50%;
+  animation: owl-decor-in .9s .45s ease both, owl-orbit 9s linear 1.35s infinite;
+}
+
+/* A small planet riding the orbit ring. */
+.planet {
+  position: absolute;
+  inset-block-start: -.35rem;
+  inset-inline-start: 50%;
+  inline-size: .7rem;
+  block-size: .7rem;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #fff, var(--classroom-hero-end, #1647d6));
+  box-shadow: 0 0 .6rem var(--owl-glow);
+}
+
+.spark {
+  position: absolute;
+  z-index: 3;
+  inline-size: 7%;
+  block-size: 7%;
+  min-inline-size: .55rem;
+  min-block-size: .55rem;
+  background: var(--owl-spark);
+  clip-path: polygon(50% 0%, 61% 38%, 100% 50%, 61% 62%, 50% 100%, 39% 62%, 0% 50%, 39% 38%);
+  filter: drop-shadow(0 0 .35rem color-mix(in srgb, var(--owl-spark) 70%, transparent));
+  pointer-events: none;
+  animation: owl-twinkle 1.8s ease-in-out infinite;
+}
+
+.sparkA { inset-block-start: 8%; inset-inline-end: 6%; }
+.sparkB { inset-block-end: 26%; inset-inline-start: 2%; animation-delay: .7s; }
+.sparkC { inset-block-start: 22%; inset-inline-start: 12%; inline-size: 4.5%; block-size: 4.5%; background: #f5c400; animation-delay: 1.2s; }
+
+/* Walking: a quick step bounce and a waddle from foot to foot. */
+.root[data-motion='walk'] .float { animation: owl-step .32s ease-in-out infinite; }
+.root[data-motion='walk'] .sway { animation: owl-waddle .64s ease-in-out infinite; }
+
+/* Joy: hop, hop, hop. */
+.root[data-motion='hop'] .float { animation: owl-joy .9s cubic-bezier(.3, .7, .4, 1) infinite; }
+
+@keyframes owl-enter-up {
+  0% { opacity: 0; transform: translateY(45%) scale(.55); }
+  60% { opacity: 1; transform: translateY(-7%) scale(1.05); }
+  80% { transform: translateY(2%) scale(.98, 1.02); }
+  100% { opacity: 1; transform: none; }
+}
+
+@keyframes owl-enter-left {
+  0% { opacity: 0; transform: translateX(-70%) rotate(-14deg) scale(.8); }
+  65% { opacity: 1; transform: translateX(6%) rotate(4deg) scale(1.03); }
+  100% { opacity: 1; transform: none; }
+}
+
+@keyframes owl-enter-right {
+  0% { opacity: 0; transform: translateX(70%) rotate(14deg) scale(.8); }
+  65% { opacity: 1; transform: translateX(-6%) rotate(-4deg) scale(1.03); }
+  100% { opacity: 1; transform: none; }
+}
+
+@keyframes owl-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5%); }
+}
+
+@keyframes owl-shadow {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: .6; transform: scale(.8); }
+}
+
+@keyframes owl-shadow-in { from { opacity: 0; transform: scale(.3); } }
+
+@keyframes owl-breathe {
+  0%, 100% { transform: scale(1, 1); }
+  50% { transform: scale(.99, 1.025); }
+}
+
+@keyframes owl-sway {
+  0%, 100% { transform: rotate(0deg); }
+  20% { transform: rotate(-2.5deg); }
+  45% { transform: rotate(0deg); }
+  70% { transform: rotate(2.5deg); }
+}
+
+@keyframes owl-wiggle {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  15% { transform: rotate(-7deg) scale(1.04); }
+  35% { transform: rotate(6deg) scale(1.04); }
+  55% { transform: rotate(-4deg) scale(1.02); }
+  75% { transform: rotate(2deg); }
+}
+
+@keyframes owl-step {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4%); }
+}
+
+@keyframes owl-waddle {
+  0%, 100% { transform: rotate(-6deg); }
+  50% { transform: rotate(6deg); }
+}
+
+@keyframes owl-joy {
+  0%, 100% { transform: translateY(0) scale(1, 1); }
+  20% { transform: translateY(0) scale(1.06, .92); }
+  50% { transform: translateY(-14%) scale(.96, 1.05); }
+  80% { transform: translateY(0) scale(1.04, .95); }
+}
+
+@keyframes owl-decor-in { from { opacity: 0; transform: scale(.4); } }
+
+@keyframes owl-halo {
+  0%, 100% { opacity: .75; transform: scale(.94); }
+  50% { opacity: 1; transform: scale(1.06); }
+}
+
+@keyframes owl-orbit {
+  from { transform: rotate(-14deg); }
+  to { transform: rotate(346deg); }
+}
+
+@keyframes owl-twinkle {
+  0%, 100% { opacity: .35; transform: scale(.6) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1.2) rotate(25deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage, .float, .react, .sway, .body, .shadow, .halo, .orbit, .spark,
+  .root:hover .react,
+  .root[data-motion] .float,
+  .root[data-motion] .sway { animation: none; }
+  .lean, .frame { transition: none; transform: none; }
+}

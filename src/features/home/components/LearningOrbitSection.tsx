@@ -1,5 +1,5 @@
 import { BrainCircuit, ChartNoAxesCombined, LibraryBig, Rocket, ScanSearch } from 'lucide-react'
-import { ClassMascot } from '@/components/ClassMascot'
+import { OwlHero } from '@/components/OwlHero'
 import { HOME_ORBIT_FEATURES } from '../homeData'
 
 const FEATURE_ICONS = [BrainCircuit, ScanSearch, LibraryBig, ChartNoAxesCombined] as const
@@ -17,7 +17,7 @@ export function LearningOrbitSection() {
           <span className="home-orbit-star home-orbit-star-one" aria-hidden="true">✦</span>
           <span className="home-orbit-star home-orbit-star-two" aria-hidden="true">✦</span>
           <span className="home-orbit-star home-orbit-star-three" aria-hidden="true">✦</span>
-          <div className="home-orbit-mascot"><ClassMascot size="lg" imageAlt="Khủng long mascot của The IELTS Space" /></div>
+          <div className="home-orbit-mascot"><OwlHero alt="Cú mascot của The IELTS Space đang học IELTS" pose="desk" size="lg" /></div>
           {HOME_ORBIT_FEATURES.map((feature, index) => {
             const Icon = FEATURE_ICONS[index]
             return <article key={feature.id} data-home-reveal className={`home-orbit-card home-orbit-card-${feature.id}`}><header><Icon aria-hidden="true" /><span>{feature.eyebrow}</span></header><div><h3>{feature.title}</h3><p>{feature.description}</p></div></article>

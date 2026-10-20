@@ -995,16 +995,16 @@
 .lp-spotlight__cta {
   margin-top: .5rem;
 }
-.lp-spotlight__mascot {
+/* Scoped under the section so it wins over the owl's own module styles. */
+.lp-spotlight .lp-spotlight__mascot {
   display: none;
 }
 @media (min-width: 1024px) {
-  .lp-spotlight__mascot {
-    display: block;
+  .lp-spotlight .lp-spotlight__mascot {
+    --mascot-size: 10.5rem;
+    display: grid;
     align-self: end;
     justify-self: end;
-    width: 10.5rem;
-    height: auto;
     margin-bottom: calc(-1 * clamp(1.25rem, 3vw, 2rem));
   }
 }

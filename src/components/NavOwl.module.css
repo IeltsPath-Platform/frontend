@@ -1,0 +1,103 @@
+/*
+ * Mini owl standing at the right end of the selected navigation item, in its padding so the label stays clear.
+ * Only shown where the desktop navigation with the sliding highlight is shown.
+ */
+.root {
+  position: absolute;
+  z-index: 2;
+  inset-block-start: 2px;
+  inset-inline-start: 0;
+  display: none;
+  inline-size: 31px;
+  block-size: 34px;
+  margin-inline-start: -15.5px;
+  opacity: 0;
+  pointer-events: none;
+  transition-property: transform, opacity;
+  transition-duration: .6s, .2s;
+  transition-timing-function: cubic-bezier(.45, .05, .35, 1), ease;
+}
+
+@media (min-width: 1241px) {
+  .root { display: block; }
+}
+
+.body {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 100%;
+  animation: nav-owl-bob 2.4s ease-in-out infinite;
+}
+
+.frame {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: contain;
+  opacity: 0;
+  filter: drop-shadow(0 1px 1.5px rgb(4 20 68 / 45%));
+}
+
+.shadow {
+  position: absolute;
+  inset-block-end: -1px;
+  inset-inline: 4px;
+  block-size: 3px;
+  border-radius: 50%;
+  background: rgb(4 20 68 / 35%);
+  filter: blur(1px);
+}
+
+.root[data-state='stand'] .stand,
+.root[data-state='jump'] .jump,
+.root[data-state='wait'] .wait { opacity: 1; }
+
+/* Walking: the two step frames swap every half cycle while the body bounces and leans into the walk. */
+.root[data-state='walk'] .stepLeft { animation: nav-owl-frame-a .34s steps(1, end) infinite; }
+.root[data-state='walk'] .stepRight { animation: nav-owl-frame-b .34s steps(1, end) infinite; }
+.root[data-state='walk'] .body { animation: nav-owl-step .17s ease-in-out infinite alternate; }
+.root[data-state='walk'][data-dir='right'] .body { rotate: 7deg; }
+.root[data-state='walk'][data-dir='left'] .body { rotate: -7deg; }
+
+.root[data-state='jump'] .body { animation: nav-owl-jump .68s cubic-bezier(.3, .7, .4, 1); }
+.root[data-state='wait'] .body { animation: nav-owl-turn 1.7s ease-in-out; }
+
+@keyframes nav-owl-frame-a {
+  0% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@keyframes nav-owl-frame-b {
+  0% { opacity: 0; }
+  50% { opacity: 1; }
+}
+
+@keyframes nav-owl-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-1.5px); }
+}
+
+@keyframes nav-owl-step {
+  from { transform: translateY(0); }
+  to { transform: translateY(-2.5px); }
+}
+
+@keyframes nav-owl-jump {
+  0%, 100% { transform: translateY(0) scale(1, 1); }
+  20% { transform: translateY(0) scale(1.12, .86); }
+  50% { transform: translateY(-10px) scale(.94, 1.08); }
+  80% { transform: translateY(0) scale(1.08, .92); }
+}
+
+@keyframes nav-owl-turn {
+  0%, 100% { transform: scaleX(1); }
+  25%, 75% { transform: scaleX(-1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .root { transition: none; }
+  .body,
+  .root[data-state] .body,
+  .root[data-state] .frame { animation: none; }
+}

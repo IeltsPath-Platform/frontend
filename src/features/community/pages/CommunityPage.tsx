@@ -3,11 +3,13 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { Bookmark, Lightbulb, Plus, Search, Users } from 'lucide-react'
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { OwlHero } from '@/components/OwlHero'
 import { SiteNavbar } from '@/components/SiteNavbar'
 import { useAuthSession } from '@/features/auth/authSession'
 import { HttpError } from '@/lib/httpClient'
 import { communityApi, type Comment, type CommunityPost, type PublicProfile } from '../api/communityApi'
 import { CommunityFeedTabs } from '../components/CommunityFeedTabs'
+import { CommunityOwlBanner } from '../components/CommunityOwlBanner'
 import { PostCard } from '../components/PostCard'
 import { CommentSection } from '../components/CommentSection'
 import { PostComposerModal, type PostFormValues } from '../components/PostComposerModal'
@@ -574,6 +576,7 @@ export function CommunityPage() {
         {/* Left Rail */}
         <aside className="community-rail community-left">
           <section className="community-welcome">
+            <CommunityOwlBanner />
             <div className="community-avatar">
               {userName.slice(0, 1).toUpperCase()}
             </div>
@@ -709,6 +712,7 @@ export function CommunityPage() {
               </h1>
               <p>Chia sẻ câu hỏi, kinh nghiệm và mục tiêu học tập.</p>
             </div>
+            <OwlHero className="community-heading-owl" decor={false} enter="right" poses={['wave', 'cheer', 'idea']} size="sm" />
             {!postId && !isBookmarks && !userId && (
               <button
                 className="community-primary"
@@ -921,13 +925,13 @@ export function CommunityPage() {
           {posts.length === 0 && !loading && !error && profileTab === 'posts' && (
             searchQuery ? (
               <section className="community-empty-state" role="status">
-                <Search size={34} />
+                <OwlHero className="community-empty-owl" decor={false} pose="confused" size="sm" />
                 <h2>Không tìm thấy bài viết phù hợp</h2>
                 <p>Hãy thử từ khóa khác hoặc điều chỉnh chủ đề.</p>
               </section>
             ) : isFollowingFeed ? (
               <section className="community-empty-state community-following-empty" role="status">
-                <Users size={34} />
+                <OwlHero className="community-empty-owl" decor={false} pose="tired" size="sm" />
                 <h2>Bạn chưa có bài viết từ người đang theo dõi</h2>
                 <p>Thử theo dõi những học viên đang chia sẻ gần đây:</p>
                 {followSuggestions.length ? (
@@ -965,7 +969,7 @@ export function CommunityPage() {
               </section>
             ) : (
               <section className="community-empty-state">
-                <Users size={34} />
+                <OwlHero className="community-empty-owl" pose="idea" size="sm" />
                 <h2>Bảng tin đang chờ câu chuyện đầu tiên</h2>
                 <p>Chia sẻ câu hỏi hoặc kinh nghiệm học tập của bạn.</p>
                 <button
@@ -1054,6 +1058,7 @@ export function CommunityPage() {
           </section>
 
           <section className="community-ielts-tips-card">
+            <OwlHero className="community-tips-owl" decor={false} enter="right" pose="cool" size="sm" />
             <div className="community-ielts-tips-header">
               <Lightbulb size={18} className="community-ielts-tips-icon" />
               <h2>Mẹo luyện thi IELTS</h2>
