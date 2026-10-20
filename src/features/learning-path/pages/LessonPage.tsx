@@ -152,6 +152,8 @@ export function LessonView({ lesson, onLessonChanged }: { lesson: LessonDetail; 
   }
 
   const hasReview = Boolean(lessonReviews.data?.length)
+  // Optional Practice (Writing sets) is not "required" once the lesson is done, but its sets stay reachable.
+  const hasPracticeSets = Boolean(practiceSets.data?.items.length)
   // A lesson with exercises is completed by passing them; the "Hoàn thành bài" confirmation is only for the others.
   const exerciseCount = (lesson.blocks ?? []).filter((block) => block.type === 'EXERCISE').length
   const hasExercises = exerciseCount > 0
@@ -297,7 +299,7 @@ export function LessonView({ lesson, onLessonChanged }: { lesson: LessonDetail; 
                 {exerciseCount ? <small>{exerciseCount}</small> : null}
               </Link>
             ) : null}
-            {requiresPractice || tab === 'practice' ? (
+            {requiresPractice || hasPracticeSets || tab === 'practice' ? (
               <Link
                 className={`lp-res-nav__link${tab === 'practice' ? ' is-active' : ''}${hasReview ? ' has-review' : ''}`}
                 to={practicePath}

@@ -43,6 +43,18 @@ Trong danh sách bài học, nút Làm bài ôn chỉ nằm ở bài học sở 
 
 Sau khi nộp bộ câu hỏi ôn, trang giữ nguyên đề và câu trả lời để xem đúng/sai, đáp án và giải thích mà API trả về. Người học tự bấm đọc lại lý thuyết, làm bộ tiếp theo hoặc học tiếp sau khi xem kết quả; trang không tự chuyển bước khi nộp xong.
 
+### Writing trong khóa học
+
+Workspace Writing của mục Luyện tập lấy chart và hướng dẫn chi tiết theo từng đề từ backend (`sections[].essays[].guide/images`).
+Cột trái chuyển giữa Đề bài và Hướng dẫn; chart có thể phóng to. Task 1 viết theo Introduction, Overview, Body 1, Body 2;
+Task 2 dùng Introduction, Body 1, Body 2, Conclusion. Khi nộp, các đoạn được ghép thành một bài và giữ nguyên luồng chấm,
+trừ điểm và hoàn thành bộ luyện tập. Không có bộ đếm thời gian; phần tra từ giữ nguyên. Trang nền được khóa cuộn trong
+khi mở workspace; nội dung dài cuộn bên trong từng cột. Đề chưa có guide hoặc ảnh vẫn mở được.
+
+Chart của bốn đề Task 1 mới cần được upload lên Supabase theo
+[`backend/docs/assets/course-writing-charts/README.md`](../backend/docs/assets/course-writing-charts/README.md).
+Triển khai Content (migration V64) và Learning trước frontend để có đủ dữ liệu.
+
 ### Cây kiến thức
 
 Trang cây kiến thức của khóa học hiển thị theo cấu trúc khóa học → nhánh kỹ năng → điểm kiến thức, có đường nối và màu trạng thái nắm vững. Có thể lọc kỹ năng và thu gọn từng nhánh; màn hình nhỏ dùng cây dọc. Quan hệ kiến thức nền vẫn hiển thị ở dòng “Xây trên” của từng điểm. Nút Luyện giữ nguyên điều kiện về tim và bộ luyện còn khả dụng.

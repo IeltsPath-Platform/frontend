@@ -3,25 +3,14 @@ import { BookA, ExternalLink } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 
-type Direction = 'vi-en' | 'en-vi'
-
-const MAX_CHARS = 50
-
-const TABS: Array<{ id: Direction; label: string; placeholder: string }> = [
-  { id: 'vi-en', label: 'Tra Việt-Anh', placeholder: 'Nhập cụm Tiếng Việt cần tra' },
-  { id: 'en-vi', label: 'Tra Anh-Việt', placeholder: 'Nhập từ hoặc cụm tiếng Anh cần tra' },
-]
-
-/** Wiktionary entries of the looked-up language carry the other language's gloss, so each direction uses its own edition. */
-const lookupUrl = (direction: Direction, term: string) =>
-  `https://${direction === 'vi-en' ? 'en' : 'vi'}.wiktionary.org/w/index.php?search=${encodeURIComponent(term)}`
+import { LOOKUP_MAX_CHARS, LOOKUP_TABS, lookupUrl, type LookupDirection } from './dictionaryLookup'
 
 /** Side panel for looking words up while writing. Results open on Wiktionary; the searches made so far stay listed. */
 export function DictionaryPanel() {
-  const [direction, setDirection] = useState<Direction>('vi-en')
+  const [direction, setDirection] = useState<LookupDirection>('vi-en')
   const [term, setTerm] = useState('')
-  const [history, setHistory] = useState<Array<{ direction: Direction; term: string }>>([])
-  const tab = TABS.find((candidate) => candidate.id === direction) ?? TABS[0]
+  const [history, setHistory] = useState<Array<{ direction: LookupDirection; term: string }>>([])
+  const tab = LOOKUP_TABS.find((candidate) => candidate.id === direction) ?? LOOKUP_TABS[0]
 
   function search(event: FormEvent) {
     event.preventDefault()
@@ -55,16 +44,16 @@ export function DictionaryPanel() {
       </div>
       <form className="pl-dict__form" onSubmit={search}>
         <div className="pl-dict__tabs" role="tablist">
-          {TABS.map((candidate) => (
+          {LOOKUP_TABS.map((candidate) => (
             <button aria-selected={candidate.id === direction} className="pl-dict__tab" key={candidate.id}
               onClick={() => setDirection(candidate.id)} role="tab" type="button">{candidate.label}</button>
           ))}
         </div>
-        <Textarea aria-label={tab.label} className="pl-dict__input" maxLength={MAX_CHARS} onChange={(event) => setTerm(event.target.value)}
+        <Textarea aria-label={tab.label} className="pl-dict__input" maxLength={LOOKUP_MAX_CHARS} onChange={(event) => setTerm(event.target.value)}
           onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); event.currentTarget.form?.requestSubmit() } }}
           placeholder={tab.placeholder} rows={2} value={term} />
         <div className="pl-dict__foot">
-          <span>{term.length}/{MAX_CHARS} ký tự</span>
+          <span>{term.length}/{LOOKUP_MAX_CHARS} ký tự</span>
           <Button className="pl-btn pl-btn--accent pl-btn--sm" disabled={!term.trim()} type="submit">Tra từ vựng</Button>
         </div>
       </form>

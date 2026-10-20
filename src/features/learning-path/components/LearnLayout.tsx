@@ -9,6 +9,7 @@ import { DemoControls } from './DemoControls'
 import '../learning-path.css'
 import '../lesson-resources.css'
 import '../guide.css'
+import '../practice-essay.css'
 
 export function LearnLayout() {
   const { pathname } = useLocation()

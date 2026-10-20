@@ -244,6 +244,33 @@ export type PracticeAttemptViewDto = {
   passage?: string | { title?: string; paragraphs?: Array<{ label?: string | null; text: string }> } | null
   audio?: { mediaUrl: string; durationSeconds?: number | null; transcript?: string | null } | null
   questions: QuestionDto[]
+  /** Essays live in the sections, next to the passage they belong to; there is no top-level list. */
+  sections?: Array<{ essays?: PracticeEssayDto[] }>
+}
+
+export type PracticeEssayDto = {
+  questionVersionId: string
+  sortOrder: number
+  stem: string
+  task?: string | null
+  minWords?: number | null
+  passBand?: number | null
+  guide?: string | null
+  images?: Array<{ mediaUrl: string; altText?: string | null }> | null
+  latestSubmission?: { id: string; status: string; overallBand?: number | null; passed?: boolean | null } | null
+}
+
+export type EssayGradeDto = {
+  submissionId: string
+  status: string
+  wordCount?: number | null
+  overallBand?: number | null
+  passed?: boolean | null
+  criteria?: Array<{ code: string; band: number; strengths?: string[]; improvements?: string[] }>
+  corrections?: Array<{ excerpt: string; suggestion: string; category?: string | null }>
+  summary?: string | null
+  pointsCharged?: number | null
+  sampleAnswer?: string | null
 }
 
 export type PracticeSubmissionResultDto = {
@@ -577,6 +604,51 @@ export function mapLessonPracticeSets(dto: LessonPracticeSetsDto): import('~type
   }
 }
 
+function mapPracticeEssay(dto: PracticeEssayDto): import('~types/learningPath').PracticeEssay {
+  return {
+    id: dto.questionVersionId,
+    number: dto.sortOrder,
+    prompt: dto.stem,
+    task: dto.task === 'TASK_1' || dto.task === 'TASK_2' ? dto.task : null,
+    minWords: dto.minWords ?? null,
+    passBand: dto.passBand ?? null,
+    guide: dto.guide ?? null,
+    images: (dto.images ?? []).map((image) => ({ mediaUrl: image.mediaUrl, altText: image.altText ?? null })),
+    latest: dto.latestSubmission
+      ? {
+          id: dto.latestSubmission.id,
+          status: dto.latestSubmission.status,
+          overallBand: dto.latestSubmission.overallBand ?? null,
+          passed: dto.latestSubmission.passed ?? null,
+        }
+      : null,
+  }
+}
+
+export function mapEssayGrade(dto: EssayGradeDto): import('~types/learningPath').EssayGrade {
+  return {
+    submissionId: dto.submissionId,
+    status: dto.status,
+    wordCount: dto.wordCount ?? null,
+    overallBand: dto.overallBand ?? null,
+    passed: dto.passed ?? null,
+    criteria: (dto.criteria ?? []).map((criterion) => ({
+      code: criterion.code,
+      band: criterion.band,
+      strengths: criterion.strengths ?? [],
+      improvements: criterion.improvements ?? [],
+    })),
+    corrections: (dto.corrections ?? []).map((correction) => ({
+      excerpt: correction.excerpt,
+      suggestion: correction.suggestion,
+      category: correction.category ?? null,
+    })),
+    summary: dto.summary ?? null,
+    pointsCharged: dto.pointsCharged ?? null,
+    sampleAnswer: dto.sampleAnswer ?? null,
+  }
+}
+
 export function mapPracticeAttemptView(dto: PracticeAttemptViewDto): import('~types/learningPath').PracticeAttemptView {
   return {
     attemptId: dto.attemptId,
@@ -591,6 +663,9 @@ export function mapPracticeAttemptView(dto: PracticeAttemptViewDto): import('~ty
         }
       : null,
     questions: (dto.questions ?? []).map(mapQuestion),
+    essays: (dto.sections ?? [])
+      .flatMap((section) => [...(section.essays ?? [])].sort((a, b) => a.sortOrder - b.sortOrder))
+      .map(mapPracticeEssay),
   }
 }
 

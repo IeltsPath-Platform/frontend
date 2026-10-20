@@ -17,6 +17,7 @@ import { learningApi, toApiError, userMessage } from '../api'
 import { AudioBlock } from './blocks/AudioBlock'
 import { ExerciseBlock } from './blocks/ExerciseBlock'
 import { PassageBlock } from './blocks/PassageBlock'
+import { PracticeEssays } from './PracticeEssays'
 import { HeartsPanel } from './HeartsPanel'
 import { ApiErrorState, LoadingState } from './PageState'
 import { RewardSummary } from './RewardSummary'
@@ -151,6 +152,31 @@ function PracticeView({ catalog, hearts, onHeartsChanged, onReload, reviewOrigin
     const percentDisplay = submission
       ? Math.round(submission.percent * (submission.percent <= 1 ? 100 : 1))
       : null
+    const hasEssays = active.attempt.essays.length > 0
+    // A set of essays only has no questions to answer: it is handed in once every essay is graded.
+    const essayOnly = hasEssays && active.attempt.questions.length === 0
+    const backToList = () => { setActive(null); setSubmission(null); onReload() }
+    const essays = hasEssays ? (
+      <PracticeEssays
+        attemptId={active.attempt.attemptId}
+        done={submission ? (
+          <>
+            <p role="status">
+              {submission.passed
+                ? 'Bài viết đạt. Bộ luyện tập đã được ghi nhận.'
+                : 'Bài viết chưa đạt, nhưng bộ này vẫn được tính là đã làm.'}
+            </p>
+            <Button className="lp-btn lp-btn--accent" onClick={backToList} type="button">
+              Về danh sách luyện tập
+            </Button>
+          </>
+        ) : null}
+        essays={active.attempt.essays}
+        finished={Boolean(submission)}
+        onExit={backToList}
+        onFinish={async () => { await submit([]) }}
+      />
+    ) : null
     return (
       <section className="lp-practice" aria-labelledby="lp-practice-attempt-title">
         <StudyActivityTracker sourceType="PRACTICE" sourceId={active.attempt.attemptId} enabled={!submission} />
@@ -163,7 +189,13 @@ function PracticeView({ catalog, hearts, onHeartsChanged, onReload, reviewOrigin
             </p>
           ) : null}
         </header>
-        <section className="lp-split" aria-label="Bài luyện thêm">
+        {essayOnly ? (
+          <>
+            {essays}
+            <RewardSummary gamification={submission?.gamification ?? null} />
+          </>
+        ) : (
+        <section className={`lp-split${active.attempt.passage || active.attempt.audio ? '' : ' lp-split--single'}`} aria-label="Bài luyện thêm">
           <div className="lp-split__passage">
             {active.attempt.audio?.mediaUrl ? <AudioBlock audio={active.attempt.audio} title="Audio luyện" /> : null}
             {active.attempt.passage && (active.attempt.passage.paragraphs.length > 0 || active.attempt.passage.title)
@@ -172,6 +204,7 @@ function PracticeView({ catalog, hearts, onHeartsChanged, onReload, reviewOrigin
           </div>
           <div className="lp-split__work">
             {hearts?.hearts === 0 ? <HeartsPanel onChanged={onHeartsChanged} status={hearts} /> : null}
+            {essays}
             <ExerciseBlock
               allowResubmit={false}
               block={toExerciseBlock(active)}
@@ -206,6 +239,7 @@ function PracticeView({ catalog, hearts, onHeartsChanged, onReload, reviewOrigin
             ) : null}
           </div>
         </section>
+        )}
       </section>
     )
   }

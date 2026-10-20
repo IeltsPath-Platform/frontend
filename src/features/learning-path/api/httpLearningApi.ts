@@ -5,6 +5,7 @@ import {
   mapAttemptResult,
   mapAttemptStructure,
   mapCourseSummary,
+  mapEssayGrade,
   mapLessonCompletion,
   mapLessonDetail,
   mapLessonExerciseResult,
@@ -21,6 +22,7 @@ import {
   toStartAttemptBody,
   toWireAnswers,
   type CourseSummaryDto,
+  type EssayGradeDto,
   type LearnerAttemptResultDto,
   type LessonCompletionDto,
   type LessonDetailDto,
@@ -277,6 +279,14 @@ export function createHttpLearningApi(): LearningApi {
         },
       })
       return mapPracticeSubmission(dto)
+    },
+
+    async submitPracticeEssay(attemptId, questionVersionId, request) {
+      const dto = await learningRequest<EssayGradeDto>(
+        `/practice-attempts/${attemptId}/essays/${questionVersionId}/submissions`,
+        { method: 'POST', body: { requestId: request.requestId, essayText: request.essayText } },
+      )
+      return mapEssayGrade(dto)
     },
 
     async getLearnerTree(courseId: string) {

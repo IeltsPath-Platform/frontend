@@ -334,6 +334,20 @@ export interface LessonPracticeSets {
   items: PracticeSetItem[]
 }
 
+/** An essay of a Practice set. `latest` is the newest submission: its band and verdict show only once it is GRADED. */
+export interface PracticeEssay {
+  id: string
+  number: number
+  prompt: string
+  task: 'TASK_1' | 'TASK_2' | null
+  minWords: number | null
+  passBand: number | null
+  /** Learner-facing guidance and chart assets for this prompt, when Content provides them. */
+  guide?: string | null
+  images?: Array<{ mediaUrl: string; altText: string | null }>
+  latest: { id: string; status: string; overallBand: number | null; passed: boolean | null } | null
+}
+
 export interface PracticeAttemptView {
   attemptId: string
   packageId: string
@@ -341,6 +355,44 @@ export interface PracticeAttemptView {
   passage: Passage | null
   audio: MediaAudio | null
   questions: Question[]
+  /** Essays graded one by one by `submitPracticeEssay`; the set is handed in once each of them is graded. */
+  essays: PracticeEssay[]
+}
+
+/** One criterion of a graded essay: TA (Task 1) or TR (Task 2), CC, LR and GRA, each with a band. */
+export interface EssayCriterion {
+  code: string
+  band: number
+  strengths: string[]
+  improvements: string[]
+}
+
+export interface EssayCorrection {
+  excerpt: string
+  suggestion: string
+  category: string | null
+}
+
+/**
+ * The result of sending one essay. Only a GRADED result carries the grade; other statuses are a failure the learner
+ * can retry, with `failureCode` saying why.
+ */
+export interface EssayGrade {
+  submissionId: string
+  status: string
+  wordCount: number | null
+  overallBand: number | null
+  passed: boolean | null
+  criteria: EssayCriterion[]
+  corrections: EssayCorrection[]
+  summary: string | null
+  pointsCharged: number | null
+  sampleAnswer: string | null
+}
+
+export interface PracticeEssayRequest {
+  requestId: string
+  essayText: string
 }
 
 export interface PracticeSubmissionRequest {
