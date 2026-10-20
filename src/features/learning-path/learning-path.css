@@ -1206,6 +1206,9 @@
 .lp-segs i.is-done {
   background: linear-gradient(90deg, var(--lp-primary), #3b6bff);
 }
+.lp-segs i.is-partial {
+  background: linear-gradient(90deg, var(--lp-primary) 0%, #3b6bff var(--fill), #e3e8f4 var(--fill));
+}
 .lp-tile.is-passed .lp-segs i.is-done {
   background: var(--lp-success);
 }

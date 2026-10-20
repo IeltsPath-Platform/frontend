@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { CSSProperties } from 'react'
-import { ArrowRight, ClipboardCheck, Gauge, Route, Trophy } from 'lucide-react'
+import { ArrowRight, ClipboardCheck, Route, Trophy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import mascotImage from '@/assets/triceratops-class-mascot.png'
 import type { CourseSummary } from '~types/learningPath'
@@ -11,7 +11,6 @@ import { CourseArt } from '../components/CourseArt'
 import { SuggestionStrip } from '../components/guide/SuggestionStrip'
 import { SegmentMeter } from '../components/SegmentMeter'
 import { ApiErrorState, CourseCatalogSkeleton, EmptyState } from '../components/PageState'
-import { entryBand } from '../lib/courseMeta'
 import { timeAgo } from '../lib/relativeTime'
 import { useApiResource } from '../lib/useApiResource'
 
@@ -145,9 +144,10 @@ function progressPct(course: CourseSummary) {
 }
 
 function progressText(course: CourseSummary) {
-  if (course.passedTopicCount > 0) return `${course.passedTopicCount}/${course.topicCount} chặng`
-  if (course.completedLessons > 0) return `${course.completedLessons}/${course.totalLessons} bài đã học`
-  return course.lastStudiedAt ? 'Đã bắt đầu học' : 'Chưa bắt đầu'
+  if (course.passedTopicCount === 0 && course.completedLessons === 0) {
+    return course.lastStudiedAt ? 'Đã bắt đầu học' : 'Chưa bắt đầu'
+  }
+  return `${course.completedLessons}/${course.totalLessons} bài · ${course.passedTopicCount}/${course.topicCount} chặng`
 }
 
 function courseCta(course: CourseSummary): string {
@@ -179,7 +179,7 @@ function CourseSpotlight({ course, resuming }: { course: CourseSummary; resuming
         <p className="lp-spotlight__label">{resuming ? 'Đang học dở' : 'Gợi ý từ bài test đầu vào'}</p>
         <h2 id="lp-spotlight-title">{course.title}</h2>
         <p className="lp-spotlight__meta">
-          {course.topicCount} chặng topic · đầu vào khuyến nghị ~{entryBand(course.bandLevel)} · kết thúc bằng bài thi cuối khóa
+          {course.topicCount} chặng topic · kết thúc bằng bài thi cuối khóa
         </p>
         {isStarted(course) ? (
           <div className="lp-meter lp-spotlight__meter">
@@ -237,6 +237,15 @@ function CourseTile({ course, focused, index, lastVisited }: {
     ? { label: `Lần cuối vào · ${timeAgo(course.lastStudiedAt)}`, tone: 'primary' as const }
     : courseChip(course)
   const passed = course.testStatus === 'PASSED'
+  const filled = Math.min(
+    course.topicCount,
+    Math.max(
+      course.passedTopicCount,
+      course.totalLessons > 0 ? (course.completedLessons / course.totalLessons) * course.topicCount : course.passedTopicCount,
+    ),
+  )
+  const done = Math.floor(filled)
+  const partial = filled - done
 
   return (
     <li
@@ -260,14 +269,10 @@ function CourseTile({ course, focused, index, lastVisited }: {
               <Route aria-hidden="true" size={14} />
               {course.topicCount} chặng topic
             </li>
-            <li>
-              <Gauge aria-hidden="true" size={14} />
-              Đầu vào ~{entryBand(course.bandLevel)}
-            </li>
           </ul>
 
           <div className="lp-tile__progress">
-            <SegmentMeter done={course.passedTopicCount} total={course.topicCount} unit="chặng" />
+            <SegmentMeter done={done} partial={partial} total={course.topicCount} unit="chặng" />
             <span className="lp-tile__count">{progressText(course)}</span>
           </div>
 

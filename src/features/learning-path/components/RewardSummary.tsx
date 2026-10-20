@@ -1,10 +1,11 @@
 import { useEffect, useRef } from 'react'
+import { publishGamification } from '@/components/owl-events'
 import { useToast } from '@/components/toast/toastContext'
 import type { GamificationSummary } from '~types/learningPath'
 
 /**
  * What a submission earned and cost, announced as toasts: one each for a new level, the XP, the daily XP cap and the
- * hearts lost. Renders nothing itself. A submission that changed none of these, such as a review with no correct first
+ * hearts lost, and passed on to the owl. Renders nothing itself. A submission that changed none of these, such as a review with no correct first
  * answer, shows nothing.
  */
 export function RewardSummary({ gamification }: { gamification: GamificationSummary | null }) {
@@ -15,6 +16,8 @@ export function RewardSummary({ gamification }: { gamification: GamificationSumm
   useEffect(() => {
     if (!gamification || announced.current === gamification) return
     announced.current = gamification
+    // The owl reloads quests and badges to tell what this submission completed.
+    publishGamification(gamification)
     const { xpEarned, xpCapped, totalXp, level, leveledUp, heartsLost, heartsRemaining } = gamification
 
     if (leveledUp) {

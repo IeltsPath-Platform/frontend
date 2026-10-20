@@ -23,6 +23,7 @@ import { VocabularyReviewPage } from '@/features/vocabulary/pages/VocabularyRevi
 import { AuthPage } from '@/features/auth/pages/AuthPage'
 import { useAuthSession } from '@/features/auth/authSession'
 import { SiteFooter } from '@/components/SiteFooter'
+import { OwlMascot } from '@/components/OwlMascot'
 import { ForgotPasswordPage } from '@/features/auth/pages/ForgotPasswordPage'
 import { OAuthCallbackPage } from '@/features/auth/pages/OAuthCallbackPage'
 import { ResetPasswordPage } from '@/features/auth/pages/ResetPasswordPage'
@@ -147,6 +148,7 @@ function AppContent() {
       <Route path="*" element={<NotFoundPage />} />
       </Routes>
       <SiteFooter />
+      <OwlMascot />
     </>
   )
 }

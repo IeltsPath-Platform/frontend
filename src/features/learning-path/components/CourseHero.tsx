@@ -1,6 +1,5 @@
-import { Gauge, Route } from 'lucide-react'
+import { Route } from 'lucide-react'
 import type { CourseRef } from '~types/learningPath'
-import { entryBand } from '../lib/courseMeta'
 import { LearnHero, type HeroFact } from './LearnHero'
 
 interface CourseHeroProps {
@@ -15,7 +14,6 @@ export function CourseHero({ course, topicCount, done }: CourseHeroProps) {
   const facts: HeroFact[] = course
     ? [
         ...(topicCount > 0 ? [{ icon: <Route aria-hidden="true" size={15} />, label: `${topicCount} chặng topic` }] : []),
-        { icon: <Gauge aria-hidden="true" size={15} />, label: `Đầu vào ~${entryBand(course.bandLevel)}` },
       ]
     : []
 

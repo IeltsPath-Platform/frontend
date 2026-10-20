@@ -1,8 +1,3 @@
-/** Band a learner should already be at to start a course (one band below it, never under 3.5). */
-export function entryBand(bandLevel: number) {
-  return Math.max(bandLevel - 1, 3.5).toFixed(1)
-}
-
 /** Whether the course illustration has a dark sky, so text drawn over it should be light. */
 export function isDarkArt(bandLevel: number) {
   return bandLevel >= 7
