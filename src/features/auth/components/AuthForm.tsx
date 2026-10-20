@@ -23,7 +23,6 @@ export interface AuthSubmitPayload {
 
 interface AuthFormProps {
   mode: AuthMode
-  statusMessage: string
   submitting?: boolean
   oauthEnabled?: boolean
   onSubmit: (payload: AuthSubmitPayload) => void
@@ -51,7 +50,6 @@ const FORM_COPY: Record<AuthMode, { title: string; description: string; submitLa
 
 export function AuthForm({
   mode,
-  statusMessage,
   submitting = false,
   oauthEnabled = false,
   onSubmit,
@@ -88,8 +86,6 @@ export function AuthForm({
 
     onSubmit({ email, password })
   }
-
-  const statusText = clientMessage || statusMessage
 
   return (
     <section className="auth-form-panel" aria-labelledby="auth-form-title">
@@ -157,7 +153,7 @@ export function AuthForm({
         </Button>
         <div className="auth-divider" role="separator" aria-label="hoặc"><span>hoặc</span></div>
         <SocialButtons disabled={!oauthEnabled} onSelect={onSocialSelect} />
-        <p className="auth-status" role="status" aria-live="polite">{statusText}</p>
+        <p className="auth-status" role="status" aria-live="polite">{clientMessage}</p>
       </form>
       <p className="auth-mode-toggle">{copy.prompt} <Link to={copy.switchTo}>{copy.switchLabel}</Link></p>
     </section>

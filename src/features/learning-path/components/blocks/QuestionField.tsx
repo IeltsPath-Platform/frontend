@@ -1,4 +1,3 @@
-import { Check, X } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import type { Question, QuestionResult } from '~types/learningPath'
@@ -9,16 +8,20 @@ interface QuestionFieldProps {
   onChange: (value: string) => void
   onBlur?: () => void
   disabled: boolean
-  /** Shown only while the answer still matches what was graded. */
+  /**
+   * Shown only while the answer still matches what was graded. Right or wrong is reported by a toast,
+   * so the field itself only carries the hint and, once the block is passed, the solution.
+   */
   result?: QuestionResult
 }
 
 export function QuestionField({ question, value, onChange, onBlur, disabled, result }: QuestionFieldProps) {
   const promptId = `${question.id}-prompt`
-  const tone = result ? (result.correct ? 'correct' : 'wrong') : 'idle'
+  // A hint is shown only once the question has been graded wrong: before that the learner should not see it.
+  const hint = result && !result.correct ? (result.hint || question.hint || null) : null
 
   return (
-    <div className={`lp-question lp-question--${tone}`}>
+    <div className="lp-question">
       <p id={promptId} className="lp-question__prompt">
         <span className="lp-question__num" aria-label={`Câu ${question.number}`}>{question.number}</span>
         <span>{question.prompt}</span>
@@ -50,14 +53,8 @@ export function QuestionField({ question, value, onChange, onBlur, disabled, res
             value={value || undefined}
         />
       )}
-      {result ? (
-        <p className="lp-question__mark">
-          {result.correct ? <Check aria-hidden="true" size={16} /> : <X aria-hidden="true" size={16} />}
-          {result.correct ? 'Đúng' : 'Sai'}
-        </p>
-      ) : null}
-      {!result?.correct && (result?.hint || question.hint) ? (
-        <p className="lp-question__hint" role="note"><strong>Gợi ý:</strong> {result?.hint || question.hint}</p>
+      {hint ? (
+        <p className="lp-question__hint" role="note"><strong>Gợi ý:</strong> {hint}</p>
       ) : null}
       {result?.correctAnswer ? (
         <div className="lp-solution">

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { OAUTH_ENABLED } from '@/lib/env'
 import { HttpError } from '@/lib/httpClient'
+import { useToast } from '@/components/toast/toastContext'
 import { AuthForm, type AuthMode, type AuthSubmitPayload } from '../components/AuthForm'
 import { AuthShell } from '../components/AuthShell'
 import type { SocialProvider } from '../components/SocialButtons'
@@ -14,7 +15,7 @@ interface AuthPageProps {
 }
 
 export function AuthPage({ mode }: AuthPageProps) {
-  const [statusMessage, setStatusMessage] = useState('')
+  const { toast } = useToast()
   const [submitting, setSubmitting] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
@@ -22,7 +23,6 @@ export function AuthPage({ mode }: AuthPageProps) {
 
   async function handleSubmit(payload: AuthSubmitPayload) {
     setSubmitting(true)
-    setStatusMessage('')
     try {
       if (mode === 'sign-up') {
         await registerWithPassword({
@@ -40,13 +40,14 @@ export function AuthPage({ mode }: AuthPageProps) {
           : null,
       })
     } catch (error) {
-      setStatusMessage(
-        mode === 'sign-up'
+      toast({
+        title: mode === 'sign-up'
           ? mapAuthPasswordHttpError(error, 'Không thể đăng ký. Vui lòng thử lại.')
           : error instanceof HttpError
             ? error.message
             : 'Không thể xác thực. Vui lòng thử lại.',
-      )
+        tone: 'error',
+      })
     } finally {
       setSubmitting(false)
     }
@@ -54,13 +55,16 @@ export function AuthPage({ mode }: AuthPageProps) {
 
   function handleSocialSelect(provider: SocialProvider) {
     if (!OAUTH_ENABLED) {
-      setStatusMessage(`Đăng nhập với ${provider} chưa được hỗ trợ.`)
+      toast({ title: `Đăng nhập với ${provider} chưa được hỗ trợ.`, tone: 'info' })
       return
     }
     try {
       authApi.startOAuth(provider)
     } catch (error) {
-      setStatusMessage(error instanceof Error ? error.message : `Không bắt đầu được đăng nhập ${provider}.`)
+      toast({
+        title: error instanceof Error ? error.message : `Không bắt đầu được đăng nhập ${provider}.`,
+        tone: 'error',
+      })
     }
   }
 
@@ -68,7 +72,6 @@ export function AuthPage({ mode }: AuthPageProps) {
     <AuthShell showNavbar={false}>
       <AuthForm
         mode={mode}
-        statusMessage={statusMessage}
         submitting={submitting}
         oauthEnabled={OAUTH_ENABLED}
         onSubmit={handleSubmit}

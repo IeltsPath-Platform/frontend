@@ -1,7 +1,8 @@
 import { useRef, useState, type CSSProperties } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowRight, Check, Clock3, Flag, Loader2, Lock, Trophy } from 'lucide-react'
+import { ArrowRight, Check, Clock3, Flag, Loader2, Lock, RotateCcw, Trophy } from 'lucide-react'
 import type { FinalTestSummary, LessonSummary, ReviewRef } from '~types/learningPath'
+import { useToast } from '@/components/toast/toastContext'
 import { learningApi, toApiError } from '../api'
 import { totalLessonMinutes } from '../lib/lessonMinutes'
 import { reportApiError, usePendingReviews } from '../lib/reviewGate'
@@ -64,7 +65,6 @@ export function TopicLessonsView({
   if (lessons.length === 0) return <p className="lp-mini__empty">Chặng này chưa có bài học.</p>
 
   const nextId = lessons.find((lesson) => lesson.status === 'AVAILABLE')?.id ?? null
-  const lessonsWithReview = new Set(pendingReviews.flatMap((review) => (review.lessonId ? [review.lessonId] : [])))
   const totalMinutes = totalLessonMinutes(lessons)
 
   return (
@@ -84,7 +84,7 @@ export function TopicLessonsView({
       <ol className="lp-lgrid" aria-label="Danh sách bài học">
         {lessons.map((lesson, index) => (
           <LessonTile
-            hasReview={lessonsWithReview.has(lesson.id)}
+            review={pendingReviews.find((review) => review.lessonId === lesson.id)}
             index={index}
             isNext={lesson.id === nextId}
             key={lesson.id}
@@ -98,21 +98,29 @@ export function TopicLessonsView({
   )
 }
 
-function LessonTile({ lesson, isNext, hasReview, index }: {
+function LessonTile({ lesson, isNext, review, index }: {
   lesson: LessonSummary
   isNext: boolean
-  hasReview: boolean
+  review?: ReviewRef
   index: number
 }) {
   const locked = lesson.status === 'LOCKED'
   const completed = lesson.status === 'COMPLETED'
+  const hasReview = Boolean(review)
+  // A finished lesson with a review still owed is not "done": it must not wear the green tick.
+  const needsReview = completed && hasReview
+  // Likewise a lesson whose exercises are passed but whose Practice is not: the next lesson stays closed until it is.
+  const needsPractice = completed && !hasReview && lesson.practiceStatus === 'REQUIRED'
+  const pending = needsReview || needsPractice
   const reasonId = `${lesson.id}-tile-reason`
-  const action = isNext ? 'Học tiếp' : completed ? 'Xem lại' : 'Mở bài'
+  const action = isNext ? 'Học tiếp' : needsPractice ? 'Luyện tập' : completed ? 'Xem lại' : 'Mở bài'
 
   const inner = (
     <>
       <span className="lp-ltile__node" aria-hidden="true">
-        {locked ? <Lock size={14} /> : completed ? <Check size={16} strokeWidth={3} /> : lesson.sortOrder}
+        {locked ? <Lock size={14} />
+          : pending ? <RotateCcw size={15} strokeWidth={2.5} />
+            : completed ? <Check size={16} strokeWidth={3} /> : lesson.sortOrder}
       </span>
 
       <span className="lp-ltile__main">
@@ -124,11 +132,13 @@ function LessonTile({ lesson, isNext, hasReview, index }: {
               {lesson.estimatedMinutes} phút
             </span>
           ) : null}
+          {needsReview ? <span className="lp-ltile__badge is-review">Cần làm bài ôn</span> : null}
+          {needsPractice ? <span className="lp-ltile__badge is-review">Cần đạt phần Luyện tập</span> : null}
           {locked ? <span className="lp-ltile__reason" id={reasonId}>{lesson.lockedReason ?? 'Chưa mở'}</span> : null}
         </span>
       </span>
 
-      {!locked ? (
+      {!locked && !hasReview ? (
         <span className="lp-ltile__go">
           {action}
           <ArrowRight aria-hidden="true" size={14} />
@@ -140,7 +150,7 @@ function LessonTile({ lesson, isNext, hasReview, index }: {
     </>
   )
 
-  const className = `lp-ltile${isNext ? ' is-next' : ''}${completed ? ' is-done' : ''}${locked ? ' is-locked' : ''}`
+  const className = `lp-ltile${isNext ? ' is-next' : ''}${completed && !pending ? ' is-done' : ''}${pending ? ' is-review' : ''}${locked ? ' is-locked' : ''}`
   const style = { '--i': index } as CSSProperties
 
   return (
@@ -148,6 +158,16 @@ function LessonTile({ lesson, isNext, hasReview, index }: {
       {locked ? (
         <div aria-describedby={reasonId} aria-disabled="true" className={className}>
           {inner}
+        </div>
+      ) : review ? (
+        <div className={className}>
+          <Link aria-current={isNext ? 'step' : undefined} className="lp-ltile__lesson-link" to={`/learn/lessons/${lesson.id}`}>
+            {inner}
+          </Link>
+          <Link className="lp-ltile__go lp-ltile__go--review" to={`/learn/reviews/${review.reviewId}`}>
+            Làm bài ôn
+            <ArrowRight aria-hidden="true" size={14} />
+          </Link>
         </div>
       ) : (
         <Link
@@ -175,9 +195,9 @@ function SummitTile({
   onChanged: () => void
 }) {
   const navigate = useNavigate()
+  const { toast } = useToast()
   const pendingReviews = usePendingReviews()
   const [starting, setStarting] = useState(false)
-  const [message, setMessage] = useState<string | null>(null)
   const inFlight = useRef(false)
   if (test.testStatus === 'NONE') return null
   const status = test.testStatus
@@ -186,7 +206,6 @@ function SummitTile({
     if (inFlight.current) return
     inFlight.current = true
     setStarting(true)
-    setMessage(null)
     try {
       const assignment = await learningApi.createTestAssignment(topicId)
       const attempt = await learningApi.createAttempt({
@@ -197,26 +216,29 @@ function SummitTile({
       const error = toApiError(reason)
       reportApiError(error)
       if (error.code === 'TEST_UNAVAILABLE') {
-        setMessage('Chưa có đề cho chặng này. Hãy quay lại sau.')
+        toast({ title: 'Chưa có đề cho chặng này. Hãy quay lại sau.', tone: 'error' })
       } else if (error.code === 'PRACTICE_REQUIRED') {
         const ids = new Set(error.details.lessonIds ?? [])
         const titled = lessons.filter((lesson) => ids.has(lesson.id))
         const names = titled.length > 0
           ? titled.map((lesson) => `Bài ${lesson.sortOrder}`).join(', ')
           : `${ids.size || 'một số'} bài`
-        setMessage(`Cần luyện thêm trước khi mở đề: ${names}. Mở bài học tương ứng và đạt phần Luyện tập.`)
+        toast({ title: `Cần luyện thêm trước khi mở đề: ${names}. Mở bài học tương ứng và đạt phần Luyện tập.`, tone: 'error' })
         onChanged()
       } else if (error.code === 'REVIEW_REQUIRED') {
         const first = error.details.reviews?.[0] ?? pendingReviews[0]
-        setMessage(first
-          ? `Cần làm bài ôn “${first.knowledgePointTitle}” trước khi làm bài kiểm tra.`
-          : 'Cần làm bài ôn trước khi làm bài kiểm tra.')
+        toast({
+          title: first
+            ? `Cần làm bài ôn “${first.knowledgePointTitle}” trước khi làm bài kiểm tra.`
+            : 'Cần làm bài ôn trước khi làm bài kiểm tra.',
+          tone: 'error',
+        })
         onChanged()
       } else if (error.code === 'TEST_LOCKED') {
-        setMessage('Bài kiểm tra chưa mở. Hoàn thành bài học, luyện thêm và bài ôn (nếu có).')
+        toast({ title: 'Bài kiểm tra chưa mở. Hoàn thành bài học, luyện thêm và bài ôn (nếu có).', tone: 'error' })
         onChanged()
       } else {
-        setMessage(`${error.message} Hãy thử lại.`)
+        toast({ title: `${error.message} Hãy thử lại.`, tone: 'error' })
       }
       inFlight.current = false
       setStarting(false)
@@ -266,7 +288,6 @@ function SummitTile({
       ) : (
         <div aria-disabled={status === 'LOCKED' ? 'true' : undefined} className={className}>{inner}</div>
       )}
-      {message ? <p className="lp-summit__error lp-error" role="alert">{message}</p> : null}
     </>
   )
 }

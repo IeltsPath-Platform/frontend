@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useToast } from '@/components/toast/toastContext'
 import { HttpError } from '@/lib/httpClient'
 import { gameErrorMessage } from '../lib/gameErrorMessage'
 import { gameApi } from '../api/gameApi'
@@ -17,6 +18,7 @@ import { rememberMatchHost, recalledMatchHost } from '../lib/matchRoomContext'
 
 export function useWordlyMatch(matchId: string) {
   const navigate = useNavigate()
+  const { toast } = useToast()
   const [word, setWord] = useState<CurrentWord | null>(null)
   const [room, setRoom] = useState<GameRoom | null>(null)
   const [match, setMatch] = useState<GameMatch | null>(null)
@@ -27,14 +29,10 @@ export function useWordlyMatch(matchId: string) {
   const roomSnapshot = useRef<GameRoom | null>(null)
   const closure = useRef('')
   const [error, setError] = useState<string | null>(null)
-  const [notice, setNotice] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [loading, setLoading] = useState(true)
   const [pending, setPending] = useState<GuessInput | null>(null)
   const [feedback, setFeedback] = useState<GuessResponse | null>(null)
-  const [toast, setToast] = useState<{ id: number; message: string } | null>(
-    null,
-  )
   const [revealing, setRevealing] = useState<{
     wordId: string
     attempt: number
@@ -229,7 +227,7 @@ export function useWordlyMatch(matchId: string) {
         setClosedMessage(closure.current)
       }
       if (event.type === 'MEMBER_LEFT' && event.message)
-        setNotice(event.message)
+        toast({ title: event.message, tone: 'info' })
       if (event.type === 'MATCH_FINISHED') finalSeen.current = true
       if (
         [
@@ -266,12 +264,11 @@ export function useWordlyMatch(matchId: string) {
     setBusy(true)
     setPending(body)
     setError(null)
-    setNotice(null)
     try {
       const result = await gameApi.guess(matchId, body)
       if (!alive.current) return
       if ('code' in result && result.code === 'REQUEST_PENDING') {
-        setNotice('Lượt đoán đang được xử lý. Bấm thử lại để nhận kết quả.')
+        toast({ title: 'Lượt đoán đang được xử lý. Bấm thử lại để nhận kết quả.', tone: 'info' })
         return
       }
       if (!('wordStatus' in result))
@@ -327,10 +324,10 @@ export function useWordlyMatch(matchId: string) {
       if (result.nextWord) {
         setWord(result.nextWord)
         setHint(result.nextWord.hint)
-        setNotice(
+        toast(
           result.wordStatus === 'SOLVED'
-            ? `Đúng! +${result.points.total} điểm. Đã chuyển sang từ tiếp theo.`
-            : 'Đã hết lượt đoán. Mất 1 mạng và chuyển từ tiếp theo.',
+            ? { title: `Đúng! +${result.points.total} điểm. Đã chuyển sang từ tiếp theo.`, tone: 'success' }
+            : { title: 'Đã hết lượt đoán. Mất 1 mạng và chuyển từ tiếp theo.', tone: 'info' },
         )
       }
       await refresh()
@@ -345,7 +342,7 @@ export function useWordlyMatch(matchId: string) {
         if (reason.status === 409) await refresh()
       }
       if (reason instanceof HttpError && reason.code === 'WORD_NOT_FOUND')
-        setToast({ id: Date.now(), message: 'Từ không tồn tại' })
+        toast({ title: 'Từ không tồn tại', tone: 'error' })
       else setError(gameErrorMessage(reason))
     } finally {
       mutating.current = false
@@ -363,7 +360,6 @@ export function useWordlyMatch(matchId: string) {
     version.current++
     setBusy(true)
     setError(null)
-    setNotice(null)
     try {
       const response = await gameApi.hint(
         matchId,
@@ -388,7 +384,6 @@ export function useWordlyMatch(matchId: string) {
     version.current++
     setBusy(true)
     setError(null)
-    setNotice(null)
     try {
       const response = await gameApi.leaveMatch(matchId)
       if (alive.current) {
@@ -416,13 +411,11 @@ export function useWordlyMatch(matchId: string) {
     ownPlayer,
     match,
     closedMessage,
-    toast,
     revealing,
     word,
     room,
     loading,
     error,
-    notice,
     busy,
     pending,
     feedback,

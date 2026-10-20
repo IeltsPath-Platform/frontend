@@ -121,7 +121,7 @@ test('UserTierDropdown is store-free and renders reusable Free and Premium state
   assert.match(freeHtml, /Chuyển sang Premium \(demo\)/)
 
   const premiumHtml = await render('/src/components/UserTierDropdown.tsx', 'UserTierDropdown', { tier: 'PREMIUM', userName: 'Minh Anh' }, '/home')
-  assert.match(premiumHtml, /Premium learner/)
+  assert.match(premiumHtml, /<h3>Gói (?:<!-- -->)?Premium<\/h3>/)
   assert.match(premiumHtml, /Chuyển sang Free \(demo\)/)
 
   const source = readFileSync(new URL('../src/components/UserTierDropdown.tsx', import.meta.url), 'utf8')
@@ -129,7 +129,7 @@ test('UserTierDropdown is store-free and renders reusable Free and Premium state
   assert.match(source, /useState<UserTier>\(defaultTier\)/)
   assert.match(source, /onToggleTier\?\.\(nextTier\)/)
   assert.doesNotMatch(source, /zustand|useAuthStore|react-router-dom/)
-  for (const animation of ['premium-ring-spin', 'sparkle-orbit-1', 'sparkle-orbit-2', 'sparkle-orbit-3', 'halo-glow-breath', 'free-points-pulse']) assert.ok(styles.includes(animation))
+  for (const animation of ['premium-ring-spin', 'sparkle-orbit-1', 'sparkle-orbit-2', 'sparkle-orbit-3', 'halo-glow-breath']) assert.ok(styles.includes(animation))
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/)
 })
 

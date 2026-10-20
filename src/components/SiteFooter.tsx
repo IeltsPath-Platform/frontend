@@ -64,10 +64,6 @@ export function SiteFooter() {
         </div>
       </div>
 
-      <a className="site-footer-consultation" href="tel:0888861786">
-        <MessageCircle aria-hidden="true" /><span>Tư vấn miễn phí</span>
-      </a>
-
       <div className="site-footer-bottom"><BookOpenCheck aria-hidden="true" /><span>© {new Date().getFullYear()} The IELTS Space. All rights reserved.</span></div>
     </footer>
   )

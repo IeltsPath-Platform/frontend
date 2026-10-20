@@ -29,6 +29,9 @@ export type ApiErrorCode =
   /** No unseen practice set is left on the point (some are kept back for reviews). */
   | 'FREE_PRACTICE_EXHAUSTED'
   | 'FREE_PRACTICE_UNAVAILABLE'
+  /** Starting a review from the basket: the point left the basket, or Content has no set the learner has not seen. */
+  | 'NOT_IN_REVIEW_BASKET'
+  | 'NO_UNREVEALED_SET'
   /** Buying a streak freeze: one is already owned, there is no streak to protect, or five days in a row are frozen. */
   | 'FREEZE_ALREADY_OWNED'
   | 'NO_STREAK_TO_PROTECT'
@@ -80,6 +83,8 @@ export function userMessage(error: ApiError): string {
       return 'Bạn đã hết tim. Chờ tim hồi lại hoặc dùng điểm để hồi đầy.'
     case 'HEARTS_FULL':
       return 'Tim của bạn đã đầy.'
+    case 'REVIEW_REQUIRED':
+      return 'Bạn cần làm xong bài ôn bắt buộc trước khi nộp thêm bài. Bạn vẫn xem lại được nội dung bài học.'
     case 'ACCESS_UNAVAILABLE':
       return 'Chưa kết nối được hệ thống điểm. Bạn chưa bị trừ điểm, hãy thử lại sau.'
     case 'COURSE_NOT_OPEN':
@@ -90,6 +95,10 @@ export function userMessage(error: ApiError): string {
       return 'Đã hết bộ luyện tự do cho điểm kiến thức này. Các bộ còn lại được giữ cho bài ôn.'
     case 'FREE_PRACTICE_UNAVAILABLE':
       return 'Điểm kiến thức này chưa có bài luyện tự do.'
+    case 'NO_UNREVEALED_SET':
+      return 'Điểm này chưa có bộ đề mới để ôn. Hãy quay lại sau.'
+    case 'NOT_IN_REVIEW_BASKET':
+      return 'Điểm này không còn trong giỏ ôn tập. Hãy tải lại trang.'
     case 'INSUFFICIENT_POINTS':
       return 'Bạn chưa đủ điểm.'
     case 'FREEZE_ALREADY_OWNED':
@@ -130,6 +139,8 @@ const CODE_MAP: Record<string, ApiErrorCode> = {
   COURSE_NOT_JOINED: 'COURSE_NOT_JOINED',
   FREE_PRACTICE_EXHAUSTED: 'FREE_PRACTICE_EXHAUSTED',
   FREE_PRACTICE_UNAVAILABLE: 'FREE_PRACTICE_UNAVAILABLE',
+  NOT_IN_REVIEW_BASKET: 'NOT_IN_REVIEW_BASKET',
+  NO_UNREVEALED_SET: 'NO_UNREVEALED_SET',
   FREEZE_ALREADY_OWNED: 'FREEZE_ALREADY_OWNED',
   NO_STREAK_TO_PROTECT: 'NO_STREAK_TO_PROTECT',
   FREEZE_LIMIT: 'FREEZE_LIMIT',

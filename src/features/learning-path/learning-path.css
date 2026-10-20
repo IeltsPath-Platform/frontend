@@ -1206,6 +1206,9 @@
 .lp-segs i.is-done {
   background: linear-gradient(90deg, var(--lp-primary), #3b6bff);
 }
+.lp-segs i.is-partial {
+  background: linear-gradient(90deg, var(--lp-primary) 0%, #3b6bff var(--fill), #e3e8f4 var(--fill));
+}
 .lp-tile.is-passed .lp-segs i.is-done {
   background: var(--lp-success);
 }
@@ -1799,6 +1802,9 @@ a.lp-ltile:hover {
 .lp-ltile.is-done {
   border-color: color-mix(in srgb, var(--lp-success) 28%, var(--lp-line));
 }
+.lp-ltile.is-review {
+  border-color: color-mix(in srgb, var(--lp-danger) 32%, var(--lp-line));
+}
 .lp-ltile.is-locked {
   border-style: dashed;
   background: color-mix(in srgb, var(--lp-surface) 55%, transparent);
@@ -1827,10 +1833,34 @@ a.lp-ltile:hover {
   background: var(--lp-success);
   box-shadow: none;
 }
+.lp-ltile.is-review .lp-ltile__node {
+  color: var(--lp-danger);
+  background: var(--lp-danger-soft);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--lp-danger) 38%, transparent);
+}
 .lp-ltile.is-locked .lp-ltile__node {
   color: var(--lp-locked);
   background: var(--lp-locked-soft);
   box-shadow: none;
+}
+.lp-ltile__lesson-link {
+  display: grid;
+  grid-column: 1 / span 2;
+  grid-template-columns: 2.1rem minmax(0, 1fr);
+  align-items: center;
+  gap: .9rem;
+  min-width: 0;
+  min-height: 44px;
+  color: inherit;
+  text-decoration: none;
+}
+.lp-ltile__lesson-link:hover .lp-ltile__title {
+  color: var(--lp-primary);
+}
+.lp-ltile__lesson-link:focus-visible {
+  outline: 2px solid var(--lp-primary);
+  outline-offset: 3px;
+  border-radius: .4rem;
 }
 .lp-ltile__main {
   display: grid;
@@ -1900,6 +1930,20 @@ a.lp-ltile:hover {
 }
 .lp-ltile.is-done .lp-ltile__go {
   color: var(--lp-muted);
+}
+/* The review action belongs to the lesson that created the pending review. */
+.lp-ltile__go--review {
+  min-height: 44px;
+  color: var(--lp-accent-ink);
+  text-decoration: none;
+}
+.lp-ltile__go--review:hover {
+  text-decoration: underline;
+}
+.lp-ltile__go--review:focus-visible {
+  outline: 2px solid var(--lp-accent-ink);
+  outline-offset: 3px;
+  border-radius: .25rem;
 }
 .lp-ltile__go svg {
   transition: transform .18s ease;
@@ -2618,14 +2662,16 @@ a.lp-step__row:hover {
   font-size: 1.02rem;
 }
 
+/* The lesson's exercises read as one column: no card per block, only hairlines between them. */
+.lp-lesson-exercises {
+  display: grid;
+  gap: 2.5rem;
+}
 .lp-passage {
   display: grid;
   gap: .95rem;
-  padding: 1.5rem 1.6rem;
-  border: 1px solid var(--lp-line);
-  border-radius: var(--lp-radius);
-  background: var(--lp-surface);
-  box-shadow: var(--lp-shadow);
+  padding-left: 1.25rem;
+  border-left: 3px solid var(--lp-line);
 }
 .lp-passage h3 {
   font-size: 1.25rem;
@@ -2895,16 +2941,9 @@ a.lp-step__row:hover {
 .lp-exercise {
   display: grid;
   gap: 1.15rem;
-  padding: 1.5rem 1.6rem;
-  border: 1px solid var(--lp-line);
-  border-radius: var(--lp-radius);
-  background: var(--lp-surface);
-  box-shadow: var(--lp-shadow);
-  transition: border-color .2s ease, box-shadow .2s ease;
 }
-.lp-exercise.is-passed {
-  border-color: #b7e2cd;
-  box-shadow: inset 0 4px 0 var(--lp-success), var(--lp-shadow);
+.lp-exercise.is-passed .lp-exercise__head h3 {
+  color: var(--lp-success);
 }
 .lp-exercise__head {
   display: flex;
@@ -3020,27 +3059,25 @@ a.lp-step__row:hover {
 
 .lp-questions {
   display: grid;
-  gap: 1rem;
   margin: 0;
   padding: 0;
   list-style: none;
 }
+.lp-questions > li + li {
+  border-top: 1px solid var(--lp-line);
+}
 .lp-question {
   display: grid;
   gap: .75rem;
-  padding: 1.15rem 1.25rem;
-  border: 1.5px solid transparent;
-  border-radius: 14px;
-  background: var(--lp-canvas);
-  transition: border-color .2s ease, background-color .2s ease;
+  padding: 1.1rem 0;
+  border-left: 3px solid transparent;
+  padding-left: 1rem;
 }
 .lp-question--correct {
-  border-color: #b7e2cd;
-  background: var(--lp-success-soft);
+  border-left-color: var(--lp-success);
 }
 .lp-question--wrong {
-  border-color: #f3bfbb;
-  background: var(--lp-danger-soft);
+  border-left-color: var(--lp-danger);
 }
 .lp-question__prompt {
   display: flex;
@@ -3096,11 +3133,11 @@ a.lp-step__row:hover {
   align-items: center;
   gap: .75rem;
   min-height: 48px;
-  padding: .65rem .95rem;
-  border: 1.5px solid var(--lp-line);
-  border-radius: 12px;
+  padding: .5rem .75rem;
+  border: 1px solid transparent;
+  border-radius: 10px;
   font-size: .98rem;
-  background: var(--lp-surface);
+  background: transparent;
   cursor: pointer;
   transition: border-color .15s ease, background-color .15s ease, transform .15s ease;
 }
@@ -3732,34 +3769,6 @@ a.lp-step__row:hover {
   color: var(--lp-muted);
   font-size: .88rem;
   line-height: 1.5;
-}
-.lp-reward {
-  display: grid;
-  gap: .4rem;
-  margin-top: 1rem;
-  padding: .85rem 1rem;
-  border: 1px solid var(--lp-line);
-  border-radius: 14px;
-  background: var(--lp-soft);
-}
-.lp-reward p {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: .4rem;
-  margin: 0;
-  font-size: .92rem;
-}
-.lp-reward__level {
-  color: var(--lp-accent-ink);
-  font-weight: 700;
-}
-.lp-reward__xp span {
-  color: var(--lp-muted);
-  font-size: .85rem;
-}
-.lp-reward__hearts {
-  color: var(--lp-danger);
 }
 
 /* ---- Knowledge tree and free practice ---- */

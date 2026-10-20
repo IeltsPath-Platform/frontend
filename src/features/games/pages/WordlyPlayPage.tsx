@@ -32,19 +32,6 @@ function WordlyPlayContent({ matchId }: WordlyPlayContentProps) {
   const [pressed, setPressed] = useState<{ key: string; id: number } | null>(
     null,
   )
-  const [toast, setToast] = useState<string | null>(null)
-  useEffect(() => {
-    if (!game.toast) return
-    const show = window.setTimeout(
-      () => setToast(game.toast?.message ?? null),
-      0,
-    )
-    const hide = window.setTimeout(() => setToast(null), 3000)
-    return () => {
-      window.clearTimeout(show)
-      window.clearTimeout(hide)
-    }
-  }, [game.toast])
   const [leaveOpen, setLeaveOpen] = useState(false)
   const [hintOpen, setHintOpen] = useState(false)
   const word = game.word
@@ -154,11 +141,6 @@ function WordlyPlayContent({ matchId }: WordlyPlayContentProps) {
           </Button>
         </div>
       )}
-      {game.notice && (
-        <p className="games-notice" role="status">
-          {game.notice}
-        </p>
-      )}
       <div
         className={`wordly-match-layout${multiplayer && game.ranking ? ' wordly-match-layout-multiplayer' : ''}`}
       >
@@ -223,11 +205,6 @@ function WordlyPlayContent({ matchId }: WordlyPlayContentProps) {
                     draft={draft}
                     revealing={game.revealing}
                   />
-                  {toast && (
-                    <div className="wordly-toast" role="alert">
-                      {toast}
-                    </div>
-                  )}
                 </div>
                 <div className="wordly-legend">
                   <span className="CORRECT">Đúng vị trí</span>

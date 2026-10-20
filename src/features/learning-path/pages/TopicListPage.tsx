@@ -2,6 +2,7 @@ import { useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Check, CheckCircle2, ChevronDown, Crown, Flag, Loader2, Lock, Network, Trophy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useToast } from '@/components/toast/toastContext'
 import type { CourseSummary, TopicSummary } from '~types/learningPath'
 import { learningApi, toApiError } from '../api'
 import { CourseHero } from '../components/CourseHero'
@@ -286,8 +287,8 @@ function TopicStop({
 
 function CourseFinalTestStop({ course, onChanged }: { course: CourseSummary; onChanged: () => void }) {
   const navigate = useNavigate()
+  const { toast } = useToast()
   const [starting, setStarting] = useState(false)
-  const [message, setMessage] = useState<string | null>(null)
   const inFlight = useRef(false)
   const status = course.testStatus
 
@@ -295,7 +296,6 @@ function CourseFinalTestStop({ course, onChanged }: { course: CourseSummary; onC
     if (inFlight.current) return
     inFlight.current = true
     setStarting(true)
-    setMessage(null)
     try {
       const assignment = await learningApi.createCourseTestAssignment(course.id)
       const attempt = await learningApi.createAttempt({
@@ -310,12 +310,12 @@ function CourseFinalTestStop({ course, onChanged }: { course: CourseSummary; onC
       const error = toApiError(reason)
       reportApiError(error)
       if (error.code === 'TEST_LOCKED') {
-        setMessage('Bài thi cuối khóa chưa mở. Hoàn thành mọi chặng trong khóa trước.')
+        toast({ title: 'Bài thi cuối khóa chưa mở. Hoàn thành mọi chặng trong khóa trước.', tone: 'error' })
         onChanged()
       } else if (error.code === 'TEST_UNAVAILABLE') {
-        setMessage('Chưa có đề thi cuối cho khóa này. Hãy quay lại sau.')
+        toast({ title: 'Chưa có đề thi cuối cho khóa này. Hãy quay lại sau.', tone: 'error' })
       } else {
-        setMessage(`${error.message} Hãy thử lại.`)
+        toast({ title: `${error.message} Hãy thử lại.`, tone: 'error' })
       }
       inFlight.current = false
       setStarting(false)
@@ -349,7 +349,6 @@ function CourseFinalTestStop({ course, onChanged }: { course: CourseSummary; onC
             <span className="lp-chip lp-chip--success">Đã đạt</span>
           ) : null}
         </div>
-        {message ? <p className="lp-error" role="alert">{message}</p> : null}
       </section>
     </li>
   )

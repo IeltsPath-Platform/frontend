@@ -1,6 +1,7 @@
-import { useState } from 'react'
-import { LogOut } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { ArrowUpRight, Crown, LogOut } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { LearnerQuickStats } from '@/features/learning-path/components/LearnerQuickStats'
 import styles from './UserTierDropdown.module.css'
 
 export type UserTier = 'FREE' | 'PREMIUM'
@@ -52,6 +53,18 @@ export function UserTierDropdown({
   className,
 }: UserTierDropdownProps) {
   const [demoTier, setDemoTier] = useState<UserTier>(defaultTier)
+  const [isOpen, setIsOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDetailsElement>(null)
+
+  useEffect(() => {
+    if (!isOpen) return
+    function dismiss(event: PointerEvent) {
+      const dropdown = dropdownRef.current
+      if (dropdown && event.target instanceof Node && !dropdown.contains(event.target)) dropdown.open = false
+    }
+    document.addEventListener('pointerdown', dismiss)
+    return () => document.removeEventListener('pointerdown', dismiss)
+  }, [isOpen])
   const activeTier = tier ?? demoTier
   const nextTier: UserTier = activeTier === 'PREMIUM' ? 'FREE' : 'PREMIUM'
   const isPremium = activeTier === 'PREMIUM'
@@ -66,7 +79,18 @@ export function UserTierDropdown({
   }
 
   return (
-    <details className={[styles.root, isPremium ? styles.isPremium : styles.isFree, className].filter(Boolean).join(' ')}>
+    <details
+      ref={dropdownRef}
+      className={[styles.root, isPremium ? styles.isPremium : undefined, className].filter(Boolean).join(' ')}
+      onToggle={(event) => setIsOpen(event.currentTarget.open)}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape' && dropdownRef.current?.open) {
+          event.stopPropagation()
+          dropdownRef.current.open = false
+          dropdownRef.current.querySelector('summary')?.focus()
+        }
+      }}
+    >
       <summary className={styles.trigger} aria-label={`Mở thông tin gói học của ${safeUserName}, ${isPremium ? 'Premium' : `${formattedPoints} Points`}`}>
         <span className={styles.avatarTierWrap} aria-hidden="true">
           {isPremium && <>
@@ -85,28 +109,26 @@ export function UserTierDropdown({
       </summary>
 
       <article className={styles.tierCard} aria-labelledby="user-tier-title">
-        <p className={styles.eyebrow}>GÓI HỌC MÔ PHỎNG</p>
-        <div className={styles.cardHeading}>
-          <div>
-            <h2 id="user-tier-title">{isPremium ? 'Premium learner' : 'Free learner'}</h2>
-            <p>{isPremium ? 'Bạn đang mở khóa không gian học nâng cao.' : 'Bạn đang trải nghiệm không gian học cơ bản.'}</p>
-          </div>
-          <span className={styles.tierBadge}>{isPremium ? 'PREMIUM' : 'FREE'}</span>
+        <div className={styles.cardIntro}>
+          <h2 id="user-tier-title">Góc học tập</h2>
+          <span className={styles.introCaption}>Của {safeUserName}</span>
         </div>
+        {isOpen && <LearnerQuickStats />}
 
-        {isPremium ? (
-          <p className={styles.premiumNote}>Đã bật mô phỏng quyền lợi Premium cho phiên này.</p>
-        ) : (
-          <p className={styles.pointsNote}><strong className={styles.freePoints}>{formattedPoints}</strong> Points sẵn sàng cho hành trình hôm nay.</p>
-        )}
-
-        <ul className={styles.benefits}>
-          <li>{isPremium ? 'Kho tài liệu và đề luyện mở rộng' : 'Luyện tập nền tảng và theo dõi tiến độ'}</li>
-          <li>{isPremium ? 'Công cụ học nâng cao trong mô phỏng' : 'Nâng cấp để mở thêm trải nghiệm học tập'}</li>
-        </ul>
-
-        <button type="button" className={styles.toggleButton} onClick={toggleTier}>{toggleLabel}</button>
-        <p className={styles.demoHint} role="status" aria-live="polite">Chế độ demo — không thay đổi gói học thực tế.</p>
+        <section className={styles.planSection} aria-label="Gói học của bạn">
+          <div className={styles.planHeading}>
+            <span className={styles.planIcon} aria-hidden="true"><Crown size={17} /></span>
+            <div className={styles.planCopy}>
+              <h3>Gói {isPremium ? 'Premium' : 'Free'}</h3>
+              <p>{isPremium ? 'Trải nghiệm học nâng cao' : 'Trải nghiệm học cơ bản'}</p>
+            </div>
+            <span className={styles.tierBadge}>{isPremium ? 'PREMIUM' : 'FREE'}</span>
+          </div>
+          <Button type="button" className={styles.toggleButton} onClick={toggleTier}>
+            {toggleLabel}<ArrowUpRight aria-hidden="true" size={16} />
+          </Button>
+          <p className={styles.demoHint} role="status" aria-live="polite">Chỉ mô phỏng, không đổi gói thực tế.</p>
+        </section>
         {onSignOut && (
           <div className={styles.accountActions}>
             <Button type="button" variant="ghost" className={styles.accountAction} disabled={signingOut} onClick={onSignOut}>

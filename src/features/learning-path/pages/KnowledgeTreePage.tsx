@@ -1,6 +1,6 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, type CSSProperties } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { Dumbbell, Loader2, Lock } from 'lucide-react'
+import { BookOpen, ChevronDown, Dumbbell, Headphones, Languages, Layers, Loader2, Lock, Mic, Network, PenLine, type LucideIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { LearnerTree, TreePoint } from '~types/learningPath'
 import { learningApi, toApiError, userMessage, type ApiError } from '../api'
@@ -10,8 +10,13 @@ import { ApiErrorState, LoadingState } from '../components/PageState'
 import { skillLabel } from '../lib/courseMeta'
 import { freePracticePath, knowledgeTreePath, type FreePracticeNavigationState } from '../lib/routes'
 import { reportApiError } from '../lib/reviewGate'
-import { masteryPercent, orderedTreeSkills, prerequisiteNames, tierMeta, visiblePoints } from '../lib/treeMeta'
+import { masteryPercent, orderedTreeSkills, pointSkill, prerequisiteNames, tierMeta, visiblePoints } from '../lib/treeMeta'
 import { useApiResource } from '../lib/useApiResource'
+import styles from './KnowledgeTreePage.module.css'
+
+const SKILL_ICONS: Record<string, LucideIcon> = {
+  LISTENING: Headphones, READING: BookOpen, WRITING: PenLine, SPEAKING: Mic, GRAMMAR: Languages, VOCABULARY: Layers,
+}
 
 /** The learner's knowledge points of one course: where they stand on each, and a way into free practice. */
 export function KnowledgeTreePage() {
@@ -34,7 +39,7 @@ export function KnowledgeTreePage() {
       <header className="lp-lesson-head">
         <p className="lp-eyebrow">{course?.title ?? 'Khóa học'}</p>
         <h1>Cây kiến thức</h1>
-        <p>Mỗi ô là một điểm kiến thức. Luyện tự do không khóa bài học của bạn, nhưng trả lời sai vẫn mất tim.</p>
+        <p>Khám phá từng nhánh kỹ năng và điểm kiến thức. Luyện tự do không khóa bài học, nhưng trả lời sai vẫn mất tim.</p>
       </header>
 
       {hearts.data && hearts.data.hearts === 0 ? <HeartsPanel onChanged={hearts.reload} status={hearts.data} /> : null}
@@ -44,6 +49,7 @@ export function KnowledgeTreePage() {
       {tree.data ? (
         <TreeView
           backTo={knowledgeTreePath(courseId)}
+          courseName={courseLabel}
           depleted={hearts.data?.hearts === 0}
           onHeartsChanged={hearts.reload}
           tree={tree.data}
@@ -68,8 +74,9 @@ function TreeLoadError({ error, onRetry }: { error: ApiError; onRetry: () => voi
   )
 }
 
-function TreeView({ tree, backTo, depleted, onHeartsChanged }: {
+function TreeView({ tree, courseName, backTo, depleted, onHeartsChanged }: {
   tree: LearnerTree
+  courseName: string
   backTo: string
   depleted: boolean
   onHeartsChanged: () => void
@@ -79,12 +86,13 @@ function TreeView({ tree, backTo, depleted, onHeartsChanged }: {
   const byId = new Map(points.map((point) => [point.knowledgePointId, point]))
   const skills = orderedTreeSkills(points)
   const visible = visiblePoints(points, skill)
+  const branches = skills.filter((key) => skill === 'ALL' || skill === key)
   const needWork = points.filter((point) => point.tier === 'PRIORITY').length
 
   if (points.length === 0) return <p className="lp-empty">Khóa này chưa có điểm kiến thức nào.</p>
 
   return (
-    <section className="lp-section" aria-labelledby="lp-tree-title">
+    <section className={`lp-section ${styles.panel}`} aria-labelledby="lp-tree-title">
       <div className="lp-section__head">
         <h2 id="lp-tree-title">{points.length} điểm kiến thức</h2>
         {skills.length > 1 ? (
@@ -101,18 +109,58 @@ function TreeView({ tree, backTo, depleted, onHeartsChanged }: {
       <p className="lp-hint" role="status">
         {needWork > 0 ? `${needWork} điểm cần ưu tiên.` : 'Chưa có điểm nào cần ưu tiên.'}
       </p>
-      <ul className="lp-tree" aria-label="Các điểm kiến thức">
-        {visible.map((point) => (
-          <PointCard
-            backTo={backTo}
-            depleted={depleted}
-            key={point.knowledgePointId}
-            onHeartsChanged={onHeartsChanged}
-            point={point}
-            prerequisites={prerequisiteNames(point, byId)}
-          />
-        ))}
+      <ul className={styles.legend} aria-label="Màu trạng thái điểm kiến thức">
+        <li data-tone="success">Vững</li>
+        <li data-tone="primary">Đang củng cố</li>
+        <li data-tone="accent">Cần ưu tiên</li>
+        <li data-tone="locked">Chưa học / chưa đủ dữ liệu</li>
       </ul>
+      <div className={styles.viewport} role="region" aria-label="Sơ đồ cây kiến thức" tabIndex={0}>
+        <div className={styles.canvas} style={{ '--tree-columns': branches.length } as CSSProperties}>
+          <div className={styles.root}>
+            <span className={styles.rootIcon}><Network aria-hidden="true" size={25} /></span>
+            <div>
+              <p className={styles.rootLabel}>Cây kiến thức</p>
+              <p className={styles.rootName}>{courseName}</p>
+              <p className={styles.rootMeta}>{branches.length} nhánh kỹ năng · {visible.length} điểm kiến thức</p>
+            </div>
+          </div>
+          <ul className={styles.branches} aria-label="Các nhánh kỹ năng">
+            {branches.map((key) => {
+              const branchPoints = visible.filter((point) => pointSkill(point) === key)
+              const SkillIcon = SKILL_ICONS[key] ?? Layers
+              const mastered = branchPoints.filter((point) => point.tier === 'MAINTAIN').length
+              return (
+                <li className={styles.branch} key={key}>
+                  <details className={styles.skillBranch} open>
+                    <summary className={styles.branchHead}>
+                      <span className={styles.skillIcon}><SkillIcon aria-hidden="true" size={21} /></span>
+                      <h3 className={styles.branchCopy}>
+                        <span>{skillLabel(key) ?? key}</span>
+                        <small>{branchPoints.length} điểm · {mastered} vững</small>
+                      </h3>
+                      <ChevronDown aria-hidden="true" className={styles.chevron} size={17} />
+                    </summary>
+                    <ul className={styles.points} aria-label={`Điểm kiến thức ${skillLabel(key) ?? key}`}>
+                      {branchPoints.map((point) => (
+                        <PointCard
+                          backTo={backTo}
+                          depleted={depleted}
+                          key={point.knowledgePointId}
+                          onHeartsChanged={onHeartsChanged}
+                          point={point}
+                          prerequisites={prerequisiteNames(point, byId)}
+                        />
+                      ))}
+                    </ul>
+                  </details>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      </div>
+      <p className={styles.treeHint}>Mỗi nhánh gom các điểm cùng kỹ năng. “Xây trên” cho biết kiến thức nền của từng điểm.</p>
     </section>
   )
 }
@@ -154,10 +202,10 @@ function PointCard({ point, prerequisites, backTo, depleted, onHeartsChanged }: 
   }
 
   return (
-    <li className="lp-point">
+    <li className={`lp-point ${styles.point}`} data-tier={point.tier ?? 'UNTOUCHED'}>
       <div className="lp-point__head">
         <div>
-          <h3 className="lp-point__name">{point.name}</h3>
+          <h4 className="lp-point__name">{point.name}</h4>
           <p className="lp-point__code">{point.code}</p>
         </div>
         <span className={`lp-chip lp-chip--${tier.chip}`} title={tier.hint}>{tier.label}</span>

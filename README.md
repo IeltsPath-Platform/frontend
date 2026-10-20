@@ -35,11 +35,17 @@ Dashboard `/overview` hiện dùng dữ liệu mẫu riêng, không chịu ảnh
 
 Slide, Lesson Summary, Tài liệu và Luyện tập là các mục trong cùng trang bài học; breadcrumb luôn kết thúc ở tên bài. Khi mở bài ôn từ Luyện tập, breadcrumb giữ khóa học, chủ đề, bài học và thêm trang bài ôn. Tên bài học và nút quay lại đưa về đúng mục Luyện tập; bộ câu hỏi đang làm có nút riêng để về danh sách luyện tập.
 
+Trong danh sách bài học, nút Làm bài ôn chỉ nằm ở bài học sở hữu bài ôn theo `pendingReviews.lessonId`. Các bài bị chặn bởi bài ôn vẫn giữ trạng thái khóa và lý do chờ; tên bài học có bài ôn vẫn mở lại được.
+
 Đường nối giữa các bài tô xanh theo trạng thái đã hoàn thành; đoạn chưa học giữ xám, hiệu ứng tôn trọng chế độ giảm chuyển động.
 
 Đường nối giữa các topic tô cam theo tỷ lệ bài học đã hoàn thành trong topic đang học, tô xanh toàn đoạn khi topic đã qua và giữ xám với topic bị khóa. Tỷ lệ hiển thị giữ nguyên khi mở/thu gọn chặng; chỉ trạng thái topic đã qua mới dùng màu xanh, kể cả khi đã học hết bài nhưng còn kiểm tra chặng.
 
 Sau khi nộp bộ câu hỏi ôn, trang giữ nguyên đề và câu trả lời để xem đúng/sai, đáp án và giải thích mà API trả về. Người học tự bấm đọc lại lý thuyết, làm bộ tiếp theo hoặc học tiếp sau khi xem kết quả; trang không tự chuyển bước khi nộp xong.
+
+### Cây kiến thức
+
+Trang cây kiến thức của khóa học hiển thị theo cấu trúc khóa học → nhánh kỹ năng → điểm kiến thức, có đường nối và màu trạng thái nắm vững. Có thể lọc kỹ năng và thu gọn từng nhánh; màn hình nhỏ dùng cây dọc. Quan hệ kiến thức nền vẫn hiển thị ở dòng “Xây trên” của từng điểm. Nút Luyện giữ nguyên điều kiện về tim và bộ luyện còn khả dụng.
 
 ### Community
 

@@ -160,8 +160,8 @@ export function LessonView({ lesson, onLessonChanged }: { lesson: LessonDetail; 
     : hasExercises ? 'exercises' : requiresPractice ? 'practice' : 'reading'
   const copy = stateCopy(state, activeReview, hasNext)
   // Practice and review actions are available in the lesson's Practice section, and a completed lesson needs no card:
-  // the card only carries the "Hoàn thành bài" action of a lesson being read.
-  const showProgress = state === 'reading' || state === 'exercises'
+  // the card only carries the "Hoàn thành bài" action of a lesson being read. Exercises are reached from the side menu.
+  const showProgress = state === 'reading'
   const StateIcon = copy.icon
 
   async function completeLesson() {

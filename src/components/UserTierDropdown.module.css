@@ -44,26 +44,45 @@
 .chevron { flex: 0 0 auto; inline-size: .45rem; block-size: .45rem; margin-inline-start: .1rem; border-block-end: 2px solid var(--tier-trigger-muted, var(--tier-muted)); border-inline-end: 2px solid var(--tier-trigger-muted, var(--tier-muted)); transform: rotate(45deg) translateY(-2px); transition: transform 180ms ease-out; }
 .root[open] .chevron { transform: rotate(225deg) translateY(-1px); }
 
-.tierCard { display: grid; gap: .9rem; position: absolute; z-index: 80; inset-block-start: calc(100% + .65rem); inset-inline-end: 0; inline-size: min(22rem, calc(100vw - 2rem)); padding: 1rem; border: 1px solid var(--tier-border); border-radius: 1rem; background: var(--tier-surface); box-shadow: 0 1rem 2.6rem color-mix(in srgb, var(--tier-primary-strong) 20%, transparent); }
-.eyebrow { margin: 0; color: var(--tier-primary); font-size: .59rem; font-weight: 850; letter-spacing: .11em; }
-.cardHeading { display: flex; align-items: start; justify-content: space-between; gap: .75rem; }
-.cardHeading h2 { margin: 0; color: var(--tier-text); font-size: 1.05rem; letter-spacing: -.02em; line-height: 1.2; }
-.cardHeading p, .premiumNote, .pointsNote, .demoHint { margin: .35rem 0 0; color: var(--tier-muted); font-size: .76rem; line-height: 1.55; }
-.tierBadge { flex: 0 0 auto; border-radius: 999px; padding: .3rem .48rem; background: var(--tier-soft); color: var(--tier-primary); font-size: .58rem; font-weight: 850; letter-spacing: .06em; }
-.premiumNote { padding: .7rem; border-radius: .7rem; background: color-mix(in srgb, var(--tier-accent) 12%, var(--tier-surface)); color: var(--tier-text); }
-.pointsNote { padding: .7rem; border-radius: .7rem; background: var(--tier-soft); color: var(--tier-text); }
-.freePoints { display: inline-block; color: var(--tier-primary); font-variant-numeric: tabular-nums; }
-.benefits { display: grid; gap: .5rem; margin: 0; padding: .85rem 0; border-block: 1px solid var(--tier-border); list-style: none; }
-.benefits li { display: grid; grid-template-columns: .5rem minmax(0, 1fr); gap: .5rem; color: var(--tier-text); font-size: .75rem; line-height: 1.45; }
-.benefits li::before { content: ''; inline-size: .42rem; block-size: .42rem; margin-block-start: .34rem; border-radius: 50%; background: var(--tier-primary); }
-.toggleButton { min-block-size: 44px; padding: .7rem 1rem; border: 1px solid var(--tier-primary); border-radius: .7rem; background: var(--tier-primary); color: var(--tier-surface); cursor: pointer; font: inherit; font-size: .78rem; font-weight: 800; transition: background 180ms ease-out, box-shadow 180ms ease-out, transform 180ms ease-out; }
-.toggleButton:hover { background: var(--tier-primary-strong); box-shadow: 0 .55rem 1rem color-mix(in srgb, var(--tier-primary) 26%, transparent); transform: translateY(-1px); }
-.toggleButton:active { transform: translateY(0) scale(.99); }
-.toggleButton:focus-visible { outline: 3px solid var(--color-focus, #005fcc); outline-offset: 3px; }
-.demoHint { margin: -.35rem 0 0; font-size: .66rem; text-align: center; }
+.tierCard {
+  display: grid;
+  gap: 1rem;
+  position: absolute;
+  z-index: 80;
+  inset-block-start: calc(100% + .65rem);
+  inset-inline-end: 0;
+  inline-size: min(21rem, calc(100vw - 2rem));
+  max-block-size: calc(100dvh - 6rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 1.1rem;
+  border: 1px solid var(--tier-border);
+  border-radius: 1.25rem;
+  background: var(--tier-surface);
+  box-shadow: 0 1rem 2.5rem color-mix(in srgb, var(--tier-primary-strong) 15%, transparent), 0 .15rem .4rem color-mix(in srgb, var(--tier-primary-strong) 5%, transparent);
+  transform-origin: top right;
+}
+.root[open] .tierCard { animation: tier-card-enter 180ms cubic-bezier(.16, 1, .3, 1) both; }
+.cardIntro { display: flex; align-items: baseline; justify-content: space-between; gap: .75rem; }
+.cardIntro h2 { margin: 0; color: var(--tier-text); font-size: .95rem; font-weight: 750; letter-spacing: -.025em; }
+.introCaption { max-inline-size: 55%; overflow: hidden; color: var(--color-text-muted); font-size: .7rem; text-overflow: ellipsis; white-space: nowrap; }
+.planSection { display: grid; gap: .75rem; padding-block-start: 1rem; border-block-start: 1px solid var(--tier-border); }
+.planHeading { display: flex; align-items: center; gap: .65rem; }
+.planIcon { display: grid; place-items: center; flex: 0 0 2rem; block-size: 2rem; border-radius: .65rem; background: var(--tier-soft); color: var(--tier-primary); }
+.planCopy { flex: 1; min-inline-size: 0; }
+.planCopy h3 { margin: 0; color: var(--tier-text); font-size: .8rem; font-weight: 750; }
+.planCopy p { margin: .15rem 0 0; color: var(--color-text-muted); font-size: .68rem; line-height: 1.5; }
+.tierBadge { flex: 0 0 auto; border-radius: .4rem; padding: .25rem .45rem; background: var(--tier-soft); color: var(--tier-primary); font-size: .56rem; font-weight: 800; letter-spacing: .05em; }
+.toggleButton { justify-content: space-between; min-block-size: 44px; inline-size: 100%; padding: .65rem .85rem; border: 1px solid transparent; border-radius: .7rem; background: var(--tier-primary); color: var(--tier-surface); font-size: .75rem; font-weight: 700; transition: background 160ms ease-out, transform 160ms ease-out; }
+.toggleButton:hover { background: var(--tier-primary-strong); }
+.toggleButton:active { transform: scale(.99); }
+.toggleButton:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3px; }
+.demoHint { margin: -.3rem 0 0; color: var(--color-text-muted); font-size: .65rem; line-height: 1.5; text-align: center; }
+.accountActions { border-block-start: 1px solid var(--tier-border); padding-block-start: .5rem; margin-block-start: -.25rem; }
+.accountAction { justify-content: flex-start; gap: .6rem; min-block-size: 44px; inline-size: 100%; padding-inline: .5rem; color: var(--color-text-muted); font-size: .8rem; }
+.accountAction:hover { background: var(--tier-soft); color: var(--tier-text); }
 
-.accountActions { display: grid; gap: .25rem; border-block-start: 1px solid var(--tier-border); padding-block-start: .75rem; }
-.accountAction { justify-content: flex-start; min-block-size: 44px; inline-size: 100%; }
+@keyframes tier-card-enter { from { opacity: 0; transform: translateY(-5px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
 
 .premiumHaloRing { position: absolute; z-index: 0; inline-size: 44px; block-size: 44px; border-radius: 50%; background: conic-gradient(from 20deg, var(--tier-accent), #ffe9a7, var(--tier-primary), var(--tier-accent)); animation: premium-ring-spin 4s linear infinite, halo-glow-breath 2.4s ease-in-out infinite; }
 .premiumHaloRing::after { content: ''; position: absolute; inset: 3px; border-radius: inherit; background: var(--tier-surface); }
@@ -73,14 +92,12 @@
 .sparkleOrbitThree { animation: sparkle-orbit-3 5.2s linear infinite; }
 .isPremium .tierBadge { background: color-mix(in srgb, var(--tier-accent) 16%, var(--tier-surface)); color: var(--tier-primary-strong); }
 .isPremium .avatar { box-shadow: 0 0 0 2px color-mix(in srgb, var(--tier-accent) 42%, transparent), 0 .35rem 1rem color-mix(in srgb, var(--tier-accent) 36%, transparent); }
-.isFree .freePoints { animation: free-points-pulse 1.8s ease-in-out infinite; }
 
 @keyframes premium-ring-spin { to { transform: rotate(360deg); } }
 @keyframes halo-glow-breath { 0%, 100% { box-shadow: 0 0 .55rem color-mix(in srgb, var(--tier-accent) 30%, transparent); } 50% { box-shadow: 0 0 1.05rem .18rem color-mix(in srgb, var(--tier-accent) 52%, transparent); } }
 @keyframes sparkle-orbit-1 { from { transform: rotate(10deg) translateX(25px) rotate(-10deg); } to { transform: rotate(370deg) translateX(25px) rotate(-370deg); } }
 @keyframes sparkle-orbit-2 { from { transform: rotate(145deg) translateX(23px) rotate(-145deg); } to { transform: rotate(505deg) translateX(23px) rotate(-505deg); } }
 @keyframes sparkle-orbit-3 { from { transform: rotate(255deg) translateX(27px) rotate(-255deg); } to { transform: rotate(615deg) translateX(27px) rotate(-615deg); } }
-@keyframes free-points-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .72; transform: scale(1.06); } }
 
 @media (max-width: 32rem) {
   .tierCard { position: fixed; inset-block-start: 4.5rem; inset-inline: 1rem; inline-size: auto; }
@@ -94,5 +111,5 @@
 
 @media (prefers-reduced-motion: reduce) {
   .trigger, .chevron, .toggleButton { transition: none; }
-  .premiumHaloRing, .premiumHaloSparkle, .freePoints { animation: none; }
+  .root[open] .tierCard, .premiumHaloRing, .premiumHaloSparkle { animation: none; }
 }

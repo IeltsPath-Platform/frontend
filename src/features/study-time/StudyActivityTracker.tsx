@@ -8,14 +8,16 @@ import { ActiveIntervals, SESSION_IN_USE_RETRY_DELAYS_MS, type ActiveInterval } 
 type SourceType = 'LESSON' | 'PRACTICE' | 'REVIEW' | 'ASSESSMENT' | 'VOCABULARY_REVIEW'
 interface Session { sessionId: string; epoch: number; serverStartedAt: string; serverNow: string; nextSequence: number }
 interface Payload { epoch: number; sequence: number; intervals: ActiveInterval[] }
-type State = { message: string; retry: boolean; conflict: boolean }
-const STARTING: State = { message: 'Đang kết nối bộ ghi thời gian học…', retry: false, conflict: false }
+type State = { message: string; retry: boolean }
+const STARTING: State = { message: 'Đang kết nối bộ ghi thời gian học…', retry: false }
+/** Healthy recording is silent; the banner renders only when the learner must act or the tracker is failing. */
+const RECORDING: State = { message: 'Đang ghi thời gian học khi bạn hoạt động trên tab này.', retry: false }
 
 /** Telemetry failure never blocks answering. Every retry retains its original sequence and payload. */
 export function StudyActivityTracker({ sourceType, sourceId, enabled = true }: { sourceType: SourceType; sourceId: string; enabled?: boolean }) {
   const { isLoggedIn, email } = useAuthSession()
   const [state, setState] = useState<State>(STARTING)
-  const [attempt, setAttempt] = useState({ version: 0, takeover: false })
+  const [attempt, setAttempt] = useState(0)
   const active = enabled && isLoggedIn && (sourceType === 'VOCABULARY_REVIEW' || !USE_MOCK_LEARNING)
   useEffect(() => {
     if (!active) return
@@ -23,7 +25,7 @@ export function StudyActivityTracker({ sourceType, sourceId, enabled = true }: {
     let ending = false
     let blocked = false
     let closing = false
-    let takeover = attempt.takeover
+    let takeover = false
     let session: Session | null = null
     let collector: ActiveIntervals | null = null
     let anchor = 0
@@ -44,8 +46,9 @@ export function StudyActivityTracker({ sourceType, sourceId, enabled = true }: {
     const sessionIsInUse = (reason: unknown) => errorCode(reason) === 'SESSION_IN_USE'
     const fail = (reason: unknown) => {
       blocked = true
-      const conflict = sessionIsInUse(reason)
-      report({ message: conflict ? 'Thời gian đang được ghi ở một phiên khác.' : 'Chưa ghi được thời gian học. Bạn vẫn có thể tiếp tục làm bài.', retry: true, conflict })
+      // Another tab holding the lease is not the learner's problem: stay quiet and let that tab keep recording.
+      if (sessionIsInUse(reason)) { report(RECORDING); return }
+      report({ message: 'Chưa ghi được thời gian học. Bạn vẫn có thể tiếp tục làm bài.', retry: true })
     }
     function sample() {
       let playing = false
@@ -78,7 +81,7 @@ export function StudyActivityTracker({ sourceType, sourceId, enabled = true }: {
         sequence++
         pending = null
         lastSuccess = performance.now()
-        report({ message: 'Đang ghi thời gian học khi bạn hoạt động trên tab này.', retry: false, conflict: false })
+        report(RECORDING)
         return true
       }).catch((reason: unknown) => {
         if (sessionIsInvalid(reason)) {
@@ -91,7 +94,7 @@ export function StudyActivityTracker({ sourceType, sourceId, enabled = true }: {
           report(STARTING)
           if (!closing) window.setTimeout(() => { lifecycle = lifecycle.then(start) }, 0)
         } else if (reason instanceof HttpError && reason.status !== 0 || performance.now() - lastSuccess >= 70_000) fail(reason)
-        else report({ message: 'Mất kết nối bộ ghi thời gian; đang thử lại trong giới hạn phiên.', retry: false, conflict: false })
+        else report({ message: 'Mất kết nối bộ ghi thời gian; đang thử lại trong giới hạn phiên.', retry: false })
         return false
       }).finally(() => { inFlight = null })
       return inFlight
@@ -127,10 +130,17 @@ export function StudyActivityTracker({ sourceType, sourceId, enabled = true }: {
           lastSuccess = anchor
           collector = new ActiveIntervals(Math.floor(baseOffset))
           if (disposed || ending || document.visibilityState !== 'visible') { await close(); return }
-          report({ message: 'Đang ghi thời gian học khi bạn hoạt động trên tab này.', retry: false, conflict: false })
+          report(RECORDING)
           return
         } catch (reason) {
-          if (!sessionIsInUse(reason) || retry === SESSION_IN_USE_RETRY_DELAYS_MS.length) { fail(reason); return }
+          if (!sessionIsInUse(reason)) { fail(reason); return }
+          if (retry === SESSION_IN_USE_RETRY_DELAYS_MS.length) {
+            // This tab is the one in use, so after the waits it claims the lease from the other tab, once.
+            if (takeover) { fail(reason); return }
+            takeover = true
+            retry--
+            continue
+          }
           await new Promise((resolve) => window.setTimeout(resolve, SESSION_IN_USE_RETRY_DELAYS_MS[retry]))
           if (disposed || ending || document.visibilityState !== 'visible') return
         }
@@ -178,6 +188,6 @@ export function StudyActivityTracker({ sourceType, sourceId, enabled = true }: {
       lifecycle = lifecycle.then(close)
     }
   }, [active, email, sourceType, sourceId, attempt])
-  if (!active) return null
-  return <div className="lp-hint" role="status"><span>{state.message}</span>{state.retry && <Button variant="outline" size="sm" onClick={() => setAttempt((value) => ({ version: value.version + 1, takeover: state.conflict }))}>{state.conflict ? 'Ghi thời gian tại đây' : 'Thử lại bộ ghi'}</Button>}</div>
+  if (!active || state === RECORDING) return null
+  return <div className="lp-hint" role="status"><span>{state.message}</span>{state.retry && <Button variant="outline" size="sm" onClick={() => setAttempt((value) => value + 1)}>Thử lại bộ ghi</Button>}</div>
 }

@@ -4,6 +4,7 @@ import * as lessons from './mockLessonHandlers'
 import { clearState, createInitialState, loadState, saveState, type KeyValueStorage, type MockState } from './mockState'
 import { createMockGamification } from './mockGamification'
 import { pendingReviewRefs } from './mockProgress'
+import { mockReviewBasket, mockSuggestions } from './mockGuide'
 import { MOCK_TREE_POINTS } from './mockTree'
 import * as tests from './mockTestHandlers'
 
@@ -72,6 +73,12 @@ export function createMockLearningApi({ storage = null, latencyMs = 0, now = () 
     getLearnerTree: async (courseId) => ({ courseId, knowledgePoints: MOCK_TREE_POINTS }),
     startFreePractice: async () => {
       throw new ApiError(404, 'NOT_FOUND', 'Mock learning không có practice set. Dùng HTTP thật để luyện tự do.')
+    },
+    // The guide is drawn from the fixed tree so both screens can be worked on offline; nothing can be started from it.
+    getSuggestions: () => respond(() => mockSuggestions()),
+    getReviewBasket: () => respond((s) => mockReviewBasket(pendingReviewRefs(s), now())),
+    startBasketReview: async () => {
+      throw new ApiError(404, 'NOT_FOUND', 'Mock learning không có bộ ôn. Dùng HTTP thật để bắt đầu ôn.')
     },
     // The mock has no Practice, so nothing ever costs a heart: the hearts stay full.
     getHearts: async () => ({ hearts: 5, maxHearts: 5, nextHeartAt: null, refillCost: 5 }),

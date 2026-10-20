@@ -46,7 +46,7 @@ function itemMeta(item: PracticeSetItem, waitsForReview: boolean): ItemMeta | un
 
 const PRACTICE_STATUS_TEXT: Record<string, string> = {
   REQUIRED: 'Bắt buộc: làm hết các bộ dưới đây, và bài ôn nếu có, để hoàn thành bài và mở bài tiếp theo.',
-  PASSED: 'Đã hoàn thành phần luyện tập của bài.',
+  PASSED: 'Đã đạt phần luyện tập của bài, bài tiếp theo đã mở. Các bộ còn lại là tùy chọn để luyện thêm.',
   LOCKED: 'Chưa mở',
 }
 
