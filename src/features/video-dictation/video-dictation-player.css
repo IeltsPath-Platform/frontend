@@ -1,0 +1,1891 @@
+/* Video dictation player (P-49). Colours come from the shared classroom tokens in styles/globals.css. */
+
+.vdp-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  padding: 0.65rem 1.25rem;
+  border-bottom: 1px solid var(--classroom-border);
+  background: var(--classroom-surface);
+  box-shadow: 0 1px 0 rgb(18 58 181 / 4%), 0 6px 18px rgb(32 55 115 / 5%);
+}
+
+.vdp-back {
+  display: inline-flex;
+  min-height: 2.25rem;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0 1rem 0 0.75rem;
+  border-radius: 999px;
+  background: var(--classroom-soft);
+  color: var(--classroom-primary);
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background-color 0.15s;
+}
+
+.vdp-back:hover {
+  background: #dfe8ff;
+}
+
+.vdp-bar__title {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.vdp-bar__count {
+  margin-left: auto;
+  padding: 0.3rem 0.85rem;
+  border-radius: 999px;
+  background: var(--classroom-soft);
+  color: var(--classroom-primary);
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+/* ---- one-screen layout: nothing below the fold while exercising --------- */
+.vdp-page--fit {
+  display: flex;
+  height: 100dvh;
+  flex-direction: column;
+  overflow: hidden;
+  background: linear-gradient(180deg, #e9efff 0%, #f4f6fd 45%, var(--classroom-canvas) 100%);
+}
+
+.vdp-page--fit > * {
+  flex: none;
+}
+
+.vdp-page--fit > .vdp-main {
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+.vdp-main {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 4rem;
+}
+
+.vdp-main--fit {
+  display: grid;
+  width: 100%;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 1rem;
+  padding: 1rem 1.25rem 1.25rem;
+}
+
+.vdp-layout {
+  display: grid;
+  min-height: 0;
+  gap: 1.25rem;
+  grid-template-rows: minmax(0, 36%) minmax(0, 1fr);
+}
+
+/* ---- video stage ------------------------------------------------------ */
+/* The stage takes all the room of its column; the inner box is the widest one whose video (16:9) plus
+   controls row still fit that height, so the controls always sit right under the video. */
+.vdp-stage {
+  display: grid;
+  min-height: 0;
+  place-items: start center; /* top edge lines up with the answer card */
+  container-type: size;
+}
+
+.vdp-stage__inner {
+  display: grid;
+  width: min(100cqw, (100cqh - 3.5rem) * 16 / 9);
+  gap: 0.85rem;
+}
+
+.vdp-stage__video {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 1.1rem;
+  background: #0b1020;
+  box-shadow: 0 0 0 1px rgb(18 58 181 / 14%), 0 18px 40px rgb(18 58 181 / 20%);
+}
+
+.vdp-stage__frame,
+.vdp-stage__frame iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+/* A click anywhere on the video plays the sentence again; the icon shows once the sentence has stopped. */
+.vdp-stage__replay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+}
+
+.vdp-stage__replay svg {
+  padding: 1rem;
+  box-sizing: content-box;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 18%);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 30%);
+  opacity: 0;
+  transition: opacity 0.15s, transform 0.15s;
+}
+
+.vdp-stage__replay:hover svg {
+  transform: scale(1.08);
+}
+
+.vdp-stage__replay[data-playing='false'] svg,
+.vdp-stage__replay:hover svg,
+.vdp-stage__replay:focus-visible svg {
+  opacity: 1;
+}
+
+.vdp-stage__replay:focus-visible {
+  outline: 3px solid var(--classroom-primary);
+  outline-offset: -3px;
+}
+
+.vdp-stage__cover {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: radial-gradient(circle at 50% 40%, #1b2a66 0%, #0b1020 70%);
+  color: #e5e7eb;
+  text-align: center;
+}
+
+.vdp-stage__cover p {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+/* Shown over the bottom of the video while it has not started: the rest of the video stays clickable for YouTube's own buttons. */
+.vdp-stage__stalled {
+  position: absolute;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  left: 0.75rem;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: 0.9rem;
+  background: rgb(120 53 15 / 92%);
+  color: #fff;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+.vdp-stage__stalled p {
+  margin: 0;
+}
+
+.vdp-stage__error {
+  display: grid;
+  max-width: 28rem;
+  justify-items: center;
+  gap: 0.9rem;
+}
+
+.vdp-stage__error p {
+  align-items: flex-start;
+  text-align: left;
+  line-height: 1.5;
+}
+
+.vdp-stage__error svg {
+  flex: none;
+  color: #fbbf24;
+}
+
+.vdp-stage__error-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
+}
+
+.vdp-stage__error-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 1rem;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 14%);
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.vdp-stage__error-links a:hover {
+  background: rgb(255 255 255 / 24%);
+}
+
+.vdp-stage__play {
+  min-height: 3.25rem;
+  gap: 0.5rem;
+  padding: 0 1.75rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #2a5bff, var(--classroom-primary));
+  box-shadow: 0 10px 24px rgb(42 91 255 / 45%);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+/* "Câu 5 · Đang phát": a small pill on the corner of the video. Clicks pass through to the replay button. */
+.vdp-stage__badge {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  background: rgb(11 16 32 / 62%);
+  backdrop-filter: blur(6px);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.vdp-stage__dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: #94a3b8;
+}
+
+.vdp-stage__badge[data-playing='true'] .vdp-stage__dot {
+  background: #34d399;
+  box-shadow: 0 0 0 0 rgb(52 211 153 / 70%);
+  animation: vdp-pulse 1.4s infinite;
+}
+
+@keyframes vdp-pulse {
+  70% { box-shadow: 0 0 0 7px rgb(52 211 153 / 0%); }
+  100% { box-shadow: 0 0 0 0 rgb(52 211 153 / 0%); }
+}
+
+.vdp-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  min-height: 2.65rem;
+}
+
+/* "Phát lại câu" button: only the stacked layout shows it (the other layouts replay from the video itself). */
+.vdp-controls__replay {
+  display: none;
+  min-height: 2.6rem;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 1.25rem;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #2a5bff, var(--classroom-primary));
+  box-shadow: 0 8px 18px rgb(18 58 181 / 28%);
+  color: #fff;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.vdp-controls__replay:disabled {
+  background: #b9c6e6;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.vdp-controls__replay kbd {
+  padding: 0.05rem 0.4rem;
+  border-radius: 0.4rem;
+  background: rgb(255 255 255 / 20%);
+  font: inherit;
+  font-size: 0.75rem;
+}
+
+.vdp-controls__tip {
+  margin: 0;
+  color: var(--classroom-text-muted);
+  font-size: 0.8125rem;
+}
+
+/* Playback speed as one segmented control. */
+.vdp-rates {
+  display: inline-flex;
+  padding: 0.2rem;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 0 0 1px var(--classroom-border), 0 2px 8px rgb(32 55 115 / 6%);
+}
+
+.vdp-rate {
+  min-width: 3.25rem;
+  padding: 0.35rem 0.75rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--classroom-text-muted);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.vdp-rate:hover {
+  color: var(--classroom-primary);
+}
+
+.vdp-rate[aria-pressed='true'] {
+  background: var(--classroom-primary);
+  color: #fff;
+  box-shadow: 0 4px 10px rgb(18 58 181 / 30%);
+}
+
+.vdp-rate:focus-visible {
+  outline: 2px solid var(--classroom-primary);
+  outline-offset: 2px;
+}
+
+/* ---- answer card ------------------------------------------------------ */
+.vdp-card {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  padding: 1.25rem 1.5rem;
+  border: 1px solid rgb(18 58 181 / 8%);
+  border-radius: 1.25rem;
+  background: var(--classroom-surface);
+  box-shadow: 0 1px 2px rgb(32 55 115 / 6%), 0 16px 40px rgb(32 55 115 / 10%);
+}
+
+.vdp-card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.9rem;
+}
+
+.vdp-card__head h2 {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.vdp-card__head span {
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  background: var(--classroom-soft);
+  color: var(--classroom-primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.vdp-input {
+  width: 100%;
+  min-height: 5.5rem;
+  flex: 1 1 0;
+  padding: 1rem 1.1rem;
+  border: 2px solid var(--classroom-border);
+  border-radius: 1rem;
+  background: #f8faff;
+  color: var(--classroom-text);
+  font: inherit;
+  font-size: 1.2rem;
+  line-height: 1.6;
+  resize: none;
+  transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
+}
+
+.vdp-input::placeholder {
+  color: #9aa3b2;
+  font-size: 0.95rem;
+}
+
+.vdp-input:disabled {
+  background: #f1f3f8;
+  color: var(--classroom-text-muted);
+}
+
+.vdp-input:focus {
+  border-color: var(--classroom-primary);
+  background: #fff;
+  box-shadow: 0 0 0 4px rgb(18 58 181 / 12%);
+  outline: none;
+}
+
+.vdp-actions {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+/* Buttons in the card: pill shaped, the main one filled with the brand colour. */
+.vdp-actions__buttons > button {
+  min-height: 2.75rem;
+  padding: 0 1.4rem;
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+.vdp-actions__buttons > button:not([data-variant='outline']):not(:disabled) {
+  background: linear-gradient(135deg, #2a5bff, var(--classroom-primary));
+  box-shadow: 0 8px 18px rgb(18 58 181 / 28%);
+}
+
+.vdp-actions__buttons {
+  display: flex;
+  gap: 0.6rem;
+  margin-left: auto;
+}
+
+/* ---- word hints: one covered tile per word, tap to uncover ------------- */
+.vdp-words {
+  display: grid;
+  flex: 0 1 auto;
+  min-height: 0;
+  gap: 0.5rem;
+  margin-top: 0.85rem;
+}
+
+.vdp-words__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  color: var(--classroom-text-muted);
+  font-size: 0.8125rem;
+}
+
+.vdp-words__tools {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* The Vietnamese meaning of the sentence, opened with "Xem nghĩa". */
+.vdp-meaning {
+  margin: 0;
+  padding: 0.55rem 0.9rem;
+  border-radius: 0.8rem;
+  background: var(--classroom-soft);
+  box-shadow: inset 0 0 0 1px rgb(18 58 181 / 12%);
+  color: var(--classroom-primary);
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.vdp-words__head > span,
+.vdp-words__all {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.vdp-words__all {
+  padding: 0.25rem 0.7rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--classroom-primary);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.vdp-words__all:hover {
+  background: var(--classroom-soft);
+}
+
+.vdp-words__list {
+  display: flex;
+  max-height: 7.5rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0.15rem;
+  overflow-y: auto;
+  list-style: none;
+}
+
+/* A tile never changes size when it is uncovered. Its size comes from two invisible copies of the word and of its
+   pronunciation (read from data attributes, so the word is not in the page text while covered); the covered bar
+   and the uncovered word are laid over the same cells. */
+.vdp-word {
+  display: inline-grid;
+  min-height: 3.25rem;
+  align-content: center;
+  place-items: center;
+  padding: 0.3rem 0.8rem;
+  border: 1.5px solid #cfd8ee;
+  border-radius: 0.8rem;
+  background: linear-gradient(180deg, #f4f7ff, #e9efff);
+  color: var(--classroom-text);
+  font-size: 1.05rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.12s, border-color 0.12s, background-color 0.12s;
+}
+
+.vdp-word:hover {
+  border-color: var(--classroom-primary);
+  transform: translateY(-1px);
+}
+
+.vdp-word::before,
+.vdp-word::after {
+  grid-column: 1;
+  line-height: 1.2;
+  visibility: hidden;
+  white-space: nowrap;
+}
+
+.vdp-word::before {
+  grid-row: 1;
+  content: attr(data-word);
+}
+
+.vdp-word::after {
+  grid-row: 2;
+  content: attr(data-ipa);
+  font-family: 'Segoe UI', 'Noto Sans', 'Lucida Sans Unicode', system-ui, sans-serif;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.vdp-word__text {
+  grid-column: 1;
+  grid-row: 1;
+  line-height: 1.2;
+}
+
+.vdp-word[data-shown='true'] {
+  border-color: #6ee7b7;
+  background: linear-gradient(180deg, #f0fdf8, #d1fae5);
+  color: #047857;
+}
+
+/* The pronunciation under an uncovered word. */
+.vdp-word__ipa {
+  grid-column: 1;
+  grid-row: 2;
+  line-height: 1.2;
+  color: var(--classroom-primary);
+  font-family: 'Segoe UI', 'Noto Sans', 'Lucida Sans Unicode', system-ui, sans-serif;
+  font-size: 0.8rem;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.vdp-word:focus-visible {
+  outline: 2px solid var(--classroom-primary);
+  outline-offset: 2px;
+}
+
+/* A covered word: a bar about as long as the word, so the learner sees how long it is. */
+.vdp-word__mask {
+  display: block;
+  grid-column: 1;
+  grid-row: 1 / 3;
+  width: 70%;
+  min-width: 1rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: #b9c6e6;
+}
+
+/* ---- result ----------------------------------------------------------- */
+.vdp-result {
+  display: grid;
+  min-height: 2.5rem;
+  flex: 0 1 auto; /* gives height back to the box first when the window is short, and scrolls inside */
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  overflow-y: auto;
+}
+
+.vdp-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border-radius: 0.9rem;
+  font-weight: 700;
+}
+
+.vdp-banner--ok {
+  background: linear-gradient(135deg, #d1fae5, #ecfdf5);
+  box-shadow: inset 0 0 0 1px #6ee7b7;
+  color: #047857;
+}
+
+.vdp-banner--bad {
+  background: linear-gradient(135deg, #fee2e2, #fef2f2);
+  box-shadow: inset 0 0 0 1px #fca5a5;
+  color: #b91c1c;
+}
+
+.vdp-answer {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.vdp-translation,
+.vdp-typed {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.vdp-label {
+  color: var(--classroom-text-muted);
+  font-size: 0.8125rem;
+}
+
+.vdp-wrong {
+  color: #b91c1c;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.vdp-note,
+.vdp-notice {
+  margin: 0;
+  color: var(--classroom-text-muted);
+  font-size: 0.8125rem;
+}
+
+.vdp-notice {
+  margin-top: 0.5rem;
+  color: #b45309;
+}
+
+.vdp-hint {
+  margin: 0;
+  padding: 0.55rem 0.85rem;
+  border-radius: 0.8rem;
+  background: #fff7ed;
+  box-shadow: inset 0 0 0 1px #fed7aa;
+  font-size: 0.875rem;
+}
+
+
+/* ---- progress strip --------------------------------------------------- */
+.vdp-strip {
+  display: flex;
+  align-items: center;
+  gap: 1rem 1.5rem;
+  padding: 0.7rem 1.25rem;
+  border: 1px solid rgb(18 58 181 / 8%);
+  border-radius: 1.1rem;
+  background: var(--classroom-surface);
+  box-shadow: 0 1px 2px rgb(32 55 115 / 6%), 0 10px 28px rgb(32 55 115 / 8%);
+}
+
+.vdp-strip__progress {
+  display: grid;
+  min-width: 8rem;
+  gap: 0.3rem;
+  font-size: 0.875rem;
+}
+
+.vdp-bubbles {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0.25rem;
+  overflow-x: auto;
+  list-style: none;
+}
+
+.vdp-bubble {
+  width: 2.15rem;
+  height: 2.15rem;
+  flex: none;
+  border: 1.5px solid #d5dbe8;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--classroom-text-muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.12s, border-color 0.12s;
+}
+
+.vdp-bubble:hover {
+  border-color: var(--classroom-primary);
+  transform: translateY(-1px);
+}
+
+.vdp-bubble[data-state='done'] {
+  border-color: #34d399;
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.vdp-bubble[data-state='current'] {
+  border-color: var(--classroom-primary);
+  background: linear-gradient(135deg, #2a5bff, var(--classroom-primary));
+  box-shadow: 0 0 0 4px rgb(18 58 181 / 15%);
+  color: #fff;
+  font-weight: 800;
+}
+
+.vdp-bubble:focus-visible {
+  outline: 2px solid var(--classroom-primary);
+  outline-offset: 2px;
+}
+
+.vdp-stats {
+  display: flex;
+  flex: none;
+  gap: 1.25rem;
+  margin: 0;
+}
+
+.vdp-stats div {
+  display: grid;
+  padding: 0.3rem 0.85rem;
+  border-radius: 0.8rem;
+  background: var(--classroom-soft);
+  font-size: 0.8125rem;
+}
+
+.vdp-stats dt {
+  color: var(--classroom-text-muted);
+}
+
+.vdp-stats dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+/* ---- completion ------------------------------------------------------- */
+.vdp-done {
+  display: grid;
+  justify-items: center;
+  gap: 0.75rem;
+  padding: 2.25rem 1.5rem;
+  border: 1px solid rgb(18 58 181 / 8%);
+  border-radius: 1.5rem;
+  background: var(--classroom-surface);
+  box-shadow: 0 1px 2px rgb(32 55 115 / 6%), 0 20px 48px rgb(32 55 115 / 10%);
+  text-align: center;
+}
+
+.vdp-done__icon {
+  padding: 0.9rem;
+  box-sizing: content-box;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #fff7ed, #ffedd5);
+  color: #ea580c;
+}
+
+.vdp-done h1 {
+  margin: 0;
+  font-size: 1.85rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.vdp-done h2 {
+  margin: 1rem 0 0;
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.vdp-done__title {
+  margin: 0;
+  color: var(--classroom-text-muted);
+}
+
+.vdp-done__tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 1rem;
+  width: min(100%, 46rem);
+  margin: 0.5rem 0;
+}
+
+.vdp-done__tiles div {
+  display: flex;
+  flex-direction: column-reverse;
+  padding: 1.1rem 1rem;
+  border-radius: 1.1rem;
+  background: linear-gradient(160deg, #f1f5ff, var(--classroom-soft));
+  box-shadow: inset 0 0 0 1px rgb(18 58 181 / 8%);
+}
+
+.vdp-done__tiles dd {
+  margin: 0;
+  color: var(--classroom-primary);
+  font-size: 2rem;
+  font-weight: 800;
+}
+
+.vdp-done__tiles dt {
+  color: var(--classroom-text-muted);
+  font-size: 0.8125rem;
+}
+
+.vdp-done__list {
+  display: grid;
+  gap: 0.6rem;
+  width: min(100%, 60rem);
+  max-height: clamp(12rem, calc(100dvh - 34rem), 36rem);
+  align-content: start;
+  margin: 0;
+  padding: 0.15rem 0.5rem 0.15rem 0.15rem;
+  overflow-y: auto;
+  list-style: none;
+  text-align: left;
+}
+
+.vdp-done__list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  padding: 0.65rem 0.75rem 0.65rem 1.1rem;
+  border-radius: 1rem;
+  background: #f8faff;
+  box-shadow: inset 0 0 0 1px var(--classroom-border);
+}
+
+.vdp-done__text {
+  flex: 1;
+  min-width: 12rem;
+  font-size: 1.0625rem;
+}
+
+.vdp-done__note {
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  background: #fff7ed;
+  color: #c2410c;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.vdp-done__note[data-state='passed'] {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.vdp-done__note[data-state='none'] {
+  background: #f1f3f8;
+  color: var(--classroom-text-muted);
+}
+
+/* Row and footer buttons: pill shaped like the buttons of the exercise. */
+.vdp-done__redo {
+  gap: 0.35rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--classroom-soft);
+  color: var(--classroom-primary);
+  font-weight: 700;
+}
+
+.vdp-done__redo:hover {
+  background: #dfe8ff;
+}
+
+.vdp-done__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.vdp-done__restart,
+.vdp-done__actions .vd-continue__cta {
+  min-height: 2.9rem;
+  padding: 0 1.6rem;
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+.vdp-done__restart {
+  gap: 0.4rem;
+}
+
+.vdp-done__actions .vd-continue__cta {
+  display: inline-flex;
+  align-items: center;
+  background: linear-gradient(135deg, #2a5bff, var(--classroom-primary));
+  box-shadow: 0 8px 18px rgb(18 58 181 / 28%);
+  color: #fff;
+  text-decoration: none;
+}
+
+
+@media (min-width: 960px) {
+  .vdp-layout {
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 720px) {
+  .vdp-stats {
+    display: none;
+  }
+
+  .vdp-strip {
+    flex-wrap: wrap;
+  }
+}
+
+/* ---- order inside the answer card -------------------------------------- */
+/* The aside holds the result, word tiles and notices. By default it dissolves into the card, and `order` keeps
+   the original top-to-bottom sequence: result, box, word tiles, notice, buttons. */
+.vdp-card__aside {
+  display: contents;
+}
+
+.vdp-card__head { order: 0; }
+.vdp-card__aside > .vdp-result { order: 1; }
+.vdp-input { order: 2; }
+.vdp-card__aside > .vdp-words { order: 3; }
+.vdp-card__aside > .vdp-notice { order: 4; }
+.vdp-actions { order: 5; }
+
+/* ---- layout switcher --------------------------------------------------- */
+.vdp-layouts {
+  display: inline-flex;
+  margin-left: auto;
+  padding: 0.2rem;
+  gap: 0.15rem;
+  border-radius: 999px;
+  background: var(--classroom-soft);
+}
+
+.vdp-layouts + .vdp-bar__count {
+  margin-left: 0;
+}
+
+.vdp-layouts__option {
+  display: inline-flex;
+  min-height: 2rem;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0 0.85rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--classroom-text-muted);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s, box-shadow 0.15s;
+}
+
+.vdp-layouts__option:hover {
+  color: var(--classroom-primary);
+}
+
+.vdp-layouts__option[aria-pressed='true'] {
+  background: var(--classroom-surface);
+  color: var(--classroom-primary);
+  box-shadow: 0 1px 3px rgb(18 58 181 / 18%);
+}
+
+.vdp-layouts__option:focus-visible {
+  outline: 2px solid var(--classroom-primary);
+  outline-offset: 2px;
+}
+
+/* Below 960px the page is already one column, so there is nothing to choose. */
+@media (max-width: 959px) {
+  .vdp-layouts {
+    display: none;
+  }
+
+  .vdp-layouts + .vdp-bar__count {
+    margin-left: auto;
+  }
+}
+
+/* ---- theater and stacked layouts (wide screens) ------------------------- */
+@media (min-width: 960px) {
+  /* Compact: a narrow column on the left with the video on top and the list of sentences under it; on the right a
+     controls bar over the writing area. The stage wrappers dissolve so the video and the controls become cells of
+     the page grid. Fits the window. */
+  .vdp-main[data-layout='compact'] {
+    max-width: none;
+    padding: 0;
+    gap: 0;
+    position: relative;
+    /* The width of the left column: the one the learner dragged to (--vdp-column), or this default. */
+    --vdp-col: var(--vdp-column, clamp(22rem, 34vw, 36rem));
+    grid-template-columns: var(--vdp-col) minmax(0, 1fr);
+    grid-template-rows: 3.6rem auto minmax(0, 1fr);
+  }
+
+  .vdp-main[data-layout='compact'] .vdp-layout,
+  .vdp-main[data-layout='compact'] .vdp-stage,
+  .vdp-main[data-layout='compact'] .vdp-stage__inner {
+    display: contents;
+  }
+
+  .vdp-main[data-layout='compact'] .vdp-stage__video {
+    width: 100%;
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    align-self: start;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  /* The controls and the writing area share one centred width, so on a wide window they do not drift apart. */
+  .vdp-main[data-layout='compact'] .vdp-controls {
+    padding: 0 max(1.25rem, calc((100% - 60rem) / 2));
+    grid-column: 2;
+    grid-row: 1;
+    justify-content: flex-start;
+    gap: 0.5rem 1rem;
+    border-bottom: 1px solid var(--classroom-border);
+    background: var(--classroom-surface);
+  }
+
+  .vdp-main[data-layout='compact'] .vdp-controls__replay {
+    display: inline-flex;
+  }
+
+  .vdp-main[data-layout='compact'] .vdp-controls__tip {
+    margin-left: auto;
+  }
+
+  .vdp-main[data-layout='compact'] .vdp-card {
+    width: min(60rem, calc(100% - 2rem));
+    margin: 0.75rem auto 1rem;
+    grid-column: 2;
+    grid-row: 2 / span 2;
+  }
+
+  .vdp-main[data-layout='compact'] .vdp-sentences {
+    grid-column: 1;
+    grid-row: 3;
+    border-radius: 0;
+    border-width: 0 1px 0 0;
+    box-shadow: none;
+  }
+
+  /* Theater: a dark screen on the left (video, then its controls), the writing area under it, and the list of
+     sentences in a column on the right. Fits the window. */
+  .vdp-main[data-layout='theater'] {
+    max-width: none;
+    padding: 0;
+    gap: 0;
+    position: relative;
+    /* The width of the right column: the one the learner dragged to (--vdp-column), or this default. */
+    --vdp-col: var(--vdp-column, clamp(17rem, 26vw, 23rem));
+    grid-template-columns: minmax(0, 1fr) var(--vdp-col);
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  .vdp-main[data-layout='theater'] .vdp-layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto; /* the card is as high as its content; the video gets the rest */
+    gap: 0.6rem;
+  }
+
+  .vdp-main[data-layout='theater'] .vdp-stage {
+    padding: 0.6rem 1.25rem 0.4rem;
+    place-items: center;
+    background: radial-gradient(ellipse at 50% 0%, #1b2547 0%, #0b1020 70%);
+  }
+
+  .vdp-main[data-layout='theater'] .vdp-stage__video {
+    border-radius: 0.6rem;
+    box-shadow: 0 24px 60px rgb(0 0 0 / 55%);
+  }
+
+  /* The controls sit right under the video, on the dark screen. */
+  .vdp-main[data-layout='theater'] .vdp-controls {
+    justify-content: center;
+    gap: 0.5rem 1.25rem;
+  }
+
+  .vdp-main[data-layout='theater'] .vdp-controls__replay {
+    display: inline-flex;
+  }
+
+  .vdp-main[data-layout='theater'] .vdp-controls__tip {
+    display: none;
+  }
+
+  .vdp-main[data-layout='theater'] .vdp-rates {
+    background: rgb(255 255 255 / 10%);
+    box-shadow: 0 0 0 1px rgb(255 255 255 / 18%);
+  }
+
+  .vdp-main[data-layout='theater'] .vdp-rate:not([aria-pressed='true']) {
+    color: #c7d2ee;
+  }
+
+  .vdp-main[data-layout='theater'] .vdp-card {
+    margin: 0 1rem 0.75rem;
+  }
+
+  /* The list of sentences takes the whole right column. */
+  .vdp-main[data-layout='theater'] .vdp-sentences {
+    border-radius: 0;
+    border-width: 0 0 0 1px;
+    box-shadow: none;
+  }
+
+  /* Stacked: three bands, each as wide as the window. A strip with the video on the left and its controls beside it;
+     the writing area under it; a row of sentence cards at the bottom. Fits the window. */
+  .vdp-main[data-layout='stacked'] {
+    max-width: none;
+    padding: 0;
+    gap: 0;
+    grid-template-columns: minmax(0, 1fr); /* so the row of sentence cards scrolls instead of widening the page */
+  }
+
+  .vdp-main[data-layout='stacked'] .vdp-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  /* The strip takes whatever height the writing area and the sentence cards leave, so the writing area is never
+     squeezed: on a short window it is the video that gets smaller. */
+  .vdp-main[data-layout='stacked'] .vdp-stage {
+    min-height: 8rem;
+    flex: 1 1 0;
+    padding: 0;
+    place-items: center;
+    border-bottom: 1px solid var(--classroom-border);
+    background: var(--classroom-surface);
+    box-shadow: 0 6px 18px rgb(32 55 115 / 6%);
+  }
+
+  .vdp-main[data-layout='stacked'] .vdp-stage__inner {
+    width: 100%;
+    grid-template-columns: min(100cqh * 16 / 9, 50vw) minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .vdp-main[data-layout='stacked'] .vdp-stage__video {
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  /* The controls fill the strip beside the video: the sentence bar on top, then step back, replay, step on, speed. */
+  .vdp-main[data-layout='stacked'] .vdp-controls {
+    align-self: center;
+    padding: 1rem 1.75rem;
+    justify-content: flex-start;
+    gap: 0.75rem 1rem;
+  }
+
+  .vdp-main[data-layout='stacked'] .vdp-controls__replay {
+    display: inline-flex;
+    order: 2;
+  }
+
+  .vdp-main[data-layout='stacked'] .vdp-controls__tip {
+    display: none;
+  }
+
+  .vdp-main[data-layout='stacked'] .vdp-rates {
+    margin-left: auto;
+    order: 4;
+  }
+
+  .vdp-main[data-layout='stacked'] .vdp-nav__bar {
+    order: 0;
+  }
+
+  .vdp-main[data-layout='stacked'] .vdp-nav__step--back {
+    order: 1;
+  }
+
+  .vdp-main[data-layout='stacked'] .vdp-nav__step--next {
+    order: 3;
+  }
+
+  /* Card: title row, then the box with the buttons beside it, then the word tiles. */
+  .vdp-main[data-layout='stacked'] .vdp-card,
+  .vdp-main[data-layout='theater'] .vdp-card,
+  .vdp-main[data-layout='compact'] .vdp-card {
+    display: grid;
+    flex: 1 1 0;
+    min-height: 0;
+    padding: 0.9rem 1.25rem;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto 5.75rem auto; /* the box is about three lines high, not as tall as the card allows */
+    gap: 0.6rem 1rem;
+  }
+
+  .vdp-main[data-layout='stacked'] .vdp-card__head,
+  .vdp-main[data-layout='theater'] .vdp-card__head,
+  .vdp-main[data-layout='compact'] .vdp-card__head {
+    grid-column: 1 / -1;
+    margin-bottom: 0;
+  }
+
+  .vdp-main[data-layout='stacked'] .vdp-input,
+  .vdp-main[data-layout='theater'] .vdp-input,
+  .vdp-main[data-layout='compact'] .vdp-input {
+    grid-column: 1;
+    grid-row: 2;
+    min-height: 0;
+    align-self: stretch;
+    font-size: 1.25rem;
+  }
+
+  .vdp-main[data-layout='stacked'] .vdp-actions,
+  .vdp-main[data-layout='theater'] .vdp-actions,
+  .vdp-main[data-layout='compact'] .vdp-actions {
+    grid-column: 2;
+    grid-row: 2;
+    align-self: end;
+    margin: 0;
+  }
+
+  .vdp-main[data-layout='stacked'] .vdp-actions__buttons,
+  .vdp-main[data-layout='theater'] .vdp-actions__buttons,
+  .vdp-main[data-layout='compact'] .vdp-actions__buttons {
+    flex-direction: column;
+    margin-left: 0;
+  }
+
+  .vdp-main[data-layout='stacked'] .vdp-actions__buttons > button,
+  .vdp-main[data-layout='theater'] .vdp-actions__buttons > button,
+  .vdp-main[data-layout='compact'] .vdp-actions__buttons > button {
+    min-height: 2.6rem;
+    padding: 0 1.25rem;
+    white-space: nowrap;
+  }
+
+  .vdp-main[data-layout='stacked'] .vdp-card__aside,
+  .vdp-main[data-layout='theater'] .vdp-card__aside,
+  .vdp-main[data-layout='compact'] .vdp-card__aside {
+    display: flex;
+    min-height: 0;
+    flex-direction: column;
+    gap: 0.5rem;
+    grid-column: 1 / -1;
+    grid-row: 3;
+  }
+
+  .vdp-main[data-layout='stacked'] .vdp-card__aside:empty,
+  .vdp-main[data-layout='theater'] .vdp-card__aside:empty,
+  .vdp-main[data-layout='compact'] .vdp-card__aside:empty {
+    display: none;
+  }
+
+  /* Without the box (after a right answer) the result takes its place, with the button still beside it. */
+  .vdp-main[data-layout='stacked'] .vdp-card:not(:has(.vdp-input)) .vdp-card__aside,
+  .vdp-main[data-layout='theater'] .vdp-card:not(:has(.vdp-input)) .vdp-card__aside,
+  .vdp-main[data-layout='compact'] .vdp-card:not(:has(.vdp-input)) .vdp-card__aside {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .vdp-main[data-layout='stacked'] .vdp-card__aside > *,
+  .vdp-main[data-layout='theater'] .vdp-card__aside > *,
+  .vdp-main[data-layout='compact'] .vdp-card__aside > * {
+    flex: none;
+    margin: 0;
+  }
+
+  .vdp-main[data-layout='stacked'] .vdp-words,
+  .vdp-main[data-layout='theater'] .vdp-words,
+  .vdp-main[data-layout='compact'] .vdp-words {
+    margin-top: 0;
+  }
+
+  .vdp-main[data-layout='stacked'] .vdp-words__list,
+  .vdp-main[data-layout='theater'] .vdp-words__list,
+  .vdp-main[data-layout='compact'] .vdp-words__list {
+    max-height: 9rem;
+  }
+
+  /* In compact the writing area is wide and tall: the box keeps a sensible height instead of filling it all. */
+  .vdp-main[data-layout='compact'] .vdp-card {
+    flex: none;
+    align-self: start;
+    max-height: 100%;
+  }
+
+  .vdp-main[data-layout='theater'] .vdp-card {
+    max-height: 60dvh;
+  }
+  /* In stacked the writing area is a centred band under the video strip, as high as its content. */
+  .vdp-main[data-layout='stacked'] .vdp-card {
+    flex: 0 1 auto;
+    width: min(72rem, calc(100% - 2rem));
+    margin: 0.6rem auto;
+    padding: 0.65rem 1.25rem;
+    grid-template-rows: 4.75rem auto;
+    gap: 0.5rem 1rem;
+  }
+
+  /* To leave the video as much height as possible the title row is gone: the box starts at the top of the card, and
+     "Lần x/5" and the buttons sit in a column beside it. */
+  .vdp-main[data-layout='stacked'] .vdp-card__head {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: start;
+    justify-content: flex-end;
+  }
+
+  .vdp-main[data-layout='stacked'] .vdp-card__head h2 {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .vdp-main[data-layout='stacked'] .vdp-input {
+    grid-row: 1;
+    min-height: 0;
+  }
+
+  .vdp-main[data-layout='stacked'] .vdp-actions {
+    grid-row: 1;
+  }
+
+  .vdp-main[data-layout='stacked'] .vdp-actions__buttons {
+    flex-direction: row;
+  }
+
+  .vdp-main[data-layout='stacked'] .vdp-card__aside,
+  .vdp-main[data-layout='stacked'] .vdp-card:not(:has(.vdp-input)) .vdp-card__aside {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .vdp-main[data-layout='stacked'] .vdp-card:not(:has(.vdp-input)) .vdp-card__aside {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .vdp-main[data-layout='stacked'] .vdp-words__list {
+    max-height: 12rem;
+  }
+
+  /* The sentence cards run in one row along the bottom, scrolling sideways when there are many. */
+  .vdp-main[data-layout='stacked'] .vdp-sentences {
+    gap: 0.35rem;
+    padding: 0.45rem 1.25rem 0.55rem;
+    border-radius: 0;
+    border-width: 1px 0 0;
+    box-shadow: none;
+  }
+
+  /* The numbers are already in the controls above, so the row is just the cards. */
+  .vdp-main[data-layout='stacked'] .vdp-sentences__head {
+    display: none;
+  }
+
+  .vdp-main[data-layout='stacked'] .vdp-sentences__list {
+    display: flex;
+    flex: none;
+    align-items: stretch;
+    overflow: auto hidden;
+    scrollbar-width: thin;
+  }
+
+  .vdp-main[data-layout='stacked'] .vdp-sentences__list > li {
+    display: flex;
+    flex: 0 0 12.5rem;
+  }
+
+  .vdp-main[data-layout='stacked'] .vdp-sentence {
+    align-content: start;
+  }
+
+  /* One line of each sentence is enough to tell the cards apart, and keeps the row low. */
+  .vdp-main[data-layout='stacked'] .vdp-sentence {
+    padding-block: 0.45rem;
+  }
+
+  .vdp-main[data-layout='stacked'] .vdp-sentence__text {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .vdp-main[data-layout='stacked'] .vdp-sentence__mask {
+    display: inline-block;
+    margin-right: 0.35rem;
+    vertical-align: middle;
+  }
+
+}
+
+/* ---- draggable divider between the two columns (compact and theater) ---- */
+.vdp-resizer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 6;
+  width: 14px;
+  cursor: col-resize;
+  touch-action: none;
+  outline: none;
+}
+
+.vdp-resizer[data-edge='left'] {
+  left: var(--vdp-col);
+  transform: translateX(-50%);
+}
+
+.vdp-resizer[data-edge='right'] {
+  right: var(--vdp-col);
+  transform: translateX(50%);
+}
+
+/* A thin line, and a grip in the middle that shows the bar can be dragged. */
+.vdp-resizer::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  background: transparent;
+  content: '';
+  transform: translateX(-50%);
+  transition: background-color 0.15s;
+}
+
+.vdp-resizer::after {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 3rem;
+  border-radius: 999px;
+  background: #b9c6e6;
+  box-shadow: 0 0 0 2px var(--classroom-surface);
+  content: '';
+  transform: translate(-50%, -50%);
+  transition: background-color 0.15s;
+}
+
+.vdp-resizer:hover::before,
+.vdp-resizer:focus-visible::before,
+.vdp-resizer[data-dragging='true']::before {
+  background: var(--classroom-primary);
+}
+
+.vdp-resizer:hover::after,
+.vdp-resizer:focus-visible::after,
+.vdp-resizer[data-dragging='true']::after {
+  background: var(--classroom-primary);
+}
+
+/* ---- sentence stepper in the stacked layout's controls ------------------ */
+.vdp-nav__bar {
+  display: grid;
+  flex: 1 0 100%;
+  gap: 0.35rem;
+}
+
+.vdp-nav__bar p {
+  display: flex;
+  justify-content: space-between;
+  margin: 0;
+  color: var(--classroom-text-muted);
+  font-size: 0.8125rem;
+}
+
+.vdp-nav__step {
+  display: inline-grid;
+  width: 2.6rem;
+  height: 2.6rem;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--classroom-soft);
+  color: var(--classroom-primary);
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.vdp-nav__step:hover:not(:disabled) {
+  background: #dfe8ff;
+}
+
+.vdp-nav__step:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.vdp-nav__step:focus-visible {
+  outline: 2px solid var(--classroom-primary);
+  outline-offset: 2px;
+}
+
+/* ---- sentence list (compact, theater and stacked layouts) --------------- */
+.vdp-sentences {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid rgb(18 58 181 / 8%);
+  background: var(--classroom-surface);
+  box-sizing: border-box;
+}
+
+.vdp-sentences__head {
+  display: grid;
+  flex: none;
+  gap: 0.5rem;
+}
+
+.vdp-sentences__total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-size: 0.95rem;
+}
+
+.vdp-sentences__total span {
+  color: var(--classroom-primary);
+  font-weight: 800;
+}
+
+.vdp-sentences__stats {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.vdp-sentences__stats div {
+  display: grid;
+  flex: 1;
+  padding: 0.3rem 0.7rem;
+  border-radius: 0.8rem;
+  background: var(--classroom-soft);
+  font-size: 0.8125rem;
+}
+
+.vdp-sentences__stats dt {
+  color: var(--classroom-text-muted);
+}
+
+.vdp-sentences__stats dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.vdp-sentences__list {
+  display: grid;
+  min-height: 0;
+  flex: 1;
+  align-content: start;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0.15rem;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.vdp-sentence {
+  display: grid;
+  width: 100%;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.15rem 0.7rem;
+  padding: 0.65rem 0.8rem;
+  border: 1.5px solid var(--classroom-border);
+  border-radius: 1rem;
+  background: #fff;
+  color: var(--classroom-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.12s, background-color 0.12s;
+}
+
+.vdp-sentence:hover {
+  border-color: var(--classroom-primary);
+}
+
+.vdp-sentence:focus-visible {
+  outline: 2px solid var(--classroom-primary);
+  outline-offset: 2px;
+}
+
+.vdp-sentence[data-state='done'] {
+  border-color: #6ee7b7;
+  background: linear-gradient(180deg, #f6fdf9, #ecfdf5);
+}
+
+.vdp-sentence[data-state='current'] {
+  border-color: var(--classroom-primary);
+  background: var(--classroom-soft);
+  box-shadow: 0 0 0 3px rgb(18 58 181 / 12%);
+}
+
+.vdp-sentence__icon {
+  display: grid;
+  width: 1.5rem;
+  height: 1.5rem;
+  grid-row: 1 / 3;
+  place-items: center;
+  border: 2px solid #cfd8ee;
+  border-radius: 50%;
+  color: #047857;
+}
+
+.vdp-sentence[data-state='done'] .vdp-sentence__icon {
+  border-color: #34d399;
+}
+
+.vdp-sentence[data-state='current'] .vdp-sentence__icon {
+  border-color: var(--classroom-primary);
+  background: var(--classroom-primary);
+}
+
+.vdp-sentence__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem 0.5rem;
+  color: var(--classroom-text-muted);
+  font-size: 0.75rem;
+}
+
+.vdp-sentence__meta b {
+  color: var(--classroom-text);
+}
+
+.vdp-sentence__meta em {
+  padding: 0.05rem 0.5rem;
+  border-radius: 999px;
+  background: var(--classroom-primary);
+  color: #fff;
+  font-size: 0.6875rem;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.vdp-sentence__text {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.35rem;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+/* A sentence not passed yet: one bar per word, as long as the word. */
+.vdp-sentence__mask {
+  height: 0.7rem;
+  border-radius: 999px;
+  background: #cfd8ee;
+}
+
+/* Borders and padding count inside the given sizes, so the boxes never overflow their column. */
+.vdp-card,
+.vdp-input,
+.vdp-strip,
+.vdp-main--fit {
+  box-sizing: border-box;
+}
+
+.vdp-card {
+  overflow-y: auto;
+}
+
+@media (max-width: 720px) {
+  .vdp-layout {
+    grid-template-rows: minmax(0, 30%) minmax(0, 1fr);
+  }
+
+  .vdp-note,
+  .vdp-hint {
+    display: none;
+  }
+
+  .vdp-bar__count {
+    margin-left: 0;
+  }
+}
+
+/* ---- narrow windows (under 960px): one column that scrolls like a normal page ---- */
+/* The one-screen fit only works with room to spare; on a phone or a small tablet the video keeps the width of the
+   window and the page scrolls, with the writing area natural height. */
+@media (max-width: 959px) {
+  .vdp-page--fit {
+    display: block;
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+
+  .vdp-page--fit > .vdp-main {
+    flex: none;
+  }
+
+  .vdp-main--fit {
+    display: block;
+    padding: 0.75rem 0.75rem 1.25rem;
+  }
+
+  .vdp-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .vdp-stage {
+    display: block;
+    container-type: normal;
+  }
+
+  .vdp-stage__inner {
+    width: min(100%, 44rem);
+    margin-inline: auto;
+  }
+
+  .vdp-card {
+    flex: none;
+    padding: 1rem;
+    overflow: visible;
+  }
+
+  .vdp-input {
+    flex: none;
+    min-height: 7.5rem;
+    font-size: 1.05rem;
+  }
+
+  .vdp-result {
+    overflow: visible;
+  }
+
+  /* Room is not short any more, so the explanations come back. */
+  .vdp-note,
+  .vdp-hint {
+    display: block;
+  }
+
+  .vdp-words__list {
+    max-height: none;
+  }
+}
+
+@media (max-width: 479px) {
+  .vdp-bar {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .vdp-bar__title {
+    flex: 1 1 100%;
+    order: 3;
+    font-size: 0.95rem;
+  }
+
+  .vdp-bar__count {
+    margin-left: auto;
+  }
+
+  .vdp-actions__buttons {
+    width: 100%;
+  }
+
+  .vdp-actions__buttons > button {
+    flex: 1;
+  }
+}
+/* ---- wide layouts on a small laptop or tablet (960px up) ------------------ */
+@media (min-width: 960px) {
+  /* One line for the bar: a long title is cut with "…" instead of pushing the count onto a second line. */
+  .vdp-bar {
+    flex-wrap: nowrap;
+  }
+
+  .vdp-bar__title {
+    flex: 1 1 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .vdp-layouts,
+  .vdp-bar__count {
+    flex: none;
+  }
+}
+
+@media (min-width: 960px) and (max-width: 1279px) {
+  /* Icons only in the layout switcher, and no tip text next to the controls: there is no room for them. */
+  .vdp-layouts__option span {
+    display: none;
+  }
+
+  .vdp-layouts__option {
+    padding: 0 0.7rem;
+  }
+
+  .vdp-main[data-layout='compact'] .vdp-controls {
+    flex-wrap: nowrap;
+  }
+
+  .vdp-main[data-layout='compact'] .vdp-controls__tip {
+    display: none;
+  }
+}
+
+/* ---- a video with hundreds of sentences: rows far from the screen are not drawn until scrolled near ---- */
+.vdp-main:not([data-layout='stacked']) .vdp-sentences__list > li {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 4.5rem;
+}

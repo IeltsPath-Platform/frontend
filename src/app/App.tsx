@@ -41,6 +41,8 @@ import { TopicPage } from '@/features/learning-path/pages/TopicPage'
 import { TopicListPage } from '@/features/learning-path/pages/TopicListPage'
 import { TopicTestPage } from '@/features/learning-path/pages/TopicTestPage'
 import { TopicTestResultPage } from '@/features/learning-path/pages/TopicTestResultPage'
+import { VideoDictationLibraryPage } from '@/features/video-dictation/pages/VideoDictationLibraryPage'
+import { VideoDictationPlayerPage } from '@/features/video-dictation/pages/VideoDictationPlayerPage'
 import { CommunityPage } from '@/features/community/pages/CommunityPage'
 import { NotificationPreferencesPage } from '@/features/community/pages/NotificationPreferencesPage'
 import { ContentReportsAdminPage } from '@/features/community/pages/ContentReportsAdminPage'
@@ -125,6 +127,8 @@ function AppContent() {
       />
       <Route path="/practice/speaking/tasks/:packageVersionId/:sectionId" element={<RequireAuth><SpeakingWorkspacePage /></RequireAuth>} />
       <Route path="/practice/speaking/:cueId" element={<Navigate replace to="/practice-tests?skill=speaking" />} />
+      <Route path="/video-dictation" element={<RequireAuth><VideoDictationLibraryPage /></RequireAuth>} />
+      <Route path="/video-dictation/:videoId" element={<RequireAuth><VideoDictationPlayerPage /></RequireAuth>} />
       <Route path="/vocabulary" element={<VocabularyPage />} />
       <Route path="/submission-history" element={<RequireAuth><RouteStatusPage title="Lịch sử nộp bài" /></RequireAuth>} />
       <Route path="/flashcards" element={<RequireAuth><RouteStatusPage title="Flashcard của tôi" /></RequireAuth>} />
