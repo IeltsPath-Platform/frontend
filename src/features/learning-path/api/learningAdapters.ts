@@ -257,6 +257,7 @@ export type PracticeEssayDto = {
   passBand?: number | null
   guide?: string | null
   images?: Array<{ mediaUrl: string; altText?: string | null }> | null
+  sampleAnswer?: string | null
   latestSubmission?: { id: string; status: string; overallBand?: number | null; passed?: boolean | null } | null
 }
 
@@ -614,6 +615,7 @@ function mapPracticeEssay(dto: PracticeEssayDto): import('~types/learningPath').
     passBand: dto.passBand ?? null,
     guide: dto.guide ?? null,
     images: (dto.images ?? []).map((image) => ({ mediaUrl: image.mediaUrl, altText: image.altText ?? null })),
+    sampleAnswer: dto.sampleAnswer ?? null,
     latest: dto.latestSubmission
       ? {
           id: dto.latestSubmission.id,

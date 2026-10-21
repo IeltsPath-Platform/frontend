@@ -204,6 +204,45 @@
   width: 100%;
   height: auto;
 }
+.lp-essay-material--guide {
+  min-height: 0;
+}
+.lp-essay-chart-rail {
+  display: grid;
+  align-content: start;
+  flex: 0 1 40%;
+  min-height: 0;
+  max-height: 40%;
+  padding: .65rem 1rem 0;
+  overflow: hidden;
+}
+.lp-essay-chart--guide-rail {
+  max-height: 100%;
+  overflow: hidden;
+}
+.lp-essay-chart--guide-rail img {
+  max-height: calc(40vh - 4.5rem);
+  object-fit: contain;
+}
+.lp-essay-chart__fallback {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: .35rem;
+  width: 100%;
+  min-height: 7rem;
+  aspect-ratio: 16 / 10;
+  padding: .75rem;
+  border-radius: 8px;
+  background: var(--lp-canvas);
+  color: var(--lp-muted);
+  font-size: .88rem;
+  text-align: center;
+}
+.lp-essay-material__guide-scroll {
+  min-height: 0;
+  overflow-y: auto;
+}
 .lp-essay-chart__zoom {
   display: inline-flex;
   align-items: center;
@@ -366,6 +405,19 @@
     overflow: visible;
   }
   .lp-ws-card__scroll {
+    overflow: visible;
+  }
+  .lp-essay-material--guide {
+    max-height: none;
+  }
+  .lp-essay-chart-rail {
+    flex: 0 0 auto;
+    max-height: 50vh;
+  }
+  .lp-essay-chart--guide-rail img {
+    max-height: calc(50vh - 4.5rem);
+  }
+  .lp-essay-material__guide-scroll {
     overflow: visible;
   }
 }

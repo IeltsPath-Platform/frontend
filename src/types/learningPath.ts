@@ -345,6 +345,8 @@ export interface PracticeEssay {
   /** Learner-facing guidance and chart assets for this prompt, when Content provides them. */
   guide?: string | null
   images?: Array<{ mediaUrl: string; altText: string | null }>
+  /** The model answer the learner may switch on while writing; paragraphs split by a blank line, `**phrase**` marks vocabulary. */
+  sampleAnswer?: string | null
   latest: { id: string; status: string; overallBand: number | null; passed: boolean | null } | null
 }
 

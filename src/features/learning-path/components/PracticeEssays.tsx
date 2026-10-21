@@ -2,12 +2,14 @@ import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'rea
 import { createPortal } from 'react-dom'
 import { CheckCircle2, CircleAlert, ExternalLink, Loader2, RotateCcw, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { countWords, essaySections, joinSections } from '@/features/practice/writing/writingText'
+import { Switch } from '@/components/ui/switch'
+import { boldRuns, countWords, essaySections, joinSections } from '@/features/practice/writing/writingText'
 import { learningApi, toApiError, userMessage, type ApiError } from '../api'
 import { LOOKUP_MAX_CHARS, LOOKUP_TABS, lookupUrl, type LookupDirection } from '../placement/dictionaryLookup'
 import { newRequestId } from '../lib/requestId'
 import { reportApiError } from '../lib/reviewGate'
 import type { EssayGrade, PracticeEssay } from '~types/learningPath'
+import { EssaySampleText } from './EssaySampleText'
 import { PracticeEssayMaterial } from './PracticeEssayMaterial'
 
 const CRITERION_NAME: Record<string, string> = {
@@ -170,11 +172,17 @@ function EssayEditor({ active, attemptId, essay, grade, index, locked, onGrade, 
   // The same id is kept while the text is unchanged, so retrying after a failure is graded and charged once.
   const pending = useRef<{ requestId: string; text: string } | null>(null)
   const inFlight = useRef(false)
+  const [sampleOn, setSampleOn] = useState(false)
 
   const words = countWords(text)
   const minWords = essay.minWords
   const shortBy = minWords !== null ? Math.max(0, minWords - words) : 0
   const graded = grade?.status === 'GRADED'
+  // The sample comes with the essay; the graded submission carries it too, for a server that sends it only then.
+  const sample = (essay.sampleAnswer ?? grade?.sampleAnswer ?? '').trim() || null
+  const showSample = sampleOn && sample !== null
+  const sampleParagraphs = (sample ?? '').split(/\n\s*\n/).map((paragraph) => paragraph.trim()).filter(Boolean)
+  const sampleParts = sampleParagraphs.length === sections.length ? sampleParagraphs : [sample ?? '']
   const title = essay.task ? `Đề viết · ${TASK_LABEL[essay.task]}` : 'Đề viết'
 
   async function submit() {
@@ -205,8 +213,16 @@ function EssayEditor({ active, attemptId, essay, grade, index, locked, onGrade, 
       <PracticeEssayMaterial essay={essay} title={title} />
 
       <section className="lp-ws-card lp-essay-ws__write" aria-label="Khu vực viết bài">
-        <header className="lp-ws-card__head">
-          <strong>Viết bài</strong>
+        <header className="lp-ws-card__head lp-essay-editor__head">
+          <div className="lp-essay-ws__title">
+            <strong>Viết bài</strong>
+            {sample ? (
+              <label className="lp-essay-switch">
+                <Switch aria-label="Bài mẫu" checked={sampleOn} onCheckedChange={setSampleOn} />
+                <span>Bài mẫu</span>
+              </label>
+            ) : null}
+          </div>
           <span aria-live="polite">Word count: {words}</span>
         </header>
         <div className="lp-ws-card__scroll">
@@ -217,20 +233,24 @@ function EssayEditor({ active, attemptId, essay, grade, index, locked, onGrade, 
             </p>
           ) : null}
           {graded && grade ? <EssayResult grade={grade} passBand={essay.passBand} /> : null}
+          {locked && showSample ? <EssaySampleText sample={sample} task={essay.task} /> : null}
           {locked ? null : (
             <div className="lp-essay-parts" role="group" aria-label={graded ? 'Sửa bài viết để chấm lại' : 'Bài viết của bạn'}>
               {sections.map((section, partIndex) => (
                 <div className="lp-essay-part" key={section}>
                   <label className="lp-essay__label" htmlFor={`essay-${essay.id}-${partIndex}`}>{section}</label>
                   <textarea
-                    className="lp-essay__text"
+                    className={`lp-essay__text${showSample ? ' lp-essay__text--sample' : ''}`}
                     disabled={submitting}
                     id={`essay-${essay.id}-${partIndex}`}
                     onChange={(event) => setParagraphs((previous) => previous.map((paragraph, paragraphIndex) =>
                       paragraphIndex === partIndex ? event.target.value : paragraph))}
                     placeholder={`Viết phần ${section} của bạn ở đây…`}
+                    readOnly={showSample}
                     spellCheck
-                    value={paragraphs[partIndex] ?? ''}
+                    value={showSample
+                      ? boldRuns(sampleParts[partIndex] ?? '').map((run) => run.text).join('')
+                      : paragraphs[partIndex] ?? ''}
                   />
                 </div>
               ))}
@@ -244,7 +264,7 @@ function EssayEditor({ active, attemptId, essay, grade, index, locked, onGrade, 
             </p>
             <Button
               className="lp-btn lp-btn--accent"
-              disabled={submitting || text.trim() === ''}
+              disabled={showSample || submitting || text.trim() === ''}
               onClick={() => void submit()}
               type="button"
             >
@@ -390,13 +410,6 @@ function EssayResult({ grade, passBand }: { grade: EssayGrade; passBand: number 
             ))}
           </ul>
         </div>
-      ) : null}
-
-      {grade.sampleAnswer ? (
-        <details className="lp-essay-sample">
-          <summary>Xem bài mẫu</summary>
-          <p>{grade.sampleAnswer}</p>
-        </details>
       ) : null}
     </section>
   )

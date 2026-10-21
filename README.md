@@ -50,6 +50,8 @@ Cột trái chuyển giữa Đề bài và Hướng dẫn; chart có thể phón
 Task 2 dùng Introduction, Body 1, Body 2, Conclusion. Khi nộp, các đoạn được ghép thành một bài và giữ nguyên luồng chấm,
 trừ điểm và hoàn thành bộ luyện tập. Không có bộ đếm thời gian; phần tra từ giữ nguyên. Trang nền được khóa cuộn trong
 khi mở workspace; nội dung dài cuộn bên trong từng cột. Đề chưa có guide hoặc ảnh vẫn mở được.
+Bật Bài mẫu hiển thị nội dung mẫu dạng chỉ đọc ngay trong các ô viết, giữ nguyên kích thước và vị trí các ô.
+Tắt Bài mẫu khôi phục bản nháp; bài mẫu không được gửi chấm.
 
 Chart của bốn đề Task 1 mới cần được upload lên Supabase theo
 [`backend/docs/assets/course-writing-charts/README.md`](../backend/docs/assets/course-writing-charts/README.md).
