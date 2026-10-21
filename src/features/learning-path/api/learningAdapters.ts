@@ -98,6 +98,7 @@ export type LessonBlockDto = {
     durationSeconds?: number | null
     transcript?: string | null
   } | null
+  vocabularySenseIds?: string[] | null
   passed?: boolean
   questions?: QuestionDto[] | null
   solutions?: Array<{ questionVersionId: string; correctAnswer: string; explanation?: string }> | null
@@ -392,12 +393,19 @@ export function mapTopicLessons(dto: TopicLessonsDto, topic: TopicSummary): Topi
   }
 }
 
-/** Passages, audio and auto-graded exercises of a lesson; essay and text blocks are not part of the exercises tab. */
+/** Preserves the lesson content used by its vocabulary and exercise sections; text and essays use other views. */
 export function mapLessonBlocks(blocks: LessonBlockDto[] | undefined): LessonBlock[] {
   const mapped: LessonBlock[] = []
   let exerciseNumber = 0
   for (const block of [...(blocks ?? [])].sort((a, b) => a.sortOrder - b.sortOrder)) {
-    if (block.blockType === 'ASSET' && block.asset?.assetType === 'PASSAGE') {
+    if (block.blockType === 'VOCABULARY') {
+      mapped.push({
+        id: block.blockId,
+        sortOrder: block.sortOrder,
+        type: 'VOCABULARY',
+        vocabularySenseIds: block.vocabularySenseIds ?? [],
+      })
+    } else if (block.blockType === 'ASSET' && block.asset?.assetType === 'PASSAGE') {
       mapped.push({
         id: block.blockId,
         sortOrder: block.sortOrder,

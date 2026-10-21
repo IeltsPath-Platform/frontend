@@ -1,5 +1,5 @@
-/** The parts of a lesson page: its three resources, the exercises of the lesson and the embedded Practice. */
-export type LessonTab = 'slides' | 'summary' | 'documents' | 'exercises' | 'practice'
+/** The resources, vocabulary, exercises and embedded Practice of a lesson page. */
+export type LessonTab = 'slides' | 'summary' | 'documents' | 'vocabulary' | 'exercises' | 'practice'
 
 export interface LessonSlideItem {
   id: string
