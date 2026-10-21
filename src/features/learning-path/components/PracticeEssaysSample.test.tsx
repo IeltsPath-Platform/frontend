@@ -36,6 +36,7 @@ const grade: EssayGrade = {
   passed: true,
   criteria: [{ code: 'TA', band: 6, strengths: ['Clear overview'], improvements: [] }],
   corrections: [],
+  studyPoints: [],
   summary: 'A clear report.',
   pointsCharged: 3,
   sampleAnswer: null,

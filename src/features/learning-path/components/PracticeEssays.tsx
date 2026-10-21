@@ -1,24 +1,21 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
-import { CheckCircle2, CircleAlert, ExternalLink, Loader2, RotateCcw, X } from 'lucide-react'
+import { CheckCircle2, CircleAlert, ExternalLink, Loader2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { boldRuns, countWords, essaySections, joinSections } from '@/features/practice/writing/writingText'
 import { learningApi, toApiError, userMessage, type ApiError } from '../api'
+import { mapEssayGrade } from '../api/learningAdapters'
 import { LOOKUP_MAX_CHARS, LOOKUP_TABS, lookupUrl, type LookupDirection } from '../placement/dictionaryLookup'
 import { newRequestId } from '../lib/requestId'
 import { reportApiError } from '../lib/reviewGate'
-import type { EssayGrade, PracticeEssay } from '~types/learningPath'
-import { EssaySampleText } from './EssaySampleText'
+import { useApiResource } from '../lib/useApiResource'
+import type { EssayGrade, EssayStudyPoint, PracticeEssay } from '~types/learningPath'
 import { PracticeEssayMaterial } from './PracticeEssayMaterial'
+import { LoadingState } from './PageState'
 
-const CRITERION_NAME: Record<string, string> = {
-  TA: 'Task Achievement',
-  TR: 'Task Response',
-  CC: 'Coherence & Cohesion',
-  LR: 'Lexical Resource',
-  GRA: 'Grammar Range & Accuracy',
-}
+import { CRITERION_NAME } from './essayCriteria'
+import { EssayStudyPoints } from './EssayStudyPoints'
 
 const TASK_LABEL: Record<string, string> = { TASK_1: 'Task 1', TASK_2: 'Task 2' }
 
@@ -43,6 +40,13 @@ function gradedBefore(essay: PracticeEssay) {
   return essay.latest?.status === 'GRADED'
 }
 
+/** Keep all submitted paragraphs, including any extra paragraphs in the final section. */
+function submittedParts(text: string, sectionCount: number): string[] {
+  const parts = text.trim().split(/\r?\n\s*\r?\n/)
+  return Array.from({ length: sectionCount }, (_, index) =>
+    index === sectionCount - 1 ? parts.slice(index).join('\n\n') : parts[index] ?? '')
+}
+
 interface PracticeEssaysProps {
   attemptId: string
   essays: PracticeEssay[]
@@ -54,6 +58,7 @@ interface PracticeEssaysProps {
   onExit: () => void
   /** Shown in the top bar once the set was handed in, in place of the finish button. */
   done?: ReactNode
+  onPractise?: (point: EssayStudyPoint) => Promise<void>
 }
 
 /**
@@ -62,7 +67,7 @@ interface PracticeEssaysProps {
  * grading and answered with its bands, corrections and a summary. Grading costs points, so nothing is sent until the
  * learner presses the button.
  */
-export function PracticeEssays({ attemptId, essays, onFinish, finished, onExit, done }: PracticeEssaysProps) {
+export function PracticeEssays({ attemptId, essays, onFinish, finished, onExit, done, onPractise }: PracticeEssaysProps) {
   const [grades, setGrades] = useState<Record<string, EssayGrade>>({})
   const [current, setCurrent] = useState(0)
   const [finishing, setFinishing] = useState(false)
@@ -144,6 +149,7 @@ export function PracticeEssays({ attemptId, essays, onFinish, finished, onExit, 
             key={essay.id}
             locked={finished}
             onGrade={(grade) => setGrades((previous) => ({ ...previous, [essay.id]: grade }))}
+            onPractise={onPractise}
             total={essays.length}
           />
         ))}
@@ -153,7 +159,7 @@ export function PracticeEssays({ attemptId, essays, onFinish, finished, onExit, 
   )
 }
 
-function EssayEditor({ active, attemptId, essay, grade, index, locked, onGrade, total }: {
+function EssayEditor({ active, attemptId, essay, grade, index, locked, onGrade, onPractise, total }: {
   /** Only the essay in view is shown; the others keep what was written while they are out of view. */
   active: boolean
   attemptId: string
@@ -162,6 +168,7 @@ function EssayEditor({ active, attemptId, essay, grade, index, locked, onGrade, 
   index: number
   locked: boolean
   onGrade: (grade: EssayGrade) => void
+  onPractise?: (point: EssayStudyPoint) => Promise<void>
   total: number
 }) {
   const sections = essaySections(essay.task)
@@ -173,20 +180,44 @@ function EssayEditor({ active, attemptId, essay, grade, index, locked, onGrade, 
   const pending = useRef<{ requestId: string; text: string } | null>(null)
   const inFlight = useRef(false)
   const [sampleOn, setSampleOn] = useState(false)
+  // The right column is reserved for the dictionary and the result, so grading never moves the essay itself.
+  const [railChoice, setRailChoice] = useState<'lookup' | 'result' | null>(null)
+  const railRef = useRef<HTMLElement>(null)
+  const freshlyGraded = useRef(false)
+  const submissionId = !grade && gradedBefore(essay) ? essay.latest?.id : undefined
+  const saved = useApiResource(`practice-essay:${attemptId}:${essay.id}:${submissionId ?? ''}`, async () =>
+    submissionId ? learningApi.getWritingSubmission(submissionId) : null)
+  const restored = saved.data?.status === 'GRADED' ? saved.data : null
+  const displayedGrade = grade ?? (restored ? mapEssayGrade(restored) : null)
+  const restoring = Boolean(submissionId)
+  const visibleParagraphs = restoring ? submittedParts(restored?.essayText ?? '', sections.length) : paragraphs
+  const missingText = restored !== null && !(restored.essayText ?? '').trim()
 
-  const words = countWords(text)
+  const words = missingText ? restored.wordCount ?? 0 : countWords(joinSections(visibleParagraphs))
   const minWords = essay.minWords
   const shortBy = minWords !== null ? Math.max(0, minWords - words) : 0
-  const graded = grade?.status === 'GRADED'
+  const graded = displayedGrade?.status === 'GRADED'
   // The sample comes with the essay; the graded submission carries it too, for a server that sends it only then.
-  const sample = (essay.sampleAnswer ?? grade?.sampleAnswer ?? '').trim() || null
-  const showSample = sampleOn && sample !== null
+  const sample = (essay.sampleAnswer ?? displayedGrade?.sampleAnswer ?? '').trim() || null
+  const sampleDisabled = graded || gradedBefore(essay) || locked
+  const showSample = !sampleDisabled && sampleOn && sample !== null
   const sampleParagraphs = (sample ?? '').split(/\n\s*\n/).map((paragraph) => paragraph.trim()).filter(Boolean)
   const sampleParts = sampleParagraphs.length === sections.length ? sampleParagraphs : [sample ?? '']
   const title = essay.task ? `Đề viết · ${TASK_LABEL[essay.task]}` : 'Đề viết'
 
+  // The result opens by itself once graded, until the learner picks the dictionary.
+  const rail = graded ? railChoice ?? 'result' : 'lookup'
+
+  useEffect(() => {
+    // On a narrow screen the columns stack, so bring the result into view after a fresh grading only.
+    if (graded && freshlyGraded.current) {
+      freshlyGraded.current = false
+      railRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' })
+    }
+  }, [graded])
+
   async function submit() {
-    if (inFlight.current || text.trim() === '') return
+    if (inFlight.current || graded || restoring || locked || text.trim() === '') return
     inFlight.current = true
     setSubmitting(true)
     setError(null)
@@ -197,6 +228,7 @@ function EssayEditor({ active, attemptId, essay, grade, index, locked, onGrade, 
         essayText: text,
       })
       pending.current = null
+      freshlyGraded.current = true
       onGrade(result)
     } catch (reason) {
       const apiError = toApiError(reason)
@@ -215,10 +247,10 @@ function EssayEditor({ active, attemptId, essay, grade, index, locked, onGrade, 
       <section className="lp-ws-card lp-essay-ws__write" aria-label="Khu vực viết bài">
         <header className="lp-ws-card__head lp-essay-editor__head">
           <div className="lp-essay-ws__title">
-            <strong>Viết bài</strong>
-            {sample ? (
+            <strong>{graded ? 'Bài viết đã nộp' : 'Viết bài'}</strong>
+            {sample && !sampleDisabled ? (
               <label className="lp-essay-switch">
-                <Switch aria-label="Bài mẫu" checked={sampleOn} onCheckedChange={setSampleOn} />
+                <Switch aria-label="Bài mẫu" checked={showSample} disabled={sampleDisabled} onCheckedChange={setSampleOn} />
                 <span>Bài mẫu</span>
               </label>
             ) : null}
@@ -226,16 +258,16 @@ function EssayEditor({ active, attemptId, essay, grade, index, locked, onGrade, 
           <span aria-live="polite">Word count: {words}</span>
         </header>
         <div className="lp-ws-card__scroll">
-          {gradedBefore(essay) && !grade ? (
-            <p className="lp-hint" role="status">
-              Bạn đã được chấm bài này: band {bandText(essay.latest?.overallBand ?? null)}
-              {essay.latest?.passed ? ', đạt.' : ', chưa đạt.'} Viết lại nếu muốn chấm thêm một lần.
-            </p>
+          {restoring && saved.status === 'loading' ? <LoadingState label="Đang tải bài viết và kết quả chấm…" /> : null}
+          {restoring && (saved.status === 'error' || (saved.status === 'success' && !restored)) ? (
+            <div className="lp-error" role="alert">
+              <p>Không tải được bài viết và kết quả chấm. {saved.error ? userMessage(saved.error) : 'Vui lòng thử lại.'}</p>
+              <Button className="lp-btn" onClick={saved.reload} type="button">Thử lại</Button>
+            </div>
           ) : null}
-          {graded && grade ? <EssayResult grade={grade} passBand={essay.passBand} /> : null}
-          {locked && showSample ? <EssaySampleText sample={sample} task={essay.task} /> : null}
-          {locked ? null : (
-            <div className="lp-essay-parts" role="group" aria-label={graded ? 'Sửa bài viết để chấm lại' : 'Bài viết của bạn'}>
+          {missingText ? <p className="lp-hint" role="status">Không có nội dung bài viết đã nộp để hiển thị.</p> : null}
+          {(restoring && !restored) || (missingText && !showSample) ? null : (
+            <div className="lp-essay-parts" role="group" aria-label={graded ? 'Bài viết đã nộp' : 'Bài viết của bạn'}>
               {sections.map((section, partIndex) => (
                 <div className="lp-essay-part" key={section}>
                   <label className="lp-essay__label" htmlFor={`essay-${essay.id}-${partIndex}`}>{section}</label>
@@ -246,46 +278,74 @@ function EssayEditor({ active, attemptId, essay, grade, index, locked, onGrade, 
                     onChange={(event) => setParagraphs((previous) => previous.map((paragraph, paragraphIndex) =>
                       paragraphIndex === partIndex ? event.target.value : paragraph))}
                     placeholder={`Viết phần ${section} của bạn ở đây…`}
-                    readOnly={showSample}
+                    readOnly={showSample || graded || locked}
                     spellCheck
                     value={showSample
                       ? boldRuns(sampleParts[partIndex] ?? '').map((run) => run.text).join('')
-                      : paragraphs[partIndex] ?? ''}
+                      : visibleParagraphs[partIndex] ?? ''}
                   />
                 </div>
               ))}
             </div>
           )}
         </div>
-        {locked ? null : (
+        {restoring || (locked && !graded) ? null : (
           <footer className="lp-ws-card__foot">
-            <p className={`lp-essay__count${shortBy > 0 ? ' is-short' : ''}`}>
-              {shortBy > 0 ? `Còn thiếu ${shortBy} từ so với yêu cầu` : minWords !== null ? 'Đủ số từ' : ''}
-            </p>
-            <Button
-              className="lp-btn lp-btn--accent"
-              disabled={showSample || submitting || text.trim() === ''}
-              onClick={() => void submit()}
-              type="button"
-            >
-              {submitting ? <Loader2 aria-hidden="true" className="lp-spin" /> : graded ? <RotateCcw aria-hidden="true" size={16} /> : null}
-              {submitting ? 'Đang chấm bài…' : graded ? 'Chấm lại' : 'Nộp để chấm'}
-            </Button>
-            {submitting ? <p className="lp-hint lp-ws-card__note" role="status">Đang chấm, thường mất 10 đến 20 giây. Đừng đóng trang này.</p> : null}
-            {error ? (
-              <p className="lp-error lp-ws-card__note" role="alert">
-                <CircleAlert aria-hidden="true" size={16} /> {error}
+            {graded ? (
+              <p className="lp-essay__count lp-essay__count--done">
+                <CheckCircle2 aria-hidden="true" size={16} /> Đã nộp và chấm xong
               </p>
-            ) : null}
+            ) : (
+              <>
+                <p className={`lp-essay__count${shortBy > 0 ? ' is-short' : ''}`}>
+                  {shortBy > 0 ? `Còn thiếu ${shortBy} từ so với yêu cầu` : minWords !== null ? 'Đủ số từ' : ''}
+                </p>
+                <Button
+                  className="lp-btn lp-btn--accent"
+                  disabled={showSample || submitting || text.trim() === ''}
+                  onClick={() => void submit()}
+                  type="button"
+                >
+                  {submitting ? <Loader2 aria-hidden="true" className="lp-spin" /> : null}
+                  {submitting ? 'Đang chấm bài…' : 'Nộp để chấm'}
+                </Button>
+                {submitting ? <p className="lp-hint lp-ws-card__note" role="status">Đang chấm, thường mất 10 đến 20 giây. Đừng đóng trang này.</p> : null}
+                {error ? (
+                  <p className="lp-error lp-ws-card__note" role="alert">
+                    <CircleAlert aria-hidden="true" size={16} /> {error}
+                  </p>
+                ) : null}
+              </>
+            )}
           </footer>
         )}
       </section>
 
-      <aside className="lp-ws-card lp-essay-ws__dictionary" aria-label="Tra từ vựng">
+      <aside className="lp-ws-card lp-essay-ws__rail" aria-label="Từ điển và kết quả chấm" ref={railRef}>
         <header className="lp-ws-card__head">
-          <strong>Tra từ vựng</strong>
+          <div className="lp-segment" role="group" aria-label="Nội dung cột bên phải">
+            <button aria-pressed={rail === 'lookup'} onClick={() => setRailChoice('lookup')} type="button">Từ điển</button>
+            <button
+              aria-pressed={rail === 'result'}
+              disabled={!graded}
+              onClick={() => setRailChoice('result')}
+              title={graded ? undefined : 'Có sau khi bài được chấm'}
+              type="button"
+            >
+              Kết quả chấm
+            </button>
+          </div>
         </header>
-        <EssayLookup />
+        <div className="lp-essay-ws__rail-pane" hidden={rail !== 'lookup'}>
+          <EssayLookup />
+        </div>
+        <div className="lp-essay-ws__rail-pane" hidden={rail !== 'result'}>
+          {graded && displayedGrade ? (
+            <div className="lp-ws-card__scroll">
+              <EssayResult grade={displayedGrade} passBand={essay.passBand} onPractise={onPractise} />
+            </div>
+          ) : null}
+        </div>
       </aside>
     </article>
   )
@@ -361,40 +421,53 @@ function EssayLookup() {
   )
 }
 
-function EssayResult({ grade, passBand }: { grade: EssayGrade; passBand: number | null }) {
+function EssayResult({ grade, passBand, onPractise }: {
+  grade: EssayGrade
+  passBand: number | null
+  onPractise?: (point: EssayStudyPoint) => Promise<void>
+}) {
   const passed = grade.passed === true
+  const gap = !passed && passBand !== null && grade.overallBand !== null ? passBand - grade.overallBand : null
   return (
     <section className={`lp-essay-result${passed ? ' is-passed' : ''}`} aria-label="Kết quả chấm bài">
       <div className="lp-essay-result__overall">
         <div>
+          <p className="lp-essay-result__eyebrow">Kết quả chấm của AI</p>
           <p className="lp-essay-result__band">{bandText(grade.overallBand)}</p>
           <p className="lp-essay-result__band-label">Band tổng</p>
         </div>
-        <p className="lp-essay-result__verdict" role="status">
-          {passed ? 'Đạt' : `Chưa đạt${passBand !== null ? `, mục tiêu band ${passBand.toFixed(1)}` : ''}`}
-        </p>
+        <div className="lp-essay-result__verdict-box">
+          <p className="lp-essay-result__verdict" role="status">
+            {passed ? 'Đạt' : `Chưa đạt${passBand !== null ? `, mục tiêu band ${passBand.toFixed(1)}` : ''}`}
+          </p>
+          {gap !== null && gap > 0 ? <p className="lp-essay-result__gap">Còn thiếu {gap.toFixed(1)} band</p> : null}
+        </div>
       </div>
 
       {grade.summary ? <p className="lp-essay-result__summary">{grade.summary}</p> : null}
 
       <ul className="lp-essay-criteria" aria-label="Điểm từng tiêu chí">
-        {grade.criteria.map((criterion) => (
-          <li key={criterion.code}>
-            <div className="lp-essay-criteria__head">
-              <span>{CRITERION_NAME[criterion.code] ?? criterion.code}</span>
-              <strong>{criterion.band.toFixed(1)}</strong>
-            </div>
-            <span className="lp-essay-criteria__bar" aria-hidden="true">
-              <i style={{ width: `${Math.min(100, (criterion.band / 9) * 100)}%` }} />
-            </span>
-            {criterion.strengths.length > 0 || criterion.improvements.length > 0 ? (
-              <ul className="lp-essay-criteria__notes">
-                {criterion.strengths.map((note) => <li className="is-good" key={`g-${note}`}>{note}</li>)}
-                {criterion.improvements.map((note) => <li key={`i-${note}`}>{note}</li>)}
-              </ul>
-            ) : null}
-          </li>
-        ))}
+        {grade.criteria.map((criterion) => {
+          const weak = passBand !== null && criterion.band < passBand
+          return (
+            <li key={criterion.code}>
+              <div className="lp-essay-criteria__head">
+                <span>{CRITERION_NAME[criterion.code] ?? criterion.code}</span>
+                <strong>{criterion.band.toFixed(1)}</strong>
+              </div>
+              <span className={`lp-essay-criteria__bar${weak ? ' is-weak' : ''}`} aria-hidden="true">
+                <i style={{ width: `${Math.min(100, (criterion.band / 9) * 100)}%` }} />
+                {passBand !== null ? <b style={{ left: `${Math.min(100, (passBand / 9) * 100)}%` }} /> : null}
+              </span>
+              {criterion.strengths.length > 0 || criterion.improvements.length > 0 ? (
+                <ul className="lp-essay-criteria__notes">
+                  {criterion.strengths.map((note) => <li className="is-good" key={`g-${note}`}>{note}</li>)}
+                  {criterion.improvements.map((note) => <li key={`i-${note}`}>{note}</li>)}
+                </ul>
+              ) : null}
+            </li>
+          )
+        })}
       </ul>
 
       {grade.corrections.length > 0 ? (
@@ -411,6 +484,7 @@ function EssayResult({ grade, passBand }: { grade: EssayGrade; passBand: number 
           </ul>
         </div>
       ) : null}
+      <EssayStudyPoints points={grade.studyPoints} onPractise={onPractise} />
     </section>
   )
 }

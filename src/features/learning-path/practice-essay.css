@@ -63,7 +63,7 @@
   min-height: 0;
   display: grid;
   gap: .75rem;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) minmax(0, .75fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1fr);
 }
 .lp-essay-ws__cols[hidden] {
   display: none;
@@ -100,6 +100,7 @@
   min-height: 0;
   padding: 1rem;
   overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 .lp-ws-card__foot {
   display: flex;
@@ -109,6 +110,8 @@
   gap: .5rem .75rem;
   padding: .65rem 1rem;
   border-top: 1px solid var(--lp-line);
+  /* Same height with the submit button and without it, so the field does not grow after grading. */
+  min-height: calc(44px + 1.3rem);
 }
 .lp-ws-card__foot .lp-essay__count {
   margin-right: auto;
@@ -303,6 +306,28 @@
 .lp-essay__count.is-short {
   color: var(--lp-accent-ink);
 }
+.lp-essay__count--done {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  color: var(--lp-success);
+  font-weight: 650;
+}
+
+/* Right column: the dictionary and, once graded, the result. Both stay mounted so the lookup history survives. */
+.lp-essay-ws__rail-pane {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+.lp-essay-ws__rail-pane[hidden] {
+  display: none;
+}
+.lp-segment button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
 
 /* Dictionary */
 .lp-lookup__empty {
@@ -422,51 +447,66 @@
   }
 }
 
-/* Graded result */
+/* Graded result, in the right column */
 .lp-essay-result {
   display: grid;
-  gap: 1rem;
-  padding: 1rem 1.1rem;
-  border: 1px solid var(--lp-line);
-  border-left: 4px solid var(--lp-accent);
-  border-radius: 12px;
-  background: var(--lp-canvas);
-}
-.lp-essay-result.is-passed {
-  border-left-color: var(--lp-success);
+  gap: 1.1rem;
 }
 .lp-essay-result__overall {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
   gap: 1rem;
+  padding: .9rem 1rem;
+  border-radius: 12px;
+  background: var(--lp-accent-soft);
+}
+.lp-essay-result.is-passed .lp-essay-result__overall {
+  background: var(--lp-success-soft);
+}
+.lp-essay-result__eyebrow {
+  margin: 0 0 .35rem;
+  color: var(--lp-muted);
+  font-size: .78rem;
+  font-weight: 600;
 }
 .lp-essay-result__band {
   margin: 0;
   color: var(--lp-ink);
   font-family: var(--lp-display);
-  font-size: 2.25rem;
+  font-size: 2.75rem;
   font-weight: 800;
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
 .lp-essay-result__band-label {
-  margin: .2rem 0 0;
+  margin: .25rem 0 0;
   color: var(--lp-muted);
   font-size: .8rem;
+}
+.lp-essay-result__verdict-box {
+  display: grid;
+  justify-items: end;
+  gap: .3rem;
+  text-align: right;
 }
 .lp-essay-result__verdict {
   margin: 0;
   padding: .3rem .8rem;
   border-radius: 999px;
-  background: var(--lp-accent-soft);
+  background: var(--lp-surface);
   color: var(--lp-accent-ink);
   font-size: .85rem;
   font-weight: 700;
 }
 .lp-essay-result.is-passed .lp-essay-result__verdict {
-  background: var(--lp-success-soft);
   color: var(--lp-success);
+}
+.lp-essay-result__gap {
+  margin: 0;
+  color: var(--lp-accent-ink);
+  font-size: .8rem;
+  font-variant-numeric: tabular-nums;
 }
 .lp-essay-result__summary {
   margin: 0;
@@ -481,12 +521,6 @@
   padding: 0;
   list-style: none;
 }
-@media (min-width: 720px) {
-  .lp-essay-criteria {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    column-gap: 1.5rem;
-  }
-}
 .lp-essay-criteria__head {
   display: flex;
   justify-content: space-between;
@@ -497,6 +531,7 @@
   font-variant-numeric: tabular-nums;
 }
 .lp-essay-criteria__bar {
+  position: relative;
   display: block;
   height: 6px;
   margin-top: .3rem;
@@ -509,6 +544,18 @@
   height: 100%;
   border-radius: inherit;
   background: var(--lp-primary);
+}
+.lp-essay-criteria__bar.is-weak i {
+  background: var(--lp-accent);
+}
+/* Where the pass band sits on the scale. */
+.lp-essay-criteria__bar b {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--lp-ink);
 }
 .lp-essay-criteria__notes {
   display: grid;
@@ -527,6 +574,7 @@
   color: var(--lp-success);
 }
 
+.lp-essay-study h4,
 .lp-essay-corrections h4 {
   margin: 0 0 .5rem;
   font-size: .9rem;
@@ -561,6 +609,47 @@
 .lp-essay-corrections small {
   margin-left: auto;
   color: var(--lp-muted);
+}
+
+.lp-essay-study ul {
+  display: grid;
+  gap: .5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.lp-essay-study li {
+  display: grid;
+  gap: .4rem;
+  min-width: 0;
+  padding: .55rem .75rem;
+  border: 1px solid var(--lp-line);
+  border-radius: 10px;
+  background: var(--lp-surface);
+  font-size: .9rem;
+  overflow-wrap: anywhere;
+}
+.lp-essay-study__criterion {
+  color: var(--lp-muted);
+}
+.lp-essay-study li p {
+  margin: 0;
+  line-height: 1.5;
+}
+.lp-essay-study li p.lp-essay-study__note {
+  padding-left: .65rem;
+  border-left: 3px solid var(--lp-accent);
+  color: var(--lp-ink);
+}
+.lp-essay-study__note span {
+  display: block;
+  color: var(--lp-accent-ink);
+  font-size: .75rem;
+  font-weight: 700;
+}
+.lp-essay-study__actions {
+  display: flex;
+  justify-content: flex-end;
 }
 
 .lp-essay-sample summary {

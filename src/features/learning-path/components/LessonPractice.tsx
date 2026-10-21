@@ -1,6 +1,6 @@
 import { StudyActivityTracker } from '@/features/study-time/StudyActivityTracker'
 import { Fragment, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { AlertTriangle, ArrowRight, CheckCircle2, CircleDot, Loader2, Lock, ShieldAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type {
@@ -22,6 +22,7 @@ import { HeartsPanel } from './HeartsPanel'
 import { ApiErrorState, LoadingState } from './PageState'
 import { RewardSummary } from './RewardSummary'
 import { newRequestId } from '../lib/requestId'
+import { startStudyPointPractice } from '../lib/studyPointPractice'
 import { reportApiError, setPendingReviews } from '../lib/reviewGate'
 import { useApiResource } from '../lib/useApiResource'
 import type { ReviewOrigin } from '../lib/routes'
@@ -32,6 +33,11 @@ const ITEM_META: Partial<Record<PracticeSetItem['status'], ItemMeta>> = {
   IN_PROGRESS: { label: 'Đang làm', tone: 'accent', icon: CircleDot },
   PASSED: { label: 'Đã đạt', tone: 'success', icon: CheckCircle2 },
   LOCKED: { label: 'Chưa mở', tone: 'locked', icon: Lock },
+}
+
+/** A set of only Writing has one graded essay, so a percentage of right answers says nothing about the band. */
+function writingOnly(item: PracticeSetItem): boolean {
+  return item.skills?.length === 1 && item.skills[0] === 'WRITING'
 }
 
 /**
@@ -92,6 +98,8 @@ function PracticeView({ catalog, hearts, onHeartsChanged, onReload, reviewOrigin
   reviewOrigin?: ReviewOrigin
   reviews: ReviewRef[]
 }) {
+  const navigate = useNavigate()
+  const location = useLocation()
   const [active, setActive] = useState<{ item: PracticeSetItem; attempt: PracticeAttemptView } | null>(null)
   const [startingId, setStartingId] = useState<string | null>(null)
   const [submission, setSubmission] = useState<PracticeSubmissionResult | null>(null)
@@ -175,6 +183,7 @@ function PracticeView({ catalog, hearts, onHeartsChanged, onReload, reviewOrigin
         finished={Boolean(submission)}
         onExit={backToList}
         onFinish={async () => { await submit([]) }}
+        onPractise={(point) => startStudyPointPractice(point, `${location.pathname}${location.search}`, navigate)}
       />
     ) : null
     return (
@@ -280,7 +289,7 @@ function PracticeView({ catalog, hearts, onHeartsChanged, onReload, reviewOrigin
         <ul className="lp-practice-list" aria-label="Bài ôn và các bộ luyện thêm">
           {looseReviews.map((review) => <ReviewCard key={review.reviewId} review={review} reviewOrigin={reviewOrigin} />)}
           {catalog.items.map((item) => {
-            const meta = itemMeta(item, reviewsBySet.has(item.packageId))
+            const meta = itemMeta(item, reviewsBySet.get(item.packageId)?.some((review) => review.blocking !== false) ?? false)
             const StateIcon = meta?.icon
             const withoutLabel = item.title.replace(/^(?:Luyện thêm|Luyện tập)\s+/i, '')
             const title = withoutLabel.startsWith(`${item.code}:`)
@@ -306,7 +315,7 @@ function PracticeView({ catalog, hearts, onHeartsChanged, onReload, reviewOrigin
                 <div className="lp-practice-card__body">
                   <span className="lp-practice-card__code">{item.code}</span>
                   <h3>{title}</h3>
-                  <p>{item.questionCount} câu{item.bestPercent != null ? ` · điểm cao nhất ${Math.round(item.bestPercent * (item.bestPercent <= 1 ? 100 : 1))}%` : ''}</p>
+                  <p>{item.questionCount} câu{item.bestPercent != null && !writingOnly(item) ? ` · điểm cao nhất ${Math.round(item.bestPercent * (item.bestPercent <= 1 ? 100 : 1))}%` : ''}</p>
                   {item.revealed && (item.status === 'AVAILABLE' || item.status === 'IN_PROGRESS') ? (
                     <p className="lp-hint lp-hint--warn">Đáp án bộ này đã hiện ở bài ôn, nên lần làm này không được tính điểm.</p>
                   ) : null}
@@ -342,21 +351,23 @@ function PracticeView({ catalog, hearts, onHeartsChanged, onReload, reviewOrigin
 
 /** A pending review of the lesson, in the list of its Practice. */
 function ReviewCard({ review, reviewOrigin }: { review: ReviewRef; reviewOrigin?: ReviewOrigin }) {
+  const blocking = review.blocking !== false
+  const Icon = blocking ? ShieldAlert : CircleDot
   return (
-    <li className="lp-practice-card is-review">
+    <li className={`lp-practice-card is-review${blocking ? '' : ' is-optional'}`}>
       <div className="lp-practice-card__body">
-        <span className="lp-practice-card__code">Bài ôn bắt buộc</span>
+        <span className="lp-practice-card__code">{blocking ? 'Bài ôn bắt buộc' : 'Bài ôn tự chọn'}</span>
         <h3>{review.knowledgePointTitle}</h3>
-        <p>Làm xong để luyện tập tiếp và mở bài sau.</p>
+        <p>{blocking ? 'Làm xong để luyện tập tiếp và mở bài sau.' : 'Ôn thêm để củng cố kiến thức; bạn vẫn có thể học tiếp.'}</p>
       </div>
       <div className="lp-practice-card__aside">
-        <span className="lp-practice-card__status lp-practice-card__status--accent">
-          <ShieldAlert aria-hidden="true" size={13} />
-          Cần làm
+        <span className={`lp-practice-card__status${blocking ? ' lp-practice-card__status--accent' : ''}`}>
+          <Icon aria-hidden="true" size={13} />
+          {blocking ? 'Cần làm' : 'Tự chọn'}
         </span>
         <Button asChild className="lp-btn lp-practice-card__action is-primary" variant="ghost">
           <Link to={`/learn/reviews/${review.reviewId}`} state={reviewOrigin ? { reviewOrigin } : undefined}>
-            Làm bài ôn<ArrowRight aria-hidden="true" />
+            {blocking ? 'Làm bài ôn' : 'Tiếp tục ôn'}<ArrowRight aria-hidden="true" />
           </Link>
         </Button>
       </div>

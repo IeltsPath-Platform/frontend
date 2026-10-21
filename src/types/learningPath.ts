@@ -68,6 +68,8 @@ export interface FinalTestSummary {
 export interface ReviewRef {
   reviewId: string
   lessonId?: string
+  /** False for optional reviews; legacy gate responses omit this field. */
+  blocking?: boolean
   /** The Practice set whose attempt created the review; absent for reviews from assessments. */
   sourcePackageId?: string | null
   knowledgePointCode: string
@@ -180,12 +182,14 @@ export interface WritingCorrection {
 export interface WritingSubmissionResult {
   submissionId: string
   status: string
+  essayText?: string | null
   task?: string
   wordCount?: number
   overallBand?: number | null
   passed?: boolean | null
   criteria?: WritingCriterion[]
   corrections?: WritingCorrection[]
+  studyPoints?: Partial<EssayStudyPoint>[]
   summary?: string
   pointsCharged?: number
   sampleAnswer?: string | null
@@ -323,6 +327,8 @@ export interface PracticeSetItem {
   bestPercent: number | null
   lastAttemptId: string | null
   revealed: boolean
+  /** Skills of the set's questions; a set of only Writing is graded by band, not by a percentage of right answers. */
+  skills?: string[]
 }
 
 export interface LessonPracticeSets {
@@ -375,6 +381,17 @@ export interface EssayCorrection {
   category: string | null
 }
 
+export interface EssayStudyPoint {
+  kind: 'CRITERION' | 'AI'
+  criterionCode: string | null
+  band: number | null
+  knowledgePointId: string | null
+  code: string | null
+  name: string | null
+  title: string | null
+  reason: string | null
+}
+
 /**
  * The result of sending one essay. Only a GRADED result carries the grade; other statuses are a failure the learner
  * can retry, with `failureCode` saying why.
@@ -387,6 +404,7 @@ export interface EssayGrade {
   passed: boolean | null
   criteria: EssayCriterion[]
   corrections: EssayCorrection[]
+  studyPoints: EssayStudyPoint[]
   summary: string | null
   pointsCharged: number | null
   sampleAnswer: string | null

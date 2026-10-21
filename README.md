@@ -37,6 +37,8 @@ Slide, Lesson Summary, Tài liệu và Luyện tập là các mục trong cùng 
 
 Trong danh sách bài học, nút Làm bài ôn chỉ nằm ở bài học sở hữu bài ôn theo `pendingReviews.lessonId`. Các bài bị chặn bởi bài ôn vẫn giữ trạng thái khóa và lý do chờ; tên bài học có bài ôn vẫn mở lại được.
 
+Cờ `blocking` từ backend phân biệt bài ôn bắt buộc với bài ôn tự chọn. Bài ôn tự chọn giữ dấu hoàn thành của lesson, hiện nhãn Ôn tự chọn và nút Tiếp tục ôn; chỉ bài ôn bắt buộc mới hiện cảnh báo Cần làm bài ôn. Nếu một lesson có cả hai loại, danh sách ưu tiên bài bắt buộc.
+
 Đường nối giữa các bài tô xanh theo trạng thái đã hoàn thành; đoạn chưa học giữ xám, hiệu ứng tôn trọng chế độ giảm chuyển động.
 
 Đường nối giữa các topic tô cam theo tỷ lệ bài học đã hoàn thành trong topic đang học, tô xanh toàn đoạn khi topic đã qua và giữ xám với topic bị khóa. Tỷ lệ hiển thị giữ nguyên khi mở/thu gọn chặng; chỉ trạng thái topic đã qua mới dùng màu xanh, kể cả khi đã học hết bài nhưng còn kiểm tra chặng.
@@ -52,6 +54,9 @@ trừ điểm và hoàn thành bộ luyện tập. Không có bộ đếm thời
 khi mở workspace; nội dung dài cuộn bên trong từng cột. Đề chưa có guide hoặc ảnh vẫn mở được.
 Bật Bài mẫu hiển thị nội dung mẫu dạng chỉ đọc ngay trong các ô viết, giữ nguyên kích thước và vị trí các ô.
 Tắt Bài mẫu khôi phục bản nháp; bài mẫu không được gửi chấm.
+Mở lại đề đã chấm sẽ tải bài viết đã nộp cùng band tổng, điểm từng tiêu chí, nhận xét và chỗ cần sửa của AI.
+Bài đã nộp hiển thị dạng chỉ đọc, kể cả sau khi hoàn thành bộ; nút Bài mẫu được ẩn khi bài đã được chấm.
+Nếu tải kết quả lỗi, màn hình có nút Thử lại để đọc lại dữ liệu đã lưu.
 
 Chart của bốn đề Task 1 mới cần được upload lên Supabase theo
 [`backend/docs/assets/course-writing-charts/README.md`](../backend/docs/assets/course-writing-charts/README.md).

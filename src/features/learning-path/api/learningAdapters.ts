@@ -21,6 +21,7 @@ import type {
   TestStatus,
   TopicLessonsResponse,
   CourseSummary,
+  EssayStudyPoint,
   TopicStatus,
   TopicSummary,
 } from '~types/learningPath'
@@ -137,6 +138,7 @@ export type ReviewRefDto = {
   lessonId: string
   knowledgePointId: string
   sourcePackageId?: string | null
+  blocking?: boolean
 }
 
 export type ReviewSetDto = {
@@ -226,6 +228,7 @@ export type PracticeSetItemDto = {
   bestPercent: number | null
   lastAttemptId: string | null
   revealed: boolean
+  skills?: string[]
 }
 
 export type LessonPracticeSetsDto = {
@@ -269,6 +272,16 @@ export type EssayGradeDto = {
   passed?: boolean | null
   criteria?: Array<{ code: string; band: number; strengths?: string[]; improvements?: string[] }>
   corrections?: Array<{ excerpt: string; suggestion: string; category?: string | null }>
+  studyPoints?: Array<{
+    kind?: string
+    criterionCode?: string | null
+    band?: number | null
+    knowledgePointId?: string | null
+    code?: string | null
+    name?: string | null
+    title?: string | null
+    reason?: string | null
+  }>
   summary?: string | null
   pointsCharged?: number | null
   sampleAnswer?: string | null
@@ -510,9 +523,10 @@ export function mapReviewRef(dto: ReviewRefDto): ReviewRef {
   return {
     reviewId: dto.reviewId,
     lessonId: dto.lessonId,
+    blocking: dto.blocking ?? true,
     sourcePackageId: dto.sourcePackageId ?? null,
     knowledgePointCode: dto.knowledgePointId.slice(0, 8),
-    knowledgePointTitle: 'Bài ôn bắt buộc',
+    knowledgePointTitle: dto.blocking === false ? 'Bài ôn tự chọn' : 'Bài ôn bắt buộc',
   }
 }
 
@@ -601,6 +615,7 @@ export function mapLessonPracticeSets(dto: LessonPracticeSetsDto): import('~type
       bestPercent: item.bestPercent,
       lastAttemptId: item.lastAttemptId,
       revealed: item.revealed,
+      skills: item.skills,
     })),
   }
 }
@@ -645,6 +660,16 @@ export function mapEssayGrade(dto: EssayGradeDto): import('~types/learningPath')
       suggestion: correction.suggestion,
       category: correction.category ?? null,
     })),
+    studyPoints: (dto.studyPoints ?? []).map((point): EssayStudyPoint => ({
+      kind: point.kind === 'CRITERION' ? 'CRITERION' : 'AI',
+      criterionCode: point.criterionCode ?? null,
+      band: point.band ?? null,
+      knowledgePointId: point.knowledgePointId ?? null,
+      code: point.code ?? null,
+      name: point.name ?? null,
+      title: point.title ?? null,
+      reason: point.reason ?? null,
+    })).filter((point) => point.kind === 'CRITERION' ? Boolean(point.knowledgePointId) : Boolean(point.title?.trim())),
     summary: dto.summary ?? null,
     pointsCharged: dto.pointsCharged ?? null,
     sampleAnswer: dto.sampleAnswer ?? null,
