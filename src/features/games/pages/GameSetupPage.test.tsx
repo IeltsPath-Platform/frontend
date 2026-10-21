@@ -2,7 +2,8 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { gameApi } from '../api/gameApi'
-import type { GameMatch, GameRoom } from '../types/game'
+import type { ActiveGame, GameMatch, GameRoom } from '../types/game'
+import { HttpError } from '@/lib/httpClient'
 import { GameSetupPage } from './GameSetupPage'
 import { SoloGameEntry } from '../components/SoloGameEntry'
 import { startSoloRoom } from '../lib/startSoloRoom'
@@ -15,6 +16,8 @@ vi.mock('../api/gameApi', () => ({
     start: vi.fn(),
     match: vi.fn(),
     leaveRoom: vi.fn(),
+    activeGame: vi.fn(),
+    leaveActiveGame: vi.fn(),
   },
 }))
 
@@ -90,6 +93,8 @@ beforeEach(() => {
   vi.mocked(gameApi.start).mockResolvedValue(match)
   vi.mocked(gameApi.match).mockResolvedValue(match)
   vi.mocked(gameApi.leaveRoom).mockResolvedValue({ ...room, status: 'CLOSED' })
+  vi.mocked(gameApi.activeGame).mockResolvedValue(null)
+  vi.mocked(gameApi.leaveActiveGame).mockResolvedValue(null)
 })
 
 afterEach(() => vi.unstubAllGlobals())
@@ -273,6 +278,7 @@ it('does not ready or start a room if setup was left before creation finished', 
   )
   setup()
   fireEvent.click(screen.getByRole('button', { name: 'Bắt đầu chơi' }))
+  await waitFor(() => expect(gameApi.createRoom).toHaveBeenCalledTimes(1))
   fireEvent.click(screen.getByRole('link', { name: 'Trò chơi' }))
   await screen.findByRole('heading', { name: 'Danh sách trò chơi' })
   await act(async () => {
@@ -280,4 +286,93 @@ it('does not ready or start a room if setup was left before creation finished', 
   })
   expect(gameApi.ready).not.toHaveBeenCalled()
   expect(gameApi.start).not.toHaveBeenCalled()
+})
+
+describe('Existing room guard', () => {
+  const running: ActiveGame = {
+    roomId: 'old-room',
+    roomCode: 'OLD123',
+    playerMode: 'MULTIPLAYER',
+    roomStatus: 'IN_MATCH',
+    matchId: 'old-match',
+    playerStatus: 'DISCONNECTED',
+  }
+
+  it.each(['SOLO', 'MULTIPLAYER'])(
+    'asks a %s player to rejoin before creating another room',
+    async (mode) => {
+      vi.mocked(gameApi.activeGame).mockResolvedValue(running)
+      setup(mode)
+      fireEvent.click(
+        screen.getByRole('button', {
+          name: mode === 'SOLO' ? 'Bắt đầu chơi' : 'Tạo phòng chơi',
+        }),
+      )
+      await screen.findByRole('heading', {
+        name: 'Bạn đang ở trong phòng chơi',
+      })
+      expect(gameApi.createRoom).not.toHaveBeenCalled()
+      fireEvent.click(screen.getByRole('button', { name: 'Tham gia lại phòng' }))
+      await screen.findByRole('heading', { name: 'Đang chơi' })
+      expect(gameApi.leaveActiveGame).not.toHaveBeenCalled()
+    },
+  )
+
+  it('rejoins a waiting multiplayer lobby', async () => {
+    vi.mocked(gameApi.activeGame).mockResolvedValue({
+      ...running,
+      roomStatus: 'WAITING',
+      matchId: null,
+      playerStatus: null,
+    })
+    setup('MULTIPLAYER')
+    fireEvent.click(screen.getByRole('button', { name: 'Tạo phòng chơi' }))
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Tham gia lại phòng' }),
+    )
+    await screen.findByRole('heading', { name: 'Sảnh nhiều người' })
+  })
+
+  it('leaves the previous room before creating a new one', async () => {
+    vi.mocked(gameApi.activeGame).mockResolvedValue(running)
+    vi.mocked(gameApi.createRoom).mockResolvedValue({
+      ...room,
+      playerMode: 'MULTIPLAYER',
+      maxPlayers: 4,
+    })
+    setup('MULTIPLAYER')
+    fireEvent.click(screen.getByRole('button', { name: 'Tạo phòng chơi' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Tạo phòng mới' }))
+    await screen.findByRole('heading', { name: 'Sảnh nhiều người' })
+    expect(vi.mocked(gameApi.leaveActiveGame)).toHaveBeenCalledBefore(
+      vi.mocked(gameApi.createRoom),
+    )
+  })
+
+  it('keeps the previous room when leaving it fails', async () => {
+    vi.mocked(gameApi.activeGame).mockResolvedValue(running)
+    vi.mocked(gameApi.leaveActiveGame).mockRejectedValue(new Error('offline'))
+    setup()
+    fireEvent.click(screen.getByRole('button', { name: 'Bắt đầu chơi' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Tạo phòng mới' }))
+    await screen.findByText(/Chưa rời được phòng cũ/)
+    expect(gameApi.createRoom).not.toHaveBeenCalled()
+  })
+
+  it('shows the same choice when the server rejects a concurrent create', async () => {
+    vi.mocked(gameApi.activeGame)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(running)
+    vi.mocked(gameApi.createRoom).mockRejectedValue(
+      new HttpError(
+        409,
+        'You are already in a Wordly room',
+        null,
+        'ACTIVE_GAME_EXISTS',
+      ),
+    )
+    setup('MULTIPLAYER')
+    fireEvent.click(screen.getByRole('button', { name: 'Tạo phòng chơi' }))
+    await screen.findByRole('heading', { name: 'Bạn đang ở trong phòng chơi' })
+  })
 })

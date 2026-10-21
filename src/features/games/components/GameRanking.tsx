@@ -1,5 +1,6 @@
+import { useEffect, useState } from 'react'
 import { Heart, Trophy } from 'lucide-react'
-import type { GameRanking as Ranking } from '../types/game'
+import type { GameRanking as Ranking, RankingPlayer } from '../types/game'
 
 import { playerStatusLabel } from '../lib/playerStatusLabel'
 
@@ -8,7 +9,45 @@ type GameRankingProps = {
   ownUserId?: string
 }
 
+function graceDeadline(player: RankingPlayer, ranking: Ranking) {
+  return !ranking.isFinal &&
+    player.status === 'DISCONNECTED' &&
+    player.reconnectDeadlineAt
+    ? Date.parse(player.reconnectDeadlineAt)
+    : null
+}
+
+/** Ticks only while someone is inside the reconnect grace; null until the first fresh reading. */
+function useGraceClock(active: boolean) {
+  const [now, setNow] = useState<number | null>(null)
+  useEffect(() => {
+    if (!active) return
+    const tick = () => setNow(Date.now())
+    const first = window.setTimeout(tick, 0)
+    const timer = window.setInterval(tick, 500)
+    return () => {
+      window.clearTimeout(first)
+      window.clearInterval(timer)
+      // A later countdown must not start from this stale reading.
+      setNow(null)
+    }
+  }, [active])
+  return now
+}
+
 export function GameRanking({ ranking, ownUserId }: GameRankingProps) {
+  const now = useGraceClock(
+    ranking.players.some((player) => graceDeadline(player, ranking) !== null),
+  )
+  function statusText(player: RankingPlayer) {
+    const label = playerStatusLabel[player.status] ?? player.status
+    const deadline = graceDeadline(player, ranking)
+    if (deadline === null || now === null) return label
+    const seconds = Math.max(0, Math.ceil((deadline - now) / 1000))
+    return seconds > 0
+      ? `${label} · tự rời trận sau ${seconds} giây`
+      : `${label} · đang xử lý rời trận…`
+  }
   return (
     <section
       className={`game-ranking${ranking.isFinal ? ' game-ranking-final' : ''}`}
@@ -54,8 +93,14 @@ export function GameRanking({ ranking, ownUserId }: GameRankingProps) {
                   <th scope="row">
                     {player.displayName || 'Người chơi'}
                     {player.userId === ownUserId && ' (Bạn)'}
-                    <small>
-                      {playerStatusLabel[player.status] ?? player.status}
+                    <small
+                      className={
+                        graceDeadline(player, ranking) !== null
+                          ? 'game-ranking-grace'
+                          : undefined
+                      }
+                    >
+                      {statusText(player)}
                     </small>
                   </th>
                   <td data-label="Điểm">

@@ -90,6 +90,8 @@ export type RankingPlayer = {
   wordsProcessed: number
   wordsSolved: number
   currentStreak: number
+  /** Set only while a DISCONNECTED player is inside the 30 s reconnect grace. */
+  reconnectDeadlineAt?: string | null
 }
 export type GameRanking = {
   matchId: string
@@ -215,4 +217,14 @@ export type GameTicket = {
   ticket: string
   expiresAt: string
   subprotocols: string[]
+}
+
+/** The Wordly room or match the user still belongs to. */
+export type ActiveGame = {
+  roomId: string
+  roomCode: string
+  playerMode: PlayerMode
+  roomStatus: 'WAITING' | 'IN_MATCH'
+  matchId: string | null
+  playerStatus: string | null
 }
