@@ -164,6 +164,11 @@ export interface ExerciseBlockData extends RawBlock {
   solutions: QuestionResult[] | null
 }
 
+export interface VocabularyBlockData extends RawBlock {
+  type: 'VOCABULARY'
+  vocabularySenseIds: string[]
+}
+
 export interface WritingCriterion {
   code: string
   band: number
@@ -194,8 +199,8 @@ export interface WritingSubmissionResult {
 }
 
 /** A lesson and its status. Its summary, slides and documents are read separately (see `types/lesson.ts`). */
-/** The parts of a lesson a learner reads or answers: passages, audio and the auto-graded exercises. */
-export type LessonBlock = PassageBlockData | AudioBlockData | ExerciseBlockData
+/** The lesson content: passages, audio, vocabulary and auto-graded exercises. */
+export type LessonBlock = PassageBlockData | AudioBlockData | VocabularyBlockData | ExerciseBlockData
 
 export interface LessonDetail {
   id: string
@@ -206,7 +211,7 @@ export interface LessonDetail {
   status: LessonStatus
   nextLessonId: string | null
   pendingReviews: ReviewRef[]
-  /** Passages, audio and exercises of the lesson, in order. Empty when the lesson has no exercise. */
+  /** Content blocks in lesson order. Vocabulary is supplemental and carries no completion state. */
   blocks?: LessonBlock[]
 }
 

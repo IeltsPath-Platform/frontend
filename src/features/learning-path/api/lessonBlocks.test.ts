@@ -5,6 +5,20 @@ const QUESTION_A = '10000000-0000-4000-8000-000000000001'
 const QUESTION_B = '10000000-0000-4000-8000-000000000002'
 
 describe('lesson blocks', () => {
+  it('retains ordered vocabulary IDs without counting them as exercises', () => {
+    const blocks = mapLessonBlocks([
+      { blockId: 'second-exercise', blockType: 'EXERCISE', sortOrder: 4, questions: [] },
+      { blockId: 'vocabulary', blockType: 'VOCABULARY', sortOrder: 2, vocabularySenseIds: ['sense-b', 'sense-a', 'sense-b'] },
+      { blockId: 'first-exercise', blockType: 'EXERCISE', sortOrder: 1, questions: [] },
+      { blockId: 'empty-vocabulary', blockType: 'VOCABULARY', sortOrder: 3, vocabularySenseIds: null },
+    ])
+
+    expect(blocks.map((block) => block.id)).toEqual(['first-exercise', 'vocabulary', 'empty-vocabulary', 'second-exercise'])
+    expect(blocks[1]).toMatchObject({ type: 'VOCABULARY', vocabularySenseIds: ['sense-b', 'sense-a', 'sense-b'] })
+    expect(blocks[2]).toMatchObject({ type: 'VOCABULARY', vocabularySenseIds: [] })
+    expect(blocks.filter((block) => block.type === 'EXERCISE').map((block) => block.title)).toEqual(['Bài tập 1', 'Bài tập 2'])
+  })
+
   it('keeps passages, audio and auto-graded exercises in order and leaves the rest out', () => {
     const blocks = mapLessonBlocks([
       {

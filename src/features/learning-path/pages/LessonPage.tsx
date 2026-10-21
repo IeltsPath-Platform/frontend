@@ -10,6 +10,7 @@ import {
   Dumbbell,
   FolderOpen,
   Loader2,
+  Languages,
   MonitorPlay,
   ShieldAlert,
   type LucideIcon,
@@ -21,6 +22,7 @@ import { learningApi, toApiError } from '../api'
 import { USE_MOCK_LEARNING } from '@/lib/env'
 import { LearnTrail } from '../components/LearnTrail'
 import { LessonExercises } from '../components/LessonExercises'
+import { LessonVocabulary } from '../components/LessonVocabulary'
 import { LessonPractice } from '../components/LessonPractice'
 import { courseTopicPath, topicPagePath, type ReviewOrigin } from '../lib/routes'
 import { hasRequiredPractice, lessonPath, lessonPracticePath } from '../lib/lessonPractice'
@@ -48,7 +50,7 @@ const TABS: readonly TabEntry[] = [
 ]
 
 function parseTab(value: string | null): LessonTab {
-  return value === 'summary' || value === 'documents' || value === 'exercises' || value === 'practice' ? value : 'slides'
+  return value === 'summary' || value === 'documents' || value === 'vocabulary' || value === 'exercises' || value === 'practice' ? value : 'slides'
 }
 
 export function LessonPage() {
@@ -153,6 +155,8 @@ export function LessonView({ lesson, onLessonChanged }: { lesson: LessonDetail; 
 
   const hasReview = Boolean(lessonReviews.data?.length)
   // A lesson with exercises is completed by passing them; the "Hoàn thành bài" confirmation is only for the others.
+  const vocabularySenseIds = [...new Set((lesson.blocks ?? []).flatMap((block) =>
+    block.type === 'VOCABULARY' ? block.vocabularySenseIds : []))]
   const exerciseCount = (lesson.blocks ?? []).filter((block) => block.type === 'EXERCISE').length
   const hasExercises = exerciseCount > 0
   const exercisesPath = `${path}?view=exercises`
@@ -217,6 +221,9 @@ export function LessonView({ lesson, onLessonChanged }: { lesson: LessonDetail; 
   }
 
   function panel() {
+    if (tab === 'vocabulary') {
+      return <LessonVocabulary senseIds={vocabularySenseIds} />
+    }
     if (tab === 'exercises') {
       return <LessonExercises blocks={lesson.blocks ?? []} lessonId={lesson.id} onChanged={exercisesChanged} />
     }
@@ -233,7 +240,7 @@ export function LessonView({ lesson, onLessonChanged }: { lesson: LessonDetail; 
     return <LessonSlides slides={resources.data.slides} />
   }
 
-  const current = TABS.find((entry) => entry.tab === tab) ?? { label: tab === 'exercises' ? 'Bài tập' : 'Luyện tập' }
+  const current = TABS.find((entry) => entry.tab === tab) ?? { label: tab === 'vocabulary' ? 'Từ vựng' : tab === 'exercises' ? 'Bài tập' : 'Luyện tập' }
 
   return (
     <article className="lp-page lp-lesson-page lp-res-page" aria-labelledby="lp-lesson-title">
@@ -285,6 +292,16 @@ export function LessonView({ lesson, onLessonChanged }: { lesson: LessonDetail; 
                 </Link>
               )
             })}
+            <Link
+              className={`lp-res-nav__link${tab === 'vocabulary' ? ' is-active' : ''}`}
+              to={`${path}?view=vocabulary`}
+              replace
+              aria-current={tab === 'vocabulary' ? 'page' : undefined}
+            >
+              <Languages aria-hidden="true" size={17} />
+              <span>Từ vựng</span>
+              {vocabularySenseIds.length ? <small>{vocabularySenseIds.length}</small> : null}
+            </Link>
             {hasExercises || tab === 'exercises' ? (
               <Link
                 className={`lp-res-nav__link${tab === 'exercises' ? ' is-active' : ''}`}
