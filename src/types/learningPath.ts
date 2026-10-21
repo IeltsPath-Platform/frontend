@@ -368,11 +368,23 @@ export interface PracticeAttemptView {
 }
 
 /** One criterion of a graded essay: TA (Task 1) or TR (Task 2), CC, LR and GRA, each with a band. */
+export type EssayJudgment = 'PASS' | 'FAIL' | 'NOT_ASSESSED'
+
+export interface EssayKnowledgeJudgment {
+  knowledgePointId: string
+  code: string | null
+  name: string | null
+  judgment: EssayJudgment
+  excerpt: string | null
+  reason: string | null
+}
+
 export interface EssayCriterion {
   code: string
   band: number
   strengths: string[]
   improvements: string[]
+  knowledgePointJudgments?: EssayKnowledgeJudgment[]
 }
 
 export interface EssayCorrection {
@@ -382,7 +394,7 @@ export interface EssayCorrection {
 }
 
 export interface EssayStudyPoint {
-  kind: 'CRITERION' | 'AI'
+  kind: 'CRITERION' | 'KNOWLEDGE_POINT' | 'AI'
   criterionCode: string | null
   band: number | null
   knowledgePointId: string | null
@@ -390,6 +402,8 @@ export interface EssayStudyPoint {
   name: string | null
   title: string | null
   reason: string | null
+  excerpt?: string | null
+  practiceKnowledgePointId?: string | null
 }
 
 /**

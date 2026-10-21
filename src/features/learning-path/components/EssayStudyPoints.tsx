@@ -37,6 +37,9 @@ function StudyPointItem({ point, notes, onPractise }: { point: EssayStudyPoint; 
   }, [])
   const criterion = CRITERION_NAME[point.criterionCode ?? ''] ?? point.criterionCode
   const title = point.name ?? point.title ?? criterion ?? 'Kiến thức cần học'
+  const practiceTarget = point.kind === 'KNOWLEDGE_POINT'
+    ? point.practiceKnowledgePointId ?? point.knowledgePointId
+    : point.kind === 'CRITERION' ? point.knowledgePointId : null
 
   async function practise() {
     if (!onPractise || inFlight.current) return
@@ -62,13 +65,19 @@ function StudyPointItem({ point, notes, onPractise }: { point: EssayStudyPoint; 
           {criterion}{point.band !== null ? ` · band ${point.band.toFixed(1)}` : ''}
         </small>
       ) : null}
+      {point.kind === 'KNOWLEDGE_POINT' ? (
+        <small className="lp-essay-study__criterion">{criterion} · Cần luyện</small>
+      ) : null}
+      {point.kind === 'KNOWLEDGE_POINT' && point.excerpt ? (
+        <blockquote className="lp-essay-study__excerpt">{point.excerpt}</blockquote>
+      ) : null}
       {point.reason ? <p>{point.reason}</p> : null}
       {notes.map((note, index) => (
         <p className="lp-essay-study__note" key={`${note.title}-${index}`}>
           <span>AI gợi ý</span> {focusNoteText(note)}
         </p>
       ))}
-      {point.kind === 'CRITERION' && onPractise && point.knowledgePointId ? (
+      {onPractise && practiceTarget ? (
         <div className="lp-essay-study__actions">
           <Button className="lp-btn" aria-label={`Luyện tập ${title}`} disabled={opening} onClick={() => void practise()} type="button">
             {opening ? <Loader2 aria-hidden="true" className="lp-spin" /> : null}

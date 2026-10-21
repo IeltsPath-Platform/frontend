@@ -270,7 +270,20 @@ export type EssayGradeDto = {
   wordCount?: number | null
   overallBand?: number | null
   passed?: boolean | null
-  criteria?: Array<{ code: string; band: number; strengths?: string[]; improvements?: string[] }>
+  criteria?: Array<{
+    code: string
+    band: number
+    strengths?: string[]
+    improvements?: string[]
+    knowledgePointJudgments?: Array<{
+      knowledgePointId?: string
+      code?: string | null
+      name?: string | null
+      judgment?: string
+      excerpt?: string | null
+      reason?: string | null
+    }>
+  }>
   corrections?: Array<{ excerpt: string; suggestion: string; category?: string | null }>
   studyPoints?: Array<{
     kind?: string
@@ -281,6 +294,8 @@ export type EssayGradeDto = {
     name?: string | null
     title?: string | null
     reason?: string | null
+    excerpt?: string | null
+    practiceKnowledgePointId?: string | null
   }>
   summary?: string | null
   pointsCharged?: number | null
@@ -654,6 +669,16 @@ export function mapEssayGrade(dto: EssayGradeDto): import('~types/learningPath')
       band: criterion.band,
       strengths: criterion.strengths ?? [],
       improvements: criterion.improvements ?? [],
+      knowledgePointJudgments: (criterion.knowledgePointJudgments ?? [])
+        .filter((item) => Boolean(item.knowledgePointId))
+        .map((item) => ({
+          knowledgePointId: item.knowledgePointId!,
+          code: item.code ?? null,
+          name: item.name ?? null,
+          judgment: item.judgment === 'PASS' || item.judgment === 'FAIL' ? item.judgment : 'NOT_ASSESSED',
+          excerpt: item.excerpt ?? null,
+          reason: item.reason ?? null,
+        })),
     })),
     corrections: (dto.corrections ?? []).map((correction) => ({
       excerpt: correction.excerpt,
@@ -661,7 +686,7 @@ export function mapEssayGrade(dto: EssayGradeDto): import('~types/learningPath')
       category: correction.category ?? null,
     })),
     studyPoints: (dto.studyPoints ?? []).map((point): EssayStudyPoint => ({
-      kind: point.kind === 'CRITERION' ? 'CRITERION' : 'AI',
+      kind: point.kind === 'CRITERION' || point.kind === 'KNOWLEDGE_POINT' ? point.kind : 'AI',
       criterionCode: point.criterionCode ?? null,
       band: point.band ?? null,
       knowledgePointId: point.knowledgePointId ?? null,
@@ -669,7 +694,11 @@ export function mapEssayGrade(dto: EssayGradeDto): import('~types/learningPath')
       name: point.name ?? null,
       title: point.title ?? null,
       reason: point.reason ?? null,
-    })).filter((point) => point.kind === 'CRITERION' ? Boolean(point.knowledgePointId) : Boolean(point.title?.trim())),
+      excerpt: point.excerpt ?? null,
+      practiceKnowledgePointId: point.practiceKnowledgePointId ?? null,
+    })).filter((point) => point.kind === 'CRITERION' || point.kind === 'KNOWLEDGE_POINT'
+      ? Boolean(point.knowledgePointId)
+      : Boolean(point.title?.trim())),
     summary: dto.summary ?? null,
     pointsCharged: dto.pointsCharged ?? null,
     sampleAnswer: dto.sampleAnswer ?? null,

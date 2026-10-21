@@ -94,7 +94,7 @@ describe('PracticeEssays sample answer switch', () => {
     expect(screen.queryByRole('heading', { level: 4 })).not.toBeInTheDocument()
   })
 
-  it('offers the sample from the graded submission when the essay did not carry one', async () => {
+  it('offers no sample switch once the essay is graded, even when only the graded submission carries a sample', async () => {
     submitPracticeEssay.mockResolvedValue({ ...grade, sampleAnswer: SAMPLE })
     renderEssay(essay)
     expect(screen.queryByRole('switch', { name: 'Bài mẫu' })).not.toBeInTheDocument()
@@ -102,6 +102,7 @@ describe('PracticeEssays sample answer switch', () => {
     await userEvent.type(screen.getByRole('textbox', { name: 'Introduction' }), 'Free tuition helps students')
     await userEvent.click(screen.getByRole('button', { name: 'Nộp để chấm' }))
 
-    expect(await screen.findByRole('switch', { name: 'Bài mẫu' })).toBeInTheDocument()
+    expect(await screen.findByText('A clear report.')).toBeInTheDocument()
+    expect(screen.queryByRole('switch', { name: 'Bài mẫu' })).not.toBeInTheDocument()
   })
 })

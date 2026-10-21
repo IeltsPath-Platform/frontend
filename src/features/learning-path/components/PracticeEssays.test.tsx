@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { EssayGrade, EssayStudyPoint, PracticeEssay } from '~types/learningPath'
@@ -84,6 +84,37 @@ describe('PracticeEssays', () => {
     expect(screen.getByText('Cohesive Devices: Use transitions sparingly.')).toBeVisible()
     await userEvent.click(screen.getByRole('button', { name: 'Luyện tập Mạch lạc và liên kết (CC)' }))
     expect(onPractise).toHaveBeenCalledExactlyOnceWith(criterionPoint)
+  })
+
+  it('shows the three knowledge point judgments under their criterion and keeps unassessed neutral', async () => {
+    submitPracticeEssay.mockResolvedValue({ ...grade, criteria: [{
+      code: 'CC', band: 5.5, strengths: [], improvements: [], knowledgePointJudgments: [
+        { knowledgePointId: 'kp-pass', code: 'LINKING', name: 'Từ nối', judgment: 'PASS', excerpt: 'However', reason: null },
+        { knowledgePointId: 'kp-fail', code: 'TOPIC', name: 'Câu chủ đề', judgment: 'FAIL', excerpt: 'bad opening', reason: 'Cần nêu luận điểm rõ hơn.' },
+        { knowledgePointId: 'kp-na', code: 'FLOW', name: 'Mạch ý', judgment: 'NOT_ASSESSED', excerpt: null, reason: null },
+      ],
+    }] })
+    renderEssays()
+    fireEvent.change(screen.getByRole('textbox', { name: 'Introduction' }), { target: { value: 'This essay has enough words now.' } })
+    await userEvent.click(screen.getByRole('button', { name: 'Nộp để chấm' }))
+
+    const list = await screen.findByRole('list', { name: 'Kiến thức con của Coherence & Cohesion' })
+    expect(within(list).getByText('Đạt')).toBeInTheDocument()
+    expect(within(list).getByText('Cần luyện')).toBeInTheDocument()
+    const unassessed = within(list).getByText('Chưa đủ bằng chứng').closest('li')!
+    expect(unassessed).toHaveClass('is-neutral')
+    expect(unassessed).not.toHaveClass('is-weak')
+    expect(within(list).getByText('However')).toBeInTheDocument()
+    expect(within(list).getByText('bad opening')).toBeInTheDocument()
+  })
+
+  it('does not render a knowledge point list for older grades without judgments', async () => {
+    submitPracticeEssay.mockResolvedValue(grade)
+    renderEssays()
+    fireEvent.change(screen.getByRole('textbox', { name: 'Introduction' }), { target: { value: 'This essay has enough words now.' } })
+    await userEvent.click(screen.getByRole('button', { name: 'Nộp để chấm' }))
+    await screen.findByText(grade.summary!)
+    expect(screen.queryByRole('list', { name: /Kiến thức con của/ })).not.toBeInTheDocument()
   })
 
   it('does not show the study points section when the grade has none', async () => {

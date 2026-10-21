@@ -14,7 +14,7 @@ import type { EssayGrade, EssayStudyPoint, PracticeEssay } from '~types/learning
 import { PracticeEssayMaterial } from './PracticeEssayMaterial'
 import { LoadingState } from './PageState'
 
-import { CRITERION_NAME } from './essayCriteria'
+import { CRITERION_NAME, JUDGMENT_LABEL } from './essayCriteria'
 import { EssayStudyPoints } from './EssayStudyPoints'
 
 const TASK_LABEL: Record<string, string> = { TASK_1: 'Task 1', TASK_2: 'Task 2' }
@@ -463,6 +463,23 @@ function EssayResult({ grade, passBand, onPractise }: {
                 <ul className="lp-essay-criteria__notes">
                   {criterion.strengths.map((note) => <li className="is-good" key={`g-${note}`}>{note}</li>)}
                   {criterion.improvements.map((note) => <li key={`i-${note}`}>{note}</li>)}
+                </ul>
+              ) : null}
+              {criterion.knowledgePointJudgments?.length ? (
+                <ul
+                  className="lp-essay-criteria__kps"
+                  aria-label={`Kiến thức con của ${CRITERION_NAME[criterion.code] ?? criterion.code}`}
+                >
+                  {criterion.knowledgePointJudgments.map((item) => (
+                    <li
+                      className={`is-${item.judgment === 'PASS' ? 'good' : item.judgment === 'FAIL' ? 'weak' : 'neutral'}`}
+                      key={item.knowledgePointId}
+                    >
+                      <span>{item.name ?? item.code ?? 'Điểm kiến thức'}</span>
+                      <em>{JUDGMENT_LABEL[item.judgment]}</em>
+                      {item.excerpt ? <q>{item.excerpt}</q> : null}
+                    </li>
+                  ))}
                 </ul>
               ) : null}
             </li>

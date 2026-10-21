@@ -54,7 +54,7 @@ trừ điểm và hoàn thành bộ luyện tập. Không có bộ đếm thời
 khi mở workspace; nội dung dài cuộn bên trong từng cột. Đề chưa có guide hoặc ảnh vẫn mở được.
 Bật Bài mẫu hiển thị nội dung mẫu dạng chỉ đọc ngay trong các ô viết, giữ nguyên kích thước và vị trí các ô.
 Tắt Bài mẫu khôi phục bản nháp; bài mẫu không được gửi chấm.
-Mở lại đề đã chấm sẽ tải bài viết đã nộp cùng band tổng, điểm từng tiêu chí, nhận xét và chỗ cần sửa của AI.
+Mở lại đề đã chấm sẽ tải bài viết đã nộp cùng band tổng, điểm từng tiêu chí, nhận xét và chỗ cần sửa của AI. Kết quả hiển thị trạng thái từng kiến thức con dưới tiêu chí cùng đoạn trích; mục “Cần luyện” có excerpt và nút Luyện tập mở bộ luyện phù hợp khi có.
 Bài đã nộp hiển thị dạng chỉ đọc, kể cả sau khi hoàn thành bộ; nút Bài mẫu được ẩn khi bài đã được chấm.
 Nếu tải kết quả lỗi, màn hình có nút Thử lại để đọc lại dữ liệu đã lưu.
 

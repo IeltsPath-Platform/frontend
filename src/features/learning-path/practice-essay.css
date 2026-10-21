@@ -573,6 +573,49 @@
 .lp-essay-criteria__notes .is-good {
   color: var(--lp-success);
 }
+.lp-essay-criteria__kps {
+  display: grid;
+  gap: .35rem;
+  margin: .5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+.lp-essay-criteria__kps li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: .2rem .6rem;
+  color: var(--lp-muted);
+  font-size: .82rem;
+  line-height: 1.45;
+}
+.lp-essay-criteria__kps em {
+  font-style: normal;
+  font-weight: 650;
+}
+.lp-essay-criteria__kps .is-good em {
+  color: var(--lp-success);
+}
+.lp-essay-criteria__kps .is-weak em {
+  color: var(--lp-danger);
+}
+.lp-essay-criteria__kps .is-neutral em {
+  color: var(--lp-muted);
+}
+.lp-essay-criteria__kps q {
+  grid-column: 1 / -1;
+  overflow-wrap: anywhere;
+}
+.lp-essay-study__excerpt {
+  margin: 0;
+  padding: .45rem .65rem;
+  border-left: 3px solid var(--lp-primary);
+  background: var(--lp-surface);
+  color: var(--lp-muted);
+  font-size: .85rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
 
 .lp-essay-study h4,
 .lp-essay-corrections h4 {

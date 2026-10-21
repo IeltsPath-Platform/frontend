@@ -6,9 +6,10 @@ import { freePracticePath, type FreePracticeNavigationState } from './routes'
 
 /** Starts free practice on a study point's knowledge point; a refusal is reported and rethrown. */
 export async function startStudyPointPractice(point: EssayStudyPoint, backTo: string, navigate: NavigateFunction) {
-  if (!point.knowledgePointId) return
+  const target = point.practiceKnowledgePointId ?? point.knowledgePointId
+  if (!target) return
   try {
-    const attempt = await learningApi.startFreePractice(point.knowledgePointId)
+    const attempt = await learningApi.startFreePractice(target)
     navigate(freePracticePath(attempt.attemptId), {
       state: {
         freePractice: {

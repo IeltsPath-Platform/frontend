@@ -29,6 +29,18 @@ describe('startStudyPointPractice', () => {
     })
   })
 
+  it('uses the practice target when one is supplied', async () => {
+    const navigate = vi.fn()
+    await startStudyPointPractice({ ...point, kind: 'KNOWLEDGE_POINT', practiceKnowledgePointId: 'practice-kp' }, '/back', navigate)
+    expect(startFreePractice).toHaveBeenCalledExactlyOnceWith('practice-kp')
+  })
+
+  it('falls back to the assessed knowledge point when no practice target is supplied', async () => {
+    const navigate = vi.fn()
+    await startStudyPointPractice({ ...point, kind: 'KNOWLEDGE_POINT', practiceKnowledgePointId: null }, '/back', navigate)
+    expect(startFreePractice).toHaveBeenCalledExactlyOnceWith('kp-1')
+  })
+
   it.each([
     ['Cohesion', 'Cohesion'],
     [null, 'Bộ luyện tự do'],
@@ -43,6 +55,13 @@ describe('startStudyPointPractice', () => {
   it('does nothing without a knowledge point', async () => {
     const navigate = vi.fn()
     await startStudyPointPractice({ ...point, knowledgePointId: null }, '/back', navigate)
+    expect(startFreePractice).not.toHaveBeenCalled()
+    expect(navigate).not.toHaveBeenCalled()
+  })
+
+  it('does nothing when a knowledge point has neither practice target nor assessed id', async () => {
+    const navigate = vi.fn()
+    await startStudyPointPractice({ ...point, kind: 'KNOWLEDGE_POINT', practiceKnowledgePointId: null, knowledgePointId: null }, '/back', navigate)
     expect(startFreePractice).not.toHaveBeenCalled()
     expect(navigate).not.toHaveBeenCalled()
   })

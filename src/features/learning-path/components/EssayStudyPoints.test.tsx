@@ -29,6 +29,35 @@ describe('EssayStudyPoints', () => {
     expect(screen.getByRole('button', { name: `Luyện tập ${criterion.name}` })).toHaveAttribute('type', 'button')
   })
 
+  it('shows a knowledge point excerpt and starts practice on its configured target', async () => {
+    const point: EssayStudyPoint = {
+      kind: 'KNOWLEDGE_POINT', criterionCode: 'CC', band: 5.5, knowledgePointId: 'kp-1',
+      practiceKnowledgePointId: 'practice-kp-1', code: 'LINKING', name: 'Từ nối', title: null,
+      reason: 'Dùng sai chức năng tương phản.', excerpt: 'Moreover, it is bad.',
+    }
+    const onPractise = vi.fn().mockResolvedValue(undefined)
+    render(<EssayStudyPoints points={[point]} onPractise={onPractise} />)
+
+    const item = screen.getByText('Từ nối').closest('li')!
+    expect(within(item).getByText('Coherence & Cohesion · Cần luyện')).toBeInTheDocument()
+    expect(within(item).getByText('Moreover, it is bad.').tagName).toBe('BLOCKQUOTE')
+    expect(within(item).getByText(point.reason!)).toBeInTheDocument()
+    await userEvent.click(within(item).getByRole('button', { name: 'Luyện tập Từ nối' }))
+    expect(onPractise).toHaveBeenCalledExactlyOnceWith(point)
+  })
+
+  it('falls back to the knowledge point itself and hides practice when neither target exists', () => {
+    const point: EssayStudyPoint = {
+      kind: 'KNOWLEDGE_POINT', criterionCode: 'CC', band: null, knowledgePointId: 'kp-1',
+      practiceKnowledgePointId: null, code: 'LINKING', name: 'Từ nối', title: null,
+      reason: null, excerpt: null,
+    }
+    const { rerender } = render(<EssayStudyPoints points={[point]} onPractise={vi.fn()} />)
+    expect(screen.getByRole('button', { name: 'Luyện tập Từ nối' })).toBeInTheDocument()
+    rerender(<EssayStudyPoints points={[{ ...point, knowledgePointId: null }]} onPractise={vi.fn()} />)
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  })
+
   it('falls back to the readable criterion when its name and title are missing', () => {
     render(<EssayStudyPoints points={[{ ...criterion, name: null }]} />)
     expect(screen.getByText('Coherence & Cohesion', { selector: 'strong' })).toBeInTheDocument()
