@@ -1,6 +1,6 @@
 import { useEffect, type ReactNode } from 'react'
 import { X } from 'lucide-react'
-import { BRAND_LOGO_URL } from '@/components/brandLogo'
+import { SiteLogo } from '@/components/SiteLogo'
 import type { AnswerMap } from '~types/learningPath'
 import type { SaveState } from '../lib/useAttemptAnswers'
 import type { TestGroup } from './placementGroups'
@@ -57,7 +57,7 @@ export function PlacementExamShell({ group, partLabel, instructions, onExit, too
   return (
     <div className="pl-exam" role="dialog" aria-modal="true" aria-labelledby="pl-exam-title">
       <header className="pl-exam__top">
-        <img alt="IELTS Space" className="pl-exam__logo" height={74} src={BRAND_LOGO_URL} width={175} />
+        <SiteLogo alt="IELTS Space" className="pl-exam__logo" />
         <div className="pl-exam__title">
           <h1 id="pl-exam-title">Bài kiểm tra đầu vào · {meta.label}</h1>
           <p>Đã làm {clock} · không giới hạn thời gian</p>

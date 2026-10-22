@@ -20,6 +20,12 @@ import { ReadingPracticePage } from '@/features/practice/reading/ReadingPractice
 import { ReadingResultPage } from '@/features/practice/reading/ReadingResultPage'
 import { ReadingHistoryPage } from '@/features/practice/reading/ReadingHistoryPage'
 import { HomePage } from '@/features/home/HomePage'
+import { DeckDetailPage } from '@/features/flashcards/pages/DeckDetailPage'
+import { DeckEditorPage } from '@/features/flashcards/pages/DeckEditorPage'
+import { LearnPage } from '@/features/flashcards/pages/LearnPage'
+import { TestPage } from '@/features/flashcards/pages/TestPage'
+import { FlashcardStudyPage } from '@/features/flashcards/pages/FlashcardStudyPage'
+import { FlashcardsPage } from '@/features/flashcards/pages/FlashcardsPage'
 import { VocabularyPage } from '@/features/vocabulary/pages/VocabularyPage'
 import { VocabularyReviewPage } from '@/features/vocabulary/pages/VocabularyReviewPage'
 import { AuthPage } from '@/features/auth/pages/AuthPage'
@@ -156,7 +162,13 @@ function AppContent() {
       <Route path="/video-dictation/:videoId" element={<RequireAuth><VideoDictationPlayerPage /></RequireAuth>} />
       <Route path="/vocabulary" element={<VocabularyPage />} />
       <Route path="/submission-history" element={<RequireAuth><RouteStatusPage title="Lịch sử nộp bài" /></RequireAuth>} />
-      <Route path="/flashcards" element={<RequireAuth><RouteStatusPage title="Flashcard của tôi" /></RequireAuth>} />
+      <Route path="/flashcards" element={<RequireAuth><FlashcardsPage /></RequireAuth>} />
+      <Route path="/flashcards/decks/new" element={<RequireAuth><DeckEditorPage /></RequireAuth>} />
+      <Route path="/flashcards/decks/:deckId" element={<RequireAuth><DeckDetailPage /></RequireAuth>} />
+      <Route path="/flashcards/decks/:deckId/edit" element={<RequireAuth><DeckEditorPage /></RequireAuth>} />
+      <Route path="/flashcards/decks/:deckId/learn" element={<RequireAuth><LearnPage /></RequireAuth>} />
+      <Route path="/flashcards/decks/:deckId/test" element={<RequireAuth><TestPage /></RequireAuth>} />
+      <Route path="/flashcards/study" element={<RequireAuth><FlashcardStudyPage /></RequireAuth>} />
       <Route path="/writing-samples" element={<RequireAuth><RouteStatusPage title="Bài mẫu Writing 8.0+" /></RequireAuth>} />
       <Route path="/student-results" element={<RequireAuth><RouteStatusPage title="Kết quả học viên" /></RequireAuth>} />
       <Route path="/login" element={<GuestOnly><AuthPage mode="sign-in" /></GuestOnly>} />

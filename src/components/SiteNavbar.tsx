@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, NavLink, useLocation, useMatch, useNavigate } from 'react-router-dom'
 import { Menu, X } from 'lucide-react'
-import { BRAND_LOGO_URL } from './brandLogo'
+import { SiteLogo } from './SiteLogo'
 import { NavOwl } from './NavOwl'
 import type { NavOwlHandle } from './NavOwl'
 import { UserTierDropdown } from './UserTierDropdown'
@@ -190,13 +190,7 @@ export function SiteNavbar({ isLoggedIn, userName }: SiteNavbarProps) {
         <nav className="site-main-nav" aria-label="Điều hướng chính"
           onKeyDown={(event) => { if (event.key === 'Escape') setMenuOpen(false) }}>
           <Link className="site-brand" to="/home" aria-label="The English Space - Trang chủ" onClick={() => setMenuOpen(false)}>
-            <img
-              className="site-brand-logo"
-              src={BRAND_LOGO_URL}
-              alt="The English Space"
-              width={175}
-              height={74}
-            />
+            <SiteLogo className="site-brand-logo" />
           </Link>
           <div id="site-navigation" ref={linksRef} className={`site-nav-links ${menuOpen ? 'is-open' : ''}`}>
             <span ref={indicatorRef} className="site-nav-indicator" aria-hidden="true" />

@@ -1,0 +1,178 @@
+/* Owl coach: a large owl with a comic speech bubble above it, effects around it and a streak badge. */
+.owl-coach {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+  inset-block-start: 5.5rem;
+  position: sticky;
+  z-index: 4;
+}
+
+.owl-coach-bubble {
+  border: 2px solid var(--coach-border);
+  border-radius: 1.2rem;
+  box-shadow: 0 .5rem 1.4rem rgb(32 55 115 / 12%);
+  font-size: .95rem;
+  font-weight: 650;
+  line-height: 1.45;
+  max-inline-size: 17rem;
+  min-block-size: 3.2rem;
+  opacity: 0;
+  padding: .8rem 1rem;
+  pointer-events: none;
+  position: relative;
+  transform: scale(.7) translateY(14px);
+  transform-origin: 50% 100%;
+  transition: opacity 220ms ease, transform 380ms cubic-bezier(.34, 1.56, .64, 1);
+}
+.owl-coach-bubble[data-visible="true"] { opacity: 1; pointer-events: auto; transform: none; }
+.owl-coach-bubble p { margin: 0; }
+/* Tail pointing down at the owl. */
+.owl-coach-bubble::after {
+  background: inherit;
+  block-size: 14px;
+  border-block-end: 2px solid var(--coach-border);
+  border-inline-end: 2px solid var(--coach-border);
+  content: '';
+  inline-size: 14px;
+  inset-block-end: -9px;
+  inset-inline-start: calc(50% - 7px);
+  position: absolute;
+  transform: rotate(45deg);
+}
+.owl-coach-caret {
+  animation: owl-caret 700ms steps(1) 4;
+  background: currentColor;
+  block-size: 1em;
+  display: inline-block;
+  inline-size: 2px;
+  margin-inline-start: 2px;
+  opacity: 0;
+  vertical-align: -2px;
+}
+
+.owl-coach.is-success .owl-coach-bubble { --coach-border: #8fd3aa; background: #effaf3; color: #1b633c; }
+.owl-coach.is-warning .owl-coach-bubble { --coach-border: #fbc96b; background: #fff8eb; color: #8a4a04; }
+.owl-coach.is-info .owl-coach-bubble { --coach-border: #a9c7ff; background: #f0f5ff; color: #1e3f9e; }
+
+.owl-coach-hero { position: relative; }
+/* Soft glow on the floor, tinted by the reaction tone. */
+.owl-coach-hero::before {
+  background: radial-gradient(closest-side, var(--coach-glow, rgb(22 71 214 / 22%)), transparent);
+  block-size: 18%;
+  content: '';
+  inline-size: 80%;
+  inset-block-end: 2%;
+  inset-inline-start: 10%;
+  position: absolute;
+  z-index: -1;
+}
+.owl-coach.is-success .owl-coach-hero::before { --coach-glow: rgb(47 168 102 / 32%); }
+.owl-coach.is-warning .owl-coach-hero::before { --coach-glow: rgb(255 118 36 / 28%); }
+
+/* Particles start at the owl's chest and fly out along --angle. */
+.owl-coach-particles { inset: 0; pointer-events: none; position: absolute; }
+.owl-coach-particles i {
+  animation: owl-burst 1100ms cubic-bezier(.2, .8, .2, 1) var(--delay) both;
+  font-size: 1.35rem;
+  font-style: normal;
+  inset-block-start: 40%;
+  inset-inline-start: 50%;
+  position: absolute;
+}
+.owl-coach-particles.fx-confetti i { animation-duration: 1400ms; font-size: 1.5rem; }
+.owl-coach-particles.fx-fire i { animation-name: owl-rise; inset-block-start: 70%; inset-inline-start: calc(10% + var(--distance) * .8); }
+.owl-coach-particles.fx-hearts i { animation-name: owl-float-up; inset-block-start: 55%; inset-inline-start: calc(5% + var(--distance) * .9); }
+.owl-coach-particles.fx-idea i { animation: owl-bulb 1600ms ease-out both; font-size: 2.4rem; inset-block-start: -6%; inset-inline-start: 62%; }
+.owl-coach-particles.fx-question i { animation-name: owl-float-up; font-size: 1.8rem; inset-block-start: 8%; inset-inline-start: calc(45% + var(--distance) * .4); }
+.owl-coach-particles.fx-sweat i { animation: owl-drop 1300ms ease-in var(--delay) both; font-size: 1.3rem; inset-block-start: 14%; inset-inline-start: 72%; }
+.owl-coach-particles.fx-zzz i { animation: owl-zzz 1800ms ease-out var(--delay) both; font-size: 1.4rem; inset-block-start: 6%; inset-inline-start: 66%; }
+
+.owl-coach-plus {
+  animation: owl-plus 1100ms cubic-bezier(.2, .8, .2, 1) both;
+  color: #2fa866;
+  font-size: 1.6rem;
+  font-weight: 900;
+  inset-block-start: 4%;
+  inset-inline-start: 12%;
+  position: absolute;
+  text-shadow: 0 2px 0 white, 0 4px 10px rgb(47 168 102 / 35%);
+}
+
+.owl-coach-streak {
+  animation: owl-badge-pop 420ms cubic-bezier(.34, 1.56, .64, 1) both, owl-flame 1.6s ease-in-out 420ms infinite alternate;
+  background: linear-gradient(135deg, #ff9a3c, #ff5a1f);
+  border: 2px solid white;
+  border-radius: 999px;
+  box-shadow: 0 .35rem .9rem rgb(255 90 31 / 40%);
+  color: white;
+  font-size: .85rem;
+  font-weight: 800;
+  inset-block-start: 6%;
+  inset-inline-end: 0;
+  padding: .2rem .6rem;
+  position: absolute;
+}
+
+@keyframes owl-caret { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+@keyframes owl-burst {
+  0% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--angle)) translateY(0) rotate(calc(var(--angle) * -1)) scale(.3); }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--angle)) translateY(calc(var(--distance) * -1)) rotate(calc(var(--angle) * -1)) scale(1.1); }
+}
+@keyframes owl-rise {
+  0% { opacity: 0; transform: translateY(0) scale(.5); }
+  25% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-6rem) scale(1.15); }
+}
+@keyframes owl-float-up {
+  0% { opacity: 0; transform: translateY(10%) scale(.6) rotate(-10deg); }
+  25% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-7rem) scale(1.1) rotate(12deg); }
+}
+@keyframes owl-bulb {
+  0% { filter: drop-shadow(0 0 0 rgb(255 214 0 / 0)); opacity: 0; transform: scale(.4) translateY(30%); }
+  30% { filter: drop-shadow(0 0 14px rgb(255 214 0 / 90%)); opacity: 1; transform: scale(1.15) translateY(0); }
+  70% { filter: drop-shadow(0 0 8px rgb(255 214 0 / 70%)); opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1) translateY(-20%); }
+}
+@keyframes owl-drop {
+  0% { opacity: 0; transform: translateY(0) scale(.6); }
+  25% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(4rem) scale(.9); }
+}
+@keyframes owl-zzz {
+  0% { opacity: 0; transform: translate(0, 0) scale(.5); }
+  30% { opacity: 1; }
+  100% { opacity: 0; transform: translate(3rem, -5rem) scale(1.2); }
+}
+@keyframes owl-plus {
+  0% { opacity: 0; transform: translateY(20%) scale(.6); }
+  25% { opacity: 1; transform: translateY(0) scale(1.15); }
+  100% { opacity: 0; transform: translateY(-3rem) scale(1); }
+}
+@keyframes owl-badge-pop { from { opacity: 0; transform: scale(.3) rotate(-20deg); } to { opacity: 1; transform: none; } }
+@keyframes owl-flame { from { filter: brightness(1); } to { filter: brightness(1.15) saturate(1.2); } }
+
+/* Phones and narrow tablets: a smaller owl pinned to the bottom corner, bubble beside it. */
+@media (max-width: 56rem) {
+  .owl-coach {
+    align-items: flex-end;
+    flex-direction: row;
+    inset: auto 1rem 1rem auto;
+    max-inline-size: min(94vw, 26rem);
+    pointer-events: none;
+    position: fixed;
+    z-index: 50;
+  }
+  .owl-coach-bubble { font-size: .85rem; margin-block-end: 2.5rem; max-inline-size: 15rem; transform-origin: 100% 100%; }
+  .owl-coach-bubble::after { inset-block-end: 1rem; inset-inline-start: auto; inset-inline-end: -9px; transform: rotate(-45deg); }
+  .owl-coach-hero > :first-child { --mascot-size: 6.5rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .owl-coach-bubble { transition: opacity 150ms ease; transform: none; }
+  .owl-coach-particles, .owl-coach-plus, .owl-coach-caret { display: none; }
+  .owl-coach-streak { animation: none; }
+}
