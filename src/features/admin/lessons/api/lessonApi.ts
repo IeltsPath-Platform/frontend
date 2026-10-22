@@ -26,6 +26,9 @@ interface TopicNode {
   skill?: string | null
   courseId?: string | null
   children?: TopicNode[] | null
+  parentTopicId?: string | null
+  bandMin?: number | null
+  bandMax?: number | null
 }
 
 const topicNodeSchema: z.ZodType<TopicNode> = z.lazy(() =>
@@ -38,9 +41,12 @@ const topicNodeSchema: z.ZodType<TopicNode> = z.lazy(() =>
     skill: z.string().nullish(),
     courseId: z.string().nullish(),
     children: z.array(topicNodeSchema).nullish(),
+    parentTopicId: z.string().nullish(),
+    bandMin: z.number().nullish(),
+    bandMax: z.number().nullish(),
   }))
 
-function flatten(nodes: readonly TopicNode[]): TopicOption[] {
+function flatten(nodes: readonly TopicNode[], parentTopicId: string | null = null): TopicOption[] {
   return nodes.flatMap((node) => [
     {
       id: node.id,
@@ -50,8 +56,11 @@ function flatten(nodes: readonly TopicNode[]): TopicOption[] {
       courseId: node.courseId ?? null,
       status: node.status ?? 'ACTIVE',
       sortOrder: node.sortOrder ?? 0,
+      parentTopicId: node.parentTopicId ?? parentTopicId,
+      bandMin: node.bandMin ?? null,
+      bandMax: node.bandMax ?? null,
     },
-    ...flatten(node.children ?? []),
+    ...flatten(node.children ?? [], node.id),
   ])
 }
 

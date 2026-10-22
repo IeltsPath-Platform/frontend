@@ -8,9 +8,9 @@ describe('adminMenu', () => {
     ])
   })
 
-  it('shows content authors only the four content screens', () => {
+  it('shows content authors their content screens', () => {
     expect(menuFor(['CONTENT_AUTHOR']).map((item) => item.path)).toEqual([
-      '/content-author/content', '/content-author/knowledge-graph', '/content-author/lessons', '/content-author/questions',
+      '/content-author/content', '/content-author/courses', '/content-author/knowledge-graph', '/content-author/lessons', '/content-author/questions',
     ])
   })
 

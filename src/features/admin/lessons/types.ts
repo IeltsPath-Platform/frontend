@@ -110,6 +110,9 @@ export interface TopicOption {
   courseId: string | null
   status: string
   sortOrder: number
+  parentTopicId?: string | null
+  bandMin?: number | null
+  bandMax?: number | null
 }
 
 export type LessonSummary = z.output<typeof lessonSummarySchema>
