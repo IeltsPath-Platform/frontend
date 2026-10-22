@@ -17,6 +17,7 @@ import { learningApi, toApiError, userMessage } from '../api'
 import { AudioBlock } from './blocks/AudioBlock'
 import { ExerciseBlock } from './blocks/ExerciseBlock'
 import { PassageBlock } from './blocks/PassageBlock'
+import { PracticeAttemptReview } from './PracticeAttemptReview'
 import { PracticeEssays } from './PracticeEssays'
 import { HeartsPanel } from './HeartsPanel'
 import { ApiErrorState, LoadingState } from './PageState'
@@ -102,6 +103,7 @@ function PracticeView({ catalog, hearts, onHeartsChanged, onReload, reviewOrigin
   const location = useLocation()
   const [active, setActive] = useState<{ item: PracticeSetItem; attempt: PracticeAttemptView } | null>(null)
   const [startingId, setStartingId] = useState<string | null>(null)
+  const [reviewing, setReviewing] = useState<PracticeSetItem | null>(null)
   const [submission, setSubmission] = useState<PracticeSubmissionResult | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -154,6 +156,10 @@ function PracticeView({ catalog, hearts, onHeartsChanged, onReload, reviewOrigin
       if (apiError.code === 'HEARTS_DEPLETED') onHeartsChanged()
       throw apiError
     }
+  }
+
+  if (reviewing?.lastAttemptId) {
+    return <PracticeAttemptReview attemptId={reviewing.lastAttemptId} item={reviewing} onBack={() => setReviewing(null)} />
   }
 
   if (active) {
@@ -325,7 +331,19 @@ function PracticeView({ catalog, hearts, onHeartsChanged, onReload, reviewOrigin
                   {meta && StateIcon ? <span className={`lp-practice-card__status lp-practice-card__status--${meta.tone}`}>
                     <StateIcon aria-hidden="true" size={14} />{meta.label}
                   </span> : null}
-                  {item.status === 'LOCKED' && !premium ? null : <Button
+                  {item.status === 'LOCKED' && !premium ? null : <span className="lp-practice-card__actions">
+                  {item.lastAttemptId && (item.status === 'PASSED' || item.status === 'ATTEMPTED') ? (
+                    <Button
+                      aria-label={`Xem kết quả: ${item.title}`}
+                      className="lp-btn lp-practice-card__action"
+                      onClick={() => setReviewing(item)}
+                      type="button"
+                      variant="ghost"
+                    >
+                      Xem kết quả
+                    </Button>
+                  ) : null}
+                  <Button
                     aria-label={`${label}: ${item.title}`}
                     className={`lp-btn lp-practice-card__action${item.packageId === primaryId ? ' is-primary' : ''}`}
                     disabled={disabled}
@@ -336,7 +354,8 @@ function PracticeView({ catalog, hearts, onHeartsChanged, onReload, reviewOrigin
                     {startingId === item.packageId ? <Loader2 aria-hidden="true" className="lp-spin" /> : null}
                     {label}
                     {startingId === item.packageId || !canStart ? null : <ArrowRight aria-hidden="true" size={16} />}
-                  </Button>}
+                  </Button>
+                  </span>}
                 </div>
               </li>
               {reviewsBySet.get(item.packageId)?.map((review) => <ReviewCard key={review.reviewId} review={review} reviewOrigin={reviewOrigin} />)}

@@ -457,6 +457,12 @@ export interface PracticeSubmissionResult {
   gamification: GamificationSummary | null
 }
 
+/** `GET /api/learning/practice-attempts/{id}/review`: a submitted attempt as it was asked, with its saved result. */
+export interface PracticeAttemptReview {
+  attempt: PracticeAttemptView
+  result: PracticeSubmissionResult
+}
+
 /** `GET /api/learning/me/progress`: XP counted toward the level, and today's use of the daily XP cap. */
 export interface LearnerProgress {
   totalXp: number
