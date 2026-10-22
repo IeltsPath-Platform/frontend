@@ -67,6 +67,27 @@ describe('LessonResourcesEditor', () => {
     confirm.mockRestore()
   })
 
+  it('retains an unfinished document while saving a slide and clears only the saved form', async () => {
+    render(<LessonResourcesEditor lessonId="l1" />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Sửa Bài đọc' }))
+    const document = screen.getByRole('form', { name: 'Sửa tài liệu' })
+    fireEvent.change(within(document).getByLabelText('Tiêu đề tài liệu'), { target: { value: 'Bài đọc đang soạn' } })
+    const slide = screen.getByRole('form', { name: 'Thêm slide' })
+    fireEvent.change(within(slide).getByLabelText('Tiêu đề slide'), { target: { value: 'Slide mới' } })
+    fireEvent.change(within(slide).getByLabelText('URL slide'), { target: { value: 'https://example.org/new' } })
+    fireEvent.submit(slide)
+    await waitFor(() => expect(api.fetchLessonResources).toHaveBeenCalledTimes(2))
+    expect(within(screen.getByRole('form', { name: 'Sửa tài liệu' })).getByLabelText('Tiêu đề tài liệu')).toHaveValue('Bài đọc đang soạn')
+    await waitFor(() => expect(within(slide).getByLabelText('Tiêu đề slide')).toHaveValue(''))
+  })
+
+  it('keeps reorder controls disabled until ordering is available', async () => {
+    render(<LessonResourcesEditor lessonId="l1" />)
+    expect(await screen.findByRole('button', { name: 'Đưa Slide đầu xuống' })).toBeDisabled()
+    expect(screen.getByText('Tạm thời chưa đổi được thứ tự. Bạn vẫn có thể thêm, sửa và xóa slide, tài liệu.')).toBeInTheDocument()
+    expect(api.updateLessonResource).not.toHaveBeenCalled()
+  })
+
   it('shows write errors and retains the form values', async () => {
     api.updateLessonResource.mockRejectedValue(new HttpError(503, 'Chưa lưu được tài liệu'))
     render(<LessonResourcesEditor lessonId="l1" />)

@@ -4,7 +4,7 @@ import { AdminEmpty, AdminError, AdminLoading } from '../../components/AdminStat
 import { adminErrorMessage } from '../../lib/adminErrors'
 import { useAdminResource } from '../../lib/useAdminResource'
 import { createLessonResource, deleteLessonResource, fetchLessonResources, updateLessonResource } from '../api/lessonApi'
-import type { LessonResource, LessonResourceRequest, LessonResourceType } from '../types'
+import type { LessonResource, LessonResourceRequest, LessonResources, LessonResourceType } from '../types'
 
 function httpsUrl(value: string) {
   try { return new URL(value).protocol === 'https:' } catch { return false }
@@ -14,7 +14,7 @@ function ResourceForm({ item, type, busy, onSave, onCancel }: {
   item?: LessonResource
   type: LessonResourceType
   busy: boolean
-  onSave: (body: Pick<LessonResourceRequest, 'title' | 'url'>) => Promise<void>
+  onSave: (body: Pick<LessonResourceRequest, 'title' | 'url'>) => Promise<boolean>
   onCancel?: () => void
 }) {
   const id = useId()
@@ -28,7 +28,8 @@ function ResourceForm({ item, type, busy, onSave, onCancel }: {
     event.preventDefault()
     setSubmitted(true)
     if (busy || !title.trim() || title.trim().length > 255 || !httpsUrl(url.trim()) || url.trim().length > 2000) return
-    await onSave({ title: title.trim(), url: url.trim() })
+    const saved = await onSave({ title: title.trim(), url: url.trim() })
+    if (saved && !item) { setTitle(''); setUrl(''); setSubmitted(false) }
   }
 
   return (
@@ -61,7 +62,7 @@ function ResourceList({ lessonId, type, items, reload, busy, run }: {
   items: LessonResource[]
   reload: () => void
   busy: boolean
-  run: (action: () => Promise<unknown>) => Promise<void>
+  run: (action: () => Promise<unknown>) => Promise<boolean>
 }) {
   const [editing, setEditing] = useState<string | null>(null)
   const label = type === 'SLIDE' ? 'Slide' : 'Tài liệu'
@@ -111,11 +112,14 @@ export function LessonResourcesEditor({ lessonId }: { lessonId: string }) {
   const resources = useAdminResource(`lesson-resources|${lessonId}`, (signal) => fetchLessonResources(lessonId, signal))
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [shown, setShown] = useState<LessonResources | null>(null)
+  if (resources.status === 'success' && resources.data !== shown) setShown(resources.data)
+  const current = resources.status === 'success' ? resources.data : shown
   async function run(action: () => Promise<unknown>) {
-    if (busy) return
+    if (busy) return false
     setBusy(true)
     setError(null)
-    try { await action() } catch (reason) { setError(adminErrorMessage(reason)) } finally { setBusy(false) }
+    try { await action(); return true } catch (reason) { setError(adminErrorMessage(reason)); return false } finally { setBusy(false) }
   }
   return (
     <section className="adm-card adm-lesson-resources" aria-label="Slide và tài liệu">
@@ -125,9 +129,9 @@ export function LessonResourcesEditor({ lessonId }: { lessonId: string }) {
       {error ? <div className="adm-alert adm-alert--error" role="alert">{error}</div> : null}
       {resources.status === 'loading' ? <AdminLoading label="Đang tải slide và tài liệu…" /> : null}
       {resources.status === 'error' ? <AdminError message={resources.error ?? 'Không tải được slide và tài liệu.'} onRetry={resources.reload} /> : null}
-      {resources.data ? <div className="adm-resources-grid">
-        <ResourceList lessonId={lessonId} type="SLIDE" items={resources.data.slides} reload={resources.reload} busy={busy} run={run} />
-        <ResourceList lessonId={lessonId} type="DOCUMENT" items={resources.data.documents} reload={resources.reload} busy={busy} run={run} />
+      {current ? <div className="adm-resources-grid">
+        <ResourceList lessonId={lessonId} type="SLIDE" items={current.slides} reload={resources.reload} busy={busy || resources.status !== 'success'} run={run} />
+        <ResourceList lessonId={lessonId} type="DOCUMENT" items={current.documents} reload={resources.reload} busy={busy || resources.status !== 'success'} run={run} />
       </div> : null}
     </section>
   )
