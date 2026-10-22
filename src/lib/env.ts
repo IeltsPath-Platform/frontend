@@ -19,5 +19,11 @@ export const USE_MOCK_LEARNING = (() => {
   return !import.meta.env.VITE_API_BASE_URL
 })()
 
+/**
+ * Rocket game runs on an in-browser mock until game-service ships its API.
+ * Set VITE_USE_MOCK_ROCKET=false to call `/api/games/rocket/**` instead.
+ */
+export const USE_MOCK_ROCKET = import.meta.env.VITE_USE_MOCK_ROCKET !== 'false'
+
 /** Social OAuth login. Off until user-service exposes a real authorize endpoint. */
 export const OAUTH_ENABLED = import.meta.env.VITE_OAUTH_ENABLED === 'true'

@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { USE_MOCK_ROCKET } from '@/lib/env'
 import { gameApi } from '../api/gameApi'
 import type { ActiveGame, GameCatalog } from '../types/game'
 import { ActiveGameDialog } from '../components/ActiveGameDialog'
@@ -120,8 +121,10 @@ export function GameCatalogPage() {
       ) : (
         <section className="game-catalog-grid" aria-label="Danh sách trò chơi">
           {catalog.games.map((game) => {
+            const rocket =
+              game.gameType === 'ROCKET' && (game.status === 'AVAILABLE' || USE_MOCK_ROCKET)
             const available =
-              game.gameType === 'WORDLY' && game.status === 'AVAILABLE'
+              (game.gameType === 'WORDLY' && game.status === 'AVAILABLE') || rocket
             return (
               <article
                 className={`game-catalog-card ${available ? 'game-catalog-wordly' : ''}`}
@@ -147,11 +150,11 @@ export function GameCatalogPage() {
                   <Button
                     disabled={!available}
                     className="game-primary-action"
-                    onClick={() => setModeOpen(true)}
+                    onClick={() => (rocket ? navigate('/games/rocket') : setModeOpen(true))}
                   >
                     {available ? (
                       <>
-                        <Gamepad2 /> Chơi Wordly <ArrowRight />
+                        <Gamepad2 /> {rocket ? 'Chơi Tên lửa' : 'Chơi Wordly'} <ArrowRight />
                       </>
                     ) : (
                       'Sắp ra mắt'

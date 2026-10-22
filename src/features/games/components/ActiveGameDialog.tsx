@@ -29,7 +29,7 @@ function describe(game: ActiveGame) {
   if (game.playerStatus === 'ACTIVE' || game.playerStatus === 'DISCONNECTED')
     return solo
       ? {
-          current: 'Bạn còn một lượt chơi đơn chưa kết thúc.',
+          current: `Bạn còn một lượt chơi đơn ${game.gameType === 'ROCKET' ? 'Tên lửa' : 'Wordly'} chưa kết thúc.`,
           consequence:
             'Nếu tiếp tục, lượt chơi cũ sẽ kết thúc và giữ nguyên số điểm đã đạt.',
         }
