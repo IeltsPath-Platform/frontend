@@ -119,6 +119,7 @@ describe('ReviewBasketPage', () => {
     due: [
       { knowledgePointId: 'kp-3', code: 'R55_TS', name: 'Câu chủ đề', skill: 'READING', tier: 'MAINTAIN', mastery: 0.9, dueAt: new Date(Date.now() - 2 * 86_400_000).toISOString(), reason: 'DUE', hasUnrevealedSet: true, reviewId: 'rev-7' },
     ],
+    weak: [],
   }
 
   it('shows the required review first, then the weak and the due points, with their counts', async () => {
@@ -131,6 +132,26 @@ describe('ReviewBasketPage', () => {
     expect(screen.getByRole('heading', { name: /^Đến hạn ôn/ })).toBeInTheDocument()
     expect(screen.getByText('Trễ 2 ngày')).toBeInTheDocument()
     expect(screen.getByRole('img', { name: /Mức thành thạo 72%/ })).toBeInTheDocument()
+  })
+
+  it('lists a weak point that already has an optional review under "Cần ưu tiên"', async () => {
+    api.getReviewBasket.mockResolvedValue({
+      ...basket,
+      weak: [{ knowledgePointId: 'kp-w', code: 'DEMO_WRITING_CRITERION_LR', name: 'Vốn từ vựng (LR)', skill: 'WRITING', tier: 'PRIORITY', mastery: 0, dueAt: null, reason: 'WRITING_CRITERION', hasUnrevealedSet: true, reviewId: 'rev-w' }],
+    })
+    renderWithRoutes(<ReviewBasketPage />)
+
+    expect(await screen.findByRole('heading', { name: /^Cần ưu tiên/ })).toBeInTheDocument()
+    const row = screen.getByText('Vốn từ vựng (LR)').closest('li') as HTMLElement
+    expect(within(row).getByRole('link', { name: /Tiếp tục ôn/ })).toHaveAttribute('href', '/learn/reviews/rev-w')
+  })
+
+  it('has no "Cần ưu tiên" section when nothing is weak', async () => {
+    api.getReviewBasket.mockResolvedValue(basket)
+    renderWithRoutes(<ReviewBasketPage />)
+
+    await screen.findByRole('heading', { name: /^Bắt buộc/ })
+    expect(screen.queryByRole('heading', { name: /^Cần ưu tiên/ })).not.toBeInTheDocument()
   })
 
   it('resumes a review already started, and blocks a point that has no new set', async () => {
@@ -156,7 +177,7 @@ describe('ReviewBasketPage', () => {
   })
 
   it('says the basket is empty when nothing is owed', async () => {
-    api.getReviewBasket.mockResolvedValue({ required: [], consolidate: [], due: [] })
+    api.getReviewBasket.mockResolvedValue({ required: [], consolidate: [], due: [], weak: [] })
     renderWithRoutes(<ReviewBasketPage />)
 
     expect(await screen.findByText('Giỏ ôn đang trống')).toBeInTheDocument()

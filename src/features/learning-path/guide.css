@@ -272,6 +272,7 @@
 }
 .lp-tally--danger { --tone: var(--lp-danger); }
 .lp-tally--primary { --tone: var(--lp-primary); }
+.lp-tally--warn { --tone: var(--lp-danger); }
 .lp-tally b {
   font-family: var(--lp-display);
   font-size: 1.5rem;

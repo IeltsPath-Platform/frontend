@@ -56,6 +56,6 @@ describe('mapReviewBasket', () => {
   })
 
   it('tolerates a missing body', () => {
-    expect(mapReviewBasket(undefined)).toEqual({ required: [], consolidate: [], due: [] })
+    expect(mapReviewBasket(undefined)).toEqual({ required: [], consolidate: [], due: [], weak: [] })
   })
 })

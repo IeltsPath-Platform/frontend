@@ -106,6 +106,9 @@ export function createMockLearningApi({ storage = null, latencyMs = 0, now = () 
     getPracticeAttempt: async () => {
       throw new ApiError(404, 'NOT_FOUND', 'Mock learning không có practice attempt.')
     },
+    getPracticeAttemptReview: async () => {
+      throw new ApiError(404, 'NOT_FOUND', 'Mock learning không có practice attempt.')
+    },
     submitPracticeAttempt: async () => {
       throw new ApiError(404, 'NOT_FOUND', 'Mock learning không có practice attempt.')
     },

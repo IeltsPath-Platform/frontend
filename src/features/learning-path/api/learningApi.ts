@@ -22,6 +22,7 @@ import type {
   LessonPracticeSets,
   PlacementResult,
   PlacementTest,
+  PracticeAttemptReview,
   PracticeAttemptView,
   PracticeEssayRequest,
   PracticeSubmissionRequest,
@@ -72,6 +73,8 @@ export interface LearningApi {
   getLessonPracticeSets(lessonId: string): Promise<LessonPracticeSets>
   startPracticeAttempt(lessonId: string, packageId: string): Promise<PracticeAttemptView>
   getPracticeAttempt(attemptId: string): Promise<PracticeAttemptView | PracticeSubmissionResult>
+  /** A submitted attempt read-only: its questions and essays, and the result it was given. Rejects with `ATTEMPT_NOT_SUBMITTED` while open. */
+  getPracticeAttemptReview(attemptId: string): Promise<PracticeAttemptReview>
   submitPracticeAttempt(attemptId: string, request: PracticeSubmissionRequest): Promise<PracticeSubmissionResult>
   /**
    * Sends one essay of a Practice set for grading (it costs points). Resolves with the grade; rejects with

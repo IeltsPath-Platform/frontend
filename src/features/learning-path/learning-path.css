@@ -2420,6 +2420,13 @@ a.lp-step__row:hover {
 .lp-practice-card__status--accent {
   color: var(--lp-accent-ink);
 }
+.lp-practice-card__actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .5rem;
+  margin-inline-start: auto;
+}
 .lp-practice-card .lp-practice-card__action {
   gap: .6rem;
   min-width: 0;

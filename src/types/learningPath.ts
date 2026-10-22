@@ -457,6 +457,12 @@ export interface PracticeSubmissionResult {
   gamification: GamificationSummary | null
 }
 
+/** `GET /api/learning/practice-attempts/{id}/review`: a submitted attempt as it was asked, with its saved result. */
+export interface PracticeAttemptReview {
+  attempt: PracticeAttemptView
+  result: PracticeSubmissionResult
+}
+
 /** `GET /api/learning/me/progress`: XP counted toward the level, and today's use of the daily XP cap. */
 export interface LearnerProgress {
   totalXp: number
@@ -599,7 +605,7 @@ export interface BasketOptionalItem {
   /** 0–1. */
   mastery: number
   dueAt: string | null
-  reason: 'CONSOLIDATE' | 'DUE'
+  reason: 'CONSOLIDATE' | 'DUE' | 'WRITING_CRITERION'
   /** False when Content has no set the learner has not seen, so the review cannot start. */
   hasUnrevealedSet: boolean
   /** Set when the learner already started an optional review of the point. */
@@ -610,6 +616,8 @@ export interface ReviewBasket {
   required: BasketRequiredItem[]
   consolidate: BasketOptionalItem[]
   due: BasketOptionalItem[]
+  /** Weak points (below the consolidate tier) that already have an optional review, such as a failed writing criterion. */
+  weak: BasketOptionalItem[]
 }
 
 /** One knowledge point of the learner's tree (`GET /api/learning/tree`). */

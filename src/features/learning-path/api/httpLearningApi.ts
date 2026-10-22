@@ -11,6 +11,7 @@ import {
   mapLessonExerciseResult,
   mapLessonPracticeSets,
   mapPracticeAttemptView,
+  mapPracticeAttemptReview,
   mapPracticeSubmission,
   mapReviewDetail,
   mapReviewRef,
@@ -28,6 +29,7 @@ import {
   type LessonDetailDto,
   type LessonExerciseResultDto,
   type LessonPracticeSetsDto,
+  type PracticeAttemptReviewDto,
   type PracticeAttemptViewDto,
   type PracticeSubmissionResultDto,
   type ReviewDetailDto,
@@ -249,6 +251,10 @@ export function createHttpLearningApi(): LearningApi {
         return mapPracticeSubmission(dto)
       }
       return mapPracticeAttemptView(dto)
+    },
+
+    async getPracticeAttemptReview(attemptId) {
+      return mapPracticeAttemptReview(await learningRequest<PracticeAttemptReviewDto>(`/practice-attempts/${attemptId}/review`))
     },
 
     async submitPracticeAttempt(attemptId, request) {

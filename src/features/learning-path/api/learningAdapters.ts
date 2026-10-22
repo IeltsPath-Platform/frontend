@@ -751,6 +751,12 @@ export function mapPracticeSubmission(dto: PracticeSubmissionResultDto): import(
   }
 }
 
+export type PracticeAttemptReviewDto = { attempt: PracticeAttemptViewDto; result: PracticeSubmissionResultDto }
+
+export function mapPracticeAttemptReview(dto: PracticeAttemptReviewDto): import('~types/learningPath').PracticeAttemptReview {
+  return { attempt: mapPracticeAttemptView(dto.attempt), result: mapPracticeSubmission(dto.result) }
+}
+
 export function mapTheoryCheck(dto: TheoryCheckResultDto): import('~types/learningPath').TheoryCheckResult {
   return {
     reviewId: dto.reviewId,
