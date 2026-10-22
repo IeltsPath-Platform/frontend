@@ -1,0 +1,15 @@
+.adm-rubric-tabs, .adm-rubric-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
+.adm-rubric-tabs .adm-btn, .adm-rubric-actions .adm-btn { min-height: 44px; }
+.adm-rubric-fields { border: 0; padding: 0; margin: 0; min-width: 0; }
+.adm-rubric-fields .adm-input, .adm-rubric-fields .adm-select, .adm-rubric-fields .adm-textarea { font-size: 1rem; }
+.adm-rubric-editor, .adm-rubric-criterion, .adm-rubric-example { margin-top: 20px; min-width: 0; }
+.adm-rubric-band { padding: 16px 0; border-bottom: 1px solid var(--adm-border); }
+.adm-rubric-view { min-width: 0; overflow-wrap: anywhere; }
+.adm-rubric-view h4 { margin: 20px 0 8px; }
+.adm-rubric-view td { white-space: pre-wrap; }
+.adm-rubric-essay { white-space: pre-wrap; }
+.adm-rubric-active { padding: 12px 0; }
+.adm-rubric-active summary, .adm-rubric-view summary { cursor: pointer; padding: 10px 0; }
+.adm-rubric-drafts { margin-top: 24px; }
+.adm-rubric-drafts ul { list-style: none; padding: 0; }
+.adm-rubric-drafts li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--adm-border); }
