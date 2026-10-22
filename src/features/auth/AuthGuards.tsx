@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuthSession } from './authSession'
+import { hasAnyRole } from './staffRoles'
 
 export function RequireAuth({ children }: { children: ReactNode }) {
   const session = useAuthSession()
@@ -11,6 +12,23 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   }
 
   return children
+}
+
+/**
+ * Renders `children` only when the signed-in user holds one of `roles`. Anyone else sees `fallback`, so a missing role
+ * is explained instead of silently redirecting. Mount it inside `RequireAuth`.
+ */
+export function RequireRole({
+  roles,
+  children,
+  fallback = <p role="alert">Bạn không có quyền truy cập trang này.</p>,
+}: {
+  roles: readonly string[]
+  children: ReactNode
+  fallback?: ReactNode
+}) {
+  const session = useAuthSession()
+  return hasAnyRole(session.roles, roles) ? children : fallback
 }
 
 export function GuestOnly({ children }: { children: ReactNode }) {

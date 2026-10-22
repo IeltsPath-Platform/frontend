@@ -1,0 +1,112 @@
+﻿.sys-instance-list,
+.sys-summary-list {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sys-instance-list li {
+  overflow-wrap: anywhere;
+  font-size: 0.8rem;
+}
+
+.sys-summary-grid,
+.sys-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.sys-summary-block,
+.sys-panel {
+  display: grid;
+  align-content: start;
+  gap: 0.9rem;
+}
+
+.sys-summary-block h2,
+.sys-panel h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.sys-summary-block p,
+.sys-panel p {
+  margin: 0;
+}
+
+.sys-mini-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.sys-mini-stats span {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.sys-stat {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.sys-stat strong {
+  font-size: 1.8rem;
+}
+
+.sys-stat small {
+  color: var(--adm-muted, currentColor);
+}
+
+.sys-activity-controls,
+.sys-date-range {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.75rem;
+}
+
+.sys-date-range {
+  margin-left: auto;
+}
+
+.sys-chart-wrap {
+  overflow-x: auto;
+}
+
+.sys-chart {
+  display: block;
+  min-width: 34rem;
+  width: 100%;
+  overflow: visible;
+}
+
+.sys-chart__grid {
+  stroke: var(--adm-border, currentColor);
+  stroke-dasharray: 3 4;
+  stroke-opacity: 0.3;
+}
+
+.sys-chart__axis {
+  fill: var(--adm-muted, currentColor);
+  font-size: 11px;
+}
+
+.sys-chart__bar {
+  fill: var(--adm-accent, currentColor);
+}
+
+@media (max-width: 760px) {
+  .sys-summary-grid,
+  .sys-stat-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sys-date-range {
+    width: 100%;
+    margin-left: 0;
+  }
+}

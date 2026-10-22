@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, NavLink, useLocation, useMatch, useNavigate } from 'react-router-dom'
 import { Menu, X } from 'lucide-react'
 import { BRAND_LOGO_URL } from './brandLogo'
@@ -6,6 +6,7 @@ import { NavOwl } from './NavOwl'
 import type { NavOwlHandle } from './NavOwl'
 import { UserTierDropdown } from './UserTierDropdown'
 import { logoutSession, setDemoTier, useAuthSession } from '@/features/auth/authSession'
+import { hasAnyRole, STAFF_ROLES } from '@/features/auth/staffRoles'
 import { NotificationBell } from '@/features/community/components/NotificationBell'
 
 interface NavChild { to: string; label: string }
@@ -84,6 +85,9 @@ const memberNavigation: readonly NavItem[] = [
   { to: '/games', label: 'Trò Chơi' },
 ]
 
+/** Only shown to staff roles; learners never see a link to the admin area. */
+const adminNavigation: NavItem = { to: '/admin', label: 'Quản trị' }
+
 export interface SiteNavbarProps {
   /** Optional visual override for embeds and component previews. App routes use the backend auth session. */
   isLoggedIn?: boolean
@@ -100,7 +104,11 @@ export function SiteNavbar({ isLoggedIn, userName }: SiteNavbarProps) {
   const session = useAuthSession()
   const activeIsLoggedIn = isLoggedIn ?? session.isLoggedIn
   const activeUserName = userName ?? session.userName
-  const visibleNavigation = activeIsLoggedIn ? memberNavigation : guestNavigation
+  const showAdminLink = hasAnyRole(session.roles, STAFF_ROLES)
+  const visibleNavigation = useMemo(
+    () => (activeIsLoggedIn ? (showAdminLink ? [...memberNavigation, adminNavigation] : memberNavigation) : guestNavigation),
+    [activeIsLoggedIn, showAdminLink],
+  )
   const activeItem = findActiveItem(visibleNavigation, pathname)
   // Hovering a primary item previews its sections in the second row; leaving the navbar restores the active ones.
   const [previewItem, setPreviewItem] = useState<NavItem | null>(null)

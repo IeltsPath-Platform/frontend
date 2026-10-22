@@ -6,7 +6,8 @@ import { WordlyPlayPage } from '@/features/games/pages/WordlyPlayPage'
 import { GameResultPage } from '@/features/games/pages/GameResultPage'
 import { lazy, Suspense } from 'react'
 import { USE_MOCK_ROCKET } from '@/lib/env'
-import { BrowserRouter, Navigate, Routes, Route, useNavigate, useParams } from 'react-router-dom'
+import { BrowserRouter, Navigate, Routes, Route, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { AdminRoutes } from '@/features/admin/AdminRoutes'
 import { ErrorBoundary } from './ErrorBoundary'
 import { NotFoundPage, RouteStatusPage } from './RouteStatusPage'
 import { OverviewPage } from '@/features/overview/pages/OverviewPage'
@@ -72,6 +73,8 @@ function RocketRoute() {
 function AppContent() {
   const navigate = useNavigate()
   const { isLoggedIn } = useAuthSession()
+  // The admin area has its own frame, so the learner footer stays out of it.
+  const inAdminArea = useLocation().pathname.startsWith('/admin')
 
   return (
     <>
@@ -79,6 +82,7 @@ function AppContent() {
       <Route path="/" element={<Navigate replace to={isLoggedIn ? '/overview' : '/home'} />} />
       <Route path="/games/rocket" element={<RocketRoute />} />
       <Route path="/games/rocket/:matchId" element={<RocketRoute />} />
+      <Route path="/admin/*" element={<RequireAuth><AdminRoutes /></RequireAuth>} />
       <Route path="/games" element={<RequireAuth><GameLayout /></RequireAuth>}>
         <Route index element={<GameCatalogPage />} />
         <Route path="wordly/setup" element={<GameSetupPage />} />
@@ -168,7 +172,7 @@ function AppContent() {
       <Route path="/copyright" element={<RouteStatusPage title="Chính sách bản quyền" />} />
       <Route path="*" element={<NotFoundPage />} />
       </Routes>
-      <SiteFooter />
+      {inAdminArea ? null : <SiteFooter />}
     </>
   )
 }

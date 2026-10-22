@@ -35,4 +35,15 @@ describe('SiteNavbar member navigation', () => {
     const community = screen.getByRole('link', { name: 'Cộng đồng' })
     expect(Boolean(home.compareDocumentPosition(community) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true)
   })
+
+  it('links staff roles to the admin area and nobody else', () => {
+    authSessionMock.mockReturnValue({ isLoggedIn: true, userName: 'R&D', roles: ['CONTENT_AUTHOR'] })
+    const { unmount } = render(<MemoryRouter initialEntries={['/overview']}><SiteNavbar /></MemoryRouter>)
+    expect(screen.getByRole('link', { name: 'Quản trị' })).toHaveAttribute('href', '/admin')
+    unmount()
+
+    authSessionMock.mockReturnValue({ isLoggedIn: true, userName: 'Học viên', roles: ['CUSTOMER'] })
+    render(<MemoryRouter initialEntries={['/overview']}><SiteNavbar /></MemoryRouter>)
+    expect(screen.queryByRole('link', { name: 'Quản trị' })).not.toBeInTheDocument()
+  })
 })
