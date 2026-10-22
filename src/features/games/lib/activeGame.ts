@@ -9,6 +9,8 @@ export function isActiveGameConflict(reason: unknown) {
 
 /** A running match reopens gameplay (or the spectator ranking); a waiting room reopens its lobby. */
 export function activeGamePath(game: ActiveGame) {
+  if (game.gameType === 'ROCKET')
+    return game.matchId ? `/games/rocket/${game.matchId}` : '/games/rocket'
   return game.matchId
     ? `/games/matches/${game.matchId}/play`
     : `/games/rooms/${game.roomId}`

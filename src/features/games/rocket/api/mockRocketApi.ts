@@ -194,16 +194,16 @@ export function createMockRocketApi(options: Options = {}): RocketApi {
 
   function toRound(match: MockMatch, round: MockRound, at: number): RocketRound {
     const index = match.rounds.indexOf(round)
-    const opensAt = round.opensAt ?? match.nextRoundAt ?? at
-    const deadlineAt = round.deadlineAt ?? opensAt + match.settings.secondsPerQuestion * 1000
+    // Like the server: a round in its reveal pause has a scheduled opening and no deadline yet.
+    const opensAt = round.opensAt ?? match.nextRoundAt
     return {
       roundId: round.roundId,
       number: index + 1,
       total: match.rounds.length,
       meaning: round.meaning,
       options: round.options,
-      opensAt: new Date(opensAt).toISOString(),
-      deadlineAt: new Date(deadlineAt).toISOString(),
+      opensAt: opensAt === null ? null : new Date(opensAt).toISOString(),
+      deadlineAt: round.deadlineAt === null ? null : new Date(round.deadlineAt).toISOString(),
       serverTime: new Date(at).toISOString(),
       me: { answered: round.chosenOptionId !== null, optionId: round.chosenOptionId },
       player: { livesRemaining: match.lives, totalScore: match.score, status: match.status },
@@ -333,6 +333,7 @@ export function createMockRocketApi(options: Options = {}): RocketApi {
           correctCount: closed.filter((round) => round.result?.correct).length,
           livesRemaining: match.lives,
           totalScore: match.score,
+          playerStatus: match.status,
           durationMs: match.endedAt - match.startedAt,
           startedAt: new Date(match.startedAt).toISOString(),
           endedAt: new Date(match.endedAt).toISOString(),

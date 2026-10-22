@@ -9,6 +9,13 @@ const messages: Record<string, string> = {
   MATCH_FINISHED: 'Phiên chơi đã kết thúc.',
   REQUEST_ID_CONFLICT:
     'Lượt đoán này đã được dùng với dữ liệu khác. Hãy đồng bộ lại.',
+  ROUND_CLOSED: 'Câu này đã hết giờ. Đang chuyển sang câu tiếp theo.',
+  ALREADY_ANSWERED: 'Bạn đã trả lời câu này rồi.',
+  INVALID_OPTION: 'Lựa chọn không hợp lệ. Hãy tải lại câu hỏi.',
+  ROUND_NOT_FOUND: 'Không tìm thấy câu hỏi này.',
+  PLAYER_NOT_ACTIVE: 'Bạn không còn tham gia lượt chơi này.',
+  MATCH_NOT_FINISHED: 'Lượt chơi chưa kết thúc.',
+  MULTIPLAYER_NOT_AVAILABLE: 'Chế độ nhiều người của Tên lửa chưa mở.',
 }
 export function gameErrorMessage(reason: unknown) {
   if (reason instanceof HttpError && reason.code && messages[reason.code])

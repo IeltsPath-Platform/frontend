@@ -1,8 +1,14 @@
-/** Shapes follow backend/plans/261021-rocket-game (round model shared by solo and multiplayer). */
+/** Shapes follow backend docs/contracts/rocket-game-v1.md (round model shared by solo and multiplayer). */
 
 export type RocketPlayerStatus = 'ACTIVE' | 'ELIMINATED' | 'FINISHED' | 'FORFEITED'
 
-export type RocketEndReason = 'ALL_ROUNDS_COMPLETED' | 'NO_LIVES_LEFT' | 'PLAYER_LEFT'
+export type RocketEndReason =
+  | 'ALL_ROUNDS_COMPLETED'
+  | 'NO_LIVES_LEFT'
+  | 'PLAYER_LEFT'
+  | 'LAST_PLAYER_STANDING'
+  | 'ALL_ELIMINATED'
+  | 'ALL_PLAYERS_LEFT'
 
 export type RocketSoloSettings = {
   questionCount: number
@@ -27,8 +33,10 @@ export type RocketRound = {
   total: number
   meaning: string
   options: RocketOption[]
-  opensAt: string
-  deadlineAt: string
+  /** Scheduled opening of a round still in its reveal pause, or when an open round opened. */
+  opensAt: string | null
+  /** Null until the round opens; fetch the round again at `opensAt`. */
+  deadlineAt: string | null
   serverTime: string
   me: { answered: boolean; optionId: string | null }
   player: RocketPlayer
@@ -82,6 +90,7 @@ export type RocketResult = {
   correctCount: number
   livesRemaining: number
   totalScore: number
+  playerStatus: RocketPlayerStatus
   durationMs: number
   startedAt: string
   endedAt: string

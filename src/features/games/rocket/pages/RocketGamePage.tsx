@@ -2,6 +2,11 @@ import { useEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { gameApi } from '../../api/gameApi'
+import { ActiveGameDialog } from '../../components/ActiveGameDialog'
+import { activeGamePath, isActiveGameConflict } from '../../lib/activeGame'
+import { gameErrorMessage } from '../../lib/gameErrorMessage'
+import type { ActiveGame } from '../../types/game'
 import { rocketApi } from '../api/rocketApi'
 import { RocketCanvas } from '../components/RocketCanvas'
 import { RocketEndScreen } from '../components/RocketEndScreen'
@@ -77,27 +82,63 @@ function RocketSetup({ scene }: { scene: RocketScene | null }) {
   const navigate = useNavigate()
   const [starting, setStarting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [activeGame, setActiveGame] = useState<ActiveGame | null>(null)
+  const [replacing, setReplacing] = useState(false)
+  const [replaceError, setReplaceError] = useState('')
+  const lastCount = useRef(0)
 
   useEffect(() => {
     void scene?.idle()
   }, [scene])
 
+  async function start(questionCount: number) {
+    lastCount.current = questionCount
+    setStarting(true)
+    setError(null)
+    try {
+      const { matchId } = await rocketApi.startSolo({ questionCount })
+      navigate(`/games/rocket/${encodeURIComponent(matchId)}`)
+    } catch (cause) {
+      // One room per user across games: offer to go back to it or leave it, as the Wordly setup does.
+      const active = isActiveGameConflict(cause) ? await gameApi.activeGame().catch(() => null) : null
+      if (active) {
+        setReplaceError('')
+        setActiveGame(active)
+      } else {
+        setError(gameErrorMessage(cause))
+      }
+      setStarting(false)
+    }
+  }
+
+  async function replace() {
+    if (replacing) return
+    setReplacing(true)
+    setReplaceError('')
+    try {
+      await gameApi.leaveActiveGame()
+      setActiveGame(null)
+      await start(lastCount.current)
+    } catch {
+      setReplaceError('Chưa rời được phòng cũ. Vui lòng kiểm tra kết nối và thử lại.')
+    } finally {
+      setReplacing(false)
+    }
+  }
+
   return (
     <main className="rocket-center">
-      <RocketSetupCard
-        starting={starting}
-        error={error}
-        onStart={(questionCount) => {
-          setStarting(true)
-          setError(null)
-          rocketApi
-            .startSolo({ questionCount })
-            .then(({ matchId }) => navigate(`/games/rocket/${encodeURIComponent(matchId)}`))
-            .catch((cause: unknown) => {
-              setError(cause instanceof Error ? cause.message : 'Không bắt đầu được lượt chơi.')
-              setStarting(false)
-            })
+      <RocketSetupCard starting={starting} error={error} onStart={(questionCount) => void start(questionCount)} />
+      <ActiveGameDialog
+        game={activeGame}
+        busy={replacing}
+        error={replaceError}
+        replaceLabel="Bắt đầu lượt mới"
+        onRejoin={() => {
+          if (activeGame) navigate(activeGamePath(activeGame))
         }}
+        onReplace={() => void replace()}
+        onClose={() => setActiveGame(null)}
       />
     </main>
   )

@@ -29,14 +29,14 @@ export const gameApi = {
       method: 'POST',
       body,
     }),
-  /** null (204) when the user can create or join another room. */
+  /** null (204) when the user can create or join another room, in any game. */
   activeGame: (signal?: AbortSignal) =>
-    apiRequest<ActiveGame | null>('/api/games/wordly/me/active-game', {
+    apiRequest<ActiveGame | null>('/api/games/me/active-game', {
       auth: true,
       signal,
     }),
   leaveActiveGame: () =>
-    apiRequest<null>('/api/games/wordly/me/active-game/leave', {
+    apiRequest<null>('/api/games/me/active-game/leave', {
       auth: true,
       method: 'POST',
     }),

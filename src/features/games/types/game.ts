@@ -227,4 +227,6 @@ export type ActiveGame = {
   roomStatus: 'WAITING' | 'IN_MATCH'
   matchId: string | null
   playerStatus: string | null
+  /** One room per user across games; older responses omit it and mean Wordly. */
+  gameType?: 'WORDLY' | 'ROCKET'
 }

@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { HttpError } from '@/lib/httpClient'
+import { gameErrorMessage } from '../../lib/gameErrorMessage'
 import { rocketApi } from '../api/rocketApi'
 import type { RocketResult, RocketRound, RocketRoundResult, RocketSoloSettings } from '../types/rocket'
 
@@ -30,12 +32,16 @@ export type RocketMatchState = {
 
 const REVEAL_HOLD_MS = 900
 const MIN_LAUNCH_MS = 650
+/** Polling while a round waits to open; the server opens it on the first request after it is due. */
+const MIN_OPEN_POLL_MS = 150
+const MAX_OPEN_POLL_MS = 5000
+const OPEN_ATTEMPTS = 40
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, Math.max(0, ms)))
 
 function errorMessage(error: unknown) {
-  if (error instanceof Error && error.message) return error.message
-  return 'Không kết nối được trò chơi. Vui lòng thử lại.'
+  if (error instanceof HttpError && error.isNetworkError) return 'Mất kết nối tới máy chủ. Vui lòng thử lại.'
+  return gameErrorMessage(error)
 }
 
 function errorCode(error: unknown) {
@@ -83,15 +89,17 @@ export function useRocketMatch(matchId: string, stage: RocketStage | null, stage
   const enterNextRound = useCallback(
     async (afterTravel: boolean) => {
       let current = await rocketApi.current(matchId)
-      if (current.matchFinished) return finish()
-      let offset = Date.parse(current.serverTime) - Date.now()
-      const opensIn = current.round ? Date.parse(current.round.opensAt) - (Date.now() + offset) : 0
-      if (opensIn > 0) {
-        await sleep(opensIn)
+      // A round in its reveal pause has no deadline yet: wait until it is due to open, then ask again.
+      for (let attempt = 0; current.round && !current.round.deadlineAt && !current.matchFinished; attempt += 1) {
+        if (attempt >= OPEN_ATTEMPTS) throw new Error('Câu tiếp theo chưa mở được. Vui lòng thử lại.')
+        const skew = Date.parse(current.serverTime) - Date.now()
+        const opensAt = current.round.opensAt ? Date.parse(current.round.opensAt) : Date.now() + skew
+        await sleep(Math.min(Math.max(opensAt - (Date.now() + skew), MIN_OPEN_POLL_MS), MAX_OPEN_POLL_MS))
+        if (!alive.current) return
         current = await rocketApi.current(matchId)
-        if (current.matchFinished) return finish()
-        offset = Date.parse(current.serverTime) - Date.now()
       }
+      if (current.matchFinished) return finish()
+      const offset = Date.parse(current.serverTime) - Date.now()
       const round = current.round
       if (!round || !alive.current) return
       if (afterTravel) {
@@ -179,11 +187,12 @@ export function useRocketMatch(matchId: string, stage: RocketStage | null, stage
           if (ack.roundResult) await showResult(ack.roundResult)
         } catch (error) {
           if (errorCode(error) === 'ROUND_CLOSED') return settleFromServer()
+          if (errorCode(error) === 'MATCH_FINISHED') return finish()
           throw error
         }
       })
     },
-    [matchId, run, settleFromServer, showResult, update],
+    [finish, matchId, run, settleFromServer, showResult, update],
   )
 
   /** Called by the countdown when the deadline passes without an answer. */

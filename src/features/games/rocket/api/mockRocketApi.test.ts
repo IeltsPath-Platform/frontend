@@ -54,10 +54,12 @@ describe('mock rocket api', () => {
     expect(ack.roundResult).toMatchObject({ correct: false, points: 0, livesRemaining: 3 })
 
     const waiting = await api.current(matchId)
-    expect(Date.parse(waiting.round!.opensAt)).toBeGreaterThan(Date.parse(waiting.serverTime))
+    expect(Date.parse(waiting.round!.opensAt!)).toBeGreaterThan(Date.parse(waiting.serverTime))
+    expect(waiting.round!.deadlineAt).toBeNull()
     advance(2500)
     const second = (await api.current(matchId)).round!
     expect(second.number).toBe(2)
+    expect(second.deadlineAt).not.toBeNull()
 
     advance(15_000)
     const afterTimeout = await api.current(matchId)
