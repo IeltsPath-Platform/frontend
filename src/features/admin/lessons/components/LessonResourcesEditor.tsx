@@ -87,8 +87,8 @@ function ResourceList({ lessonId, type, items, reload, busy, run }: {
                   {httpsUrl(item.url) ? <a href={item.url} target="_blank" rel="noreferrer">{item.url} <ExternalLink aria-hidden="true" size={14} /></a> : <span className="adm-muted">{item.url} · Sửa thành đường dẫn HTTPS để mở.</span>}
                 </div>
                 <div className="adm-resource-actions">
-                  <button className="adm-btn" type="button" disabled aria-label={`Đưa ${item.title} lên`} title="Tạm thời chưa đổi được thứ tự"><ArrowUp aria-hidden="true" size={16} /></button>
-                  <button className="adm-btn" type="button" disabled aria-label={`Đưa ${item.title} xuống`} title="Tạm thời chưa đổi được thứ tự"><ArrowDown aria-hidden="true" size={16} /></button>
+                  <button className="adm-btn" type="button" disabled aria-label={`Đưa ${item.title} lên`} title="Chờ API đổi thứ tự"><ArrowUp aria-hidden="true" size={16} /></button>
+                  <button className="adm-btn" type="button" disabled aria-label={`Đưa ${item.title} xuống`} title="Chờ API đổi thứ tự"><ArrowDown aria-hidden="true" size={16} /></button>
                   <button className="adm-btn" type="button" disabled={busy} aria-label={`Sửa ${item.title}`} onClick={() => setEditing(item.id)}><Pencil aria-hidden="true" size={16} /> Sửa</button>
                   <button className="adm-btn adm-btn--danger" type="button" disabled={busy} aria-label={`Xóa ${item.title}`} onClick={() => {
                     if (window.confirm(`Xóa ${label.toLowerCase()} “${item.title}” khỏi bài học?`)) void run(async () => { await deleteLessonResource(lessonId, item.id); reload() })
@@ -125,7 +125,7 @@ export function LessonResourcesEditor({ lessonId }: { lessonId: string }) {
     <section className="adm-card adm-lesson-resources" aria-label="Slide và tài liệu">
       <h2>Slide và tài liệu</h2>
       <p className="adm-muted">Các đường dẫn này xuất hiện trong bài học của học viên.</p>
-      <p className="adm-muted">Tạm thời chưa đổi được thứ tự. Bạn vẫn có thể thêm, sửa và xóa slide, tài liệu.</p>
+      <p className="adm-muted">Chờ API đổi thứ tự. Bạn vẫn có thể thêm, sửa và xóa slide, tài liệu.</p>
       {error ? <div className="adm-alert adm-alert--error" role="alert">{error}</div> : null}
       {resources.status === 'loading' ? <AdminLoading label="Đang tải slide và tài liệu…" /> : null}
       {resources.status === 'error' ? <AdminError message={resources.error ?? 'Không tải được slide và tài liệu.'} onRetry={resources.reload} /> : null}

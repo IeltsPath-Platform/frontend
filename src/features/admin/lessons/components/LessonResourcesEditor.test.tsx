@@ -84,7 +84,9 @@ describe('LessonResourcesEditor', () => {
   it('keeps reorder controls disabled until ordering is available', async () => {
     render(<LessonResourcesEditor lessonId="l1" />)
     expect(await screen.findByRole('button', { name: 'Đưa Slide đầu xuống' })).toBeDisabled()
-    expect(screen.getByText('Tạm thời chưa đổi được thứ tự. Bạn vẫn có thể thêm, sửa và xóa slide, tài liệu.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Đưa Slide đầu xuống' })).toHaveAttribute('title', 'Chờ API đổi thứ tự')
+    expect(screen.getByText('Chờ API đổi thứ tự. Bạn vẫn có thể thêm, sửa và xóa slide, tài liệu.')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Đưa Slide đầu xuống' }))
     expect(api.updateLessonResource).not.toHaveBeenCalled()
   })
 
