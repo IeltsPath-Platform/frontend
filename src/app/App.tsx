@@ -4,6 +4,8 @@ import { GameSetupPage } from '@/features/games/pages/GameSetupPage'
 import { GameRoomPage } from '@/features/games/pages/GameRoomPage'
 import { WordlyPlayPage } from '@/features/games/pages/WordlyPlayPage'
 import { GameResultPage } from '@/features/games/pages/GameResultPage'
+import { lazy, Suspense } from 'react'
+import { USE_MOCK_ROCKET } from '@/lib/env'
 import { BrowserRouter, Navigate, Routes, Route, useNavigate, useParams } from 'react-router-dom'
 import { ErrorBoundary } from './ErrorBoundary'
 import { NotFoundPage, RouteStatusPage } from './RouteStatusPage'
@@ -51,6 +53,22 @@ import type { PracticeMode, SkillType } from '@/types/practice'
 import './app.css'
 import '@/features/practice/practice.css'
 
+const RocketGamePage = lazy(() =>
+  import('@/features/games/rocket/pages/RocketGamePage').then((module) => ({ default: module.RocketGamePage })),
+)
+
+/** Full-screen game without the site navbar; the mock needs no sign-in so the UI can be reviewed offline. */
+function RocketRoute() {
+  const page = (
+    <ErrorBoundary>
+      <Suspense fallback={<div className="min-h-dvh bg-[#04195c]" role="status" aria-label="Đang tải trò chơi" />}>
+        <RocketGamePage />
+      </Suspense>
+    </ErrorBoundary>
+  )
+  return USE_MOCK_ROCKET ? page : <RequireAuth>{page}</RequireAuth>
+}
+
 function AppContent() {
   const navigate = useNavigate()
   const { isLoggedIn } = useAuthSession()
@@ -59,6 +77,8 @@ function AppContent() {
     <>
       <Routes>
       <Route path="/" element={<Navigate replace to={isLoggedIn ? '/overview' : '/home'} />} />
+      <Route path="/games/rocket" element={<RocketRoute />} />
+      <Route path="/games/rocket/:matchId" element={<RocketRoute />} />
       <Route path="/games" element={<RequireAuth><GameLayout /></RequireAuth>}>
         <Route index element={<GameCatalogPage />} />
         <Route path="wordly/setup" element={<GameSetupPage />} />

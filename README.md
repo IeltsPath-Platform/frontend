@@ -24,6 +24,7 @@ Mở URL Vite in ra (mặc định `http://localhost:5173`).
 | --- | --- | --- |
 | `VITE_API_BASE_URL` | `http://localhost:8080` | Gateway BE |
 | `VITE_USE_MOCK_LEARNING` | `false` khi có base URL | `true` = mock learning; `false` = HTTP `/api/learning/**` |
+| `VITE_USE_MOCK_ROCKET` | `true` | Game Tên lửa (`/games/rocket`) chạy mock trong trình duyệt (10 từ mẫu, không cần đăng nhập); `false` = HTTP `/api/games/rocket/**` khi game-service có API |
 
 Không commit file `.env` (đã có trong `.gitignore`). Dùng `.env.example` làm mẫu.
 
