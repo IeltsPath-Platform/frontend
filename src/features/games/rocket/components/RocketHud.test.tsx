@@ -32,6 +32,14 @@ function state(patch: Partial<RocketMatchState> = {}): RocketMatchState {
     final: null,
     error: null,
     clockOffsetMs: 0,
+    playerMode: 'SOLO',
+    ownUserId: null,
+    ranking: null,
+    answeredUserIds: [],
+    answeredCount: null,
+    aliveCount: null,
+    spectating: false,
+    roomClosed: false,
     ...patch,
   }
 }
