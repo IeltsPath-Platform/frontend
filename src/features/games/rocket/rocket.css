@@ -646,9 +646,13 @@
 .is-slot-3 { --slot: var(--rocket-slot-3); }
 .is-slot-4 { --slot: var(--rocket-slot-4); }
 
+/*
+ * Bottom right, over the Earth and clouds, so it never covers a planet or its label. Fixed rather than absolute: the HUD
+ * box is only as tall as the top bar, while the game itself fills the viewport.
+ */
 .rocket-ranking.is-live {
-  position: absolute;
-  top: calc(clamp(16px, 4.5vh, 46px) + 60px);
+  position: fixed;
+  bottom: clamp(16px, 4.5vh, 46px);
   right: clamp(16px, 5.5vw, 104px);
   width: min(260px, 22vw);
   padding: 8px;
