@@ -21,7 +21,7 @@ export function ReviewBasketPage() {
   const [now] = useState(() => new Date())
 
   const data = basket.data
-  const total = data ? data.required.length + data.consolidate.length + data.due.length : 0
+  const total = data ? data.required.length + data.consolidate.length + data.due.length + data.weak.length : 0
 
   return (
     <div className="lp-page lp-basket">
@@ -37,6 +37,7 @@ export function ReviewBasketPage() {
         {data && total > 0 ? (
           <nav aria-label="Các nhóm trong giỏ ôn" className="lp-basket__tally">
             <TallyLink count={data.required.length} href="#lp-basket-required" label="Bắt buộc" tone="danger" />
+            <TallyLink count={data.weak.length} href="#lp-basket-weak" label="Cần ưu tiên" tone="warn" />
             <TallyLink count={data.consolidate.length} href="#lp-basket-consolidate" label="Nên củng cố" tone="accent" />
             <TallyLink count={data.due.length} href="#lp-basket-due" label="Đến hạn ôn" tone="primary" />
           </nav>
@@ -67,6 +68,20 @@ export function ReviewBasketPage() {
             {data.required.map((item) => <RequiredRow item={item} key={item.reviewId} />)}
           </BasketSection>
 
+          {data.weak.length > 0 ? (
+            <BasketSection
+              count={data.weak.length}
+              emptyText=""
+              hint="Điểm còn yếu: hệ thống đã gợi ý sẵn một bài ôn cho bạn, làm khi bạn sẵn sàng."
+              id="lp-basket-weak"
+              title="Cần ưu tiên"
+            >
+              {data.weak.map((item) => (
+                <OptionalRow busyId={busyId} item={item} key={item.knowledgePointId} now={now} onStart={start} />
+              ))}
+            </BasketSection>
+          ) : null}
+
           <BasketSection
             count={data.consolidate.length}
             emptyText="Chưa có điểm nào cần củng cố thêm."
@@ -96,7 +111,7 @@ export function ReviewBasketPage() {
   )
 }
 
-function TallyLink({ count, label, href, tone }: { count: number; label: string; href: string; tone: 'danger' | 'accent' | 'primary' }) {
+function TallyLink({ count, label, href, tone }: { count: number; label: string; href: string; tone: 'danger' | 'warn' | 'accent' | 'primary' }) {
   return (
     <a className={`lp-tally lp-tally--${tone}${count === 0 ? ' is-empty' : ''}`} href={href}>
       <b>{count}</b>

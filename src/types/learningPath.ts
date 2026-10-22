@@ -605,7 +605,7 @@ export interface BasketOptionalItem {
   /** 0–1. */
   mastery: number
   dueAt: string | null
-  reason: 'CONSOLIDATE' | 'DUE'
+  reason: 'CONSOLIDATE' | 'DUE' | 'WRITING_CRITERION'
   /** False when Content has no set the learner has not seen, so the review cannot start. */
   hasUnrevealedSet: boolean
   /** Set when the learner already started an optional review of the point. */
@@ -616,6 +616,8 @@ export interface ReviewBasket {
   required: BasketRequiredItem[]
   consolidate: BasketOptionalItem[]
   due: BasketOptionalItem[]
+  /** Weak points (below the consolidate tier) that already have an optional review, such as a failed writing criterion. */
+  weak: BasketOptionalItem[]
 }
 
 /** One knowledge point of the learner's tree (`GET /api/learning/tree`). */

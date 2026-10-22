@@ -52,6 +52,7 @@ export type ReviewBasketDto = {
   required?: BasketRequiredDto[] | null
   consolidate?: BasketOptionalDto[] | null
   due?: BasketOptionalDto[] | null
+  weak?: BasketOptionalDto[] | null
 }
 
 const LESSON_PATH = /^\/api\/learning\/lessons\/([^/]+)$/
@@ -115,5 +116,6 @@ export function mapReviewBasket(dto: ReviewBasketDto | null | undefined): Review
     required: (dto?.required ?? []).map(mapRequired),
     consolidate: (dto?.consolidate ?? []).map(mapOptional),
     due: (dto?.due ?? []).map(mapOptional),
+    weak: (dto?.weak ?? []).map(mapOptional),
   }
 }

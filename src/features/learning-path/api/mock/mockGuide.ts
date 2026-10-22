@@ -60,5 +60,6 @@ export function mockReviewBasket(pending: ReviewRef[], now: Date): ReviewBasket 
     consolidate: MOCK_TREE_POINTS.filter((point) => point.tier === 'CONSOLIDATE' || point.tier === 'PRIORITY')
       .map((point) => optional(point, 'CONSOLIDATE', 1)),
     due: MOCK_TREE_POINTS.filter((point) => point.tier === 'MAINTAIN').map((point) => optional(point, 'DUE', -2)),
+    weak: [],
   }
 }

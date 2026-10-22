@@ -98,3 +98,17 @@ describe('practice result review', () => {
     expect(await screen.findByRole('alert')).toBeInTheDocument()
   })
 })
+
+describe('optional review notice', () => {
+  it('tells the learner that a writing review was suggested', async () => {
+    api.getLessonPracticeSets.mockResolvedValue(catalog([item({})]))
+    api.getPendingReviews.mockResolvedValue([
+      { reviewId: 'rev-w', knowledgePointId: 'kp-w', lessonId: 'l1', knowledgePointCode: 'DEMO_WRITING_CRITERION_LR', knowledgePointTitle: 'Vốn từ vựng (LR)', blocking: false },
+    ])
+    api.getHearts.mockResolvedValue(null)
+    renderPractice()
+
+    expect(await screen.findByText(/gợi ý bài ôn tự chọn/)).toBeInTheDocument()
+    expect(screen.getByText('Bài ôn tự chọn')).toBeInTheDocument()
+  })
+})

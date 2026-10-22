@@ -289,6 +289,11 @@ function PracticeView({ catalog, hearts, onHeartsChanged, onReload, reviewOrigin
       </header>
       {hearts ? <HeartsPanel onChanged={onHeartsChanged} status={hearts} /> : null}
       {error ? <p className="lp-error" role="alert">{error}</p> : null}
+      {looseReviews.some((review) => review.blocking === false) ? (
+        <p className="lp-hint" role="status">
+          Hệ thống gợi ý bài ôn tự chọn cho những tiêu chí bài viết chưa đạt. Bạn có thể làm ngay hoặc để sau, bài ôn này không chặn bài học.
+        </p>
+      ) : null}
       {catalog.items.length === 0 && reviews.length === 0 ? (
         <p className="lp-empty">Bài này không có bộ luyện thêm.</p>
       ) : (
