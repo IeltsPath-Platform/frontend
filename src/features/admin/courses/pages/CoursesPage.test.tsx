@@ -86,46 +86,42 @@ describe('CoursesPage', () => {
     expect(api.updateTopic).toHaveBeenNthCalledWith(2, 't3', expect.objectContaining({ name: 'Liên kết câu', parentTopicId: 't1', sortOrder: 1 }))
   })
 
-  it('normalizes all tied siblings before moving a topic without changing other parent groups', async () => {
-    let stored = [
+  it('pauses reordering for tied siblings while keeping unrelated groups and editing available', async () => {
+    const stored = [
       { ...topics[0]! }, { ...topics[1]!, sortOrder: 4 }, { ...topics[2]!, sortOrder: 4 },
       { ...topics[1]!, id: 't4', code: 'SUMMARY', name: 'Tóm tắt', sortOrder: 8 },
       { ...topics[1]!, id: 't5', parentTopicId: 'outside-course', code: 'OTHER', name: 'Chủ đề khác', sortOrder: 4 },
+      { ...topics[1]!, id: 't6', parentTopicId: 'outside-course', code: 'OTHER_NEXT', name: 'Chủ đề kế', sortOrder: 5 },
     ]
-    lessons.fetchTopics.mockImplementation(async () => stored)
-    api.updateTopic.mockImplementation(async (id, body) => {
-      stored = stored.map((item) => item.id === id ? { ...item, ...body } : item)
-      return stored.find((item) => item.id === id)
-    })
+    lessons.fetchTopics.mockResolvedValue(stored)
     show()
-    fireEvent.click(await screen.findByRole('button', { name: 'Đưa Diễn đạt lại lên' }))
-    await waitFor(() => expect(lessons.fetchTopics).toHaveBeenCalledTimes(2))
-    await waitFor(() => {
-      const group = screen.getByRole('article', { name: 'Viết học thuật' }).parentElement!
-      expect(within(group).getAllByRole('article').map((item) => item.getAttribute('aria-label'))).toEqual(['Viết học thuật', 'Diễn đạt lại', 'Liên kết câu', 'Tóm tắt'])
-    })
-    expect(api.updateTopic.mock.calls.map(([id]) => id)).toEqual(['t3', 't2', 't4', 't2', 't3'])
-    expect(stored.find((item) => item.id === 't5')?.sortOrder).toBe(4)
-    expect(stored.find((item) => item.id === 't1')?.sortOrder).toBe(1)
+    const up = await screen.findByRole('button', { name: 'Đưa Diễn đạt lại lên' })
+    expect(up).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Đưa Tóm tắt lên' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Đưa Chủ đề khác xuống' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Sửa Diễn đạt lại' })).toBeEnabled()
+    expect(screen.getByText('Nhóm này có thứ tự trùng. Chờ quyết định xử lý.')).toBeInTheDocument()
+    fireEvent.click(up)
+    expect(api.updateTopic).not.toHaveBeenCalled()
   })
 
-  it('stops after a normalization failure and reloads the saved partial order', async () => {
-    let stored = [{ ...topics[0]! }, { ...topics[1]!, sortOrder: 4 }, { ...topics[2]!, sortOrder: 4 }]
+  it('reloads server state and retains the error if an untied swap fails halfway', async () => {
+    let stored = topics.map((topic) => ({ ...topic }))
     lessons.fetchTopics.mockImplementation(async () => stored)
     api.updateTopic.mockImplementation(async (id, body) => {
-      if (id === 't2') throw new HttpError(503, 'Chưa lưu được chủ đề')
+      if (id === 't3') throw new HttpError(503, 'Chưa lưu được chủ đề')
       stored = stored.map((item) => item.id === id ? { ...item, ...body } : item)
       return stored.find((item) => item.id === id)
     })
     show()
-    fireEvent.click(await screen.findByRole('button', { name: 'Đưa Diễn đạt lại lên' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Đưa Diễn đạt lại xuống' }))
     await waitFor(() => expect(lessons.fetchTopics).toHaveBeenCalledTimes(2))
     expect(api.updateTopic).toHaveBeenCalledTimes(2)
     expect(await screen.findByRole('alert')).toHaveTextContent('Chưa lưu được chủ đề')
     expect(screen.getByRole('alert')).toHaveTextContent('Kiểm tra lại thứ tự trong danh sách trước khi thử lại.')
-    expect(stored.find((item) => item.id === 't3')?.sortOrder).toBe(0)
-    expect(stored.find((item) => item.id === 't2')?.sortOrder).toBe(4)
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Đưa Diễn đạt lại lên' })).toBeEnabled())
+    expect(stored.find((item) => item.id === 't3')?.sortOrder).toBe(2)
+    expect(stored.find((item) => item.id === 't2')?.sortOrder).toBe(2)
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Sửa Diễn đạt lại' })).toBeEnabled())
   })
   it('offers retry after a list failure', async () => {
     api.fetchCourses.mockRejectedValueOnce(new HttpError(503, 'Không tải được khóa học'))
