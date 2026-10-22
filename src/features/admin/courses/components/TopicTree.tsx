@@ -14,14 +14,25 @@ export function TopicTree({ topics, allTopics, courses, courseId, onSaved, onErr
   const [busy, setBusy] = useState(false)
   const ids = new Set(topics.map((topic) => topic.id))
 
-  async function move(topic: TopicOption, sibling: TopicOption) {
-    if (busy) return
+  async function move(topic: TopicOption, sibling: TopicOption, peers: TopicOption[]) {
+    if (busy || loading || editing) return
     setBusy(true)
     onError(null)
     try {
-      await updateTopic(topic.id, { ...topicUpdate(topic), sortOrder: sibling.sortOrder })
-      await updateTopic(sibling.id, { ...topicUpdate(sibling), sortOrder: topic.sortOrder })
-    } catch (reason) { onError(topicError(reason)) } finally { setBusy(false); onSaved() }
+      let topicOrder = topic.sortOrder
+      let siblingOrder = sibling.sortOrder
+      if (new Set(peers.map((item) => item.sortOrder)).size !== peers.length) {
+        for (const [index, peer] of peers.entries()) {
+          await updateTopic(peer.id, { ...topicUpdate(peer), sortOrder: index })
+          if (peer.id === topic.id) topicOrder = index
+          if (peer.id === sibling.id) siblingOrder = index
+        }
+      }
+      await updateTopic(topic.id, { ...topicUpdate(topic), sortOrder: siblingOrder })
+      await updateTopic(sibling.id, { ...topicUpdate(sibling), sortOrder: topicOrder })
+    } catch (reason) {
+      onError(`Không đổi được thứ tự. ${topicError(reason)} Kiểm tra lại thứ tự trong danh sách trước khi thử lại.`)
+    } finally { setBusy(false); onSaved() }
   }
 
   function list(parentId: string | null, ancestors: Set<string>) {
@@ -36,8 +47,8 @@ export function TopicTree({ topics, allTopics, courses, courseId, onSaved, onErr
         <div className="adm-author-actions"><code>{topic.code}</code><strong>{topic.name}</strong><span className={`adm-badge ${topic.status === 'ACTIVE' ? 'adm-badge--ok' : 'adm-badge--muted'}`}>{topic.status === 'ACTIVE' ? 'Đang dùng' : 'Ngừng dùng'}</span></div>
         <p className="adm-muted"><span className={`adm-topic-skill adm-topic-skill--${topic.skill?.toLowerCase() ?? 'none'}`}>{topic.skill ? SKILL_LABEL[topic.skill as keyof typeof SKILL_LABEL] ?? topic.skill : 'Chưa chọn kỹ năng'}</span> · Band {topic.bandMin ?? 'không giới hạn'} – {topic.bandMax ?? 'không giới hạn'}</p>
         <div className="adm-author-actions">
-          <button className="adm-btn" type="button" disabled={busy || loading || !!editing || index === 0} aria-label={`Đưa ${topic.name} lên`} onClick={() => void move(topic, peers[index - 1]!)}><ArrowUp aria-hidden="true" size={16} /></button>
-          <button className="adm-btn" type="button" disabled={busy || loading || !!editing || index === peers.length - 1} aria-label={`Đưa ${topic.name} xuống`} onClick={() => void move(topic, peers[index + 1]!)}><ArrowDown aria-hidden="true" size={16} /></button>
+          <button className="adm-btn" type="button" disabled={busy || loading || !!editing || index === 0} aria-label={`Đưa ${topic.name} lên`} onClick={() => void move(topic, peers[index - 1]!, peers)}><ArrowUp aria-hidden="true" size={16} /></button>
+          <button className="adm-btn" type="button" disabled={busy || loading || !!editing || index === peers.length - 1} aria-label={`Đưa ${topic.name} xuống`} onClick={() => void move(topic, peers[index + 1]!, peers)}><ArrowDown aria-hidden="true" size={16} /></button>
           <button className="adm-btn" type="button" disabled={busy || loading || !!editing} aria-label={`Sửa ${topic.name}`} onClick={() => setEditing({ topic, parentId: topic.parentTopicId ?? null })}><Pencil aria-hidden="true" size={16} /> Sửa</button>
           <button className="adm-btn" type="button" disabled={busy || loading || !!editing} onClick={() => setEditing({ parentId: topic.id })}><Plus aria-hidden="true" size={16} /> Thêm chủ đề con</button>
           <Link className="adm-btn" to={`/content-author/lessons?topicId=${encodeURIComponent(topic.id)}`}>Mở bài học</Link>
