@@ -91,4 +91,32 @@ describe('CoursesPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Thử lại' }))
     expect(await screen.findByRole('article', { name: 'Viết học thuật' })).toBeInTheDocument()
   })
+
+  it('retains an unfinished topic while saving course metadata', async () => {
+    show()
+    fireEvent.click(await screen.findByRole('button', { name: 'Sửa Diễn đạt lại' }))
+    const topicForm = screen.getByRole('form', { name: 'Sửa chủ đề' })
+    fireEvent.change(within(topicForm).getByLabelText('Tên chủ đề'), { target: { value: 'Tên chưa lưu' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Sửa khóa học' }))
+    fireEvent.submit(screen.getByRole('form', { name: 'Sửa khóa học' }))
+    await waitFor(() => expect(api.fetchCourses).toHaveBeenCalledTimes(2))
+    expect(within(screen.getByRole('form', { name: 'Sửa chủ đề' })).getByLabelText('Tên chủ đề')).toHaveValue('Tên chưa lưu')
+  })
+
+  it('does not reorder displayed roots with different real parents', async () => {
+    lessons.fetchTopics.mockResolvedValue([topics[0], { ...topics[1], parentTopicId: 'outside-course', sortOrder: 2 }])
+    show()
+    expect(await screen.findByRole('button', { name: 'Đưa Viết học thuật xuống' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Đưa Diễn đạt lại lên' })).toBeDisabled()
+    expect(api.updateTopic).not.toHaveBeenCalled()
+  })
+
+  it('locks reorder and other editors while a topic form is open', async () => {
+    show()
+    fireEvent.click(await screen.findByRole('button', { name: 'Sửa Diễn đạt lại' }))
+    expect(screen.getByRole('button', { name: 'Đưa Diễn đạt lại xuống' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Sửa Liên kết câu' })).toBeDisabled()
+    fireEvent.click(within(screen.getByRole('form', { name: 'Sửa chủ đề' })).getByRole('button', { name: 'Hủy' }))
+    expect(screen.getByRole('button', { name: 'Đưa Diễn đạt lại xuống' })).toBeEnabled()
+  })
 })
