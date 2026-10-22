@@ -21,6 +21,7 @@ import type {
   TestStatus,
   TopicLessonsResponse,
   CourseSummary,
+  EssayStudyPoint,
   TopicStatus,
   TopicSummary,
 } from '~types/learningPath'
@@ -138,6 +139,7 @@ export type ReviewRefDto = {
   lessonId: string
   knowledgePointId: string
   sourcePackageId?: string | null
+  blocking?: boolean
 }
 
 export type ReviewSetDto = {
@@ -227,6 +229,7 @@ export type PracticeSetItemDto = {
   bestPercent: number | null
   lastAttemptId: string | null
   revealed: boolean
+  skills?: string[]
 }
 
 export type LessonPracticeSetsDto = {
@@ -245,6 +248,59 @@ export type PracticeAttemptViewDto = {
   passage?: string | { title?: string; paragraphs?: Array<{ label?: string | null; text: string }> } | null
   audio?: { mediaUrl: string; durationSeconds?: number | null; transcript?: string | null } | null
   questions: QuestionDto[]
+  /** Essays live in the sections, next to the passage they belong to; there is no top-level list. */
+  sections?: Array<{ essays?: PracticeEssayDto[] }>
+}
+
+export type PracticeEssayDto = {
+  questionVersionId: string
+  sortOrder: number
+  stem: string
+  task?: string | null
+  minWords?: number | null
+  passBand?: number | null
+  guide?: string | null
+  images?: Array<{ mediaUrl: string; altText?: string | null }> | null
+  sampleAnswer?: string | null
+  latestSubmission?: { id: string; status: string; overallBand?: number | null; passed?: boolean | null } | null
+}
+
+export type EssayGradeDto = {
+  submissionId: string
+  status: string
+  wordCount?: number | null
+  overallBand?: number | null
+  passed?: boolean | null
+  criteria?: Array<{
+    code: string
+    band: number
+    strengths?: string[]
+    improvements?: string[]
+    knowledgePointJudgments?: Array<{
+      knowledgePointId?: string
+      code?: string | null
+      name?: string | null
+      judgment?: string
+      excerpt?: string | null
+      reason?: string | null
+    }>
+  }>
+  corrections?: Array<{ excerpt: string; suggestion: string; category?: string | null }>
+  studyPoints?: Array<{
+    kind?: string
+    criterionCode?: string | null
+    band?: number | null
+    knowledgePointId?: string | null
+    code?: string | null
+    name?: string | null
+    title?: string | null
+    reason?: string | null
+    excerpt?: string | null
+    practiceKnowledgePointId?: string | null
+  }>
+  summary?: string | null
+  pointsCharged?: number | null
+  sampleAnswer?: string | null
 }
 
 export type PracticeSubmissionResultDto = {
@@ -490,9 +546,10 @@ export function mapReviewRef(dto: ReviewRefDto): ReviewRef {
   return {
     reviewId: dto.reviewId,
     lessonId: dto.lessonId,
+    blocking: dto.blocking ?? true,
     sourcePackageId: dto.sourcePackageId ?? null,
     knowledgePointCode: dto.knowledgePointId.slice(0, 8),
-    knowledgePointTitle: 'Bài ôn bắt buộc',
+    knowledgePointTitle: dto.blocking === false ? 'Bài ôn tự chọn' : 'Bài ôn bắt buộc',
   }
 }
 
@@ -581,7 +638,78 @@ export function mapLessonPracticeSets(dto: LessonPracticeSetsDto): import('~type
       bestPercent: item.bestPercent,
       lastAttemptId: item.lastAttemptId,
       revealed: item.revealed,
+      skills: item.skills,
     })),
+  }
+}
+
+function mapPracticeEssay(dto: PracticeEssayDto): import('~types/learningPath').PracticeEssay {
+  return {
+    id: dto.questionVersionId,
+    number: dto.sortOrder,
+    prompt: dto.stem,
+    task: dto.task === 'TASK_1' || dto.task === 'TASK_2' ? dto.task : null,
+    minWords: dto.minWords ?? null,
+    passBand: dto.passBand ?? null,
+    guide: dto.guide ?? null,
+    images: (dto.images ?? []).map((image) => ({ mediaUrl: image.mediaUrl, altText: image.altText ?? null })),
+    sampleAnswer: dto.sampleAnswer ?? null,
+    latest: dto.latestSubmission
+      ? {
+          id: dto.latestSubmission.id,
+          status: dto.latestSubmission.status,
+          overallBand: dto.latestSubmission.overallBand ?? null,
+          passed: dto.latestSubmission.passed ?? null,
+        }
+      : null,
+  }
+}
+
+export function mapEssayGrade(dto: EssayGradeDto): import('~types/learningPath').EssayGrade {
+  return {
+    submissionId: dto.submissionId,
+    status: dto.status,
+    wordCount: dto.wordCount ?? null,
+    overallBand: dto.overallBand ?? null,
+    passed: dto.passed ?? null,
+    criteria: (dto.criteria ?? []).map((criterion) => ({
+      code: criterion.code,
+      band: criterion.band,
+      strengths: criterion.strengths ?? [],
+      improvements: criterion.improvements ?? [],
+      knowledgePointJudgments: (criterion.knowledgePointJudgments ?? [])
+        .filter((item) => Boolean(item.knowledgePointId))
+        .map((item) => ({
+          knowledgePointId: item.knowledgePointId!,
+          code: item.code ?? null,
+          name: item.name ?? null,
+          judgment: item.judgment === 'PASS' || item.judgment === 'FAIL' ? item.judgment : 'NOT_ASSESSED',
+          excerpt: item.excerpt ?? null,
+          reason: item.reason ?? null,
+        })),
+    })),
+    corrections: (dto.corrections ?? []).map((correction) => ({
+      excerpt: correction.excerpt,
+      suggestion: correction.suggestion,
+      category: correction.category ?? null,
+    })),
+    studyPoints: (dto.studyPoints ?? []).map((point): EssayStudyPoint => ({
+      kind: point.kind === 'CRITERION' || point.kind === 'KNOWLEDGE_POINT' ? point.kind : 'AI',
+      criterionCode: point.criterionCode ?? null,
+      band: point.band ?? null,
+      knowledgePointId: point.knowledgePointId ?? null,
+      code: point.code ?? null,
+      name: point.name ?? null,
+      title: point.title ?? null,
+      reason: point.reason ?? null,
+      excerpt: point.excerpt ?? null,
+      practiceKnowledgePointId: point.practiceKnowledgePointId ?? null,
+    })).filter((point) => point.kind === 'CRITERION' || point.kind === 'KNOWLEDGE_POINT'
+      ? Boolean(point.knowledgePointId)
+      : Boolean(point.title?.trim())),
+    summary: dto.summary ?? null,
+    pointsCharged: dto.pointsCharged ?? null,
+    sampleAnswer: dto.sampleAnswer ?? null,
   }
 }
 
@@ -599,6 +727,9 @@ export function mapPracticeAttemptView(dto: PracticeAttemptViewDto): import('~ty
         }
       : null,
     questions: (dto.questions ?? []).map(mapQuestion),
+    essays: (dto.sections ?? [])
+      .flatMap((section) => [...(section.essays ?? [])].sort((a, b) => a.sortOrder - b.sortOrder))
+      .map(mapPracticeEssay),
   }
 }
 

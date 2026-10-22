@@ -84,7 +84,8 @@ export function TopicLessonsView({
       <ol className="lp-lgrid" aria-label="Danh sách bài học">
         {lessons.map((lesson, index) => (
           <LessonTile
-            review={pendingReviews.find((review) => review.lessonId === lesson.id)}
+            review={pendingReviews.find((review) => review.lessonId === lesson.id && review.blocking !== false)
+              ?? pendingReviews.find((review) => review.lessonId === lesson.id)}
             index={index}
             isNext={lesson.id === nextId}
             key={lesson.id}
@@ -107,10 +108,12 @@ function LessonTile({ lesson, isNext, review, index }: {
   const locked = lesson.status === 'LOCKED'
   const completed = lesson.status === 'COMPLETED'
   const hasReview = Boolean(review)
-  // A finished lesson with a review still owed is not "done": it must not wear the green tick.
-  const needsReview = completed && hasReview
+  const blockingReview = hasReview && review?.blocking !== false
+  const optionalReview = review?.blocking === false
+  // Optional consolidation does not undo lesson completion or block progress.
+  const needsReview = completed && blockingReview
   // Likewise a lesson whose exercises are passed but whose Practice is not: the next lesson stays closed until it is.
-  const needsPractice = completed && !hasReview && lesson.practiceStatus === 'REQUIRED'
+  const needsPractice = completed && !blockingReview && lesson.practiceStatus === 'REQUIRED'
   const pending = needsReview || needsPractice
   const reasonId = `${lesson.id}-tile-reason`
   const action = isNext ? 'Học tiếp' : needsPractice ? 'Luyện tập' : completed ? 'Xem lại' : 'Mở bài'
@@ -133,6 +136,7 @@ function LessonTile({ lesson, isNext, review, index }: {
             </span>
           ) : null}
           {needsReview ? <span className="lp-ltile__badge is-review">Cần làm bài ôn</span> : null}
+          {optionalReview ? <span className="lp-ltile__badge is-optional">Ôn tự chọn</span> : null}
           {needsPractice ? <span className="lp-ltile__badge is-review">Cần đạt phần Luyện tập</span> : null}
           {locked ? <span className="lp-ltile__reason" id={reasonId}>{lesson.lockedReason ?? 'Chưa mở'}</span> : null}
         </span>
@@ -145,7 +149,7 @@ function LessonTile({ lesson, isNext, review, index }: {
         </span>
       ) : null}
       <span className="lp-sr-only">
-        Bài {lesson.sortOrder}, {lessonStatusMeta(lesson.status).label}{hasReview ? ', có bài ôn' : ''}
+        Bài {lesson.sortOrder}, {lessonStatusMeta(lesson.status).label}{hasReview ? optionalReview ? ', có bài ôn tự chọn' : ', có bài ôn bắt buộc' : ''}
       </span>
     </>
   )
@@ -165,7 +169,7 @@ function LessonTile({ lesson, isNext, review, index }: {
             {inner}
           </Link>
           <Link className="lp-ltile__go lp-ltile__go--review" to={`/learn/reviews/${review.reviewId}`}>
-            Làm bài ôn
+            {optionalReview ? 'Tiếp tục ôn' : 'Làm bài ôn'}
             <ArrowRight aria-hidden="true" size={14} />
           </Link>
         </div>

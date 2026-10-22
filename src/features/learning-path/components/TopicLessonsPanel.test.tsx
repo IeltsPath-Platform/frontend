@@ -28,6 +28,32 @@ function row(title: string) {
 }
 
 describe('TopicLessonsView review ownership', () => {
+  it('keeps completed lessons green for optional reviews while marking only blocking reviews as required', () => {
+    const completed = lessons.map((lesson) => ({ ...lesson, status: 'COMPLETED' as const, blockingReviewId: null }))
+    renderLessons([
+      { ...review, blocking: false },
+      { ...review, reviewId: 'review-3', lessonId: 'lesson-3', blocking: true },
+    ], completed)
+    const optional = row('Bài hai')
+    expect(optional.querySelector('.lp-ltile')).toHaveClass('is-done')
+    expect(optional.querySelector('.lp-ltile')).not.toHaveClass('is-review')
+    expect(within(optional).queryByText('Cần làm bài ôn')).not.toBeInTheDocument()
+    expect(within(optional).getByText('Ôn tự chọn')).toBeInTheDocument()
+    expect(within(optional).getByRole('link', { name: /Tiếp tục ôn/ })).toHaveAttribute('href', '/learn/reviews/review-2')
+    expect(within(row('Bài ba')).getByText('Cần làm bài ôn')).toBeInTheDocument()
+    expect(screen.getAllByText('Cần làm bài ôn')).toHaveLength(1)
+  })
+
+  it('shows a blocking review before an optional review owned by the same lesson', () => {
+    renderLessons([{ ...review, reviewId: 'optional', blocking: false }, { ...review, blocking: true }])
+    expect(within(row('Bài hai')).getByRole('link', { name: /Làm bài ôn/ })).toHaveAttribute('href', '/learn/reviews/review-2')
+  })
+
+  it('does not let an optional review hide required lesson practice', () => {
+    renderLessons([{ ...review, blocking: false }], lessons.map((lesson) => ({ ...lesson, practiceStatus: 'REQUIRED' })))
+    expect(within(row('Bài hai')).getByText('Cần đạt phần Luyện tập')).toBeInTheDocument()
+  })
+
   it('places the review action only on its owning lesson and keeps later lessons locked', () => {
     const { container } = renderLessons([review])
     const owner = row('Bài hai')

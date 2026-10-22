@@ -68,6 +68,8 @@ export interface FinalTestSummary {
 export interface ReviewRef {
   reviewId: string
   lessonId?: string
+  /** False for optional reviews; legacy gate responses omit this field. */
+  blocking?: boolean
   /** The Practice set whose attempt created the review; absent for reviews from assessments. */
   sourcePackageId?: string | null
   knowledgePointCode: string
@@ -185,12 +187,14 @@ export interface WritingCorrection {
 export interface WritingSubmissionResult {
   submissionId: string
   status: string
+  essayText?: string | null
   task?: string
   wordCount?: number
   overallBand?: number | null
   passed?: boolean | null
   criteria?: WritingCriterion[]
   corrections?: WritingCorrection[]
+  studyPoints?: Partial<EssayStudyPoint>[]
   summary?: string
   pointsCharged?: number
   sampleAnswer?: string | null
@@ -328,6 +332,8 @@ export interface PracticeSetItem {
   bestPercent: number | null
   lastAttemptId: string | null
   revealed: boolean
+  /** Skills of the set's questions; a set of only Writing is graded by band, not by a percentage of right answers. */
+  skills?: string[]
 }
 
 export interface LessonPracticeSets {
@@ -339,6 +345,22 @@ export interface LessonPracticeSets {
   items: PracticeSetItem[]
 }
 
+/** An essay of a Practice set. `latest` is the newest submission: its band and verdict show only once it is GRADED. */
+export interface PracticeEssay {
+  id: string
+  number: number
+  prompt: string
+  task: 'TASK_1' | 'TASK_2' | null
+  minWords: number | null
+  passBand: number | null
+  /** Learner-facing guidance and chart assets for this prompt, when Content provides them. */
+  guide?: string | null
+  images?: Array<{ mediaUrl: string; altText: string | null }>
+  /** The model answer the learner may switch on while writing; paragraphs split by a blank line, `**phrase**` marks vocabulary. */
+  sampleAnswer?: string | null
+  latest: { id: string; status: string; overallBand: number | null; passed: boolean | null } | null
+}
+
 export interface PracticeAttemptView {
   attemptId: string
   packageId: string
@@ -346,6 +368,70 @@ export interface PracticeAttemptView {
   passage: Passage | null
   audio: MediaAudio | null
   questions: Question[]
+  /** Essays graded one by one by `submitPracticeEssay`; the set is handed in once each of them is graded. */
+  essays: PracticeEssay[]
+}
+
+/** One criterion of a graded essay: TA (Task 1) or TR (Task 2), CC, LR and GRA, each with a band. */
+export type EssayJudgment = 'PASS' | 'FAIL' | 'NOT_ASSESSED'
+
+export interface EssayKnowledgeJudgment {
+  knowledgePointId: string
+  code: string | null
+  name: string | null
+  judgment: EssayJudgment
+  excerpt: string | null
+  reason: string | null
+}
+
+export interface EssayCriterion {
+  code: string
+  band: number
+  strengths: string[]
+  improvements: string[]
+  knowledgePointJudgments?: EssayKnowledgeJudgment[]
+}
+
+export interface EssayCorrection {
+  excerpt: string
+  suggestion: string
+  category: string | null
+}
+
+export interface EssayStudyPoint {
+  kind: 'CRITERION' | 'KNOWLEDGE_POINT' | 'AI'
+  criterionCode: string | null
+  band: number | null
+  knowledgePointId: string | null
+  code: string | null
+  name: string | null
+  title: string | null
+  reason: string | null
+  excerpt?: string | null
+  practiceKnowledgePointId?: string | null
+}
+
+/**
+ * The result of sending one essay. Only a GRADED result carries the grade; other statuses are a failure the learner
+ * can retry, with `failureCode` saying why.
+ */
+export interface EssayGrade {
+  submissionId: string
+  status: string
+  wordCount: number | null
+  overallBand: number | null
+  passed: boolean | null
+  criteria: EssayCriterion[]
+  corrections: EssayCorrection[]
+  studyPoints: EssayStudyPoint[]
+  summary: string | null
+  pointsCharged: number | null
+  sampleAnswer: string | null
+}
+
+export interface PracticeEssayRequest {
+  requestId: string
+  essayText: string
 }
 
 export interface PracticeSubmissionRequest {

@@ -18,10 +18,12 @@ import type {
   LessonCompletionResult,
   LessonDetail,
   LessonExerciseResult,
+  EssayGrade,
   LessonPracticeSets,
   PlacementResult,
   PlacementTest,
   PracticeAttemptView,
+  PracticeEssayRequest,
   PracticeSubmissionRequest,
   PracticeSubmissionResult,
   ReviewBasket,
@@ -71,6 +73,12 @@ export interface LearningApi {
   startPracticeAttempt(lessonId: string, packageId: string): Promise<PracticeAttemptView>
   getPracticeAttempt(attemptId: string): Promise<PracticeAttemptView | PracticeSubmissionResult>
   submitPracticeAttempt(attemptId: string, request: PracticeSubmissionRequest): Promise<PracticeSubmissionResult>
+  /**
+   * Sends one essay of a Practice set for grading (it costs points). Resolves with the grade; rejects with
+   * `INSUFFICIENT_POINTS`, `GRADING_UNAVAILABLE`, `DAILY_LIMIT_REACHED` or `VALIDATION_FAILED` (an empty or too short
+   * essay). The same `requestId` is graded and charged once.
+   */
+  submitPracticeEssay(attemptId: string, questionVersionId: string, request: PracticeEssayRequest): Promise<EssayGrade>
   /** The learner's knowledge tree for one course. Rejects with `COURSE_NOT_OPEN` or `COURSE_NOT_JOINED`. */
   getLearnerTree(courseId: string): Promise<LearnerTree>
   /**

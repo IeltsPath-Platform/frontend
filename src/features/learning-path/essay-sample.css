@@ -1,0 +1,82 @@
+/* The model answer a learner can switch on beside the editor: labelled green boxes with the phrases worth learning highlighted. */
+.lp-essay-sample__body {
+  display: grid;
+  gap: 1.5rem;
+}
+.lp-essay-sample__body .lp-essay-sample__part {
+  display: grid;
+  gap: .65rem;
+}
+.lp-essay-sample__body .lp-essay-sample__part h4 {
+  margin: 0;
+}
+.lp-essay-sample__body .lp-essay-sample__part p {
+  margin: 0;
+  padding: .85rem 1rem;
+  border: 1px solid var(--lp-success);
+  border-radius: 12px;
+  background: var(--lp-success-soft);
+  color: var(--lp-ink);
+  line-height: 1.65;
+  white-space: pre-line;
+}
+.lp-essay-sample__body mark {
+  padding: 0 .15em;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--lp-success) 24%, transparent);
+  color: var(--lp-ink);
+  font-weight: 700;
+}
+.lp-essay-sample__body .lp-essay-sample__legend {
+  margin: 0;
+  color: var(--lp-muted);
+  font-size: .85rem;
+}
+
+/* The "Bài mẫu" switch in the header of the writing card. */
+.lp-essay-editor__head {
+  flex-wrap: wrap;
+}
+.lp-essay__text.lp-essay__text--sample {
+  border-color: var(--lp-success);
+  background: var(--lp-success-soft);
+}
+.lp-ws-card__head .lp-essay-ws__title {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.lp-ws-card__head .lp-essay-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.lp-ws-card__head .lp-essay-switch > span {
+  color: var(--lp-ink);
+  font-weight: 600;
+}
+.lp-essay-switch [data-slot='switch'] {
+  width: 2.5rem;
+  height: 1.375rem;
+  padding: 2px;
+  border: 0;
+  background: var(--lp-locked);
+}
+.lp-essay-switch [data-slot='switch'][data-state='checked'] {
+  background: var(--lp-success);
+}
+.lp-essay-switch [data-slot='switch-thumb'] {
+  width: 1.125rem;
+  height: 1.125rem;
+  margin: 0;
+  translate: none;
+  transform: translateX(0);
+  background: var(--lp-surface);
+}
+.lp-essay-switch [data-slot='switch'][data-state='checked'] [data-slot='switch-thumb'] {
+  transform: translateX(calc(2.5rem - 1.125rem - 4px));
+}

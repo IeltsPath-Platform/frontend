@@ -1,0 +1,721 @@
+/* Essays of a Practice set: a full-screen workspace with the prompt, the writing and the dictionary side by side, and the
+   graded result. Built on the lp- tokens. */
+.lp-essay-ws {
+  position: fixed;
+  inset: 0;
+  /* Above the site header and the owl, so the exam-like workspace has the whole screen. */
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  background: var(--lp-canvas);
+  color: var(--lp-ink);
+}
+.lp-essay-ws__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .75rem;
+  padding: .6rem .9rem;
+  border-bottom: 1px solid var(--lp-line);
+  background: var(--lp-surface);
+}
+.lp-essay-ws__exit {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--lp-line);
+  border-radius: 999px;
+  background: var(--lp-surface);
+  color: var(--lp-ink);
+  cursor: pointer;
+}
+.lp-essay-ws__exit:hover {
+  border-color: var(--lp-primary);
+  color: var(--lp-primary);
+}
+.lp-essay-ws__finish {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .75rem;
+  margin-left: auto;
+}
+.lp-essay-ws__finish p {
+  margin: 0;
+  color: var(--lp-muted);
+  font-size: .88rem;
+}
+.lp-essay-ws__error {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+.lp-essay-ws__body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: .75rem;
+}
+.lp-essay-ws__cols {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  gap: .75rem;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1fr);
+}
+.lp-essay-ws__cols[hidden] {
+  display: none;
+}
+
+.lp-ws-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border: 1px solid var(--lp-line);
+  border-radius: var(--lp-radius);
+  background: var(--lp-surface);
+  box-shadow: var(--lp-shadow);
+  overflow: hidden;
+}
+.lp-ws-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  padding: .75rem 1rem;
+  border-bottom: 1px solid var(--lp-line);
+  font-size: .92rem;
+}
+.lp-ws-card__head span {
+  color: var(--lp-muted);
+  font-variant-numeric: tabular-nums;
+}
+.lp-ws-card__scroll {
+  display: grid;
+  align-content: start;
+  gap: .85rem;
+  flex: 1;
+  min-height: 0;
+  padding: 1rem;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+.lp-ws-card__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem .75rem;
+  padding: .65rem 1rem;
+  border-top: 1px solid var(--lp-line);
+  /* Same height with the submit button and without it, so the field does not grow after grading. */
+  min-height: calc(44px + 1.3rem);
+}
+.lp-ws-card__foot .lp-essay__count {
+  margin-right: auto;
+}
+.lp-ws-card__note {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+.lp-essay__prompt {
+  margin: 0;
+  padding: .85rem 1rem;
+  border: 1px solid var(--lp-ink);
+  border-radius: 6px;
+  color: var(--lp-ink);
+  font-size: 1rem;
+  line-height: 1.65;
+  white-space: pre-line;
+}
+.lp-essay__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.lp-essay__facts li {
+  padding: .2rem .65rem;
+  border-radius: 999px;
+  background: var(--lp-soft);
+  color: var(--lp-primary);
+  font-size: .8rem;
+  font-weight: 600;
+}
+
+.lp-essay__label {
+  color: var(--lp-ink);
+  font-size: .9rem;
+  font-weight: 700;
+}
+.lp-essay__text {
+  width: 100%;
+  min-height: 18rem;
+  padding: .9rem 1rem;
+  border: 1px solid var(--lp-line);
+  border-radius: 12px;
+  background: var(--lp-surface);
+  color: var(--lp-ink);
+  font: inherit;
+  /* 16px or more keeps mobile browsers from zooming into the field. */
+  font-size: 1rem;
+  line-height: 1.65;
+  resize: vertical;
+}
+.lp-essay__text:focus-visible {
+  outline: 2px solid var(--lp-primary);
+  outline-offset: 1px;
+  border-color: var(--lp-primary);
+}
+.lp-essay__text:disabled {
+  background: var(--lp-locked-soft);
+}
+.lp-essay-parts {
+  display: grid;
+  gap: 1.5rem;
+}
+.lp-essay-part {
+  display: grid;
+  gap: .65rem;
+}
+.lp-essay-part .lp-essay__text {
+  min-height: 8rem;
+}
+.lp-essay-part:nth-child(3) .lp-essay__text,
+.lp-essay-part:nth-child(4) .lp-essay__text {
+  min-height: 10rem;
+}
+.lp-essay-material__head {
+  flex-wrap: wrap;
+}
+.lp-essay-material__head .lp-segment {
+  margin-left: auto;
+}
+.lp-essay-chart {
+  margin: 0;
+  padding: .5rem;
+  border: 1px solid var(--lp-line);
+  border-radius: 12px;
+}
+.lp-essay-chart img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.lp-essay-material--guide {
+  min-height: 0;
+}
+.lp-essay-chart-rail {
+  display: grid;
+  align-content: start;
+  flex: 0 1 40%;
+  min-height: 0;
+  max-height: 40%;
+  padding: .65rem 1rem 0;
+  overflow: hidden;
+}
+.lp-essay-chart--guide-rail {
+  max-height: 100%;
+  overflow: hidden;
+}
+.lp-essay-chart--guide-rail img {
+  max-height: calc(40vh - 4.5rem);
+  object-fit: contain;
+}
+.lp-essay-chart__fallback {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: .35rem;
+  width: 100%;
+  min-height: 7rem;
+  aspect-ratio: 16 / 10;
+  padding: .75rem;
+  border-radius: 8px;
+  background: var(--lp-canvas);
+  color: var(--lp-muted);
+  font-size: .88rem;
+  text-align: center;
+}
+.lp-essay-material__guide-scroll {
+  min-height: 0;
+  overflow-y: auto;
+}
+.lp-essay-chart__zoom {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  min-height: 44px;
+  padding: .4rem .6rem;
+  border: 0;
+  border-radius: 6px;
+  background: var(--lp-surface);
+  color: var(--lp-primary);
+  font: inherit;
+  font-size: .85rem;
+  cursor: pointer;
+}
+.lp-essay-chart__zoom:focus-visible {
+  outline: 2px solid var(--lp-primary);
+  outline-offset: 2px;
+}
+.lp-essay-chart-dialog {
+  max-width: 70rem;
+}
+.lp-essay-chart-dialog img {
+  width: 100%;
+  height: auto;
+}
+.lp-essay-guide {
+  line-height: 1.7;
+}
+.lp-essay-guide h2 {
+  margin: 0 0 1.25rem;
+  font-size: 1.15rem;
+  text-align: center;
+}
+.lp-essay-guide h3 {
+  margin: 1.4rem 0 .5rem;
+  color: var(--lp-primary);
+  font-size: 1rem;
+}
+.lp-essay-guide p {
+  margin: 0 0 .65rem;
+}
+.lp-essay-guide strong {
+  color: var(--lp-primary);
+}
+.lp-essay-guide__bullet {
+  padding-left: 1rem;
+}
+.lp-essay-guide__bullet::before {
+  content: '• ';
+  margin-left: -1rem;
+}
+.lp-essay__count {
+  margin: 0;
+  color: var(--lp-muted);
+  font-size: .85rem;
+  font-variant-numeric: tabular-nums;
+}
+.lp-essay__count.is-short {
+  color: var(--lp-accent-ink);
+}
+.lp-essay__count--done {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  color: var(--lp-success);
+  font-weight: 650;
+}
+
+/* Right column: the dictionary and, once graded, the result. Both stay mounted so the lookup history survives. */
+.lp-essay-ws__rail-pane {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+.lp-essay-ws__rail-pane[hidden] {
+  display: none;
+}
+.lp-segment button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+/* Dictionary */
+.lp-lookup__empty {
+  margin: 0;
+  color: var(--lp-muted);
+  font-size: .88rem;
+  line-height: 1.5;
+}
+.lp-lookup {
+  display: grid;
+  gap: .5rem;
+  margin: .5rem .75rem .75rem;
+  padding: .6rem;
+  border: 1px solid var(--lp-line);
+  border-radius: 12px;
+}
+.lp-lookup__tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.lp-lookup__tabs button {
+  padding: .4rem;
+  border: 1px solid var(--lp-line);
+  background: var(--lp-canvas);
+  color: var(--lp-muted);
+  font: inherit;
+  font-size: .8rem;
+  cursor: pointer;
+}
+.lp-lookup__tabs button:first-child {
+  border-radius: 8px 0 0 8px;
+}
+.lp-lookup__tabs button:last-child {
+  border-radius: 0 8px 8px 0;
+}
+.lp-lookup__tabs button[aria-selected='true'] {
+  background: var(--lp-surface);
+  color: var(--lp-ink);
+  font-weight: 700;
+}
+.lp-lookup__input {
+  width: 100%;
+  min-height: 44px;
+  padding: .5rem .6rem;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--lp-ink);
+  font: inherit;
+  /* 16px or more keeps mobile browsers from zooming into the field. */
+  font-size: 1rem;
+}
+.lp-lookup__input:focus-visible {
+  outline: 2px solid var(--lp-primary);
+}
+.lp-lookup__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  color: var(--lp-muted);
+  font-size: .78rem;
+}
+.lp-lookup__history {
+  display: grid;
+  gap: .4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.lp-lookup__history a {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .5rem .75rem;
+  border: 1px solid var(--lp-line);
+  border-radius: 10px;
+  color: var(--lp-ink);
+  text-decoration: none;
+}
+.lp-lookup__history a:hover {
+  border-color: var(--lp-primary);
+}
+.lp-lookup__history small {
+  margin-left: auto;
+  color: var(--lp-muted);
+}
+
+/* Narrow screens: one column in reading order, the page scrolls instead of each card. */
+@media (max-width: 1000px) {
+  .lp-essay-ws__body {
+    display: block;
+    overflow-y: auto;
+  }
+  .lp-essay-ws__cols {
+    display: flex;
+    flex-direction: column;
+  }
+  .lp-ws-card {
+    overflow: visible;
+  }
+  .lp-ws-card__scroll {
+    overflow: visible;
+  }
+  .lp-essay-material--guide {
+    max-height: none;
+  }
+  .lp-essay-chart-rail {
+    flex: 0 0 auto;
+    max-height: 50vh;
+  }
+  .lp-essay-chart--guide-rail img {
+    max-height: calc(50vh - 4.5rem);
+  }
+  .lp-essay-material__guide-scroll {
+    overflow: visible;
+  }
+}
+
+/* Graded result, in the right column */
+.lp-essay-result {
+  display: grid;
+  gap: 1.1rem;
+}
+.lp-essay-result__overall {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .9rem 1rem;
+  border-radius: 12px;
+  background: var(--lp-accent-soft);
+}
+.lp-essay-result.is-passed .lp-essay-result__overall {
+  background: var(--lp-success-soft);
+}
+.lp-essay-result__eyebrow {
+  margin: 0 0 .35rem;
+  color: var(--lp-muted);
+  font-size: .78rem;
+  font-weight: 600;
+}
+.lp-essay-result__band {
+  margin: 0;
+  color: var(--lp-ink);
+  font-family: var(--lp-display);
+  font-size: 2.75rem;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.lp-essay-result__band-label {
+  margin: .25rem 0 0;
+  color: var(--lp-muted);
+  font-size: .8rem;
+}
+.lp-essay-result__verdict-box {
+  display: grid;
+  justify-items: end;
+  gap: .3rem;
+  text-align: right;
+}
+.lp-essay-result__verdict {
+  margin: 0;
+  padding: .3rem .8rem;
+  border-radius: 999px;
+  background: var(--lp-surface);
+  color: var(--lp-accent-ink);
+  font-size: .85rem;
+  font-weight: 700;
+}
+.lp-essay-result.is-passed .lp-essay-result__verdict {
+  color: var(--lp-success);
+}
+.lp-essay-result__gap {
+  margin: 0;
+  color: var(--lp-accent-ink);
+  font-size: .8rem;
+  font-variant-numeric: tabular-nums;
+}
+.lp-essay-result__summary {
+  margin: 0;
+  color: var(--lp-ink);
+  line-height: 1.65;
+}
+
+.lp-essay-criteria {
+  display: grid;
+  gap: .85rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.lp-essay-criteria__head {
+  display: flex;
+  justify-content: space-between;
+  gap: .5rem;
+  font-size: .9rem;
+}
+.lp-essay-criteria__head strong {
+  font-variant-numeric: tabular-nums;
+}
+.lp-essay-criteria__bar {
+  position: relative;
+  display: block;
+  height: 6px;
+  margin-top: .3rem;
+  border-radius: 999px;
+  background: var(--lp-line);
+  overflow: hidden;
+}
+.lp-essay-criteria__bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--lp-primary);
+}
+.lp-essay-criteria__bar.is-weak i {
+  background: var(--lp-accent);
+}
+/* Where the pass band sits on the scale. */
+.lp-essay-criteria__bar b {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--lp-ink);
+}
+.lp-essay-criteria__notes {
+  display: grid;
+  gap: .25rem;
+  margin: .45rem 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--lp-muted);
+  font-size: .85rem;
+  line-height: 1.5;
+}
+.lp-essay-criteria__notes li::before {
+  content: '– ';
+}
+.lp-essay-criteria__notes .is-good {
+  color: var(--lp-success);
+}
+.lp-essay-criteria__kps {
+  display: grid;
+  gap: .35rem;
+  margin: .5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+.lp-essay-criteria__kps li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: .2rem .6rem;
+  color: var(--lp-muted);
+  font-size: .82rem;
+  line-height: 1.45;
+}
+.lp-essay-criteria__kps em {
+  font-style: normal;
+  font-weight: 650;
+}
+.lp-essay-criteria__kps .is-good em {
+  color: var(--lp-success);
+}
+.lp-essay-criteria__kps .is-weak em {
+  color: var(--lp-danger);
+}
+.lp-essay-criteria__kps .is-neutral em {
+  color: var(--lp-muted);
+}
+.lp-essay-criteria__kps q {
+  grid-column: 1 / -1;
+  overflow-wrap: anywhere;
+}
+.lp-essay-study__excerpt {
+  margin: 0;
+  padding: .45rem .65rem;
+  border-left: 3px solid var(--lp-primary);
+  background: var(--lp-surface);
+  color: var(--lp-muted);
+  font-size: .85rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.lp-essay-study h4,
+.lp-essay-corrections h4 {
+  margin: 0 0 .5rem;
+  font-size: .9rem;
+}
+.lp-essay-corrections ul {
+  display: grid;
+  gap: .5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.lp-essay-corrections li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: .25rem .6rem;
+  padding: .55rem .75rem;
+  border-radius: 10px;
+  background: var(--lp-surface);
+  border: 1px solid var(--lp-line);
+  font-size: .9rem;
+}
+.lp-essay-corrections del {
+  color: var(--lp-danger);
+  text-decoration-thickness: 1px;
+}
+.lp-essay-corrections ins {
+  color: var(--lp-success);
+  text-decoration: none;
+  font-weight: 600;
+}
+.lp-essay-corrections small {
+  margin-left: auto;
+  color: var(--lp-muted);
+}
+
+.lp-essay-study ul {
+  display: grid;
+  gap: .5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.lp-essay-study li {
+  display: grid;
+  gap: .4rem;
+  min-width: 0;
+  padding: .55rem .75rem;
+  border: 1px solid var(--lp-line);
+  border-radius: 10px;
+  background: var(--lp-surface);
+  font-size: .9rem;
+  overflow-wrap: anywhere;
+}
+.lp-essay-study__criterion {
+  color: var(--lp-muted);
+}
+.lp-essay-study li p {
+  margin: 0;
+  line-height: 1.5;
+}
+.lp-essay-study li p.lp-essay-study__note {
+  padding-left: .65rem;
+  border-left: 3px solid var(--lp-accent);
+  color: var(--lp-ink);
+}
+.lp-essay-study__note span {
+  display: block;
+  color: var(--lp-accent-ink);
+  font-size: .75rem;
+  font-weight: 700;
+}
+.lp-essay-study__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.lp-essay-sample summary {
+  cursor: pointer;
+  color: var(--lp-primary);
+  font-size: .9rem;
+  font-weight: 600;
+}
+.lp-essay-sample p {
+  margin: .6rem 0 0;
+  white-space: pre-line;
+  line-height: 1.65;
+}
+
+/* A Practice set with only essays has no passage to keep beside it, so it reads as one column. */
+.lp-essay-set {
+  display: grid;
+  gap: 1.25rem;
+  max-width: 52rem;
+}
+.lp-split--single {
+  grid-template-columns: minmax(0, 1fr);
+}
+.lp-split--single .lp-split__passage {
+  display: none;
+}

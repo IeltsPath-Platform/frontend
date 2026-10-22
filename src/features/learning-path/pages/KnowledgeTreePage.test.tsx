@@ -44,7 +44,7 @@ beforeEach(() => {
   vi.mocked(learningApi.getLearnerTree).mockResolvedValue({ courseId: 'course-1', knowledgePoints: points })
   vi.mocked(learningApi.listCourses).mockResolvedValue([{ id: 'course-1', code: 'IELTS55', title: 'IELTS 5.5', bandLevel: 5.5, topicCount: 3, passedTopicCount: 0, completedLessons: 0, totalLessons: 6, lastStudiedAt: null, recommended: true, testStatus: 'NONE' }])
   vi.mocked(learningApi.getHearts).mockResolvedValue({ hearts: 3, maxHearts: 5, nextHeartAt: null, refillCost: 5 })
-  vi.mocked(learningApi.startFreePractice).mockResolvedValue({ attemptId: 'attempt-1', packageId: 'package-1', packageVersionId: 'version-1', passage: null, audio: null, questions: [] })
+  vi.mocked(learningApi.startFreePractice).mockResolvedValue({ attemptId: 'attempt-1', packageId: 'package-1', packageVersionId: 'version-1', passage: null, audio: null, questions: [], essays: [] })
 })
 
 describe('KnowledgeTreePage', () => {

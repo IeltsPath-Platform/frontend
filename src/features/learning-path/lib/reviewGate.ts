@@ -19,7 +19,8 @@ export function usePendingReviews() {
 }
 
 export function setPendingReviews(reviews: ReviewRef[]) {
-  pending = reviews.length === 0 ? NO_REVIEWS : reviews
+  const blocking = reviews.filter((review) => review.blocking !== false)
+  pending = blocking.length === 0 ? NO_REVIEWS : blocking
   listeners.forEach((listener) => listener())
 }
 

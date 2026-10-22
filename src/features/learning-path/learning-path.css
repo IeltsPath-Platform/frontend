@@ -1916,6 +1916,10 @@ a.lp-ltile:hover {
 .lp-ltile__badge.is-practice {
   background: var(--lp-accent-soft);
 }
+.lp-ltile__badge.is-optional {
+  color: var(--lp-primary);
+  background: var(--lp-soft);
+}
 .lp-ltile__go {
   display: inline-flex;
   align-items: center;
@@ -2363,6 +2367,9 @@ a.lp-step__row:hover {
 .lp-practice-card.is-review {
   padding-inline: 1rem;
   background: color-mix(in srgb, var(--lp-accent-soft) 55%, var(--lp-surface));
+}
+.lp-practice-card.is-optional {
+  background: var(--lp-soft);
 }
 .lp-practice-card__body {
   display: grid;

@@ -5,6 +5,7 @@ import {
   mapAttemptResult,
   mapAttemptStructure,
   mapCourseSummary,
+  mapEssayGrade,
   mapLessonCompletion,
   mapLessonDetail,
   mapLessonExerciseResult,
@@ -21,6 +22,7 @@ import {
   toStartAttemptBody,
   toWireAnswers,
   type CourseSummaryDto,
+  type EssayGradeDto,
   type LearnerAttemptResultDto,
   type LessonCompletionDto,
   type LessonDetailDto,
@@ -29,6 +31,7 @@ import {
   type PracticeAttemptViewDto,
   type PracticeSubmissionResultDto,
   type ReviewDetailDto,
+  type ReviewRefDto,
   type ReviewSubmissionResultDto,
   type TestAssignmentDto,
   type TheoryCheckResultDto,
@@ -198,40 +201,20 @@ export function createHttpLearningApi(): LearningApi {
     },
 
     async getPendingReviews() {
-      const rows = await learningRequest<Array<{
-        reviewId: string
-        knowledgePointId: string
-        lessonId: string
-        skill?: string
-        stage?: string
-        sourcePackageId?: string | null
-      }>>('/reviews?status=PENDING&limit=50')
-      return rows.map((row) => mapReviewRef({
-        reviewId: row.reviewId,
-        lessonId: row.lessonId,
-        knowledgePointId: row.knowledgePointId,
-        sourcePackageId: row.sourcePackageId,
-      }))
+      const rows = await learningRequest<ReviewRefDto[]>('/reviews?status=PENDING&limit=50')
+      return rows.map(mapReviewRef)
     },
 
     async getTopicLessons(topicId: string): Promise<TopicLessonsResponse> {
       const [dto, topic, pendingReviews] = await Promise.all([
         learningRequest<TopicLessonsDto>(`/topics/${topicId}/lessons`),
         resolveTopic(topicId),
-        learningRequest<Array<{
-          reviewId: string
-          knowledgePointId: string
-          lessonId: string
-        }>>('/reviews?status=PENDING&limit=50').catch(() => []),
+        learningRequest<ReviewRefDto[]>('/reviews?status=PENDING&limit=50').catch(() => []),
       ])
       const mapped = mapTopicLessons(dto, topic)
       return {
         ...mapped,
-        pendingReviews: pendingReviews.map((row) => mapReviewRef({
-          reviewId: row.reviewId,
-          lessonId: row.lessonId,
-          knowledgePointId: row.knowledgePointId,
-        })),
+        pendingReviews: pendingReviews.map(mapReviewRef),
       }
     },
 
@@ -277,6 +260,14 @@ export function createHttpLearningApi(): LearningApi {
         },
       })
       return mapPracticeSubmission(dto)
+    },
+
+    async submitPracticeEssay(attemptId, questionVersionId, request) {
+      const dto = await learningRequest<EssayGradeDto>(
+        `/practice-attempts/${attemptId}/essays/${questionVersionId}/submissions`,
+        { method: 'POST', body: { requestId: request.requestId, essayText: request.essayText } },
+      )
+      return mapEssayGrade(dto)
     },
 
     async getLearnerTree(courseId: string) {
