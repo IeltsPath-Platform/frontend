@@ -11,7 +11,7 @@
 .kg-canvas .react-flow__attribution { font-size: .65rem; }
 .kg-canvas .react-flow__controls-button { background: var(--adm-surface); color: var(--adm-text); border-color: var(--adm-border); }
 
-.kg-lane { position: relative; border-radius: 10px; background: rgb(255 255 255 / 3%); border: 1px solid var(--adm-border); pointer-events: none; }
+.kg-lane { position: relative; border-radius: 10px; background: rgb(15 59 184 / 4%); border: 1px solid var(--adm-border); pointer-events: none; }
 .kg-lane__label { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 120px; font-weight: 700; font-size: .85rem; color: var(--adm-muted); }
 .kg-column { text-align: center; font-weight: 800; font-size: .9rem; letter-spacing: .04em; color: var(--adm-muted); pointer-events: none; }
 
@@ -54,4 +54,4 @@
 .kg-panel__section h3 { margin: 14px 0 6px; font-size: .9rem; }
 .kg-related { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .kg-link { background: transparent; border: 0; padding: 0; color: var(--adm-accent); font: inherit; font-weight: 700; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
-.kg-link[aria-pressed="true"] { color: var(--adm-brand); }
+.kg-link[aria-pressed="true"] { color: var(--adm-warn); }

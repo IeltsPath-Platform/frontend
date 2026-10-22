@@ -5,7 +5,7 @@ import { AdminError, AdminLoading } from '../../components/AdminState'
 import { useAdminResource } from '../../lib/useAdminResource'
 import { KnowledgePointPicker } from '../../questions/components/KnowledgePointPicker'
 import { STATUS_LABEL, statusBadgeClass } from '../../questions/lib/labels'
-import { AdminPageHeader } from '../../pages/AdminPageHeader'
+import { AdminPage } from '../../pages/AdminPage'
 import {
   addBlock, archiveLesson, deleteBlock, fetchLesson, publishLesson, reorderBlocks,
   setLessonKnowledgePoints, updateBlock, updateLesson,
@@ -281,15 +281,13 @@ export function LessonEditorPage() {
   const current = lesson.status === 'success' ? lesson.data : shown
 
   return (
-    <>
-      <AdminPageHeader
+    <AdminPage
         actions={<Link className="adm-btn" to="/admin/lessons"><ArrowLeft aria-hidden="true" size={14} /> Danh sách bài học</Link>}
         subtitle="Sửa từng block giữ nguyên mã block. Mọi thay đổi lưu ngay khi bấm lưu."
-        title={current ? current.title : 'Soạn bài học'}
-      />
+        title={current ? current.title : 'Soạn bài học'}>
       {!current && lesson.status === 'loading' ? <AdminLoading label="Đang tải bài học…" /> : null}
       {lesson.status === 'error' ? <AdminError message={lesson.error ?? 'Không tải được bài học.'} onRetry={lesson.reload} /> : null}
       {current ? <LessonEditorBody lesson={current} reload={lesson.reload} /> : null}
-    </>
+    </AdminPage>
   )
 }

@@ -4,7 +4,7 @@ import { Plus } from 'lucide-react'
 import { useAdminSearch } from '../../adminSearch'
 import { AdminEmpty, AdminError, AdminLoading } from '../../components/AdminState'
 import { useAdminResource } from '../../lib/useAdminResource'
-import { AdminPageHeader } from '../../pages/AdminPageHeader'
+import { AdminPage } from '../../pages/AdminPage'
 import { createQuestion, listQuestions } from '../api/questionApi'
 import {
   PURPOSE_LABEL, SKILL_LABEL, STATUS_LABEL, TYPE_LABEL, questionErrorText, statusBadgeClass,
@@ -97,16 +97,14 @@ export function QuestionBankPage() {
   }
 
   return (
-    <>
-      <AdminPageHeader
+    <AdminPage
         actions={
           <button className="adm-btn adm-btn--primary" onClick={() => setCreating((open) => !open)} type="button">
             <Plus aria-hidden="true" size={16} /> Câu hỏi mới
           </button>
         }
         subtitle="Tạo câu hỏi, thêm phiên bản, rồi xuất bản để bài học dùng được. Câu chưa xuất bản không bao giờ tới học viên."
-        title="Ngân hàng câu hỏi"
-      />
+        title="Ngân hàng câu hỏi">
 
       {creating ? <CreateQuestionPanel onDone={() => setCreating(false)} /> : null}
 
@@ -184,6 +182,6 @@ export function QuestionBankPage() {
           </nav>
         </>
       ) : null}
-    </>
+    </AdminPage>
   )
 }

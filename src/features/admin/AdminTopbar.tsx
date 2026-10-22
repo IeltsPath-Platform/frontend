@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ChevronDown, GraduationCap, LogOut, Search } from 'lucide-react'
+import { BRAND_LOGO_URL } from '@/components/brandLogo'
 import { logoutSession, useAuthSession } from '@/features/auth/authSession'
 import { useAdminSearch } from './adminSearch'
 
@@ -74,7 +75,7 @@ export function AdminTopbar() {
   return (
     <header className="adm-topbar">
       <Link aria-label="Trang chủ quản trị" className="adm-brand" to="/admin">
-        <span className="adm-brand__name">IELTSPath</span>
+        <img alt="The English Space" className="adm-brand__logo" height={74} src={BRAND_LOGO_URL} width={175} />
         <span aria-hidden="true" className="adm-brand__divider" />
         <span className="adm-brand__label">QUẢN TRỊ</span>
       </Link>

@@ -5,7 +5,7 @@ import { useAdminSearch } from '../../adminSearch'
 import { AdminEmpty, AdminError, AdminLoading } from '../../components/AdminState'
 import { useAdminResource } from '../../lib/useAdminResource'
 import { fetchCourses } from '../../knowledge-graph/api/knowledgeGraphApi'
-import { AdminPageHeader } from '../../pages/AdminPageHeader'
+import { AdminPage } from '../../pages/AdminPage'
 import { STATUS_LABEL, statusBadgeClass } from '../../questions/lib/labels'
 import { createLesson, fetchLessons, fetchTopics, reorderLessons } from '../api/lessonApi'
 import { lessonErrorText } from '../lib/lessonErrors'
@@ -92,16 +92,14 @@ export function LessonsPage() {
   const unfiltered = text === ''
 
   return (
-    <>
-      <AdminPageHeader
+    <AdminPage
         actions={
           <button className="adm-btn adm-btn--primary" disabled={!topicId} onClick={() => setCreating((open) => !open)} type="button">
             <Plus aria-hidden="true" size={16} /> Bài học mới
           </button>
         }
         subtitle="Chọn khóa học và chủ đề, rồi soạn bài theo từng block. Block giữ nguyên mã khi sửa nên tiến độ của học viên không mất."
-        title="Bài học"
-      />
+        title="Bài học">
 
       <div className="adm-filters">
         <label className="adm-field">
@@ -179,6 +177,6 @@ export function LessonsPage() {
         </div>
       ) : null}
       {topicId && lessons.status === 'success' && !unfiltered ? <p className="adm-muted">Đang lọc theo ô tìm kiếm nên tạm khóa đổi thứ tự.</p> : null}
-    </>
+    </AdminPage>
   )
 }

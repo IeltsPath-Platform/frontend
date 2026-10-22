@@ -6,7 +6,7 @@ import { hasAnyRole } from '@/features/auth/staffRoles'
 import { useAdminSearch } from '../../adminSearch'
 import { AdminEmpty, AdminError, AdminLoading } from '../../components/AdminState'
 import { useAdminResource } from '../../lib/useAdminResource'
-import { AdminPageHeader } from '../../pages/AdminPageHeader'
+import { AdminPage } from '../../pages/AdminPage'
 import { fetchCourses, fetchKnowledgeTree, fetchKnowledgeTreeHealth } from '../api/knowledgeGraphApi'
 import { KnowledgeTable } from '../components/KnowledgeTable'
 import { NodeDetailPanel } from '../components/NodeDetailPanel'
@@ -100,12 +100,10 @@ export function KnowledgeGraphPage() {
   }
 
   return (
-    <>
-      <AdminPageHeader
+    <AdminPage
         actions={<button className="adm-btn" onClick={reloadAll} type="button">Tải lại</button>}
         subtitle="Mỗi nút là một knowledge point: cột là cấp CEFR, hàng là kỹ năng, mũi tên chỉ từ kiến thức cần học trước."
-        title="Cây tri thức"
-      />
+        title="Cây tri thức">
 
       <div className="adm-filters">
         <label className="adm-field">
@@ -202,6 +200,6 @@ export function KnowledgeGraphPage() {
           </div>
         </>
       ) : null}
-    </>
+    </AdminPage>
   )
 }

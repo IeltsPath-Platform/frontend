@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { AdminEmpty, AdminError, AdminLoading } from '../../components/AdminState'
 import { useAdminResource, type AdminResource } from '../../lib/useAdminResource'
 import { fetchKnowledgeTreeHealth } from '../../knowledge-graph/api/knowledgeGraphApi'
-import { AdminPageHeader } from '../../pages/AdminPageHeader'
+import { AdminPage } from '../../pages/AdminPage'
 import { fetchAuthorWorkItems, fetchContentOverview, fetchQuestionStats } from '../api/overviewApi'
 import { WORK_KIND_LABEL, WORK_STATUS_LABEL, correctRate, extremes, percent } from '../lib/overviewLabels'
 import '../overview.css'
@@ -50,8 +50,7 @@ export function OverviewPage() {
   const stats = useAdminResource('overview|question-stats', (signal) => fetchQuestionStats(MIN_ATTEMPTS, signal))
 
   return (
-    <>
-      <AdminPageHeader subtitle="Nội dung hiện có và việc cần làm của R&D." title="Tổng quan" />
+    <AdminPage subtitle="Nội dung hiện có và việc cần làm của R&D." title="Tổng quan">
 
       <div className="ov-grid">
         <Block resource={overview} title="Nội dung">
@@ -119,6 +118,6 @@ export function OverviewPage() {
           }}
         </Block>
       </div>
-    </>
+    </AdminPage>
   )
 }

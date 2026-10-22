@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { ArrowLeft, Plus } from 'lucide-react'
 import { AdminError, AdminLoading } from '../../components/AdminState'
 import { useAdminResource } from '../../lib/useAdminResource'
-import { AdminPageHeader } from '../../pages/AdminPageHeader'
+import { AdminPage } from '../../pages/AdminPage'
 import { addQuestionVersion, archiveQuestionVersion, getQuestion, publishQuestionVersion } from '../api/questionApi'
 import { VersionCard } from '../components/VersionCard'
 import { VersionForm } from '../components/VersionForm'
@@ -47,24 +47,30 @@ export function QuestionDetailPage() {
     detail.reload()
   }
 
-  return (
-    <>
-      <p><Link className="qb-link" to="/admin/questions"><ArrowLeft aria-hidden="true" size={14} /> Ngân hàng câu hỏi</Link></p>
+  const back = (
+    <Link className="adm-btn" to="/admin/questions"><ArrowLeft aria-hidden="true" size={14} /> Ngân hàng câu hỏi</Link>
+  )
 
+  return (
+    <AdminPage
+      actions={
+        <>
+          {back}
+          {question ? (
+            <button className="adm-btn adm-btn--primary" onClick={() => setAdding((open) => !open)} type="button">
+              <Plus aria-hidden="true" size={16} /> Thêm phiên bản
+            </button>
+          ) : null}
+        </>
+      }
+      subtitle={question ? `Mã ${question.id}` : undefined}
+      title={question ? TYPE_LABEL[question.questionType] ?? question.questionType : 'Câu hỏi'}
+    >
       {detail.status === 'loading' ? <AdminLoading label="Đang tải câu hỏi…" /> : null}
       {detail.status === 'error' ? <AdminError message={detail.error ?? 'Không tải được câu hỏi.'} onRetry={detail.reload} /> : null}
 
       {question ? (
         <>
-          <AdminPageHeader
-            actions={
-              <button className="adm-btn adm-btn--primary" onClick={() => setAdding((open) => !open)} type="button">
-                <Plus aria-hidden="true" size={16} /> Thêm phiên bản
-              </button>
-            }
-            subtitle={`Mã ${question.id}`}
-            title={TYPE_LABEL[question.questionType] ?? question.questionType}
-          />
           <p className="qb-meta">
             <span className={statusBadgeClass(question.status)}>{STATUS_LABEL[question.status]}</span>
             <span className="adm-badge">{question.skill ? SKILL_LABEL[question.skill] ?? question.skill : 'Chưa gắn kỹ năng'}</span>
@@ -99,6 +105,6 @@ export function QuestionDetailPage() {
           </section>
         </>
       ) : null}
-    </>
+    </AdminPage>
   )
 }
