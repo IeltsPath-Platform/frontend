@@ -82,6 +82,7 @@ function AppContent() {
       <Route path="/games" element={<RequireAuth><GameLayout /></RequireAuth>}>
         <Route index element={<GameCatalogPage />} />
         <Route path="wordly/setup" element={<GameSetupPage />} />
+        <Route path="rocket/setup" element={<GameSetupPage gameType="ROCKET" />} />
         <Route path="rooms/:roomId" element={<GameRoomPage />} />
         <Route path="matches/:matchId/play" element={<WordlyPlayPage />} />
         <Route path="matches/:matchId/result" element={<GameResultPage />} />

@@ -10,7 +10,13 @@ import {
 } from '@/components/ui/dialog'
 import { gameApi } from '../api/gameApi'
 import type { CreateRoomInput, GameRoom } from '../types/game'
-import { GameSettingsForm } from './GameSettingsForm'
+import { GameSettingsForm, RocketSettingsForm } from './GameSettingsForm'
+import { toGameType } from '../lib/gameRoutes'
+import {
+  ROCKET_ROOM_DEFAULTS,
+  rocketQuestionCountError,
+  type RocketRoomSettings,
+} from '../lib/rocketRoomSettings'
 
 type RoomSettingsDialogProps = {
   room: GameRoom
@@ -29,6 +35,15 @@ export function RoomSettingsDialog({
     playMode: room.settings?.playMode ?? 'FINITE',
     wordLimit: room.settings?.wordLimit ?? null,
     timeEnabled: room.settings?.timeEnabled ?? true,
+  })
+  const rocket = toGameType(room.gameType) === 'ROCKET'
+  const [rocketValue, setRocketValue] = useState<RocketRoomSettings>({
+    initialLives: room.settings?.initialLives ?? ROCKET_ROOM_DEFAULTS.initialLives,
+    questionCount:
+      room.settings?.questionCount ?? ROCKET_ROOM_DEFAULTS.questionCount,
+    secondsPerQuestion:
+      room.settings?.secondsPerQuestion ??
+      ROCKET_ROOM_DEFAULTS.secondsPerQuestion,
   })
   const [pending, setPending] = useState(false)
   const [error, setError] = useState('')
@@ -55,7 +70,15 @@ export function RoomSettingsDialog({
           onSubmit={async (event) => {
             event.preventDefault()
             if (saving.current) return
+            const countError = rocket
+              ? rocketQuestionCountError(rocketValue.questionCount)
+              : null
+            if (countError) {
+              setError(countError)
+              return
+            }
             if (
+              !rocket &&
               value.playMode === 'FINITE' &&
               (!Number.isInteger(value.wordLimit) ||
                 (value.wordLimit ?? 0) < 5 ||
@@ -73,11 +96,16 @@ export function RoomSettingsDialog({
             setError('')
             try {
               onSaved(
-                await gameApi.settings(room.id, {
-                  initialLives: value.initialLives,
-                  wordLimit: value.wordLimit,
-                  timeEnabled: value.timeEnabled,
-                }),
+                await gameApi.settings(
+                  room.id,
+                  rocket
+                    ? rocketValue
+                    : {
+                        initialLives: value.initialLives,
+                        wordLimit: value.wordLimit,
+                        timeEnabled: value.timeEnabled,
+                      },
+                ),
               )
               onClose()
             } catch {
@@ -90,12 +118,20 @@ export function RoomSettingsDialog({
             }
           }}
         >
-          <GameSettingsForm
-            value={value}
-            onChange={setValue}
-            disabled={pending}
-            editing
-          />
+          {rocket ? (
+            <RocketSettingsForm
+              value={rocketValue}
+              onChange={setRocketValue}
+              disabled={pending}
+            />
+          ) : (
+            <GameSettingsForm
+              value={value}
+              onChange={setValue}
+              disabled={pending}
+              editing
+            />
+          )}
           <GameNoticeDialog message={error} onClose={() => setError('')} />
           <div className="game-actions">
             <Button

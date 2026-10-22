@@ -8,6 +8,10 @@ export type RoomSettings = {
   playMode: PlayMode
   wordLimit: number | null
   timeEnabled: boolean
+  /** Rocket rooms only; null in Wordly rooms. */
+  questionCount?: number | null
+  /** Rocket rooms only; null in Wordly rooms. */
+  secondsPerQuestion?: number | null
 }
 
 export type CreateRoomInput = {
@@ -22,6 +26,21 @@ export type UpdateRoomSettingsInput = Pick<
   RoomSettings,
   'initialLives' | 'wordLimit' | 'timeEnabled'
 >
+
+/** A Rocket multiplayer room; solo rooms are started by the Rocket API. */
+export type RocketRoomInput = {
+  playerMode: 'MULTIPLAYER'
+  questionCount: number
+  initialLives: number
+  secondsPerQuestion: number
+}
+
+/** null keeps the current value. */
+export type UpdateRocketRoomSettingsInput = {
+  initialLives: number
+  questionCount: number | null
+  secondsPerQuestion: number | null
+}
 
 export type GameRoomMember = {
   userId: string

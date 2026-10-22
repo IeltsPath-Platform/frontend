@@ -14,6 +14,8 @@ import type {
   HintResponse,
   LeaveMatchResponse,
   PendingGuessResponse,
+  RocketRoomInput,
+  UpdateRocketRoomSettingsInput,
   UpdateRoomSettingsInput,
 } from '../types/game'
 
@@ -25,6 +27,12 @@ export const gameApi = {
     apiRequest<GameCatalog>('/api/games/catalog', { auth: true, signal }),
   createRoom: (body: CreateRoomInput) =>
     apiRequest<GameRoom>('/api/games/wordly/rooms', {
+      auth: true,
+      method: 'POST',
+      body,
+    }),
+  createRocketRoom: (body: RocketRoomInput) =>
+    apiRequest<GameRoom>('/api/games/rocket/rooms', {
       auth: true,
       method: 'POST',
       body,
@@ -53,7 +61,10 @@ export const gameApi = {
       method: 'POST',
       body: { ready },
     }),
-  settings: (id: string, body: UpdateRoomSettingsInput) =>
+  settings: (
+    id: string,
+    body: UpdateRoomSettingsInput | UpdateRocketRoomSettingsInput,
+  ) =>
     apiRequest<GameRoom>(`${roomPath(id)}/settings`, {
       auth: true,
       method: 'PUT',

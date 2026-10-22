@@ -1,22 +1,42 @@
 import { GameNoticeDialog } from '../components/GameNoticeDialog'
 import { useEffect, useRef, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, Heart, Play } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { GameSettingsForm } from '../components/GameSettingsForm'
+import {
+  GameSettingsForm,
+  RocketSettingsForm,
+} from '../components/GameSettingsForm'
 import { gameApi } from '../api/gameApi'
 import type { ActiveGame, CreateRoomInput, GameRoom } from '../types/game'
 import { HttpError } from '@/lib/httpClient'
 import { startSoloRoom } from '../lib/startSoloRoom'
 import { ActiveGameDialog } from '../components/ActiveGameDialog'
 import { activeGamePath, isActiveGameConflict } from '../lib/activeGame'
+import { gameName, playPath, setupPath, type GameType } from '../lib/gameRoutes'
+import {
+  ROCKET_ROOM_DEFAULTS,
+  rocketQuestionCountError,
+  type RocketRoomSettings,
+} from '../lib/rocketRoomSettings'
 import '../games-room.css'
 
-export function GameSetupPage() {
+/** Wordly sets up solo and multiplayer; Rocket only multiplayer rooms (solo has its own full-screen card). */
+export function GameSetupPage({ gameType = 'WORDLY' }: { gameType?: GameType }) {
+  const [params] = useSearchParams()
+  if (gameType === 'ROCKET' && params.get('mode') !== 'MULTIPLAYER')
+    return <Navigate replace to={setupPath('ROCKET', 'SOLO')} />
+  return <SetupContent gameType={gameType} />
+}
+
+function SetupContent({ gameType }: { gameType: GameType }) {
   const [params] = useSearchParams()
   const navigate = useNavigate()
+  const rocket = gameType === 'ROCKET'
   const playerMode =
     params.get('mode') === 'MULTIPLAYER' ? 'MULTIPLAYER' : 'SOLO'
+  const [rocketValue, setRocketValue] =
+    useState<RocketRoomSettings>(ROCKET_ROOM_DEFAULTS)
   const [value, setValue] = useState<CreateRoomInput>({
     playerMode,
     initialLives: 4,
@@ -41,7 +61,15 @@ export function GameSetupPage() {
   /** checkActive=false only after the user chose to leave their previous room. */
   async function submit(checkActive: boolean) {
     if (submitting.current) return
+    const countError = rocket
+      ? rocketQuestionCountError(rocketValue.questionCount)
+      : null
+    if (countError) {
+      setError(countError)
+      return
+    }
     if (
+      !rocket &&
       value.playMode === 'FINITE' &&
       (!Number.isInteger(value.wordLimit) ||
         (value.wordLimit ?? 0) < 5 ||
@@ -67,6 +95,17 @@ export function GameSetupPage() {
           setActiveGame(active)
           return
         }
+      }
+      if (rocket) {
+        const room = await gameApi.createRocketRoom({
+          playerMode: 'MULTIPLAYER',
+          questionCount: rocketValue.questionCount ?? 0,
+          initialLives: rocketValue.initialLives,
+          secondsPerQuestion: rocketValue.secondsPerQuestion,
+        })
+        signal?.throwIfAborted()
+        navigate(`/games/rooms/${room.id}`)
+        return
       }
       if (playerMode === 'SOLO') {
         let room = pendingSoloRoom.current
@@ -102,7 +141,7 @@ export function GameSetupPage() {
         const match = await startSoloRoom(room, signal)
         signal?.throwIfAborted()
         pendingSoloRoom.current = null
-        navigate(`/games/matches/${match.matchId}/play`, {
+        navigate(playPath(gameType, match.matchId), {
           replace: true,
         })
         return
@@ -158,7 +197,8 @@ export function GameSetupPage() {
       </Link>
       <header className="game-page-heading">
         <span className="game-eyebrow">
-          WORDLY · {playerMode === 'SOLO' ? 'CHƠI ĐƠN' : 'NHIỀU NGƯỜI'}
+          {gameName[gameType].toUpperCase()} ·{' '}
+          {playerMode === 'SOLO' ? 'CHƠI ĐƠN' : 'NHIỀU NGƯỜI'}
         </span>
         <h1>
           {playerMode === 'SOLO'
@@ -170,7 +210,7 @@ export function GameSetupPage() {
       <div className="game-setup-grid">
         <section className="game-panel">
           <h2>
-            <Heart size={21} /> Cấu hình Wordly
+            <Heart size={21} /> Cấu hình {gameName[gameType]}
           </h2>
           <form
             noValidate
@@ -181,11 +221,19 @@ export function GameSetupPage() {
               void submit(true)
             }}
           >
-            <GameSettingsForm
-              value={{ ...value, playerMode }}
-              onChange={setValue}
-              disabled={pending}
-            />
+            {rocket ? (
+              <RocketSettingsForm
+                value={rocketValue}
+                onChange={setRocketValue}
+                disabled={pending}
+              />
+            ) : (
+              <GameSettingsForm
+                value={{ ...value, playerMode }}
+                onChange={setValue}
+                disabled={pending}
+              />
+            )}
             <GameNoticeDialog message={error} onClose={() => setError('')} />
             <ActiveGameDialog
               game={activeGame}
@@ -214,29 +262,44 @@ export function GameSetupPage() {
             </Button>
           </form>
         </section>
-        <aside className="game-panel game-howto">
-          <span className="game-eyebrow">CÁCH CHƠI</span>
-          <h2>Một gợi ý. Một từ mới.</h2>
-          <div className="game-letter-demo" aria-hidden="true">
-            {'WORDLY'.split('').map((letter, index) => (
-              <span key={index}>{letter}</span>
-            ))}
-          </div>
-          <p>
-            Đoán từ tiếng Anh dựa trên nghĩa. Từ có N chữ cái sẽ có N+1 lượt
-            đoán.
-          </p>
-          <p>
-            Đúng liên tiếp từ 3 từ: thêm 50 điểm mỗi từ. Đoán sai một hàng không
-            mất mạng và không ngắt chuỗi.
-          </p>
-          {playerMode === 'MULTIPLAYER' && (
-            <p className="game-note">
-              Tối đa 4 người, cùng một chuỗi từ và tiến độ riêng. Tất cả sẵn
-              sàng để chủ phòng bắt đầu.
+        {rocket ? (
+          <aside className="game-panel game-howto">
+            <span className="game-eyebrow">CÁCH CHƠI</span>
+            <h2>Một nghĩa. Ba hành tinh.</h2>
+            <p>
+              Mỗi câu hiện nghĩa tiếng Việt và ba từ tiếng Anh. Mọi người cùng
+              trả lời một câu; chọn đúng và nhanh được thêm tới 100 điểm.
             </p>
-          )}
-        </aside>
+            <p>Sai hoặc hết giờ mất một mạng. Hết mạng thì xem tiếp đến hết trận.</p>
+            <p className="game-note">
+              Tối đa 4 người. Tất cả sẵn sàng để chủ phòng bắt đầu.
+            </p>
+          </aside>
+        ) : (
+          <aside className="game-panel game-howto">
+            <span className="game-eyebrow">CÁCH CHƠI</span>
+            <h2>Một gợi ý. Một từ mới.</h2>
+            <div className="game-letter-demo" aria-hidden="true">
+              {'WORDLY'.split('').map((letter, index) => (
+                <span key={index}>{letter}</span>
+              ))}
+            </div>
+            <p>
+              Đoán từ tiếng Anh dựa trên nghĩa. Từ có N chữ cái sẽ có N+1 lượt
+              đoán.
+            </p>
+            <p>
+              Đúng liên tiếp từ 3 từ: thêm 50 điểm mỗi từ. Đoán sai một hàng không
+              mất mạng và không ngắt chuỗi.
+            </p>
+            {playerMode === 'MULTIPLAYER' && (
+              <p className="game-note">
+                Tối đa 4 người, cùng một chuỗi từ và tiến độ riêng. Tất cả sẵn
+                sàng để chủ phòng bắt đầu.
+              </p>
+            )}
+          </aside>
+        )}
       </div>
     </main>
   )
