@@ -273,6 +273,13 @@ describe('useRocketMatch multiplayer', () => {
     return hook
   }
 
+  it('keeps a briefly disconnected player in the round instead of making them a spectator', async () => {
+    // Moving from the lobby to the match page closes one socket before the next opens.
+    api.current.mockResolvedValueOnce(openRound(1, { player: { livesRemaining: 4, totalScore: 0, status: 'DISCONNECTED' } }))
+    const { result } = await startAiming()
+    expect(result.current.state.spectating).toBe(false)
+  })
+
   it('waits for the others after answering, then reveals the socket result once', async () => {
     api.current.mockResolvedValueOnce(openRound(2))
     api.answer.mockResolvedValueOnce(ack('a'))

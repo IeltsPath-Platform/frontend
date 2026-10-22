@@ -2,7 +2,7 @@ import type { GameRanking, PlayerMode } from '../../types/game'
 
 /** Shapes follow backend docs/contracts/rocket-game-v1.md (round model shared by solo and multiplayer). */
 
-export type RocketPlayerStatus = 'ACTIVE' | 'ELIMINATED' | 'FINISHED' | 'FORFEITED'
+export type RocketPlayerStatus = 'ACTIVE' | 'DISCONNECTED' | 'ELIMINATED' | 'FINISHED' | 'FORFEITED'
 
 export type RocketEndReason =
   | 'ALL_ROUNDS_COMPLETED'

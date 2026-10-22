@@ -66,6 +66,12 @@ const CLOSE_ATTEMPTS = 12
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, Math.max(0, ms)))
 
+/**
+ * Whether the player only watches: eliminated, forfeited or done. A DISCONNECTED player is still in the match (the
+ * server keeps their place for a grace period, e.g. while the lobby socket hands over to the match page).
+ */
+const watches = (status: string) => status !== 'ACTIVE' && status !== 'DISCONNECTED'
+
 function errorMessage(error: unknown) {
   if (error instanceof HttpError && error.isNetworkError) return 'Mất kết nối tới máy chủ. Vui lòng thử lại.'
   return gameErrorMessage(error)
@@ -188,7 +194,7 @@ export function useRocketMatch(matchId: string, stage: RocketStage | null, stage
       }
       const early = earlyAnswers.current?.roundId === round.roundId ? earlyAnswers.current : null
       earlyAnswers.current = null
-      const spectating = round.player.status !== 'ACTIVE'
+      const spectating = watches(round.player.status)
       update({
         phase: 'intro',
         settings: current.settings,
@@ -225,7 +231,7 @@ export function useRocketMatch(matchId: string, stage: RocketStage | null, stage
       else await stageRef.current?.revealWrong(chosen >= 0 ? chosen : null, correct)
       await sleep(REVEAL_HOLD_MS)
       // Multiplayer goes on without a player who ran out of lives; they watch the remaining rounds.
-      if (result.status !== 'ACTIVE' && multiplayer()) update({ spectating: true })
+      if (watches(result.status) && multiplayer()) update({ spectating: true })
       if (result.matchFinished) await finish()
       else await enterNextRound(true)
     },
@@ -287,11 +293,11 @@ export function useRocketMatch(matchId: string, stage: RocketStage | null, stage
         const offset = Date.parse(current.serverTime) - Date.now()
         const expired = deadlineAt !== null && Date.now() + offset >= Date.parse(deadlineAt)
         // The server decides whether this player may still answer; an unanswered round stays answerable (same requestId).
-        const locked = me.answered || player.status !== 'ACTIVE' || expired
+        const locked = me.answered || watches(player.status) || expired
         update({
           lives: player.livesRemaining,
           score: player.totalScore,
-          spectating: player.status !== 'ACTIVE',
+          spectating: watches(player.status),
           clockOffsetMs: offset,
           phase: locked ? 'locked' : 'aiming',
           chosenOptionId: me.answered ? me.optionId : locked ? stateRef.current.chosenOptionId : null,
@@ -336,7 +342,7 @@ export function useRocketMatch(matchId: string, stage: RocketStage | null, stage
         round: seen,
         lives: seen.player.livesRemaining,
         score: seen.player.totalScore,
-        spectating: seen.player.status !== 'ACTIVE',
+        spectating: watches(seen.player.status),
         clockOffsetMs: Date.parse(current.serverTime) - Date.now(),
       })
       await stageRef.current?.showRound(seen.options.map((option) => option.word))
