@@ -29,7 +29,7 @@ function CreateQuestionPanel({ onDone }: { onDone: () => void }) {
     setError(null)
     try {
       const created = await createQuestion({ questionType, skill: skill || null, accessLevel, purpose })
-      navigate(`/admin/questions/${created.id}`)
+      navigate(`/content-author/questions/${created.id}`)
     } catch (reason) {
       setError(questionErrorText(reason))
       setSaving(false)
@@ -156,7 +156,7 @@ export function QuestionBankPage() {
               <tbody>
                 {rows.map((question) => (
                   <tr key={question.id}>
-                    <td><Link className="qb-link" to={`/admin/questions/${question.id}`}>{question.id.slice(0, 8)}…</Link></td>
+                    <td><Link className="qb-link" to={`/content-author/questions/${question.id}`}>{question.id.slice(0, 8)}…</Link></td>
                     <td>{TYPE_LABEL[question.questionType] ?? question.questionType}</td>
                     <td>{question.skill ? SKILL_LABEL[question.skill] ?? question.skill : '—'}</td>
                     <td>{question.purpose ? PURPOSE_LABEL[question.purpose] ?? question.purpose : '—'}</td>

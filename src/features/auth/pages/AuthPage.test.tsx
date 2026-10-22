@@ -38,7 +38,7 @@ function LocationProbe() {
 describe('AuthPage community redirect', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    loginWithPasswordMock.mockResolvedValue(undefined)
+    loginWithPasswordMock.mockResolvedValue({ roles: [{ name: 'CUSTOMER' }] })
   })
 
   it('marks a successful login redirect to the requested Community route', async () => {
@@ -53,5 +53,22 @@ describe('AuthPage community redirect', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Đăng nhập kiểm thử' }))
     expect(await screen.findByTestId('community-state')).toHaveTextContent('communityLoginTransition')
+  })
+
+  it.each([
+    ['ADMIN', '/admin'],
+    ['CONTENT_AUTHOR', '/content-author'],
+  ])('sends %s to its workspace even when login started in Community', async (role, destination) => {
+    loginWithPasswordMock.mockResolvedValue({ roles: [{ name: role }] })
+    render(
+      <MemoryRouter initialEntries={[{ pathname: '/login', state: { from: { pathname: '/community' } } }]}>
+        <Routes>
+          <Route path="/login" element={<AuthPage mode="sign-in" />} />
+          <Route path={destination} element={<h1>Không gian làm việc</h1>} />
+        </Routes>
+      </MemoryRouter>,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Đăng nhập kiểm thử' }))
+    expect(await screen.findByRole('heading', { name: 'Không gian làm việc' })).toBeInTheDocument()
   })
 })

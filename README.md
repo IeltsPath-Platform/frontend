@@ -73,6 +73,12 @@ Trang cây kiến thức của khóa học hiển thị theo cấu trúc khóa h
 
 Community `/community` yêu cầu đăng nhập, hỗ trợ feed cursor 10 bài/lượt, tìm kiếm toàn văn tiêu đề/nội dung, lọc chủ đề, tạo bài, reaction, lưu bài, bình luận và phản hồi, theo dõi hồ sơ, cùng bảng bài đã lưu. Ảnh/video hiện nhận URL HTTPS được Community backend cho phép; chưa có luồng upload. Chuông thông báo dùng REST để đồng bộ unread và STOMP qua `/ws/notifications`; khi mất kết nối, danh sách REST vẫn là dữ liệu chuẩn.
 
+### Điều hướng và không gian làm việc
+
+Navbar dùng mục **Khám phá** để gom Cộng đồng, Trò chơi, Nghe chép, Kho từ vựng và Flashcard của tôi. Di chuột vào mục này để hiện thanh điều hướng con với hiệu ứng như các mục khác; trên điện thoại, bấm để mở các mục con trong menu. Bàn phím vẫn hỗ trợ Enter và Escape. Navbar không còn mục Quản trị, Kết quả học viên hoặc Bài mẫu 8đ.
+
+Sau đăng nhập, khi mở `/` hoặc quay lại trang dành cho khách với phiên đã khôi phục, tài khoản `ADMIN` vào `/admin`, `CONTENT_AUTHOR` vào `/content-author`; nếu có cả hai vai trò thì ưu tiên `ADMIN`. Người học giữ đích đến trước đăng nhập hoặc `/overview`. Các trang nội dung dùng `/content-author/content`, `/content-author/knowledge-graph`, `/content-author/lessons` và `/content-author/questions`; URL `/admin` cũ của các trang này chuyển tiếp có kiểm tra quyền. Examiner vẫn dùng `/admin/knowledge-graph`.
+
 ### Backend cần chạy
 
 - Gateway `:8080` (CORS + credentials)
@@ -111,7 +117,7 @@ src/
 
 ### Trò chơi Wordly
 
-Vào **Trò Chơi** trên navbar hoặc `/games` sau khi đăng nhập. Module nằm ở
+Vào **Khám phá → Trò chơi** trên navbar hoặc `/games` sau khi đăng nhập. Module nằm ở
 `src/features/games/`, chia `pages`, `components`, `hooks`, `api`, `types` và `lib`.
 
 - Catalog lấy từ backend; Tên lửa chưa khả dụng. Chọn Wordly mở popup chọn chế độ.

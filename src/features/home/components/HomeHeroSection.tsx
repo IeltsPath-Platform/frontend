@@ -1,4 +1,4 @@
-import { ArrowRight, BookOpen, Check, Headphones, Mic, PenLine, Sparkles } from 'lucide-react'
+import { ArrowRight, BookOpen, Check, Headphones, Mic, PenLine } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { OwlHero } from '@/components/OwlHero'
 import { Button } from '@/components/ui/button'
@@ -15,12 +15,10 @@ export function HomeHeroSection() {
     <section id="home-hero" className="home-hero" aria-labelledby="home-hero-title">
       <div className="home-hero-shell">
         <div className="home-hero-copy">
-          <span className="home-hero-tag"><Sparkles aria-hidden="true" />KHÔNG GIAN HỌC IELTS CỦA BẠN</span>
           <h1 id="home-hero-title" className="home-hero-title">Mỗi ngày một bước.<br /><em>Gần hơn band mục tiêu.</em></h1>
           <p>Học có định hướng, luyện tập chủ động và nhận phản hồi từ Mentor. Tất cả trong một không gian dành riêng cho hành trình IELTS của bạn.</p>
           <div className="home-hero-actions">
             <Button asChild className="home-hero-primary"><Link to="/practice-tests">Khám phá bài luyện <ArrowRight aria-hidden="true" /></Link></Button>
-            <a className="home-hero-secondary" href="#home-mentors">Gặp gỡ Mentor <ArrowRight aria-hidden="true" /></a>
           </div>
           <div className="home-hero-points" aria-label="Quyền lợi học tập nổi bật">
             <span><Check aria-hidden="true" />4 kỹ năng</span>
@@ -37,7 +35,6 @@ export function HomeHeroSection() {
               <Icon aria-hidden="true" /><span>{label}</span>
             </div>
           ))}
-          <div className="home-hero-caption"><Sparkles aria-hidden="true" />Hành trình lớn bắt đầu từ một bài học nhỏ</div>
         </div>
       </div>
     </section>

@@ -282,7 +282,7 @@ export function LessonEditorPage() {
 
   return (
     <AdminPage
-        actions={<Link className="adm-btn" to="/admin/lessons"><ArrowLeft aria-hidden="true" size={14} /> Danh sách bài học</Link>}
+        actions={<Link className="adm-btn" to="/content-author/lessons"><ArrowLeft aria-hidden="true" size={14} /> Danh sách bài học</Link>}
         subtitle="Sửa từng block giữ nguyên mã block. Mọi thay đổi lưu ngay khi bấm lưu."
         title={current ? current.title : 'Soạn bài học'}>
       {!current && lesson.status === 'loading' ? <AdminLoading label="Đang tải bài học…" /> : null}

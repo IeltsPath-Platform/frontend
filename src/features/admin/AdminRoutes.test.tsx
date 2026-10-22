@@ -1,5 +1,5 @@
 ﻿import { render, screen } from '@testing-library/react'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AdminRoutes } from './AdminRoutes'
 
@@ -7,13 +7,21 @@ const { auth } = vi.hoisted(() => ({ auth: vi.fn() }))
 vi.mock('@/features/auth/authSession', () => ({ useAuthSession: auth, logoutSession: vi.fn() }))
 vi.mock('./overview/pages/OverviewPage', () => ({ OverviewPage: () => <h1>Tổng quan nội dung</h1> }))
 vi.mock('./knowledge-graph/pages/KnowledgeGraphPage', () => ({ KnowledgeGraphPage: () => <h1>Cây tri thức</h1> }))
+vi.mock('./lessons/pages/LessonEditorPage', () => ({ LessonEditorPage: () => <h1>Biên soạn bài học</h1> }))
+
+function LocationProbe() {
+  const { pathname, search, hash } = useLocation()
+  return <output data-testid="location">{pathname}{search}{hash}</output>
+}
 
 function renderAt(url: string) {
   return render(
     <MemoryRouter initialEntries={[url]}>
       <Routes>
         <Route element={<AdminRoutes />} path="/admin/*" />
+        <Route element={<AdminRoutes area="content-author" />} path="/content-author/*" />
       </Routes>
+      <LocationProbe />
     </MemoryRouter>,
   )
 }
@@ -51,6 +59,9 @@ describe('AdminRoutes', () => {
     expect(menu).not.toHaveTextContent('Người dùng')
     expect(screen.getByRole('heading', { name: 'Tổng quan nội dung' })).toBeInTheDocument()
     expect(screen.getByRole('searchbox')).toBeInTheDocument()
+    expect(screen.getByTestId('location')).toHaveTextContent('/content-author/content')
+    expect(screen.getByRole('link', { name: 'Trang chủ biên soạn nội dung' })).toHaveAttribute('href', '/content-author')
+    expect(screen.getByText('BIÊN SOẠN')).toBeInTheDocument()
   })
 
   it('redirects examiners to the knowledge graph', () => {
@@ -84,5 +95,26 @@ describe('AdminRoutes', () => {
     expect(screen.getByRole('heading', { name: 'Bạn không có quyền truy cập' })).toBeInTheDocument()
     expect(screen.queryByRole('navigation', { name: 'Menu quản trị' })).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Về trang học' })).toHaveAttribute('href', '/overview')
+  })
+
+  it('opens the content author workspace directly', () => {
+    auth.mockReturnValue(session(['CONTENT_AUTHOR']))
+    renderAt('/content-author')
+    expect(screen.getByRole('heading', { name: 'Tổng quan nội dung' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Bài học' })).toHaveAttribute('href', '/content-author/lessons')
+  })
+
+  it('redirects legacy lesson details without losing the query or fragment', () => {
+    auth.mockReturnValue(session(['CONTENT_AUTHOR']))
+    renderAt('/admin/lessons/lesson-1?view=questions#question-2')
+    expect(screen.getByRole('heading', { name: 'Biên soạn bài học' })).toBeInTheDocument()
+    expect(screen.getByTestId('location')).toHaveTextContent('/content-author/lessons/lesson-1?view=questions#question-2')
+  })
+
+  it.each(['ADMIN', 'CUSTOMER', 'EXAMINER'])('does not grant %s access to the content author workspace', (role) => {
+    auth.mockReturnValue(session([role]))
+    renderAt('/content-author/lessons/lesson-1')
+    expect(screen.getByRole('heading', { name: 'Bạn không có quyền truy cập' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Biên soạn bài học' })).not.toBeInTheDocument()
   })
 })

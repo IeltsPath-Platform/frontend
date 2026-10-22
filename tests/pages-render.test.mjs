@@ -139,7 +139,8 @@ test('Shared navbar swaps the guest menu for member sections after sign-in', asy
   const member = { isLoggedIn: true, userName: 'Minh Anh' }
 
   const guestHome = await renderNavbar(guest, '/home')
-  for (const label of ['Trang chủ', 'Khóa học', 'Luyện tập 4 kỹ năng', 'Bài mẫu Writing 8.0+', 'Kết quả học viên', 'Đăng nhập', 'Đăng ký']) assert.match(guestHome, new RegExp(label))
+  for (const label of ['Trang chủ', 'Khóa học', 'Luyện tập 4 kỹ năng', 'Khám phá', 'Đăng nhập', 'Đăng ký']) assert.match(guestHome, new RegExp(label))
+  assert.doesNotMatch(guestHome, /Bài mẫu|Kết quả học viên|Quản trị/)
   for (const label of ['Dashboard', 'Lịch sử nộp bài', 'Khóa học của tôi', 'Sổ từ vựng', 'Flashcard của tôi', '0 Points', 'Đăng xuất']) assert.doesNotMatch(guestHome, new RegExp(label))
   assert.doesNotMatch(guestHome, /site-subnav/)
 
@@ -166,13 +167,14 @@ test('Shared navbar swaps the guest menu for member sections after sign-in', asy
   assert.match(guestPractice, /aria-current="page"[^>]*href="\/practice-tests\?skill=writing"|class="active"[^>]*aria-current="page"[^>]*href="\/practice-tests\?skill=writing"/)
 
   const memberHome = await renderNavbar(member, '/home')
-  for (const label of ['Sổ từ vựng', 'Kết quả học viên', 'Minh Anh', '0 Points', 'Đăng xuất']) assert.match(memberHome, new RegExp(label))
-  assert.doesNotMatch(memberHome, /Bài mẫu Writing 8\.0\+|Đăng nhập|Đăng ký|>Overview</)
+  for (const label of ['Khám phá', 'Minh Anh', '0 Points', 'Đăng xuất']) assert.match(memberHome, new RegExp(label))
+  assert.doesNotMatch(memberHome, /Bài mẫu|Kết quả học viên|Quản trị|Đăng nhập|Đăng ký|>Overview</)
   const memberDashboard = await renderNavbar(member, '/overview')
   for (const label of ['Dashboard', 'Lịch sử nộp bài', 'Khóa học của tôi']) assert.match(memberDashboard, new RegExp(label))
-  assert.match(memberDashboard, /class="active"[^>]*href="\/home"/)
+  assert.match(memberDashboard, /class="site-nav-link active"[^>]*href="\/home"/)
   const memberVocabulary = await renderNavbar(member, '/vocabulary')
-  for (const label of ['Flashcard của tôi', 'Kho từ vựng', 'Bài mẫu 8đ']) assert.match(memberVocabulary, new RegExp(label))
+  for (const label of ['Cộng đồng', 'Trò chơi', 'Nghe chép', 'Flashcard của tôi', 'Kho từ vựng']) assert.match(memberVocabulary, new RegExp(label))
+  assert.doesNotMatch(memberVocabulary, /Bài mẫu/)
 })
 
 test('Auth routes hide guest account links while retaining public navigation', async () => {

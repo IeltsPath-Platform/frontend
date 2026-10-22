@@ -5,6 +5,7 @@ import { HttpError } from '@/lib/httpClient'
 import { authApi } from '../api/authApi'
 import { AuthShell } from '../components/AuthShell'
 import { loginWithAccessToken } from '../authSession'
+import { signInDestination } from '../staffRoles'
 
 /**
  * Placeholder route for future OAuth redirect.
@@ -24,9 +25,9 @@ export function OAuthCallbackPage() {
       try {
         const tokens = await authApi.handleOAuthCallback(searchParams)
         if (cancelled) return
-        await loginWithAccessToken(tokens.accessToken)
+        const user = await loginWithAccessToken(tokens.accessToken)
         if (cancelled) return
-        navigate('/overview', { replace: true })
+        navigate(signInDestination(user.roles.map((role) => role.name)), { replace: true })
       } catch (error) {
         if (cancelled) return
         setMessage(error instanceof HttpError ? error.message : error instanceof Error ? error.message : 'OAuth thất bại.')

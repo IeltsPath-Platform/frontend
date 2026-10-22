@@ -9,6 +9,7 @@ import type { SocialProvider } from '../components/SocialButtons'
 import { loginWithPassword, registerWithPassword } from '../authSession'
 import { authApi } from '../api/authApi'
 import { mapAuthPasswordHttpError } from '../lib/passwordRules'
+import { signInDestination } from '../staffRoles'
 
 interface AuthPageProps {
   mode: AuthMode
@@ -19,20 +20,19 @@ export function AuthPage({ mode }: AuthPageProps) {
   const [submitting, setSubmitting] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
-  const redirectTo = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || '/overview'
+  const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname
 
   async function handleSubmit(payload: AuthSubmitPayload) {
     setSubmitting(true)
     try {
-      if (mode === 'sign-up') {
-        await registerWithPassword({
+      const user = mode === 'sign-up'
+        ? await registerWithPassword({
           email: payload.email,
           password: payload.password,
           fullName: payload.fullName ?? payload.email.split('@')[0] ?? 'Học viên',
         })
-      } else {
-        await loginWithPassword(payload.email, payload.password)
-      }
+        : await loginWithPassword(payload.email, payload.password)
+      const redirectTo = signInDestination(user.roles.map((role) => role.name), from)
       navigate(redirectTo, {
         replace: true,
         state: mode === 'sign-in' && redirectTo.startsWith('/community')
