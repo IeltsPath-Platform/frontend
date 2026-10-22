@@ -1,0 +1,193 @@
+/* Glossary rows live inside the shared lesson content card. */
+.lp-vocabulary {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.lp-vocabulary p,
+.lp-vocabulary__empty p,
+.lp-vocabulary__feedback p {
+  margin: 0;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.lp-vocabulary__intro,
+.lp-vocabulary__muted,
+.lp-vocabulary__ipa,
+.lp-vocabulary__definition {
+  color: var(--lp-muted);
+}
+
+.lp-vocabulary__intro {
+  font-size: .9rem;
+}
+
+.lp-vocabulary__list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lp-vocabulary__item {
+  display: grid;
+  grid-template-columns: 1.75rem minmax(0, 1fr);
+  align-items: start;
+  gap: .75rem;
+  padding-block: 1.25rem;
+  border-top: 1px solid var(--lp-line);
+}
+
+.lp-vocabulary__item:last-child {
+  padding-bottom: .25rem;
+}
+
+.lp-vocabulary__number {
+  display: grid;
+  place-items: center;
+  min-height: 1.75rem;
+  border-radius: 8px;
+  background: var(--lp-soft);
+  color: var(--lp-primary);
+  font-size: .8rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.lp-vocabulary__body {
+  display: grid;
+  gap: .4rem;
+  min-width: 0;
+}
+
+.lp-vocabulary__heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: .4rem .65rem;
+  min-width: 0;
+}
+
+.lp-vocabulary__heading h3 {
+  margin: 0;
+  color: var(--lp-ink);
+  font-family: var(--lp-ui);
+  font-size: 1.125rem;
+  font-weight: 750;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.lp-vocabulary__pos {
+  color: var(--lp-primary);
+  font-size: .85rem;
+  overflow-wrap: anywhere;
+}
+
+.lp-vocabulary__ipa {
+  font-size: .95rem;
+}
+
+.lp-vocabulary__pronunciation {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .25rem .6rem;
+}
+
+.lp-vocabulary__play {
+  min-width: 44px;
+  min-height: 44px;
+  border-color: var(--lp-line);
+  color: var(--lp-primary);
+}
+
+.lp-vocabulary__play:focus-visible {
+  outline: 3px solid var(--lp-primary);
+  outline-offset: 3px;
+}
+
+.lp-vocabulary__play svg[data-playing='true'] {
+  color: var(--lp-primary-strong);
+}
+
+.lp-vocabulary__play-error {
+  color: var(--lp-muted);
+  font-size: .85rem;
+}
+
+.lp-vocabulary__meaning {
+  color: var(--lp-ink);
+  font-weight: 600;
+}
+
+.lp-vocabulary__example {
+  display: grid;
+  gap: .25rem;
+  margin-top: .35rem;
+  padding: .75rem 1rem;
+  border-left: 3px solid var(--lp-line);
+  background: var(--lp-canvas);
+  color: var(--lp-ink);
+}
+
+.lp-vocabulary__example-label {
+  color: var(--lp-muted);
+  font-size: .8rem;
+  font-weight: 650;
+}
+
+.lp-vocabulary__notice {
+  display: flex;
+  align-items: flex-start;
+  gap: .6rem;
+  padding: .8rem 1rem;
+  border-radius: 10px;
+  background: var(--lp-soft);
+  color: var(--lp-primary-strong);
+  font-size: .9rem;
+}
+
+.lp-vocabulary__notice svg {
+  flex-shrink: 0;
+  margin-top: .15rem;
+}
+
+.lp-vocabulary__empty,
+.lp-vocabulary__feedback {
+  display: grid;
+  justify-items: start;
+  gap: .75rem;
+  padding: 1.25rem;
+  border: 1px dashed var(--lp-line);
+  border-radius: 12px;
+  color: var(--lp-ink);
+}
+
+.lp-vocabulary__empty > svg {
+  color: var(--lp-primary);
+}
+
+.lp-vocabulary__retry {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.lp-vocabulary__retry:focus-visible {
+  outline: 3px solid var(--lp-primary);
+  outline-offset: 3px;
+}
+
+@media (min-width: 640px) {
+  .lp-vocabulary__item {
+    grid-template-columns: 2rem minmax(0, 1fr);
+    gap: 1rem;
+    padding-block: 1.5rem;
+  }
+
+  .lp-vocabulary__number {
+    min-height: 2rem;
+  }
+}

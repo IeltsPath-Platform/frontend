@@ -1,0 +1,39 @@
+/* Burst point sits at the owl's chest; pieces fly out on a fan, then fall and fade. */
+.root {
+  position: absolute;
+  z-index: 6;
+  inset-block-start: 38%;
+  inset-inline-start: 50%;
+  inline-size: 0;
+  block-size: 0;
+  pointer-events: none;
+}
+
+.piece {
+  position: absolute;
+  inset: 0;
+  inline-size: .55rem;
+  block-size: .55rem;
+  background: var(--confetti-color);
+  opacity: 0;
+  animation: owl-confetti 1.25s cubic-bezier(.15, .7, .3, 1) var(--delay) both;
+}
+
+.strip { inline-size: .32rem; block-size: .8rem; border-radius: .1rem; }
+.dot { border-radius: 50%; }
+.star { inline-size: .75rem; block-size: .75rem; clip-path: polygon(50% 0%, 61% 38%, 100% 50%, 61% 62%, 50% 100%, 39% 62%, 0% 50%, 39% 38%); }
+
+.tone0 { --confetti-color: var(--classroom-primary, #123ab5); }
+.tone1 { --confetti-color: var(--classroom-warning, #ff7624); }
+.tone2 { --confetti-color: #f5c400; }
+.tone3 { --confetti-color: #ff6fae; }
+
+@keyframes owl-confetti {
+  0% { opacity: 1; transform: rotate(var(--angle)) translateX(0) rotate(0deg) scale(.4); }
+  55% { opacity: 1; transform: rotate(var(--angle)) translateX(var(--distance)) rotate(calc(var(--spin) * .6)) scale(1); }
+  100% { opacity: 0; transform: rotate(var(--angle)) translateX(calc(var(--distance) * 1.1)) translateY(3rem) rotate(var(--spin)) scale(.8); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .root { display: none; }
+}

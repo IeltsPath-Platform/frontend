@@ -11,7 +11,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { gameApi } from '../api/gameApi'
-import type { GameCatalog } from '../types/game'
+import type { ActiveGame, GameCatalog } from '../types/game'
+import { ActiveGameDialog } from '../components/ActiveGameDialog'
+import { activeGamePath, isActiveGameConflict } from '../lib/activeGame'
 import '../games-room.css'
 
 export function GameCatalogPage() {
@@ -24,6 +26,51 @@ export function GameCatalogPage() {
   const [joinError, setJoinError] = useState('')
   const [joining, setJoining] = useState(false)
   const submitting = useRef(false)
+  const [activeGame, setActiveGame] = useState<ActiveGame | null>(null)
+  const [pendingCode, setPendingCode] = useState('')
+  const [replacing, setReplacing] = useState(false)
+  const [replaceError, setReplaceError] = useState('')
+  async function joinRoom(roomCode: string) {
+    try {
+      const room = await gameApi.join(roomCode)
+      navigate(`/games/rooms/${room.id}`)
+    } catch (cause) {
+      const active = isActiveGameConflict(cause)
+        ? await gameApi.activeGame().catch(() => null)
+        : null
+      if (active) {
+        setPendingCode(roomCode)
+        setReplaceError('')
+        setActiveGame(active)
+        return
+      }
+      setJoinError(
+        cause instanceof Error ? cause.message : 'Không tham gia được phòng.',
+      )
+    }
+  }
+  async function leaveAndJoin() {
+    if (replacing) return
+    setReplacing(true)
+    setReplaceError('')
+    try {
+      await gameApi.leaveActiveGame()
+    } catch {
+      setReplaceError(
+        'Chưa rời được phòng cũ. Vui lòng kiểm tra kết nối và thử lại.',
+      )
+      setReplacing(false)
+      return
+    }
+    setActiveGame(null)
+    setJoining(true)
+    try {
+      await joinRoom(pendingCode)
+    } finally {
+      setReplacing(false)
+      setJoining(false)
+    }
+  }
   useEffect(() => {
     const controller = new AbortController()
     gameApi
@@ -138,14 +185,7 @@ export function GameCatalogPage() {
             setJoining(true)
             setJoinError('')
             try {
-              const room = await gameApi.join(roomCode)
-              navigate(`/games/rooms/${room.id}`)
-            } catch (cause) {
-              setJoinError(
-                cause instanceof Error
-                  ? cause.message
-                  : 'Không tham gia được phòng.',
-              )
+              await joinRoom(roomCode)
             } finally {
               submitting.current = false
               setJoining(false)
@@ -182,6 +222,17 @@ export function GameCatalogPage() {
           </p>
         )}
       </section>
+      <ActiveGameDialog
+        game={activeGame}
+        busy={replacing}
+        error={replaceError}
+        replaceLabel="Vào phòng mới"
+        onRejoin={() => {
+          if (activeGame) navigate(activeGamePath(activeGame))
+        }}
+        onReplace={() => void leaveAndJoin()}
+        onClose={() => setActiveGame(null)}
+      />
       <Dialog open={modeOpen} onOpenChange={setModeOpen}>
         <DialogContent>
           <DialogHeader>

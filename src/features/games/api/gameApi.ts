@@ -1,5 +1,6 @@
 import { apiRequest } from '@/lib/httpClient'
 import type {
+  ActiveGame,
   CreateRoomInput,
   CurrentWord,
   GameCatalog,
@@ -27,6 +28,17 @@ export const gameApi = {
       auth: true,
       method: 'POST',
       body,
+    }),
+  /** null (204) when the user can create or join another room. */
+  activeGame: (signal?: AbortSignal) =>
+    apiRequest<ActiveGame | null>('/api/games/wordly/me/active-game', {
+      auth: true,
+      signal,
+    }),
+  leaveActiveGame: () =>
+    apiRequest<null>('/api/games/wordly/me/active-game/leave', {
+      auth: true,
+      method: 'POST',
     }),
   room: (id: string, signal?: AbortSignal) =>
     apiRequest<GameRoom>(roomPath(id), { auth: true, signal }),

@@ -1,6 +1,6 @@
 import React from 'react'
 import { Play } from 'lucide-react'
-import { ClassMascot } from '@/components/ClassMascot'
+import { OwlHero } from '@/components/OwlHero'
 
 interface PracticeCosmicBannerProps {
   onStartTest?: () => void
@@ -11,9 +11,9 @@ export const PracticeCosmicBanner: React.FC<PracticeCosmicBannerProps> = ({
 }) => {
   return (
     <div className="practice-cosmic-card">
-      {/* The class mascot, the dinosaur, on the left */}
+      {/* The puzzled owl on the left */}
       <div className="cosmic-mascot-wrapper">
-        <ClassMascot size="md" className="cosmic-mascot" />
+        <OwlHero className="cosmic-mascot" enter="left" pose="confused" size="md" />
       </div>
 
       {/* Middle Banner Content */}

@@ -33,6 +33,8 @@ Dashboard `/overview` hiện dùng dữ liệu mẫu riêng, không chịu ảnh
 
 ### Điều hướng trong bài học
 
+Mục **Từ vựng** mở bằng `?view=vocabulary` trong trang bài học và hiển thị số mục từ duy nhất. Khi mở mục này, frontend lấy các thẻ từ qua Library theo đúng thứ tự của bài, gồm từ, phiên âm, loại từ, nghĩa và ví dụ khi có. Bài chưa gắn từ vựng hiển thị trạng thái rỗng; mục từ không còn khả dụng được thông báo. Đây là nội dung bổ trợ, không tạo thêm điều kiện hoàn thành bài học.
+
 Slide, Lesson Summary, Tài liệu và Luyện tập là các mục trong cùng trang bài học; breadcrumb luôn kết thúc ở tên bài. Khi mở bài ôn từ Luyện tập, breadcrumb giữ khóa học, chủ đề, bài học và thêm trang bài ôn. Tên bài học và nút quay lại đưa về đúng mục Luyện tập; bộ câu hỏi đang làm có nút riêng để về danh sách luyện tập.
 
 Trong danh sách bài học, nút Làm bài ôn chỉ nằm ở bài học sở hữu bài ôn theo `pendingReviews.lessonId`. Các bài bị chặn bởi bài ôn vẫn giữ trạng thái khóa và lý do chờ; tên bài học có bài ôn vẫn mở lại được.
@@ -119,6 +121,8 @@ Vào **Trò Chơi** trên navbar hoặc `/games` sau khi đăng nhập. Module n
 - Gửi lại lượt đoán đang chờ giữ nguyên requestId/payload; tải lại khôi phục trạng thái từ server.
 - Multiplayer dùng WebSocket ticket một lần (không đưa JWT lên URL), tự xin ticket mới khi nối lại; REST định kỳ 2.5s phục hồi trạng thái với abort/khóa chống ghi đè response cũ.
 - Kết thúc đọc kết quả chính thức; chơi đơn bấm **Chơi lại** về cấu hình chơi đơn. Nhiều người trở về phòng chờ khi phòng còn tồn tại.
+- Mỗi người chỉ ở một phòng. Tạo phòng (đơn hoặc nhiều người) hay vào phòng bằng mã khi còn phòng/trận dở sẽ hiện popup **Tham gia lại phòng** hoặc **Tạo phòng mới**/**Vào phòng mới**; chọn phòng mới sẽ rời phòng cũ trước (trận đang chơi tính là rời trận).
+- Trận nhiều người: người mất kết nối hiển thị đếm ngược 30 giây trong bảng xếp hạng; hết giờ bị tính rời trận, vào lại chỉ xem được bảng xếp hạng.
 - Tổng kết bỏ số mạng còn lại và cột mạng; ranking chuyển thành thẻ khi vùng hiển thị hẹp. Khi đang chơi multiplayer, ranking nằm cạnh phải khu chơi trên desktop và xuống dưới trên màn nhỏ. Bảng chữ và bàn phím co theo chiều rộng màn hình.
 - Multiplayer tối đa 4 người: ready/start, host kick khi WAITING, bảng riêng, ranking trực tiếp, hết mạng/hoàn thành chuyển sang theo dõi, tổng kết giữ người đã rời trận.
 - Host rời giữa trận không đóng trận; cuối trận hiển thị ranking rồi popup đóng phòng. Cache trong sessionStorage chỉ lưu UUID host theo match để khôi phục thông báo trong tab, không chứa token.

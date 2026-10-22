@@ -2,7 +2,8 @@ import { useId, useState, type CSSProperties } from 'react'
 import { ArrowLeft, ArrowRight, CalendarDays, Clock, Loader2, PartyPopper } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { ClassMascot } from '@/components/ClassMascot'
+import { OwlHero } from '@/components/OwlHero'
+import type { OwlPose } from '@/components/owlPoses'
 import type { LearningGoalRequest } from '~types/learningPath'
 import { learningApi, toApiError } from '../api'
 
@@ -29,6 +30,9 @@ const QUESTIONS = [
   'Bạn có thể dành bao nhiêu thời gian học mỗi ngày?',
   'Mục tiêu điểm IELTS của bạn là?',
 ] as const
+
+/** The owl's pose for each question; it slides in again with every new question. */
+const QUESTION_POSES: readonly OwlPose[] = ['confused', 'idea', 'confident']
 
 /** `yyyy-mm` of the six months after the current one. */
 function upcomingMonths(from = new Date()): Choice<string>[] {
@@ -124,7 +128,7 @@ export function PlacementSurvey({ onContinue, onProgress }: PlacementSurveyProps
   return (
     <section className="pl-survey" aria-labelledby={bubbleId}>
       <div className="pl-survey__question" key={step}>
-        <ClassMascot className="pl-survey__mascot" size="sm" />
+        <OwlHero className="pl-survey__mascot" decor={false} enter="left" pose={QUESTION_POSES[step % QUESTION_POSES.length]} size="sm" />
         <p className="pl-survey__bubble" id={bubbleId}>{QUESTIONS[step]}</p>
       </div>
 

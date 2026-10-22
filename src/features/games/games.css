@@ -544,6 +544,11 @@
 .game-ranking-left {
   color: var(--classroom-muted);
 }
+.game-ranking .game-ranking-grace {
+  color: var(--destructive);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
 @media (max-width: 800px) {
   .game-ranking {
     padding: 16px;

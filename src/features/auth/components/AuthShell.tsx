@@ -1,6 +1,6 @@
 import { Award, BookOpenCheck, PenLine, Sparkles, Star, Trophy } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { ClassMascot } from '@/components/ClassMascot'
+import { OwlHero } from '@/components/OwlHero'
 import { InteractiveCanvasBackground } from '@/components/InteractiveCanvasBackground'
 import { SiteNavbar } from '@/components/SiteNavbar'
 import '../auth.css'
@@ -45,7 +45,7 @@ export function AuthShell({
             <h2>{ambientTitle}</h2>
             <p>{ambientBody}</p>
           </section>
-          <ClassMascot className="auth-mascot" size="lg" />
+          <OwlHero className="auth-mascot" enter="left" pose="wave" size="lg" />
           {children}
         </div>
       </main>

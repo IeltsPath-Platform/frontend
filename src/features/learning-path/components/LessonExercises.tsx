@@ -59,7 +59,7 @@ export function LessonExercises({ lessonId, blocks, onChanged }: LessonExercises
     return <p className="lp-empty">Bài học này chưa có bài tập. Bấm “Hoàn thành bài” để ghi nhận tiến độ.</p>
   }
 
-  const hasPassage = blocks.some((block) => !isExercise(block) && !isAudio(block))
+  const hasPassage = blocks.some(isPassage)
   const heartsNotice = hearts.data?.hearts === 0 ? <HeartsPanel onChanged={hearts.reload} status={hearts.data} /> : null
   const exerciseNodes = (block: ExerciseBlockData) => (
     <div key={block.id}>
@@ -75,8 +75,8 @@ export function LessonExercises({ lessonId, blocks, onChanged }: LessonExercises
       <section className="lp-split" aria-label="Bài đọc và bài tập">
         <div className="lp-split__passage">
           {blocks.filter(isAudio).map((block) => <AudioBlock key={block.id} audio={block} />)}
-          {blocks.filter((block) => !isExercise(block) && !isAudio(block)).map((block) => (
-            <PassageBlock key={block.id} passage={block as PassageBlockData} />
+          {blocks.filter(isPassage).map((block) => (
+            <PassageBlock key={block.id} passage={block} />
           ))}
         </div>
         <div className="lp-split__work">
@@ -93,7 +93,7 @@ export function LessonExercises({ lessonId, blocks, onChanged }: LessonExercises
       {blocks.map((block) => {
         if (isExercise(block)) return exerciseNodes(block)
         if (isAudio(block)) return <AudioBlock key={block.id} audio={block} />
-        return <PassageBlock key={block.id} passage={block as PassageBlockData} />
+        return isPassage(block) ? <PassageBlock key={block.id} passage={block} /> : null
       })}
     </div>
   )
@@ -105,4 +105,8 @@ function isExercise(block: LessonBlock): block is ExerciseBlockData {
 
 function isAudio(block: LessonBlock): block is AudioBlockData {
   return block.type === 'ASSET' && block.assetType === 'AUDIO'
+}
+
+function isPassage(block: LessonBlock): block is PassageBlockData {
+  return block.type === 'ASSET' && block.assetType === 'PASSAGE'
 }
