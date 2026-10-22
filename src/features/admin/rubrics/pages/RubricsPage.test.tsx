@@ -45,6 +45,16 @@ describe('RubricsPage', () => {
     await waitFor(() => expect(api.updateRubric).toHaveBeenCalledWith(expect.objectContaining({ code: active.code, version: 2, sourceNote: 'Hiệu chỉnh lần hai' })))
     expect(api.createRubric).toHaveBeenCalledTimes(1)
   })
+
+  it('shows and submits the next version after the largest loaded draft', async () => {
+    api.fetchDraftRubrics.mockResolvedValue([{ ...draft, version: 7 }, { ...draft, version: 3 }])
+    api.createRubric.mockResolvedValue({ ...draft, version: 8 })
+    show()
+    expect(await screen.findByText('Bản tiếp theo: 8 (theo các phiên bản đã tải).')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Tạo bản nháp từ bản đang dùng' }))
+    fireEvent.submit(screen.getByRole('form', { name: 'Soạn rubric' }))
+    await waitFor(() => expect(api.createRubric).toHaveBeenCalledWith(expect.objectContaining({ code: active.code, version: 8 })))
+  })
   it('does not save a criterion without any band descriptors', async () => {
     api.fetchActiveRubrics.mockResolvedValue([{ ...active, criteria: [{ ...active.criteria[0], bandDescriptors: [] }] }])
     show()

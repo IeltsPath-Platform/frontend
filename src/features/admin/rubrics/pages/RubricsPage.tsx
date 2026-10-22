@@ -23,7 +23,19 @@ function TaskRubrics({ task }: { task: WritingTask }) {
       {active.status === 'loading' ? <AdminLoading label="Đang tải rubric đang dùng…" /> : null}
       {active.status === 'error' ? <AdminError message={active.error!} onRetry={active.reload} /> : null}
       {active.status === 'success' && !active.data?.length ? <AdminEmpty title="Chưa có rubric đang dùng cho Task này" /> : null}
-      {active.data?.map((rubric) => <div key={`${rubric.code}-${rubric.version}`}><details className="adm-rubric-active"><summary>{rubric.code} · Phiên bản {rubric.version} · Đang dùng</summary><RubricView rubric={rubric} /></details><button className="adm-btn" type="button" disabled={drafts.status !== 'success' || !!editing} onClick={() => setEditing({ body: rubricDraft(rubric, [...(active.data ?? []), ...(drafts.data ?? [])]), persisted: false })}>Tạo bản nháp từ bản đang dùng</button></div>)}
+      {active.data?.map((rubric) => {
+        const nextDraft = drafts.status === 'success' ? rubricDraft(rubric, [...(active.data ?? []), ...(drafts.data ?? [])]) : null
+        return <div key={`${rubric.code}-${rubric.version}`}>
+          <details className="adm-rubric-active">
+            <summary>{rubric.code} · Phiên bản {rubric.version} · Đang dùng</summary>
+            <RubricView rubric={rubric} />
+          </details>
+          {nextDraft ? <p className="adm-muted">Bản tiếp theo: {nextDraft.version} (theo các phiên bản đã tải).</p> : null}
+          <button className="adm-btn" type="button" disabled={!nextDraft || !!editing} onClick={() => {
+            if (nextDraft) setEditing({ body: nextDraft, persisted: false })
+          }}>Tạo bản nháp từ bản đang dùng</button>
+        </div>
+      })}
     </section>
     <section aria-label="Bản nháp" className="adm-rubric-drafts">
       <h2>Bản nháp</h2>
