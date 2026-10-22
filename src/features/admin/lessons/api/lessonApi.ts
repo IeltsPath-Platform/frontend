@@ -3,6 +3,10 @@ import { apiRequest } from '@/lib/httpClient'
 import {
   lessonEditorSchema,
   lessonSummarySchema,
+  lessonResourceSchema,
+  lessonResourcesSchema,
+  type LessonResourceRequest,
+  type LessonResourceType,
   type BlockRequest,
   type LessonEditor,
   type LessonMetaRequest,
@@ -109,6 +113,22 @@ export async function publishLesson(lessonId: string): Promise<void> {
 
 export async function archiveLesson(lessonId: string): Promise<void> {
   await write(`/lessons/${lessonId}/archive`, 'POST')
+}
+
+export async function fetchLessonResources(lessonId: string, signal?: AbortSignal) {
+  return lessonResourcesSchema.parse(await apiRequest<unknown>(`${ADMIN}/lessons/${lessonId}/resources`, { auth: true, signal }))
+}
+
+export async function createLessonResource(lessonId: string, body: LessonResourceRequest & { type: LessonResourceType }) {
+  return lessonResourceSchema.parse(await write(`/lessons/${lessonId}/resources`, 'POST', body))
+}
+
+export async function updateLessonResource(lessonId: string, resourceId: string, body: LessonResourceRequest) {
+  return lessonResourceSchema.parse(await write(`/lessons/${lessonId}/resources/${resourceId}`, 'PUT', body))
+}
+
+export async function deleteLessonResource(lessonId: string, resourceId: string): Promise<void> {
+  await write(`/lessons/${lessonId}/resources/${resourceId}`, 'DELETE')
 }
 
 const vocabularySearchSchema = z.array(

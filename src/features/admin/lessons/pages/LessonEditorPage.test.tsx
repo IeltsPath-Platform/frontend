@@ -9,6 +9,7 @@ const { api, graph, questions, vocab } = vi.hoisted(() => ({
   api: {
     fetchLesson: vi.fn(), updateLesson: vi.fn(), setLessonKnowledgePoints: vi.fn(), addBlock: vi.fn(), updateBlock: vi.fn(),
     deleteBlock: vi.fn(), reorderBlocks: vi.fn(), publishLesson: vi.fn(), archiveLesson: vi.fn(), searchVocabulary: vi.fn(),
+    fetchLessonResources: vi.fn(), createLessonResource: vi.fn(), updateLessonResource: vi.fn(), deleteLessonResource: vi.fn(),
   },
   graph: { fetchKnowledgeTree: vi.fn() },
   questions: { listQuestions: vi.fn(), getQuestion: vi.fn() },
@@ -44,6 +45,7 @@ describe('LessonEditorPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     api.fetchLesson.mockResolvedValue(lesson())
+    api.fetchLessonResources.mockResolvedValue({ lessonId: 'l1', summaryMarkdown: null, slides: [], documents: [] })
     graph.fetchKnowledgeTree.mockResolvedValue({ nodes: [{ id: 'kp1', code: 'R55_SCAN', name: 'Scanning', kind: 'STRATEGY', status: 'ACTIVE' }], edges: [] })
     questions.listQuestions.mockResolvedValue({ content: [], page: 0, size: 100, totalElements: 0, totalPages: 0 })
     vocab.getLessonVocabularySenses.mockResolvedValue([])
@@ -123,5 +125,13 @@ describe('LessonEditorPage', () => {
     api.fetchLesson.mockResolvedValue(lesson())
     fireEvent.click(screen.getByRole('button', { name: 'Thử lại' }))
     expect(await screen.findByRole('heading', { name: 'Skimming' })).toBeInTheDocument()
+  })
+
+  it('keeps lesson information editable when resources cannot load', async () => {
+    api.fetchLessonResources.mockRejectedValue(new HttpError(503, 'Không tải được tài nguyên'))
+    renderPage()
+    expect(await screen.findByText('Không tải được tài nguyên')).toBeInTheDocument()
+    expect(screen.getByRole('form', { name: 'Thông tin bài học' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Lưu thông tin' })).toBeEnabled()
   })
 })

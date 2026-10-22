@@ -135,3 +135,22 @@ export interface LessonMetaRequest {
 export interface NewLessonRequest extends LessonMetaRequest {
   code: string
 }
+
+export const lessonResourceSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  url: z.string(),
+  sortOrder: z.number().int().nonnegative(),
+})
+
+export const lessonResourcesSchema = z.object({
+  lessonId: z.string(),
+  summaryMarkdown: z.string().nullable(),
+  slides: z.array(lessonResourceSchema),
+  documents: z.array(lessonResourceSchema),
+})
+
+export type LessonResource = z.infer<typeof lessonResourceSchema>
+export type LessonResources = z.infer<typeof lessonResourcesSchema>
+export type LessonResourceType = 'SLIDE' | 'DOCUMENT'
+export type LessonResourceRequest = Pick<LessonResource, 'title' | 'url' | 'sortOrder'>
