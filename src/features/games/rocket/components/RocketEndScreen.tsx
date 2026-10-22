@@ -3,12 +3,18 @@ import { BookOpen, Clock3, House, RotateCcw, Star, Target } from 'lucide-react'
 import endBgUrl from '../assets/end-bg.webp'
 import owlGameOverUrl from '../assets/owl-gameover.webp'
 import owlVictoryUrl from '../assets/owl-victory.webp'
+import type { GameRanking } from '../../types/game'
 import type { RocketResult } from '../types/rocket'
+import { RocketRankingPanel } from './RocketRankingPanel'
 
 type RocketEndScreenProps = {
   result: RocketResult
   onReplay: () => void
   onHome: () => void
+  /** Multiplayer: the final ranking under the player's own stats. */
+  ranking?: GameRanking | null
+  ownUserId?: string | null
+  replayLabel?: string
 }
 
 function formatDuration(ms: number) {
@@ -16,8 +22,9 @@ function formatDuration(ms: number) {
   return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`
 }
 
-export function RocketEndScreen({ result, onReplay, onHome }: RocketEndScreenProps) {
-  const victory = result.endReason === 'ALL_ROUNDS_COMPLETED'
+export function RocketEndScreen({ result, onReplay, onHome, ranking, ownUserId = null, replayLabel }: RocketEndScreenProps) {
+  // Multiplayer: whoever is still playing at the end finished it, whatever ended the match.
+  const victory = ranking ? result.playerStatus === 'FINISHED' : result.endReason === 'ALL_ROUNDS_COMPLETED'
   const heading = useRef<HTMLHeadingElement>(null)
 
   useEffect(() => {
@@ -49,9 +56,10 @@ export function RocketEndScreen({ result, onReplay, onHome }: RocketEndScreenPro
               </>
             )}
           </dl>
+          {ranking && <RocketRankingPanel ranking={ranking} ownUserId={ownUserId} final />}
           <div className="rocket-end-actions">
             <button type="button" className="rocket-primary" onClick={onReplay}>
-              <RotateCcw size={18} /> {victory ? 'Chơi lại' : 'Thử lại'}
+              <RotateCcw size={18} /> {replayLabel ?? (victory ? 'Chơi lại' : 'Thử lại')}
             </button>
             <button type="button" className="rocket-secondary" onClick={onHome}>
               <House size={18} /> Về trang chủ

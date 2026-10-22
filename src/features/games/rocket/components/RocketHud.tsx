@@ -1,6 +1,7 @@
 import type { Ref } from 'react'
 import { ArrowLeft, Check, Heart, Trophy, Volume2, VolumeX, X } from 'lucide-react'
 import type { RocketMatchState } from '../hooks/useRocketMatch'
+import { RocketRankingPanel } from './RocketRankingPanel'
 
 type RocketHudProps = {
   ref?: Ref<HTMLElement>
@@ -21,8 +22,10 @@ export function RocketHud({ ref, state, timeFraction, seconds, hovered, soundOn,
   const choosing = phase === 'aiming'
   // Keep the verdict on screen while the scene flies on to the next round.
   const revealing = (phase === 'reveal' || phase === 'travel') && reveal !== null
-  const lostLife = phase === 'reveal' && reveal && !reveal.correct
-  const gained = phase === 'reveal' && reveal?.correct ? reveal.points : 0
+  const watching = state.spectating
+  const lostLife = phase === 'reveal' && reveal && !reveal.correct && !watching
+  const gained = phase === 'reveal' && reveal?.correct && !watching ? reveal.points : 0
+  const multiplayer = state.playerMode === 'MULTIPLAYER'
 
   return (
     <header ref={ref} className="rocket-hud">
@@ -58,7 +61,19 @@ export function RocketHud({ ref, state, timeFraction, seconds, hovered, soundOn,
           >
             <span style={{ transform: `scaleX(${timeFraction})` }} className={timeFraction < 0.25 ? 'is-low' : ''} />
           </div>
-          <div className="rocket-options">
+          {multiplayer && watching && (
+            <p className="rocket-wait is-spectating" role="status">
+              Bạn đã bị loại — đang xem
+            </p>
+          )}
+          {multiplayer && !watching && phase === 'locked' && (
+            <p className="rocket-wait" role="status">
+              {state.answeredCount !== null && state.aliveCount !== null
+                ? `Đang chờ ${state.answeredCount}/${state.aliveCount} người`
+                : 'Đang chờ người chơi khác'}
+            </p>
+          )}
+          <div className="rocket-options" hidden={multiplayer && watching}>
             {round.options.map((option, index) => {
               const isAnswer = revealing && reveal?.correctOptionId === option.optionId
               const isWrong = revealing && chosenOptionId === option.optionId && !reveal?.correct
@@ -109,6 +124,9 @@ export function RocketHud({ ref, state, timeFraction, seconds, hovered, soundOn,
           {soundOn ? <Volume2 size={20} /> : <VolumeX size={20} />}
         </button>
       </div>
+      {multiplayer && state.ranking && (
+        <RocketRankingPanel ranking={state.ranking} ownUserId={state.ownUserId} answeredUserIds={state.answeredUserIds} />
+      )}
     </header>
   )
 }

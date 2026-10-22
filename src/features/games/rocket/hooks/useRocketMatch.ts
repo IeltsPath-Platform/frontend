@@ -240,18 +240,17 @@ export function useRocketMatch(matchId: string, stage: RocketStage | null, stage
         return
       }
       busy.current = true
-      try {
-        await task()
-      } catch (error) {
-        if (alive.current && !(error instanceof DOMException && error.name === 'AbortError')) {
-          queue.current = []
-          update({ phase: 'error', error: errorMessage(error) })
+      for (let next: (() => Promise<void>) | undefined = task; next && alive.current; next = queue.current.shift()) {
+        try {
+          await next()
+        } catch (error) {
+          if (alive.current && !(error instanceof DOMException && error.name === 'AbortError')) {
+            queue.current = []
+            update({ phase: 'error', error: errorMessage(error) })
+          }
         }
-      } finally {
-        busy.current = false
       }
-      const next = queue.current.shift()
-      if (next && alive.current) await run(next, true)
+      busy.current = false
     },
     [update],
   )
@@ -500,5 +499,5 @@ export function useRocketMatch(matchId: string, stage: RocketStage | null, stage
     void run(resume)
   }, [matchId, resume, run, stageReady])
 
-  return { state, choose, timeUp, retry, leave, connected }
+  return { state, choose, timeUp, retry, leave, connected, roomId }
 }

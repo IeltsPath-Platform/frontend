@@ -11,6 +11,7 @@ import { startSoloRoom } from '../lib/startSoloRoom'
 vi.mock('../api/gameApi', () => ({
   gameApi: {
     createRoom: vi.fn(),
+    createRocketRoom: vi.fn(),
     room: vi.fn(),
     ready: vi.fn(),
     start: vi.fn(),
@@ -374,5 +375,49 @@ describe('Existing room guard', () => {
     setup('MULTIPLAYER')
     fireEvent.click(screen.getByRole('button', { name: 'Tạo phòng chơi' }))
     await screen.findByRole('heading', { name: 'Bạn đang ở trong phòng chơi' })
+  })
+})
+
+describe('Rocket multiplayer setup', () => {
+  function setupRocket(mode = 'MULTIPLAYER') {
+    return render(
+      <MemoryRouter initialEntries={[`/games/rocket/setup?mode=${mode}`]}>
+        <Routes>
+          <Route path="/games/rocket/setup" element={<GameSetupPage gameType="ROCKET" />} />
+          <Route path="/games/rocket" element={<h1>Tên lửa chơi đơn</h1>} />
+          <Route path="/games/rooms/:roomId" element={<h1>Sảnh nhiều người</h1>} />
+        </Routes>
+      </MemoryRouter>,
+    )
+  }
+
+  it('creates a Rocket room with its own settings and opens the shared lobby', async () => {
+    vi.mocked(gameApi.createRocketRoom).mockResolvedValue({ ...room, id: 'rocket-room', gameType: 'ROCKET' })
+    setupRocket()
+    expect(screen.getByText(/TÊN LỬA/)).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText(/Số câu/), { target: { value: '12' } })
+    fireEvent.click(screen.getByRole('radio', { name: '20 giây' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Tạo phòng chơi' }))
+    await screen.findByRole('heading', { name: 'Sảnh nhiều người' })
+    expect(gameApi.createRocketRoom).toHaveBeenCalledWith({
+      playerMode: 'MULTIPLAYER',
+      questionCount: 12,
+      initialLives: 4,
+      secondsPerQuestion: 20,
+    })
+    expect(gameApi.createRoom).not.toHaveBeenCalled()
+  })
+
+  it('rejects a question count outside 5–20', async () => {
+    setupRocket()
+    fireEvent.change(screen.getByLabelText(/Số câu/), { target: { value: '30' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Tạo phòng chơi' }))
+    expect(await screen.findByText(/từ 5 đến 20/)).toBeInTheDocument()
+    expect(gameApi.createRocketRoom).not.toHaveBeenCalled()
+  })
+
+  it('sends solo Rocket to its own setup card', async () => {
+    setupRocket('SOLO')
+    await screen.findByRole('heading', { name: 'Tên lửa chơi đơn' })
   })
 })

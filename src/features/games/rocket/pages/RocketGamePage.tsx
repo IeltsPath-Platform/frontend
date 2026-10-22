@@ -12,6 +12,7 @@ import { RocketCanvas } from '../components/RocketCanvas'
 import { RocketEndScreen } from '../components/RocketEndScreen'
 import { RocketHud } from '../components/RocketHud'
 import { RocketSetupCard } from '../components/RocketSetupCard'
+import { setupPath } from '../../lib/gameRoutes'
 import { useCountdown } from '../hooks/useCountdown'
 import { useRocketMatch, type RocketStage } from '../hooks/useRocketMatch'
 import type { RocketScene } from '../scene/RocketScene'
@@ -171,10 +172,13 @@ function RocketPlay({ matchId, scene, stageReady, hovered, setHovered, pickRef }
       },
     [scene],
   )
-  const { state, choose, timeUp, retry, leave } = useRocketMatch(matchId, stage, stageReady)
+  const { state, choose, timeUp, retry, leave, roomId } = useRocketMatch(matchId, stage, stageReady)
   const { round, phase } = state
+  const multiplayer = state.playerMode === 'MULTIPLAYER'
   const aiming = phase === 'aiming' && !exitOpen
-  const countdown = useCountdown(round?.opensAt ?? null, round?.deadlineAt ?? null, state.clockOffsetMs, aiming, timeUp)
+  // Multiplayer rounds run on the server clock: keep counting while the dialog is open or the answer is in.
+  const ticking = multiplayer ? phase === 'aiming' || phase === 'locked' : aiming
+  const countdown = useCountdown(round?.opensAt ?? null, round?.deadlineAt ?? null, state.clockOffsetMs, ticking, timeUp)
 
   useEffect(() => {
     pickRef.current = (index) => {
@@ -236,9 +240,11 @@ function RocketPlay({ matchId, scene, stageReady, hovered, setHovered, pickRef }
 
   const announcement =
     phase === 'reveal' && state.reveal
-      ? state.reveal.correct
-        ? `Chính xác, cộng ${state.reveal.points} điểm.`
-        : `Chưa đúng. Còn ${state.reveal.livesRemaining} mạng.`
+      ? state.spectating
+        ? 'Đã có đáp án của câu này.'
+        : state.reveal.correct
+          ? `Chính xác, cộng ${state.reveal.points} điểm.`
+          : `Chưa đúng. Còn ${state.reveal.livesRemaining} mạng.`
       : phase === 'aiming' && round
         ? `Câu ${round.number} trên ${round.total}: ${round.meaning}`
         : ''
@@ -247,7 +253,18 @@ function RocketPlay({ matchId, scene, stageReady, hovered, setHovered, pickRef }
     return (
       <RocketEndScreen
         result={state.final}
-        onReplay={() => navigate('/games/rocket')}
+        ranking={multiplayer ? state.ranking : null}
+        ownUserId={state.ownUserId}
+        replayLabel={multiplayer ? (roomId && !state.roomClosed ? 'Về phòng chờ' : 'Tạo phòng mới') : undefined}
+        onReplay={() =>
+          navigate(
+            !multiplayer
+              ? '/games/rocket'
+              : roomId && !state.roomClosed
+                ? `/games/rooms/${roomId}`
+                : setupPath('ROCKET', 'MULTIPLAYER'),
+          )
+        }
         onHome={() => navigate('/games')}
       />
     )
@@ -288,8 +305,12 @@ function RocketPlay({ matchId, scene, stageReady, hovered, setHovered, pickRef }
       <Dialog open={exitOpen} onOpenChange={setExitOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Rời lượt chơi?</DialogTitle>
-            <DialogDescription>Điểm đã đạt được vẫn được giữ, nhưng lượt chơi này sẽ kết thúc.</DialogDescription>
+            <DialogTitle>{multiplayer ? 'Rời trận đấu?' : 'Rời lượt chơi?'}</DialogTitle>
+            <DialogDescription>
+              {multiplayer
+                ? 'Điểm đã đạt được vẫn được giữ, nhưng bạn sẽ bị tính là bỏ cuộc. Những người khác chơi tiếp.'
+                : 'Điểm đã đạt được vẫn được giữ, nhưng lượt chơi này sẽ kết thúc.'}
+            </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setExitOpen(false)}>
