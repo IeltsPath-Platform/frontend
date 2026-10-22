@@ -10,7 +10,7 @@ describe('adminMenu', () => {
 
   it('shows content authors only the four content screens', () => {
     expect(menuFor(['CONTENT_AUTHOR']).map((item) => item.path)).toEqual([
-      '/admin/content', '/admin/knowledge-graph', '/admin/lessons', '/admin/questions',
+      '/content-author/content', '/content-author/knowledge-graph', '/content-author/lessons', '/content-author/questions',
     ])
   })
 
@@ -25,6 +25,8 @@ describe('adminMenu', () => {
 
   it('looks up route roles and rejects unknown routes', () => {
     expect(rolesFor('/admin/lessons')).toEqual(['CONTENT_AUTHOR'])
+    expect(rolesFor('/content-author/lessons')).toEqual(['CONTENT_AUTHOR'])
+    expect(rolesFor('/content-author/users')).toEqual([])
     expect(rolesFor('/admin/users')).toEqual(['ADMIN'])
     expect(rolesFor('/admin/unknown')).toEqual([])
   })

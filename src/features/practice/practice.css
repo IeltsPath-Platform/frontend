@@ -88,7 +88,16 @@
   flex: 1;
 }
 
-.site-nav-links a {
+.site-nav-group { display: contents; }
+.site-mobile-sections { display: none; }
+
+.site-nav-link {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  min-height: 44px;
   color: rgba(255, 255, 255, 0.8);
   font-size: 0.84rem;
   padding: 0.45rem 0.8rem;
@@ -101,17 +110,28 @@
   white-space: nowrap;
 }
 
-.site-nav-links a:hover {
+.site-nav-link:hover {
   color: white;
   background: rgba(255, 255, 255, 0.1);
 }
 
-.site-nav-links a.active {
+.site-nav-link.active {
   background: rgba(124, 165, 255, 0.45);
   border: 1px solid rgba(255, 255, 255, 0.72);
   color: white;
   font-weight: 700;
 }
+
+.site-nav-link:focus-visible,
+.site-mobile-sections a:focus-visible,
+.site-menu-btn:focus-visible,
+.site-subnav-inner a:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: -3px;
+}
+
+.site-nav-link svg { transition: transform 0.16s ease; }
+.site-nav-link[aria-expanded='true'] svg { transform: rotate(180deg); }
 
 /* Second row inside the header: the sections of the active (or hovered) primary item.
    The matching primary item becomes a tab of the same blue that joins this row (see .tab below). */
@@ -153,7 +173,7 @@
 .site-subnav-inner a {
   display: inline-flex;
   align-items: center;
-  min-height: 42px;
+  min-height: 44px;
   padding: 0 1rem;
   border-bottom: 3px solid transparent;
   color: rgba(255, 255, 255, 0.82);
@@ -295,16 +315,16 @@
     inset-inline-start: 100%;
     background: radial-gradient(circle at 100% 0, transparent calc(var(--tab-radius) - 0.5px), var(--site-blue) var(--tab-radius));
   }
-  .site-nav-links a,
-  .site-nav-links a:hover,
-  .site-nav-links a.active {
+  .site-nav-link,
+  .site-nav-link:hover,
+  .site-nav-link.active {
     position: relative;
     z-index: 1;
     background: transparent;
     border: 0;
     padding: 0.45rem 1.1rem;
   }
-  .site-nav-links a.active { color: white; font-weight: 700; }
+  .site-nav-link.active { color: white; font-weight: 700; }
   .site-main-nav {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
@@ -330,14 +350,37 @@
     left: 0;
     right: 0;
     display: grid;
+    justify-content: stretch;
+    max-height: calc(100dvh - 64px);
+    overflow-y: auto;
     padding: 1rem;
     background: var(--site-navy);
     box-shadow: var(--classroom-shadow);
   }
-  .site-nav-links a {
+  .site-nav-link {
     min-height: 44px;
     justify-content: center;
   }
+  .site-nav-group { display: grid; }
+  .site-mobile-sections {
+    display: grid;
+    background: var(--site-blue);
+    border-radius: .75rem;
+    padding: .25rem;
+  }
+  .site-mobile-sections a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    color: white;
+    font-size: .875rem;
+    text-decoration: none;
+    border-radius: .5rem;
+  }
+  .site-mobile-sections a:hover,
+  .site-mobile-sections a[aria-current='page'] { background: rgb(255 255 255 / 14%); }
+  .site-main-header--menu-open .site-subnav { display: none; }
 }
 
 @media (max-width: 600px) {

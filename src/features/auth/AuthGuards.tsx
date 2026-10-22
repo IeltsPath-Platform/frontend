@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuthSession } from './authSession'
-import { hasAnyRole } from './staffRoles'
+import { hasAnyRole, signInDestination } from './staffRoles'
 
 export function RequireAuth({ children }: { children: ReactNode }) {
   const session = useAuthSession()
@@ -35,9 +35,8 @@ export function GuestOnly({ children }: { children: ReactNode }) {
   const session = useAuthSession()
   const location = useLocation()
   if (session.isLoggedIn) {
-    // Same target as AuthPage: the page that sent the learner to sign in, else the overview.
     const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname
-    return <Navigate replace to={from || '/overview'} />
+    return <Navigate replace to={signInDestination(session.roles, from)} />
   }
   return children
 }

@@ -27,8 +27,8 @@ function detail(overrides: Partial<QuestionDetail> = {}): QuestionDetail {
 
 function renderPage() {
   return render(
-    <MemoryRouter initialEntries={['/admin/questions/q1']}>
-      <Routes><Route element={<QuestionDetailPage />} path="/admin/questions/:questionId" /></Routes>
+    <MemoryRouter initialEntries={['/content-author/questions/q1']}>
+      <Routes><Route element={<QuestionDetailPage />} path="/content-author/questions/:questionId" /></Routes>
     </MemoryRouter>,
   )
 }

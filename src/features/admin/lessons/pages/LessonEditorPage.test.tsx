@@ -34,8 +34,8 @@ function lesson(overrides: Partial<LessonEditor> = {}): LessonEditor {
 
 function renderPage() {
   return render(
-    <MemoryRouter initialEntries={['/admin/lessons/l1']}>
-      <Routes><Route element={<LessonEditorPage />} path="/admin/lessons/:lessonId" /></Routes>
+    <MemoryRouter initialEntries={['/content-author/lessons/l1']}>
+      <Routes><Route element={<LessonEditorPage />} path="/content-author/lessons/:lessonId" /></Routes>
     </MemoryRouter>,
   )
 }

@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { RequireRole } from './AuthGuards'
+import { GuestOnly, RequireRole } from './AuthGuards'
 
 const { auth } = vi.hoisted(() => ({ auth: vi.fn() }))
 vi.mock('./authSession', () => ({ useAuthSession: auth }))
@@ -36,5 +36,24 @@ describe('RequireRole', () => {
     auth.mockReturnValue({ isLoggedIn: true })
     renderGuard(['ADMIN'])
     expect(screen.getByText('Không có quyền')).toBeInTheDocument()
+  })
+})
+
+describe('GuestOnly', () => {
+  it.each([
+    ['ADMIN', '/admin'],
+    ['CONTENT_AUTHOR', '/content-author'],
+    ['CUSTOMER', '/community'],
+  ])('sends a restored %s session to the appropriate destination', (role, destination) => {
+    auth.mockReturnValue({ isLoggedIn: true, roles: [role] })
+    render(
+      <MemoryRouter initialEntries={[{ pathname: '/login', state: { from: { pathname: '/community' } } }]}>
+        <Routes>
+          <Route path="/login" element={<GuestOnly><p>Đăng nhập</p></GuestOnly>} />
+          <Route path={destination} element={<p>Đích đến: {destination}</p>} />
+        </Routes>
+      </MemoryRouter>,
+    )
+    expect(screen.getByText(`Đích đến: ${destination}`)).toBeInTheDocument()
   })
 })

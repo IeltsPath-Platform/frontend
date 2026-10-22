@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { ChevronDown, GraduationCap, LogOut, Search } from 'lucide-react'
 import brandLogo from '@/assets/brand-logo-white.webp'
 import { logoutSession, useAuthSession } from '@/features/auth/authSession'
@@ -72,12 +72,13 @@ function AccountMenu() {
 
 export function AdminTopbar() {
   const { query, setQuery } = useAdminSearch()
+  const isAuthorArea = useLocation().pathname.startsWith('/content-author')
   return (
     <header className="adm-topbar">
-      <Link aria-label="Trang chủ quản trị" className="adm-brand" to="/admin">
+      <Link aria-label={isAuthorArea ? 'Trang chủ biên soạn nội dung' : 'Trang chủ quản trị'} className="adm-brand" to={isAuthorArea ? '/content-author' : '/admin'}>
         <img alt="The English Space" className="adm-brand__logo" height={74} src={brandLogo} width={175} />
         <span aria-hidden="true" className="adm-brand__divider" />
-        <span className="adm-brand__label">QUẢN TRỊ</span>
+        <span className="adm-brand__label">{isAuthorArea ? 'BIÊN SOẠN' : 'QUẢN TRỊ'}</span>
       </Link>
       <label className="adm-search">
         <Search aria-hidden="true" size={16} />

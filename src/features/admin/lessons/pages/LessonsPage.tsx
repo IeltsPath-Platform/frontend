@@ -165,7 +165,7 @@ export function LessonsPage() {
                     </span>
                   </td>
                   <td><code>{lesson.code}</code></td>
-                  <td><Link className="qb-link" to={`/admin/lessons/${lesson.id}`}>{lesson.title}</Link></td>
+                  <td><Link className="qb-link" to={`/content-author/lessons/${lesson.id}`}>{lesson.title}</Link></td>
                   <td><span className={statusBadgeClass(lesson.status)}>{STATUS_LABEL[lesson.status]}</span></td>
                   <td>{lesson.blockCount ?? '—'}</td>
                   <td>{lesson.knowledgePointCount ?? '—'}</td>

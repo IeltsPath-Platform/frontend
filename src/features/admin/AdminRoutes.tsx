@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react'
-import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
+import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { RequireRole } from '@/features/auth/AuthGuards'
 import { useAuthSession } from '@/features/auth/authSession'
-import { STAFF_ROLES } from '@/features/auth/staffRoles'
+import { hasAnyRole, STAFF_ROLES } from '@/features/auth/staffRoles'
 import { menuFor, rolesFor } from './adminMenu'
 import { AdminLayout } from './AdminLayout'
 import { AdminForbiddenPage } from './pages/AdminForbiddenPage'
@@ -22,33 +22,51 @@ function Guard({ path, children }: { path: string; children: ReactNode }) {
   return <RequireRole fallback={<AdminForbiddenPage />} roles={rolesFor(path)}>{children}</RequireRole>
 }
 
-/** `/admin` forwards each staff role to its first available menu item. */
+/** Each workspace forwards staff to their first available menu item. */
 function AdminHome() {
   const { roles } = useAuthSession()
   const first = menuFor(roles)[0]
   return first ? <Navigate replace to={first.path} /> : <AdminForbiddenPage />
 }
 
-export function AdminRoutes() {
+function LegacyContentRedirect() {
+  const { pathname, search, hash } = useLocation()
+  return <Navigate replace to={`${pathname.replace(/^\/admin/, '/content-author')}${search}${hash}`} />
+}
+
+function LegacyKnowledgeGraph() {
+  const { roles } = useAuthSession()
+  return hasAnyRole(roles, ['CONTENT_AUTHOR']) ? <LegacyContentRedirect /> : <KnowledgeGraphPage />
+}
+
+export function AdminRoutes({ area = 'admin' }: { area?: 'admin' | 'content-author' }) {
+  const isAuthorArea = area === 'content-author'
   return (
     <Routes>
-      <Route element={<RequireRole fallback={<AdminForbiddenPage />} roles={STAFF_ROLES}><AdminLayout /></RequireRole>}>
-        <Route element={<AdminHome />} index />
-        <Route element={<Guard path="/admin/system"><SystemOverviewPage /></Guard>} path="system" />
-        <Route element={<Guard path="/admin/users"><UsersPage /></Guard>} path="users" />
-        <Route element={<Guard path="/admin/services"><ServicesPage /></Guard>} path="services" />
-        <Route element={<Guard path="/admin/activity"><ActivityPage /></Guard>} path="activity" />
-        <Route element={<Guard path="/admin/content"><OverviewPage /></Guard>} path="content" />
-        <Route element={<Guard path="/admin/knowledge-graph"><KnowledgeGraphPage /></Guard>} path="knowledge-graph" />
-        <Route element={<Guard path="/admin/lessons"><Outlet /></Guard>} path="lessons">
-          <Route element={<LessonsPage />} index />
-          <Route element={<LessonEditorPage />} path=":lessonId" />
-        </Route>
-        <Route element={<Guard path="/admin/questions"><Outlet /></Guard>} path="questions">
-          <Route element={<QuestionBankPage />} index />
-          <Route element={<QuestionDetailPage />} path=":questionId" />
-        </Route>
-        <Route element={<Navigate replace to="/admin" />} path="*" />
+      <Route element={<RequireRole fallback={<AdminForbiddenPage />} roles={isAuthorArea ? ['CONTENT_AUTHOR'] : STAFF_ROLES}><AdminLayout /></RequireRole>}>
+        <Route element={isAuthorArea ? <Navigate replace to="/content-author/content" /> : <AdminHome />} index />
+        {isAuthorArea ? <>
+          <Route element={<OverviewPage />} path="content" />
+          <Route element={<KnowledgeGraphPage />} path="knowledge-graph" />
+          <Route element={<Outlet />} path="lessons">
+            <Route element={<LessonsPage />} index />
+            <Route element={<LessonEditorPage />} path=":lessonId" />
+          </Route>
+          <Route element={<Outlet />} path="questions">
+            <Route element={<QuestionBankPage />} index />
+            <Route element={<QuestionDetailPage />} path=":questionId" />
+          </Route>
+        </> : <>
+          <Route element={<Guard path="/admin/system"><SystemOverviewPage /></Guard>} path="system" />
+          <Route element={<Guard path="/admin/users"><UsersPage /></Guard>} path="users" />
+          <Route element={<Guard path="/admin/services"><ServicesPage /></Guard>} path="services" />
+          <Route element={<Guard path="/admin/activity"><ActivityPage /></Guard>} path="activity" />
+          <Route element={<Guard path="/admin/content"><LegacyContentRedirect /></Guard>} path="content" />
+          <Route element={<Guard path="/admin/knowledge-graph"><LegacyKnowledgeGraph /></Guard>} path="knowledge-graph" />
+          <Route element={<Guard path="/admin/lessons"><LegacyContentRedirect /></Guard>} path="lessons/*" />
+          <Route element={<Guard path="/admin/questions"><LegacyContentRedirect /></Guard>} path="questions/*" />
+        </>}
+        <Route element={<Navigate replace to={`/${area}`} />} path="*" />
       </Route>
     </Routes>
   )

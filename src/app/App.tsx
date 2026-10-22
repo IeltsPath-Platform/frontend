@@ -30,6 +30,7 @@ import { VocabularyPage } from '@/features/vocabulary/pages/VocabularyPage'
 import { VocabularyReviewPage } from '@/features/vocabulary/pages/VocabularyReviewPage'
 import { AuthPage } from '@/features/auth/pages/AuthPage'
 import { useAuthSession } from '@/features/auth/authSession'
+import { signInDestination } from '@/features/auth/staffRoles'
 import { SiteFooter } from '@/components/SiteFooter'
 import { ForgotPasswordPage } from '@/features/auth/pages/ForgotPasswordPage'
 import { OAuthCallbackPage } from '@/features/auth/pages/OAuthCallbackPage'
@@ -78,17 +79,19 @@ function RocketRoute() {
 
 function AppContent() {
   const navigate = useNavigate()
-  const { isLoggedIn } = useAuthSession()
+  const { isLoggedIn, roles } = useAuthSession()
   // The admin area has its own frame, so the learner footer stays out of it.
-  const inAdminArea = useLocation().pathname.startsWith('/admin')
+  const { pathname } = useLocation()
+  const inAdminArea = ['/admin', '/content-author'].some((base) => pathname === base || pathname.startsWith(`${base}/`))
 
   return (
     <>
       <Routes>
-      <Route path="/" element={<Navigate replace to={isLoggedIn ? '/overview' : '/home'} />} />
+      <Route path="/" element={<Navigate replace to={isLoggedIn ? signInDestination(roles) : '/home'} />} />
       <Route path="/games/rocket" element={<RocketRoute />} />
       <Route path="/games/rocket/:matchId" element={<RocketRoute />} />
       <Route path="/admin/*" element={<RequireAuth><AdminRoutes /></RequireAuth>} />
+      <Route path="/content-author/*" element={<RequireAuth><AdminRoutes area="content-author" /></RequireAuth>} />
       <Route path="/games" element={<RequireAuth><GameLayout /></RequireAuth>}>
         <Route index element={<GameCatalogPage />} />
         <Route path="wordly/setup" element={<GameSetupPage />} />

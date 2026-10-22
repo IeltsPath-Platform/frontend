@@ -48,7 +48,7 @@ export function QuestionDetailPage() {
   }
 
   const back = (
-    <Link className="adm-btn" to="/admin/questions"><ArrowLeft aria-hidden="true" size={14} /> Ngân hàng câu hỏi</Link>
+    <Link className="adm-btn" to="/content-author/questions"><ArrowLeft aria-hidden="true" size={14} /> Ngân hàng câu hỏi</Link>
   )
 
   return (

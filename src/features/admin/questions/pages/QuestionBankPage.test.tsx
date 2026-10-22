@@ -21,11 +21,11 @@ function page(overrides: Partial<QuestionPage> = {}): QuestionPage {
 
 function renderPage(query = '') {
   return render(
-    <MemoryRouter initialEntries={['/admin/questions']}>
+    <MemoryRouter initialEntries={['/content-author/questions']}>
       <AdminSearchContext.Provider value={{ query, setQuery: vi.fn() }}>
         <Routes>
-          <Route element={<QuestionBankPage />} path="/admin/questions" />
-          <Route element={<h1>Chi tiết câu hỏi</h1>} path="/admin/questions/:questionId" />
+          <Route element={<QuestionBankPage />} path="/content-author/questions" />
+          <Route element={<h1>Chi tiết câu hỏi</h1>} path="/content-author/questions/:questionId" />
         </Routes>
       </AdminSearchContext.Provider>
     </MemoryRouter>,
@@ -48,7 +48,7 @@ describe('QuestionBankPage', () => {
     expect(within(table).getByText('Nháp')).toBeInTheDocument()
     expect(api.listQuestions).toHaveBeenCalledWith(
       { skill: '', purpose: '', status: '', page: 0, size: 25 }, expect.any(AbortSignal))
-    expect(screen.getByRole('link', { name: 'aaaaaaaa…' })).toHaveAttribute('href', '/admin/questions/aaaaaaaa-1111')
+    expect(screen.getByRole('link', { name: 'aaaaaaaa…' })).toHaveAttribute('href', '/content-author/questions/aaaaaaaa-1111')
   })
 
   it('sends a changed filter to the API and returns to the first page', async () => {

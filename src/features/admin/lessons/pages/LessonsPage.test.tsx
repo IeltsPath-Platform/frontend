@@ -40,7 +40,7 @@ describe('LessonsPage', () => {
 
     fireEvent.change(await screen.findByLabelText('Chủ đề'), { target: { value: 't1' } })
 
-    expect(await screen.findByRole('link', { name: 'Lesson one' })).toHaveAttribute('href', '/admin/lessons/l1')
+    expect(await screen.findByRole('link', { name: 'Lesson one' })).toHaveAttribute('href', '/content-author/lessons/l1')
     expect(screen.getAllByText('Nháp')).toHaveLength(2)
   })
 

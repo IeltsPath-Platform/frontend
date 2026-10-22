@@ -5,3 +5,10 @@ export type StaffRole = (typeof STAFF_ROLES)[number]
 export function hasAnyRole(roles: readonly string[] | undefined, allowed: readonly string[]): boolean {
   return Boolean(roles?.some((role) => allowed.includes(role)))
 }
+
+/** Staff enter their workspace even when sign-in started on a learner page. */
+export function signInDestination(roles: readonly string[] | undefined, from?: string): string {
+  if (hasAnyRole(roles, ['ADMIN'])) return '/admin'
+  if (hasAnyRole(roles, ['CONTENT_AUTHOR'])) return '/content-author'
+  return from || '/overview'
+}
