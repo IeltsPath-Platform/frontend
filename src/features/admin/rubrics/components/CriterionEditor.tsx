@@ -4,8 +4,8 @@ export function CriterionEditor({ criterion, index, onChange }: { criterion: Rub
   const label = index + 1
   return <fieldset className="adm-card adm-rubric-criterion">
     <legend>Tiêu chí {label}</legend>
-    <label className="adm-field"><span>Mã tiêu chí {label}</span><input className="adm-input" maxLength={100} required value={criterion.code} onChange={(event) => onChange({ ...criterion, code: event.target.value })} /></label>
-    <label className="adm-field"><span>Tên tiêu chí {label}</span><input className="adm-input" maxLength={255} required value={criterion.name} onChange={(event) => onChange({ ...criterion, name: event.target.value })} /></label>
+    <label className="adm-field"><span>Mã tiêu chí {label}</span><select className="adm-select" value={criterion.code} onChange={(event) => onChange({ ...criterion, code: event.target.value as RubricCriterion['code'] })}>{['TA', 'TR', 'CC', 'LR', 'GRA'].map((code) => <option key={code} value={code}>{code}</option>)}</select></label>
+    <label className="adm-field"><span>Tên tiêu chí {label}</span><input className="adm-input" maxLength={120} required value={criterion.name} onChange={(event) => onChange({ ...criterion, name: event.target.value })} /></label>
     <label className="adm-field"><span>Mô tả tiêu chí {label}</span><textarea className="adm-textarea" maxLength={20000} required value={criterion.description} onChange={(event) => onChange({ ...criterion, description: event.target.value })} /></label>
     {criterion.bandDescriptors.map((item, bandIndex) => <div className="adm-rubric-band" key={bandIndex}>
       <label className="adm-field"><span>Band {bandIndex + 1} của tiêu chí {label}</span><select className="adm-select" value={item.band} onChange={(event) => onChange({ ...criterion, bandDescriptors: criterion.bandDescriptors.map((band, position) => position === bandIndex ? { ...band, band: Number(event.target.value) } : band) })}>{RUBRIC_BANDS.map((band) => <option key={band} value={band}>{band.toFixed(1)}</option>)}</select></label>

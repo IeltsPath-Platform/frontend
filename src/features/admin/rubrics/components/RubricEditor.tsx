@@ -63,7 +63,7 @@ export function RubricEditor({ initial, persisted, onSaved, onActivated, onCance
           <button className="adm-btn adm-btn--danger" type="button" onClick={() => change({ ...draft, criteria: draft.criteria.filter((_, position) => position !== index).map((item, position) => ({ ...item, sortOrder: position + 1 })) })}>Xóa tiêu chí {index + 1}</button>
         </div>
       </div>)}
-      <button className="adm-btn" type="button" onClick={() => change({ ...draft, criteria: [...draft.criteria, { code: '', name: '', description: '', sortOrder: draft.criteria.length + 1, bandDescriptors: [{ band: 4, descriptor: '' }] }] })}>Thêm tiêu chí</button>
+      <button className="adm-btn" type="button" onClick={() => change({ ...draft, criteria: [...draft.criteria, { code: draft.task === 'TASK_1' ? 'TA' : 'TR', name: '', description: '', sortOrder: draft.criteria.length + 1, bandDescriptors: [{ band: 4, descriptor: '' }] }] })}>Thêm tiêu chí</button>
       <h3>Bài mẫu</h3>
       {draft.examples.map((example, index) => <fieldset className="adm-card adm-rubric-example" key={index}>
         <legend>Bài mẫu {index + 1}</legend>

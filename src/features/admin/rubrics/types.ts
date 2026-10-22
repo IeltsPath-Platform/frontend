@@ -5,7 +5,7 @@ import { z } from 'zod'
 export const WRITING_TASKS = ['TASK_1', 'TASK_2'] as const
 export const bandDescriptorSchema = z.object({ band: z.number().min(0).max(9).multipleOf(0.5), descriptor: z.string() })
 export const criterionRequestSchema = z.object({
-  code: z.string().trim().min(1), name: z.string().trim().min(1), description: z.string().trim().min(1),
+  code: z.enum(['TA', 'TR', 'CC', 'LR', 'GRA']), name: z.string().trim().min(1).max(120), description: z.string().trim().min(1),
   sortOrder: z.number().int().min(1), bandDescriptors: z.array(bandDescriptorSchema.extend({ descriptor: z.string().trim().min(1) })).min(1),
 })
 export const exampleSchema = z.object({ band: z.number().min(0).max(9).multipleOf(0.5), prompt: z.string().trim().min(1), essay: z.string().trim().min(1), commentary: z.string().trim().min(1) })

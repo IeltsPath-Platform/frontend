@@ -8,7 +8,7 @@ const api = vi.hoisted(() => ({ fetchActiveRubrics: vi.fn(), fetchDraftRubrics: 
 vi.mock('../api/rubricApi', () => api)
 const active: Rubric = {
   code: 'IELTS_WRITING_T2', task: 'TASK_2', version: 1, status: 'ACTIVE', sourceNote: 'Rubric học thuật',
-  criteria: ['TR', 'CC', 'LR', 'GRA'].map((code, index) => ({ code, name: `Tiêu chí ${code}`, description: `Mô tả ${code}`, sortOrder: index + 1, knowledgePointId: `kp${index}`, bandDescriptors: Array.from({ length: 11 }, (_, step) => ({ band: 4 + step * 0.5, descriptor: `Mô tả band ${4 + step * 0.5}` })) })),
+  criteria: (['TR', 'CC', 'LR', 'GRA'] as const).map((code, index) => ({ code, name: `Tiêu chí ${code}`, description: `Mô tả ${code}`, sortOrder: index + 1, knowledgePointId: `kp${index}`, bandDescriptors: Array.from({ length: 11 }, (_, step) => ({ band: 4 + step * 0.5, descriptor: `Mô tả band ${4 + step * 0.5}` })) })),
   examples: [{ band: 6.5, prompt: 'Đề bài học thuật', essay: 'Bài mẫu học thuật', commentary: 'Nhận xét bài mẫu' }],
 }
 const draft = { ...active, version: 2, status: 'DRAFT' as const }
