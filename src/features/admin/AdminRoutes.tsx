@@ -18,6 +18,7 @@ import { QuestionBankPage } from './questions/pages/QuestionBankPage'
 import { QuestionDetailPage } from './questions/pages/QuestionDetailPage'
 import { CoursesPage } from './courses/pages/CoursesPage'
 import { RubricsPage } from './rubrics/pages/RubricsPage'
+import { ErrorTypesPage } from './error-types/pages/ErrorTypesPage'
 
 /** A route is open only to the roles its menu item lists. */
 function Guard({ path, children }: { path: string; children: ReactNode }) {
@@ -51,6 +52,7 @@ export function AdminRoutes({ area = 'admin' }: { area?: 'admin' | 'content-auth
           <Route element={<OverviewPage />} path="content" />
           <Route element={<CoursesPage />} path="courses" />
           <Route element={<RubricsPage />} path="rubrics" />
+          <Route element={<ErrorTypesPage />} path="error-types" />
           <Route element={<KnowledgeGraphPage />} path="knowledge-graph" />
           <Route element={<Outlet />} path="lessons">
             <Route element={<LessonsPage />} index />

@@ -1,0 +1,90 @@
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { HttpError } from '@/lib/httpClient'
+import { ErrorTypesPage } from './ErrorTypesPage'
+
+const { api, graph } = vi.hoisted(() => ({ api: { fetchErrorTypes: vi.fn(), createErrorType: vi.fn(), updateErrorType: vi.fn() }, graph: { fetchKnowledgeTree: vi.fn() } }))
+vi.mock('../api/errorTypeApi', () => api)
+vi.mock('../../knowledge-graph/api/knowledgeGraphApi', () => graph)
+const spelling = { id: 'e1', code: 'SPELLING', name: 'Sai chính tả', category: 'SPELLING_NUMBER', severity: 1, knowledgePointId: 'kp1', fixHint: 'Đọc lại từng từ.', status: 'ACTIVE', reviewStatus: 'DRAFT' }
+const grammar = { ...spelling, id: 'e2', code: 'TENSE', name: 'Sai thì', category: 'GRAMMAR', severity: 2, knowledgePointId: null, reviewStatus: 'APPROVED' }
+
+describe('ErrorTypesPage', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    api.fetchErrorTypes.mockResolvedValue([spelling, grammar])
+    api.createErrorType.mockResolvedValue(spelling)
+    api.updateErrorType.mockResolvedValue(spelling)
+    graph.fetchKnowledgeTree.mockResolvedValue({ nodes: [{ id: 'kp1', code: 'SPELLING_KP', name: 'Chính tả', kind: 'STRATEGY', status: 'ACTIVE' }], edges: [] })
+  })
+  it('shows the spelling and number category, severity and linked knowledge point name', async () => {
+    render(<ErrorTypesPage />)
+    const row = (await screen.findByText('SPELLING')).closest('tr')!
+    expect(row).toHaveTextContent('Chính tả & số')
+    expect(row).toHaveTextContent('1 · Nhẹ')
+    await waitFor(() => expect(row).toHaveTextContent('Chính tả'))
+  })
+  it('filters by category, review state and text without reloading the API', async () => {
+    render(<ErrorTypesPage />)
+    await screen.findByText('SPELLING')
+    fireEvent.change(screen.getByLabelText('Lọc nhóm lỗi'), { target: { value: 'GRAMMAR' } })
+    expect(screen.queryByText('SPELLING')).not.toBeInTheDocument()
+    expect(screen.getByText('TENSE')).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('Lọc trạng thái duyệt'), { target: { value: 'DRAFT' } })
+    expect(screen.getByText('Không có mã lỗi khớp bộ lọc')).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('Lọc nhóm lỗi'), { target: { value: '' } })
+    fireEvent.change(screen.getByLabelText('Tìm mã hoặc tên'), { target: { value: 'chính tả' } })
+    expect(screen.getByText('SPELLING')).toBeInTheDocument()
+    expect(api.fetchErrorTypes).toHaveBeenCalledTimes(1)
+  })
+  it('creates an error type with one selected knowledge point', async () => {
+    render(<ErrorTypesPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Tạo mã lỗi' }))
+    const form = screen.getByRole('form', { name: 'Tạo mã lỗi' })
+    fireEvent.change(within(form).getByLabelText('Mã lỗi'), { target: { value: 'NEW_ERROR' } })
+    fireEvent.change(within(form).getByLabelText('Tên mã lỗi'), { target: { value: 'Lỗi mới' } })
+    fireEvent.change(within(form).getByLabelText('Gợi ý sửa'), { target: { value: 'Kiểm tra cấu trúc câu.' } })
+    fireEvent.click(await within(form).findByRole('checkbox', { name: /SPELLING_KP/ }))
+    fireEvent.submit(form)
+    await waitFor(() => expect(api.createErrorType).toHaveBeenCalledWith({ code: 'NEW_ERROR', name: 'Lỗi mới', category: 'GRAMMAR', severity: 1, knowledgePointId: 'kp1', fixHint: 'Kiểm tra cấu trúc câu.' }))
+  })
+  it('keeps the code locked and omits it from update requests', async () => {
+    render(<ErrorTypesPage />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Sửa SPELLING' }))
+    const form = screen.getByRole('form', { name: 'Sửa mã lỗi' })
+    expect(within(form).getByLabelText('Mã lỗi')).toBeDisabled()
+    fireEvent.change(within(form).getByLabelText('Tên mã lỗi'), { target: { value: 'Lỗi viết từ' } })
+    fireEvent.submit(form)
+    await waitFor(() => expect(api.updateErrorType).toHaveBeenCalledWith('e1', { name: 'Lỗi viết từ', category: 'SPELLING_NUMBER', severity: 1, knowledgePointId: 'kp1', fixHint: spelling.fixHint, status: 'ACTIVE', reviewStatus: 'DRAFT' }))
+  })
+  it('approves with all current editable fields', async () => {
+    render(<ErrorTypesPage />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Duyệt SPELLING' }))
+    await waitFor(() => expect(api.updateErrorType).toHaveBeenCalledWith('e1', { name: spelling.name, category: spelling.category, severity: 1, knowledgePointId: 'kp1', fixHint: spelling.fixHint, status: 'ACTIVE', reviewStatus: 'APPROVED' }))
+  })
+  it('deactivates without changing review status or the knowledge point', async () => {
+    render(<ErrorTypesPage />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Ngừng dùng SPELLING' }))
+    await waitFor(() => expect(api.updateErrorType).toHaveBeenCalledWith('e1', expect.objectContaining({ status: 'INACTIVE', reviewStatus: 'DRAFT', knowledgePointId: 'kp1' })))
+  })
+  it('translates the actual duplicate-code response', async () => {
+    api.createErrorType.mockRejectedValue(new HttpError(400, "ErrorType with code 'SPELLING' already exists"))
+    render(<ErrorTypesPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Tạo mã lỗi' }))
+    const form = screen.getByRole('form', { name: 'Tạo mã lỗi' })
+    fireEvent.change(within(form).getByLabelText('Mã lỗi'), { target: { value: 'SPELLING' } })
+    fireEvent.change(within(form).getByLabelText('Tên mã lỗi'), { target: { value: 'Sai chính tả' } })
+    fireEvent.change(within(form).getByLabelText('Gợi ý sửa'), { target: { value: 'Đọc lại từ.' } })
+    fireEvent.submit(form)
+    expect(await screen.findByRole('alert')).toHaveTextContent('Mã lỗi này đã tồn tại. Hãy chọn mã khác.')
+  })
+  it('rejects invalid codes before sending a request', async () => {
+    render(<ErrorTypesPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Tạo mã lỗi' }))
+    const form = screen.getByRole('form', { name: 'Tạo mã lỗi' })
+    fireEvent.change(within(form).getByLabelText('Mã lỗi'), { target: { value: 'lower_case' } })
+    fireEvent.submit(form)
+    expect(await within(form).findByRole('alert')).toHaveTextContent('Mã bắt đầu bằng chữ in hoa')
+    expect(api.createErrorType).not.toHaveBeenCalled()
+  })
+})
