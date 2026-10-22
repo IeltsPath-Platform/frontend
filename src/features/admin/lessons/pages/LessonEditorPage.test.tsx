@@ -98,7 +98,7 @@ describe('LessonEditorPage', () => {
     renderPage()
     fireEvent.click(await screen.findByRole('button', { name: 'Xuất bản' }))
 
-    const alert = await screen.findByText('LESSON_HAS_NO_ACTIVE_KP')
+    const alert = await screen.findByText('Bài chưa gắn knowledge point nào đang hoạt động.')
     expect(alert.closest('[role="alert"]')).toHaveTextContent('Chưa xuất bản được bài học.')
   })
 
