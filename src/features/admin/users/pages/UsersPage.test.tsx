@@ -1,0 +1,135 @@
+﻿import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { render, screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
+import { UsersPage } from './UsersPage'
+import { HttpError } from '@/lib/httpClient'
+import type { User } from '../types'
+
+const { api, auth, search } = vi.hoisted(() => ({
+  api: { listUsers: vi.fn(), createUser: vi.fn(), updateUser: vi.fn(), updateUserRoles: vi.fn(), updateUserStatus: vi.fn(), deleteUser: vi.fn() },
+  auth: vi.fn(),
+  search: { query: '', setQuery: vi.fn() },
+}))
+vi.mock('../api/userAdminApi', () => api)
+vi.mock('@/features/auth/authSession', () => ({ useAuthSession: auth }))
+vi.mock('../../adminSearch', () => ({ useAdminSearch: () => search }))
+
+function fixture(id: string, email: string, role = 'CUSTOMER', status = 'ACTIVE'): User {
+  return {
+    id,
+    email,
+    fullName: email.split('@')[0],
+    phoneNumber: null,
+    status: status as User['status'],
+    roles: [{ id: `role-${role}`, name: role as User['roles'][number]['name'] }],
+    createdAt: '2026-10-01T10:00:00',
+    updatedAt: '2026-10-01T10:00:00',
+  }
+}
+
+function renderUsers(users: User[] = [fixture('self-id', 'admin@example.com', 'ADMIN'), fixture('user-id', 'user@example.com')]) {
+  api.listUsers.mockResolvedValue(users)
+  auth.mockReturnValue({ userId: 'self-id', email: 'admin@example.com' })
+  return render(<MemoryRouter><UsersPage /></MemoryRouter>)
+}
+
+describe('UsersPage', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    search.query = ''
+    vi.stubGlobal('confirm', vi.fn(() => true))
+    api.createUser.mockResolvedValue(fixture('new-user', 'new@example.com', 'CONTENT_AUTHOR'))
+    api.updateUser.mockResolvedValue(fixture('user-id', 'user@example.com'))
+    api.updateUserRoles.mockResolvedValue(fixture('user-id', 'user@example.com'))
+    api.updateUserStatus.mockResolvedValue(fixture('user-id', 'user@example.com'))
+    api.deleteUser.mockResolvedValue(fixture('user-id', 'user@example.com', 'CUSTOMER', 'INACTIVE'))
+  })
+
+  it('lists users and filters by search text, role, and status', async () => {
+    search.query = 'user0@example.com'
+    const users = Array.from({ length: 26 }, (_, index) => fixture(`user-${index}`, `user${index}@example.com`, index === 0 ? 'CONTENT_AUTHOR' : 'CUSTOMER', index === 0 ? 'LOCKED' : 'ACTIVE'))
+    renderUsers(users)
+    expect(await screen.findByText('user0@example.com')).toBeInTheDocument()
+    await userEvent.selectOptions(screen.getByLabelText('Vai trò'), 'CONTENT_AUTHOR')
+    await userEvent.selectOptions(screen.getByLabelText('Trạng thái'), 'LOCKED')
+    expect(screen.getByText('user0@example.com')).toBeInTheDocument()
+    expect(screen.queryByText('user1@example.com')).not.toBeInTheDocument()
+  })
+
+  it('paginates the unpaginated API response by 25 rows', async () => {
+    renderUsers(Array.from({ length: 26 }, (_, index) => fixture(`user-${index}`, `user${index}@example.com`)))
+    expect(await screen.findByText('user24@example.com')).toBeInTheDocument()
+    expect(screen.queryByText('user25@example.com')).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Trang sau' }))
+    expect(screen.getByText('user25@example.com')).toBeInTheDocument()
+    expect(screen.getByText('Trang 2 / 2 · 26 người dùng')).toBeInTheDocument()
+  })
+
+  it('creates a user with the exact request body and blocks conflicting role choices', async () => {
+    const user = userEvent.setup()
+    renderUsers([])
+    await screen.findByRole('heading', { name: 'Người dùng' })
+    await user.click(screen.getByRole('button', { name: 'Tài khoản mới' }))
+    await user.type(screen.getByLabelText('Email'), 'author@example.com')
+    await user.type(screen.getByLabelText('Họ tên'), 'Nội dung viên')
+    await user.type(screen.getByLabelText(/Mật khẩu tạm thời/), 'secret1')
+    const roles = screen.getByRole('group', { name: 'Vai trò' })
+    await user.click(within(roles).getByLabelText('Quản trị hệ thống'))
+    expect(within(roles).getByLabelText('R&D (nội dung)')).toBeDisabled()
+    await user.click(screen.getByRole('button', { name: 'Tạo tài khoản' }))
+    await waitFor(() => expect(api.createUser).toHaveBeenCalledWith({ email: 'author@example.com', fullName: 'Nội dung viên', password: 'secret1', roles: ['CUSTOMER', 'ADMIN'] }))
+    expect(api.listUsers).toHaveBeenCalledTimes(2)
+  })
+
+  it.each([
+    ['ROLE_CONFLICT', 'Tài khoản quản trị hệ thống không được kiêm vai trò R&D hoặc Mentor.'],
+    ['SELF_ADMIN_REMOVAL', 'Bạn không thể tự gỡ quyền quản trị của chính mình.'],
+    ['SELF_ACCOUNT_CHANGE', 'Bạn không thể tự khóa hoặc xóa tài khoản đang dùng.'],
+    ['LAST_ADMIN', 'Đây là tài khoản quản trị cuối cùng đang hoạt động, không thể gỡ, khóa hay xóa.'],
+  ])('shows the %s rule returned by the server', async (code, message) => {
+    api.createUser.mockRejectedValue(new HttpError(409, 'Conflict', { details: { code } }, code))
+    renderUsers([])
+    await userEvent.click(await screen.findByRole('button', { name: 'Tài khoản mới' }))
+    await userEvent.type(screen.getByLabelText('Email'), 'author@example.com')
+    await userEvent.type(screen.getByLabelText('Họ tên'), 'Nội dung viên')
+    await userEvent.type(screen.getByLabelText(/Mật khẩu tạm thời/), 'secret1')
+    await userEvent.click(screen.getByRole('button', { name: 'Tạo tài khoản' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(message)
+  })
+
+  it('maps the existing duplicate email response', async () => {
+    api.createUser.mockRejectedValue(new HttpError(409, 'Email already exists'))
+    renderUsers([])
+    await userEvent.click(await screen.findByRole('button', { name: 'Tài khoản mới' }))
+    await userEvent.type(screen.getByLabelText('Email'), 'used@example.com')
+    await userEvent.type(screen.getByLabelText('Họ tên'), 'Người dùng cũ')
+    await userEvent.type(screen.getByLabelText(/Mật khẩu tạm thời/), 'secret1')
+    await userEvent.click(screen.getByRole('button', { name: 'Tạo tài khoản' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Email đã được dùng.')
+  })
+
+  it('disables self-lock and self-delete, and protects the self ADMIN role', async () => {
+    renderUsers()
+    await screen.findByText('admin@example.com')
+    const row = screen.getByText('admin@example.com').closest('tr')
+    if (!row) throw new Error('Current user row is missing')
+    await userEvent.click(within(row).getByRole('button', { name: 'Quản lý' }))
+    const editor = screen.getByRole('region', { name: 'Quản lý admin@example.com' })
+    expect(within(editor).getByLabelText('Quản trị hệ thống')).toBeDisabled()
+    expect(within(editor).getByRole('option', { name: 'Bị khóa' })).toBeDisabled()
+    expect(within(editor).queryByRole('button', { name: 'Xóa tài khoản' })).not.toBeInTheDocument()
+    expect(within(editor).getByRole('button', { name: 'Lưu trạng thái' })).toBeDisabled()
+  })
+
+  it('asks for confirmation before deleting another account', async () => {
+    renderUsers()
+    await screen.findByText('user@example.com')
+    const row = screen.getByText('user@example.com').closest('tr')
+    if (!row) throw new Error('User row is missing')
+    await userEvent.click(within(row).getByRole('button', { name: 'Quản lý' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Xóa tài khoản' }))
+    expect(window.confirm).toHaveBeenCalledWith('Xóa tài khoản user@example.com? Thao tác này không thể hoàn tác.')
+    expect(api.deleteUser).toHaveBeenCalledWith('user-id')
+  })
+})

@@ -1,12 +1,17 @@
-import { describe, expect, it } from 'vitest'
+﻿import { describe, expect, it } from 'vitest'
 import { menuFor, rolesFor } from './adminMenu'
 
 describe('adminMenu', () => {
-  it('gives authors every item', () => {
-    expect(menuFor(['CONTENT_AUTHOR']).map((item) => item.label)).toEqual([
-      'Tổng quan', 'Cây tri thức', 'Bài học', 'Ngân hàng câu hỏi',
+  it('shows administrators only the four system screens', () => {
+    expect(menuFor(['ADMIN']).map((item) => item.path)).toEqual([
+      '/admin/system', '/admin/users', '/admin/services', '/admin/activity',
     ])
-    expect(menuFor(['ADMIN'])).toHaveLength(4)
+  })
+
+  it('shows content authors only the four content screens', () => {
+    expect(menuFor(['CONTENT_AUTHOR']).map((item) => item.path)).toEqual([
+      '/admin/content', '/admin/knowledge-graph', '/admin/lessons', '/admin/questions',
+    ])
   })
 
   it('shows an examiner only the knowledge graph', () => {
@@ -18,8 +23,9 @@ describe('adminMenu', () => {
     expect(menuFor(undefined)).toEqual([])
   })
 
-  it('looks up the roles of a route', () => {
-    expect(rolesFor('/admin/lessons')).toEqual(['ADMIN', 'CONTENT_AUTHOR'])
+  it('looks up route roles and rejects unknown routes', () => {
+    expect(rolesFor('/admin/lessons')).toEqual(['CONTENT_AUTHOR'])
+    expect(rolesFor('/admin/users')).toEqual(['ADMIN'])
     expect(rolesFor('/admin/unknown')).toEqual([])
   })
 })
