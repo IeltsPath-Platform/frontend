@@ -1,6 +1,6 @@
 import { BookOpenCheck, Building2, Camera, ExternalLink, Mail, MapPin, MessageCircle, Music2, Phone, Video } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { BRAND_LOGO_URL } from './brandLogo'
+import { SiteLogo } from './SiteLogo'
 import './SiteFooter.css'
 
 const MAP_URL = 'https://www.google.com/maps/search/?api=1&query=257+Gi%E1%BA%A3i+Ph%C3%B3ng%2C+B%E1%BA%A1ch+Mai%2C+H%C3%A0+N%E1%BB%99i'
@@ -11,7 +11,7 @@ export function SiteFooter() {
       <div className="site-footer-shell">
         <section className="site-footer-contact" aria-labelledby="site-footer-contact-title">
           <div className="site-footer-brand">
-            <img src={BRAND_LOGO_URL} alt="The IELTS Space" width="175" height="74" loading="lazy" decoding="async" />
+            <SiteLogo alt="The IELTS Space" loading="lazy" />
             <span aria-hidden="true" />
             <strong id="site-footer-title">THE IELTS SPACE - KHÔNG GIAN HỌC TẬP TÍCH HỢP THẾ HỆ MỚI</strong>
           </div>
