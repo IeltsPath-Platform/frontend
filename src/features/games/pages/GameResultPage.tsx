@@ -9,6 +9,7 @@ import { GameRanking } from '../components/GameRanking'
 import { GameNoticeDialog } from '../components/GameNoticeDialog'
 import { recalledMatchHost, rememberMatchHost } from '../lib/matchRoomContext'
 import { HttpError } from '@/lib/httpClient'
+import { playPath, setupPath, toGameType } from '../lib/gameRoutes'
 
 export function GameResultPage() {
   const { matchId = '' } = useParams()
@@ -111,7 +112,7 @@ function ResultContent({ matchId }: ResultContentProps) {
         <div className="games-alert" role="alert">
           <p>{error}</p>
           <Button onClick={() => reload((v) => v + 1)}>Thử lại</Button>
-          <Link to={`/games/matches/${matchId}/play`}>Quay lại lượt chơi</Link>
+          <Link to={playPath('WORDLY', matchId)}>Quay lại lượt chơi</Link>
         </div>
       )}
       {!result && !error && <p role="status">Đang tải kết quả…</p>}
@@ -174,10 +175,10 @@ function ResultContent({ matchId }: ResultContentProps) {
               <Link
                 to={
                   result.playerMode === 'SOLO'
-                    ? '/games/wordly/setup?mode=SOLO'
+                    ? setupPath(toGameType(result.gameType), 'SOLO')
                     : roomId
                       ? `/games/rooms/${roomId}`
-                      : `/games/wordly/setup?mode=${result.playerMode}`
+                      : setupPath(toGameType(result.gameType), result.playerMode)
                 }
               >
                 {result.playerMode === 'SOLO'

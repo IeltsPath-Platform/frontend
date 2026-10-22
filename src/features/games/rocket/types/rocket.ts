@@ -1,6 +1,8 @@
+import type { GameRanking, PlayerMode } from '../../types/game'
+
 /** Shapes follow backend docs/contracts/rocket-game-v1.md (round model shared by solo and multiplayer). */
 
-export type RocketPlayerStatus = 'ACTIVE' | 'ELIMINATED' | 'FINISHED' | 'FORFEITED'
+export type RocketPlayerStatus = 'ACTIVE' | 'DISCONNECTED' | 'ELIMINATED' | 'FINISHED' | 'FORFEITED'
 
 export type RocketEndReason =
   | 'ALL_ROUNDS_COMPLETED'
@@ -96,10 +98,54 @@ export type RocketResult = {
   endedAt: string
 }
 
+/** Who plays the match: multiplayer matches listen to their room socket. */
+export type RocketMatchInfo = {
+  roomId: string | null
+  playerMode: PlayerMode
+  ownUserId: string | null
+  ranking: GameRanking | null
+}
+
+/** One player's line in ROCKET_ROUND_RESULT; never sent before the round closes. */
+export type RocketAnswerOutcome = {
+  userId: string
+  optionId: string | null
+  correct: boolean
+  points: number
+  livesRemaining: number
+  totalScore: number
+  status: RocketPlayerStatus
+}
+
+/** Room socket events of a multiplayer match (backend contract, "WebSocket"). */
+export type RocketEvent =
+  | {
+      type: 'ROCKET_ROUND_STARTED'
+      matchId: string
+      round: Pick<RocketRound, 'roundId' | 'number' | 'total' | 'meaning' | 'options' | 'opensAt' | 'deadlineAt'>
+      serverTime: string
+    }
+  | { type: 'ROCKET_PLAYER_ANSWERED'; matchId: string; roundId: string; userId: string; answeredCount: number; aliveCount: number }
+  | {
+      type: 'ROCKET_ROUND_RESULT'
+      matchId: string
+      roundId: string
+      correctOptionId: string
+      answers: RocketAnswerOutcome[]
+      ranking: GameRanking | null
+      nextRoundAt: string | null
+      matchFinished: boolean
+      endReason: RocketEndReason | null
+    }
+  | { type: 'RANKING_UPDATED' | 'MEMBER_LEFT' | 'MATCH_FINISHED'; matchId?: string; ranking?: GameRanking; userId?: string }
+  | { type: 'ROOM_CLOSED'; matchId?: string; message?: string }
+
 export type RocketApi = {
   startSolo: (settings: Pick<RocketSoloSettings, 'questionCount'>) => Promise<{ matchId: string }>
   current: (matchId: string, signal?: AbortSignal) => Promise<RocketCurrent>
   answer: (matchId: string, roundId: string, body: RocketAnswerInput) => Promise<RocketAnswerAck>
   leave: (matchId: string) => Promise<void>
   result: (matchId: string, signal?: AbortSignal) => Promise<RocketResult>
+  match: (matchId: string, signal?: AbortSignal) => Promise<RocketMatchInfo>
+  ranking: (matchId: string, signal?: AbortSignal) => Promise<GameRanking>
 }

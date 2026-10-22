@@ -1,5 +1,5 @@
 import { apiRequest } from '@/lib/httpClient'
-import type { GameMatch, GameRoom } from '../../types/game'
+import type { GameMatch, GameRanking, GameRoom } from '../../types/game'
 import type { RocketAnswerAck, RocketApi, RocketCurrent, RocketResult } from '../types/rocket'
 
 /** Routes from backend/plans/261021-rocket-game/plan.md §4; game-service has not shipped them yet. */
@@ -32,5 +32,16 @@ export function createHttpRocketApi(): RocketApi {
     },
     result: (matchId, signal) =>
       apiRequest<RocketResult>(`/api/games/matches/${encodeURIComponent(matchId)}/result`, { auth: true, signal }),
+    async match(matchId, signal) {
+      const match = await apiRequest<GameMatch>(`/api/games/matches/${encodeURIComponent(matchId)}`, { auth: true, signal })
+      return {
+        roomId: match.roomId,
+        playerMode: match.playerMode ?? 'SOLO',
+        ownUserId: match.ownPlayer?.userId ?? null,
+        ranking: match.ranking,
+      }
+    },
+    ranking: (matchId, signal) =>
+      apiRequest<GameRanking>(`/api/games/matches/${encodeURIComponent(matchId)}/ranking`, { auth: true, signal }),
   }
 }

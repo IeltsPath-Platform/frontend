@@ -1,16 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import {
-  Check,
-  Clock3,
-  Copy,
-  Crown,
-  Heart,
-  LogOut,
-  Plus,
-  Settings2,
-  Users,
-} from 'lucide-react'
+import { Check, Copy, Crown, LogOut, Plus, Settings2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -28,7 +18,9 @@ import type { GameRoom } from '../types/game'
 import { RoomSettingsDialog } from '../components/RoomSettingsDialog'
 import { GameNoticeDialog } from '../components/GameNoticeDialog'
 import { SoloGameEntry } from '../components/SoloGameEntry'
+import { RoomSettingsSummary } from '../components/RoomSettingsSummary'
 import { useGameConnection } from '../hooks/useGameConnection'
+import { gameName, playPath, toGameType } from '../lib/gameRoutes'
 import '../games-room.css'
 
 export function GameRoomPage() {
@@ -72,12 +64,17 @@ function GameRoomContent() {
       updateRoom(event.room)
     }
     if (event.type === 'MATCH_STARTED' && event.match)
-      navigate(`/games/matches/${event.match.matchId}/play`, { replace: true })
+      navigate(
+        playPath(toGameType(lastKnownRoom.current?.gameType), event.match.matchId),
+        { replace: true },
+      )
   })
 
   useEffect(() => {
     if (room?.status === 'IN_MATCH' && room.activeMatchId && !removed)
-      navigate(`/games/matches/${room.activeMatchId}/play`, { replace: true })
+      navigate(playPath(toGameType(room.gameType), room.activeMatchId), {
+        replace: true,
+      })
   }, [room, navigate, removed])
 
   function updateRoom(next: GameRoom) {
@@ -219,6 +216,7 @@ function GameRoomContent() {
     )
   if (room.playerMode === 'SOLO') return <SoloGameEntry roomId={room.id} />
 
+  const gameType = toGameType(room.gameType)
   const host = room.hostUserId === userId
   const waiting = room.status === 'WAITING'
   const activeMembers = room.members.filter(
@@ -260,7 +258,9 @@ function GameRoomContent() {
       </p>
       <header className="game-lobby-heading">
         <div>
-          <span className="game-eyebrow">WORDLY · NHIỀU NGƯỜI</span>
+          <span className="game-eyebrow">
+            {gameName[gameType].toUpperCase()} · NHIỀU NGƯỜI
+          </span>
           <h1>
             {waiting
               ? 'Sẵn sàng khám phá từ mới?'
@@ -300,24 +300,7 @@ function GameRoomContent() {
         </div>
         <div className="game-room-stats">
           {settings ? (
-            <>
-              <span>
-                <Heart />
-                {settings.initialLives} mạng / người
-              </span>
-              <span>
-                <Users />
-                {settings.playMode === 'ENDLESS'
-                  ? 'Vô hạn số từ'
-                  : `${settings.wordLimit} từ`}
-              </span>
-              <span>
-                <Clock3 />
-                {settings.timeEnabled
-                  ? `${settings.wordTimeLimitSeconds ?? 180} giây / từ`
-                  : 'Không giới hạn thời gian'}
-              </span>
-            </>
+            <RoomSettingsSummary gameType={gameType} settings={settings} />
           ) : (
             <span>Cấu hình phòng chưa khả dụng.</span>
           )}
@@ -439,7 +422,7 @@ function GameRoomContent() {
                     void act(async () => {
                       const match = await gameApi.start(room.id)
                       if (alive.current)
-                        navigate(`/games/matches/${match.matchId}/play`)
+                        navigate(playPath(gameType, match.matchId))
                     })
                   }
                 >

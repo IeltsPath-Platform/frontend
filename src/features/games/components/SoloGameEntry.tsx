@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { gameApi } from '../api/gameApi'
 import { startSoloRoom } from '../lib/startSoloRoom'
+import { playPath, toGameType } from '../lib/gameRoutes'
 
 type SoloGameEntryProps = {
   roomId: string
@@ -21,7 +22,9 @@ export function SoloGameEntry({ roomId }: SoloGameEntryProps) {
         if (controller.signal.aborted) return
         const match = await startSoloRoom(room, controller.signal)
         if (!controller.signal.aborted) {
-          navigate(`/games/matches/${match.matchId}/play`, { replace: true })
+          navigate(playPath(toGameType(room.gameType), match.matchId), {
+            replace: true,
+          })
         }
       } catch {
         if (!controller.signal.aborted) setFailed(true)

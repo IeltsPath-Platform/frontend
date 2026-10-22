@@ -339,6 +339,18 @@ export function createMockRocketApi(options: Options = {}): RocketApi {
           endedAt: new Date(match.endedAt).toISOString(),
         }
       }, signal),
+
+    // The mock only plays solo: no room socket and no ranking.
+    match: (matchId, signal) =>
+      delay(() => {
+        find(matchId)
+        return { roomId: null, playerMode: 'SOLO' as const, ownUserId: null, ranking: null }
+      }, signal),
+
+    ranking: (_matchId, signal) =>
+      delay(() => {
+        throw new MockRocketError(404, 'NOT_FOUND', 'Chơi thử không có bảng xếp hạng.')
+      }, signal),
   }
 }
 

@@ -1,6 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowRight, Gamepad2, Rocket, UserRound, Users } from 'lucide-react'
+import {
+  ArrowRight,
+  Gamepad2,
+  KeyRound,
+  Rocket,
+  UserRound,
+  Users,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -15,6 +22,7 @@ import { gameApi } from '../api/gameApi'
 import type { ActiveGame, GameCatalog } from '../types/game'
 import { ActiveGameDialog } from '../components/ActiveGameDialog'
 import { activeGamePath, isActiveGameConflict } from '../lib/activeGame'
+import { gameName, setupPath, type GameType } from '../lib/gameRoutes'
 import '../games-room.css'
 
 export function GameCatalogPage() {
@@ -22,7 +30,8 @@ export function GameCatalogPage() {
   const [catalog, setCatalog] = useState<GameCatalog | null>(null)
   const [error, setError] = useState('')
   const [retry, setRetry] = useState(0)
-  const [modeOpen, setModeOpen] = useState(false)
+  const [modeGame, setModeGame] = useState<GameType | null>(null)
+  const codeInput = useRef<HTMLInputElement>(null)
   const [code, setCode] = useState('')
   const [joinError, setJoinError] = useState('')
   const [joining, setJoining] = useState(false)
@@ -150,7 +159,12 @@ export function GameCatalogPage() {
                   <Button
                     disabled={!available}
                     className="game-primary-action"
-                    onClick={() => (rocket ? navigate('/games/rocket') : setModeOpen(true))}
+                    onClick={() =>
+                      // The in-browser mock has no rooms, so it can only play solo.
+                      rocket && USE_MOCK_ROCKET
+                        ? navigate(setupPath('ROCKET', 'SOLO'))
+                        : setModeGame(rocket ? 'ROCKET' : 'WORDLY')
+                    }
                   >
                     {available ? (
                       <>
@@ -199,6 +213,7 @@ export function GameCatalogPage() {
             Mã phòng
           </label>
           <Input
+            ref={codeInput}
             id="game-room-code"
             value={code}
             onChange={(event) => {
@@ -236,17 +251,29 @@ export function GameCatalogPage() {
         onReplace={() => void leaveAndJoin()}
         onClose={() => setActiveGame(null)}
       />
-      <Dialog open={modeOpen} onOpenChange={setModeOpen}>
-        <DialogContent>
+      <Dialog
+        open={modeGame !== null}
+        onOpenChange={(open) => {
+          if (!open) setModeGame(null)
+        }}
+      >
+        <DialogContent
+          onCloseAutoFocus={(event) => {
+            if (document.activeElement === codeInput.current)
+              event.preventDefault()
+          }}
+        >
           <DialogHeader>
-            <DialogTitle>Wordly · Chọn chế độ chơi</DialogTitle>
+            <DialogTitle>
+              {gameName[modeGame ?? 'WORDLY']} · Chọn chế độ chơi
+            </DialogTitle>
             <DialogDescription>
               Luyện tập theo nhịp của bạn hoặc tạo phòng cùng bạn bè.
             </DialogDescription>
           </DialogHeader>
           <div className="game-mode-options">
             <Button variant="outline" asChild>
-              <Link to="/games/wordly/setup?mode=SOLO">
+              <Link to={setupPath(modeGame ?? 'WORDLY', 'SOLO')}>
                 <UserRound />
                 <span>
                   <strong>Chơi đơn</strong>
@@ -256,7 +283,7 @@ export function GameCatalogPage() {
               </Link>
             </Button>
             <Button variant="outline" asChild>
-              <Link to="/games/wordly/setup?mode=MULTIPLAYER">
+              <Link to={setupPath(modeGame ?? 'WORDLY', 'MULTIPLAYER')}>
                 <Users />
                 <span>
                   <strong>Nhiều người</strong>
@@ -264,6 +291,21 @@ export function GameCatalogPage() {
                 </span>
                 <ArrowRight />
               </Link>
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setModeGame(null)
+                // After the dialog has returned focus, so the field keeps it.
+                setTimeout(() => codeInput.current?.focus(), 0)
+              }}
+            >
+              <KeyRound />
+              <span>
+                <strong>Nhập mã phòng</strong>
+                <small>Vào phòng bạn bè đã tạo</small>
+              </span>
+              <ArrowRight />
             </Button>
           </div>
         </DialogContent>
