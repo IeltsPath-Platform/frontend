@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { HttpError } from '@/lib/httpClient'
 import { gameErrorMessage } from '../../lib/gameErrorMessage'
 import { rocketApi } from '../api/rocketApi'
-import type { RocketResult, RocketRound, RocketRoundResult, RocketSoloSettings } from '../types/rocket'
+import type { RocketCurrent, RocketResult, RocketRound, RocketRoundResult, RocketSoloSettings } from '../types/rocket'
 
 /** What the hook asks of the 3D scene. Every step is optional so the HUD still works without WebGL. */
 export type RocketStage = {
@@ -44,6 +44,30 @@ function errorMessage(error: unknown) {
   return gameErrorMessage(error)
 }
 
+/**
+ * The round on screen, kept per tab so a reload during the reveal can show it again: the server's lastRoundResult
+ * names the options by id only. Storage may be unavailable; the reveal is then skipped, nothing else changes.
+ */
+const roundKey = (matchId: string) => `rocket:round:${matchId}`
+
+function rememberRound(matchId: string, round: RocketRound | null) {
+  try {
+    if (round) sessionStorage.setItem(roundKey(matchId), JSON.stringify(round))
+    else sessionStorage.removeItem(roundKey(matchId))
+  } catch {
+    // Private mode or blocked storage.
+  }
+}
+
+function recallRound(matchId: string): RocketRound | null {
+  try {
+    const raw = sessionStorage.getItem(roundKey(matchId))
+    return raw ? (JSON.parse(raw) as RocketRound) : null
+  } catch {
+    return null
+  }
+}
+
 function errorCode(error: unknown) {
   return typeof error === 'object' && error && 'code' in error ? String((error as { code: unknown }).code) : null
 }
@@ -81,14 +105,15 @@ export function useRocketMatch(matchId: string, stage: RocketStage | null, stage
 
   const finish = useCallback(async () => {
     const final = await rocketApi.result(matchId)
+    rememberRound(matchId, null)
     await stageRef.current?.idle()
     update({ phase: 'finished', final, round: null })
   }, [matchId, update])
 
   /** Fetch the current round, waiting out the reveal pause, then fly into it. */
   const enterNextRound = useCallback(
-    async (afterTravel: boolean) => {
-      let current = await rocketApi.current(matchId)
+    async (afterTravel: boolean, fetched?: RocketCurrent) => {
+      let current = fetched ?? (await rocketApi.current(matchId))
       // A round in its reveal pause has no deadline yet: wait until it is due to open, then ask again.
       for (let attempt = 0; current.round && !current.round.deadlineAt && !current.matchFinished; attempt += 1) {
         if (attempt >= OPEN_ATTEMPTS) throw new Error('Câu tiếp theo chưa mở được. Vui lòng thử lại.')
@@ -116,6 +141,7 @@ export function useRocketMatch(matchId: string, stage: RocketStage | null, stage
         reveal: null,
         clockOffsetMs: offset,
       })
+      rememberRound(matchId, round)
       await stageRef.current?.showRound(round.options.map((option) => option.word))
       update({ phase: 'aiming' })
     },
@@ -165,6 +191,31 @@ export function useRocketMatch(matchId: string, stage: RocketStage | null, stage
     if (current.matchFinished) return finish()
     return enterNextRound(false)
   }, [enterNextRound, finish, matchId, showResult])
+
+  /**
+   * First load. If the page left while a round's result was showing (the next round still waits out the reveal pause),
+   * show that result again from the remembered round before moving on, so a reload does not hide the right answer.
+   */
+  const resume = useCallback(async () => {
+    const current = await rocketApi.current(matchId)
+    const last = current.lastRoundResult
+    const seen = recallRound(matchId)
+    const inPause = !current.matchFinished && current.round !== null && !current.round.deadlineAt
+    if (inPause && last && seen && seen.roundId === last.roundId) {
+      update({
+        phase: 'intro',
+        settings: current.settings,
+        round: seen,
+        lives: seen.player.livesRemaining,
+        score: seen.player.totalScore,
+        clockOffsetMs: Date.parse(current.serverTime) - Date.now(),
+      })
+      await stageRef.current?.showRound(seen.options.map((option) => option.word))
+      return showResult(last)
+    }
+    if (current.matchFinished) return finish()
+    return enterNextRound(false, current)
+  }, [enterNextRound, finish, matchId, showResult, update])
 
   const choose = useCallback(
     (optionId: string) => {
@@ -220,8 +271,8 @@ export function useRocketMatch(matchId: string, stage: RocketStage | null, stage
 
   useEffect(() => {
     if (!stageReady || !matchId) return
-    void run(() => enterNextRound(false))
-  }, [enterNextRound, matchId, run, stageReady])
+    void run(resume)
+  }, [matchId, resume, run, stageReady])
 
   return { state, choose, timeUp, retry, leave }
 }
