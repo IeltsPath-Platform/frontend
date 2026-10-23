@@ -11,3 +11,20 @@ export function topicUpdate(topic: TopicOption): TopicUpdate {
     status: topic.status as Course['status'], bandMin: topic.bandMin ?? null, bandMax: topic.bandMax ?? null,
     skill: topic.skill as TopicCreate['skill'], courseId: topic.courseId }
 }
+
+/**
+ * The ids of every topic that shares the topic's parent, in display order, with the topic and its neighbour swapped.
+ * The view may show only one course, so the group comes from all topics: the server needs the whole group.
+ */
+export function swappedGroup(allTopics: readonly TopicOption[], topic: TopicOption, sibling: TopicOption): string[] {
+  const group = allTopics
+    .filter((item) => (item.parentTopicId ?? null) === (topic.parentTopicId ?? null))
+    .sort((a, b) => a.sortOrder - b.sortOrder || a.code.localeCompare(b.code))
+    .map((item) => item.id)
+  const first = group.indexOf(topic.id)
+  const second = group.indexOf(sibling.id)
+  if (first < 0 || second < 0) return group
+  group[first] = sibling.id
+  group[second] = topic.id
+  return group
+}

@@ -8,9 +8,10 @@ import { AdminPage } from '../../pages/AdminPage'
 import { fetchAuthorWorkItems, fetchContentOverview, fetchQuestionStats } from '../api/overviewApi'
 import { BarList, ColumnChart, DonutChart, StackedBar } from '../components/OverviewCharts'
 import {
-  CEFR_LEVELS, LESSON_STATUS_ROWS, SKILL_ROWS, WORK_KIND_LABEL, WORK_STATUS_LABEL,
+  CEFR_LEVELS, LESSON_STATUS_ROWS, SKILL_ROWS, WORK_STATUS_LABEL,
   correctRate, extremes, formatCount, percent,
 } from '../lib/overviewLabels'
+import { detailText, kindLabel, subjectText } from '../../work-queue/lib/workQueueLabels'
 import type { ContentOverview } from '../types'
 import '../overview.css'
 
@@ -220,13 +221,14 @@ export function OverviewPage() {
               {items.slice(0, 8).map((item) => (
                 <li key={item.id}>
                   <span>
-                    <strong>{WORK_KIND_LABEL[item.kind] ?? item.kind}</strong>
-                    {item.detail ? <span className="adm-muted ov-detail"> {item.detail}</span> : null}
+                    <strong>{kindLabel(item.kind)}</strong>
+                    <span className="adm-muted ov-detail"> {subjectText(item)}{detailText(item) ? ` · ${detailText(item)}` : ''}</span>
                   </span>
                   <span className="adm-badge">{WORK_STATUS_LABEL[item.status] ?? item.status}</span>
                 </li>
               ))}
               {items.length > 8 ? <li className="adm-muted">Và {items.length - 8} việc nữa.</li> : null}
+              <li><Link to="/content-author/work-items">Xem tất cả</Link></li>
             </ul>
           )}
         </Block>

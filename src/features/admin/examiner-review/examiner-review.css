@@ -1,0 +1,10 @@
+.adm-er-workspace { display: grid; gap: 1rem; min-width: 0; }
+.adm-er-workspace > *, .adm-er-workspace section { min-width: 0; }
+.adm-er-form { display: grid; gap: 1rem; }
+.adm-er-fields { display: grid; gap: .75rem; border: 0; padding: 0; min-width: 0; }
+.adm-er-fields select, .adm-er-fields textarea { font-size: 1rem; }
+.adm-er-actions { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem; }
+.adm-er-actions .adm-btn { min-height: 44px; }
+.adm-er-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+.adm-er-rubric { max-width: 100%; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+.adm-er-workspace td { overflow-wrap: anywhere; }

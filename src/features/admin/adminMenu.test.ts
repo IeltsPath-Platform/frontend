@@ -10,7 +10,9 @@ describe('adminMenu', () => {
 
   it('shows content authors their content screens', () => {
     expect(menuFor(['CONTENT_AUTHOR']).map((item) => item.path)).toEqual([
-      '/content-author/content', '/content-author/courses', '/content-author/knowledge-graph', '/content-author/lessons', '/content-author/questions', '/content-author/packages', '/content-author/rubrics', '/content-author/error-types',
+      '/content-author/content', '/content-author/courses', '/content-author/knowledge-graph', '/content-author/lessons', '/content-author/questions', '/content-author/packages', '/content-author/course-drafts', '/content-author/course-import',
+      '/content-author/work-items', '/content-author/examiner-review', '/content-author/ai-evaluation',
+      '/content-author/rubrics', '/content-author/error-types',
     ])
   })
 
@@ -27,6 +29,16 @@ describe('adminMenu', () => {
     expect(rolesFor('/content-author/packages')).toEqual(['CONTENT_AUTHOR'])
     expect(menuFor(['CONTENT_AUTHOR']).find((item) => item.path === '/content-author/packages')?.label).toBe('Đề & gói câu hỏi')
     for (const role of ['ADMIN', 'EXAMINER', 'CUSTOMER']) expect(menuFor([role]).some((item) => item.path.includes('/packages'))).toBe(false)
+  })
+
+  it('shows the work queue, examiner review and AI evaluation only to content authors', () => {
+    const paths = ['/content-author/work-items', '/content-author/examiner-review', '/content-author/ai-evaluation', '/content-author/course-import']
+    const labels = ['Việc cần làm', 'Đánh giá giám khảo', 'Đánh giá AI chấm Writing', 'Nhập Excel']
+    paths.forEach((path, index) => {
+      expect(menuFor(['CONTENT_AUTHOR']).find((item) => item.path === path)?.label).toBe(labels[index])
+      expect(rolesFor(path)).toEqual(['CONTENT_AUTHOR'])
+      for (const role of ['ADMIN', 'EXAMINER', 'CUSTOMER']) expect(menuFor([role]).some((item) => item.path === path)).toBe(false)
+    })
   })
 
   it('looks up route roles and rejects unknown routes', () => {

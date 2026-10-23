@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { HttpError } from '@/lib/httpClient'
 import { CoursesPage } from './CoursesPage'
 
-const { api, lessons } = vi.hoisted(() => ({ api: { fetchCourses: vi.fn(), createCourse: vi.fn(), updateCourse: vi.fn(), createTopic: vi.fn(), updateTopic: vi.fn() }, lessons: { fetchTopics: vi.fn() } }))
+const { api, lessons } = vi.hoisted(() => ({ api: { fetchCourses: vi.fn(), createCourse: vi.fn(), updateCourse: vi.fn(), createTopic: vi.fn(), updateTopic: vi.fn(), reorderTopics: vi.fn() }, lessons: { fetchTopics: vi.fn() } }))
 vi.mock('../api/courseApi', () => api)
 vi.mock('../../lessons/api/lessonApi', () => lessons)
 const course = { id: 'c1', code: 'FOUNDATION', name: 'Nền tảng 5.5', bandLevel: 5.5, status: 'ACTIVE', createdAt: '', updatedAt: '' }
@@ -18,6 +18,8 @@ describe('CoursesPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     api.updateTopic.mockReset()
+    api.reorderTopics.mockReset()
+    api.reorderTopics.mockResolvedValue(undefined)
     api.fetchCourses.mockResolvedValue([course])
     lessons.fetchTopics.mockResolvedValue(topics)
     api.createCourse.mockResolvedValue(course)
@@ -78,15 +80,29 @@ describe('CoursesPage', () => {
     fireEvent.submit(form)
     await waitFor(() => expect(api.createTopic).toHaveBeenCalledWith(expect.objectContaining({ parentTopicId: 't1', courseId: 'c1', code: 'ESSAY', skill: 'WRITING', sortOrder: 3 })))
   })
-  it('swaps the order of two siblings while preserving other fields', async () => {
+  it('reorders siblings with one atomic call that carries the whole group', async () => {
     show()
     fireEvent.click(await screen.findByRole('button', { name: 'Đưa Diễn đạt lại xuống' }))
-    await waitFor(() => expect(api.updateTopic).toHaveBeenCalledTimes(2))
-    expect(api.updateTopic).toHaveBeenNthCalledWith(1, 't2', expect.objectContaining({ name: 'Diễn đạt lại', parentTopicId: 't1', sortOrder: 2 }))
-    expect(api.updateTopic).toHaveBeenNthCalledWith(2, 't3', expect.objectContaining({ name: 'Liên kết câu', parentTopicId: 't1', sortOrder: 1 }))
+    await waitFor(() => expect(api.reorderTopics).toHaveBeenCalledTimes(1))
+    expect(api.reorderTopics).toHaveBeenCalledWith('t1', ['t3', 't2'])
+    expect(api.updateTopic).not.toHaveBeenCalled()
+    await waitFor(() => expect(lessons.fetchTopics).toHaveBeenCalledTimes(2))
   })
 
-  it('pauses reordering for tied siblings while keeping unrelated groups and editing available', async () => {
+  it('sends every topic of the parent even when only one course is shown', async () => {
+    const roots = [
+      { ...topics[0]!, id: 'r1', code: 'R1', name: 'Gốc một', sortOrder: 1 },
+      { ...topics[0]!, id: 'x', code: 'X', name: 'Gốc khóa khác', courseId: 'c2', sortOrder: 2 },
+      { ...topics[0]!, id: 'r2', code: 'R2', name: 'Gốc hai', sortOrder: 3 },
+    ]
+    lessons.fetchTopics.mockResolvedValue(roots)
+    show()
+    fireEvent.click(await screen.findByRole('button', { name: 'Đưa Gốc một xuống' }))
+    await waitFor(() => expect(api.reorderTopics).toHaveBeenCalledTimes(1))
+    expect(api.reorderTopics).toHaveBeenCalledWith(null, ['r2', 'x', 'r1'])
+  })
+
+  it('lets tied siblings be reordered, since the server numbers the group again', async () => {
     const stored = [
       { ...topics[0]! }, { ...topics[1]!, sortOrder: 4 }, { ...topics[2]!, sortOrder: 4 },
       { ...topics[1]!, id: 't4', code: 'SUMMARY', name: 'Tóm tắt', sortOrder: 8 },
@@ -96,31 +112,22 @@ describe('CoursesPage', () => {
     lessons.fetchTopics.mockResolvedValue(stored)
     show()
     const up = await screen.findByRole('button', { name: 'Đưa Diễn đạt lại lên' })
-    expect(up).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Đưa Tóm tắt lên' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Đưa Chủ đề khác xuống' })).toBeEnabled()
-    expect(screen.getByRole('button', { name: 'Sửa Diễn đạt lại' })).toBeEnabled()
-    expect(screen.getByText('Nhóm này có thứ tự trùng. Sửa thứ tự trong form từng chủ đề.')).toBeInTheDocument()
+    expect(up).toBeEnabled()
+    expect(screen.queryByText(/thứ tự trùng/)).not.toBeInTheDocument()
     fireEvent.click(up)
-    expect(api.updateTopic).not.toHaveBeenCalled()
+    await waitFor(() => expect(api.reorderTopics).toHaveBeenCalledTimes(1))
+    // Tied topics are shown by code (COHESION, PARAPHRASE, SUMMARY); moving PARAPHRASE up swaps it with COHESION.
+    expect(api.reorderTopics).toHaveBeenCalledWith('t1', ['t2', 't3', 't4'])
   })
 
-  it('reloads server state and retains the error if an untied swap fails halfway', async () => {
-    let stored = topics.map((topic) => ({ ...topic }))
-    lessons.fetchTopics.mockImplementation(async () => stored)
-    api.updateTopic.mockImplementation(async (id, body) => {
-      if (id === 't3') throw new HttpError(503, 'Chưa lưu được chủ đề')
-      stored = stored.map((item) => item.id === id ? { ...item, ...body } : item)
-      return stored.find((item) => item.id === id)
-    })
+  it('shows the server message and reloads the list when the reorder fails', async () => {
+    api.reorderTopics.mockRejectedValue(new HttpError(503, 'Chưa lưu được thứ tự'))
     show()
     fireEvent.click(await screen.findByRole('button', { name: 'Đưa Diễn đạt lại xuống' }))
     await waitFor(() => expect(lessons.fetchTopics).toHaveBeenCalledTimes(2))
-    expect(api.updateTopic).toHaveBeenCalledTimes(2)
-    expect(await screen.findByRole('alert')).toHaveTextContent('Chưa lưu được chủ đề')
+    expect(await screen.findByRole('alert')).toHaveTextContent('Chưa lưu được thứ tự')
     expect(screen.getByRole('alert')).toHaveTextContent('Kiểm tra lại thứ tự trong danh sách trước khi thử lại.')
-    expect(stored.find((item) => item.id === 't3')?.sortOrder).toBe(2)
-    expect(stored.find((item) => item.id === 't2')?.sortOrder).toBe(2)
+    expect(api.updateTopic).not.toHaveBeenCalled()
     await waitFor(() => expect(screen.getByRole('button', { name: 'Sửa Diễn đạt lại' })).toBeEnabled())
   })
 
@@ -149,19 +156,6 @@ describe('CoursesPage', () => {
     expect(api.updateTopic).toHaveBeenCalledTimes(1)
   })
 
-  it('stops an arrow swap after the server rejects its first conflicting write and reloads', async () => {
-    const message = 'Thứ tự 2 đã có chủ đề khác cùng cấp'
-    api.updateTopic.mockRejectedValue(new HttpError(409, message, { message, details: { code: 'SORT_ORDER_TAKEN' } }))
-    show()
-    fireEvent.click(await screen.findByRole('button', { name: 'Đưa Diễn đạt lại xuống' }))
-    await waitFor(() => expect(lessons.fetchTopics).toHaveBeenCalledTimes(2))
-    expect(api.updateTopic).toHaveBeenCalledExactlyOnceWith('t2', expect.objectContaining({ sortOrder: 2, parentTopicId: 't1' }))
-    expect(await screen.findByRole('alert')).toHaveTextContent(message)
-    expect(screen.getByRole('alert')).toHaveTextContent('Kiểm tra lại thứ tự trong danh sách trước khi thử lại.')
-    expect(api.createTopic).not.toHaveBeenCalled()
-    expect(api.createCourse).not.toHaveBeenCalled()
-    expect(api.updateCourse).not.toHaveBeenCalled()
-  })
   it('offers retry after a list failure', async () => {
     api.fetchCourses.mockRejectedValueOnce(new HttpError(503, 'Không tải được khóa học'))
     show()

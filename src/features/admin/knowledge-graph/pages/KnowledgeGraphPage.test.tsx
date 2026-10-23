@@ -36,9 +36,9 @@ const tree: KnowledgeTree = {
 }
 const health: KnowledgeTreeHealth = { isolatedIds: ['c'], missingMetadataIds: [], levelViolations: [] }
 
-function renderPage(query = '') {
+function renderPage(query = '', path = '/') {
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[path]}>
       <AdminSearchContext.Provider value={{ query, setQuery: vi.fn() }}>
         <KnowledgeGraphPage />
       </AdminSearchContext.Provider>
@@ -63,6 +63,19 @@ describe('KnowledgeGraphPage', () => {
     expect(await screen.findByText('1 KP chưa nối')).toBeInTheDocument()
     expect(screen.getByText('0 cạnh ngược cấp')).toBeInTheDocument()
     expect(api.fetchKnowledgeTree).toHaveBeenCalledWith({ skill: '', courseId: '', includeInactive: false }, expect.any(AbortSignal))
+  })
+
+  it('opens the point named by the kp query, as a work item link does', async () => {
+    renderPage('', '/content-author/knowledge-graph?kp=a')
+
+    expect(await screen.findByRole('complementary', { name: 'Chi tiết R55_SCANNING' })).toBeInTheDocument()
+  })
+
+  it('shows no panel for a kp that is not in the tree', async () => {
+    renderPage('', '/content-author/knowledge-graph?kp=missing')
+
+    await screen.findByText(/3 KP/)
+    expect(screen.queryByRole('complementary')).not.toBeInTheDocument()
   })
 
   it('opens the details of a point with its prerequisites, dependents, course and lessons', async () => {
