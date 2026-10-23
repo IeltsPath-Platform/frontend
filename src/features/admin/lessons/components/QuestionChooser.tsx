@@ -12,15 +12,16 @@ export interface QuestionChooserProps {
   onChange: (next: string[]) => void
   /** The questions the block already has, so their text can be shown without another call. */
   known: LessonBlock['questions']
+  purpose?: 'LEARNING' | 'EXAM' | 'PLACEMENT'
 }
 
 /** Chooses the questions of an exercise block from the published learning questions of the bank. */
-export function QuestionChooser({ value, onChange, known }: QuestionChooserProps) {
+export function QuestionChooser({ value, onChange, known, purpose = 'LEARNING' }: QuestionChooserProps) {
   const [skill, setSkill] = useState('')
   const [previews, setPreviews] = useState<Record<string, string>>({})
   const [previewError, setPreviewError] = useState<string | null>(null)
-  const list = useAdminResource(`exercise-questions|${skill}`, (signal) =>
-    listQuestions({ status: 'PUBLISHED', purpose: 'LEARNING', skill, size: 100 }, signal))
+  const list = useAdminResource(`exercise-questions|${purpose}|${skill}`, (signal) =>
+    listQuestions({ status: 'PUBLISHED', purpose, skill, size: 100 }, signal))
 
   async function preview(questionId: string) {
     setPreviewError(null)

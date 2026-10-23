@@ -8,6 +8,9 @@ vi.mock('@/features/auth/authSession', () => ({ useAuthSession: auth, logoutSess
 vi.mock('./overview/pages/OverviewPage', () => ({ OverviewPage: () => <h1>Tổng quan nội dung</h1> }))
 vi.mock('./knowledge-graph/pages/KnowledgeGraphPage', () => ({ KnowledgeGraphPage: () => <h1>Cây tri thức</h1> }))
 vi.mock('./lessons/pages/LessonEditorPage', () => ({ LessonEditorPage: () => <h1>Biên soạn bài học</h1> }))
+vi.mock('./packages/api/packageApi', async (original) => ({ ...await original<typeof import('./packages/api/packageApi')>(), listPackages: vi.fn().mockResolvedValue([]) }))
+vi.mock('./courses/api/courseApi', async (original) => ({ ...await original<typeof import('./courses/api/courseApi')>(), fetchCourses: vi.fn().mockResolvedValue([]) }))
+vi.mock('./lessons/api/lessonApi', async (original) => ({ ...await original<typeof import('./lessons/api/lessonApi')>(), fetchTopics: vi.fn().mockResolvedValue([]) }))
 
 function LocationProbe() {
   const { pathname, search, hash } = useLocation()
@@ -130,7 +133,7 @@ describe('AdminRoutes', () => {
     auth.mockReturnValue(session(['CONTENT_AUTHOR']))
     renderAt('/content-author/packages')
     expect(screen.getByRole('heading', { name: 'Đề & gói câu hỏi' })).toBeInTheDocument()
-    expect(screen.getByRole('form', { name: 'Mở gói có sẵn' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Gói mới' })).toBeInTheDocument()
   })
 
   it.each(['ADMIN', 'CUSTOMER', 'EXAMINER'])('denies %s access to the package workspace', (role) => {

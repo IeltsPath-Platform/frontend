@@ -6,7 +6,12 @@ import { draft, draftId, makePackage, nextSectionId, packageId, published, publi
 import type { ContentPackage } from '../types'
 import { PackageEditorPage } from './PackageEditorPage'
 
-const { api } = vi.hoisted(() => ({ api: { getPackage: vi.fn(), createDraftVersion: vi.fn(), addSection: vi.fn(), updateSection: vi.fn(), deleteSection: vi.fn(), reorderSections: vi.fn() } }))
+const { api } = vi.hoisted(() => ({ api: {
+  getPackage: vi.fn(), createDraftVersion: vi.fn(), addSection: vi.fn(), updateSection: vi.fn(), deleteSection: vi.fn(), reorderSections: vi.fn(),
+  listSchedules: vi.fn(), previewVersion: vi.fn(), publishVersion: vi.fn(), scheduleVersion: vi.fn(), cancelSchedule: vi.fn(),
+  addSectionQuestion: vi.fn(), removeSectionQuestion: vi.fn(), reorderSectionQuestions: vi.fn(),
+  updatePassage: vi.fn(), deletePassage: vi.fn(), updateAudio: vi.fn(), deleteAudio: vi.fn(), uploadAudio: vi.fn(),
+} }))
 vi.mock('../api/packageApi', () => api)
 function Location() { return <output data-testid="location">{useLocation().search}</output> }
 function show(query = '', id = packageId) {
@@ -32,6 +37,7 @@ describe('PackageEditorPage', () => {
     api.updateSection.mockResolvedValue(section)
     api.deleteSection.mockResolvedValue(undefined)
     api.reorderSections.mockResolvedValue(undefined)
+    api.listSchedules.mockResolvedValue([])
   })
   afterEach(() => vi.restoreAllMocks())
 
@@ -49,6 +55,10 @@ describe('PackageEditorPage', () => {
     expect(screen.getByText(/Phiên bản này chỉ xem/)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Sửa Reading One' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Thêm phần' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Thêm câu hỏi' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Lưu đoạn văn' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Lưu audio' })).toBeDisabled()
+    expect(screen.queryByRole('button', { name: 'Xuất bản ngay' })).not.toBeInTheDocument()
     fireEvent.change(screen.getByLabelText('Chọn phiên bản'), { target: { value: draftId } })
     expect(screen.getByRole('heading', { name: 'Bản 2 · Bản nháp' })).toBeInTheDocument()
     expect(screen.getByTestId('location')).toHaveTextContent(`version=${draftId}`)
@@ -74,7 +84,7 @@ describe('PackageEditorPage', () => {
     expect(await screen.findByText('Phiên bản chưa có phần nào')).toBeInTheDocument()
     expect(api.createDraftVersion).toHaveBeenCalledExactlyOnceWith(packageId, '{}')
     expect(api.getPackage).toHaveBeenCalledTimes(2)
-    expect(screen.getByTestId('location')).toHaveTextContent(`view=sections&version=${draftId}`)
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(`view=sections&version=${draftId}`))
   })
   it('preserves every persisted section field, including exact seconds and cover, when saving', async () => {
     show()
@@ -84,7 +94,7 @@ describe('PackageEditorPage', () => {
     fireEvent.submit(form)
     await waitFor(() => expect(api.updateSection).toHaveBeenCalledExactlyOnceWith(packageId, draftId, sectionId, { ...sectionRequest, title: 'Revised Reading' }))
     await waitFor(() => expect(api.getPackage).toHaveBeenCalledTimes(2))
-    expect(screen.queryByRole('form')).not.toBeInTheDocument()
+    expect(screen.queryByRole('form', { name: 'Sửa phần Reading One' })).not.toBeInTheDocument()
   })
   it('preserves a negative stored sort order when saving section metadata', async () => {
     api.getPackage.mockResolvedValue(makePackage([{ ...draft, sections: [{ ...section, sortOrder: -1 }] }]))
@@ -182,13 +192,14 @@ describe('PackageEditorPage', () => {
     expect(api.updateSection).toHaveBeenCalledTimes(1)
     await act(async () => write.resolve(section))
   })
-  it('shows question IDs and keeps unavailable authoring actions disabled', async () => {
+  it('shows rich question metadata and enables section content authoring in a draft', async () => {
     show()
     const article = await screen.findByRole('article', { name: 'Reading One' })
-    expect(within(article).getByText(section.questions[0]!.questionVersionId)).toBeInTheDocument()
-    for (const label of ['Soạn câu hỏi', 'Đoạn văn', 'Audio', 'Tải audio']) {
-      expect(within(article).getByRole('button', { name: `${label} · Chờ backend` })).toBeDisabled()
-    }
+    expect(within(article).getByText(section.questions[0]!.stem!)).toBeInTheDocument()
+    expect(within(article).getByRole('button', { name: 'Thêm câu hỏi' })).toBeEnabled()
+    expect(within(article).getByRole('button', { name: 'Lưu đoạn văn' })).toBeEnabled()
+    expect(within(article).getByRole('button', { name: 'Lưu audio' })).toBeEnabled()
+    expect(within(article).queryByText(/Chờ backend/)).not.toBeInTheDocument()
   })
   it('retries a failed detail load without starting any writes', async () => {
     api.getPackage.mockRejectedValueOnce(new HttpError(404, 'Package missing')).mockResolvedValue(makePackage())

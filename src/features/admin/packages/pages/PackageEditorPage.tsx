@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowDown, ArrowUp, Pencil, Plus, Trash2 } from 'lucide-react'
 import { z } from 'zod'
@@ -8,6 +8,10 @@ import { AdminPage } from '../../pages/AdminPage'
 import { addSection, createDraftVersion, deleteSection, getPackage, reorderSections, updateSection } from '../api/packageApi'
 import { SectionEditor } from '../components/SectionEditor'
 import { VersionPicker } from '../components/VersionPicker'
+import { PackagePreview } from '../components/PackagePreview'
+import { PublishPanel } from '../components/PublishPanel'
+import { SectionContentEditor } from '../components/SectionContentEditor'
+import { SectionQuestionsEditor } from '../components/SectionQuestionsEditor'
 import { PACKAGE_STATUS_LABEL, PACKAGE_TYPE_LABEL, SECTION_SKILL_LABEL, packageError } from '../lib/packageLabels'
 import type { ContentPackage, PackageSection, SectionRequest } from '../types'
 import '../packages.css'
@@ -20,6 +24,10 @@ function PackageEditor({ packageId }: { packageId: string }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const [previewRevision, setPreviewRevision] = useState(0)
+  const active = useRef(true)
+  useEffect(() => { active.current = true; return () => { active.current = false } }, [])
   if (resource.status === 'success' && resource.data !== shown) setShown(resource.data)
   const pkg = resource.status === 'success' ? resource.data : shown
   const requested = search.get('version')
@@ -40,15 +48,21 @@ function PackageEditor({ packageId }: { packageId: string }) {
     setSearch((previous) => { const next = new URLSearchParams(previous); next.set('version', id); return next })
   }
   async function mutate(action: () => Promise<unknown>, message: string, closeEditor = false) {
-    if (locked) return
+    if (locked) return false
     setBusy(true); setError(null); setNotice(null)
     try {
       await action()
       if (closeEditor) setEditing(null)
       setNotice(message)
+      setPreviewRevision((revision) => revision + 1)
       resource.reload()
-    } catch (reason) { setError(packageError(reason)) }
+      return true
+    } catch (reason) { setError(packageError(reason)); return false }
     finally { setBusy(false) }
+  }
+  async function mutateContent(action: () => Promise<unknown>, message: string) {
+    if (readOnly || editing) return false
+    return mutate(action, message)
   }
   async function save(body: SectionRequest, section?: PackageSection) {
     if (!selected || readOnly) return
@@ -77,7 +91,7 @@ function PackageEditor({ packageId }: { packageId: string }) {
           if (editing || pkg.versions.some((version) => version.status === 'DRAFT')) return
           void mutate(async () => {
             const draft = await createDraftVersion(packageId, '{}')
-            setSearch((previous) => { const next = new URLSearchParams(previous); next.set('version', draft.id); return next })
+            if (active.current) setSearch((previous) => { const next = new URLSearchParams(previous); next.set('version', draft.id); return next })
           }, 'Đã tạo bản nháp trống.')
         }} />
         {error ? <div className="adm-alert adm-alert--error" role="alert">{error}<div><button className="adm-btn" type="button" disabled={locked} onClick={resource.reload}>Tải lại gói</button></div></div> : null}
@@ -100,16 +114,15 @@ function PackageEditor({ packageId }: { packageId: string }) {
               <button className="adm-btn adm-btn--danger" type="button" disabled={locked || !!editing} onClick={() => remove(section)} aria-label={`Xóa ${section.title}`}><Trash2 size={16} aria-hidden="true" /> Xóa phần</button>
             </div> : null}
             {editing?.versionId === selected.id && editing.id === section.id && !readOnly ? <SectionEditor section={section} sortOrder={section.sortOrder} busy={locked} onSave={(body) => save(body, section)} onCancel={() => { setEditing(null); setError(null) }} /> : null}
-            <details><summary>Câu hỏi hiện có ({section.questions.length})</summary>
-              <p className="adm-muted">Hiện chỉ có ID phiên bản câu hỏi, thứ tự và điểm. Nội dung câu hỏi: Chờ backend.</p>
-              <ol>{section.questions.map((question) => <li key={question.id}><span className="adm-package-question-id">{question.questionVersionId}</span> · Thứ tự {question.sortOrder} · {question.maxScore} điểm</li>)}</ol>
-            </details>
-            <div className="adm-package-actions">{['Soạn câu hỏi', 'Đoạn văn', 'Audio', 'Tải audio'].map((label) => <button className="adm-btn" key={label} disabled title="Chờ backend" type="button">{label} · Chờ backend</button>)}</div>
+            <SectionQuestionsEditor packageId={packageId} versionId={selected.id} section={section} packageType={pkg.packageType} disabled={locked || readOnly || !!editing} onSaved={() => {}} onMutate={mutateContent} />
+            <SectionContentEditor packageId={packageId} versionId={selected.id} section={section} disabled={locked || readOnly || !!editing} onSaved={() => {}} onMutate={mutateContent} />
           </article>)}
           {!readOnly ? <div className="adm-package-section">
             <button className="adm-btn" type="button" disabled={locked || !!editing} onClick={() => { setError(null); setNotice(null); setEditing({ id: 'new', versionId: selected.id }) }}><Plus size={16} aria-hidden="true" /> Thêm phần</button>
             {editing?.versionId === selected.id && editing.id === 'new' ? <SectionEditor sortOrder={Math.max(0, ...sections.map((section) => section.sortOrder)) + 1} busy={locked} onSave={(body) => save(body)} onCancel={() => { setEditing(null); setError(null) }} /> : null}
           </div> : null}
+          <PublishPanel key={selected.id} packageId={packageId} version={selected} packageType={pkg.packageType} disabled={locked || !!editing} onMutate={mutateContent} onPreview={() => setPreviewOpen(true)} />
+          {previewOpen ? <PackagePreview key={`${selected.id}:${previewRevision}`} packageId={packageId} versionId={selected.id} onClose={() => setPreviewOpen(false)} /> : null}
         </section> : null}
       </> : null}
     </div>
