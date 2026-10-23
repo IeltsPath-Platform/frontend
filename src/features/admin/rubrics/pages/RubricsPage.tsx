@@ -6,7 +6,9 @@ import { AdminPage } from '../../pages/AdminPage'
 import { fetchActiveRubrics, fetchDraftRubrics } from '../api/rubricApi'
 import { RubricEditor } from '../components/RubricEditor'
 import { RubricView } from '../components/RubricView'
+import { RubricVersionDraftAction } from '../components/RubricVersionDraftAction'
 import { rubricDraft, rubricRequest } from '../lib/rubricDraft'
+import { RUBRIC_VERSIONS_ENABLED } from '../rubricFlags'
 import { type RubricRequest, type WritingTask } from '../types'
 import '../rubrics.css'
 
@@ -24,16 +26,18 @@ function TaskRubrics({ task }: { task: WritingTask }) {
       {active.status === 'error' ? <AdminError message={active.error!} onRetry={active.reload} /> : null}
       {active.status === 'success' && !active.data?.length ? <AdminEmpty title="Chưa có rubric đang dùng cho Task này" /> : null}
       {active.data?.map((rubric) => {
-        const nextDraft = drafts.status === 'success' ? rubricDraft(rubric, [...(active.data ?? []), ...(drafts.data ?? [])]) : null
+        const nextDraft = !RUBRIC_VERSIONS_ENABLED && drafts.status === 'success' ? rubricDraft(rubric, [...(active.data ?? []), ...(drafts.data ?? [])]) : null
         return <div key={`${rubric.code}-${rubric.version}`}>
           <details className="adm-rubric-active">
             <summary>{rubric.code} · Phiên bản {rubric.version} · Đang dùng</summary>
             <RubricView rubric={rubric} />
           </details>
-          {nextDraft ? <p className="adm-muted">Bản tiếp theo: {nextDraft.version} (theo các phiên bản đã tải).</p> : null}
-          <button className="adm-btn" type="button" disabled={!nextDraft || !!editing} onClick={() => {
-            if (nextDraft) setEditing({ body: nextDraft, persisted: false })
-          }}>Tạo bản nháp từ bản đang dùng</button>
+          {RUBRIC_VERSIONS_ENABLED ? <RubricVersionDraftAction rubric={rubric} disabled={!!editing} onCreate={(body) => setEditing({ body, persisted: false })} /> : <>
+            {nextDraft ? <p className="adm-muted">Bản tiếp theo: {nextDraft.version} (theo các phiên bản đã tải).</p> : null}
+            <button className="adm-btn" type="button" disabled={!nextDraft || !!editing} onClick={() => {
+              if (nextDraft) setEditing({ body: nextDraft, persisted: false })
+            }}>Tạo bản nháp từ bản đang dùng</button>
+          </>}
         </div>
       })}
     </section>

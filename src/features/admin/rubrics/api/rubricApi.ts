@@ -1,12 +1,15 @@
 import { z } from 'zod'
 import { apiRequest } from '@/lib/httpClient'
-import { rubricSchema, type RubricRequest, type WritingTask } from '../types'
+import { rubricSchema, rubricVersionSchema, type RubricRequest, type WritingTask } from '../types'
 
 export async function fetchActiveRubrics(task: WritingTask, signal?: AbortSignal) {
   return z.array(rubricSchema).parse(await apiRequest<unknown>(`/api/content/rubrics?${new URLSearchParams({ task })}`, { auth: true, signal }))
 }
 export async function fetchDraftRubrics(task: WritingTask, signal?: AbortSignal) {
   return z.array(rubricSchema).parse(await apiRequest<unknown>(`/api/content/admin/rubrics?${new URLSearchParams({ task })}`, { auth: true, signal }))
+}
+export async function fetchRubricVersions(code: string, signal?: AbortSignal) {
+  return z.array(rubricVersionSchema).parse(await apiRequest<unknown>(`/api/content/admin/rubrics/versions?code=${encodeURIComponent(code)}`, { auth: true, signal }))
 }
 export async function createRubric(body: RubricRequest) {
   return rubricSchema.parse(await apiRequest<unknown>('/api/content/admin/rubrics', { auth: true, method: 'POST', body }))
