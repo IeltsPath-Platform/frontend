@@ -1,1 +1,1 @@
-export const QUESTION_DRAFTS_ENABLED = false
+export const QUESTION_DRAFTS_ENABLED = true

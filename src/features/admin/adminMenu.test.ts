@@ -12,7 +12,7 @@ describe('adminMenu', () => {
     expect(menuFor(['CONTENT_AUTHOR']).map((item) => item.path)).toEqual([
       '/content-author/content', '/content-author/courses', '/content-author/knowledge-graph', '/content-author/lessons', '/content-author/questions', '/content-author/packages', '/content-author/course-drafts', '/content-author/course-import',
       '/content-author/work-items', '/content-author/examiner-review', '/content-author/ai-evaluation',
-      '/content-author/rubrics', '/content-author/error-types',
+      '/content-author/rubrics', '/content-author/error-types', '/content-author/ai-drafts',
     ])
   })
 
@@ -49,8 +49,9 @@ describe('adminMenu', () => {
     expect(rolesFor('/admin/unknown')).toEqual([])
   })
 
-  it('hides question generation during rollout while preserving content-author route roles', () => {
-    expect(menuFor(['CONTENT_AUTHOR']).some((item) => item.path === '/content-author/ai-drafts')).toBe(false)
+  it('shows question generation only to content authors', () => {
+    expect(menuFor(['CONTENT_AUTHOR']).some((item) => item.path === '/content-author/ai-drafts')).toBe(true)
+    for (const role of ['ADMIN', 'EXAMINER', 'CUSTOMER']) expect(menuFor([role]).some((item) => item.path === '/content-author/ai-drafts')).toBe(false)
     expect(rolesFor('/content-author/ai-drafts')).toEqual(['CONTENT_AUTHOR'])
     expect(rolesFor('/admin/ai-drafts')).toEqual([])
   })
