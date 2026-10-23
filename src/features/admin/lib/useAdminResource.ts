@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useEffectEvent, useState } from 'react'
+import { ZodError } from 'zod'
+import { HttpError } from '@/lib/httpClient'
 import { adminErrorMessage, isAbort } from './adminErrors'
 
 export interface AdminResource<T> {
@@ -27,6 +29,13 @@ export function useAdminResource<T>(key: string, load: (signal: AbortSignal) => 
       (data) => { if (!controller.signal.aborted) setSettled({ requestKey, data, error: null }) },
       (reason: unknown) => {
         if (controller.signal.aborted || isAbort(reason)) return
+        // A response the client cannot parse (not an HTTP error) otherwise shows only the generic message.
+        if (!(reason instanceof HttpError)) {
+          const issues = reason instanceof ZodError
+            ? reason.issues.slice(0, 8).map((issue) => `${issue.path.join('.')}: ${issue.message}`).join('\n')
+            : ''
+          console.error(`Admin resource "${requestKey}" failed\n${issues}`, reason)
+        }
         setSettled({ requestKey, data: null, error: adminErrorMessage(reason) })
       },
     )

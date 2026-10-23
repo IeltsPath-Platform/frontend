@@ -9,7 +9,7 @@ const nonblank = z.string().refine((value) => value.trim().length > 0)
 const bandSchema = z.number().min(0).max(9).multipleOf(0.5)
 const finalTestSchema = z.object({ code: codeSchema, title: nonblank.max(255) })
 
-export const courseGapSchema = z.object({ knowledgePointId: z.uuid(), reason: z.string() })
+export const courseGapSchema = z.object({ knowledgePointId: z.guid(), reason: z.string() })
 export const courseAnalysisIssueSchema = z.object({ code: z.string(), subject: z.string().nullable(), related: z.string().nullable() })
 export const courseAnalysisSchema = z.object({
   valid: z.boolean(), errors: z.array(courseAnalysisIssueSchema), warnings: z.array(courseAnalysisIssueSchema),
@@ -18,7 +18,7 @@ export const courseAnalysisSchema = z.object({
 
 export const courseBlockSchema = z.object({
   type: z.enum(['TEXT', 'EXERCISE']), text: z.string().max(20000).nullable(),
-  knowledgePointIds: z.array(z.uuid()).max(50), questionRefs: z.array(nonblank.max(100)).max(100),
+  knowledgePointIds: z.array(z.guid()).max(50), questionRefs: z.array(nonblank.max(100)).max(100),
 }).superRefine((block, ctx) => {
   if (block.type === 'TEXT' && block.questionRefs.length) ctx.addIssue({ code: 'custom', path: ['questionRefs'], message: 'Block văn bản không có câu hỏi.' })
   if (block.type === 'EXERCISE') {
@@ -30,7 +30,7 @@ export const courseBlockSchema = z.object({
 
 export const courseLessonSchema = z.object({
   code: codeSchema, title: nonblank.max(255), summary: z.string().max(2000).nullable(),
-  knowledgePointIds: z.array(z.uuid()).max(50), blocks: z.array(courseBlockSchema).max(50), practiceSetPackageIds: z.array(z.uuid()).max(20),
+  knowledgePointIds: z.array(z.guid()).max(50), blocks: z.array(courseBlockSchema).max(50), practiceSetPackageIds: z.array(z.guid()).max(20),
 })
 export const courseTopicSchema = z.object({
   code: codeSchema, name: nonblank.max(255), skill: skillSchema, sortOrder: z.int().min(0).max(2147483647),
@@ -39,7 +39,7 @@ export const courseTopicSchema = z.object({
 export const courseStructureSchema = z.object({
   course: z.object({ code: codeSchema, name: nonblank.max(255), bandLevel: bandSchema }).nullable(),
   topics: z.array(courseTopicSchema).max(30), courseTest: finalTestSchema.nullable(),
-  practiceTestMilestones: z.array(z.object({ packageId: z.uuid(), afterTopicSequence: z.int().positive() })).max(100),
+  practiceTestMilestones: z.array(z.object({ packageId: z.guid(), afterTopicSequence: z.int().positive() })).max(100),
   gaps: z.array(courseGapSchema),
 }).superRefine((structure, ctx) => {
   const topics = new Set<string>()
@@ -67,7 +67,7 @@ export const courseGenerationRequestSchema = z.object({
   bandLevel: bandSchema,
   skills: z.array(skillSchema).min(1).max(4).refine((skills) => new Set(skills).size === skills.length),
   topics: z.array(nonblank.max(100)).max(10).default([]),
-  knowledgePointIds: z.array(z.uuid()).max(COURSE_CANDIDATE_LIMIT).default([]),
+  knowledgePointIds: z.array(z.guid()).max(COURSE_CANDIDATE_LIMIT).default([]),
   lessonCount: z.int().min(1).max(30).nullable().optional(), instructions: z.string().max(500).nullable().optional(),
 }).refine((body) => body.topics.length > 0 || body.knowledgePointIds.length > 0, { message: 'Chọn kiến thức hoặc nhập chủ đề.' })
 
@@ -75,7 +75,7 @@ export const courseDraftResultSchema = courseStructureSchema.safeExtend({
   unmatchedTopics: z.array(z.string()).optional(),
   warnings: z.array(z.object({ code: z.string(), subject: z.string() })).optional(),
   analysis: courseAnalysisSchema.optional(),
-  gapHints: z.array(z.object({ knowledgePointId: z.uuid(), reason: z.string(), action: z.literal('REQUEST_QUESTION_DRAFT') })).optional(),
+  gapHints: z.array(z.object({ knowledgePointId: z.guid(), reason: z.string(), action: z.literal('REQUEST_QUESTION_DRAFT') })).optional(),
 })
 export const courseDraftSchema = aiDraftSchema.extend({
   kind: z.literal('COURSE'),
@@ -83,7 +83,7 @@ export const courseDraftSchema = aiDraftSchema.extend({
   result: courseDraftResultSchema.nullable(),
 })
 export const courseApprovalSchema = z.object({
-  draftId: z.uuid(), courseId: z.uuid(), topicIds: z.array(z.uuid()), lessonIds: z.array(z.uuid()), finalTestPackageIds: z.array(z.uuid()),
+  draftId: z.guid(), courseId: z.guid(), topicIds: z.array(z.guid()), lessonIds: z.array(z.guid()), finalTestPackageIds: z.array(z.guid()),
 })
 
 export type CourseStructure = z.infer<typeof courseStructureSchema>

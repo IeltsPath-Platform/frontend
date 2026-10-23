@@ -37,4 +37,4 @@ function EvaluationRun({ id }: { id: string }) {
     </> : null}{error ? <p className="adm-alert adm-alert--error" role="alert">{error}</p> : null}{notice ? <p role="status">{notice} <Link to="/content-author/ai-evaluation">Xem bản đang sử dụng</Link></p> : null}
   </div></AdminPage>
 }
-export function EvaluationRunPage() { const { runId } = useParams<{ runId: string }>(); const id = z.uuid().safeParse(runId); return id.success ? <EvaluationRun id={id.data} key={id.data} /> : <AdminPage title="Chi tiết lượt đánh giá"><AdminError message="ID lượt đánh giá không hợp lệ." /></AdminPage> }
+export function EvaluationRunPage() { const { runId } = useParams<{ runId: string }>(); const id = z.guid().safeParse(runId); return id.success ? <EvaluationRun id={id.data} key={id.data} /> : <AdminPage title="Chi tiết lượt đánh giá"><AdminError message="ID lượt đánh giá không hợp lệ." /></AdminPage> }

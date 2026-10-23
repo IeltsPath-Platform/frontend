@@ -65,6 +65,6 @@ function CourseDetail({ id }: { id: string }) {
 }
 export function CourseDraftDetailPage() {
   const { draftId } = useParams<{ draftId: string }>()
-  const id = z.uuid().safeParse(draftId)
+  const id = z.guid().safeParse(draftId)
   return id.success ? <CourseDetail id={id.data} key={id.data} /> : <AdminPage title="Bản nháp khóa học"><AdminError message="ID bản nháp không hợp lệ." /></AdminPage>
 }

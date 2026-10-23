@@ -8,7 +8,7 @@ export const aiDraftStatusSchema = z.enum(AI_DRAFT_STATUSES)
 const jsonObjectSchema = z.record(z.string(), z.json())
 
 export const aiDraftSchema = z.object({
-  id: z.uuid(),
+  id: z.guid(),
   kind: aiDraftKindSchema,
   status: aiDraftStatusSchema,
   request: jsonObjectSchema,
@@ -46,7 +46,7 @@ export const QUESTION_DRAFT_REJECTION_REASONS = [
 ] as const
 
 export const questionGenerationRequestSchema = z.object({
-  knowledgePointId: z.uuid(),
+  knowledgePointId: z.guid(),
   questionType: z.enum(QUESTION_DRAFT_TYPES),
   count: z.number().int().min(1).max(QUESTION_DRAFT_MAX_ITEMS),
   difficulty: z.enum(QUESTION_DIFFICULTIES),

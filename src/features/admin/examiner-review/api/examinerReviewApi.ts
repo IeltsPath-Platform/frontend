@@ -21,11 +21,11 @@ export async function listMyReviews(page = 0, signal?: AbortSignal) {
 }
 
 export async function claimReview(jobId: string) {
-  return queueEntrySchema.parse(await apiRequest<unknown>(`${QA}/${z.uuid().parse(jobId)}/claim`, { auth: true, method: 'POST' }))
+  return queueEntrySchema.parse(await apiRequest<unknown>(`${QA}/${z.guid().parse(jobId)}/claim`, { auth: true, method: 'POST' }))
 }
 
 export async function getReviewEssay(jobId: string, signal?: AbortSignal) {
-  return reviewEssaySchema.parse(await apiRequest<unknown>(`${QA}/${z.uuid().parse(jobId)}/essay`, { auth: true, signal }))
+  return reviewEssaySchema.parse(await apiRequest<unknown>(`${QA}/${z.guid().parse(jobId)}/essay`, { auth: true, signal }))
 }
 
 export async function submitReview(body: ReviewBody) {

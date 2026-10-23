@@ -128,7 +128,7 @@ function DraftDetail({ draftId }: { draftId: string }) {
 
 function DraftDetailRoute() {
   const { draftId } = useParams<{ draftId: string }>()
-  const parsed = z.uuid().safeParse(draftId)
+  const parsed = z.guid().safeParse(draftId)
   return parsed.success ? <DraftDetail key={parsed.data} draftId={parsed.data} /> : <AdminPage title="Bản nháp câu hỏi"><AdminError message="ID bản nháp không hợp lệ." /></AdminPage>
 }
 export function AiDraftDetailPage() { return QUESTION_DRAFTS_ENABLED ? <DraftDetailRoute /> : <DraftUnavailable /> }

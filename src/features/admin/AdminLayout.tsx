@@ -1,7 +1,7 @@
 import { Outlet, useLocation } from 'react-router-dom'
 import { ErrorBoundary } from '@/app/ErrorBoundary'
 import { useAuthSession } from '@/features/auth/authSession'
-import { menuFor } from './adminMenu'
+import { menuEntriesFor } from './adminMenu'
 import { AdminSearchProvider } from './AdminSearchProvider'
 import { AdminSidebar } from './AdminSidebar'
 import { AdminTopbar } from './AdminTopbar'
@@ -16,7 +16,7 @@ export function AdminLayout() {
       <div className="adm-theme adm-shell">
         <a className="adm-skip" href="#admin-main">Bỏ qua điều hướng</a>
         <AdminTopbar />
-        <AdminSidebar items={menuFor(roles)} />
+        <AdminSidebar entries={menuEntriesFor(roles)} />
         <main className="adm-main" id="admin-main">
           <ErrorBoundary key={pathname} title="Không thể hiển thị trang quản trị">
             <Outlet />
