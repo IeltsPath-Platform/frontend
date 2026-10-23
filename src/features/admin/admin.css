@@ -76,10 +76,21 @@
 .adm-search input:focus-visible { outline: none; }
 .adm-search input::placeholder { color: #7c89a3; }
 
+/* A grouped sidebar entry is a button, so it is reset first and then styled by .adm-nav below like a plain link. */
+.adm-group__trigger { width: 100%; appearance: none; background: transparent; border: 0; font: inherit; cursor: pointer; }
 .adm-nav { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 66px; padding: 8px 4px; color: var(--adm-muted); text-decoration: none; font-size: .72rem; font-weight: 600; text-align: center; border-left: 3px solid transparent; }
 .adm-nav:hover { color: var(--adm-accent-strong); background: rgb(255 255 255 / 55%); }
 .adm-nav.is-active { color: var(--adm-accent); background: var(--adm-surface); border-left-color: var(--adm-accent); }
 @media (max-width: 767px) { .adm-nav { border-left: 0; border-top: 3px solid transparent; } .adm-nav.is-active { border-top-color: var(--adm-accent); } }
+
+/* The sub-menu of a grouped entry. Fixed-positioned by AdminSidebar so the sidebar's scrolling cannot clip it. */
+.adm-sidebar .adm-flyout { position: fixed; z-index: 40; display: block; min-width: 220px; max-width: calc(100vw - 16px); margin: 0; padding: 6px; list-style: none; background: var(--adm-surface); border: 1px solid var(--adm-border); border-radius: var(--adm-radius); box-shadow: 0 12px 28px rgb(13 43 141 / 18%); visibility: hidden; opacity: 0; transition: opacity .12s ease; }
+.adm-sidebar .adm-flyout.is-open { visibility: visible; opacity: 1; }
+.adm-sidebar .adm-flyout li { flex: none; }
+.adm-flyout__link { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 6px; color: var(--adm-text); text-decoration: none; font-size: .86rem; font-weight: 600; }
+.adm-flyout__link:hover { background: var(--adm-surface-2); color: var(--adm-accent-strong); }
+.adm-flyout__link.is-active { background: var(--adm-accent-soft); color: var(--adm-accent); }
+@media (prefers-reduced-motion: reduce) { .adm-sidebar .adm-flyout { transition: none; } }
 
 .adm-account { position: relative; margin-left: auto; }
 .adm-account__button { display: flex; align-items: center; gap: 10px; background: transparent; border: 0; color: #fff; cursor: pointer; padding: 4px 6px; border-radius: 8px; font: inherit; }
