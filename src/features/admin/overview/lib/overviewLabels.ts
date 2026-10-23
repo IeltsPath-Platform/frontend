@@ -1,12 +1,5 @@
 import type { QuestionStat } from '../types'
 
-export const WORK_KIND_LABEL: Record<string, string> = {
-  CONTENT_GAP: 'Thiếu bộ câu hỏi ôn tập',
-  QUESTION_TOO_EASY: 'Câu hỏi quá dễ',
-  QUESTION_TOO_HARD: 'Câu hỏi quá khó',
-  EDGE_SUSPECT: 'Cạnh tiên quyết đáng ngờ',
-}
-
 export const WORK_STATUS_LABEL: Record<string, string> = { OPEN: 'Mới', IN_PROGRESS: 'Đang làm', DONE: 'Xong' }
 
 /** Skills in display order, with the colour token each one already has in the admin theme. */

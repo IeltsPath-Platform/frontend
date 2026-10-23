@@ -21,16 +21,8 @@ export const contentOverviewSchema = z.object({
   lessons: counts.nullish(),
 })
 
-/** One item of `GET /api/learning/admin/work-items` (`StaffRecords.WorkItem`). */
-export const workItemSchema = z.object({
-  id: z.string(),
-  queue: z.string(),
-  kind: z.string(),
-  subjectRef: z.string().nullish(),
-  detail: z.string().nullish(),
-  status: z.string(),
-  createdAt: z.string().nullish(),
-})
+/** One item of `GET /api/learning/admin/work-items`; the schema is shared with the work queue screen. */
+export { workItemSchema } from '../work-queue/types'
 
 /** `GET /api/learning/admin/question-stats`. */
 export const questionStatsSchema = z.object({
@@ -47,5 +39,5 @@ export const questionStatsSchema = z.object({
 })
 
 export type ContentOverview = z.infer<typeof contentOverviewSchema>
-export type WorkItem = z.infer<typeof workItemSchema>
+export type { WorkItem } from '../work-queue/types'
 export type QuestionStat = z.infer<typeof questionStatsSchema>['questions'][number]

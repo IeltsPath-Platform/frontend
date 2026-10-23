@@ -1,0 +1,6 @@
+.adm-import-workspace { display: grid; gap: 1.25rem; min-width: 0; }
+.adm-import-workspace > *, .adm-import-workspace .adm-card { min-width: 0; }
+.adm-import-workspace input { max-width: 100%; min-width: 0; font-size: 1rem; }
+.adm-import-actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-block: 1rem; }
+.adm-import-actions .adm-btn { min-height: 44px; }
+.adm-import-workspace td { overflow-wrap: anywhere; }

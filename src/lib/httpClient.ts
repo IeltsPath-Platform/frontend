@@ -63,8 +63,8 @@ export function onSessionExpired(listener: (() => void) | null) {
   sessionExpiredListener = listener
 }
 
-async function send(path: string, options: RequestOptions, bearer?: string | null): Promise<Response> {
-  const headers: Record<string, string> = { Accept: 'application/json' }
+async function send(path: string, options: RequestOptions, bearer?: string | null, accept = 'application/json'): Promise<Response> {
+  const headers: Record<string, string> = { Accept: accept }
   const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData
   if (options.body !== undefined && !isFormData) headers['Content-Type'] = 'application/json'
   if (bearer) headers.Authorization = `Bearer ${bearer}`
@@ -134,8 +134,8 @@ function refreshOnce() {
   return refreshInFlight
 }
 
-export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  if (!options.auth) return parse<T>(await send(path, options))
+async function requestResponse(path: string, options: RequestOptions, accept?: string): Promise<Response> {
+  if (!options.auth) return send(path, options, null, accept)
 
   const current = accessToken
   if (!current) {
@@ -144,11 +144,11 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
       sessionExpiredListener?.()
       throw new HttpError(401, 'Phiên đăng nhập đã hết hạn.')
     }
-    return parse<T>(await send(path, options, refreshed))
+    return send(path, options, refreshed, accept)
   }
 
-  const response = await send(path, options, current)
-  if (response.status !== 401) return parse<T>(response)
+  const response = await send(path, options, current, accept)
+  if (response.status !== 401) return response
 
   const latest = accessToken
   const refreshed = latest && latest !== current ? latest : await refreshOnce()
@@ -156,13 +156,23 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     sessionExpiredListener?.()
     throw new HttpError(401, 'Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.')
   }
-  const retry = await send(path, options, refreshed)
+  const retry = await send(path, options, refreshed, accept)
   if (retry.status === 401) {
     accessToken = null
     sessionExpiredListener?.()
     throw new HttpError(401, 'Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.')
   }
-  return parse<T>(retry)
+  return retry
+}
+
+export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  return parse<T>(await requestResponse(path, options))
+}
+
+export async function apiDownload(path: string, options: { signal?: AbortSignal } = {}): Promise<Blob> {
+  const response = await requestResponse(path, { auth: true, signal: options.signal }, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+  if (!response.ok) await parse<unknown>(response)
+  return response.blob()
 }
 
 /** Boot helper: try cookie refresh without throwing on failure. */

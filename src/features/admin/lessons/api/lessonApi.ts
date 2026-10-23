@@ -3,6 +3,11 @@ import { apiRequest } from '@/lib/httpClient'
 import {
   lessonEditorSchema,
   lessonSummarySchema,
+  lessonResourceSchema,
+  lessonResourcesSchema,
+  lessonResourceOrderSchema,
+  type LessonResourceRequest,
+  type LessonResourceType,
   type BlockRequest,
   type LessonEditor,
   type LessonMetaRequest,
@@ -22,6 +27,9 @@ interface TopicNode {
   skill?: string | null
   courseId?: string | null
   children?: TopicNode[] | null
+  parentTopicId?: string | null
+  bandMin?: number | null
+  bandMax?: number | null
 }
 
 const topicNodeSchema: z.ZodType<TopicNode> = z.lazy(() =>
@@ -34,9 +42,12 @@ const topicNodeSchema: z.ZodType<TopicNode> = z.lazy(() =>
     skill: z.string().nullish(),
     courseId: z.string().nullish(),
     children: z.array(topicNodeSchema).nullish(),
+    parentTopicId: z.string().nullish(),
+    bandMin: z.number().nullish(),
+    bandMax: z.number().nullish(),
   }))
 
-function flatten(nodes: readonly TopicNode[]): TopicOption[] {
+function flatten(nodes: readonly TopicNode[], parentTopicId: string | null = null): TopicOption[] {
   return nodes.flatMap((node) => [
     {
       id: node.id,
@@ -46,8 +57,11 @@ function flatten(nodes: readonly TopicNode[]): TopicOption[] {
       courseId: node.courseId ?? null,
       status: node.status ?? 'ACTIVE',
       sortOrder: node.sortOrder ?? 0,
+      parentTopicId: node.parentTopicId ?? parentTopicId,
+      bandMin: node.bandMin ?? null,
+      bandMax: node.bandMax ?? null,
     },
-    ...flatten(node.children ?? []),
+    ...flatten(node.children ?? [], node.id),
   ])
 }
 
@@ -109,6 +123,27 @@ export async function publishLesson(lessonId: string): Promise<void> {
 
 export async function archiveLesson(lessonId: string): Promise<void> {
   await write(`/lessons/${lessonId}/archive`, 'POST')
+}
+
+export async function fetchLessonResources(lessonId: string, signal?: AbortSignal) {
+  return lessonResourcesSchema.parse(await apiRequest<unknown>(`${ADMIN}/lessons/${lessonId}/resources`, { auth: true, signal }))
+}
+
+export async function createLessonResource(lessonId: string, body: LessonResourceRequest & { type: LessonResourceType }) {
+  return lessonResourceSchema.parse(await write(`/lessons/${lessonId}/resources`, 'POST', body))
+}
+
+export async function updateLessonResource(lessonId: string, resourceId: string, body: LessonResourceRequest) {
+  return lessonResourceSchema.parse(await write(`/lessons/${lessonId}/resources/${resourceId}`, 'PUT', body))
+}
+
+export async function deleteLessonResource(lessonId: string, resourceId: string): Promise<void> {
+  await write(`/lessons/${lessonId}/resources/${resourceId}`, 'DELETE')
+}
+
+export async function reorderLessonResources(lessonId: string, type: LessonResourceType, resourceIds: string[]): Promise<void> {
+  const body = lessonResourceOrderSchema.parse({ type, resourceIds })
+  z.null().parse(await write(`/lessons/${lessonId}/resources/order`, 'PUT', body))
 }
 
 const vocabularySearchSchema = z.array(

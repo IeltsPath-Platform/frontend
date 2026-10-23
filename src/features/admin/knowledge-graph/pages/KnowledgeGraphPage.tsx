@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Controls, ReactFlow } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { useAuthSession } from '@/features/auth/authSession'
@@ -53,7 +54,8 @@ export function KnowledgeGraphPage() {
   const [includeInactive, setIncludeInactive] = useState(false)
   const [onlyFlagged, setOnlyFlagged] = useState(false)
   const [view, setView] = useState<'graph' | 'table'>('graph')
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [searchParams] = useSearchParams()
+  const [selectedId, setSelectedId] = useState<string | null>(searchParams.get('kp'))
 
   const wantInactive = canSeeInactive && includeInactive
   const filterKey = `${skill}|${courseId}|${wantInactive}`

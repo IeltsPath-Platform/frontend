@@ -110,6 +110,9 @@ export interface TopicOption {
   courseId: string | null
   status: string
   sortOrder: number
+  parentTopicId?: string | null
+  bandMin?: number | null
+  bandMax?: number | null
 }
 
 export type LessonSummary = z.output<typeof lessonSummarySchema>
@@ -135,3 +138,29 @@ export interface LessonMetaRequest {
 export interface NewLessonRequest extends LessonMetaRequest {
   code: string
 }
+
+export const lessonResourceSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  url: z.string(),
+  sortOrder: z.number().int().nonnegative(),
+})
+
+export const lessonResourcesSchema = z.object({
+  lessonId: z.string(),
+  summaryMarkdown: z.string().nullable(),
+  slides: z.array(lessonResourceSchema),
+  documents: z.array(lessonResourceSchema),
+})
+
+export type LessonResource = z.infer<typeof lessonResourceSchema>
+export type LessonResources = z.infer<typeof lessonResourcesSchema>
+export const lessonResourceTypeSchema = z.enum(['SLIDE', 'DOCUMENT'])
+export const lessonResourceOrderSchema = z.object({
+  type: lessonResourceTypeSchema,
+  resourceIds: z.array(z.uuid()).refine((ids) => new Set(ids).size === ids.length, {
+    message: 'Mỗi tài nguyên chỉ được xuất hiện một lần.',
+  }),
+})
+export type LessonResourceType = z.infer<typeof lessonResourceTypeSchema>
+export type LessonResourceRequest = Pick<LessonResource, 'title' | 'url' | 'sortOrder'>

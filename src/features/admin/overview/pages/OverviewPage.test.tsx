@@ -28,7 +28,7 @@ describe('OverviewPage', () => {
     })
     graph.fetchKnowledgeTreeHealth.mockResolvedValue({ isolatedIds: ['a', 'b'], missingMetadataIds: [], levelViolations: [] })
     api.fetchAuthorWorkItems.mockResolvedValue([
-      { id: 'w1', queue: 'CONTENT_AUTHOR', kind: 'CONTENT_GAP', detail: 'R55_SCAN ran out of sets', status: 'OPEN' },
+      { id: 'w1', queue: 'CONTENT_AUTHOR', kind: 'CONTENT_GAP', detail: '{"knowledgePointId":"kp1"}', status: 'OPEN', subject: { type: 'KNOWLEDGE_POINT', id: 'kp1', code: 'R55_SCAN', name: 'Scanning', occurrences: 3 } },
     ])
     api.fetchQuestionStats.mockResolvedValue([stat('aaaaaaaa-1', 40, 5), stat('bbbbbbbb-2', 30, 29), stat('cccccccc-3', 25, 12)])
   })
@@ -51,7 +51,9 @@ describe('OverviewPage', () => {
     expect(within(health).getAllByLabelText('Ổn')).toHaveLength(2)
     expect(within(health).getAllByLabelText('Cần xử lý')).toHaveLength(1)
 
-    expect(await screen.findByText('Thiếu bộ câu hỏi ôn tập')).toBeInTheDocument()
+    expect(await screen.findByText('KP thiếu bài luyện')).toBeInTheDocument()
+    expect(screen.getByText(/Scanning · Hết bài ôn 3 lần/)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Xem tất cả' })).toHaveAttribute('href', '/content-author/work-items')
     expect(await screen.findByText('13% đúng · 40 lượt')).toBeInTheDocument()
     expect(screen.getByText('97% đúng · 30 lượt')).toBeInTheDocument()
   })

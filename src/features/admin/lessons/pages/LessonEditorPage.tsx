@@ -11,6 +11,7 @@ import {
   setLessonKnowledgePoints, updateBlock, updateLesson,
 } from '../api/lessonApi'
 import { BlockEditor } from '../components/BlockEditor'
+import { LessonResourcesEditor } from '../components/LessonResourcesEditor'
 import { BLOCK_LABEL } from '../lib/blockLabels'
 import { moveId } from '../lib/blockForm'
 import { lessonErrorText, publishProblems } from '../lib/lessonErrors'
@@ -186,6 +187,7 @@ function LessonEditorBody({ lesson, reload }: { lesson: LessonEditor; reload: ()
       {exerciseLocked ? <div className="adm-alert" role="note">{EXERCISE_LOCK_NOTE}</div> : null}
 
       <MetaForm key={`meta-${lesson.title}-${lesson.summary}-${lesson.estimatedMinutes}`} lesson={lesson} onSaved={reload} />
+      <LessonResourcesEditor key={lesson.id} lessonId={lesson.id} />
       <KnowledgePointsPanel key={`kp-${lesson.knowledgePointIds.join(',')}`} lesson={lesson} onSaved={reload} />
 
       <section aria-label="Các block" className="ls-blocks">

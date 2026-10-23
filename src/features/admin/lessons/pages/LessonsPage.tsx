@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { ArrowDown, ArrowUp, Plus } from 'lucide-react'
 import { useAdminSearch } from '../../adminSearch'
 import { AdminEmpty, AdminError, AdminLoading } from '../../components/AdminState'
@@ -64,8 +64,10 @@ function NewLessonForm({ topicId, onCreated, onCancel }: { topicId: string; onCr
 
 export function LessonsPage() {
   const { query } = useAdminSearch()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [courseId, setCourseId] = useState('')
-  const [topicId, setTopicId] = useState('')
+  const topicId = searchParams.get('topicId') ?? ''
+  const setTopicId = (id: string) => setSearchParams((current) => { const next = new URLSearchParams(current); if (id) next.set('topicId', id); else next.delete('topicId'); return next })
   const [creating, setCreating] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
 

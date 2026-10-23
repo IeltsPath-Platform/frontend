@@ -21,3 +21,18 @@
 .ls-questions__list { max-height: 280px; overflow-y: auto; }
 .ls-questions__list li { padding: 6px 8px; border: 1px solid var(--adm-border); border-radius: 8px; background: var(--adm-bg); }
 .ls-questions__stem { margin: 6px 0 0; white-space: pre-wrap; color: var(--adm-muted); font-size: .9rem; }
+.adm-lesson-resources { margin-bottom: 18px; }
+.adm-resources-grid { display: grid; gap: 24px; min-width: 0; }
+.adm-resource-list { min-width: 0; }
+.adm-resource-list h3 { margin: 0 0 12px; font-size: 1rem; }
+.adm-resource-list ol { list-style: none; padding: 0; margin: 0 0 16px; display: grid; gap: 12px; }
+.adm-resource-list li { padding-bottom: 12px; border-bottom: 1px solid var(--adm-border); }
+.adm-resource-head { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.adm-resource-link { flex: 1 1 200px; min-width: 0; overflow-wrap: anywhere; display: grid; gap: 6px; }
+.adm-resource-link a { color: var(--adm-accent); }
+.adm-resource-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.adm-resource-actions .adm-btn { min-height: 44px; }
+.adm-resource-fields { min-width: 0; border: 0; padding: 0; margin: 0; }
+.adm-resource-fields legend { margin-bottom: 12px; font-weight: 600; }
+.adm-resource-fields .adm-input { font-size: 1rem; }
+@media (min-width: 1100px) { .adm-resources-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }

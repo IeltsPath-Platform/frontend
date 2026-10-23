@@ -16,6 +16,21 @@ import { ActivityPage } from './system/pages/ActivityPage'
 import { SystemOverviewPage } from './system/pages/SystemOverviewPage'
 import { QuestionBankPage } from './questions/pages/QuestionBankPage'
 import { QuestionDetailPage } from './questions/pages/QuestionDetailPage'
+import { CoursesPage } from './courses/pages/CoursesPage'
+import { RubricsPage } from './rubrics/pages/RubricsPage'
+import { ErrorTypesPage } from './error-types/pages/ErrorTypesPage'
+import { PackagesPage } from './packages/pages/PackagesPage'
+import { PackageEditorPage } from './packages/pages/PackageEditorPage'
+import { AiDraftsPage } from './ai-drafts/pages/AiDraftsPage'
+import { AiDraftDetailPage } from './ai-drafts/pages/AiDraftDetailPage'
+import { CourseDraftsPage } from './course-drafts/pages/CourseDraftsPage'
+import { CourseDraftDetailPage } from './course-drafts/pages/CourseDraftDetailPage'
+import { CourseImportPage } from './course-import/pages/CourseImportPage'
+import { WorkQueuePage } from './work-queue/pages/WorkQueuePage'
+import { ExaminerReviewPage } from './examiner-review/pages/ExaminerReviewPage'
+import { ReviewEssayPage } from './examiner-review/pages/ReviewEssayPage'
+import { AiEvaluationPage } from './ai-evaluation/pages/AiEvaluationPage'
+import { EvaluationRunPage } from './ai-evaluation/pages/EvaluationRunPage'
 
 /** A route is open only to the roles its menu item lists. */
 function Guard({ path, children }: { path: string; children: ReactNode }) {
@@ -47,6 +62,31 @@ export function AdminRoutes({ area = 'admin' }: { area?: 'admin' | 'content-auth
         <Route element={isAuthorArea ? <Navigate replace to="/content-author/content" /> : <AdminHome />} index />
         {isAuthorArea ? <>
           <Route element={<OverviewPage />} path="content" />
+          <Route element={<CoursesPage />} path="courses" />
+          <Route element={<RubricsPage />} path="rubrics" />
+          <Route element={<ErrorTypesPage />} path="error-types" />
+          <Route element={<Outlet />} path="ai-drafts">
+            <Route element={<AiDraftsPage />} index />
+            <Route element={<AiDraftDetailPage />} path=":draftId" />
+          </Route>
+          <Route element={<Outlet />} path="packages">
+            <Route element={<PackagesPage />} index />
+            <Route element={<PackageEditorPage />} path=":packageId" />
+          </Route>
+          <Route element={<Outlet />} path="course-drafts">
+            <Route element={<CourseDraftsPage />} index />
+            <Route element={<CourseDraftDetailPage />} path=":draftId" />
+          </Route>
+          <Route element={<CourseImportPage />} path="course-import" />
+          <Route element={<WorkQueuePage />} path="work-items" />
+          <Route element={<Outlet />} path="examiner-review">
+            <Route element={<ExaminerReviewPage />} index />
+            <Route element={<ReviewEssayPage />} path=":jobId" />
+          </Route>
+          <Route element={<Outlet />} path="ai-evaluation">
+            <Route element={<AiEvaluationPage />} index />
+            <Route element={<EvaluationRunPage />} path="runs/:runId" />
+          </Route>
           <Route element={<KnowledgeGraphPage />} path="knowledge-graph" />
           <Route element={<Outlet />} path="lessons">
             <Route element={<LessonsPage />} index />

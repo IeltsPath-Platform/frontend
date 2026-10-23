@@ -1,0 +1,7 @@
+.adm-evaluation-workspace { display: grid; gap: 1.25rem; min-width: 0; }
+.adm-evaluation-workspace > *, .adm-evaluation-workspace section, .adm-evaluation-workspace form { min-width: 0; }
+.adm-evaluation-fields { display: grid; gap: 1rem; border: 0; padding: 0; min-width: 0; }
+.adm-evaluation-fields input, .adm-evaluation-fields textarea, .adm-evaluation-fields select { font-size: 1rem; }
+.adm-evaluation-actions { display: flex; align-items: end; flex-wrap: wrap; gap: .75rem; border: 0; padding: 0; }
+.adm-evaluation-actions .adm-btn { min-height: 44px; }
+.adm-evaluation-workspace td { overflow-wrap: anywhere; }
