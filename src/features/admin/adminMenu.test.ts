@@ -36,4 +36,10 @@ describe('adminMenu', () => {
     expect(rolesFor('/admin/users')).toEqual(['ADMIN'])
     expect(rolesFor('/admin/unknown')).toEqual([])
   })
+
+  it('hides question generation during rollout while preserving content-author route roles', () => {
+    expect(menuFor(['CONTENT_AUTHOR']).some((item) => item.path === '/content-author/ai-drafts')).toBe(false)
+    expect(rolesFor('/content-author/ai-drafts')).toEqual(['CONTENT_AUTHOR'])
+    expect(rolesFor('/admin/ai-drafts')).toEqual([])
+  })
 })

@@ -21,6 +21,8 @@ import { RubricsPage } from './rubrics/pages/RubricsPage'
 import { ErrorTypesPage } from './error-types/pages/ErrorTypesPage'
 import { PackagesPage } from './packages/pages/PackagesPage'
 import { PackageEditorPage } from './packages/pages/PackageEditorPage'
+import { AiDraftsPage } from './ai-drafts/pages/AiDraftsPage'
+import { AiDraftDetailPage } from './ai-drafts/pages/AiDraftDetailPage'
 
 /** A route is open only to the roles its menu item lists. */
 function Guard({ path, children }: { path: string; children: ReactNode }) {
@@ -55,6 +57,10 @@ export function AdminRoutes({ area = 'admin' }: { area?: 'admin' | 'content-auth
           <Route element={<CoursesPage />} path="courses" />
           <Route element={<RubricsPage />} path="rubrics" />
           <Route element={<ErrorTypesPage />} path="error-types" />
+          <Route element={<Outlet />} path="ai-drafts">
+            <Route element={<AiDraftsPage />} index />
+            <Route element={<AiDraftDetailPage />} path=":draftId" />
+          </Route>
           <Route element={<Outlet />} path="packages">
             <Route element={<PackagesPage />} index />
             <Route element={<PackageEditorPage />} path=":packageId" />
