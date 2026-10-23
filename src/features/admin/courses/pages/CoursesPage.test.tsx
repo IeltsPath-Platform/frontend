@@ -123,6 +123,28 @@ describe('CoursesPage', () => {
     expect(stored.find((item) => item.id === 't2')?.sortOrder).toBe(2)
     await waitFor(() => expect(screen.getByRole('button', { name: 'Sửa Diễn đạt lại' })).toBeEnabled())
   })
+
+  it('preserves an edited tied order when the server rejects it without normalizing or retrying', async () => {
+    lessons.fetchTopics.mockResolvedValue([topics[0], { ...topics[1]!, sortOrder: 4 }, { ...topics[2]!, sortOrder: 4 }])
+    api.updateTopic.mockRejectedValue(new HttpError(400, 'Thứ tự chủ đề đã được sử dụng.'))
+    show()
+    fireEvent.click(await screen.findByRole('button', { name: 'Sửa Diễn đạt lại' }))
+    const form = screen.getByRole('form', { name: 'Sửa chủ đề' })
+    fireEvent.change(within(form).getByLabelText('Tên chủ đề'), { target: { value: 'Tên đang chỉnh sửa' } })
+    fireEvent.submit(form)
+    expect(await screen.findByRole('alert')).toHaveTextContent('Thứ tự chủ đề đã được sử dụng.')
+    expect(api.updateTopic).toHaveBeenCalledExactlyOnceWith('t2', {
+      name: 'Tên đang chỉnh sửa', parentTopicId: 't1', courseId: 'c1', skill: 'WRITING',
+      bandMin: 5, bandMax: 6, sortOrder: 4, status: 'ACTIVE',
+    })
+    expect(within(form).getByLabelText('Tên chủ đề')).toHaveValue('Tên đang chỉnh sửa')
+    expect(within(form).getByLabelText('Thứ tự chủ đề')).toHaveValue(4)
+    expect(within(form).getByRole('button', { name: 'Lưu chủ đề' })).toBeEnabled()
+    expect(lessons.fetchTopics).toHaveBeenCalledTimes(1)
+    fireEvent.click(within(form).getByRole('button', { name: 'Hủy' }))
+    expect(screen.getByRole('button', { name: 'Đưa Diễn đạt lại xuống' })).toBeDisabled()
+    expect(api.updateTopic).toHaveBeenCalledTimes(1)
+  })
   it('offers retry after a list failure', async () => {
     api.fetchCourses.mockRejectedValueOnce(new HttpError(503, 'Không tải được khóa học'))
     show()
