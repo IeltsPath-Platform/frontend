@@ -104,6 +104,20 @@ describe('AdminRoutes', () => {
     expect(screen.getByRole('link', { name: 'Bài học' })).toHaveAttribute('href', '/content-author/lessons')
   })
 
+  it('opens the package workspace for a content author', () => {
+    auth.mockReturnValue(session(['CONTENT_AUTHOR']))
+    renderAt('/content-author/packages')
+    expect(screen.getByRole('heading', { name: 'Đề & gói câu hỏi' })).toBeInTheDocument()
+    expect(screen.getByRole('form', { name: 'Mở gói có sẵn' })).toBeInTheDocument()
+  })
+
+  it.each(['ADMIN', 'CUSTOMER', 'EXAMINER'])('denies %s access to the package workspace', (role) => {
+    auth.mockReturnValue(session([role]))
+    renderAt('/content-author/packages')
+    expect(screen.getByRole('heading', { name: 'Bạn không có quyền truy cập' })).toBeInTheDocument()
+    expect(screen.queryByRole('form', { name: 'Mở gói có sẵn' })).not.toBeInTheDocument()
+  })
+
   it('redirects legacy lesson details without losing the query or fragment', () => {
     auth.mockReturnValue(session(['CONTENT_AUTHOR']))
     renderAt('/admin/lessons/lesson-1?view=questions#question-2')

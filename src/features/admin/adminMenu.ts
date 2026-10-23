@@ -1,6 +1,6 @@
 ﻿import { Activity, BookOpen, FileQuestion, Gauge, LayoutDashboard, Network, Server, Users, type LucideIcon } from 'lucide-react'
 import { hasAnyRole, type StaffRole } from '@/features/auth/staffRoles'
-import { Bug, Library, Scale } from 'lucide-react'
+import { Bug, ClipboardList, Library, Scale } from 'lucide-react'
 
 export interface AdminMenuItem {
   path: string
@@ -20,6 +20,7 @@ export const ADMIN_MENU: readonly AdminMenuItem[] = [
   { path: '/content-author/knowledge-graph', label: 'Cây tri thức', icon: Network, roles: ['CONTENT_AUTHOR', 'EXAMINER'] },
   { path: '/content-author/lessons', label: 'Bài học', icon: BookOpen, roles: ['CONTENT_AUTHOR'] },
   { path: '/content-author/questions', label: 'Ngân hàng câu hỏi', icon: FileQuestion, roles: ['CONTENT_AUTHOR'] },
+  { path: '/content-author/packages', label: 'Đề & gói câu hỏi', icon: ClipboardList, roles: ['CONTENT_AUTHOR'] },
   { path: '/content-author/rubrics', label: 'Rubric chấm Writing', icon: Scale, roles: ['CONTENT_AUTHOR'] },
   { path: '/content-author/error-types', label: 'Mã lỗi', icon: Bug, roles: ['CONTENT_AUTHOR'] },
 ]

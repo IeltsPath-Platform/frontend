@@ -1,0 +1,13 @@
+.adm-package-workspace { display: grid; gap: 18px; min-width: 0; overflow-wrap: anywhere; }
+.adm-package-workspace > *, .adm-package-form-grid > * { min-width: 0; }
+.adm-package-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.adm-package-actions .adm-btn, .adm-package-workspace .adm-btn { min-height: 44px; white-space: normal; }
+.adm-package-fields { min-width: 0; border: 0; padding: 0; margin: 0; }
+.adm-package-workspace .adm-input, .adm-package-workspace .adm-select, .adm-package-workspace .adm-textarea { font-size: 1rem; min-width: 0; }
+.adm-package-form-grid { display: grid; gap: 0 14px; }
+.adm-package-section { display: grid; gap: 14px; border-bottom: 1px solid var(--adm-border); padding: 18px 0; min-width: 0; }
+.adm-package-section h3, .adm-package-section p { margin: 0; }
+.adm-package-section ol { padding-left: 22px; }
+.adm-package-question-id { word-break: break-all; }
+.adm-package-section__instructions { white-space: pre-wrap; }
+@media (min-width: 760px) { .adm-package-form-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
