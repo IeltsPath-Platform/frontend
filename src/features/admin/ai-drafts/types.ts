@@ -42,7 +42,7 @@ export const QUESTION_DIFFICULTIES = ['EASY', 'MEDIUM', 'HARD'] as const
 export const QUESTION_DRAFT_MAX_ITEMS = 20
 export const QUESTION_DRAFT_REJECTION_REASONS = [
   'NOT_AN_OBJECT', 'BAD_STEM', 'NO_EXPLANATION', 'BAD_OPTIONS', 'CORRECT_NOT_AN_OPTION',
-  'DISTRACTOR_NOT_A_WRONG_OPTION', 'UNKNOWN_ERROR_CODE', 'NO_ACCEPTED_ANSWER',
+  'DISTRACTOR_NOT_A_WRONG_OPTION', 'UNKNOWN_ERROR_CODE', 'NO_ACCEPTED_ANSWER', 'DUPLICATE_STEM',
 ] as const
 
 export const questionGenerationRequestSchema = z.object({
@@ -50,7 +50,7 @@ export const questionGenerationRequestSchema = z.object({
   questionType: z.enum(QUESTION_DRAFT_TYPES),
   count: z.number().int().min(1).max(QUESTION_DRAFT_MAX_ITEMS),
   difficulty: z.enum(QUESTION_DIFFICULTIES),
-  instructions: z.string().max(500).optional(),
+  instructions: z.string().max(500).nullable().optional(),
 })
 
 const nonblankText = z.string().refine((value) => value.trim().length > 0)
@@ -85,3 +85,12 @@ export type QuestionGenerationRequest = z.infer<typeof questionGenerationRequest
 export type QuestionDraftItem = z.infer<typeof questionDraftItemSchema>
 export type QuestionDraft = z.infer<typeof questionDraftSchema>
 export type ApproveQuestionDraftRequest = z.infer<typeof approveQuestionDraftRequestSchema>
+
+export const questionDraftItemPatchSchema = z.object({
+  stem: z.string().max(4000).nullable().optional(), explanation: z.string().max(4000).nullable().optional(),
+  options: z.array(z.object({ optionKey: z.string().max(100), content: z.string().max(4000) })).max(6).nullable().optional(),
+  correct: z.string().max(100).nullable().optional(),
+  distractors: z.record(z.string().max(100), z.string().max(100)).nullable().optional(),
+  accepted: z.array(z.string().max(500)).max(20).nullable().optional(),
+})
+export type QuestionDraftItemPatch = z.infer<typeof questionDraftItemPatchSchema>

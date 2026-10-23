@@ -8,12 +8,14 @@ import {
   approveQuestionDraftRequestSchema,
   questionDraftSchema,
   questionGenerationRequestSchema,
+  questionDraftItemPatchSchema,
   type AiDraft,
   type AiDraftQuery,
   type RejectAiDraftRequest,
   type ApproveQuestionDraftRequest,
   type QuestionDraft,
   type QuestionGenerationRequest,
+  type QuestionDraftItemPatch,
 } from '../types'
 
 const ADMIN = '/api/content/admin/ai-drafts'
@@ -55,4 +57,18 @@ export async function approveQuestionDraft(id: string, body: ApproveQuestionDraf
   return questionDraftSchema.parse(await apiRequest<unknown>(`${ADMIN}/${draftId}/approve`, {
     method: 'POST', auth: true, body: request,
   }))
+}
+
+export async function patchQuestionDraftItem(id: string, index: number, body: QuestionDraftItemPatch): Promise<QuestionDraft> {
+  const draftId = z.uuid().parse(id)
+  const itemIndex = z.int().nonnegative().max(2147483647).parse(index)
+  return questionDraftSchema.parse(await apiRequest<unknown>(`${ADMIN}/${draftId}/items/${itemIndex}`, {
+    method: 'PATCH', auth: true, body: questionDraftItemPatchSchema.parse(body),
+  }))
+}
+
+export async function deleteQuestionDraftItem(id: string, index: number): Promise<QuestionDraft> {
+  const draftId = z.uuid().parse(id)
+  const itemIndex = z.int().nonnegative().max(2147483647).parse(index)
+  return questionDraftSchema.parse(await apiRequest<unknown>(`${ADMIN}/${draftId}/items/${itemIndex}`, { method: 'DELETE', auth: true }))
 }

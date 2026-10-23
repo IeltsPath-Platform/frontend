@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { API_BASE_URL } from '@/lib/env'
 import { clearAccessToken, setAccessToken } from '@/lib/httpClient'
 import { AI_DRAFT_STATUSES, QUESTION_DRAFT_TYPES, aiDraftSchema, questionDraftSchema, type AiDraft, type AiDraftQuery, type QuestionGenerationRequest } from '../types'
-import { approveQuestionDraft, fetchAiDraft, fetchAiDrafts, rejectAiDraft, requestQuestionDraft } from './aiDraftApi'
+import { approveQuestionDraft, deleteQuestionDraftItem, fetchAiDraft, fetchAiDrafts, patchQuestionDraftItem, rejectAiDraft, requestQuestionDraft } from './aiDraftApi'
 
 const id = '00000000-0000-4000-8000-000000000001'
 const base = `${API_BASE_URL}/api/content/admin/ai-drafts`
@@ -225,5 +225,51 @@ describe('AI draft API', () => {
     const response = { ...readyQuestionDraft, result: { items: [{ ...questionItem, answerSpec: { type: 'CHOICE', correct: 'A' } }], rejected: [] } }
     expect(questionDraftSchema.parse(response)).toEqual(response)
     expect(questionDraftSchema.safeParse({ ...response, result: { items: [{ ...questionItem, answerSpec: { type: 'CHOICE', correct: 'A', distractors: { B: ['TRAP'] } } }], rejected: [] } }).success).toBe(false)
+  })
+
+  it('patches only supplied fields and preserves the returned authoritative items', async () => {
+    const response = { ...readyQuestionDraft, result: { ...readyQuestionDraft.result, items: [{ ...questionItem, stem: 'Edited stem' }] } }
+    fetchMock.mockResolvedValue(json(response))
+    const patch = { stem: 'Edited stem', options: [{ optionKey: 'A', content: 'First' }, { optionKey: 'B', content: 'Second' }], correct: 'B', distractors: {} }
+    await expect(patchQuestionDraftItem(id, 1, patch)).resolves.toEqual(response)
+    expect(fetchMock).toHaveBeenCalledWith(`${base}/${id}/items/1`, expect.objectContaining({
+      method: 'PATCH', credentials: 'include', body: JSON.stringify(patch), headers: expect.objectContaining({ Authorization: 'Bearer test-access-token' }),
+    }))
+  })
+
+  it('deletes an item and parses the returned reindexed list including an empty result', async () => {
+    const response = { ...readyQuestionDraft, result: { items: [], rejected: readyQuestionDraft.result.rejected } }
+    fetchMock.mockResolvedValue(json(response))
+    await expect(deleteQuestionDraftItem(id, 0)).resolves.toEqual(response)
+    expect(fetchMock).toHaveBeenCalledWith(`${base}/${id}/items/0`, expect.objectContaining({ method: 'DELETE', credentials: 'include', body: undefined }))
+  })
+
+  it('accepts nullable omitted instruction metadata from the backend', async () => {
+    fetchMock.mockResolvedValue(json({ ...questionDraft, request: { ...generationRequest, instructions: null } }, 202))
+    await expect(requestQuestionDraft({ ...generationRequest, instructions: null })).resolves.toMatchObject({ request: { instructions: null } })
+  })
+
+  it.each([
+    () => patchQuestionDraftItem('invalid', 0, {}), () => patchQuestionDraftItem(id, -1, {}),
+    () => deleteQuestionDraftItem(id, 0.5), () => deleteQuestionDraftItem(id, 2147483648),
+    () => patchQuestionDraftItem(id, 0, { stem: 'a'.repeat(4001) }),
+    () => patchQuestionDraftItem(id, 0, { explanation: 'a'.repeat(4001) }),
+    () => patchQuestionDraftItem(id, 0, { options: Array.from({ length: 7 }, () => ({ optionKey: 'A', content: 'Answer' })) }),
+    () => patchQuestionDraftItem(id, 0, { accepted: Array.from({ length: 21 }, () => 'Answer') }),
+    () => patchQuestionDraftItem(id, 0, { accepted: ['a'.repeat(501)] }),
+  ])('validates item address and patch limits before fetching', async (action) => {
+    await expect(action()).rejects.toThrow()
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it.each(['patch', 'delete'] as const)('validates the successful item %s response', async (action) => {
+    fetchMock.mockResolvedValue(json({ unexpected: true }))
+    await expect(action === 'patch' ? patchQuestionDraftItem(id, 0, {}) : deleteQuestionDraftItem(id, 0)).rejects.toThrow()
+  })
+
+  it.each([400, 404, 422])('preserves item edit %s errors and reason details', async (status) => {
+    const body = { message: 'Invalid item', details: { code: 'INVALID_DRAFT_ITEM', reason: 'DUPLICATE_STEM' } }
+    fetchMock.mockResolvedValue(json(body, status))
+    await expect(patchQuestionDraftItem(id, 0, { stem: 'Duplicate' })).rejects.toMatchObject({ status, body })
   })
 })
