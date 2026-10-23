@@ -5,6 +5,7 @@ import {
   lessonSummarySchema,
   lessonResourceSchema,
   lessonResourcesSchema,
+  lessonResourceOrderSchema,
   type LessonResourceRequest,
   type LessonResourceType,
   type BlockRequest,
@@ -138,6 +139,11 @@ export async function updateLessonResource(lessonId: string, resourceId: string,
 
 export async function deleteLessonResource(lessonId: string, resourceId: string): Promise<void> {
   await write(`/lessons/${lessonId}/resources/${resourceId}`, 'DELETE')
+}
+
+export async function reorderLessonResources(lessonId: string, type: LessonResourceType, resourceIds: string[]): Promise<void> {
+  const body = lessonResourceOrderSchema.parse({ type, resourceIds })
+  z.null().parse(await write(`/lessons/${lessonId}/resources/order`, 'PUT', body))
 }
 
 const vocabularySearchSchema = z.array(

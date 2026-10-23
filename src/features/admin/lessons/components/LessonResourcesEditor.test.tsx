@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { HttpError } from '@/lib/httpClient'
 import { LessonResourcesEditor } from './LessonResourcesEditor'
 
-const api = vi.hoisted(() => ({ fetchLessonResources: vi.fn(), createLessonResource: vi.fn(), updateLessonResource: vi.fn(), deleteLessonResource: vi.fn() }))
+const api = vi.hoisted(() => ({ fetchLessonResources: vi.fn(), createLessonResource: vi.fn(), updateLessonResource: vi.fn(), deleteLessonResource: vi.fn(), reorderLessonResources: vi.fn() }))
 vi.mock('../api/lessonApi', () => api)
 const slides = [
   { id: 's2', title: 'Slide sau', url: 'https://docs.google.com/presentation/d/second/embed', sortOrder: 7 },
@@ -87,7 +87,9 @@ describe('LessonResourcesEditor', () => {
     expect(screen.getByRole('button', { name: 'Đưa Slide đầu xuống' })).toHaveAttribute('title', 'Chờ API đổi thứ tự')
     expect(screen.getByText('Chờ API đổi thứ tự. Bạn vẫn có thể thêm, sửa và xóa slide, tài liệu.')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Đưa Slide đầu xuống' }))
+    expect(api.reorderLessonResources).not.toHaveBeenCalled()
     expect(api.updateLessonResource).not.toHaveBeenCalled()
+    expect(api.fetchLessonResources).toHaveBeenCalledTimes(1)
   })
 
   it('shows write errors and retains the form values', async () => {

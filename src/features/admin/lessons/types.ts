@@ -155,5 +155,12 @@ export const lessonResourcesSchema = z.object({
 
 export type LessonResource = z.infer<typeof lessonResourceSchema>
 export type LessonResources = z.infer<typeof lessonResourcesSchema>
-export type LessonResourceType = 'SLIDE' | 'DOCUMENT'
+export const lessonResourceTypeSchema = z.enum(['SLIDE', 'DOCUMENT'])
+export const lessonResourceOrderSchema = z.object({
+  type: lessonResourceTypeSchema,
+  resourceIds: z.array(z.uuid()).refine((ids) => new Set(ids).size === ids.length, {
+    message: 'Mỗi tài nguyên chỉ được xuất hiện một lần.',
+  }),
+})
+export type LessonResourceType = z.infer<typeof lessonResourceTypeSchema>
 export type LessonResourceRequest = Pick<LessonResource, 'title' | 'url' | 'sortOrder'>
