@@ -9,7 +9,7 @@ export const CRITERIA = [
 export type CriterionKey = (typeof CRITERIA)[number]['key']
 
 export const queueEntrySchema = z.object({
-  id: z.uuid(),
+  id: z.guid(),
   attemptType: z.string().nullish(),
   source: z.string().nullish(),
   skill: z.string().nullish(),
@@ -32,7 +32,7 @@ export const qualitySchema = z.object({
 
 /** The essay to re-grade, without the original grade. `rubric` is shown for reference only. */
 export const reviewEssaySchema = z.object({
-  jobId: z.uuid(),
+  jobId: z.guid(),
   prompt: z.string().nullish(),
   essay: z.string(),
   task: z.string().nullish(),
@@ -42,7 +42,7 @@ export const reviewEssaySchema = z.object({
 
 export const bandSchema = z.number().min(0).max(9).multipleOf(0.5)
 export const reviewSchema = z.object({
-  gradingJobId: z.uuid(),
+  gradingJobId: z.guid(),
   reviewerBand: bandSchema,
   reviewerCriteria: z.object({ taskResponse: bandSchema, coherence: bandSchema, lexical: bandSchema, grammar: bandSchema }),
   note: z.string().max(4000).optional(),

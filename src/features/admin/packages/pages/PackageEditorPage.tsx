@@ -131,6 +131,6 @@ function PackageEditor({ packageId }: { packageId: string }) {
 
 export function PackageEditorPage() {
   const { packageId } = useParams<{ packageId: string }>()
-  const parsed = z.uuid().safeParse(packageId)
+  const parsed = z.guid().safeParse(packageId)
   return parsed.success ? <PackageEditor key={parsed.data} packageId={parsed.data} /> : <AdminPage title="Soạn gói câu hỏi"><AdminError message="ID gói không hợp lệ (cần UUID)." /><Link className="adm-btn" to="/content-author/packages">Đề & gói câu hỏi</Link></AdminPage>
 }

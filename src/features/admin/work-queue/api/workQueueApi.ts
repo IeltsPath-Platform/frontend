@@ -20,5 +20,5 @@ export async function updateWorkItem(id: string, update: WorkUpdate): Promise<vo
     const value = update[key]?.trim()
     if (value) body[key] = value
   }
-  await apiRequest<unknown>(`${BASE}/${z.uuid().parse(id)}`, { auth: true, method: 'PATCH', body })
+  await apiRequest<unknown>(`${BASE}/${z.guid().parse(id)}`, { auth: true, method: 'PATCH', body })
 }

@@ -9,10 +9,10 @@ import {
 } from '../types'
 
 const BASE = '/api/content/admin/packages'
-const packagePath = (id: string) => `${BASE}/${z.uuid().parse(id)}`
-const sectionsPath = (id: string, versionId: string) => `${packagePath(id)}/versions/${z.uuid().parse(versionId)}/sections`
-const versionPath = (id: string, versionId: string) => `${packagePath(id)}/versions/${z.uuid().parse(versionId)}`
-const sectionPath = (id: string, versionId: string, sectionId: string) => `${sectionsPath(id, versionId)}/${z.uuid().parse(sectionId)}`
+const packagePath = (id: string) => `${BASE}/${z.guid().parse(id)}`
+const sectionsPath = (id: string, versionId: string) => `${packagePath(id)}/versions/${z.guid().parse(versionId)}/sections`
+const versionPath = (id: string, versionId: string) => `${packagePath(id)}/versions/${z.guid().parse(versionId)}`
+const sectionPath = (id: string, versionId: string, sectionId: string) => `${sectionsPath(id, versionId)}/${z.guid().parse(sectionId)}`
 
 export async function listPackages(filters: PackageFilters = {}, signal?: AbortSignal) {
   const params = new URLSearchParams()
@@ -38,11 +38,11 @@ export async function addSection(id: string, versionId: string, body: SectionReq
 }
 
 export async function updateSection(id: string, versionId: string, sectionId: string, body: SectionRequest) {
-  return packageSectionSchema.parse(await apiRequest<unknown>(`${sectionsPath(id, versionId)}/${z.uuid().parse(sectionId)}`, { auth: true, method: 'PUT', body: sectionRequestSchema.parse(body) }))
+  return packageSectionSchema.parse(await apiRequest<unknown>(`${sectionsPath(id, versionId)}/${z.guid().parse(sectionId)}`, { auth: true, method: 'PUT', body: sectionRequestSchema.parse(body) }))
 }
 
 export async function deleteSection(id: string, versionId: string, sectionId: string) {
-  z.null().parse(await apiRequest<unknown>(`${sectionsPath(id, versionId)}/${z.uuid().parse(sectionId)}`, { auth: true, method: 'DELETE' }))
+  z.null().parse(await apiRequest<unknown>(`${sectionsPath(id, versionId)}/${z.guid().parse(sectionId)}`, { auth: true, method: 'DELETE' }))
 }
 
 export async function reorderSections(id: string, versionId: string, sectionIds: string[]) {
@@ -54,7 +54,7 @@ export async function addSectionQuestion(id: string, versionId: string, sectionI
 }
 
 export async function removeSectionQuestion(id: string, versionId: string, sectionId: string, sectionQuestionId: string) {
-  z.null().parse(await apiRequest<unknown>(`${sectionPath(id, versionId, sectionId)}/questions/${z.uuid().parse(sectionQuestionId)}`, { auth: true, method: 'DELETE' }))
+  z.null().parse(await apiRequest<unknown>(`${sectionPath(id, versionId, sectionId)}/questions/${z.guid().parse(sectionQuestionId)}`, { auth: true, method: 'DELETE' }))
 }
 
 export async function reorderSectionQuestions(id: string, versionId: string, sectionId: string, sectionQuestionIds: string[]) {
@@ -89,8 +89,8 @@ export async function previewVersion(id: string, versionId: string, signal?: Abo
 }
 
 export async function publishVersion(id: string, versionId: string) {
-  const packageId = z.uuid().parse(id)
-  return publishedPackageSchema.parse(await apiRequest<unknown>(`/api/content/packages/${packageId}/publish`, { auth: true, method: 'POST', body: { versionId: z.uuid().parse(versionId) } }))
+  const packageId = z.guid().parse(id)
+  return publishedPackageSchema.parse(await apiRequest<unknown>(`/api/content/packages/${packageId}/publish`, { auth: true, method: 'POST', body: { versionId: z.guid().parse(versionId) } }))
 }
 
 export async function scheduleVersion(id: string, versionId: string, publishAt: string) {

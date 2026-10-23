@@ -158,7 +158,7 @@ export type LessonResources = z.infer<typeof lessonResourcesSchema>
 export const lessonResourceTypeSchema = z.enum(['SLIDE', 'DOCUMENT'])
 export const lessonResourceOrderSchema = z.object({
   type: lessonResourceTypeSchema,
-  resourceIds: z.array(z.uuid()).refine((ids) => new Set(ids).size === ids.length, {
+  resourceIds: z.array(z.guid()).refine((ids) => new Set(ids).size === ids.length, {
     message: 'Mỗi tài nguyên chỉ được xuất hiện một lần.',
   }),
 })

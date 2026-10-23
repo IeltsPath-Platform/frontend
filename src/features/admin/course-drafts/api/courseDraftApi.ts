@@ -7,7 +7,7 @@ import {
 } from '../types'
 
 const BASE = '/api/content/admin/course-drafts'
-const draftPath = (id: string) => `${BASE}/${z.uuid().parse(id)}`
+const draftPath = (id: string) => `${BASE}/${z.guid().parse(id)}`
 
 export async function listCourseDrafts(filters: CourseDraftFilters = {}, signal?: AbortSignal) {
   return z.array(courseDraftSchema).parse(await fetchAiDrafts({ ...filters, kind: 'COURSE' }, signal))

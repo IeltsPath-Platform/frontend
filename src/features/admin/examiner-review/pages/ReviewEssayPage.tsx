@@ -106,6 +106,6 @@ function ReviewEssay({ jobId }: { jobId: string }) {
 
 export function ReviewEssayPage() {
   const { jobId } = useParams<{ jobId: string }>()
-  const id = z.uuid().safeParse(jobId)
+  const id = z.guid().safeParse(jobId)
   return id.success ? <ReviewEssay jobId={id.data} key={id.data} /> : <AdminPage title="Chấm lại bài Writing"><AdminError message="ID bài chấm lại không hợp lệ." /></AdminPage>
 }

@@ -33,7 +33,7 @@ export function PackagesPage() {
   const creating = search.has('create')
   function open(event: FormEvent) {
     event.preventDefault()
-    const parsed = z.uuid().safeParse(id.trim())
+    const parsed = z.guid().safeParse(id.trim())
     if (!parsed.success) { setError('Nhập ID gói hợp lệ (UUID).'); return }
     navigate(`/content-author/packages/${parsed.data}`)
   }
