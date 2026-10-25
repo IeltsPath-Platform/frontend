@@ -146,6 +146,31 @@ describe('ReviewBasketPage', () => {
     expect(within(row).getByRole('link', { name: /Tiếp tục ôn/ })).toHaveAttribute('href', '/learn/reviews/rev-w')
   })
 
+  it('names the error pattern of a point whose review came from a repeated mistake', async () => {
+    api.getReviewBasket.mockResolvedValue({
+      ...basket,
+      weak: [{
+        knowledgePointId: 'kp-e', code: 'TFNG_NOT_GIVEN', name: 'Nhận ra Not Given', skill: 'READING',
+        tier: 'PRIORITY', mastery: 0.45, dueAt: null, reason: 'ERROR_PATTERN', hasUnrevealedSet: true, reviewId: 'rev-e',
+        errorTrap: { code: 'TFNG_NG_AS_FALSE', name: 'Chọn False khi thông tin không được nêu', fixHint: 'Tìm câu nói ngược lại trước.' },
+      }],
+    })
+    renderWithRoutes(<ReviewBasketPage />)
+
+    expect(await screen.findByRole('heading', { name: /^Cần ưu tiên/ })).toBeInTheDocument()
+    const row = screen.getByText('Nhận ra Not Given').closest('li') as HTMLElement
+    expect(row).toHaveTextContent('Lỗi hay gặp: Chọn False khi thông tin không được nêu')
+    expect(within(row).getByRole('link', { name: /Tiếp tục ôn/ })).toHaveAttribute('href', '/learn/reviews/rev-e')
+  })
+
+  it('shows no error line on a point without an error pattern', async () => {
+    api.getReviewBasket.mockResolvedValue(basket)
+    renderWithRoutes(<ReviewBasketPage />)
+
+    await screen.findByRole('heading', { name: /^Nên củng cố/ })
+    expect(screen.queryByText(/Lỗi hay gặp/)).not.toBeInTheDocument()
+  })
+
   it('has no "Cần ưu tiên" section when nothing is weak', async () => {
     api.getReviewBasket.mockResolvedValue(basket)
     renderWithRoutes(<ReviewBasketPage />)

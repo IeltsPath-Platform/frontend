@@ -107,6 +107,13 @@ export interface AnswerInput {
   answer: string
 }
 
+/** The kind of mistake behind a wrong answer, with the line that tells the learner how to avoid it. `fixHint` may be empty. */
+export interface ErrorHint {
+  code: string
+  name: string
+  fixHint: string
+}
+
 /** `correctAnswer` and `explanation` are only present when the block or set was passed. */
 export interface QuestionResult {
   questionId: string
@@ -114,6 +121,8 @@ export interface QuestionResult {
   correctAnswer?: string
   explanation?: string
   hint?: string | null
+  /** Present only on a wrong answer whose mistake the backend could name. */
+  error?: ErrorHint
 }
 
 export interface PassageParagraph {
@@ -257,6 +266,10 @@ export interface ReviewDetail {
   maxFailedSets: number | null
   theoryReason: string | null
   resumeLessonId: string | null
+  /** False for an optional review; absent means required. */
+  blocking?: boolean
+  /** The mistake this review's set was picked to fix; absent when the learner has no repeated mistake on the point. */
+  errorTrap?: ErrorHint
 }
 
 export interface ExerciseSubmissionRequest {
@@ -605,11 +618,13 @@ export interface BasketOptionalItem {
   /** 0–1. */
   mastery: number
   dueAt: string | null
-  reason: 'CONSOLIDATE' | 'DUE' | 'WRITING_CRITERION'
+  reason: 'CONSOLIDATE' | 'DUE' | 'WRITING_CRITERION' | 'ERROR_PATTERN'
   /** False when Content has no set the learner has not seen, so the review cannot start. */
   hasUnrevealedSet: boolean
   /** Set when the learner already started an optional review of the point. */
   reviewId: string | null
+  /** The repeated mistake behind an `ERROR_PATTERN` review. */
+  errorTrap?: ErrorHint
 }
 
 export interface ReviewBasket {
@@ -637,6 +652,19 @@ export interface TreePoint {
   prerequisiteIds: string[]
   /** An upper bound: the start route can still answer `FREE_PRACTICE_EXHAUSTED`. */
   practiceAvailable: boolean
+  /** The mistakes the learner has made on this point, with how well they avoid each; only those with evidence. */
+  errorTraps?: ErrorTrapPoint[]
+}
+
+/** One mistake the learner can make on a knowledge point, tracked as a point of its own. */
+export interface ErrorTrapPoint {
+  knowledgePointId: string
+  code: string
+  name: string
+  tier: MasteryTier
+  /** 0–1. */
+  mastery: number
+  evidenceCount: number
 }
 
 export interface LearnerTree {

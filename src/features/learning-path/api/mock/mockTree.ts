@@ -48,6 +48,10 @@ export const MOCK_TREE_POINTS: TreePoint[] = [
     nextReviewAt: null,
     prerequisiteIds: ['00000000-0000-4000-8000-0000000000a2'],
     practiceAvailable: false,
+    errorTraps: [
+      { knowledgePointId: '00000000-0000-4000-8000-0000000000b1', code: 'TFNG_NG_AS_FALSE', name: 'Chọn False khi thông tin không được nêu', tier: 'PRIORITY', mastery: 0.38, evidenceCount: 5 },
+      { knowledgePointId: '00000000-0000-4000-8000-0000000000b2', code: 'TFNG_FALSE_AS_NG', name: 'Chọn Not Given khi bài đã nói ngược lại', tier: 'MAINTAIN', mastery: 0.85, evidenceCount: 4 },
+    ],
   },
   {
     knowledgePointId: '00000000-0000-4000-8000-0000000000a4',

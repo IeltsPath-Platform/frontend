@@ -89,6 +89,30 @@ describe('practice result review', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: 'Xem kết quả: Đọc hiểu 1' })).toBeInTheDocument())
   })
 
+  it('shows the error of a wrong answer under that question only', async () => {
+    api.getLessonPracticeSets.mockResolvedValue(catalog([item({})]))
+    api.getPracticeAttemptReview.mockResolvedValue({
+      ...review,
+      result: {
+        ...review.result,
+        results: [
+          review.result.results[0],
+          {
+            ...review.result.results[1],
+            error: { code: 'KEYWORD_MATCH_ONLY', name: 'Chọn đáp án chỉ vì trùng từ khóa', fixHint: 'Kiểm tra cả câu.' },
+          },
+        ],
+      },
+    })
+    renderPractice()
+    fireEvent.click(await screen.findByRole('button', { name: 'Xem kết quả: Đọc hiểu 1' }))
+
+    const items = within(await screen.findByRole('list', { name: 'Kết quả từng câu' })).getAllByRole('listitem')
+    expect(within(items[0]).queryByRole('note', { name: 'Lỗi cần sửa' })).not.toBeInTheDocument()
+    expect(within(items[1]).getByRole('note', { name: 'Lỗi cần sửa' })).toHaveTextContent('Chọn đáp án chỉ vì trùng từ khóa')
+    expect(within(items[1]).getByRole('note', { name: 'Lỗi cần sửa' })).toHaveTextContent('Kiểm tra cả câu.')
+  })
+
   it('says so when the result cannot be loaded', async () => {
     api.getLessonPracticeSets.mockResolvedValue(catalog([item({})]))
     api.getPracticeAttemptReview.mockRejectedValue(new Error('boom'))

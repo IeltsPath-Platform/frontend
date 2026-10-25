@@ -1,7 +1,10 @@
 import type { BasketOptionalItem, ReviewBasket, ReviewRef, Suggestion } from '~types/learningPath'
+import { MOCK_NG_AS_FALSE } from '@/mocks/learning-path/contentTypes'
 import { MOCK_TREE_POINTS } from './mockTree'
 
 const DAY_MS = 86_400_000
+
+const hasErrorTraps = (point: (typeof MOCK_TREE_POINTS)[number]) => (point.errorTraps?.length ?? 0) > 0
 
 /** Weak points of the fixed tree, and one point that opens up next, so the strip shows every reason offline. */
 export function mockSuggestions(): Suggestion[] {
@@ -57,9 +60,16 @@ export function mockReviewBasket(pending: ReviewRef[], now: Date): ReviewBasket 
       lessonId: review.lessonId ?? null,
       skill: 'READING',
     })),
-    consolidate: MOCK_TREE_POINTS.filter((point) => point.tier === 'CONSOLIDATE' || point.tier === 'PRIORITY')
+    // A point with a repeated mistake sits in "weak" with its error-pattern review, never twice in the basket.
+    consolidate: MOCK_TREE_POINTS.filter((point) => (point.tier === 'CONSOLIDATE' || point.tier === 'PRIORITY') && !hasErrorTraps(point))
       .map((point) => optional(point, 'CONSOLIDATE', 1)),
     due: MOCK_TREE_POINTS.filter((point) => point.tier === 'MAINTAIN').map((point) => optional(point, 'DUE', -2)),
-    weak: [],
+    weak: MOCK_TREE_POINTS.filter((point) => point.tier === 'PRIORITY' && hasErrorTraps(point))
+      .map((point) => ({
+        ...optional(point, 'CONSOLIDATE', 1),
+        reason: 'ERROR_PATTERN' as const,
+        hasUnrevealedSet: true,
+        errorTrap: MOCK_NG_AS_FALSE,
+      })),
   }
 }

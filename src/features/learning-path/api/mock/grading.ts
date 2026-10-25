@@ -53,8 +53,13 @@ export function gradeAnswers(questions: MockQuestion[], answers: AnswerMap): Gra
   const totalCount = questions.length
   const ratio = totalCount === 0 ? 1 : correctCount / totalCount
   const passed = ratio * 100 >= PASS_PERCENT
-  const results = marks.map(({ question, correct }): QuestionResult => passed
-    ? { questionId: question.id, correct, correctAnswer: formatAnswerValue(question, question.accepted[0]), explanation: question.explanation }
-    : { questionId: question.id, correct })
+  const results = marks.map(({ question, correct }): QuestionResult => {
+    // A wrong answer names its mistake whether or not the set passed, like the backend does.
+    const error = correct ? undefined : question.traps?.[(answers[question.id] ?? '').trim()]
+    const named = error ? { error } : {}
+    return passed
+      ? { questionId: question.id, correct, correctAnswer: formatAnswerValue(question, question.accepted[0]), explanation: question.explanation, ...named }
+      : { questionId: question.id, correct, ...named }
+  })
   return { correctCount, totalCount, percent: Math.round(ratio * 100), passed, results }
 }
