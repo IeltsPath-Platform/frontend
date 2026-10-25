@@ -1,6 +1,10 @@
-import { choice, gap, toPassage, type MockReviewSet } from './contentTypes'
+import { choice, gap, tfng, toPassage, MOCK_PARAPHRASE_TRAP, MOCK_WRONG_PARAGRAPH, type MockReviewSet } from './contentTypes'
 
 const PARAGRAPHS: [string, string][] = [['A', 'Paragraph A'], ['B', 'Paragraph B']]
+
+/** Any paragraph other than the right one is the same mistake: looking in the wrong place. */
+const wrongParagraph = (correct: string) =>
+  Object.fromEntries(PARAGRAPHS.filter(([value]) => value !== correct).map(([value]) => [value, MOCK_WRONG_PARAGRAPH]))
 
 /** Three sets per knowledge point: a learner who fails all three is marked SKIPPED. */
 export const MOCK_REVIEW_PACKS: Record<string, MockReviewSet[]> = {
@@ -36,7 +40,7 @@ export const MOCK_REVIEW_PACKS: Record<string, MockReviewSet[]> = {
       passage: toPassage('Urban Foxes', [[null, 'Foxes have adapted remarkably well to city life. Rather than hunting, many urban foxes rely on food that people throw away.']]),
       questions: [
         choice('r-kp2a-1', 1, 'Urban foxes mainly', [['A', 'hunt small animals'], ['B', 'eat food discarded by people'], ['C', 'avoid areas with people']], 'B', '"Food that people throw away" = "food discarded by people".'),
-        choice('r-kp2a-2', 2, '"Adapted remarkably well" is closest in meaning to', [['A', 'changed very little'], ['B', 'adjusted extremely successfully'], ['C', 'moved very quickly']], 'B', '"Remarkably well" ≈ "extremely successfully".'),
+        choice('r-kp2a-2', 2, '"Adapted remarkably well" is closest in meaning to', [['A', 'changed very little'], ['B', 'adjusted extremely successfully'], ['C', 'moved very quickly']], 'B', '"Remarkably well" ≈ "extremely successfully".', { A: MOCK_PARAPHRASE_TRAP }),
       ],
     },
     {
@@ -52,7 +56,7 @@ export const MOCK_REVIEW_PACKS: Record<string, MockReviewSet[]> = {
       passage: toPassage('Modern Libraries', [[null, 'Public libraries are no longer simply places to borrow books; they now host coding clubs, job workshops and language classes.']]),
       questions: [
         choice('r-kp2c-1', 1, 'Modern libraries', [['A', 'have stopped lending books'], ['B', 'offer a wider range of activities'], ['C', 'only serve students']], 'B', 'Thư viện vẫn cho mượn sách nhưng "now host" thêm nhiều hoạt động.'),
-        choice('r-kp2c-2', 2, '"No longer simply" suggests that libraries are', [['A', 'more than just book lenders'], ['B', 'closing down'], ['C', 'rarely used']], 'A', '"No longer simply places to borrow books" → không chỉ là nơi mượn sách.'),
+        choice('r-kp2c-2', 2, '"No longer simply" suggests that libraries are', [['A', 'more than just book lenders'], ['B', 'closing down'], ['C', 'rarely used']], 'A', '"No longer simply places to borrow books" → không chỉ là nơi mượn sách.', { B: MOCK_PARAPHRASE_TRAP }),
       ],
     },
   ],
@@ -61,24 +65,54 @@ export const MOCK_REVIEW_PACKS: Record<string, MockReviewSet[]> = {
       packageCode: 'PS-KP3-A',
       passage: toPassage('Bamboo', [['A', 'Bamboo is one of the fastest-growing plants on Earth; some species grow almost a metre in a single day.'], ['B', 'Because it is strong and light, bamboo is used to build houses, bridges and even bicycles in many parts of Asia.']]),
       questions: [
-        choice('r-kp3a-1', 1, 'Which paragraph focuses on how bamboo is used?', PARAGRAPHS, 'B', 'Đoạn B liệt kê nhà, cầu, xe đạp làm từ tre.'),
-        choice('r-kp3a-2', 2, "Which paragraph focuses on bamboo's growth rate?", PARAGRAPHS, 'A', 'Đoạn A nói tre lớn gần một mét mỗi ngày.'),
+        choice('r-kp3a-1', 1, 'Which paragraph focuses on how bamboo is used?', PARAGRAPHS, 'B', 'Đoạn B liệt kê nhà, cầu, xe đạp làm từ tre.', wrongParagraph('B')),
+        choice('r-kp3a-2', 2, "Which paragraph focuses on bamboo's growth rate?", PARAGRAPHS, 'A', 'Đoạn A nói tre lớn gần một mét mỗi ngày.', wrongParagraph('A')),
       ],
     },
     {
       packageCode: 'PS-KP3-B',
       passage: toPassage('Living with Volcanoes', [['A', 'Volcanic eruptions can destroy towns and farmland within hours.'], ['B', 'Yet volcanic ash also makes soil very fertile, which is why farmers often return to live near volcanoes.']]),
       questions: [
-        choice('r-kp3b-1', 1, 'Which paragraph describes a benefit of volcanoes?', PARAGRAPHS, 'B', 'Từ chuyển ý "Yet" mở ra lợi ích: đất màu mỡ.'),
-        choice('r-kp3b-2', 2, 'Which paragraph describes the danger of volcanoes?', PARAGRAPHS, 'A', 'Đoạn A nói phun trào phá hủy thị trấn và đồng ruộng.'),
+        choice('r-kp3b-1', 1, 'Which paragraph describes a benefit of volcanoes?', PARAGRAPHS, 'B', 'Từ chuyển ý "Yet" mở ra lợi ích: đất màu mỡ.', wrongParagraph('B')),
+        choice('r-kp3b-2', 2, 'Which paragraph describes the danger of volcanoes?', PARAGRAPHS, 'A', 'Đoạn A nói phun trào phá hủy thị trấn và đồng ruộng.', wrongParagraph('A')),
       ],
     },
     {
       packageCode: 'PS-KP3-C',
       passage: toPassage('Recycling at Home', [['A', 'Recycling one aluminium can saves enough energy to run a television for three hours.'], ['B', 'However, mixing food waste with recyclables can ruin a whole load, so careful sorting at home is essential.']]),
       questions: [
-        choice('r-kp3c-1', 1, 'Which paragraph explains why sorting matters?', PARAGRAPHS, 'B', '"However… careful sorting at home is essential".'),
-        choice('r-kp3c-2', 2, 'Which paragraph gives an example of energy saved?', PARAGRAPHS, 'A', 'Đoạn A: một lon nhôm đủ chạy TV ba giờ.'),
+        choice('r-kp3c-1', 1, 'Which paragraph explains why sorting matters?', PARAGRAPHS, 'B', '"However… careful sorting at home is essential".', wrongParagraph('B')),
+        choice('r-kp3c-2', 2, 'Which paragraph gives an example of energy saved?', PARAGRAPHS, 'A', 'Đoạn A: một lon nhôm đủ chạy TV ba giờ.', wrongParagraph('A')),
+      ],
+    },
+  ],
+  // The True / False / Not Given point: every False and Not Given question carries its trap (see `tfng`).
+  KP5: [
+    {
+      packageCode: 'PS-KP5-A',
+      passage: toPassage('The Ferry', [[null, 'The ferry leaves Riverton at 08:30 and 10:00. Cycles may be taken on board for a small fee.']]),
+      questions: [
+        tfng('r-kp5a-1', 1, 'The first ferry leaves at 09:00.', 'FALSE', 'Bài ghi 08:30, mâu thuẫn trực tiếp với 09:00 nên là False.'),
+        tfng('r-kp5a-2', 2, 'Meals are served on board.', 'NOT GIVEN', 'Bài không nhắc tới đồ ăn trên phà, nên là Not Given chứ không phải False.'),
+        tfng('r-kp5a-3', 3, 'Bicycles can be taken on the ferry.', 'TRUE', '"Cycles may be taken on board" khớp với câu hỏi.'),
+      ],
+    },
+    {
+      packageCode: 'PS-KP5-B',
+      passage: toPassage('The Public Garden', [[null, 'The garden has been open to visitors since 2018. Entry is free, and dogs must be kept on a lead.']]),
+      questions: [
+        tfng('r-kp5b-1', 1, 'The garden first opened in 2020.', 'FALSE', 'Bài nói mở cửa từ 2018, nên 2020 bị mâu thuẫn.'),
+        tfng('r-kp5b-2', 2, 'There is a café in the garden.', 'NOT GIVEN', 'Bài không nói gì về quán cà phê.'),
+        tfng('r-kp5b-3', 3, 'Visitors do not pay to enter.', 'TRUE', '"Entry is free" = không phải trả tiền vào cổng.'),
+      ],
+    },
+    {
+      packageCode: 'PS-KP5-C',
+      passage: toPassage('The Reading Room', [[null, 'The reading room is open from 09:00 to 17:00 on weekdays. Silence is required on the upper floor.']]),
+      questions: [
+        tfng('r-kp5c-1', 1, 'The reading room opens at weekends.', 'NOT GIVEN', 'Bài chỉ nói giờ mở cửa ngày thường, không nói gì về cuối tuần.'),
+        tfng('r-kp5c-2', 2, 'The reading room closes at 18:00 on weekdays.', 'FALSE', 'Bài ghi 17:00, mâu thuẫn với 18:00.'),
+        tfng('r-kp5c-3', 3, 'Visitors must be quiet upstairs.', 'TRUE', '"Silence is required on the upper floor".'),
       ],
     },
   ],

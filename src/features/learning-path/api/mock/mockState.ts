@@ -1,4 +1,4 @@
-import type { AttemptResult, AttemptStatus, ReviewStatus } from '~types/learningPath'
+import type { AttemptResult, AttemptStatus, ErrorHint, ReviewStatus } from '~types/learningPath'
 
 export const MOCK_STORAGE_KEY = 'ieltspath.learning-path.mock.v3'
 const STATE_VERSION = 3
@@ -17,6 +17,10 @@ export interface ReviewRecord {
   status: ReviewStatus
   setIndex: number
   createdSeq: number
+  /** `false` for an optional review opened from the basket (it never locks lessons); absent means required. */
+  blocking?: boolean
+  /** The repeated mistake an optional error-pattern review works on. */
+  errorTrap?: ErrorHint
 }
 
 export interface TopicTestRecord {

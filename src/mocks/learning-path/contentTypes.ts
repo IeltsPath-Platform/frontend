@@ -20,6 +20,30 @@ export const MOCK_FALSE_AS_NG: ErrorHint = {
   fixHint: 'Tìm câu trong bài nói ngược lại với câu hỏi trước khi kết luận là Not Given.',
 }
 
+export const MOCK_PARAPHRASE_TRAP: ErrorHint = {
+  code: 'PARAPHRASE_TRAP',
+  name: 'Bị đánh lừa bởi cách diễn đạt gần nghĩa',
+  fixHint: 'Đọc lại đoạn văn gốc và kiểm tra ý có giữ nguyên nghĩa không, đừng chỉ dựa vào từ khóa.',
+}
+
+export const MOCK_WRONG_PARAGRAPH: ErrorHint = {
+  code: 'WRONG_PARAGRAPH',
+  name: 'Tìm nhầm đoạn văn',
+  fixHint: 'Xác định đoạn chứa thông tin bằng ý chính của từng đoạn, không chỉ bằng một chi tiết.',
+}
+
+export const MOCK_DETAIL_AS_MAIN_IDEA: ErrorHint = {
+  code: 'DETAIL_AS_MAIN_IDEA',
+  name: 'Lấy chi tiết làm ý chính',
+  fixHint: 'Ý chính bao trùm cả đoạn; một chi tiết chỉ minh họa cho ý đó.',
+}
+
+/** Every mistake the mock can name, by error code. */
+export const MOCK_ERROR_HINTS: Record<string, ErrorHint> = Object.fromEntries(
+  [MOCK_NG_AS_FALSE, MOCK_FALSE_AS_NG, MOCK_PARAPHRASE_TRAP, MOCK_WRONG_PARAGRAPH, MOCK_DETAIL_AS_MAIN_IDEA]
+    .map((hint) => [hint.code, hint]),
+)
+
 export interface MockResourceLink {
   id: string
   title: string
@@ -95,8 +119,12 @@ export function choice(
   options: [string, string][],
   correct: string,
   explanation: string,
+  traps?: Record<string, ErrorHint>,
 ): MockQuestion {
-  return { id, number, prompt, options: options.map(([value, label]) => ({ value, label })), accepted: [correct], explanation }
+  return {
+    id, number, prompt, options: options.map(([value, label]) => ({ value, label })), accepted: [correct], explanation,
+    ...(traps ? { traps } : {}),
+  }
 }
 
 export function tfng(id: string, number: number, prompt: string, correct: 'TRUE' | 'FALSE' | 'NOT GIVEN', explanation: string): MockQuestion {

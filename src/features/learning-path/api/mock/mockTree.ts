@@ -33,6 +33,10 @@ export const MOCK_TREE_POINTS: TreePoint[] = [
     nextReviewAt: null,
     prerequisiteIds: ['00000000-0000-4000-8000-0000000000a1'],
     practiceAvailable: true,
+    // A repeated mistake that is not yet weak enough to call for its own review.
+    errorTraps: [
+      { knowledgePointId: '00000000-0000-4000-8000-0000000000b3', code: 'DETAIL_AS_MAIN_IDEA', name: 'Lấy chi tiết làm ý chính', tier: 'CONSOLIDATE', mastery: 0.66, evidenceCount: 4 },
+    ],
   },
   {
     knowledgePointId: '00000000-0000-4000-8000-0000000000a3',
@@ -67,5 +71,24 @@ export const MOCK_TREE_POINTS: TreePoint[] = [
     nextReviewAt: null,
     prerequisiteIds: ['00000000-0000-4000-8000-0000000000a2'],
     practiceAvailable: true,
+  },
+  {
+    // The parent is firm but one mistake under it is weak: the case the error-pattern review exists for.
+    knowledgePointId: '00000000-0000-4000-8000-0000000000a5',
+    code: 'R65_PARAPHRASE',
+    name: 'Nhận diện paraphrase',
+    skill: 'READING',
+    kind: 'STRATEGY',
+    cefrLevel: 'B2',
+    canDo: 'Nhận ra cách diễn đạt khác nhưng giữ nguyên nghĩa.',
+    mastery: 0.88,
+    tier: 'MAINTAIN',
+    evidenceCount: 9,
+    nextReviewAt: FUTURE_REVIEW,
+    prerequisiteIds: ['00000000-0000-4000-8000-0000000000a2'],
+    practiceAvailable: true,
+    errorTraps: [
+      { knowledgePointId: '00000000-0000-4000-8000-0000000000b4', code: 'PARAPHRASE_TRAP', name: 'Bị đánh lừa bởi cách diễn đạt gần nghĩa', tier: 'PRIORITY', mastery: 0.42, evidenceCount: 4 },
+    ],
   },
 ]

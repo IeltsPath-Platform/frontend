@@ -1,10 +1,14 @@
 import type { BasketOptionalItem, ReviewBasket, ReviewRef, Suggestion } from '~types/learningPath'
-import { MOCK_NG_AS_FALSE } from '@/mocks/learning-path/contentTypes'
+import { MOCK_ERROR_HINTS } from '@/mocks/learning-path/contentTypes'
 import { MOCK_TREE_POINTS } from './mockTree'
 
 const DAY_MS = 86_400_000
 
-const hasErrorTraps = (point: (typeof MOCK_TREE_POINTS)[number]) => (point.errorTraps?.length ?? 0) > 0
+type TreePoint = (typeof MOCK_TREE_POINTS)[number]
+
+/** The weakest repeated mistake of a point, when one is at PRIORITY; such a point gets an error-pattern review. */
+const weakestTrap = (point: TreePoint) =>
+  point.errorTraps?.filter((trap) => trap.tier === 'PRIORITY').sort((a, b) => a.mastery - b.mastery)[0]
 
 /** Weak points of the fixed tree, and one point that opens up next, so the strip shows every reason offline. */
 export function mockSuggestions(): Suggestion[] {
@@ -61,15 +65,16 @@ export function mockReviewBasket(pending: ReviewRef[], now: Date): ReviewBasket 
       skill: 'READING',
     })),
     // A point with a repeated mistake sits in "weak" with its error-pattern review, never twice in the basket.
-    consolidate: MOCK_TREE_POINTS.filter((point) => (point.tier === 'CONSOLIDATE' || point.tier === 'PRIORITY') && !hasErrorTraps(point))
+    consolidate: MOCK_TREE_POINTS.filter((point) => (point.tier === 'CONSOLIDATE' || point.tier === 'PRIORITY') && !weakestTrap(point))
       .map((point) => optional(point, 'CONSOLIDATE', 1)),
-    due: MOCK_TREE_POINTS.filter((point) => point.tier === 'MAINTAIN').map((point) => optional(point, 'DUE', -2)),
-    weak: MOCK_TREE_POINTS.filter((point) => point.tier === 'PRIORITY' && hasErrorTraps(point))
+    due: MOCK_TREE_POINTS.filter((point) => point.tier === 'MAINTAIN' && !weakestTrap(point))
+      .map((point) => optional(point, 'DUE', -2)),
+    weak: MOCK_TREE_POINTS.filter((point) => weakestTrap(point))
       .map((point) => ({
         ...optional(point, 'CONSOLIDATE', 1),
         reason: 'ERROR_PATTERN' as const,
         hasUnrevealedSet: true,
-        errorTrap: MOCK_NG_AS_FALSE,
+        errorTrap: MOCK_ERROR_HINTS[weakestTrap(point)!.code],
       })),
   }
 }

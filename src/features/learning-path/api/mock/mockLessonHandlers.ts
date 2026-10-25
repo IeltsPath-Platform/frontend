@@ -9,8 +9,10 @@ import type {
   TopicSummary,
 } from '~types/learningPath'
 import type { LessonResourcesResponse } from '~types/lesson'
+import { MOCK_ERROR_HINTS } from '@/mocks/learning-path/contentTypes'
 import { MOCK_TOPICS } from '@/mocks/learning-path/topics'
 import { ApiError } from '../apiError'
+import { MOCK_TREE_POINTS } from './mockTree'
 import { answersToMap, gradeAnswers, hasCompleteAnswers, toPublicQuestion } from './grading'
 import {
   assertLessonAccessible,
@@ -149,7 +151,32 @@ export function getReview(state: MockState, reviewId: string): ReviewDetail {
     maxFailedSets: pack.length,
     theoryReason: null,
     resumeLessonId: review.resumeLessonId,
+    ...(review.blocking === false ? { blocking: false } : {}),
+    ...(review.errorTrap ? { errorTrap: review.errorTrap } : {}),
   }
+}
+
+/** Tree points of the mock whose optional error-pattern review can be opened, and the review pack standing for each. */
+const ERROR_PATTERN_PACKS: Record<string, string> = { R60_TFNG_F_VS_NG: 'KP5', R65_PARAPHRASE: 'KP2' }
+
+/** Opens (or returns the open) optional review of a tree point whose repeated mistake is at PRIORITY. */
+export function startErrorPatternReview(state: MockState, treePointId: string): { reviewId: string } {
+  const point = MOCK_TREE_POINTS.find((candidate) => candidate.knowledgePointId === treePointId)
+  const kpCode = point ? ERROR_PATTERN_PACKS[point.code] : undefined
+  const weakest = point?.errorTraps?.filter((trap) => trap.tier === 'PRIORITY').sort((a, b) => a.mastery - b.mastery)[0]
+  const errorTrap = weakest ? MOCK_ERROR_HINTS[weakest.code] : undefined
+  if (!kpCode || !errorTrap) {
+    throw new ApiError(404, 'NOT_FOUND', 'Mock chỉ có bộ ôn cho các điểm có lỗi lặp lại. Dùng HTTP thật để bắt đầu ôn.')
+  }
+  const open = state.reviews.find((review) => review.kpCode === kpCode && review.status === 'PENDING')
+  if (open) return { reviewId: open.id }
+  const lesson = requireLesson(requireKnowledgePoint(kpCode).theoryLessonId)
+  const seq = state.seq++
+  state.reviews.push({
+    id: `mock-review-${seq}`, topicId: lesson.topicId, kpCode, resumeLessonId: lesson.id, status: 'PENDING',
+    setIndex: 0, createdSeq: seq, blocking: false, errorTrap,
+  })
+  return { reviewId: `mock-review-${seq}` }
 }
 
 export function submitReview(state: MockState, reviewId: string, request: ReviewSubmissionRequest): ReviewSubmissionResult {
