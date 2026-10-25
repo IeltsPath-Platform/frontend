@@ -230,6 +230,21 @@ function PointCard({ point, prerequisites, backTo, depleted, onHeartsChanged }: 
         <p className="lp-point__needs">Xây trên: {prerequisites.join(', ')}</p>
       ) : null}
 
+      {point.errorTraps && point.errorTraps.length > 0 ? (
+        <ul aria-label="Lỗi hay gặp" className="lp-point__traps">
+          {point.errorTraps.map((trap) => {
+            const trapTier = tierMeta(trap.tier)
+            return (
+              <li key={trap.knowledgePointId}>
+                <span className="lp-point__trap-name">{trap.name}</span>
+                <span className={`lp-chip lp-chip--${trapTier.chip}`} title={trapTier.hint}>{trapTier.label}</span>
+                <span>{masteryPercent(trap.mastery)}% · {trap.evidenceCount} lượt làm</span>
+              </li>
+            )
+          })}
+        </ul>
+      ) : null}
+
       <div className="lp-point__actions">
         <Button
           aria-describedby={noteId}

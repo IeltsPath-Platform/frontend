@@ -77,9 +77,8 @@ export function createMockLearningApi({ storage = null, latencyMs = 0, now = () 
     // The guide is drawn from the fixed tree so both screens can be worked on offline; nothing can be started from it.
     getSuggestions: () => respond(() => mockSuggestions()),
     getReviewBasket: () => respond((s) => mockReviewBasket(pendingReviewRefs(s), now())),
-    startBasketReview: async () => {
-      throw new ApiError(404, 'NOT_FOUND', 'Mock learning không có bộ ôn. Dùng HTTP thật để bắt đầu ôn.')
-    },
+    // Only a point with a repeated mistake has a mock review (its error-pattern review); others need the real API.
+    startBasketReview: (knowledgePointId) => respond((s) => lessons.startErrorPatternReview(s, knowledgePointId)),
     // The mock has no Practice, so nothing ever costs a heart: the hearts stay full.
     getHearts: async () => ({ hearts: 5, maxHearts: 5, nextHeartAt: null, refillCost: 5 }),
     refillHearts: async () => {

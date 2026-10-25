@@ -4,6 +4,7 @@ import type { PracticeAttemptReview as Review, PracticeSetItem } from '~types/le
 import { learningApi } from '../api'
 import { useApiResource } from '../lib/useApiResource'
 import { AudioBlock } from './blocks/AudioBlock'
+import { ErrorHintNote } from './blocks/ErrorHintNote'
 import { PassageBlock } from './blocks/PassageBlock'
 import { ApiErrorState, LoadingState } from './PageState'
 import { PracticeEssays } from './PracticeEssays'
@@ -31,6 +32,7 @@ function QuestionResults({ review }: { review: Review }) {
                 <p>Đáp án đúng: {outcome.correctAnswer}{answerLabel ? ` · ${answerLabel}` : ''}</p>
               ) : null}
               {outcome?.explanation ? <p>{outcome.explanation}</p> : null}
+              {!correct && outcome?.error ? <ErrorHintNote hint={outcome.error} variant="answer" /> : null}
             </div>
           </li>
         )

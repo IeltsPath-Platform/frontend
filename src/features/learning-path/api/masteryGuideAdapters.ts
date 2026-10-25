@@ -8,6 +8,7 @@ import type {
   SuggestionReason,
   SuggestionType,
 } from '~types/learningPath'
+import { mapErrorHint, type ErrorHintDto } from './errorHint'
 
 /** Wire DTOs of the mastery guide: `GET /api/learning/suggestions` and `GET /api/learning/review-basket`. */
 
@@ -43,9 +44,10 @@ export type BasketOptionalDto = {
   tier: MasteryTier
   mastery: number
   dueAt?: string | null
-  reason: 'CONSOLIDATE' | 'DUE'
+  reason: 'CONSOLIDATE' | 'DUE' | 'WRITING_CRITERION' | 'ERROR_PATTERN'
   hasUnrevealedSet: boolean
   reviewId?: string | null
+  errorTrap?: ErrorHintDto | null
 }
 
 export type ReviewBasketDto = {
@@ -97,6 +99,7 @@ function mapRequired(item: BasketRequiredDto): BasketRequiredItem {
 }
 
 function mapOptional(item: BasketOptionalDto): BasketOptionalItem {
+  const errorTrap = mapErrorHint(item.errorTrap)
   return {
     knowledgePointId: item.knowledgePointId,
     code: item.code,
@@ -108,6 +111,7 @@ function mapOptional(item: BasketOptionalDto): BasketOptionalItem {
     reason: item.reason,
     hasUnrevealedSet: item.hasUnrevealedSet,
     reviewId: item.reviewId ?? null,
+    ...(errorTrap ? { errorTrap } : {}),
   }
 }
 

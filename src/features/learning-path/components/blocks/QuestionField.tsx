@@ -1,6 +1,7 @@
 import { Input } from '@/components/ui/input'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import type { Question, QuestionResult } from '~types/learningPath'
+import { ErrorHintNote } from './ErrorHintNote'
 
 interface QuestionFieldProps {
   question: Question
@@ -56,6 +57,7 @@ export function QuestionField({ question, value, onChange, onBlur, disabled, res
       {hint ? (
         <p className="lp-question__hint" role="note"><strong>Gợi ý:</strong> {hint}</p>
       ) : null}
+      {result && !result.correct && result.error ? <ErrorHintNote hint={result.error} variant="answer" /> : null}
       {result?.correctAnswer ? (
         <div className="lp-solution">
           <p><strong>Đáp án:</strong> {result.correctAnswer}</p>

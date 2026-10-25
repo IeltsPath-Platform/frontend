@@ -16,6 +16,7 @@ import type {
 } from '~types/learningPath'
 import { learningApi, toApiError } from '../api'
 import { AudioBlock } from '../components/blocks/AudioBlock'
+import { ErrorHintNote } from '../components/blocks/ErrorHintNote'
 import { ExerciseBlock } from '../components/blocks/ExerciseBlock'
 import { RewardSummary } from '../components/RewardSummary'
 import { PassageBlock } from '../components/blocks/PassageBlock'
@@ -179,7 +180,7 @@ function ReviewView({ review, onAdvance, onReload, reviewOrigin }: {
       />
       <header className="lp-review-head">
         <p className="lp-eyebrow">
-          Bài ôn bắt buộc
+          {review.blocking === false ? 'Bài ôn tự chọn' : 'Bài ôn bắt buộc'}
           {stage ? ` · Bước ${stage === 'THEORY' ? 'đọc lý thuyết' : 'luyện tập'}` : ''}
         </p>
         <h1 id="lp-review-title">{review.knowledgePoint.title}</h1>
@@ -187,6 +188,8 @@ function ReviewView({ review, onAdvance, onReload, reviewOrigin }: {
           <p>Số bộ chưa đạt: {review.failedSets}/{review.maxFailedSets}.</p>
         ) : null}
       </header>
+
+      {status === 'PENDING' && review.errorTrap ? <ErrorHintNote hint={review.errorTrap} variant="review" /> : null}
 
       {review.theory.length > 0 ? (
         <section className="lp-theory" aria-labelledby="lp-theory-title">

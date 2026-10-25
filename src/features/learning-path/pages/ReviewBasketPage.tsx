@@ -187,6 +187,7 @@ function OptionalRow({ item, now, busyId, onStart }: {
           {skill ? <span>{skill}</span> : null}
           <span className={`lp-chip lp-chip--${tier.chip}`}>{tier.label}</span>
         </p>
+        {item.errorTrap ? <p className="lp-brow__trap">Lỗi hay gặp: {item.errorTrap.name}</p> : null}
       </div>
       {due ? <span className={`lp-brow__due${due.urgent ? ' is-urgent' : ''}`}>{due.text}</span> : <span />}
       {resumable ? (

@@ -41,7 +41,8 @@ export function nextLessonId(lesson: MockLesson) {
 }
 
 export function pendingReviews(state: MockState) {
-  return state.reviews.filter((review) => review.status === 'PENDING').sort((a, b) => a.createdSeq - b.createdSeq)
+  return state.reviews.filter((review) => review.status === 'PENDING' && review.blocking !== false)
+    .sort((a, b) => a.createdSeq - b.createdSeq)
 }
 
 export function toReviewRef(review: ReviewRecord): ReviewRef {

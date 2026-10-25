@@ -3577,6 +3577,34 @@ a.lp-step__row:hover {
   line-height: 1.5;
   border: 1px solid color-mix(in srgb, #f5e6b8 90%, transparent);
 }
+.lp-brow__trap {
+  margin: .25rem 0 0;
+  font-size: .85rem;
+  color: var(--lp-accent-ink);
+}
+.lp-error-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: .6rem;
+  margin: .45rem 0 0;
+  padding: .65rem .85rem;
+  border: 1px solid color-mix(in srgb, var(--lp-accent) 35%, transparent);
+  border-radius: .7rem;
+  background: var(--lp-accent-soft);
+  color: var(--lp-accent-ink);
+  font-size: .92rem;
+  line-height: 1.5;
+}
+.lp-error-hint > svg {
+  flex: none;
+  margin-top: .2rem;
+}
+.lp-error-hint p {
+  margin: 0;
+}
+.lp-error-hint p + p {
+  margin-top: .2rem;
+}
 .lp-audio {
   display: grid;
   gap: .75rem;
@@ -3841,6 +3869,25 @@ a.lp-step__row:hover {
   margin: 0;
   font-size: 0.875rem;
   color: var(--lp-muted);
+}
+
+.lp-point__traps {
+  display: grid;
+  gap: .35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: .85rem;
+  color: var(--lp-muted);
+}
+.lp-point__traps li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .25rem .6rem;
+}
+.lp-point__trap-name {
+  color: var(--lp-ink);
 }
 
 .lp-point__meta {

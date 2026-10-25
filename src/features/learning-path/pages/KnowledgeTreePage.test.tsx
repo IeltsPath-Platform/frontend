@@ -47,6 +47,41 @@ beforeEach(() => {
   vi.mocked(learningApi.startFreePractice).mockResolvedValue({ attemptId: 'attempt-1', packageId: 'package-1', packageVersionId: 'version-1', passage: null, audio: null, questions: [], essays: [] })
 })
 
+describe('KnowledgeTreePage error traps', () => {
+  const errorTraps: NonNullable<TreePoint['errorTraps']> = [
+    { knowledgePointId: 'trap-1', code: 'TFNG_NG_AS_FALSE', name: 'Chọn False khi thông tin không được nêu', tier: 'PRIORITY', mastery: .45, evidenceCount: 5 },
+    { knowledgePointId: 'trap-2', code: 'TFNG_FALSE_AS_NG', name: 'Chọn Not Given khi bài đã nói ngược lại', tier: 'MAINTAIN', mastery: .9, evidenceCount: 4 },
+  ]
+
+  it('lists the error traps a point has, with their mastery, under that point only', async () => {
+    vi.mocked(learningApi.getLearnerTree).mockResolvedValue({
+      courseId: 'course-1', knowledgePoints: [{ ...base, errorTraps }, points[1]],
+    })
+    renderTree()
+
+    const reading = await screen.findByRole('list', { name: 'Điểm kiến thức Reading' })
+    const main = within(reading).getByRole('heading', { name: 'Nắm ý chính', level: 4 }).closest('li') as HTMLElement
+    const traps = within(main).getByRole('list', { name: 'Lỗi hay gặp' })
+    expect(within(traps).getAllByRole('listitem')).toHaveLength(2)
+    expect(traps).toHaveTextContent('Chọn False khi thông tin không được nêu')
+    expect(traps).toHaveTextContent('45%')
+    expect(traps).toHaveTextContent('5 lượt làm')
+
+    const detail = within(reading).getByRole('heading', { name: 'Đọc chi tiết', level: 4 }).closest('li') as HTMLElement
+    expect(within(detail).queryByRole('list', { name: 'Lỗi hay gặp' })).not.toBeInTheDocument()
+  })
+
+  it('shows no error list when the backend sends none or an empty list', async () => {
+    vi.mocked(learningApi.getLearnerTree).mockResolvedValue({
+      courseId: 'course-1', knowledgePoints: [{ ...base, errorTraps: [] }, points[1]],
+    })
+    renderTree()
+
+    await screen.findByRole('region', { name: 'Sơ đồ cây kiến thức' })
+    expect(screen.queryByRole('list', { name: 'Lỗi hay gặp' })).not.toBeInTheDocument()
+  })
+})
+
 describe('KnowledgeTreePage', () => {
   it('groups every real point under its skill and preserves mastery and prerequisites', async () => {
     renderTree()

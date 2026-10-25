@@ -25,6 +25,7 @@ import type {
   TopicStatus,
   TopicSummary,
 } from '~types/learningPath'
+import { mapErrorHint, type ErrorHintDto } from './errorHint'
 
 /** Wire DTOs — backend/docs/contracts/lesson-learning-v1.md */
 
@@ -125,6 +126,7 @@ export type LessonExerciseResultDto = {
     correctAnswer?: string
     explanation?: string
     hint?: string | null
+    error?: ErrorHintDto | null
   }>
   gamification?: GamificationDto | null
 }
@@ -164,6 +166,8 @@ export type ReviewDetailDto = {
   maxFailedSets?: number | null
   knowledgePointId?: string
   skill?: string
+  blocking?: boolean
+  errorTrap?: ErrorHintDto | null
 }
 
 /** `gamification` of a submission response; the hearts fields are null or absent for a submission that costs no hearts. */
@@ -202,6 +206,7 @@ export type ReviewSubmissionResultDto = {
     correct: boolean
     correctAnswer?: string
     explanation?: string
+    error?: ErrorHintDto | null
   }>
 }
 
@@ -216,6 +221,7 @@ export type TheoryCheckResultDto = {
     correctAnswer?: string
     explanation?: string
     hint?: string | null
+    error?: ErrorHintDto | null
   }>
 }
 
@@ -316,6 +322,7 @@ export type PracticeSubmissionResultDto = {
     correctAnswer?: string
     explanation?: string
     hint?: string | null
+    error?: ErrorHintDto | null
   }>
   reviewsCreated?: Array<{ reviewId: string; knowledgePointId: string; stage?: string }>
   gamification?: GamificationDto | null
@@ -366,13 +373,16 @@ function mapQuestionResult(dto: {
   correctAnswer?: string
   explanation?: string
   hint?: string | null
+  error?: ErrorHintDto | null
 }): QuestionResult {
+  const error = mapErrorHint(dto.error)
   return {
     questionId: dto.questionVersionId,
     correct: dto.correct,
     ...(dto.correctAnswer !== undefined ? { correctAnswer: dto.correctAnswer } : {}),
     ...(dto.explanation !== undefined ? { explanation: dto.explanation } : {}),
     hint: dto.hint ?? null,
+    ...(error ? { error } : {}),
   }
 }
 
@@ -583,6 +593,7 @@ export function mapReviewDetail(dto: ReviewDetailDto, topicId: string): ReviewDe
   const failedSets = dto.failedSets ?? 0
   const maxFailedSets = dto.maxFailedSets ?? null
   const stage = dto.stage ?? (dto.set ? 'PRACTICE' : 'THEORY')
+  const errorTrap = mapErrorHint(dto.errorTrap)
 
   const set = dto.set
     ? {
@@ -618,6 +629,8 @@ export function mapReviewDetail(dto: ReviewDetailDto, topicId: string): ReviewDe
     maxFailedSets,
     theoryReason: dto.theoryReason ?? null,
     resumeLessonId: dto.lessonId,
+    ...(dto.blocking === undefined ? {} : { blocking: dto.blocking }),
+    ...(errorTrap ? { errorTrap } : {}),
   }
 }
 
