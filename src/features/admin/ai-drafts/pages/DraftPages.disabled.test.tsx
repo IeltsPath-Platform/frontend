@@ -8,6 +8,7 @@ import { AiDraftsPage } from './AiDraftsPage'
 const api = vi.hoisted(() => ({ fetchAiDrafts: vi.fn(), fetchAiDraft: vi.fn(), approveQuestionDraft: vi.fn(), rejectAiDraft: vi.fn(), requestQuestionDraft: vi.fn() }))
 const knowledge = vi.hoisted(() => ({ fetchKnowledgeTree: vi.fn() }))
 vi.mock('../api/aiDraftApi', () => api)
+vi.mock('../draftFlags', () => ({ QUESTION_DRAFTS_ENABLED: false }))
 vi.mock('../../knowledge-graph/api/knowledgeGraphApi', () => knowledge)
 describe('question drafts rollout', () => {
   it.each([AiDraftsPage, AiDraftDetailPage])('renders the deployment placeholder without any draft or knowledge calls', (Page) => {

@@ -28,7 +28,7 @@ describe('AdminSidebar groups', () => {
   it('lists every screen of a group as a link inside its sub-menu', () => {
     renderSidebar()
     const links = within(flyout('Câu hỏi & đề')).getAllByRole('link').map((link) => link.getAttribute('href'))
-    expect(links).toEqual(['/content-author/questions', '/content-author/packages', '/content-author/course-import'])
+    expect(links).toEqual(['/content-author/questions', '/content-author/packages', '/content-author/course-import', '/content-author/ai-drafts'])
   })
 
   it('opens the sub-menu when the pointer rests on the icon and closes it when the pointer leaves', async () => {
