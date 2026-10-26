@@ -66,7 +66,8 @@ const discovery: NavItem = {
     { to: '/community', label: 'Cộng đồng' },
     { to: '/games', label: 'Trò chơi' },
     { to: '/video-dictation', label: 'Nghe chép' },
-    { to: '/vocabulary', label: 'Kho từ vựng' },
+    { to: '/vocabulary', label: 'Từ điển' },
+    { to: '/vocabulary/notebook', label: 'Sổ tay từ vựng' },
     { to: '/flashcards', label: 'Flashcard của tôi' },
   ],
 }

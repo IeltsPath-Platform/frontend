@@ -31,6 +31,7 @@ import { ExaminerReviewPage } from './examiner-review/pages/ExaminerReviewPage'
 import { ReviewEssayPage } from './examiner-review/pages/ReviewEssayPage'
 import { AiEvaluationPage } from './ai-evaluation/pages/AiEvaluationPage'
 import { EvaluationRunPage } from './ai-evaluation/pages/EvaluationRunPage'
+import { AdminVocabularyPage } from './vocabulary/pages/AdminVocabularyPage'
 
 /** A route is open only to the roles its menu item lists. */
 function Guard({ path, children }: { path: string; children: ReactNode }) {
@@ -77,6 +78,7 @@ export function AdminRoutes({ area = 'admin' }: { area?: 'admin' | 'content-auth
             <Route element={<CourseDraftsPage />} index />
             <Route element={<CourseDraftDetailPage />} path=":draftId" />
           </Route>
+          <Route element={<AdminVocabularyPage />} path="vocabulary" />
           <Route element={<CourseImportPage />} path="course-import" />
           <Route element={<WorkQueuePage />} path="work-items" />
           <Route element={<Outlet />} path="examiner-review">
@@ -101,6 +103,7 @@ export function AdminRoutes({ area = 'admin' }: { area?: 'admin' | 'content-auth
           <Route element={<Guard path="/admin/users"><UsersPage /></Guard>} path="users" />
           <Route element={<Guard path="/admin/services"><ServicesPage /></Guard>} path="services" />
           <Route element={<Guard path="/admin/activity"><ActivityPage /></Guard>} path="activity" />
+          <Route element={<Guard path="/admin/vocabulary"><AdminVocabularyPage /></Guard>} path="vocabulary" />
           <Route element={<Guard path="/admin/content"><LegacyContentRedirect /></Guard>} path="content" />
           <Route element={<Guard path="/admin/knowledge-graph"><LegacyKnowledgeGraph /></Guard>} path="knowledge-graph" />
           <Route element={<Guard path="/admin/lessons"><LegacyContentRedirect /></Guard>} path="lessons/*" />
