@@ -3,15 +3,6 @@
  * Uses the learning tokens (--lp-*); the lead suggestion is the one deliberately loud element, the rest stays quiet.
  */
 
-/* The two shortcuts under the course-list heading sit side by side. */
-.lp-pagehead__links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: .6rem;
-  margin-top: 8px;
-}
-.lp-pagehead__links .lp-pagehead__link { margin-top: 0; }
-
 /* ---------- Suggestion strip ---------- */
 .lp-guide {
   display: grid;

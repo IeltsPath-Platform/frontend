@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { ArrowUpRight, Crown, LogOut } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { ArrowUpRight, Crown, LogOut, Trophy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { LearnerQuickStats } from '@/features/learning-path/components/LearnerQuickStats'
 import styles from './UserTierDropdown.module.css'
 
 export type UserTier = 'FREE' | 'PREMIUM'
@@ -78,6 +78,10 @@ export function UserTierDropdown({
     onToggleTier?.(nextTier)
   }
 
+  function closeMenu() {
+    if (dropdownRef.current) dropdownRef.current.open = false
+  }
+
   return (
     <details
       ref={dropdownRef}
@@ -113,7 +117,9 @@ export function UserTierDropdown({
           <h2 id="user-tier-title">Góc học tập</h2>
           <span className={styles.introCaption}>Của {safeUserName}</span>
         </div>
-        {isOpen && <LearnerQuickStats />}
+        <Link to="/learn/progress" className={styles.menuLink} onClick={closeMenu}>
+          <Trophy aria-hidden="true" size={17} />Thành tích của tôi
+        </Link>
 
         <section className={styles.planSection} aria-label="Gói học của bạn">
           <div className={styles.planHeading}>
