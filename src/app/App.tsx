@@ -173,7 +173,7 @@ function AppContent() {
       <Route path="/vocabulary/sets/:id" element={<VocabularySetPage />} />
       <Route path="/vocabulary/sets/:id/study" element={<RequireAuth><SetStudyPage /></RequireAuth>} />
       <Route path="/vocabulary/map" element={<RequireAuth><VocabularyMapPage /></RequireAuth>} />
-      <Route path="/vocabulary/notebook" element={<RequireAuth><VocabularyNotebookPage /></RequireAuth>} />
+      <Route path="/vocabulary/notebook" element={<VocabularyNotebookPage />} />
       <Route path="/vocabulary/notebook/review" element={<RequireAuth><NotebookReviewPage /></RequireAuth>} />
       <Route path="/vocabulary/review" element={<Navigate replace to="/vocabulary/notebook/review" />} />
       <Route path="/submission-history" element={<RequireAuth><RouteStatusPage title="Lịch sử nộp bài" /></RequireAuth>} />

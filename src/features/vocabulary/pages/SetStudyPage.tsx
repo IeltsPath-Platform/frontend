@@ -1,3 +1,4 @@
+import { VocabularyShell } from '../components/VocabularyShell'
 import { useEffect, useRef, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { X, RefreshCw, AlertCircle, Sparkles } from 'lucide-react'
@@ -19,7 +20,7 @@ import { ReviewSummaryView } from '../components/review/ReviewSummaryView'
 import { SkipConfirmDialog } from '../components/review/SkipConfirmDialog'
 import '../vocabulary-notebook.css'
 
-export function SetStudyPage() {
+function SetStudyContent() {
   const { id = '' } = useParams<{ id: string }>()
   const navigate = useNavigate()
 
@@ -295,5 +296,14 @@ export function SetStudyPage() {
         }}
       />
     </div>
+  )
+}
+
+/** Same frame as the rest of the vocabulary area, so the site navbar stays available on every screen. */
+export function SetStudyPage() {
+  return (
+    <VocabularyShell>
+      <SetStudyContent />
+    </VocabularyShell>
   )
 }

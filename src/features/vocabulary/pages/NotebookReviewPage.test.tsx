@@ -32,6 +32,11 @@ const MOCK_DUE_ITEMS = [
 
 describe('NotebookReviewPage', () => {
   beforeEach(() => {
+    vi.stubGlobal('ResizeObserver', class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    })
     vi.clearAllMocks()
     vi.mocked(notebookApi.getDueFlashcards).mockResolvedValue({
       items: MOCK_DUE_ITEMS,

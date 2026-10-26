@@ -1,3 +1,4 @@
+import { VocabularyShell } from '../components/VocabularyShell'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { X, RefreshCw, AlertCircle, Flame } from 'lucide-react'
@@ -21,7 +22,7 @@ import { ReviewSummaryView } from '../components/review/ReviewSummaryView'
 import { SkipConfirmDialog } from '../components/review/SkipConfirmDialog'
 import '../vocabulary-notebook.css'
 
-export function NotebookReviewPage() {
+function NotebookReviewContent() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
 
@@ -372,5 +373,14 @@ export function NotebookReviewPage() {
         onCancel={() => setIsSkipDialogOpen(false)}
       />
     </div>
+  )
+}
+
+/** Same frame as the rest of the vocabulary area, so the site navbar stays available on every screen. */
+export function NotebookReviewPage() {
+  return (
+    <VocabularyShell>
+      <NotebookReviewContent />
+    </VocabularyShell>
   )
 }

@@ -18,6 +18,7 @@ vi.mock('../api/notebookApi', () => ({
 
 vi.mock('@/features/auth/authSession', () => ({
   useAuthSession: () => ({ isLoggedIn: true, userName: 'Learner' }),
+  setDemoTier: vi.fn(),
 }))
 
 const MOCK_DETAIL = {
@@ -62,6 +63,11 @@ const MOCK_DETAIL = {
 
 describe('WordDetailPage', () => {
   beforeEach(() => {
+    vi.stubGlobal('ResizeObserver', class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    })
     vi.clearAllMocks()
     vi.mocked(notebookApi.getVocabularyItem).mockResolvedValue(MOCK_DETAIL)
     vi.mocked(notebookApi.getSavedNotebookSenses).mockResolvedValue(['sense-100'])

@@ -6,6 +6,13 @@ import { VocabularyNotebookPage } from './VocabularyNotebookPage'
 import { notebookApi } from '../api/notebookApi'
 import { ToastProvider } from '@/components/toast/ToastProvider'
 
+const session = vi.hoisted(() => ({ current: { isLoggedIn: true, hydrated: true, userName: 'Learner', points: 0, tier: 'FREE', email: null, userId: 'u1', roles: [] as string[] } }))
+
+vi.mock('@/features/auth/authSession', () => ({
+  useAuthSession: () => session.current,
+  setDemoTier: vi.fn(),
+}))
+
 vi.mock('../api/notebookApi', () => ({
   notebookApi: {
     getNotebookSummary: vi.fn(),
@@ -76,6 +83,7 @@ const MOCK_ENTRIES = [
 
 describe('VocabularyNotebookPage', () => {
   beforeEach(() => {
+    session.current = { isLoggedIn: true, hydrated: true, userName: 'Learner', points: 0, tier: 'FREE', email: null, userId: 'u1', roles: [] }
     vi.clearAllMocks()
     vi.stubGlobal('ResizeObserver', class {
       observe() {}

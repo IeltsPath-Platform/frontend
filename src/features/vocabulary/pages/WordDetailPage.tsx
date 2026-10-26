@@ -1,3 +1,4 @@
+import { VocabularyShell } from '../components/VocabularyShell'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import {
@@ -28,7 +29,7 @@ import '../vocabulary-notebook.css'
 
 type TabKey = 'definitions' | 'collocations' | 'thesaurus' | 'commonMistakes' | 'examples'
 
-export function WordDetailPage() {
+function WordDetailContent() {
   const { id } = useParams<{ id: string }>()
   const location = useLocation()
   const navigate = useNavigate()
@@ -971,5 +972,14 @@ export function WordDetailPage() {
         </aside>
       </div>
     </div>
+  )
+}
+
+/** Same frame as the rest of the vocabulary area, so the site navbar stays available on every screen. */
+export function WordDetailPage() {
+  return (
+    <VocabularyShell>
+      <WordDetailContent />
+    </VocabularyShell>
   )
 }

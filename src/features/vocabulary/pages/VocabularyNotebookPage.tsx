@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { BookOpen, RefreshCw, AlertCircle } from 'lucide-react'
+import { BookOpen, RefreshCw, AlertCircle, LogIn } from 'lucide-react'
 import {
   notebookApi,
   type NotebookEntryResponse,
@@ -15,11 +15,15 @@ import { WordCard } from '../components/WordCard'
 import { WordDetailSheet } from '../components/WordDetailSheet'
 import { WordOfTheDayCard } from '../components/WordOfTheDayCard'
 import { useToast } from '@/components/toast/toastContext'
+import { OwlHero } from '@/components/OwlHero'
+import { useAuthSession } from '@/features/auth/authSession'
+import { VocabularyShell } from '../components/VocabularyShell'
 import '../vocabulary-notebook.css'
 
 const LOCAL_STORAGE_VIEW_MODE_KEY = 'ieltspath_vocab_view_mode'
 
-export function VocabularyNotebookPage() {
+/** The notebook of a signed-in learner; it calls APIs that need a token, so guests never mount it. */
+function NotebookContent() {
   const [searchParams, setSearchParams] = useSearchParams()
   const { toast } = useToast()
 
@@ -529,6 +533,45 @@ export function VocabularyNotebookPage() {
         hasPrev={hasPrev}
         hasNext={hasNext}
       />
+    </div>
+  )
+}
+
+/** Anyone can open the notebook page; guests see how it works and are invited to sign in, since a notebook is personal. */
+export function VocabularyNotebookPage() {
+  const session = useAuthSession()
+  return (
+    <VocabularyShell skipLabel="Chuyển đến sổ tay">
+      {session.isLoggedIn ? <NotebookContent /> : <GuestNotebook hydrated={session.hydrated} />}
+    </VocabularyShell>
+  )
+}
+
+function GuestNotebook({ hydrated }: { hydrated: boolean }) {
+  if (!hydrated) {
+    return <div className="vocab-container" role="status" aria-label="Đang kiểm tra phiên đăng nhập" style={{ minHeight: '40vh' }} />
+  }
+  return (
+    <div className="vocab-container" style={{ textAlign: 'center', padding: '3rem 1rem 5rem' }}>
+      <OwlHero pose="idea" size="lg" alt="" />
+      <h1 style={{ fontSize: '1.6rem', fontWeight: 800, margin: '1rem 0 0.5rem', color: '#0f172a' }}>Sổ tay từ vựng của bạn</h1>
+      <p style={{ color: '#64748b', margin: '0 auto 1.5rem', maxWidth: '34rem', lineHeight: 1.6 }}>
+        Lưu từ khi tra từ điển, đặt mức hiểu, ghi chú riêng và ôn đúng lúc theo lịch lặp lại ngắt quãng. Đăng nhập để mở sổ tay của riêng bạn.
+      </p>
+      <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+        <Link
+          to="/login?returnTo=/vocabulary/notebook"
+          style={{ alignItems: 'center', background: '#123ab5', borderRadius: '0.65rem', color: '#ffffff', display: 'inline-flex', fontWeight: 700, gap: '0.4rem', padding: '0.7rem 1.4rem', textDecoration: 'none' }}
+        >
+          <LogIn size={16} aria-hidden="true" /> Đăng nhập ngay
+        </Link>
+        <Link
+          to="/vocabulary"
+          style={{ alignItems: 'center', border: '1px solid #cbd5e1', borderRadius: '0.65rem', color: '#334155', display: 'inline-flex', fontWeight: 600, padding: '0.7rem 1.4rem', textDecoration: 'none' }}
+        >
+          Xem từ điển
+        </Link>
+      </div>
     </div>
   )
 }
