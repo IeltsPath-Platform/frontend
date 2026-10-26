@@ -210,6 +210,11 @@ export interface LearningReportResponse {
   overallMastery?: number
 }
 
+/** Raw `/api/learning/report` body: `estimatedBand` is an object, flattened to a number by `getLearningReport`. */
+interface LearningReportApiResponse extends Omit<LearningReportResponse, 'estimatedBand'> {
+  estimatedBand?: { value: number | null; estimated: boolean } | null
+}
+
 export interface NotebookEntryResponse {
   flashcardId: string
   vocabularySenseId: string
@@ -552,10 +557,16 @@ export const notebookApi = {
     ),
 
   /** Learner report from learning-service */
-  getLearningReport: (signal?: AbortSignal) =>
-    apiRequest<LearningReportResponse>('/api/learning/report', {
+  getLearningReport: (signal?: AbortSignal): Promise<LearningReportResponse> =>
+    apiRequest<LearningReportApiResponse>('/api/learning/report', {
       auth: true,
       signal,
+    }).then((report) => {
+      const value = report.estimatedBand?.value
+      return {
+        ...report,
+        estimatedBand: value == null ? undefined : Number(value),
+      }
     }),
 
   /** Set manual understanding level */
