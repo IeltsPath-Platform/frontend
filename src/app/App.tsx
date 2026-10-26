@@ -15,6 +15,8 @@ import { PracticeCatalogPage } from '@/features/practice/pages/PracticeCatalogPa
 import { ListeningPracticePage } from '@/features/practice/listening/ListeningPracticePage'
 import { WritingWorkspacePage } from '@/features/practice/writing/WritingWorkspacePage'
 import { WritingResultPage } from '@/features/practice/writing/WritingResultPage'
+import { ExaminerReviewsPage } from '@/features/practice/writing/ExaminerReviewsPage'
+import { GradingJobPage } from '@/features/practice/writing/GradingJobPage'
 import { SpeakingWorkspacePage } from '@/features/practice/speaking/SpeakingWorkspacePage'
 import { ReadingPracticePage } from '@/features/practice/reading/ReadingPracticePage'
 import { ReadingResultPage } from '@/features/practice/reading/ReadingResultPage'
@@ -148,6 +150,8 @@ function AppContent() {
       <Route path="/practice/listening/attempts/:attemptId/review" element={<RequireAuth><ReadingResultPage skill="listening" review /></RequireAuth>} />
       <Route path="/practice/writing/tasks/:packageVersionId/:sectionId" element={<RequireAuth><WritingWorkspacePage /></RequireAuth>} />
       <Route path="/practice/writing/submissions/:submissionId/result" element={<RequireAuth><WritingResultPage /></RequireAuth>} />
+      <Route path="/grading-jobs/:jobId" element={<RequireAuth><GradingJobPage /></RequireAuth>} />
+      <Route path="/writing-reviews" element={<RequireAuth><ExaminerReviewsPage /></RequireAuth>} />
       <Route path="/practice/listening/:testId" element={<Navigate replace to="/practice-tests?skill=listening" />} />
       <Route path="/practice/writing/:taskId" element={<Navigate replace to="/practice-tests?skill=writing" />} />
       <Route path="/practice/reading/history" element={<RequireAuth><ReadingHistoryPage /></RequireAuth>} />

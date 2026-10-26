@@ -10,5 +10,6 @@ export function hasAnyRole(roles: readonly string[] | undefined, allowed: readon
 export function signInDestination(roles: readonly string[] | undefined, from?: string): string {
   if (hasAnyRole(roles, ['ADMIN'])) return '/admin'
   if (hasAnyRole(roles, ['CONTENT_AUTHOR'])) return '/content-author'
+  if (hasAnyRole(roles, ['EXAMINER'])) return '/admin'
   return from || '/overview'
 }

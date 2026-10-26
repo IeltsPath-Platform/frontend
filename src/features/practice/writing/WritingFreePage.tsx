@@ -61,6 +61,7 @@ export function WritingFreePage({ task }: { task: WritingTask }) {
   return (
     <div className={`rw-root lp-tokens ww-root${eyeComfort ? ' rw-eye-comfort' : ''} rw-text-${fontSize}`}>
       <WritingTopBar exitTo={CATALOG_PATH} eyeComfort={eyeComfort} onToggleEyeComfort={setEyeComfort} fontSize={fontSize} onChangeFontSize={setFontSize} />
+      {grade.pendingNotice}
       <div className="ww-body ww-body-free">
         <WritingTaskPanel task={task} showGuide />
 

@@ -17,6 +17,7 @@ const SOURCE_LABEL: Record<string, string> = {
   TOPIC_GATE: 'Thi cuối chủ đề',
   COURSE_GATE: 'Thi cuối khóa',
   PLACEMENT: 'Thi xếp lớp',
+  MOCK: 'Thi thử',
   PRACTICE: 'Luyện tập',
   LESSON: 'Bài học',
 }

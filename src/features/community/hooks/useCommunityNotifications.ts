@@ -3,9 +3,14 @@ import { Client } from '@stomp/stompjs'
 import { API_BASE_URL } from '@/lib/env'
 import { getAccessToken } from '@/lib/httpClient'
 import { communityApi, type Notification } from '../api/communityApi'
+import { NOTIFICATION_PUSHED } from '../lib/notificationEvents'
+
+/** What the socket pushes the moment a notification is stored: enough to say what happened and where it leads. */
+export type PushedNotification = Pick<Notification, 'id' | 'eventType' | 'actorId'> & Partial<Pick<Notification, 'postId' | 'gradingJobId'>>
 
 export function useCommunityNotifications(enabled: boolean) {
   const [items, setItems] = useState<Notification[]>([])
+  const [fresh, setFresh] = useState<PushedNotification | null>(null)
   const [unread, setUnread] = useState(0)
   const [error, setError] = useState('')
   const [announcement, setAnnouncement] = useState('')
@@ -25,8 +30,13 @@ export function useCommunityNotifications(enabled: boolean) {
       void refresh()
       client.subscribe('/user/queue/notifications', (frame) => {
         try {
-          const pushed = JSON.parse(frame.body) as { id?: string }
-          if (pushed.id) { setAnnouncement('Bạn có thông báo mới.'); void refresh() }
+          const pushed = JSON.parse(frame.body) as Partial<PushedNotification>
+          if (pushed.id) {
+            setAnnouncement('Bạn có thông báo mới.')
+            if (pushed.eventType) setFresh(pushed as PushedNotification)
+            void refresh()
+            window.dispatchEvent(new Event(NOTIFICATION_PUSHED))
+          }
         } catch { setError('Nhận được thông báo không hợp lệ.') }
       })
     }
@@ -39,5 +49,6 @@ export function useCommunityNotifications(enabled: boolean) {
   }, [enabled, refresh])
   const markRead = async (id: string) => { await communityApi.markRead(id); await refresh() }
   const markAll = async () => { await communityApi.markAll(); await refresh() }
-  return { items, unread, error, announcement, refresh, markRead, markAll }
+  const dismissFresh = useCallback(() => setFresh(null), [])
+  return { items, unread, error, announcement, fresh, dismissFresh, refresh, markRead, markAll }
 }
