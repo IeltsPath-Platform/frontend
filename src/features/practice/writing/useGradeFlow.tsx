@@ -1,19 +1,27 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
-import { useLocation } from 'react-router-dom'
+import { Hourglass } from 'lucide-react'
+import { Link, useLocation } from 'react-router-dom'
 import { KeyActivationDialog } from '@/features/home/components/KeyActivationDialog'
 import { POINT_PRODUCTS } from '@/features/home/pricingData'
+import { getPendingExaminerSubmission } from './examinerApi'
+import { ExaminerPickDialog } from './ExaminerPickDialog'
+import { GradeMethodDialog } from './GradeMethodDialog'
 import { GradeConfirmDialog, NotEnoughPointsDialog } from './WritingParts'
+import { gradeOptions } from './gradeOptions'
 import type { WritingMode, WritingTask } from './writingApi'
 import { countWords } from './writingText'
+import { useExaminerSubmission } from './useExaminerSubmission'
 import { useWritingGrading } from './useWritingGrading'
 import { useWritingWallet } from './useWritingWallet'
+import type { GradingAccess } from './useWritingWallet'
 
-type Popup = 'confirm' | 'short' | null
+type Popup = 'method' | 'confirm' | 'short' | 'examiner' | null
 
 /**
- * What "Hoàn thành" does on a Writing screen: read the learner's points, then open the confirm popup (or the
- * not-enough-points popup, which leads to key activation) and send the essay to the AI grader when confirmed.
+ * What "Hoàn thành" does on a Writing screen: read the learner's points and Premium credits, then ask who grades. A teacher
+ * needs Premium with a credit left and is picked from the examiners who take work; the AI needs enough points and goes
+ * through the confirm popup (or the not-enough-points popup, which leads to key activation).
  */
 export function useGradeFlow({ task, mode, draftKey, essay, seconds, label, benefits, extraChecks }: {
   task: WritingTask
@@ -26,30 +34,67 @@ export function useGradeFlow({ task, mode, draftKey, essay, seconds, label, bene
   benefits: string[]
   /** Checks shown under the figures besides the word count, such as the steps done. */
   extraChecks: Array<{ text: string; ok: boolean }>
-}): { start: () => void; checking: boolean; dialogs: ReactNode } {
+}): { start: () => void; checking: boolean; dialogs: ReactNode; pendingNotice: ReactNode } {
   const { pathname, search } = useLocation()
   const [popup, setPopup] = useState<Popup>(null)
+  const [waiting, setWaiting] = useState<string | null>(null)
   const [checking, setChecking] = useState(false)
   const [activationOpen, setActivationOpen] = useState(false)
+  const [access, setAccess] = useState<GradingAccess>({ balance: null, subscription: undefined })
   const wallet = useWritingWallet()
+  const retryPath = `${pathname}${search}`
   const grading = useWritingGrading({
-    task, mode, draftKey, essay, seconds, retryPath: `${pathname}${search}`,
+    task, mode, draftKey, essay, seconds, retryPath,
     onPointsShort: () => setPopup('short'),
   })
+  const examiner = useExaminerSubmission({ task, mode, draftKey, essay, seconds, retryPath })
+
+  // The learner may come back to a prompt they already sent to a teacher: say so before they write it again.
+  useEffect(() => {
+    const controller = new AbortController()
+    getPendingExaminerSubmission(task.questionVersionId, controller.signal)
+      .then((id) => { if (!controller.signal.aborted) setWaiting(id) })
+      .catch(() => undefined)
+    return () => controller.abort()
+  }, [task.questionVersionId])
+  const pendingId = examiner.pendingId ?? waiting
   const words = countWords(essay)
   const minWords = task.minWords ?? grading.terms.minWords
   const canGrade = words >= grading.terms.minWords
+  const options = gradeOptions({ balance: access.balance, cost: grading.terms.pointCost, subscription: access.subscription, teacherPending: pendingId !== null })
+  const context = `Writing ${task.task === 'TASK_2' ? 'Task 2' : 'Task 1'} · ${task.title} · ${label}`
 
   function start() {
     if (checking) return
     setChecking(true)
-    void wallet.check().then((balance) => {
-      setPopup(balance !== null && balance < grading.terms.pointCost ? 'short' : 'confirm')
+    void wallet.checkAccess().then((found) => {
+      setAccess(found)
+      setPopup('method')
     }).finally(() => setChecking(false))
   }
 
   const dialogs = (
     <>
+      {popup === 'method' && (
+        <GradeMethodDialog
+          options={options}
+          context={context}
+          onClose={() => setPopup(null)}
+          onTeacher={() => setPopup('examiner')}
+          onAi={() => setPopup(options.ai.enabled ? 'confirm' : 'short')}
+        />
+      )}
+      {popup === 'examiner' && (
+        <ExaminerPickDialog
+          words={words}
+          minWords={grading.terms.minWords}
+          busy={examiner.busy}
+          error={examiner.error}
+          onSend={(examinerId) => void examiner.send(examinerId)}
+          onBack={() => { examiner.clearError(); setPopup('method') }}
+          onClose={() => { examiner.clearError(); setPopup(null) }}
+        />
+      )}
       {popup === 'confirm' && (
         <GradeConfirmDialog
           busy={grading.grading}
@@ -59,8 +104,8 @@ export function useGradeFlow({ task, mode, draftKey, essay, seconds, label, bene
           onClose={() => { grading.clearError(); setPopup(null) }}
           figures={{
             cost: grading.terms.pointCost,
-            balance: wallet.balance,
-            context: `Writing ${task.task === 'TASK_2' ? 'Task 2' : 'Task 1'} · ${task.title} · ${label}`,
+            balance: access.balance ?? wallet.balance,
+            context,
             benefits,
             checks: [...extraChecks, { text: `Số từ: ${words} (tối thiểu ${minWords})`, ok: words >= minWords }],
           }}
@@ -69,7 +114,7 @@ export function useGradeFlow({ task, mode, draftKey, essay, seconds, label, bene
       {popup === 'short' && (
         <NotEnoughPointsDialog
           cost={grading.terms.pointCost}
-          balance={wallet.balance}
+          balance={access.balance ?? wallet.balance}
           onClose={() => setPopup(null)}
           onActivate={() => { setPopup(null); setActivationOpen(true) }}
         />
@@ -79,11 +124,25 @@ export function useGradeFlow({ task, mode, draftKey, essay, seconds, label, bene
         isLoggedIn={wallet.isLoggedIn}
         client={wallet.client}
         onClose={() => setActivationOpen(false)}
-        onActivated={wallet.onActivated}
+        onActivated={(result) => {
+          wallet.onActivated(result)
+          if (result.newBalance !== null) setAccess((current) => ({ ...current, balance: result.newBalance }))
+        }}
         returnFocus={() => undefined}
       />
     </>
   )
 
-  return { start, checking, dialogs }
+  const pendingNotice = pendingId ? (
+    <div className="we-pending" role="status">
+      <span aria-hidden="true" className="we-pending__icon"><Hourglass size={20} /></span>
+      <div className="we-pending__body">
+        <strong>Bài này đã gửi giáo viên và đang chờ chấm</strong>
+        <p>Bạn gửi lại cho giáo viên được sau khi giáo viên chấm xong. Trong lúc chờ, bạn có thể chọn AI chấm.</p>
+      </div>
+      <Link className="we-pending__action" to={`/practice/writing/submissions/${pendingId}/result`}>Xem bài đang chờ chấm</Link>
+    </div>
+  ) : null
+
+  return { start, checking, dialogs, pendingNotice }
 }

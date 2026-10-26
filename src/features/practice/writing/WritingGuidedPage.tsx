@@ -82,6 +82,7 @@ export function WritingGuidedPage({ task, steps }: { task: WritingTask; steps: G
         <div className="ww-progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent} aria-label="Tiến độ các bước"><i style={{ width: `${percent}%` }} /></div>
       </WritingTopBar>
 
+      {grade.pendingNotice}
       <div className="ww-body ww-body-guided">
         <section className="ww-card ww-task" aria-label="Đề bài">
           <div className="ww-task-scroll">

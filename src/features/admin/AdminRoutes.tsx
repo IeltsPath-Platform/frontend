@@ -29,6 +29,12 @@ import { CourseImportPage } from './course-import/pages/CourseImportPage'
 import { WorkQueuePage } from './work-queue/pages/WorkQueuePage'
 import { ExaminerReviewPage } from './examiner-review/pages/ExaminerReviewPage'
 import { ReviewEssayPage } from './examiner-review/pages/ReviewEssayPage'
+import { ExaminerDashboardPage } from '@/features/examiner/dashboard/pages/ExaminerDashboardPage'
+import { ExaminerProfilePage } from '@/features/examiner/dashboard/pages/ExaminerProfilePage'
+import { GradedReviewPage } from '@/features/examiner/grading/pages/GradedReviewPage'
+import { SpeakingGradingPage } from '@/features/examiner/grading/pages/SpeakingGradingPage'
+import { WritingGradingPage } from '@/features/examiner/grading/pages/WritingGradingPage'
+import { WritingQueuePage } from '@/features/examiner/grading/pages/WritingQueuePage'
 import { AiEvaluationPage } from './ai-evaluation/pages/AiEvaluationPage'
 import { EvaluationRunPage } from './ai-evaluation/pages/EvaluationRunPage'
 import { AdminVocabularyPage } from './vocabulary/pages/AdminVocabularyPage'
@@ -103,6 +109,16 @@ export function AdminRoutes({ area = 'admin' }: { area?: 'admin' | 'content-auth
           <Route element={<Guard path="/admin/users"><UsersPage /></Guard>} path="users" />
           <Route element={<Guard path="/admin/services"><ServicesPage /></Guard>} path="services" />
           <Route element={<Guard path="/admin/activity"><ActivityPage /></Guard>} path="activity" />
+          <Route element={<Outlet />} path="examiner">
+            <Route element={<Guard path="/admin/examiner"><ExaminerDashboardPage /></Guard>} index />
+            <Route element={<Guard path="/admin/examiner/profile"><ExaminerProfilePage /></Guard>} path="profile" />
+          </Route>
+          <Route element={<Outlet />} path="grading">
+            <Route element={<Guard path="/admin/grading/writing"><WritingQueuePage /></Guard>} path="writing" />
+            <Route element={<Guard path="/admin/grading/writing"><WritingGradingPage /></Guard>} path="writing/:jobId" />
+            <Route element={<Guard path="/admin/grading/writing"><GradedReviewPage /></Guard>} path="writing/:jobId/review" />
+            <Route element={<Guard path="/admin/grading/speaking"><SpeakingGradingPage /></Guard>} path="speaking" />
+          </Route>
           <Route element={<Guard path="/admin/vocabulary"><AdminVocabularyPage /></Guard>} path="vocabulary" />
           <Route element={<Guard path="/admin/content"><LegacyContentRedirect /></Guard>} path="content" />
           <Route element={<Guard path="/admin/knowledge-graph"><LegacyKnowledgeGraph /></Guard>} path="knowledge-graph" />

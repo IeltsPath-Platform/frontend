@@ -3,6 +3,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { ChevronDown, GraduationCap, LogOut, Search } from 'lucide-react'
 import brandLogo from '@/assets/brand-logo-white.webp'
 import { logoutSession, useAuthSession } from '@/features/auth/authSession'
+import { hasAnyRole } from '@/features/auth/staffRoles'
+import { NotificationBell } from '@/features/community/components/NotificationBell'
 import { useAdminSearch } from './adminSearch'
 
 function initialsOf(name: string): string {
@@ -73,6 +75,8 @@ function AccountMenu() {
 export function AdminTopbar() {
   const { query, setQuery } = useAdminSearch()
   const isAuthorArea = useLocation().pathname.startsWith('/content-author')
+  // An examiner is reminded here when a job will be late soon.
+  const isExaminer = hasAnyRole(useAuthSession().roles, ['EXAMINER'])
   return (
     <header className="adm-topbar">
       <Link aria-label={isAuthorArea ? 'Trang chủ biên soạn nội dung' : 'Trang chủ quản trị'} className="adm-brand" to={isAuthorArea ? '/content-author' : '/admin'}>
@@ -90,7 +94,10 @@ export function AdminTopbar() {
           value={query}
         />
       </label>
-      <AccountMenu />
+      <div className="adm-topbar__tools">
+        <NotificationBell enabled={isExaminer} />
+        <AccountMenu />
+      </div>
     </header>
   )
 }

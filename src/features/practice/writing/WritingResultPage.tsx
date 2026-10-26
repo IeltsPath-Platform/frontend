@@ -5,6 +5,7 @@ import { SiteNavbar } from '@/components/SiteNavbar'
 import { ApiErrorState, LoadingState } from '@/features/learning-path/components/PageState'
 import { useApiResource } from '@/features/learning-path/lib/useApiResource'
 import '@/features/learning-path/learning-path.css'
+import { ExaminerResult } from './ExaminerResult'
 import { getWritingSubmission } from './writingApi'
 import type { WritingCorrection, WritingCriterion, WritingSubmission } from './writingApi'
 import { formatClock, loadResultContext, lowestIndex, measureEssay, roundBand } from './writingText'
@@ -176,6 +177,7 @@ export function WritingResultPage() {
   if (resource.status === 'error' && resource.error) return <ApiErrorState error={resource.error} onRetry={resource.reload} />
   const submission = resource.data
   if (!submission) return null
+  if (submission.status === 'AWAITING_EXAMINER') return <ExaminerResult submission={submission} submissionId={submissionId} />
   if (submission.status !== 'GRADED') {
     return (
       <main className="reading-state reading-empty">

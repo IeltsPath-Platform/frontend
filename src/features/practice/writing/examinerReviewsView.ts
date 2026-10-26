@@ -1,0 +1,59 @@
+import type { ExaminerReviewItem } from './examinerReviewsApi'
+import type { MyGradingJob } from './gradingJobApi'
+
+export type ReviewFilter = 'ALL' | 'DONE' | 'WAITING'
+
+/** One essay of the list: what Learning knows of it, joined with how the examiner's job stands. */
+export interface ReviewRow extends ExaminerReviewItem {
+  done: boolean
+  band: number | null
+  completedAt: string | null
+  /** The job, so a late one can be told from one still within its 48 hours. */
+  job: MyGradingJob | null
+}
+
+/** Joins the essays with the learner's jobs by the review id; an essay whose job is not found counts as still waiting. */
+export function joinReviews(items: readonly ExaminerReviewItem[], jobs: readonly MyGradingJob[]): ReviewRow[] {
+  const byReview = new Map(jobs.filter((job) => job.reviewSubmissionId).map((job) => [job.reviewSubmissionId as string, job] as const))
+  return items.map((item) => {
+    const job = byReview.get(item.reviewSubmissionId) ?? null
+    const done = job?.state === 'COMPLETED'
+    return { ...item, job, done, band: done ? job?.band ?? null : null, completedAt: done ? job?.completedAt ?? null : null }
+  })
+}
+
+/** Graded essays first (newest grade first), then the ones still waiting in the order they were sent. */
+export function viewReviews(rows: readonly ReviewRow[], filter: ReviewFilter): ReviewRow[] {
+  const shown = rows.filter((row) => filter === 'ALL' || (filter === 'DONE') === row.done)
+  const finishedAt = (row: ReviewRow) => (row.completedAt ? Date.parse(row.completedAt) : 0)
+  return [...shown].sort((a, b) => Number(b.done) - Number(a.done) || finishedAt(b) - finishedAt(a)
+    || Date.parse(b.requestedAt) - Date.parse(a.requestedAt))
+}
+
+export const countReviews = (rows: readonly ReviewRow[]) => ({
+  ALL: rows.length,
+  DONE: rows.filter((row) => row.done).length,
+  WAITING: rows.filter((row) => !row.done).length,
+})
+
+/** The mean of the bands the teacher gave, to the nearest half band as IELTS rounds; null while nothing is graded. */
+export function averageBand(rows: readonly ReviewRow[]): number | null {
+  const bands = rows.flatMap((row) => (row.band === null ? [] : [row.band]))
+  if (bands.length === 0) return null
+  return Math.round((bands.reduce((sum, band) => sum + band, 0) / bands.length) * 2) / 2
+}
+
+const SOURCE_TEXT: Record<string, string> = {
+  FREE_WRITING: 'Luyện viết tự do',
+  PRACTICE_ITEM: 'Luyện tập',
+  LESSON_BLOCK: 'Bài học',
+}
+
+export const sourceText = (source: string | null | undefined) => SOURCE_TEXT[source ?? ''] ?? 'Bài viết'
+
+export const taskText = (task: string | null | undefined) => (task === 'TASK_1' ? 'Task 1' : task === 'TASK_2' ? 'Task 2' : 'Writing')
+
+export function dateText(iso: string | null | undefined) {
+  const date = iso ? new Date(iso) : null
+  return date && !Number.isNaN(date.getTime()) ? date.toLocaleDateString('vi-VN') : ''
+}

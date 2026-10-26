@@ -1,0 +1,82 @@
+﻿/* Examiner dashboard, queue header and profile. Colours come from the admin theme tokens. */
+.ex-dashboard { display: grid; gap: 18px; min-width: 0; }
+.ex-block { min-width: 0; display: grid; align-content: start; gap: 4px; padding: 18px; }
+.ex-block__head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; padding-bottom: 10px; border-bottom: 1px solid var(--adm-border); }
+.ex-block__head h2 { margin: 0; font-size: 1.05rem; }
+.ex-block__link { flex: none; }
+
+/* The main button of the page and the buttons of the page title. */
+.ex-cta { min-height: 46px; padding: 0 22px; font-size: 1rem; box-shadow: 0 4px 12px rgb(13 43 141 / 28%); }
+
+/* Four numbers, each a button that opens the queue. */
+.ex-tiles { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); margin: 0; padding: 0; list-style: none; }
+.ex-tile { display: flex; align-items: center; gap: 14px; padding: 16px 18px; border-left: 5px solid var(--ex-tone); text-decoration: none; color: inherit; transition: box-shadow .15s ease, transform .15s ease; }
+.ex-tile:hover { box-shadow: 0 8px 20px rgb(13 43 141 / 14%); transform: translateY(-1px); }
+.ex-tile:focus-visible { outline: 3px solid var(--ex-tone); outline-offset: 2px; }
+.ex-tile--blue { --ex-tone: #1d4ed8; --ex-soft: #dbeafe; }
+.ex-tile--indigo { --ex-tone: #6d28d9; --ex-soft: #ede9fe; }
+.ex-tile--amber { --ex-tone: #d97706; --ex-soft: #fef3c7; }
+.ex-tile--red { --ex-tone: #dc2626; --ex-soft: #fee2e2; }
+.ex-tile__icon { display: grid; place-items: center; flex: none; width: 46px; height: 46px; border-radius: 12px; background: var(--ex-soft); color: var(--ex-tone); }
+.ex-tile__body { display: grid; gap: 2px; min-width: 0; }
+.ex-tile__body strong { font-size: 2rem; line-height: 1; font-variant-numeric: tabular-nums; color: var(--ex-tone); }
+.ex-tile__body span { color: var(--adm-muted); font-size: .88rem; }
+.ex-tile__go { margin-left: auto; color: var(--adm-muted); flex: none; }
+.ex-tile.is-quiet { border-left-color: var(--adm-border); }
+.ex-tile.is-quiet .ex-tile__icon { background: var(--adm-surface-2); color: var(--adm-muted); }
+.ex-tile.is-quiet .ex-tile__body strong { color: var(--adm-text); }
+
+/* The numbers above the queue table. */
+.ex-stats { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); margin: 0; padding: 0; list-style: none; }
+.ex-stat { display: grid; gap: 2px; padding: 14px 16px; text-decoration: none; color: inherit; }
+.ex-stat strong { font-size: 1.75rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.ex-stat span { color: var(--adm-muted); font-size: .85rem; }
+.ex-stat--danger strong, .ex-stat--danger span { color: var(--adm-danger); }
+.ex-stat--warn strong, .ex-stat--warn span { color: var(--adm-warn); }
+.ex-stats--four { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+.ex-stats--four .ex-stat { list-style: none; }
+
+/* The work list (wide) beside today's intake (slim). On a narrow screen the intake drops under the list. */
+.ex-main { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr) 290px; align-items: start; min-width: 0; }
+.ex-main > * { min-width: 0; }
+.ex-side .ex-block { padding: 14px 16px; }
+.ex-side .ex-block__head { margin-bottom: 6px; padding-bottom: 8px; }
+@media (max-width: 1099px) {
+  .ex-main { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Today. */
+.ex-intake { margin: 0 0 8px; font-size: 1.05rem; font-weight: 700; }
+.ex-bar { height: 10px; border-radius: 999px; background: var(--adm-surface-2); border: 1px solid var(--adm-border); overflow: hidden; margin-bottom: 10px; }
+.ex-bar__fill { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--adm-accent), var(--adm-accent-strong)); }
+.ex-bar__fill--full { background: var(--adm-warn); }
+.ex-note { margin: 0 0 8px; padding: 8px 12px; border-radius: 8px; font-size: .9rem; }
+.ex-note--warn { background: #fef3c7; color: #92400e; }
+.ex-facts { display: flex; flex-wrap: wrap; gap: 8px 28px; margin: 10px 0 0; }
+.ex-facts div { display: grid; gap: 2px; }
+.ex-facts dt { color: var(--adm-muted); font-size: .8rem; }
+.ex-facts dd { margin: 0; font-size: 1.25rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.ex-facts--boxes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
+.ex-facts--boxes div { padding: 8px 12px; border: 1px solid var(--adm-border); border-radius: 10px; background: var(--adm-surface-2); }
+.ex-facts--boxes dt { font-size: .78rem; }
+.ex-facts--boxes dd { font-size: 1.4rem; line-height: 1.2; color: var(--adm-accent-strong); }
+.ex-side .ex-note { padding: 6px 10px; font-size: .84rem; }
+
+/* The switch of the profile form. */
+.ex-switch { display: grid; grid-template-columns: auto 1fr; align-items: center; column-gap: 10px; row-gap: 0; margin-top: 12px; padding: 10px 14px; min-height: 52px; border: 1px solid var(--adm-border); border-radius: 10px; cursor: pointer; background: var(--adm-surface-2); }
+.ex-switch.is-on { border-color: var(--adm-accent); background: var(--adm-accent-soft); }
+.ex-switch input { grid-row: span 2; width: 20px; height: 20px; accent-color: var(--adm-accent-strong); }
+.ex-switch span { font-weight: 600; }
+.ex-switch small { color: var(--adm-muted); }
+
+/* Tables of jobs. */
+.ex-table th { white-space: nowrap; }
+.ex-table td:last-child { white-space: nowrap; }
+
+/* The profile form. */
+.ex-form { display: grid; gap: 14px; max-width: 760px; }
+.ex-form__row { display: grid; gap: .5rem; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+.ex-cert { display: grid; gap: .5rem; padding: 10px; border: 1px solid var(--adm-border); border-radius: var(--adm-radius); }
+.ex-cert__grid { display: grid; gap: .5rem; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+.ex-form__actions { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+.ex-form__actions .adm-btn { min-height: 44px; }

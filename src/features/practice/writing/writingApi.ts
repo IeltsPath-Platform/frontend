@@ -59,7 +59,8 @@ export interface WritingCorrection {
 
 export interface WritingSubmission {
   submissionId: string
-  status: 'GRADING' | 'PAYMENT_PENDING' | 'GRADED' | 'FAILED'
+  /** AWAITING_EXAMINER: sent to an examiner instead of the AI; their review is read apart (see examinerApi). */
+  status: 'GRADING' | 'PAYMENT_PENDING' | 'GRADED' | 'FAILED' | 'AWAITING_EXAMINER'
   task?: string
   wordCount?: number
   overallBand?: number

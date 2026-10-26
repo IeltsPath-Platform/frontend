@@ -92,6 +92,7 @@
 .adm-flyout__link.is-active { background: var(--adm-accent-soft); color: var(--adm-accent); }
 @media (prefers-reduced-motion: reduce) { .adm-sidebar .adm-flyout { transition: none; } }
 
+.adm-topbar__tools { display: flex; align-items: center; gap: 12px; margin-left: auto; }
 .adm-account { position: relative; margin-left: auto; }
 .adm-account__button { display: flex; align-items: center; gap: 10px; background: transparent; border: 0; color: #fff; cursor: pointer; padding: 4px 6px; border-radius: 8px; font: inherit; }
 .adm-account__button:hover { background: rgb(255 255 255 / 12%); }

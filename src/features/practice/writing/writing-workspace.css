@@ -1,6 +1,8 @@
 /* Writing practice: A top bar, B task (prompt, chart, guide), C essay or steps, D dictionary / hints. */
 
-.ww-root { grid-template-rows: auto minmax(0, 1fr); }
+/* Top bar, then the notice (an empty row takes no room), then the writing area, which fills what is left. */
+.ww-root { grid-template-rows: auto auto minmax(0, 1fr); }
+.ww-root > .ww-body { grid-row: 3; }
 
 .ww-topbar-center { display: grid; justify-items: center; gap: 0.3rem; min-width: 0; }
 .ww-step-label { margin: 0; font-size: 0.82rem; font-weight: 700; text-align: center; }
