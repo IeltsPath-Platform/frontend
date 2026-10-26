@@ -1,7 +1,7 @@
 import { questTitle } from '@/features/learning-path/lib/progressMeta'
-import type { Badge, DailyQuests, GamificationSummary, HeartsStatus, LearnerProgress } from '~types/learningPath'
+import type { Badge, DailyQuests, GamificationSummary, HeartsStatus, LearnerProgress, Suggestion } from '~types/learningPath'
 
-export type OwlTab = 'quests' | 'badges'
+export type OwlTab = 'quests' | 'badges' | 'suggestions'
 
 export interface OwlMessage {
   id: string
@@ -70,6 +70,19 @@ function badgeMessages(badges: Badge[]): OwlMessage[] {
 export function buildOwlMessages(daily: DailyQuests | null, badges: Badge[] | null): OwlMessage[] {
   const quest = daily ? questMessage(daily) : null
   return [...(quest ? [quest] : []), ...(badges ? badgeMessages(badges) : [])]
+}
+
+/**
+ * The once-a-day nudge about the optional suggestions, or `null` when there are none. It only offers; the wording
+ * keeps it a question so skipping it feels fine.
+ */
+export function buildSuggestionReminder(suggestions: Suggestion[]): OwlMessage | null {
+  const [first] = suggestions
+  if (!first) return null
+  const text = suggestions.length === 1
+    ? `Hôm nay có 1 việc nhỏ giúp bạn chắc hơn: “${first.title}”. Xem thử nhé?`
+    : `Hôm nay có ${suggestions.length} việc nhỏ giúp bạn chắc hơn. Bắt đầu với “${first.title}” nhé?`
+  return { id: 'suggestions-today', text, tab: 'suggestions', mood: 'info' }
 }
 
 /**

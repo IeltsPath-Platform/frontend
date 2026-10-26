@@ -3923,10 +3923,6 @@ a.lp-step__row:hover {
 }
 
 /* ---- Progress page: level, streak, quests, badges, league ---- */
-.lp-pagehead__link {
-  margin-top: 8px;
-}
-
 .lp-progress-section {
   display: flex;
   flex-direction: column;

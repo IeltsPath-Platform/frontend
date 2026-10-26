@@ -66,6 +66,9 @@
 .cardIntro { display: flex; align-items: baseline; justify-content: space-between; gap: .75rem; }
 .cardIntro h2 { margin: 0; color: var(--tier-text); font-size: .95rem; font-weight: 750; letter-spacing: -.025em; }
 .introCaption { max-inline-size: 55%; overflow: hidden; color: var(--color-text-muted); font-size: .7rem; text-overflow: ellipsis; white-space: nowrap; }
+.menuLink { display: flex; align-items: center; gap: .6rem; min-block-size: 44px; padding-inline: .65rem; border-radius: .7rem; background: var(--tier-soft); color: var(--tier-primary); font-size: .8rem; font-weight: 700; text-decoration: none; transition: background 160ms ease-out; }
+.menuLink:hover { background: color-mix(in srgb, var(--tier-soft) 80%, var(--tier-primary) 20%); }
+.menuLink:focus-visible { outline: 3px solid var(--tier-primary); outline-offset: 2px; }
 .planSection { display: grid; gap: .75rem; padding-block-start: 1rem; border-block-start: 1px solid var(--tier-border); }
 .planHeading { display: flex; align-items: center; gap: .65rem; }
 .planIcon { display: grid; place-items: center; flex: 0 0 2rem; block-size: 2rem; border-radius: .65rem; background: var(--tier-soft); color: var(--tier-primary); }

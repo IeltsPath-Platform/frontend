@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import type { Badge, DailyQuests, GamificationSummary, Quest } from '~types/learningPath'
-import { buildAnnouncements, buildOwlMessages, type OwlSnapshot } from './owl-messages'
+import type { Badge, DailyQuests, GamificationSummary, Quest, Suggestion } from '~types/learningPath'
+import { buildAnnouncements, buildOwlMessages, buildSuggestionReminder, type OwlSnapshot } from './owl-messages'
 
 const quest = (over: Partial<Quest>): Quest => ({
   type: 'PRACTICE', required: 5, progress: 0, completed: false, xpReward: 20, pointsReward: 0, target: null, ...over,
@@ -48,6 +48,29 @@ describe('buildOwlMessages', () => {
   it('says nothing when there is nothing to report', () => {
     expect(buildOwlMessages(null, null)).toEqual([])
     expect(buildOwlMessages(daily([]), [badge({ progress: { current: 1, target: 7 } })])).toEqual([])
+  })
+})
+
+const suggestion = (title: string): Suggestion => ({
+  type: 'PRACTICE_SET', id: title, title, knowledgePointId: 'kp', knowledgePointCode: null, reason: 'CONSOLIDATE',
+  band: 5.5, skill: 'READING', action: { kind: 'BASKET_REVIEW', knowledgePointId: 'kp' },
+})
+
+describe('buildSuggestionReminder', () => {
+  it('says nothing when there is nothing to suggest', () => {
+    expect(buildSuggestionReminder([])).toBeNull()
+  })
+
+  it('counts the suggestions and starts with the first one', () => {
+    const message = buildSuggestionReminder([suggestion('Câu chủ đề'), suggestion('Ý chính'), suggestion('Từ nối')])
+    expect(message?.text).toBe('Hôm nay có 3 việc nhỏ giúp bạn chắc hơn. Bắt đầu với “Câu chủ đề” nhé?')
+    expect(message?.tab).toBe('suggestions')
+    expect(message?.mood).toBe('info')
+  })
+
+  it('names the only suggestion instead of counting', () => {
+    expect(buildSuggestionReminder([suggestion('Câu chủ đề')])?.text)
+      .toBe('Hôm nay có 1 việc nhỏ giúp bạn chắc hơn: “Câu chủ đề”. Xem thử nhé?')
   })
 })
 

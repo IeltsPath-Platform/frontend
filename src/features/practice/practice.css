@@ -200,6 +200,23 @@
   gap: 0.5rem;
 }
 
+/* The count on the review basket link; red while a review is required, amber when points are only due. */
+.site-nav-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  margin-inline-start: .4rem;
+  padding-inline: .3rem;
+  border-radius: 999px;
+  background: #ffc247;
+  color: #3a2600;
+  font-size: .7rem;
+  font-weight: 800;
+  line-height: 1;
+}
+.site-nav-badge[data-urgent] { background: #ff5a5f; color: #fff; }
+
 .site-user-tier-dropdown {
   --tier-trigger-text: white;
   --tier-trigger-muted: rgb(255 255 255 / 74%);

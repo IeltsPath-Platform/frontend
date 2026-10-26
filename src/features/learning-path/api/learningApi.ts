@@ -28,6 +28,7 @@ import type {
   PracticeSubmissionRequest,
   PracticeSubmissionResult,
   ReviewBasket,
+  ReviewBasketSummary,
   ReviewDetail,
   ReviewRef,
   ReviewSubmissionRequest,
@@ -93,6 +94,8 @@ export interface LearningApi {
   getSuggestions(): Promise<Suggestion[]>
   /** Reviews the learner owes, and weak or due points they may review when they choose. */
   getReviewBasket(): Promise<ReviewBasket>
+  /** How many required reviews and due points wait in the basket; cheap enough for a badge on every page. */
+  getReviewBasketSummary(): Promise<ReviewBasketSummary>
   /**
    * Starts (or returns) an optional review of the point and gives its first set; resolves with the review to open.
    * Rejects with `REVIEW_REQUIRED` while a required review is open.

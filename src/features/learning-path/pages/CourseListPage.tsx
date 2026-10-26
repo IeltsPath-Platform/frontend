@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { CSSProperties } from 'react'
-import { ArrowRight, ClipboardCheck, Route, Trophy } from 'lucide-react'
+import { ArrowRight, Route } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { OwlHero } from '@/components/OwlHero'
 import type { CourseSummary } from '~types/learningPath'
@@ -51,14 +51,6 @@ export function CourseListPage() {
       <header className="lp-pagehead">
         <p className="lp-eyebrow">Khóa học</p>
         <h1>Lộ trình IELTS theo band mục tiêu</h1>
-        <div className="lp-pagehead__links">
-          <Button asChild className="lp-btn lp-pagehead__link">
-            <Link to="/learn/progress"><Trophy aria-hidden="true" size={16} />Thành tích của tôi</Link>
-          </Button>
-          <Button asChild className="lp-btn lp-btn--quiet lp-pagehead__link">
-            <Link to="/learn/review-basket"><ClipboardCheck aria-hidden="true" size={16} />Giỏ ôn tập</Link>
-          </Button>
-        </div>
       </header>
 
       {courses.status === 'success' ? (
