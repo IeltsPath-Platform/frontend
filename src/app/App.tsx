@@ -27,7 +27,12 @@ import { TestPage } from '@/features/flashcards/pages/TestPage'
 import { FlashcardStudyPage } from '@/features/flashcards/pages/FlashcardStudyPage'
 import { FlashcardsPage } from '@/features/flashcards/pages/FlashcardsPage'
 import { VocabularyPage } from '@/features/vocabulary/pages/VocabularyPage'
-import { VocabularyReviewPage } from '@/features/vocabulary/pages/VocabularyReviewPage'
+import { WordDetailPage } from '@/features/vocabulary/pages/WordDetailPage'
+import { VocabularySetPage } from '@/features/vocabulary/pages/VocabularySetPage'
+import { SetStudyPage } from '@/features/vocabulary/pages/SetStudyPage'
+import { VocabularyMapPage } from '@/features/vocabulary/pages/VocabularyMapPage'
+import { VocabularyNotebookPage } from '@/features/vocabulary/pages/VocabularyNotebookPage'
+import { NotebookReviewPage } from '@/features/vocabulary/pages/NotebookReviewPage'
 import { AuthPage } from '@/features/auth/pages/AuthPage'
 import { useAuthSession } from '@/features/auth/authSession'
 import { signInDestination } from '@/features/auth/staffRoles'
@@ -107,7 +112,6 @@ function AppContent() {
       <Route path="/notifications/preferences" element={<RequireAuth><NotificationPreferencesPage /></RequireAuth>} />
       <Route path="/community/posts/:postId" element={<RequireAuth><CommunityPage /></RequireAuth>} />
       <Route path="/community/users/:userId" element={<RequireAuth><CommunityPage /></RequireAuth>} />
-      <Route path="/vocabulary/review" element={<RequireAuth><VocabularyReviewPage /></RequireAuth>} />
       <Route path="/learn" element={<RequireAuth><LearnLayout /></RequireAuth>}>
         <Route index element={<CourseListPage />} />
         <Route path="placement" element={<PlacementPage />} />
@@ -165,6 +169,13 @@ function AppContent() {
       <Route path="/video-dictation" element={<RequireAuth><VideoDictationLibraryPage /></RequireAuth>} />
       <Route path="/video-dictation/:videoId" element={<RequireAuth><VideoDictationPlayerPage /></RequireAuth>} />
       <Route path="/vocabulary" element={<VocabularyPage />} />
+      <Route path="/vocabulary/:id" element={<WordDetailPage />} />
+      <Route path="/vocabulary/sets/:id" element={<VocabularySetPage />} />
+      <Route path="/vocabulary/sets/:id/study" element={<RequireAuth><SetStudyPage /></RequireAuth>} />
+      <Route path="/vocabulary/map" element={<RequireAuth><VocabularyMapPage /></RequireAuth>} />
+      <Route path="/vocabulary/notebook" element={<RequireAuth><VocabularyNotebookPage /></RequireAuth>} />
+      <Route path="/vocabulary/notebook/review" element={<RequireAuth><NotebookReviewPage /></RequireAuth>} />
+      <Route path="/vocabulary/review" element={<Navigate replace to="/vocabulary/notebook/review" />} />
       <Route path="/submission-history" element={<RequireAuth><RouteStatusPage title="Lịch sử nộp bài" /></RequireAuth>} />
       <Route path="/flashcards" element={<RequireAuth><FlashcardsPage /></RequireAuth>} />
       <Route path="/flashcards/decks/new" element={<RequireAuth><DeckEditorPage /></RequireAuth>} />

@@ -1,6 +1,8 @@
-import { BookOpenText, Info, RotateCcw } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { BookOpenText, Info, RotateCcw, Bookmark, BookmarkCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { getLessonVocabularySenses } from '../api/lessonVocabularyApi'
+import { notebookApi } from '@/features/vocabulary/api/notebookApi'
 import { useApiResource } from '../lib/useApiResource'
 import { LoadingState } from './PageState'
 import { PronunciationButton } from './PronunciationButton'
@@ -42,6 +44,34 @@ export function LessonVocabulary({ senseIds }: LessonVocabularyProps) {
 
 function VocabularyList({ senseIds }: LessonVocabularyProps) {
   const resource = useApiResource(`lesson-vocabulary:${senseIds.join(',')}`, () => getLessonVocabularySenses(senseIds))
+  const [savedSenseIds, setSavedSenseIds] = useState<Set<string>>(new Set())
+  const [savingSenseId, setSavingSenseId] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (senseIds.length === 0) return
+    let active = true
+    notebookApi.getSavedNotebookSenses([...senseIds])
+      .then((saved) => {
+        if (active) setSavedSenseIds(new Set(saved))
+      })
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [senseIds])
+
+  const handleToggleSave = async (senseId: string) => {
+    if (savedSenseIds.has(senseId) || savingSenseId === senseId) return
+    setSavingSenseId(senseId)
+    try {
+      await notebookApi.saveNotebookEntry(senseId)
+      setSavedSenseIds((prev) => new Set([...prev, senseId]))
+    } catch {
+      // Silent error fallback
+    } finally {
+      setSavingSenseId(null)
+    }
+  }
 
   if (resource.status === 'loading') return <LoadingState label="Đang tải từ vựng…" />
 
@@ -86,9 +116,32 @@ function VocabularyList({ senseIds }: LessonVocabularyProps) {
           <li className="lp-vocabulary__item" key={sense.senseId}>
             <span className="lp-vocabulary__number" aria-hidden="true">{index + 1}</span>
             <div className="lp-vocabulary__body">
-              <div className="lp-vocabulary__heading">
+              <div className="lp-vocabulary__heading" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
                 <h3 lang="en">{sense.lemma}</h3>
                 {sense.partOfSpeech ? <span className="lp-vocabulary__pos">{PART_OF_SPEECH_LABELS[sense.partOfSpeech] ?? sense.partOfSpeech.toLowerCase().replaceAll('_', ' ')}</span> : null}
+                <button
+                  type="button"
+                  onClick={() => handleToggleSave(sense.senseId)}
+                  disabled={savingSenseId === sense.senseId}
+                  title={savedSenseIds.has(sense.senseId) ? 'Đã lưu trong sổ tay' : 'Lưu vào sổ tay'}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                    padding: '0.3rem 0.65rem',
+                    borderRadius: '0.5rem',
+                    border: '1px solid',
+                    borderColor: savedSenseIds.has(sense.senseId) ? '#16a34a' : '#cbd5e1',
+                    background: savedSenseIds.has(sense.senseId) ? '#f0fdf4' : '#ffffff',
+                    color: savedSenseIds.has(sense.senseId) ? '#15803d' : '#475569',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    cursor: savedSenseIds.has(sense.senseId) ? 'default' : 'pointer',
+                  }}
+                >
+                  {savedSenseIds.has(sense.senseId) ? <BookmarkCheck size={14} /> : <Bookmark size={14} />}
+                  <span>{savedSenseIds.has(sense.senseId) ? 'Đã lưu' : 'Lưu vào sổ'}</span>
+                </button>
               </div>
               {sense.ipa || hasPlayableAudio(sense.pronunciationAudioReference) ? (
                 <div className="lp-vocabulary__pronunciation">
