@@ -627,6 +627,14 @@ export interface BasketOptionalItem {
   errorTrap?: ErrorHint
 }
 
+/** The counts behind the badge on the review basket (`GET /api/learning/review-basket/summary`). */
+export interface ReviewBasketSummary {
+  /** Blocking reviews the learner has to finish. */
+  required: number
+  /** Maintained points whose review date has come. */
+  due: number
+}
+
 export interface ReviewBasket {
   required: BasketRequiredItem[]
   consolidate: BasketOptionalItem[]

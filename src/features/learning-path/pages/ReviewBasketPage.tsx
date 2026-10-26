@@ -169,7 +169,7 @@ function OptionalRow({ item, now, busyId, onStart }: {
   item: BasketOptionalItem
   now: Date
   busyId: string | null
-  onStart: (knowledgePointId: string) => Promise<void>
+  onStart: (knowledgePointId: string) => Promise<unknown>
 }) {
   const tier = tierMeta(item.tier)
   const skill = skillLabel(item.skill)

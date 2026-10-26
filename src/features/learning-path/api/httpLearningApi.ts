@@ -296,6 +296,11 @@ export function createHttpLearningApi(): LearningApi {
       return mapReviewBasket(await learningRequest<ReviewBasketDto>('/review-basket'))
     },
 
+    async getReviewBasketSummary() {
+      const dto = await learningRequest<{ required?: number, due?: number }>('/review-basket/summary')
+      return { required: dto.required ?? 0, due: dto.due ?? 0 }
+    },
+
     async startBasketReview(knowledgePointId: string) {
       const dto = await learningRequest<{ reviewId: string }>(
         `/review-basket/${encodeURIComponent(knowledgePointId)}/start`,

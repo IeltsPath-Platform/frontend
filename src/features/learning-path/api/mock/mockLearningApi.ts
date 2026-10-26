@@ -77,6 +77,10 @@ export function createMockLearningApi({ storage = null, latencyMs = 0, now = () 
     // The guide is drawn from the fixed tree so both screens can be worked on offline; nothing can be started from it.
     getSuggestions: () => respond(() => mockSuggestions()),
     getReviewBasket: () => respond((s) => mockReviewBasket(pendingReviewRefs(s), now())),
+    getReviewBasketSummary: () => respond((s) => {
+      const basket = mockReviewBasket(pendingReviewRefs(s), now())
+      return { required: basket.required.length, due: basket.due.length }
+    }),
     // Only a point with a repeated mistake has a mock review (its error-pattern review); others need the real API.
     startBasketReview: (knowledgePointId) => respond((s) => lessons.startErrorPatternReview(s, knowledgePointId)),
     // The mock has no Practice, so nothing ever costs a heart: the hearts stay full.

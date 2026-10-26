@@ -1,4 +1,4 @@
-﻿import { Activity, BookOpen, FileQuestion, Gauge, LayoutDashboard, Network, Server, Users, type LucideIcon } from 'lucide-react'
+import { Activity, BookOpen, FileQuestion, Gauge, LayoutDashboard, Network, Server, Users, type LucideIcon } from 'lucide-react'
 import { hasAnyRole, type StaffRole } from '@/features/auth/staffRoles'
 import { BadgeCheck, Bug, ClipboardList, Library, ListTodo, Mic, PenLine, Scale, Sparkles, UserCheck, UserRound } from 'lucide-react'
 import { QUESTION_DRAFTS_ENABLED } from './ai-drafts/draftFlags'
@@ -86,6 +86,9 @@ export function menuEntriesFor(roles: readonly string[] | undefined): MenuEntry[
 }
 
 export function rolesFor(path: string): readonly StaffRole[] {
+  if (path === '/admin/vocabulary' || path === '/content-author/vocabulary') {
+    return ['CONTENT_AUTHOR', 'ADMIN']
+  }
   const canonical = path.replace(/^\/admin\/(?=content$|knowledge-graph$|lessons$|questions$)/, '/content-author/')
   return ADMIN_MENU.find((item) => item.path === canonical)?.roles ?? []
 }

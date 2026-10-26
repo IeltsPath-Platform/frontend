@@ -7,13 +7,20 @@ import type { NavOwlHandle } from './NavOwl'
 import { UserTierDropdown } from './UserTierDropdown'
 import { logoutSession, setDemoTier, useAuthSession } from '@/features/auth/authSession'
 import { NotificationBell } from '@/features/community/components/NotificationBell'
+import { ReviewBasketBadge } from './ReviewBasketBadge'
+import { useReviewBasketSummary } from './useReviewBasketSummary'
 
 interface NavChild { to: string; label: string }
 interface NavItem { to: string; label: string; children?: readonly NavChild[]; disclosure?: boolean }
 
-/** The primary item owning the current route: its own path first, then a child's path. */
+/**
+ * The primary item owning the current route: its own path first (the most specific one, so a page under `/learn`
+ * that has its own item is not claimed by `Khóa học`), then a child's path.
+ */
 function findActiveItem(items: readonly NavItem[], pathname: string) {
-  return items.find((item) => pathname === item.to || pathname.startsWith(`${item.to}/`))
+  return items
+    .filter((item) => pathname === item.to || pathname.startsWith(`${item.to}/`))
+    .sort((a, b) => b.to.length - a.to.length)[0]
     ?? items.find((item) => item.children?.some((child) => {
       const path = child.to.split('?')[0]
       return path === pathname || pathname.startsWith(`${path}/`)
@@ -48,6 +55,8 @@ const coursesNav: NavItem = {
     { to: '/learn', label: 'Khóa học' },
   ],
 }
+/** Signed-in learners only: what is waiting for them to review. */
+const reviewBasket: NavItem = { to: '/learn/review-basket', label: 'Giỏ ôn tập' }
 const practice: NavItem = { to: '/practice-tests', label: 'Luyện tập 4 kỹ năng', children: practiceSkills }
 const discovery: NavItem = {
   to: '/community',
@@ -57,7 +66,8 @@ const discovery: NavItem = {
     { to: '/community', label: 'Cộng đồng' },
     { to: '/games', label: 'Trò chơi' },
     { to: '/video-dictation', label: 'Nghe chép' },
-    { to: '/vocabulary', label: 'Kho từ vựng' },
+    { to: '/vocabulary', label: 'Từ điển' },
+    { to: '/vocabulary/notebook', label: 'Sổ tay từ vựng' },
     { to: '/flashcards', label: 'Flashcard của tôi' },
   ],
 }
@@ -80,6 +90,7 @@ const memberNavigation: readonly NavItem[] = [
     ],
   },
   coursesNav,
+  reviewBasket,
   practice,
   discovery,
 ]
@@ -100,6 +111,7 @@ export function SiteNavbar({ isLoggedIn, userName }: SiteNavbarProps) {
   const session = useAuthSession()
   const activeIsLoggedIn = isLoggedIn ?? session.isLoggedIn
   const activeUserName = userName ?? session.userName
+  const basketSummary = useReviewBasketSummary(activeIsLoggedIn)
   const visibleNavigation = useMemo(
     () => activeIsLoggedIn ? memberNavigation : guestNavigation,
     [activeIsLoggedIn],
@@ -248,6 +260,7 @@ export function SiteNavbar({ isLoggedIn, userName }: SiteNavbarProps) {
                     onMouseEnter={() => previewSections(item)} onFocus={() => previewSections(item)}
                     className={() => `site-nav-link${item === subnavItem ? ' active' : ''}`}>
                     {item.label}
+                    {item === reviewBasket ? <ReviewBasketBadge summary={basketSummary} /> : null}
                   </NavLink>
                 )}
                 {menuOpen && item === subnavItem && item.children ? (
