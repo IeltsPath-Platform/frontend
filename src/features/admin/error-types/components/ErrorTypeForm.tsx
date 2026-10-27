@@ -29,8 +29,7 @@ export function ErrorTypeForm({ item, onSaved, onCancel }: { item?: ErrorType; o
       onSaved()
     } catch (reason) { setError(errorTypeMessage(reason)) } finally { setSaving(false) }
   }
-  return <form aria-label={item ? 'Sửa mã lỗi' : 'Tạo mã lỗi'} className="adm-card adm-error-form" noValidate onSubmit={(event) => void submit(event)}>
-    <h2>{item ? 'Sửa mã lỗi' : 'Tạo mã lỗi'}</h2>
+  return <form aria-label={item ? 'Sửa mã lỗi' : 'Tạo mã lỗi'} className="adm-error-form" noValidate onSubmit={(event) => void submit(event)}>
     {error ? <div className="adm-alert adm-alert--error" role="alert">{error}</div> : null}
     <fieldset className="adm-error-fields" disabled={saving}>
       <label className="adm-field"><span>Mã lỗi</span><input className="adm-input" required maxLength={60} disabled={!!item} value={code} onChange={(event) => setCode(event.target.value)} /></label>
@@ -42,7 +41,7 @@ export function ErrorTypeForm({ item, onSaved, onCancel }: { item?: ErrorType; o
       {kp ? <button className="adm-btn" type="button" onClick={() => setKp(null)}>Gỡ điểm kiến thức</button> : null}
       <label className="adm-field"><span>Gợi ý sửa</span><textarea className="adm-textarea" maxLength={20000} required value={hint} onChange={(event) => setHint(event.target.value)} /></label>
       {item ? <><label className="adm-field"><span>Trạng thái mã lỗi</span><select className="adm-select" value={status} onChange={(event) => setStatus(event.target.value as ErrorType['status'])}><option value="ACTIVE">Đang dùng</option><option value="INACTIVE">Ngừng dùng</option></select></label><label className="adm-field"><span>Trạng thái duyệt</span><select className="adm-select" value={review} onChange={(event) => setReview(event.target.value as ErrorType['reviewStatus'])}><option value="DRAFT">Chưa duyệt</option><option value="APPROVED">Đã duyệt</option></select></label></> : null}
-      <div className="adm-error-actions"><button className="adm-btn adm-btn--primary" type="submit">{saving ? 'Đang lưu…' : 'Lưu mã lỗi'}</button><button className="adm-btn" type="button" onClick={onCancel}>Hủy</button></div>
+      <div className="adm-form-footer"><button className="adm-btn" type="button" onClick={onCancel}>Hủy</button><button className="adm-btn adm-btn--primary" type="submit">{saving ? 'Đang lưu…' : 'Lưu mã lỗi'}</button></div>
     </fieldset>
   </form>
 }

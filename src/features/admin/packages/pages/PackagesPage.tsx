@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { z } from 'zod'
+import { AdminDrawer } from '../../components/AdminLayer'
 import { AdminEmpty, AdminError, AdminLoading } from '../../components/AdminState'
 import { fetchCourses } from '../../courses/api/courseApi'
 import { fetchLessons, fetchTopics } from '../../lessons/api/lessonApi'
@@ -39,7 +40,9 @@ export function PackagesPage() {
   }
   return <AdminPage title="Đề & gói câu hỏi" subtitle="Tạo gói đề, soạn các phiên bản và xuất bản khi nội dung đã sẵn sàng." actions={<button className="adm-btn adm-btn--primary" type="button" disabled={creating} onClick={() => setSearch((previous) => { const next = new URLSearchParams(previous); next.set('create', 'PRACTICE_SET'); return next })}>Gói mới</button>}>
     <div className="adm-package-workspace">
-      {creating ? <PackageCreateForm initialType={search.get('create') ?? undefined} onCancel={() => setSearch((previous) => { const next = new URLSearchParams(previous); next.delete('create'); return next })} onCreated={(packageId) => navigate(`/content-author/packages/${packageId}`)} /> : null}
+      {creating ? <AdminDrawer title="Gói mới" onClose={() => setSearch((previous) => { const next = new URLSearchParams(previous); next.delete('create'); return next })}>
+        {(close) => <PackageCreateForm initialType={search.get('create') ?? undefined} onCancel={close} onCreated={(packageId) => navigate(`/content-author/packages/${packageId}`)} />}
+      </AdminDrawer> : null}
       <section aria-label="Bộ lọc gói" className="adm-package-form-grid">
         <label className="adm-field"><span>Tìm mã hoặc tiêu đề</span><input className="adm-input" type="search" value={text} onChange={(event) => setText(event.target.value)} /></label>
         <label className="adm-field"><span>Loại gói</span><select className="adm-select" value={type} onChange={(event) => setType(event.target.value)}><option value="">Tất cả loại</option>{PACKAGE_TYPES.map((item) => <option key={item} value={item}>{PACKAGE_TYPE_LABEL[item]}</option>)}</select></label>
@@ -54,8 +57,8 @@ export function PackagesPage() {
       {packages.status === 'loading' ? <AdminLoading label="Đang tải gói đề…" /> : null}
       {packages.status === 'error' ? <AdminError message={packages.error!} onRetry={packages.reload} /> : null}
       {packages.status === 'success' && !packages.data?.length ? <AdminEmpty title="Chưa có gói phù hợp">Đổi bộ lọc hoặc tạo gói mới.</AdminEmpty> : null}
-      {packages.data?.length ? <div className="adm-table-wrap"><table className="adm-table"><thead><tr><th>Mã và tiêu đề</th><th>Loại</th><th>Truy cập</th><th>Trạng thái</th><th>Phiên bản</th><th>Cập nhật</th></tr></thead><tbody>{packages.data.map((pkg) => <tr key={pkg.id}>
-        <td><Link to={`/content-author/packages/${pkg.id}`}>{pkg.code} · {pkg.title}</Link></td><td>{PACKAGE_TYPE_LABEL[pkg.packageType]}</td><td>{pkg.accessLevel === 'FREE' ? 'Miễn phí' : 'Premium'}</td><td><span className="adm-badge">{PACKAGE_STATUS_LABEL[pkg.status]}</span></td><td>{pkg.latestVersionNumber ?? 'Chưa có'} {pkg.hasDraft ? <span className="adm-badge adm-badge--warn">Có bản nháp</span> : null}</td><td>{new Date(pkg.updatedAt).toLocaleString('vi-VN')}</td>
+      {packages.data?.length ? <div className="adm-table-wrap"><table className="adm-table"><thead><tr><th className="adm-stt" scope="col">STT</th><th>Mã và tiêu đề</th><th>Loại</th><th>Truy cập</th><th>Trạng thái</th><th>Phiên bản</th><th>Cập nhật</th></tr></thead><tbody>{packages.data.map((pkg, index) => <tr key={pkg.id}>
+        <td className="adm-stt">{index + 1}</td><td><Link to={`/content-author/packages/${pkg.id}`}>{pkg.code} · {pkg.title}</Link></td><td>{PACKAGE_TYPE_LABEL[pkg.packageType]}</td><td>{pkg.accessLevel === 'FREE' ? 'Miễn phí' : 'Premium'}</td><td><span className="adm-badge">{PACKAGE_STATUS_LABEL[pkg.status]}</span></td><td>{pkg.latestVersionNumber ?? 'Chưa có'} {pkg.hasDraft ? <span className="adm-badge adm-badge--warn">Có bản nháp</span> : null}</td><td>{new Date(pkg.updatedAt).toLocaleString('vi-VN')}</td>
       </tr>)}</tbody></table></div> : null}
       <details><summary>Mở trực tiếp bằng ID</summary><form className="adm-card" aria-label="Mở gói có sẵn" noValidate onSubmit={open}>
         <h2>Mở gói có sẵn</h2>

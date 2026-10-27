@@ -17,6 +17,7 @@ export function KnowledgeTable({ nodes, selectedId, isolated, missing, onSelect 
         <caption className="adm-sr-only">Danh sách knowledge point</caption>
         <thead>
           <tr>
+            <th className="adm-stt" scope="col">STT</th>
             <th scope="col">Mã</th>
             <th scope="col">Tên</th>
             <th scope="col">Kỹ năng</th>
@@ -26,8 +27,9 @@ export function KnowledgeTable({ nodes, selectedId, isolated, missing, onSelect 
           </tr>
         </thead>
         <tbody>
-          {nodes.map((node) => (
+          {nodes.map((node, index) => (
             <tr key={node.id}>
+              <td className="adm-stt">{index + 1}</td>
               <td>
                 <button
                   aria-pressed={node.id === selectedId}

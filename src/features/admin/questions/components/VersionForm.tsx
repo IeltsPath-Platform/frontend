@@ -53,8 +53,7 @@ export function VersionForm({ questionType, nextVersionNumber, onSubmit, onCance
   }
 
   return (
-    <form className="adm-card qb-form" noValidate onSubmit={(event) => void submit(event)}>
-      <h2>Phiên bản mới (nháp)</h2>
+    <form aria-label="Phiên bản mới" className="qb-form" noValidate onSubmit={(event) => void submit(event)}>
 
       {problems.length > 0 ? (
         <div className="adm-alert adm-alert--error" role="alert">
@@ -187,9 +186,9 @@ export function VersionForm({ questionType, nextVersionNumber, onSubmit, onCance
         <KnowledgePointPicker onChange={(next) => patch({ knowledgePoints: next })} value={form.knowledgePoints} />
       </div>
 
-      <div className="qb-form__actions">
-        <button className="adm-btn adm-btn--primary" disabled={saving} type="submit">{saving ? 'Đang lưu…' : 'Lưu bản nháp'}</button>
+      <div className="adm-form-footer">
         <button className="adm-btn" disabled={saving} onClick={onCancel} type="button">Hủy</button>
+        <button className="adm-btn adm-btn--primary" disabled={saving} type="submit">{saving ? 'Đang lưu…' : 'Lưu bản nháp'}</button>
       </div>
     </form>
   )

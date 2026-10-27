@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import type { UseFormReturn } from 'react-hook-form'
 import { Image, Smile, Sparkles, Loader2, X } from 'lucide-react'
+import { useConfirmDialog } from '@/lib/useConfirmDialog'
 import { CATEGORY_LABELS } from '../utils/communityFormat'
 import {
   getComposerBackground,
@@ -81,13 +82,24 @@ export function PostComposerModal({
 
   const isDirty = Boolean(bodyValue.trim() || titleValue.trim() || imageUrlsValue.trim() || videoUrlValue.trim())
 
+  const { confirm, confirmDialog } = useConfirmDialog()
+  const confirming = useRef(false)
+  // A clean form closes at once. A dirty one asks first; while the question is open, Esc or a click behind it must not ask again.
   const handleSafeClose = useCallback(() => {
-    if (isDirty) {
-      const confirmDiscard = window.confirm('Bạn có chắc muốn hủy bài viết đang soạn?')
-      if (!confirmDiscard) return
-    }
-    onClose()
-  }, [isDirty, onClose])
+    if (!isDirty) { onClose(); return }
+    if (confirming.current) return
+    confirming.current = true
+    void confirm({
+      title: 'Hủy bài viết đang soạn?',
+      message: 'Bạn có chắc muốn hủy bài viết đang soạn? Nội dung chưa đăng sẽ bị mất.',
+      confirmLabel: 'Hủy bài viết',
+      cancelLabel: 'Tiếp tục soạn',
+      tone: 'danger',
+    }).then((discard) => {
+      confirming.current = false
+      if (discard) onClose()
+    })
+  }, [isDirty, onClose, confirm])
 
   const handleUpdateImageUrls = (urls: string[]) => {
     setValue('imageUrls', urls.join('\n'))
@@ -208,6 +220,7 @@ export function PostComposerModal({
         if (e.target === e.currentTarget) handleSafeClose()
       }}
     >
+      {confirmDialog}
       <section
         ref={modalRef}
         className="composer-modal"

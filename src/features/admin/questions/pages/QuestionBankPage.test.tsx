@@ -75,9 +75,11 @@ describe('QuestionBankPage', () => {
     api.createQuestion.mockResolvedValue({ id: 'new-1', questionType: 'ESSAY', status: 'DRAFT' })
     renderPage()
     fireEvent.click(await screen.findByRole('button', { name: /Câu hỏi mới/ }))
-    fireEvent.change(screen.getByLabelText('Dạng câu hỏi'), { target: { value: 'ESSAY' } })
-    fireEvent.change(screen.getAllByLabelText('Kỹ năng')[0], { target: { value: 'WRITING' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Tạo và thêm phiên bản' }))
+    const drawer = screen.getByRole('dialog', { name: 'Câu hỏi mới' })
+    expect(drawer).toHaveClass('adm-drawer')
+    fireEvent.change(within(drawer).getByLabelText('Dạng câu hỏi'), { target: { value: 'ESSAY' } })
+    fireEvent.change(within(drawer).getByLabelText('Kỹ năng'), { target: { value: 'WRITING' } })
+    fireEvent.click(within(drawer).getByRole('button', { name: 'Tạo và thêm phiên bản' }))
 
     await waitFor(() => expect(api.createQuestion).toHaveBeenCalledWith(
       { questionType: 'ESSAY', skill: 'WRITING', accessLevel: 'FREE', purpose: 'LEARNING' }))

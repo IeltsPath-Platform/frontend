@@ -1,4 +1,4 @@
-﻿import { Activity, BookOpen, FileQuestion, Gauge, LayoutDashboard, Network, Server, Users, type LucideIcon } from 'lucide-react'
+﻿import { Activity, FileQuestion, Gauge, LayoutDashboard, Network, Server, Users, type LucideIcon } from 'lucide-react'
 import { hasAnyRole, type StaffRole } from '@/features/auth/staffRoles'
 import { BadgeCheck, Bug, ClipboardList, Library, ListTodo, Scale, Sparkles, UserCheck } from 'lucide-react'
 import { QUESTION_DRAFTS_ENABLED } from './ai-drafts/draftFlags'
@@ -30,7 +30,6 @@ export const ADMIN_MENU: readonly AdminMenuItem[] = [
   { path: '/content-author/content', label: 'Tổng quan nội dung', icon: LayoutDashboard, roles: ['CONTENT_AUTHOR'] },
   { path: '/content-author/courses', label: 'Khóa học & chủ đề', icon: Library, roles: ['CONTENT_AUTHOR'], group: 'curriculum' },
   { path: '/content-author/knowledge-graph', label: 'Cây tri thức', icon: Network, roles: ['CONTENT_AUTHOR', 'EXAMINER'], group: 'curriculum' },
-  { path: '/content-author/lessons', label: 'Bài học', icon: BookOpen, roles: ['CONTENT_AUTHOR'], group: 'curriculum' },
   { path: '/content-author/questions', label: 'Ngân hàng câu hỏi', icon: FileQuestion, roles: ['CONTENT_AUTHOR'], group: 'questions' },
   { path: '/content-author/packages', label: 'Đề & gói câu hỏi', icon: ClipboardList, roles: ['CONTENT_AUTHOR'], group: 'questions' },
   { path: '/content-author/course-drafts', label: 'Dựng khóa học', icon: Library, roles: ['CONTENT_AUTHOR'], group: 'curriculum' },
@@ -79,6 +78,6 @@ export function menuEntriesFor(roles: readonly string[] | undefined): MenuEntry[
 }
 
 export function rolesFor(path: string): readonly StaffRole[] {
-  const canonical = path.replace(/^\/admin\/(?=content$|knowledge-graph$|lessons$|questions$)/, '/content-author/')
+  const canonical = path.replace(/^\/admin\/(?=content$|knowledge-graph$|questions$)/, '/content-author/')
   return ADMIN_MENU.find((item) => item.path === canonical)?.roles ?? []
 }

@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { answerConfirm } from '@/test/confirm'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PackageSection, PackageType } from '../types'
 import { SectionQuestionsEditor } from './SectionQuestionsEditor'
@@ -51,14 +52,13 @@ describe('SectionQuestionsEditor', () => {
   })
 
   it('confirms before removing a question and disables every write when locked', async () => {
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
     const { rerender } = show()
     fireEvent.click(screen.getByRole('button', { name: 'Gỡ câu 1' }))
+    await answerConfirm(false)
     expect(api.removeSectionQuestion).not.toHaveBeenCalled()
-    confirm.mockReturnValue(true)
     fireEvent.click(screen.getByRole('button', { name: 'Gỡ câu 1' }))
+    await answerConfirm(true)
     await waitFor(() => expect(api.removeSectionQuestion).toHaveBeenCalledWith('package', 'version', section.id, 'row-1'))
-    confirm.mockRestore()
     rerender(<SectionQuestionsEditor packageId="package" versionId="version" section={section} packageType="PRACTICE_SET" disabled onSaved={vi.fn()} onMutate={mutate} />)
     expect(screen.getByRole('button', { name: 'Thêm câu hỏi' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Gỡ câu 1' })).toBeDisabled()

@@ -62,8 +62,7 @@ export function PackageCreateForm({ onCreated, onCancel, initialType }: {
     finally { if (mounted.current) setPending(false) }
   }
 
-  return <form aria-label="Tạo gói câu hỏi" className="adm-card adm-package-create" noValidate onSubmit={(event) => void submit(event)}>
-    <h2>Gói mới</h2>
+  return <form aria-label="Tạo gói câu hỏi" className="adm-package-create" noValidate onSubmit={(event) => void submit(event)}>
     {error ? <div className="adm-alert adm-alert--error" role="alert">{error}</div> : null}
     {createdId && !pending ? <button className="adm-btn adm-btn--primary" type="button" onClick={() => onCreated(createdId)}>Mở gói đã tạo</button> : null}
     <fieldset className="adm-package-fields" disabled={pending || !!createdId}>
@@ -91,7 +90,7 @@ export function PackageCreateForm({ onCreated, onCancel, initialType }: {
         {sources.status === 'error' ? <AdminError message={sources.error!} onRetry={sources.reload} /> : null}
         <label className="adm-field"><span>Nguồn đề (tùy chọn)</span><select className="adm-select" value={sourceCode} onChange={(event) => setSourceCode(event.target.value)}><option value="">Không (đề kiểm tra nội bộ của khóa)</option>{sources.data?.map((source) => <option key={source.code} value={source.code}>{source.name}</option>)}</select></label>
       </> : null}
-      <div className="adm-package-actions"><button className="adm-btn adm-btn--primary" type="submit">{pending ? 'Đang tạo gói…' : 'Tạo gói và bản nháp'}</button><button className="adm-btn" type="button" onClick={onCancel}>Hủy</button></div>
+      <div className="adm-form-footer"><button className="adm-btn" type="button" onClick={onCancel}>Hủy</button><button className="adm-btn adm-btn--primary" type="submit">{pending ? 'Đang tạo gói…' : 'Tạo gói và bản nháp'}</button></div>
     </fieldset>
   </form>
 }

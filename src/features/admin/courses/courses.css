@@ -1,24 +1,96 @@
 .adm-author-fields { min-width: 0; border: 0; padding: 0; margin: 0; }
 .adm-author-fields .adm-input, .adm-author-fields .adm-select, .adm-author-fields .adm-textarea { font-size: 1rem; }
-.adm-author-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
-.adm-author-actions .adm-btn { min-height: 44px; }
-.adm-courses-layout { display: grid; gap: 20px; min-width: 0; margin-top: 16px; }
-.adm-courses-layout > *, .adm-course-topics { min-width: 0; }
-.adm-course-desktop { display: none; }
-.adm-course-choice { display: grid; gap: 6px; width: 100%; padding: 14px; border: 1px solid var(--adm-border); border-radius: var(--adm-radius); background: var(--adm-surface); color: var(--adm-text); text-align: left; font: inherit; cursor: pointer; overflow-wrap: anywhere; }
-.adm-course-choice.is-selected { border-color: var(--adm-accent); background: var(--adm-accent-soft); }
-.adm-course-choice span { color: var(--adm-muted); font-size: .85rem; }
-.adm-topic-tree { list-style: none; padding: 0; margin: 16px 0; display: grid; gap: 12px; }
-.adm-topic-tree .adm-topic-tree { margin-left: 10px; padding-left: 10px; border-left: 2px solid var(--adm-border); }
-.adm-topic-node { border-bottom: 1px solid var(--adm-border); padding: 12px 0; min-width: 0; overflow-wrap: anywhere; }
-.adm-topic-form { margin-top: 12px; }
-.adm-topic-skill { color: var(--adm-text); border-left: 3px solid var(--adm-topic-skill-color, var(--adm-muted)); padding-left: 6px; }
+
+/* Course tabs: one per course. They scroll sideways on a narrow screen so the page itself never does. */
+.adm-course-tabs { display: flex; gap: 2px; overflow-x: auto; border-bottom: 1px solid var(--adm-border); scrollbar-width: thin; }
+.adm-course-tab { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name count" "detail count"; align-items: center; column-gap: 12px; flex: 0 0 auto; min-width: 156px; min-height: 56px; margin-bottom: -1px; padding: 8px 14px; background: transparent; border: 0; border-bottom: 3px solid transparent; border-radius: 6px 6px 0 0; color: var(--adm-muted); font: inherit; text-align: left; cursor: pointer; transition: background-color .15s ease; }
+.adm-course-tab:hover { background: var(--adm-accent-soft); }
+.adm-course-tab.is-selected { background: var(--adm-accent-soft); border-bottom-color: var(--adm-accent); }
+.adm-course-tab__name { grid-area: name; color: var(--adm-text); font-weight: 700; white-space: nowrap; }
+.adm-course-tab.is-selected .adm-course-tab__name { color: var(--adm-accent-strong); }
+.adm-course-tab.is-muted .adm-course-tab__name { color: var(--adm-muted); }
+.adm-course-tab__detail { grid-area: detail; font-size: .78rem; white-space: nowrap; }
+.adm-course-tab__count { grid-area: count; min-width: 28px; padding: 2px 8px; background: var(--adm-surface-2); border: 1px solid var(--adm-border); border-radius: 999px; color: var(--adm-muted); font-size: .78rem; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; }
+.adm-course-tab.is-selected .adm-course-tab__count { background: var(--adm-accent-strong); border-color: var(--adm-accent-strong); color: #fff; }
+
+.adm-course-panel { min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+.adm-course-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px; margin-top: 20px; }
+.adm-course-head__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.adm-course-head h2 { margin: 0; font-size: 1.25rem; line-height: 1.3; }
+.adm-course-head p { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 4px 0 0; font-size: .9rem; }
+
+/* The topic tree reads as a table: a row per topic, a rail in its skill's colour, columns that line up at every depth. */
+.adm-topic-section { min-width: 0; }
+.adm-topic-table { background: var(--adm-surface); border: 1px solid var(--adm-border); border-radius: var(--adm-radius); }
+.adm-topic-head, .adm-topic-node { display: grid; grid-template-columns: minmax(0, 1fr) 132px 112px 110px 184px; align-items: center; column-gap: 14px; padding: 0 14px; }
+.adm-topic-head { min-height: 38px; background: var(--adm-surface-2); border-bottom: 1px solid var(--adm-border); border-radius: 7px 7px 0 0; color: var(--adm-muted); font-size: .75rem; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; }
+.adm-topic-tree { margin: 0; padding: 0; list-style: none; }
+.adm-topic-node { --adm-rail: var(--adm-border); position: relative; min-height: 60px; border-top: 1px solid var(--adm-border); box-shadow: inset 3px 0 0 var(--adm-rail); transition: background-color .12s ease; overflow-wrap: anywhere; }
+.adm-topic-table > .adm-topic-head + .adm-topic-tree > li:first-child > .adm-topic-node { border-top: 0; }
+.adm-topic-node:hover, .adm-topic-node:focus-within { background: var(--adm-accent-soft); }
+.adm-topic-node--listening { --adm-rail: var(--adm-skill-listening); }
+.adm-topic-node--reading { --adm-rail: var(--adm-skill-reading); }
+.adm-topic-node--writing { --adm-rail: var(--adm-skill-writing); }
+.adm-topic-node--speaking { --adm-rail: var(--adm-skill-speaking); }
+
+.adm-topic-name { display: flex; align-items: center; gap: 6px; min-width: 0; padding-left: calc(var(--depth, 0) * 26px); }
+.adm-topic-toggle { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 32px; height: 32px; padding: 0; background: transparent; border: 0; border-radius: 6px; color: var(--adm-muted); }
+button.adm-topic-toggle { cursor: pointer; }
+button.adm-topic-toggle:hover { background: var(--adm-surface-2); color: var(--adm-accent); }
+.adm-topic-toggle svg { transition: transform .15s ease; }
+.adm-topic-toggle[aria-expanded='true'] svg { transform: rotate(90deg); }
+.adm-topic-toggle--leaf.has-elbow::before { content: ''; width: 12px; height: 14px; margin-top: -12px; border-bottom: 2px solid var(--adm-border); border-left: 2px solid var(--adm-border); border-radius: 0 0 0 6px; }
+.adm-topic-title { display: grid; gap: 2px; min-width: 0; }
+.adm-topic-title strong { font-weight: 600; }
+.adm-topic-sub { display: flex; flex-wrap: wrap; gap: 2px 10px; color: var(--adm-muted); font-size: .78rem; }
+.adm-topic-sub code { font-size: .78rem; }
+
+/* On a wide screen the meta cells are grid columns of the row itself; on a narrow one they become a line of their own. */
+.adm-topic-meta { display: contents; }
+.adm-topic-skill { display: inline-flex; align-items: center; gap: 6px; justify-self: start; padding: 3px 10px 3px 8px; background: var(--adm-surface-2); border: 1px solid var(--adm-border); border-radius: 999px; color: var(--adm-text); font-size: .8rem; font-weight: 600; white-space: nowrap; }
+.adm-topic-skill::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--adm-topic-skill-color, var(--adm-muted)); }
+.adm-topic-skill--none { color: var(--adm-muted); font-weight: 500; }
 .adm-topic-skill--listening { --adm-topic-skill-color: var(--adm-skill-listening); }
 .adm-topic-skill--reading { --adm-topic-skill-color: var(--adm-skill-reading); }
 .adm-topic-skill--writing { --adm-topic-skill-color: var(--adm-skill-writing); }
 .adm-topic-skill--speaking { --adm-topic-skill-color: var(--adm-skill-speaking); }
-@media (min-width: 900px) {
-  .adm-courses-layout { grid-template-columns: minmax(220px, .65fr) minmax(0, 2fr); }
-  .adm-course-mobile { display: none; }
-  .adm-course-desktop { display: grid; gap: 10px; }
+.adm-topic-band { font-size: .88rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.adm-topic-meta .adm-badge { justify-self: start; }
+
+.adm-topic-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.adm-topic-open { min-height: 36px; padding: 0 12px; white-space: nowrap; }
+.adm-row-menu { position: relative; }
+.adm-row-menu__trigger { width: 36px; min-height: 36px; padding: 0; }
+.adm-row-menu__panel { position: absolute; top: calc(100% + 4px); right: 0; z-index: 6; display: grid; min-width: 200px; padding: 4px; background: var(--adm-surface); border: 1px solid var(--adm-border); border-radius: var(--adm-radius); box-shadow: 0 12px 28px rgb(13 43 141 / 18%); animation: adm-menu-in .12s ease both; }
+.adm-row-menu__item { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 12px; background: transparent; border: 0; border-radius: 6px; color: var(--adm-text); font: inherit; text-align: left; cursor: pointer; }
+.adm-row-menu__item:hover:not(:disabled), .adm-row-menu__item:focus-visible { background: var(--adm-surface-2); color: var(--adm-accent-strong); }
+.adm-row-menu__item:disabled { opacity: .45; cursor: not-allowed; }
+.adm-row-menu__item.is-danger { color: var(--adm-danger); }
+.adm-row-menu__item.is-danger:hover:not(:disabled), .adm-row-menu__item.is-danger:focus-visible { background: rgb(196 45 45 / 8%); color: var(--adm-danger); }
+.adm-row-menu__item.has-rule { margin-top: 5px; border-top: 1px solid var(--adm-border); border-top-left-radius: 0; border-top-right-radius: 0; }
+@keyframes adm-menu-in { from { opacity: 0; transform: translateY(-4px); } }
+
+.adm-topic-empty { margin: 0; padding: 28px 16px; border: 1px dashed var(--adm-border); border-radius: var(--adm-radius); color: var(--adm-muted); text-align: center; }
+
+@media (max-width: 1099px) {
+  .adm-topic-head { display: none; }
+  .adm-topic-node { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name actions" "meta meta"; row-gap: 8px; padding-block: 10px; }
+  .adm-topic-name { grid-area: name; padding-left: calc(var(--depth, 0) * 18px); }
+  .adm-topic-actions { grid-area: actions; }
+  .adm-topic-meta { grid-area: meta; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding-left: calc(var(--depth, 0) * 18px + 38px); }
+}
+@media (max-width: 560px) {
+  .adm-course-tab { min-width: 136px; }
+  .adm-topic-node { grid-template-columns: minmax(0, 1fr); grid-template-areas: "name" "meta" "actions"; }
+  .adm-topic-actions { justify-content: stretch; padding-left: calc(var(--depth, 0) * 18px + 38px); }
+  .adm-topic-open { flex: 1; }
+}
+/* Fingers need bigger targets than a pointer does. */
+@media (pointer: coarse) {
+  .adm-topic-open, .adm-row-menu__trigger, .adm-row-menu__item { min-height: 44px; }
+  .adm-row-menu__trigger, .adm-topic-toggle { width: 44px; height: 44px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .adm-course-tab, .adm-topic-node, .adm-topic-toggle svg { transition: none; }
+  .adm-row-menu__panel { animation: none; }
 }

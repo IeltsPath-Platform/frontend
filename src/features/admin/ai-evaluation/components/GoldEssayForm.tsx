@@ -23,7 +23,7 @@ export function GoldEssayForm({ onSaved, onCancel }: { onSaved: () => void; onCa
     catch (reason) { setError(adminErrorMessage(reason)) }
     finally { setBusy(false) }
   }
-  return <form className="adm-card" onSubmit={(event) => void submit(event)}><h2>Thêm bài chuẩn</h2><fieldset className="adm-evaluation-fields" disabled={busy}>
+  return <form aria-label="Thêm bài chuẩn" onSubmit={(event) => void submit(event)}>{error ? <p role="alert" className="adm-alert adm-alert--error">{error}</p> : null}<fieldset className="adm-evaluation-fields" disabled={busy}>
     <label className="adm-field"><span>Task bài chuẩn</span><select className="adm-select" value={task} onChange={(event) => setTask(event.target.value as WritingTask)}><option value="TASK_1">Task 1</option><option value="TASK_2">Task 2</option></select></label>
     <label className="adm-field"><span>Đề bài</span><textarea className="adm-textarea" required value={prompt} onChange={(event) => setPrompt(event.target.value)} /></label>
     {task === 'TASK_1' ? <label className="adm-field"><span>Số liệu biểu đồ (bắt buộc)</span><textarea className="adm-textarea" required value={chartFacts} onChange={(event) => setChartFacts(event.target.value)} /></label> : null}
@@ -32,6 +32,6 @@ export function GoldEssayForm({ onSaved, onCancel }: { onSaved: () => void; onCa
     <label><input type="checkbox" checked={withCriteria} onChange={(event) => setWithCriteria(event.target.checked)} /> Nhập điểm theo tiêu chí</label>
     {withCriteria ? ['TA/TR', 'CC', 'LR', 'GRA'].map((label, index) => <label className="adm-field" key={label}><span>Band {label}</span><input className="adm-input" type="number" min="0" max="9" step="0.5" required value={criteria[index]} onChange={(event) => setCriteria(criteria.map((value, position) => position === index ? event.target.value : value))} /></label>) : null}
     <label className="adm-field"><span>Mã lỗi (tùy chọn, cách bằng dấu phẩy)</span><textarea className="adm-textarea" value={codes} onChange={(event) => setCodes(event.target.value)} /></label>
-    <div className="adm-evaluation-actions"><button className="adm-btn adm-btn--primary" type="submit">{busy ? 'Đang lưu…' : 'Lưu bài chuẩn'}</button><button className="adm-btn" type="button" onClick={onCancel}>Hủy thêm bài</button></div>
-  </fieldset>{error ? <p role="alert" className="adm-alert adm-alert--error">{error}</p> : null}</form>
+    <div className="adm-form-footer"><button className="adm-btn" type="button" onClick={onCancel}>Hủy thêm bài</button><button className="adm-btn adm-btn--primary" type="submit">{busy ? 'Đang lưu…' : 'Lưu bài chuẩn'}</button></div>
+  </fieldset></form>
 }

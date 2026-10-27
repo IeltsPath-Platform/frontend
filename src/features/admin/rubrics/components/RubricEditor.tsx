@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { ArrowDown, ArrowUp } from 'lucide-react'
+import { useAdminConfirm } from '../../lib/useAdminConfirm'
 import { adminErrorCode, adminErrorMessage } from '../../lib/adminErrors'
 import { activateRubric, createRubric, updateRubric } from '../api/rubricApi'
 import { activationProblem, rubricRequest } from '../lib/rubricDraft'
@@ -9,6 +10,7 @@ import { CriterionEditor } from './CriterionEditor'
 export function RubricEditor({ initial, persisted, onSaved, onActivated, onCancel }: {
   initial: RubricRequest; persisted: boolean; onSaved: () => void; onActivated: () => void; onCancel: () => void
 }) {
+  const { confirm, confirmDialog } = useAdminConfirm()
   const [draft, setDraft] = useState(initial)
   const [saved, setSaved] = useState(persisted)
   const [dirty, setDirty] = useState(!persisted)
@@ -43,13 +45,17 @@ export function RubricEditor({ initial, persisted, onSaved, onActivated, onCance
     if (busy || dirty || !saved) return
     const problem = activationProblem(draft)
     if (problem) { setError(problem); return }
-    if (!window.confirm(`Rubric này sẽ được dùng để chấm mọi bài Writing Task ${draft.task === 'TASK_1' ? '1' : '2'} từ bây giờ. Bản đang dùng sẽ ngừng áp dụng. Bạn có muốn kích hoạt ${draft.code} phiên bản ${draft.version}?`)) return
+    if (!(await confirm({
+      title: 'Kích hoạt rubric này?',
+      message: `Rubric này sẽ được dùng để chấm mọi bài Writing Task ${draft.task === 'TASK_1' ? '1' : '2'} từ bây giờ. Bản đang dùng sẽ ngừng áp dụng. Bạn có muốn kích hoạt ${draft.code} phiên bản ${draft.version}?`,
+      confirmLabel: 'Kích hoạt',
+    }))) return
     setBusy(true)
     setError(null)
     try { await activateRubric(draft.code, draft.version); onActivated() } catch (reason) { setError(errorText(reason)) } finally { setBusy(false) }
   }
-  return <form className="adm-card adm-rubric-editor" aria-label="Soạn rubric" noValidate onSubmit={(event) => void save(event)}>
-    <h2>{draft.code} · Bản nháp {draft.version}</h2>
+  return <form className="adm-rubric-editor" aria-label="Soạn rubric" noValidate onSubmit={(event) => void save(event)}>
+    {confirmDialog}
     <p className="adm-muted">Kích hoạt cần đúng {draft.task === 'TASK_1' ? 'TA' : 'TR'}, CC, LR, GRA; mỗi tiêu chí có đủ band 4,0–9,0 theo bước 0,5. Lưu bản nháp trước khi kích hoạt.</p>
     {error ? <div className="adm-alert adm-alert--error" role="alert">{error}</div> : null}
     {notice ? <p role="status">{notice}</p> : null}
@@ -72,10 +78,10 @@ export function RubricEditor({ initial, persisted, onSaved, onActivated, onCance
         <button className="adm-btn adm-btn--danger" type="button" onClick={() => change({ ...draft, examples: draft.examples.filter((_, position) => position !== index) })}>Xóa bài mẫu {index + 1}</button>
       </fieldset>)}
       <button className="adm-btn" type="button" onClick={() => change({ ...draft, examples: [...draft.examples, { band: 6.5, prompt: '', essay: '', commentary: '' }] })}>Thêm bài mẫu</button>
-      <div className="adm-rubric-actions">
-        <button className="adm-btn adm-btn--primary" type="submit">{busy ? 'Đang xử lý…' : 'Lưu bản nháp'}</button>
-        <button className="adm-btn" type="button" disabled={!saved || dirty} onClick={() => void activate()}>Kích hoạt</button>
+      <div className="adm-form-footer">
         <button className="adm-btn" type="button" onClick={onCancel}>Đóng trình soạn</button>
+        <button className="adm-btn" type="button" disabled={!saved || dirty} onClick={() => void activate()}>Kích hoạt</button>
+        <button className="adm-btn adm-btn--primary" type="submit">{busy ? 'Đang xử lý…' : 'Lưu bản nháp'}</button>
       </div>
     </fieldset>
   </form>

@@ -49,6 +49,7 @@ export function TopicLessonsPanel({ topicId, onOpen, onCreate }: {
             <caption className="adm-sr-only">Danh sách bài học</caption>
             <thead>
               <tr>
+                <th className="adm-stt" scope="col">STT</th>
                 <th scope="col">Thứ tự</th>
                 <th scope="col">Mã</th>
                 <th scope="col">Tiêu đề</th>
@@ -61,6 +62,7 @@ export function TopicLessonsPanel({ topicId, onOpen, onCreate }: {
             <tbody>
               {rows.map((lesson, index) => (
                 <tr key={lesson.id}>
+                  <td className="adm-stt">{index + 1}</td>
                   <td>
                     <span className="ls-order">
                       <button aria-label={`Đưa ${lesson.title} lên`} className="adm-btn adm-btn--small" disabled={busy || index === 0} onClick={() => void move(lesson.id, -1)} type="button">

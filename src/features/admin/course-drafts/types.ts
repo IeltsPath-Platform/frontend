@@ -3,6 +3,8 @@ import { aiDraftSchema, type AiDraftQuery } from '../ai-drafts/types'
 
 export const COURSE_DRAFT_SKILLS = ['LISTENING', 'READING', 'WRITING', 'SPEAKING'] as const
 export const COURSE_CANDIDATE_LIMIT = 40
+/** Most question references one exercise block may carry. */
+export const COURSE_QUESTION_LIMIT = 100
 const skillSchema = z.enum(COURSE_DRAFT_SKILLS)
 const codeSchema = z.string().regex(/^[A-Za-z0-9._-]{1,100}$/)
 const nonblank = z.string().refine((value) => value.trim().length > 0)
@@ -28,10 +30,16 @@ export const courseBlockSchema = z.object({
   }
 })
 
+export const lessonResourceSchema = z.object({
+  type: z.enum(['SLIDE', 'DOCUMENT']), title: nonblank.max(255), url: z.string().max(2000).regex(/^https?:\/\/\S+$/i),
+})
+/** `summaryMarkdown`, `estimatedMinutes` and `resources` are optional so a draft saved before they existed still reads. */
 export const courseLessonSchema = z.object({
   code: codeSchema, title: nonblank.max(255), summary: z.string().max(2000).nullable(),
   knowledgePointIds: z.array(z.guid()).max(50), blocks: z.array(courseBlockSchema).max(50), practiceSetPackageIds: z.array(z.guid()).max(20),
-})
+  summaryMarkdown: z.string().max(20000).nullish(), estimatedMinutes: z.int().min(1).max(600).nullish(),
+  resources: z.array(lessonResourceSchema).max(20).optional(),
+}).refine((lesson) => (lesson.resources ?? []).filter((item) => item.type === 'SLIDE').length <= 1, { path: ['resources'], message: 'Mỗi bài chỉ có một slide.' })
 export const courseTopicSchema = z.object({
   code: codeSchema, name: nonblank.max(255), skill: skillSchema, sortOrder: z.int().min(0).max(2147483647),
   lessons: z.array(courseLessonSchema).max(50), topicTest: finalTestSchema.nullable(),
@@ -90,6 +98,7 @@ export type CourseStructure = z.infer<typeof courseStructureSchema>
 export type CourseDraftStructure = CourseStructure
 export type CourseTopic = z.infer<typeof courseTopicSchema>
 export type CourseLesson = z.infer<typeof courseLessonSchema>
+export type CourseLessonResource = z.infer<typeof lessonResourceSchema>
 export type CourseBlock = z.infer<typeof courseBlockSchema>
 export type CourseFinalTest = z.infer<typeof finalTestSchema>
 export type CourseMilestone = CourseStructure['practiceTestMilestones'][number]

@@ -5,6 +5,10 @@ import { createTopic, updateTopic } from '../api/courseApi'
 import { SKILL_LABEL, TOPIC_SKILLS, validBand, type Course, type TopicCreate } from '../types'
 import { topicError } from '../lib/topicHelpers'
 
+/**
+ * A new topic is always top level, and the parent field shows only for a topic that already has one, so it can be moved
+ * back to the top. The learner's path lists every topic flat, so nesting is not offered for new topics.
+ */
 export function TopicForm({ topic, parentId, courseId, courses, topics, onSaved, onCancel }: {
   topic?: TopicOption; parentId: string | null; courseId: string | null; courses: Course[]; topics: TopicOption[]; onSaved: () => void; onCancel: () => void
 }) {
@@ -47,14 +51,13 @@ export function TopicForm({ topic, parentId, courseId, courses, topics, onSaved,
       else setError(topicError(reason))
     } finally { setSaving(false) }
   }
-  return <form aria-label={topic ? 'Sửa chủ đề' : 'Tạo chủ đề'} className="adm-card adm-topic-form" noValidate onSubmit={(event) => void submit(event)}>
-    <h3>{topic ? 'Sửa chủ đề' : 'Tạo chủ đề'}</h3>
+  return <form aria-label={topic ? 'Sửa chủ đề' : 'Tạo chủ đề'} noValidate onSubmit={(event) => void submit(event)}>
     {error ? <div className="adm-alert adm-alert--error" role="alert">{error}</div> : null}
     <fieldset className="adm-author-fields" disabled={saving}>
       <label className="adm-field"><span>Mã chủ đề</span><input className="adm-input" required maxLength={100} disabled={!!topic} value={code} onChange={(event) => setCode(event.target.value)} /></label>
       <label className="adm-field"><span>Tên chủ đề</span><input className="adm-input" required maxLength={255} value={name} onChange={(event) => setName(event.target.value)} /></label>
       <label className="adm-field"><span>Thuộc khóa học</span><select className="adm-select" value={course} onChange={(event) => setCourse(event.target.value)}>{!topic?.courseId ? <option value="">Chưa gán khóa</option> : null}{courses.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
-      <label className="adm-field"><span>Chủ đề cha</span><select className="adm-select" value={parent} onChange={(event) => { setParent(event.target.value); setOrderError(null) }}><option value="">Không có (cấp đầu)</option>{topics.filter((item) => !excluded.has(item.id)).map((item) => <option key={item.id} value={item.id}>{item.code} · {item.name}</option>)}</select></label>
+      {topic?.parentTopicId ? <label className="adm-field"><span>Chủ đề cha</span><select className="adm-select" value={parent} onChange={(event) => { setParent(event.target.value); setOrderError(null) }}><option value="">Không có (cấp đầu)</option>{topics.filter((item) => !excluded.has(item.id)).map((item) => <option key={item.id} value={item.id}>{item.code} · {item.name}</option>)}</select></label> : null}
       <label className="adm-field"><span>Kỹ năng</span><select className="adm-select" value={skill} onChange={(event) => setSkill(event.target.value)}>{!topic?.skill ? <option value="">Chưa chọn</option> : null}{TOPIC_SKILLS.map((item) => <option key={item} value={item}>{SKILL_LABEL[item]}</option>)}</select></label>
       <div className="adm-filters"><label className="adm-field"><span>Band thấp nhất</span><input className="adm-input" type="number" min={0} max={9} step={0.5} value={min} onChange={(event) => setMin(event.target.value)} /></label><label className="adm-field"><span>Band cao nhất</span><input className="adm-input" type="number" min={0} max={9} step={0.5} value={max} onChange={(event) => setMax(event.target.value)} /></label></div>
       <div>
@@ -62,7 +65,7 @@ export function TopicForm({ topic, parentId, courseId, courses, topics, onSaved,
         {orderError ? <p id={`${orderId}-error`} className="adm-alert adm-alert--error" role="alert">{orderError}</p> : null}
       </div>
       {topic ? <label className="adm-field"><span>Trạng thái chủ đề</span><select className="adm-select" value={status} onChange={(event) => setStatus(event.target.value)}><option value="ACTIVE">Đang dùng</option><option value="INACTIVE">Ngừng dùng</option></select></label> : null}
-      <div className="adm-author-actions"><button className="adm-btn adm-btn--primary" type="submit">{saving ? 'Đang lưu…' : 'Lưu chủ đề'}</button><button className="adm-btn" type="button" onClick={onCancel}>Hủy</button></div>
+      <div className="adm-form-footer"><button className="adm-btn" type="button" onClick={onCancel}>Hủy</button><button className="adm-btn adm-btn--primary" type="submit">{saving ? 'Đang lưu…' : 'Lưu chủ đề'}</button></div>
     </fieldset>
   </form>
 }

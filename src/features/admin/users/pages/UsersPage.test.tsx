@@ -1,5 +1,6 @@
 ﻿import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen, waitFor, within } from '@testing-library/react'
+import { answerConfirm } from '@/test/confirm'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { UsersPage } from './UsersPage'
@@ -38,7 +39,6 @@ describe('UsersPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     search.query = ''
-    vi.stubGlobal('confirm', vi.fn(() => true))
     api.createUser.mockResolvedValue(fixture('new-user', 'new@example.com', 'CONTENT_AUTHOR'))
     api.updateUser.mockResolvedValue(fixture('user-id', 'user@example.com'))
     api.updateUserRoles.mockResolvedValue(fixture('user-id', 'user@example.com'))
@@ -114,7 +114,7 @@ describe('UsersPage', () => {
     await screen.findByText('admin@example.com')
     const row = screen.getByText('admin@example.com').closest('tr')
     if (!row) throw new Error('Current user row is missing')
-    await userEvent.click(within(row).getByRole('button', { name: 'Quản lý' }))
+    await userEvent.click(within(row).getByRole('button', { name: 'Sửa' }))
     const editor = screen.getByRole('region', { name: 'Quản lý admin@example.com' })
     expect(within(editor).getByLabelText('Quản trị hệ thống')).toBeDisabled()
     expect(within(editor).getByRole('option', { name: 'Bị khóa' })).toBeDisabled()
@@ -127,9 +127,55 @@ describe('UsersPage', () => {
     await screen.findByText('user@example.com')
     const row = screen.getByText('user@example.com').closest('tr')
     if (!row) throw new Error('User row is missing')
-    await userEvent.click(within(row).getByRole('button', { name: 'Quản lý' }))
+    await userEvent.click(within(row).getByRole('button', { name: 'Sửa' }))
     await userEvent.click(await screen.findByRole('button', { name: 'Xóa tài khoản' }))
-    expect(window.confirm).toHaveBeenCalledWith('Xóa tài khoản user@example.com? Thao tác này không thể hoàn tác.')
-    expect(api.deleteUser).toHaveBeenCalledWith('user-id')
+    const popup = await answerConfirm(false)
+    expect(popup).toHaveTextContent('Xóa user@example.com? Thao tác này không thể hoàn tác.')
+    expect(api.deleteUser).not.toHaveBeenCalled()
+    await userEvent.click(screen.getByRole('button', { name: 'Xóa tài khoản' }))
+    await answerConfirm(true)
+    await waitFor(() => expect(api.deleteUser).toHaveBeenCalledWith('user-id'))
+  })
+
+  it('asks before locking an account and locks it only when confirmed', async () => {
+    renderUsers()
+    const row = (await screen.findByText('user@example.com')).closest('tr')!
+    await userEvent.click(within(row).getByRole('button', { name: 'Sửa' }))
+    const editor = await screen.findByRole('region', { name: 'Quản lý user@example.com' })
+    await userEvent.selectOptions(within(editor).getByLabelText('Trạng thái'), 'LOCKED')
+    await userEvent.click(within(editor).getByRole('button', { name: 'Lưu trạng thái' }))
+    const popup = await answerConfirm(false)
+    expect(popup).toHaveTextContent('Khóa tài khoản?')
+    expect(api.updateUserStatus).not.toHaveBeenCalled()
+    await userEvent.click(within(editor).getByRole('button', { name: 'Lưu trạng thái' }))
+    await answerConfirm(true)
+    await waitFor(() => expect(api.updateUserStatus).toHaveBeenCalledWith('user-id', 'LOCKED'))
+  })
+
+  it('opens create and edit in a right drawer', async () => {
+    renderUsers()
+    await userEvent.click(await screen.findByRole('button', { name: 'Tài khoản mới' }))
+    const create = screen.getByRole('dialog', { name: 'Tài khoản nhân sự mới' })
+    expect(create).toHaveClass('adm-drawer')
+    await userEvent.click(within(create).getByRole('button', { name: 'Hủy' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    const row = screen.getByText('user@example.com').closest('tr')!
+    await userEvent.click(within(row).getByRole('button', { name: 'Sửa' }))
+    expect(screen.getByRole('dialog', { name: 'user' })).toHaveClass('adm-drawer')
+    await userEvent.click(screen.getByRole('button', { name: 'Đóng' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('shows a user in a centred modal and moves to the edit drawer from it', async () => {
+    renderUsers()
+    const row = (await screen.findByText('user@example.com')).closest('tr')!
+    await userEvent.click(within(row).getByRole('button', { name: 'Chi tiết' }))
+    const modal = screen.getByRole('dialog', { name: 'user' })
+    expect(modal).toHaveClass('adm-modal')
+    expect(modal).toHaveTextContent('user@example.com')
+    expect(modal).toHaveTextContent('Học viên')
+    await userEvent.click(within(modal).getByRole('button', { name: 'Sửa' }))
+    expect(screen.getByRole('dialog', { name: 'user' })).toHaveClass('adm-drawer')
+    expect(screen.getByRole('region', { name: 'Quản lý user@example.com' })).toBeInTheDocument()
   })
 })

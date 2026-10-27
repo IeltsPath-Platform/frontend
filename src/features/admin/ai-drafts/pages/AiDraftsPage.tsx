@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Plus, RefreshCw } from 'lucide-react'
+import { AdminDrawer } from '../../components/AdminLayer'
 import { AdminEmpty, AdminError, AdminLoading } from '../../components/AdminState'
 import { useAdminResource } from '../../lib/useAdminResource'
 import { AdminPage } from '../../pages/AdminPage'
@@ -38,7 +39,9 @@ function DraftList() {
   }
   return <AdminPage title="Sinh nội dung bằng AI" subtitle="Yêu cầu tạo câu hỏi theo kiến thức, kiểm tra đáp án rồi chọn những câu phù hợp để duyệt." actions={<button className="adm-btn adm-btn--primary" type="button" disabled={creating} onClick={() => toggleForm(true)}><Plus size={16} aria-hidden="true" /> Sinh câu hỏi</button>}>
     <div className="adm-draft-workspace">
-      {creating ? <QuestionDraftForm initialKnowledgePointId={params.get('knowledgePointId') ?? undefined} onCancel={() => toggleForm(false)} onCreated={(draft) => navigate(`/content-author/ai-drafts/${draft.id}`)} /> : null}
+      {creating ? <AdminDrawer title="Tạo nháp câu hỏi" size="lg" onClose={() => toggleForm(false)}>
+        {(close) => <QuestionDraftForm initialKnowledgePointId={params.get('knowledgePointId') ?? undefined} onCancel={close} onCreated={(draft) => navigate(`/content-author/ai-drafts/${draft.id}`)} />}
+      </AdminDrawer> : null}
       <div className="adm-draft-actions">
         <label className="adm-field"><span>Trạng thái bản nháp</span><select className="adm-select" value={status ?? ''} onChange={(event) => setParams((previous) => { const next = new URLSearchParams(previous); next.delete('page'); if (event.target.value) next.set('status', event.target.value); else next.delete('status'); return next })}><option value="">Tất cả trạng thái</option>{AI_DRAFT_STATUSES.map((item) => <option key={item} value={item}>{DRAFT_STATUS_LABEL[item]}</option>)}</select></label>
         <button className="adm-btn" type="button" disabled={resource.status === 'loading'} onClick={resource.reload}><RefreshCw size={16} aria-hidden="true" /> Tải lại</button>

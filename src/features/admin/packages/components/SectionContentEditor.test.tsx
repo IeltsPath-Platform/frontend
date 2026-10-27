@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { answerConfirm } from '@/test/confirm'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PackageSection } from '../types'
 import { SectionContentEditor } from './SectionContentEditor'
@@ -33,14 +34,13 @@ describe('SectionContentEditor', () => {
   })
 
   it('confirms before removing a passage and blocks oversized audio before upload', async () => {
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
     show()
     fireEvent.click(screen.getByRole('button', { name: 'Gỡ đoạn văn' }))
+    await answerConfirm(false)
     expect(api.deletePassage).not.toHaveBeenCalled()
-    confirm.mockReturnValue(true)
     fireEvent.click(screen.getByRole('button', { name: 'Gỡ đoạn văn' }))
+    await answerConfirm(true)
     await waitFor(() => expect(api.deletePassage).toHaveBeenCalledWith('package', 'version', section.id))
-    confirm.mockRestore()
     const file = new File(['audio'], 'big.mp3', { type: 'audio/mpeg' })
     Object.defineProperty(file, 'size', { value: 25 * 1024 * 1024 + 1 })
     fireEvent.change(screen.getByLabelText('File audio'), { target: { files: [file] } })

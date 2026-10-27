@@ -111,6 +111,10 @@
 .adm-titlebar__actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .adm-content { flex: 1; min-width: 0; padding: 20px 22px 24px; background: var(--adm-surface); border: 1px solid var(--adm-border); border-radius: var(--adm-radius); }
 @media (max-width: 560px) { .adm-content { padding: 14px; } }
+/* A page of several blocks: each is a card on the canvas, set apart from the next by the same gap as the title bar. */
+.adm-stack { display: flex; flex-direction: column; flex: 1; gap: 12px; min-width: 0; }
+.adm-block { min-width: 0; padding: 20px 22px 24px; background: var(--adm-surface); border: 1px solid var(--adm-border); border-radius: var(--adm-radius); }
+@media (max-width: 560px) { .adm-block { padding: 14px; } }
 .adm-card { background: var(--adm-surface); border: 1px solid var(--adm-border); border-radius: var(--adm-radius); padding: 16px; }
 .adm-card h2 { margin: 0 0 8px; font-size: 1rem; }
 .adm-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
@@ -121,10 +125,15 @@
 .adm-btn--primary { background: var(--adm-accent-strong); border-color: var(--adm-accent-strong); color: #fff; }
 .adm-btn--primary:hover:not(:disabled) { background: var(--adm-accent); border-color: var(--adm-accent); color: #fff; }
 .adm-btn--danger { color: var(--adm-danger); }
+.adm-btn--destructive { background: var(--adm-danger); border-color: var(--adm-danger); color: #fff; }
+.adm-btn--destructive:hover:not(:disabled) { background: #a82222; border-color: #a82222; color: #fff; }
 .adm-btn--small { min-height: 30px; padding: 0 10px; font-size: .85rem; }
 
 .adm-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
 .adm-field > span { font-size: .85rem; font-weight: 600; color: var(--adm-muted); }
+.adm-drawer__body .adm-field > span { font-size: 1rem; font-weight: 700; color: var(--adm-text); }
+/* Red asterisk after the title of a required field; drawn by CSS so it stays out of the accessible name (the input itself carries `required`). */
+.adm-required::after { content: "*"; margin-left: 4px; color: var(--adm-danger); }
 .adm-input, .adm-select, .adm-textarea { width: 100%; background: var(--adm-surface); color: var(--adm-text); border: 1px solid var(--adm-border); border-radius: 6px; padding: 9px 11px; font: inherit; }
 .adm-input:focus-visible, .adm-select:focus-visible, .adm-textarea:focus-visible { outline: 2px solid var(--adm-focus); outline-offset: 1px; border-color: var(--adm-accent); }
 .adm-textarea { min-height: 120px; resize: vertical; }
@@ -153,3 +162,110 @@
 .adm-alert ul { margin: 6px 0 0 18px; padding: 0; }
 .adm-forbidden { min-height: 70dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 24px; text-align: center; }
 .adm-forbidden h1 { margin: 0; }
+
+/*
+ * Layers: a drawer from the right to create or edit a record, a centred modal to read one. They are portalled out of
+ * .adm-theme, so .adm-layer carries the tokens again; the wrapper itself draws nothing.
+ */
+.adm-layer { background: none; }
+.adm-layer__overlay { position: fixed; inset: 0; z-index: 70; background: rgb(13 25 58 / 45%); animation: adm-fade-in .2s ease both; }
+.adm-layer__overlay.is-closing { animation: adm-fade-out .18s ease both; }
+.adm-layer__title { margin: 0; font-size: 1.35rem; font-weight: 800; letter-spacing: -.01em; line-height: 1.25; }
+.adm-confirm .adm-layer__title { font-size: 1.1rem; }
+.adm-layer__description { margin: 2px 0 0; font-size: .82rem; color: var(--adm-muted); }
+
+.adm-drawer { position: fixed; top: 0; right: 0; bottom: 0; z-index: 71; display: flex; flex-direction: column; width: min(560px, 100vw); background: var(--adm-surface); color: var(--adm-text); box-shadow: -12px 0 32px rgb(13 43 141 / 20%); animation: adm-drawer-in .24s cubic-bezier(.2, .8, .2, 1) both; }
+.adm-drawer--lg { width: min(880px, 100vw); }
+.adm-drawer--xl { width: min(1120px, 100vw); }
+.adm-drawer.is-closing { animation: adm-drawer-out .18s ease-in both; }
+.adm-drawer__header { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-bottom: 1px solid var(--adm-border); }
+.adm-drawer__heading { flex: 1; min-width: 0; }
+.adm-drawer__heading .adm-layer__title { overflow-wrap: anywhere; }
+.adm-drawer__back, .adm-modal__close { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 38px; height: 38px; background: var(--adm-surface-2); color: var(--adm-text); border: 1px solid var(--adm-border); border-radius: 6px; cursor: pointer; }
+.adm-drawer__back:hover, .adm-modal__close:hover { border-color: var(--adm-accent); color: var(--adm-accent); }
+.adm-drawer__body { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow-y: auto; padding: 16px 14px 0; }
+/* The form (or editor) fills the panel, so a short one still ends with its buttons at the bottom edge. */
+.adm-drawer__body > form:only-child, .adm-drawer__body > section:only-child { display: flex; flex-direction: column; flex: 1 0 auto; }
+.adm-drawer__body > form:only-child > fieldset { display: flex; flex-direction: column; flex: 1 0 auto; }
+/* A drawer with several blocks (the lesson editor) lets each keep its natural height and width. */
+.adm-drawer__body > * { flex-shrink: 0; }
+
+/* The buttons that end a form stay in view at the bottom of the panel while its fields scroll. */
+.adm-form-footer { position: sticky; bottom: 0; z-index: 1; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin: auto -20px 0; padding: 12px 20px; background: var(--adm-surface); border-top: 1px solid var(--adm-border); }
+.adm-drawer__body .adm-form-footer { margin-inline: -14px; padding-inline: 14px; }
+.adm-modal__body .adm-form-footer { margin-top: 18px; }
+
+.adm-modal { position: fixed; inset: 0; z-index: 71; display: flex; flex-direction: column; width: min(640px, calc(100vw - 32px)); height: fit-content; max-height: calc(100dvh - 32px); margin: auto; background: var(--adm-surface); color: var(--adm-text); border: 1px solid var(--adm-border); border-radius: 12px; box-shadow: 0 24px 56px rgb(13 43 141 / 28%); animation: adm-modal-in .2s ease both; }
+.adm-modal.is-closing { animation: adm-modal-out .18s ease-in both; }
+.adm-modal--lg { width: min(980px, calc(100vw - 32px)); height: min(720px, calc(100dvh - 32px)); }
+.adm-modal--lg .adm-modal__body { display: flex; flex-direction: column; overflow: hidden; padding: 0; }
+.adm-layer__overlay--stacked { z-index: 80; }
+.adm-modal--stacked { z-index: 81; }
+.adm-modal__header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--adm-border); }
+.adm-modal__body { flex: 1; min-height: 0; overflow-y: auto; padding: 16px 20px 20px; }
+
+.adm-details { display: grid; margin: 0; }
+.adm-details__row { display: grid; grid-template-columns: minmax(110px, 30%) 1fr; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--adm-border); }
+.adm-details__row:last-child { border-bottom: 0; }
+.adm-details dt { font-size: .85rem; font-weight: 600; color: var(--adm-muted); }
+.adm-details dd { margin: 0; min-width: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+@media (max-width: 480px) { .adm-details__row { grid-template-columns: 1fr; gap: 2px; } }
+
+/* The confirmation popup: a small centred panel above everything else, with the question and two buttons. */
+.adm-confirm__overlay { z-index: 80; }
+.adm-confirm { z-index: 81; display: grid; grid-template-columns: auto 1fr; align-items: start; gap: 8px 14px; width: min(460px, calc(100vw - 32px)); padding: 22px; }
+.adm-confirm__icon { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; background: var(--adm-accent-soft); color: var(--adm-accent); }
+.adm-confirm__icon.is-danger { background: rgb(196 45 45 / 10%); color: var(--adm-danger); }
+.adm-confirm__text { display: grid; gap: 6px; min-width: 0; }
+.adm-confirm__message { margin: 0; color: var(--adm-muted); font-size: .92rem; line-height: 1.5; overflow-wrap: anywhere; }
+.adm-confirm__actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+
+@keyframes adm-fade-in { from { opacity: 0; } }
+@keyframes adm-fade-out { to { opacity: 0; } }
+@keyframes adm-drawer-in { from { transform: translateX(100%); } }
+@keyframes adm-drawer-out { to { transform: translateX(100%); } }
+@keyframes adm-modal-in { from { opacity: 0; scale: .96; } }
+@keyframes adm-modal-out { to { opacity: 0; scale: .96; } }
+@media (prefers-reduced-motion: reduce) {
+  .adm-layer__overlay, .adm-drawer, .adm-modal { animation: none; }
+}
+
+/* Row action menu: fixed to the viewport so a clipped or scrolling table never cuts it off; above drawers and modals. */
+.adm-rowmenu { position: fixed; z-index: 120; min-width: 180px; padding: 6px; background: var(--adm-surface); color: var(--adm-text); border: 1px solid var(--adm-border); border-radius: var(--adm-radius); box-shadow: 0 12px 28px rgb(13 43 141 / 18%); }
+.adm-rowmenu__item { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 38px; padding: 0 10px; background: transparent; border: 0; border-radius: 6px; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.adm-rowmenu__item:hover:not(:disabled), .adm-rowmenu__item:focus-visible { background: var(--adm-surface-2); outline: none; }
+.adm-rowmenu__item:disabled { opacity: .4; cursor: not-allowed; }
+.adm-rowmenu__item.is-danger { color: var(--adm-danger); }
+.adm-rowmenu__item.is-danger:hover:not(:disabled), .adm-rowmenu__item.is-danger:focus-visible { background: rgb(196 45 45 / 8%); }
+.adm-icon-btn.adm-rowmenu__trigger { background: transparent; border-color: transparent; color: var(--adm-muted); }
+.adm-icon-btn.adm-rowmenu__trigger:hover:not(:disabled), .adm-icon-btn.adm-rowmenu__trigger[aria-expanded="true"] { background: var(--adm-surface-2); border-color: transparent; color: var(--adm-text); }
+.adm-icon-btn.adm-rowmenu__trigger { border-radius: 8px; transition: background-color .12s, color .12s, transform .12s; }
+.adm-icon-btn.adm-rowmenu__trigger:active:not(:disabled) { background: var(--adm-accent-soft); color: var(--adm-accent-strong); transform: scale(.9); }
+.adm-icon-btn.adm-rowmenu__trigger[aria-expanded="true"] { background: var(--adm-accent-soft); color: var(--adm-accent-strong); }
+.adm-icon-btn.adm-rowmenu__trigger:focus-visible { outline: 2px solid var(--adm-focus); outline-offset: 2px; }
+.adm-rowmenu { animation: adm-rowmenu-in .14s ease-out; transform-origin: top right; }
+.adm-rowmenu__item:active:not(:disabled) { background: var(--adm-accent-soft); }
+@keyframes adm-rowmenu-in { from { opacity: 0; transform: translateY(-4px) scale(.97); } }
+@media (prefers-reduced-motion: reduce) { .adm-rowmenu { animation: none; } .adm-icon-btn.adm-rowmenu__trigger { transition: none; } .adm-icon-btn.adm-rowmenu__trigger:active:not(:disabled) { transform: none; } }
+
+/* The STT column: a narrow, muted row number. */
+.adm-table th.adm-stt, .adm-table td.adm-stt { width: 64px; color: var(--adm-muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* Form footer of drawers and dialogs: centred; the first plain button is the red close button with a cross, the primary
+   one carries a save icon. A button that is neither (an edit button, say) takes `adm-btn--noicon`. */
+.adm-form-footer { justify-content: center; gap: 10px; }
+.adm-form-footer > .adm-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.adm-form-footer > .adm-btn:first-child:not(.adm-btn--primary):not(.adm-btn--noicon)::before,
+.adm-form-footer > .adm-btn--primary:not(.adm-btn--noicon)::before { content: ""; flex: none; width: 16px; height: 16px; background: currentColor; -webkit-mask: center / contain no-repeat; mask: center / contain no-repeat; }
+.adm-form-footer > .adm-btn:first-child:not(.adm-btn--primary):not(.adm-btn--noicon)::before { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 6 6 18'/%3E%3Cpath d='m6 6 12 12'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 6 6 18'/%3E%3Cpath d='m6 6 12 12'/%3E%3C/svg%3E"); }
+.adm-form-footer > .adm-btn--primary:not(.adm-btn--noicon)::before { -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z'/%3E%3Cpath d='M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7'/%3E%3Cpath d='M7 3v4a1 1 0 0 0 1 1h7'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z'/%3E%3Cpath d='M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7'/%3E%3Cpath d='M7 3v4a1 1 0 0 0 1 1h7'/%3E%3C/svg%3E"); }
+.adm-form-footer > .adm-btn:first-child:not(.adm-btn--primary):not(.adm-btn--noicon) { background: var(--adm-danger); border-color: var(--adm-danger); color: #fff; }
+.adm-form-footer > .adm-btn:first-child:not(.adm-btn--primary):not(.adm-btn--noicon):hover:not(:disabled) { background: #a82424; border-color: #a82424; color: #fff; }
+.adm-form-footer > .adm-btn:first-child:not(.adm-btn--primary):not(.adm-btn--noicon):active:not(:disabled) { transform: scale(.97); }
+
+/* Every text button inside a drawer is navy with white text, on every admin page; the red close button of the footer and
+   danger buttons keep their own colour (their selectors are more specific or excluded here), icon-only controls stay light. */
+.adm-drawer .adm-btn:not(.adm-btn--danger):not(.adm-btn--destructive) { background: var(--adm-accent-strong); border-color: var(--adm-accent-strong); color: #fff; }
+.adm-drawer .adm-btn:not(.adm-btn--danger):not(.adm-btn--destructive):hover:not(:disabled) { background: var(--adm-accent); border-color: var(--adm-accent); color: #fff; }
+.adm-drawer .adm-btn:not(.adm-btn--danger):not(.adm-btn--destructive):active:not(:disabled) { transform: scale(.97); }
+.adm-drawer .adm-btn:disabled { opacity: .55; cursor: not-allowed; }

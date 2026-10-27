@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { answerConfirm } from '@/test/confirm'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Rubric, RubricVersion } from '../types'
@@ -142,7 +143,7 @@ describe('RubricsPage', () => {
     ]))
     expect(await screen.findByText('Bản tiếp theo: 3 (theo toàn bộ lịch sử phiên bản).')).toBeInTheDocument()
     expect(within(form).getByLabelText('Nguồn rubric')).toHaveValue('Đang sửa tiếp')
-    expect(screen.getByRole('button', { name: 'Tạo bản nháp từ bản đang dùng' })).toBeDisabled()
+    expect(screen.getByRole('button', { hidden: true, name: 'Tạo bản nháp từ bản đang dùng' })).toBeDisabled()
     fireEvent.submit(form)
     await waitFor(() => expect(api.updateRubric).toHaveBeenCalledWith(expect.objectContaining({ version: 2, sourceNote: 'Đang sửa tiếp' })))
     expect(api.createRubric).toHaveBeenCalledTimes(1)
@@ -165,17 +166,16 @@ describe('RubricsPage', () => {
     expect(api.createRubric).not.toHaveBeenCalled()
   })
   it('confirms the grading impact before activating a saved draft', async () => {
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
     api.fetchDraftRubrics.mockResolvedValue([draft])
     show()
     fireEvent.click(await screen.findByRole('button', { name: 'Sửa bản nháp 2' }))
     fireEvent.click(screen.getByRole('button', { name: 'Kích hoạt' }))
-    expect(confirm).toHaveBeenCalledWith(expect.stringContaining('Rubric này sẽ được dùng để chấm mọi bài Writing Task 2 từ bây giờ.'))
+    const popup = await answerConfirm(false)
+    expect(popup).toHaveTextContent('Rubric này sẽ được dùng để chấm mọi bài Writing Task 2 từ bây giờ.')
     expect(api.activateRubric).not.toHaveBeenCalled()
-    confirm.mockReturnValue(true)
     fireEvent.click(screen.getByRole('button', { name: 'Kích hoạt' }))
+    await answerConfirm(true)
     await waitFor(() => expect(api.activateRubric).toHaveBeenCalledWith(active.code, 2))
-    confirm.mockRestore()
   })
   it('requires saving changes before activation', async () => {
     api.fetchDraftRubrics.mockResolvedValue([draft])

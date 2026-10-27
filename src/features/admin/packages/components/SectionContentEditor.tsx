@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useAdminConfirm } from '../../lib/useAdminConfirm'
 import { deleteAudio, deletePassage, updateAudio, updatePassage, uploadAudio } from '../api/packageApi'
 import type { AudioUpload, PackageSection } from '../types'
 
@@ -12,6 +13,7 @@ export function SectionContentEditor({ packageId, versionId, section, disabled, 
   packageId: string; versionId: string; section: PackageSection; disabled: boolean; onSaved: () => void
   onMutate: (action: () => Promise<unknown>, message: string) => Promise<boolean>
 }) {
+  const { confirm, confirmDialog } = useAdminConfirm()
   const [passage, setPassage] = useState(section.passage ?? '')
   const [reference, setReference] = useState(section.audio?.mediaReference ?? '')
   const [duration, setDuration] = useState(section.audio?.durationSeconds?.toString() ?? '')
@@ -75,16 +77,23 @@ export function SectionContentEditor({ packageId, versionId, section, disabled, 
   }
 
   return <div className="adm-package-content">
+    {confirmDialog}
     {error ? <div className="adm-alert adm-alert--error" role="alert">{error}</div> : null}
     <form aria-label={`Đoạn văn của ${section.title}`} noValidate onSubmit={savePassage}>
       <h4>Đoạn văn</h4>
       <fieldset className="adm-package-fields" disabled={locked}>
         <label className="adm-field"><span>Nội dung đoạn văn</span><textarea className="adm-textarea" maxLength={50000} value={passage} onChange={(event) => setPassage(event.target.value)} /></label>
         <p className="adm-muted">{passage.length.toLocaleString('vi-VN')}/50.000 ký tự</p>
-        <div className="adm-package-actions"><button className="adm-btn" type="submit">Lưu đoạn văn</button><button className="adm-btn adm-btn--danger" type="button" disabled={!section.passage} onClick={() => {
-          if (locked || !window.confirm('Gỡ đoạn văn khỏi phần này? Tài nguyên gốc được giữ lại.')) return
-          void mutate(() => deletePassage(packageId, versionId, section.id), 'Đã gỡ đoạn văn.', () => setPassage(''))
-        }}>Gỡ đoạn văn</button></div>
+        <div className="adm-package-actions"><button className="adm-btn" type="submit">Lưu đoạn văn</button><button className="adm-btn adm-btn--danger" type="button" disabled={!section.passage} onClick={() => void (async () => {
+          if (locked) return
+          if (!(await confirm({
+            title: 'Gỡ đoạn văn khỏi phần này?',
+            message: 'Tài nguyên gốc được giữ lại.',
+            confirmLabel: 'Gỡ đoạn văn',
+            tone: 'danger',
+          }))) return
+          await mutate(() => deletePassage(packageId, versionId, section.id), 'Đã gỡ đoạn văn.', () => setPassage(''))
+        })()}>Gỡ đoạn văn</button></div>
       </fieldset>
     </form>
     <form aria-label={`Audio của ${section.title}`} noValidate onSubmit={saveAudio}>
@@ -98,10 +107,16 @@ export function SectionContentEditor({ packageId, versionId, section, disabled, 
         <label className="adm-field"><span>Thời lượng audio (giây)</span><input className="adm-input" required type="number" min={1} max={7200} step={1} value={duration} onChange={(event) => { manualDuration.current = true; setDuration(event.target.value) }} /></label>
         <label className="adm-field"><span>Transcript (tùy chọn)</span><textarea className="adm-textarea" value={transcript} onChange={(event) => setTranscript(event.target.value)} /></label>
         <details><summary>Dùng file có sẵn</summary><label className="adm-field"><span>Key audio</span><input className="adm-input" value={reference} onChange={(event) => { generation.current += 1; setUploaded(null); setReference(event.target.value) }} /></label><p className="adm-muted">Nhập key tệp đã lưu, ví dụ listening/demo/ls1.mp3, và thời lượng ở trên.</p></details>
-        <div className="adm-package-actions"><button className="adm-btn" type="submit">Lưu audio</button><button className="adm-btn adm-btn--danger" type="button" disabled={!section.audio} onClick={() => {
-          if (locked || !window.confirm('Gỡ audio khỏi phần này? Tệp và tài nguyên gốc được giữ lại.')) return
-          void mutate(() => deleteAudio(packageId, versionId, section.id), 'Đã gỡ audio.', () => { generation.current += 1; setReference(''); setDuration(''); setTranscript(''); setUploaded(null) })
-        }}>Gỡ audio</button></div>
+        <div className="adm-package-actions"><button className="adm-btn" type="submit">Lưu audio</button><button className="adm-btn adm-btn--danger" type="button" disabled={!section.audio} onClick={() => void (async () => {
+          if (locked) return
+          if (!(await confirm({
+            title: 'Gỡ audio khỏi phần này?',
+            message: 'Tệp và tài nguyên gốc được giữ lại.',
+            confirmLabel: 'Gỡ audio',
+            tone: 'danger',
+          }))) return
+          await mutate(() => deleteAudio(packageId, versionId, section.id), 'Đã gỡ audio.', () => { generation.current += 1; setReference(''); setDuration(''); setTranscript(''); setUploaded(null) })
+        })()}>Gỡ audio</button></div>
       </fieldset>
       {uploaded && uploadedUrl ? <audio key={uploaded.generation} hidden preload="metadata" src={uploadedUrl} aria-label="Đọc thời lượng audio tải lên" onLoadedMetadata={(event) => {
         if (!mounted.current || generation.current !== uploaded.generation || manualDuration.current) return

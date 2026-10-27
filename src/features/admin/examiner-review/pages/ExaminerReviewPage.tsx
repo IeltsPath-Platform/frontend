@@ -16,10 +16,11 @@ function QueueTable({ entries, action }: { entries: QueueEntry[]; action: (entry
   return (
     <div className="adm-table-wrap">
       <table className="adm-table">
-        <thead><tr><th>Task</th><th>Nguồn bài</th><th>Thời gian chờ</th><th /></tr></thead>
+        <thead><tr><th className="adm-stt" scope="col">STT</th><th>Task</th><th>Nguồn bài</th><th>Thời gian chờ</th><th /></tr></thead>
         <tbody>
-          {entries.map((entry) => (
+          {entries.map((entry, index) => (
             <tr key={entry.id}>
+              <td className="adm-stt">{index + 1}</td>
               <td>{taskLabel(entry.task)}</td>
               <td>{sourceLabel(entry)}</td>
               <td>{waitText(entry.waitSeconds)}{entry.overdue ? <> <span className="adm-badge adm-badge--danger">Quá 48 giờ</span></> : null}</td>
@@ -53,10 +54,11 @@ function Quality() {
       <p className="adm-muted">{QUALITY_NOTE}</p>
       <div className="adm-table-wrap">
         <table className="adm-table">
-          <thead><tr><th>Giám khảo</th><th>Số bài đã chấm lại</th><th>Lệch trung bình (band)</th><th>Bài lệch hơn 1 band</th></tr></thead>
+          <thead><tr><th className="adm-stt" scope="col">STT</th><th>Giám khảo</th><th>Số bài đã chấm lại</th><th>Lệch trung bình (band)</th><th>Bài lệch hơn 1 band</th></tr></thead>
           <tbody>
-            {rows.map((row) => (
+            {rows.map((row, index) => (
               <tr key={row.examinerId}>
+                <td className="adm-stt">{index + 1}</td>
                 <td>{row.examinerName || shortId(row.examinerId)}</td>
                 <td>{row.reviewedEssays}</td>
                 <td>{row.averageAbsoluteBandDifference.toLocaleString('vi-VN', { maximumFractionDigits: 2 })}</td>

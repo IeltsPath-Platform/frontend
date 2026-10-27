@@ -7,7 +7,6 @@ const { auth } = vi.hoisted(() => ({ auth: vi.fn() }))
 vi.mock('@/features/auth/authSession', () => ({ useAuthSession: auth, logoutSession: vi.fn() }))
 vi.mock('./overview/pages/OverviewPage', () => ({ OverviewPage: () => <h1>Tổng quan nội dung</h1> }))
 vi.mock('./knowledge-graph/pages/KnowledgeGraphPage', () => ({ KnowledgeGraphPage: () => <h1>Cây tri thức</h1> }))
-vi.mock('./lessons/pages/LessonEditorPage', () => ({ LessonEditorPage: () => <h1>Biên soạn bài học</h1> }))
 vi.mock('./packages/api/packageApi', async (original) => ({ ...await original<typeof import('./packages/api/packageApi')>(), listPackages: vi.fn().mockResolvedValue([]) }))
 vi.mock('./ai-drafts/api/aiDraftApi', async (original) => ({ ...await original<typeof import('./ai-drafts/api/aiDraftApi')>(), fetchAiDrafts: vi.fn().mockResolvedValue([]) }))
 vi.mock('./courses/api/courseApi', async (original) => ({ ...await original<typeof import('./courses/api/courseApi')>(), fetchCourses: vi.fn().mockResolvedValue([]) }))
@@ -58,7 +57,8 @@ describe('AdminRoutes', () => {
     const menu = screen.getByRole('navigation', { name: 'Menu quản trị' })
     expect(menu).toHaveTextContent('Tổng quan nội dung')
     expect(menu).toHaveTextContent('Cây tri thức')
-    expect(menu).toHaveTextContent('Bài học')
+    expect(menu).toHaveTextContent('Khóa học & chủ đề')
+    expect(menu).not.toHaveTextContent('Bài học')
     expect(menu).toHaveTextContent('Ngân hàng câu hỏi')
     expect(menu).not.toHaveTextContent('Người dùng')
     expect(screen.getByRole('heading', { name: 'Tổng quan nội dung' })).toBeInTheDocument()
@@ -105,7 +105,7 @@ describe('AdminRoutes', () => {
     auth.mockReturnValue(session(['CONTENT_AUTHOR']))
     renderAt('/content-author')
     expect(screen.getByRole('heading', { name: 'Tổng quan nội dung' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Bài học' })).toHaveAttribute('href', '/content-author/lessons')
+    expect(screen.getByRole('link', { name: 'Khóa học & chủ đề' })).toHaveAttribute('href', '/content-author/courses')
   })
 
   it('opens question generation for an author and lists it in the menu', () => {
@@ -145,17 +145,24 @@ describe('AdminRoutes', () => {
     expect(screen.queryByRole('form', { name: 'Mở gói có sẵn' })).not.toBeInTheDocument()
   })
 
-  it('redirects legacy lesson details without losing the query or fragment', () => {
+  it('sends an old lessons link to the course page, where the lessons now open in a panel', () => {
     auth.mockReturnValue(session(['CONTENT_AUTHOR']))
     renderAt('/admin/lessons/lesson-1?view=questions#question-2')
-    expect(screen.getByRole('heading', { name: 'Biên soạn bài học' })).toBeInTheDocument()
-    expect(screen.getByTestId('location')).toHaveTextContent('/content-author/lessons/lesson-1?view=questions#question-2')
+    expect(screen.getByRole('heading', { name: 'Khóa học & chủ đề' })).toBeInTheDocument()
+    expect(screen.getByTestId('location')).toHaveTextContent(/^\/content-author\/courses$/)
+  })
+
+  it('has no lessons page of its own any more', () => {
+    auth.mockReturnValue(session(['CONTENT_AUTHOR']))
+    renderAt('/content-author/lessons/lesson-1')
+    expect(screen.getByTestId('location')).toHaveTextContent(/^\/content-author$|^\/content-author\/content$/)
+    expect(screen.getByRole('heading', { name: 'Tổng quan nội dung' })).toBeInTheDocument()
   })
 
   it.each(['ADMIN', 'CUSTOMER', 'EXAMINER'])('does not grant %s access to the content author workspace', (role) => {
     auth.mockReturnValue(session([role]))
-    renderAt('/content-author/lessons/lesson-1')
+    renderAt('/content-author/courses')
     expect(screen.getByRole('heading', { name: 'Bạn không có quyền truy cập' })).toBeInTheDocument()
-    expect(screen.queryByRole('heading', { name: 'Biên soạn bài học' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Khóa học & chủ đề' })).not.toBeInTheDocument()
   })
 })

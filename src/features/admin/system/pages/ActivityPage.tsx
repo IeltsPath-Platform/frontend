@@ -70,8 +70,8 @@ function RetentionTable({ rows }: { rows: Retention[] }) {
     <div className="adm-table-wrap">
       <table className="adm-table">
         <caption className="adm-sr-only">Retention theo cohort tuần, tuần bắt đầu tính theo UTC</caption>
-        <thead><tr><th scope="col">Tuần bắt đầu</th><th scope="col">Cỡ cohort</th><th scope="col">Tuần 1</th><th scope="col">Tuần 2</th><th scope="col">Tuần 4</th><th scope="col">Tuần 8</th></tr></thead>
-        <tbody>{rows.map((row) => <tr key={row.weekStart}><th scope="row">{new Date(row.weekStart).toLocaleDateString('vi-VN', { timeZone: 'UTC' })}</th><td>{row.size}</td><td>{percent(row.week1)}</td><td>{percent(row.week2)}</td><td>{percent(row.week4)}</td><td>{percent(row.week8)}</td></tr>)}</tbody>
+        <thead><tr><th className="adm-stt" scope="col">STT</th><th scope="col">Tuần bắt đầu</th><th scope="col">Cỡ cohort</th><th scope="col">Tuần 1</th><th scope="col">Tuần 2</th><th scope="col">Tuần 4</th><th scope="col">Tuần 8</th></tr></thead>
+        <tbody>{rows.map((row, index) => <tr key={row.weekStart}><td className="adm-stt">{index + 1}</td><th scope="row">{new Date(row.weekStart).toLocaleDateString('vi-VN', { timeZone: 'UTC' })}</th><td>{row.size}</td><td>{percent(row.week1)}</td><td>{percent(row.week2)}</td><td>{percent(row.week4)}</td><td>{percent(row.week8)}</td></tr>)}</tbody>
       </table>
     </div>
   )

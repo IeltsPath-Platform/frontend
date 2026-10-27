@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { ArrowDown, ArrowUp, Archive, Pencil, Plus, Send, Trash2 } from 'lucide-react'
+import { useAdminConfirm } from '../../lib/useAdminConfirm'
 import { AdminError, AdminLoading } from '../../components/AdminState'
 import { useAdminResource } from '../../lib/useAdminResource'
 import { KnowledgePointPicker } from '../../questions/components/KnowledgePointPicker'
@@ -118,6 +119,7 @@ function KnowledgePointsPanel({ lesson, onSaved }: { lesson: LessonEditor; onSav
 type Editing = { mode: 'new'; blockType: BlockType } | { mode: 'edit'; block: LessonBlock } | null
 
 function LessonEditorBody({ lesson, reload }: { lesson: LessonEditor; reload: () => void }) {
+  const { confirm, confirmDialog } = useAdminConfirm()
   const [editing, setEditing] = useState<Editing>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   const [problems, setProblems] = useState<string[]>([])
@@ -150,15 +152,21 @@ function LessonEditorBody({ lesson, reload }: { lesson: LessonEditor; reload: ()
   const moveBlock = (id: string, delta: -1 | 1) =>
     run(() => reorderBlocks(lesson.id, moveId(lesson.blocks.map((block) => block.id), id, delta)))
 
-  const removeBlock = (block: LessonBlock) => {
-    if (!window.confirm(`Xóa block "${BLOCK_LABEL[block.blockType]}"? Tiến độ của học viên ở block này sẽ không còn được tính.`)) return Promise.resolve()
-    return run(() => deleteBlock(lesson.id, block.id))
+  const removeBlock = async (block: LessonBlock) => {
+    if (!(await confirm({
+      title: 'Xóa block này?',
+      message: `Xóa block “${BLOCK_LABEL[block.blockType]}”? Tiến độ của học viên ở block này sẽ không còn được tính.`,
+      confirmLabel: 'Xóa block',
+      tone: 'danger',
+    }))) return
+    await run(() => deleteBlock(lesson.id, block.id))
   }
 
   const canTouch = (block: LessonBlock) => block.blockType !== 'EXERCISE' || !exerciseLocked
 
   return (
     <>
+      {confirmDialog}
       <div className="ls-statusbar">
         <span className={statusBadgeClass(lesson.status)}>{STATUS_LABEL[lesson.status]}</span>
         <code>{lesson.code}</code>

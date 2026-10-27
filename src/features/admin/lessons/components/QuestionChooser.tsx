@@ -13,10 +13,12 @@ export interface QuestionChooserProps {
   /** The questions the block already has, so their text can be shown without another call. */
   known: LessonBlock['questions']
   purpose?: 'LEARNING' | 'EXAM' | 'PLACEMENT'
+  /** The owner already lists what is picked, so only the pool to choose from is shown. */
+  hideSelected?: boolean
 }
 
 /** Chooses the questions of an exercise block from the published learning questions of the bank. */
-export function QuestionChooser({ value, onChange, known, purpose = 'LEARNING' }: QuestionChooserProps) {
+export function QuestionChooser({ value, onChange, known, purpose = 'LEARNING', hideSelected = false }: QuestionChooserProps) {
   const [skill, setSkill] = useState('')
   const [previews, setPreviews] = useState<Record<string, string>>({})
   const [previewError, setPreviewError] = useState<string | null>(null)
@@ -49,6 +51,7 @@ export function QuestionChooser({ value, onChange, known, purpose = 'LEARNING' }
 
   return (
     <div className="ls-questions">
+      {hideSelected ? null : <>
       <h4>Câu hỏi đã chọn ({value.length})</h4>
       {value.length === 0 ? <p className="adm-muted">Chưa chọn câu hỏi nào.</p> : null}
       <ol>
@@ -62,6 +65,7 @@ export function QuestionChooser({ value, onChange, known, purpose = 'LEARNING' }
           )
         })}
       </ol>
+      </>}
 
       <label className="adm-field">
         <span>Lọc kỹ năng</span>

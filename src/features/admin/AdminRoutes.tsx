@@ -7,8 +7,6 @@ import { menuFor, rolesFor } from './adminMenu'
 import { AdminLayout } from './AdminLayout'
 import { AdminForbiddenPage } from './pages/AdminForbiddenPage'
 import { KnowledgeGraphPage } from './knowledge-graph/pages/KnowledgeGraphPage'
-import { LessonEditorPage } from './lessons/pages/LessonEditorPage'
-import { LessonsPage } from './lessons/pages/LessonsPage'
 import { OverviewPage } from './overview/pages/OverviewPage'
 import { UsersPage } from './users/pages/UsersPage'
 import { ServicesPage } from './system/pages/ServicesPage'
@@ -88,10 +86,6 @@ export function AdminRoutes({ area = 'admin' }: { area?: 'admin' | 'content-auth
             <Route element={<EvaluationRunPage />} path="runs/:runId" />
           </Route>
           <Route element={<KnowledgeGraphPage />} path="knowledge-graph" />
-          <Route element={<Outlet />} path="lessons">
-            <Route element={<LessonsPage />} index />
-            <Route element={<LessonEditorPage />} path=":lessonId" />
-          </Route>
           <Route element={<Outlet />} path="questions">
             <Route element={<QuestionBankPage />} index />
             <Route element={<QuestionDetailPage />} path=":questionId" />
@@ -103,7 +97,7 @@ export function AdminRoutes({ area = 'admin' }: { area?: 'admin' | 'content-auth
           <Route element={<Guard path="/admin/activity"><ActivityPage /></Guard>} path="activity" />
           <Route element={<Guard path="/admin/content"><LegacyContentRedirect /></Guard>} path="content" />
           <Route element={<Guard path="/admin/knowledge-graph"><LegacyKnowledgeGraph /></Guard>} path="knowledge-graph" />
-          <Route element={<Guard path="/admin/lessons"><LegacyContentRedirect /></Guard>} path="lessons/*" />
+          <Route element={<Guard path="/admin/content"><Navigate replace to="/content-author/courses" /></Guard>} path="lessons/*" />
           <Route element={<Guard path="/admin/questions"><LegacyContentRedirect /></Guard>} path="questions/*" />
         </>}
         <Route element={<Navigate replace to={`/${area}`} />} path="*" />

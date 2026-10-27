@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ArrowLeft, Plus } from 'lucide-react'
+import { AdminDrawer } from '../../components/AdminLayer'
 import { AdminError, AdminLoading } from '../../components/AdminState'
 import { useAdminResource } from '../../lib/useAdminResource'
 import { AdminPage } from '../../pages/AdminPage'
@@ -42,7 +43,6 @@ export function QuestionDetailPage() {
 
   async function saveVersion(body: VersionRequest) {
     await addQuestionVersion(questionId, body)
-    setAdding(false)
     setNotice(`Đã lưu phiên bản ${body.versionNumber} ở trạng thái nháp.`)
     detail.reload()
   }
@@ -57,7 +57,7 @@ export function QuestionDetailPage() {
         <>
           {back}
           {question ? (
-            <button className="adm-btn adm-btn--primary" onClick={() => setAdding((open) => !open)} type="button">
+            <button className="adm-btn adm-btn--primary" onClick={() => setAdding(true)} type="button">
               <Plus aria-hidden="true" size={16} /> Thêm phiên bản
             </button>
           ) : null}
@@ -82,12 +82,16 @@ export function QuestionDetailPage() {
           {actionError ? <div className="adm-alert adm-alert--error" role="alert">{actionError}</div> : null}
 
           {adding ? (
-            <VersionForm
-              nextVersionNumber={nextVersionNumber}
-              onCancel={() => setAdding(false)}
-              onSubmit={saveVersion}
-              questionType={question.questionType}
-            />
+            <AdminDrawer title="Phiên bản mới (nháp)" description={`Mã ${question.id}`} size="lg" onClose={() => setAdding(false)}>
+              {(close) => (
+                <VersionForm
+                  nextVersionNumber={nextVersionNumber}
+                  onCancel={close}
+                  onSubmit={async (body) => { await saveVersion(body); close() }}
+                  questionType={question.questionType}
+                />
+              )}
+            </AdminDrawer>
           ) : null}
 
           <section aria-label="Các phiên bản" className="qb-versions">

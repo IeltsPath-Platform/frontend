@@ -53,7 +53,7 @@ describe('AdminSidebar groups', () => {
 
     await user.hover(button)
     await user.unhover(button)
-    await user.hover(within(flyout('Chương trình học')).getByRole('link', { name: 'Bài học' }))
+    await user.hover(within(flyout('Chương trình học')).getByRole('link', { name: 'Cây tri thức' }))
     await new Promise((resolve) => setTimeout(resolve, 250))
 
     expect(button).toHaveAttribute('aria-expanded', 'true')
@@ -97,7 +97,7 @@ describe('AdminSidebar groups', () => {
     const button = screen.getByRole('button', { name: 'Chương trình học' })
 
     await user.hover(button)
-    await user.click(within(flyout('Chương trình học')).getByRole('link', { name: 'Bài học' }))
+    await user.click(within(flyout('Chương trình học')).getByRole('link', { name: 'Cây tri thức' }))
 
     expect(button).toHaveAttribute('aria-expanded', 'false')
     expect(button).toHaveClass('is-active')

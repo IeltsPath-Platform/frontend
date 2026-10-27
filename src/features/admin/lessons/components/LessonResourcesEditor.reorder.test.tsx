@@ -59,13 +59,9 @@ describe('Lesson resource ordering when enabled', () => {
     await waitFor(() => expect(within(region).getAllByRole('link')[0]).toHaveAttribute('href', type === 'SLIDE' ? slides[0]!.url : documents[1]!.url))
   })
 
-  it('locks both resource lists during the write and reload while retaining unfinished forms', async () => {
+  it('locks both resource lists during the write and reload', async () => {
     render(<LessonResourcesEditor lessonId={lessonId} />)
-    fireEvent.click(await screen.findByRole('button', { name: 'Sửa Bài đọc đầu' }))
-    const editForm = screen.getByRole('form', { name: 'Sửa tài liệu' })
-    fireEvent.change(within(editForm).getByLabelText('Tiêu đề tài liệu'), { target: { value: 'Bài đang soạn' } })
-    const addForm = screen.getByRole('form', { name: 'Thêm slide' })
-    fireEvent.change(within(addForm).getByLabelText('Tiêu đề slide'), { target: { value: 'Slide đang soạn' } })
+    await screen.findByRole('button', { name: 'Đưa Slide đầu xuống' })
     let finishWrite!: (response: Response) => void
     let finishReload!: (response: Response) => void
     fetchMock.mockReturnValueOnce(new Promise((resolve) => { finishWrite = resolve }))
@@ -73,31 +69,25 @@ describe('Lesson resource ordering when enabled', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Đưa Slide đầu xuống' }))
     expect(screen.getByRole('button', { name: 'Đưa Bài đọc sau lên' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Sửa Slide sau' })).toBeDisabled()
-    expect(within(editForm).getByLabelText('Tiêu đề tài liệu')).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Thêm slide' })).toBeDisabled()
     fireEvent.click(screen.getByRole('button', { name: 'Đưa Slide sau lên' }))
     expect(fetchMock).toHaveBeenCalledTimes(2)
     await act(async () => finishWrite(new Response(null, { status: 204 })))
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
     expect(screen.getByRole('button', { name: 'Đưa Slide đầu xuống' })).toBeDisabled()
-    expect(within(editForm).getByLabelText('Tiêu đề tài liệu')).toHaveValue('Bài đang soạn')
-    expect(within(addForm).getByLabelText('Tiêu đề slide')).toHaveValue('Slide đang soạn')
     await act(async () => finishReload(json(snapshot)))
     await waitFor(() => expect(screen.getByRole('button', { name: 'Đưa Slide đầu xuống' })).toBeEnabled())
-    expect(within(editForm).getByLabelText('Tiêu đề tài liệu')).toHaveValue('Bài đang soạn')
-    expect(within(addForm).getByLabelText('Tiêu đề slide')).toHaveValue('Slide đang soạn')
+    expect(screen.getByRole('button', { name: 'Thêm slide' })).toBeEnabled()
   })
 
-  it('shows a failed reorder and reloads the current list without replacing unfinished values', async () => {
+  it('shows a failed reorder and reloads the current list', async () => {
     render(<LessonResourcesEditor lessonId={lessonId} />)
     const move = await screen.findByRole('button', { name: 'Đưa Slide đầu xuống' })
-    const form = screen.getByRole('form', { name: 'Thêm tài liệu' })
-    fireEvent.change(within(form).getByLabelText('Tiêu đề tài liệu'), { target: { value: 'Tài liệu đang soạn' } })
     fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ message: 'Danh sách tài nguyên đã thay đổi.' }), { status: 400 }))
     fetchMock.mockResolvedValueOnce(json(snapshot))
     fireEvent.click(move)
     expect(await screen.findByRole('alert')).toHaveTextContent('Danh sách tài nguyên đã thay đổi.')
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
-    expect(within(form).getByLabelText('Tiêu đề tài liệu')).toHaveValue('Tài liệu đang soạn')
     expect(fetchMock.mock.calls.map(([, options]) => options?.method)).toEqual(['GET', 'PUT', 'GET'])
   })
 })

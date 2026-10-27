@@ -10,7 +10,7 @@ describe('adminMenu', () => {
 
   it('shows content authors their content screens', () => {
     expect(menuFor(['CONTENT_AUTHOR']).map((item) => item.path)).toEqual([
-      '/content-author/content', '/content-author/courses', '/content-author/knowledge-graph', '/content-author/lessons', '/content-author/questions', '/content-author/packages', '/content-author/course-drafts', '/content-author/course-import',
+      '/content-author/content', '/content-author/courses', '/content-author/knowledge-graph', '/content-author/questions', '/content-author/packages', '/content-author/course-drafts', '/content-author/course-import',
       '/content-author/work-items', '/content-author/examiner-review', '/content-author/ai-evaluation',
       '/content-author/rubrics', '/content-author/error-types', '/content-author/ai-drafts',
     ])
@@ -42,8 +42,9 @@ describe('adminMenu', () => {
   })
 
   it('looks up route roles and rejects unknown routes', () => {
-    expect(rolesFor('/admin/lessons')).toEqual(['CONTENT_AUTHOR'])
-    expect(rolesFor('/content-author/lessons')).toEqual(['CONTENT_AUTHOR'])
+    // Lessons are edited in a panel on the course page, so there is no lessons route left to grant.
+    expect(rolesFor('/content-author/lessons')).toEqual([])
+    expect(rolesFor('/content-author/courses')).toEqual(['CONTENT_AUTHOR'])
     expect(rolesFor('/content-author/users')).toEqual([])
     expect(rolesFor('/admin/users')).toEqual(['ADMIN'])
     expect(rolesFor('/admin/unknown')).toEqual([])

@@ -50,8 +50,7 @@ export function QuestionDraftForm({ initialKnowledgePointId, onCreated, onCancel
     finally { if (mounted.current) setPending(false) }
   }
 
-  return <form className="adm-card adm-draft-form" aria-label="Tạo bản nháp câu hỏi" noValidate onSubmit={(event) => void submit(event)}>
-    <h2>Tạo nháp câu hỏi</h2>
+  return <form className="adm-draft-form" aria-label="Tạo bản nháp câu hỏi" noValidate onSubmit={(event) => void submit(event)}>
     <p className="adm-muted">Chọn một điểm kiến thức và cấu hình câu hỏi. Bạn sẽ xem lại và chọn câu cần giữ trước khi duyệt.</p>
     {error ? <div className="adm-alert adm-alert--error" role="alert">{error}</div> : null}
     <fieldset className="adm-draft-fields" disabled={pending}>
@@ -67,9 +66,9 @@ export function QuestionDraftForm({ initialKnowledgePointId, onCreated, onCancel
       <label className="adm-field"><span>Độ khó</span><select className="adm-select" required value={difficulty} onChange={(event) => setDifficulty(event.target.value as QuestionGenerationRequest['difficulty'])}>{QUESTION_DIFFICULTIES.map((value) => <option key={value} value={value}>{DIFFICULTY_LABEL[value]}</option>)}</select></label>
       <label className="adm-field"><span>Hướng dẫn thêm (tùy chọn)</span><textarea className="adm-textarea" maxLength={500} value={instructions} onChange={(event) => setInstructions(event.target.value)} /><span className="adm-muted adm-draft-counter">{instructions.length}/500 ký tự</span></label>
       <p className="adm-muted">Duyệt câu hỏi chỉ tạo nội dung nháp. Bạn cần xuất bản riêng trong ngân hàng câu hỏi trước khi dùng cho học viên.</p>
-      <div className="adm-draft-actions">
-        <button className="adm-btn adm-btn--primary" type="submit">{pending ? 'Đang gửi yêu cầu…' : 'Tạo nháp câu hỏi'}</button>
+      <div className="adm-form-footer">
         <button className="adm-btn" type="button" onClick={onCancel}>Hủy</button>
+        <button className="adm-btn adm-btn--primary" type="submit">{pending ? 'Đang gửi yêu cầu…' : 'Tạo nháp câu hỏi'}</button>
       </div>
     </fieldset>
   </form>

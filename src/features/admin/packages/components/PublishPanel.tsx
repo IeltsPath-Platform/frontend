@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { useAdminConfirm } from '../../lib/useAdminConfirm'
 import { AdminError, AdminLoading } from '../../components/AdminState'
 import { useAdminResource } from '../../lib/useAdminResource'
 import { cancelSchedule, listSchedules, publishVersion, scheduleVersion } from '../api/packageApi'
@@ -9,6 +10,7 @@ export function PublishPanel({ packageId, version, packageType, disabled, onMuta
   packageId: string; version: PackageVersion; packageType: PackageType; disabled: boolean
   onMutate: (action: () => Promise<unknown>, message: string) => Promise<boolean>; onPreview: () => void
 }) {
+  const { confirm, confirmDialog } = useAdminConfirm()
   const schedules = useAdminResource(`package-schedules:${packageId}:${version.id}`, (signal) => listSchedules(packageId, signal))
   const [publishAt, setPublishAt] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -16,9 +18,16 @@ export function PublishPanel({ packageId, version, packageType, disabled, onMuta
   const scheduledAt = current?.publishAt ?? version.publishAt
   const lastError = current?.lastPublishError ?? version.lastPublishError
   const locked = disabled || schedules.status !== 'success'
-  function publish() {
+  async function publish() {
     const finalTest = packageType === 'TOPIC_TEST' || packageType === 'COURSE_TEST'
-    if (locked || version.status !== 'DRAFT' || !window.confirm(`Xuất bản phiên bản này?${finalTest ? ' Đề sẽ vào nhóm đề thi của chủ đề/khóa này ngay khi xuất bản; học viên thi lại sẽ có thể nhận đề này.' : ''}`)) return
+    if (locked || version.status !== 'DRAFT') return
+    if (!(await confirm({
+      title: 'Xuất bản phiên bản này?',
+      message: finalTest
+        ? 'Đề sẽ vào nhóm đề thi của chủ đề/khóa này ngay khi xuất bản; học viên thi lại sẽ có thể nhận đề này.'
+        : 'Học viên sẽ thấy phiên bản này ngay khi xuất bản.',
+      confirmLabel: 'Xuất bản',
+    }))) return
     void onMutate(() => publishVersion(packageId, version.id), 'Đã xuất bản phiên bản.').then((ok) => { if (ok) schedules.reload() })
   }
   async function schedule(event: FormEvent) {
@@ -30,6 +39,7 @@ export function PublishPanel({ packageId, version, packageType, disabled, onMuta
     if (await onMutate(() => scheduleVersion(packageId, version.id, time.toISOString()), 'Đã lên lịch xuất bản.')) schedules.reload()
   }
   return <section className="adm-card adm-package-publish" aria-label="Xem trước và xuất bản"><h2>Xem trước và xuất bản</h2>
+    {confirmDialog}
     <button className="adm-btn" type="button" disabled={disabled} onClick={onPreview}>Xem trước</button>
     {schedules.status === 'loading' ? <AdminLoading label="Đang tải lịch xuất bản…" /> : null}
     {schedules.status === 'error' ? <AdminError message={schedules.error!} onRetry={schedules.reload} /> : null}
