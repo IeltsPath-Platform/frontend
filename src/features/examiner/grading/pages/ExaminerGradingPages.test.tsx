@@ -114,18 +114,30 @@ describe('WritingQueuePage', () => {
     expect(screen.queryByText(/Học viên:/)).not.toBeInTheDocument()
   })
 
-  it('shows the examiner their numbers: waiting, being graded, late, and today against the limit', async () => {
+  it('does not repeat the dashboard numbers: the tabs count the jobs, one line says what the tabs cannot', async () => {
     queueServer({ queued: [entry()] })
     show()
 
-    const stats = await screen.findByRole('list', { name: 'Số liệu hàng đợi' })
-    expect(within(stats).getByText('Chờ chấm').closest('li')).toHaveTextContent('2')
-    expect(within(stats).getByText('Đang chấm').closest('li')).toHaveTextContent('1')
-    expect(within(stats).getByText('Quá hạn 48 giờ').closest('li')).toHaveTextContent('1')
-    expect(within(stats).getByText(/Đã nhận hôm nay/).closest('li')).toHaveTextContent('7 / 10')
+    const line = await screen.findByRole('status', { name: 'Số liệu hàng đợi' })
+    expect(line).toHaveTextContent('Hôm nay đã nhận 7 / 10 bài')
+    expect(line).toHaveTextContent('1 bài quá hạn 48 giờ')
+    expect(screen.queryByRole('list', { name: 'Số liệu hàng đợi' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Chờ chấm (1)' })).toBeInTheDocument()
     expect(screen.getByText(/Mỗi ngày bạn nhận tối đa 10 bài mới/)).toBeInTheDocument()
   })
 
+  it('opens on the tab the dashboard linked to', async () => {
+    queueServer({ queued: [entry()], processing: [entry({ id: thirdJob, status: 'PROCESSING', hasDraft: true, waitSeconds: 10000 })] })
+    const first = show('/admin/grading/writing?tab=processing')
+    await screen.findByRole('table')
+    expect(screen.getByRole('button', { name: /^Đang chấm/ })).toHaveAttribute('aria-pressed', 'true')
+    expect(rowsOfTable()).toHaveLength(1)
+    first.unmount()
+
+    show('/admin/grading/writing?tab=queued')
+    await screen.findByRole('table')
+    expect(screen.getByRole('button', { name: /^Chờ chấm/ })).toHaveAttribute('aria-pressed', 'true')
+  })
   it('shows what the examiner already graded on its own tab, newest first, each with a button to read it again', async () => {
     queueServer({ queued: [entry()], finished: [graded(thirdJob, { band: 7 }), graded(lessonJob, { source: 'LESSON' })] })
     show()
@@ -173,6 +185,37 @@ describe('WritingQueuePage', () => {
     expect(rows[0]).toHaveTextContent('Chưa hỗ trợ')
     expect(within(rows[0]).queryByRole('link')).not.toBeInTheDocument()
     expect(screen.getAllByText(/chưa chấm được trên màn hình này/).length).toBeGreaterThan(0)
+  })
+
+  it.each([
+    ['overdue', 'Quá hạn (1)', 'Quá hạn'],
+    ['due-soon', 'Sắp quá hạn (1)', 'Sắp quá hạn'],
+  ])('opens on only the %s jobs when the dashboard sends the examiner there', async (tab, button, badge) => {
+    queueServer({
+      queued: [
+        entry({ id: lessonJob, overdue: true, waitSeconds: 50 * 3600 }),
+        entry({ id: thirdJob, waitSeconds: 40 * 3600 }),
+        entry({ waitSeconds: 3600 }),
+      ],
+    })
+    show(`/admin/grading/writing?tab=${tab}`)
+
+    await screen.findByRole('table')
+    expect(screen.getByRole('button', { name: button })).toHaveAttribute('aria-pressed', 'true')
+    expect(rowsOfTable()).toHaveLength(1)
+    expect(rowsOfTable()[0]).toHaveTextContent(badge)
+  })
+
+  it('offers every source in the filter, lessons included, even when no job comes from it yet', async () => {
+    queueServer({ queued: [entry()] })
+    show()
+    await screen.findByRole('table')
+
+    const options = within(screen.getByLabelText('Nguồn')).getAllByRole('option').map((option) => option.textContent)
+    expect(options).toEqual(['Tất cả', 'Bài học', 'Luyện tập'])
+
+    fireEvent.change(screen.getByLabelText('Nguồn'), { target: { value: 'LESSON' } })
+    expect(screen.getByText('Không có bài nào khớp bộ lọc')).toBeInTheDocument()
   })
 
   it('narrows the list by tab, source and job code', async () => {
@@ -273,6 +316,14 @@ describe('GradedReviewPage', () => {
     expect(calls.every((call) => call.method === 'GET')).toBe(true)
   })
 
+  it('shows the chart of a Task 1 prompt under the prompt', async () => {
+    backend(() => json(gradedReview({ images: [{ url: 'https://cdn.example/chart.png', altText: 'Bar chart of sales' }] })))
+    open()
+
+    const prompt = await screen.findByRole('region', { name: 'Đề bài' })
+    expect(within(prompt).getByRole('img', { name: 'Bar chart of sales' })).toHaveAttribute('src', 'https://cdn.example/chart.png')
+  })
+
   it('leaves out the error list when nothing was marked', async () => {
     backend(() => json(gradedReview({ annotations: null, errorCodes: [] })))
     open()
@@ -315,6 +366,20 @@ describe('WritingGradingPage', () => {
     fireEvent.change(screen.getByLabelText('Gợi ý sửa'), { target: { value: 'have risen' } })
     fireEvent.click(screen.getByRole('button', { name: 'Thêm lỗi' }))
   }
+
+  it('shows the chart the learner saw under the prompt, and enlarges it in a dialog', async () => {
+    workspaceServer({ essayBody: essay({ task: 'TASK_1', images: [{ url: 'https://cdn.example/chart.png', altText: null }] }) })
+    await open()
+
+    const prompt = screen.getByRole('region', { name: 'Đề bài' })
+    expect(within(prompt).getByRole('img', { name: 'Biểu đồ của đề bài' })).toHaveAttribute('src', 'https://cdn.example/chart.png')
+
+    // Large view in a dialog, not a link: a `data:` chart cannot be opened as a page.
+    expect(within(prompt).queryByRole('link')).not.toBeInTheDocument()
+    fireEvent.click(within(prompt).getByRole('button', { name: /Phóng to biểu đồ/ }))
+    const dialog = await screen.findByRole('dialog')
+    expect(within(dialog).getByRole('img', { name: 'Biểu đồ của đề bài' })).toHaveAttribute('src', 'https://cdn.example/chart.png')
+  })
 
   it('takes the job first, then shows the prompt and the essay without any learner identity', async () => {
     workspaceServer()
@@ -384,24 +449,42 @@ describe('WritingGradingPage', () => {
     expect(screen.getByLabelText(/Đoạn có lỗi/)).toHaveValue('figure')
   })
 
-  it('suggests the overall band from the four criteria, lets the examiner change it, and only allows finishing when ready', async () => {
+  it('works the overall band out from the four criteria, with no way to type or pick it, and only allows finishing when ready', async () => {
     workspaceServer()
     await open()
     const finish = screen.getByRole('button', { name: 'Hoàn tất chấm' })
     expect(finish).toBeDisabled()
-    expect(screen.getByLabelText('Band tổng')).toHaveValue('')
+    expect(screen.getByLabelText('Band tổng')).toHaveTextContent('—')
+    expect(screen.getByText(/Chấm đủ 4 tiêu chí, band tổng sẽ tự hiện/)).toBeInTheDocument()
 
     gradeEverything()
 
-    expect(screen.getByLabelText('Band tổng')).toHaveValue('6.5')
-    expect(screen.getByText(/Đề xuất 6.5/)).toBeInTheDocument()
+    // The overall band is shown, not an input: nothing to type in, no plus or minus, no quick picks for it.
+    const overall = screen.getByLabelText('Band tổng')
+    expect(overall).toHaveTextContent('6.5')
+    expect(overall.tagName).toBe('OUTPUT')
+    expect(screen.queryByRole('textbox', { name: 'Band tổng' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Tăng Band tổng|Giảm Band tổng/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('group', { name: 'Chọn nhanh Band tổng' })).not.toBeInTheDocument()
+    // The working is on screen, so the examiner can check it: (6.0 + 6.5 + 7.0 + 6.5) ÷ 4 = 6.5.
+    expect(screen.getByText('(6.0 + 6.5 + 7.0 + 6.5) ÷ 4 = 6.5, làm tròn thành 6.5.')).toBeInTheDocument()
     expect(finish).toBeEnabled()
-    fireEvent.change(screen.getByLabelText('Band tổng'), { target: { value: '7' } })
-    expect(screen.getByLabelText('Band tổng')).toHaveValue('7')
-    fireEvent.blur(screen.getByLabelText('Band tổng'))
-    expect(screen.getByLabelText('Band tổng')).toHaveValue('7.0')
   })
 
+  it('follows the criteria: change one and the overall band changes with it, rounded to the nearest half band', async () => {
+    workspaceServer()
+    await open()
+    gradeEverything()
+    expect(screen.getByLabelText('Band tổng')).toHaveTextContent('6.5')
+
+    // Lexical 7.0 → 5.5: (6.0 + 6.5 + 5.5 + 6.5) ÷ 4 = 6.125, which rounds down to 6.0.
+    const lexical = screen.getByLabelText('Band Lexical Resource')
+    fireEvent.change(lexical, { target: { value: '5.5' } })
+    fireEvent.blur(lexical)
+
+    expect(screen.getByLabelText('Band tổng')).toHaveTextContent('6.0')
+    expect(screen.getByText('(6.0 + 6.5 + 5.5 + 6.5) ÷ 4 = 6.125, làm tròn thành 6.0.')).toBeInTheDocument()
+  })
   it('scores a criterion with the plus and minus buttons, half a band at a time', async () => {
     workspaceServer()
     await open()

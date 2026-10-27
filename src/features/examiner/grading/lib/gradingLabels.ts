@@ -19,13 +19,23 @@ export type Comments = Record<CriterionKey, string>
 export const emptyScores = (): Scores => ({ taskResponse: null, coherence: null, lexical: null, grammar: null })
 export const emptyComments = (): Comments => ({ taskResponse: '', coherence: '', lexical: '', grammar: '' })
 
-/** The suggested overall band, once all four criteria have one. */
+/** The overall band: the mean of the four criteria to the nearest half band, once all four have one. */
 export function suggestedBand(scores: Scores): number | null {
   const { taskResponse, coherence, lexical, grammar } = scores
   if (taskResponse === null || coherence === null || lexical === null || grammar === null) return null
   return overallBand({ taskResponse, coherence, lexical, grammar })
 }
 
+/**
+ * How the overall band comes about, to show it to the examiner: the four bands, their mean, and the band after rounding to the
+ * nearest half. The overall band is never typed in; it is this number, once all four criteria have a band.
+ */
+export function overallWorking(scores: Scores): { bands: number[]; mean: number; band: number } | null {
+  const band = suggestedBand(scores)
+  if (band === null) return null
+  const bands = [scores.taskResponse, scores.coherence, scores.lexical, scores.grammar] as number[]
+  return { bands, mean: bands.reduce((sum, value) => sum + value, 0) / 4, band }
+}
 export interface Checklist { allGraded: boolean; allCommented: boolean; hasFeedback: boolean; ready: boolean }
 
 export function checklist(scores: Scores, comments: Comments, feedback: string): Checklist {

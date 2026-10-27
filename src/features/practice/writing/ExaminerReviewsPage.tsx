@@ -35,6 +35,7 @@ function Stat({ label, value, tone }: { label: string; value: string | number; t
 /** Where the essay stands, as a badge: the colour and the words say the same thing. */
 function Status({ row }: { row: ReviewRow }) {
   if (row.done) return <span className="we-badge we-badge--done"><CheckCircle2 aria-hidden="true" size={14} />Đã chấm</span>
+  if (row.cancelled) return <span className="we-badge we-badge--cancelled">Đã hủy yêu cầu</span>
   if (row.job?.state === 'OVERDUE') return <span className="we-badge we-badge--late"><TriangleAlert aria-hidden="true" size={14} />Quá hạn 48 giờ</span>
   return <span className="we-badge we-badge--wait"><Hourglass aria-hidden="true" size={14} />Đang chờ chấm</span>
 }

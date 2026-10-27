@@ -57,6 +57,15 @@ describe('SiteNavbar navigation', () => {
     expect(screen.queryByRole('navigation', { name: 'Khám phá' })).not.toBeInTheDocument()
   })
 
+  it('reaches the essays teachers graded through "Lịch sử nộp bài", with no link of its own', () => {
+    render(<MemoryRouter initialEntries={['/submission-history']}><SiteNavbar /></MemoryRouter>)
+    const sections = screen.getByRole('navigation', { name: 'Trang chủ' })
+    const history = within(sections).getByRole('link', { name: 'Lịch sử nộp bài' })
+    expect(history).toHaveAttribute('href', '/submission-history')
+    expect(history).toHaveClass('active')
+    expect(screen.queryByRole('link', { name: 'Bài giáo viên chấm' })).not.toBeInTheDocument()
+  })
+
   it('lists the review basket with the main links for a signed-in learner, lit on its own page only', () => {
     render(<MemoryRouter initialEntries={['/learn/review-basket']}><SiteNavbar /></MemoryRouter>)
     const main = screen.getByRole('navigation', { name: 'Điều hướng chính' })

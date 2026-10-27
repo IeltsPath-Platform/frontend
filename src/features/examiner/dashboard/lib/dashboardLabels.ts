@@ -18,6 +18,10 @@ export function intakePercent(summary: Pick<Summary, 'receivedToday' | 'dailyLim
 export const intakeFull = (summary: Pick<Summary, 'receivedToday' | 'dailyLimit'>) =>
   summary.dailyLimit != null && summary.receivedToday >= summary.dailyLimit
 
+/** Learners cannot choose an examiner with this many late jobs until they grade some. */
+export const heldBackByLateJobs = (summary: Pick<Summary, 'overdue' | 'overdueLimit'>) =>
+  summary.overdueLimit != null && summary.overdue >= summary.overdueLimit
+
 export const bandText =(band: number | null | undefined) => (band == null ? 'Chưa cập nhật' : band.toFixed(1))
 
 /** The profile as the form edits it. Blank optional fields are sent as null. */

@@ -7,6 +7,7 @@ import { useAdminResource } from '@/features/admin/lib/useAdminResource'
 import { AdminPage } from '@/features/admin/pages/AdminPage'
 import { getMyGradedReview } from '../api/examinerGradingApi'
 import { AnnotatedEssay } from '../components/AnnotatedEssay'
+import { PromptCard } from '../components/PromptCard'
 import { SplitPane } from '../components/SplitPane'
 import { timeOfDay } from '../lib/gradingLabels'
 import '../examiner-grading.css'
@@ -43,7 +44,7 @@ export function GradedReviewPage() {
           storageKey="examiner-grading-split"
           left={(
             <>
-              {data.prompt ? <section aria-label="Đề bài" className="adm-card"><h2>Đề bài</h2><p className="adm-eg-text">{data.prompt}</p></section> : null}
+              <PromptCard images={data.images} prompt={data.prompt} />
               <section className="adm-card">
                 <h2>Bài viết của học viên</h2>
                 <AnnotatedEssay annotations={marks} essay={data.essay} onSelect={() => undefined} />

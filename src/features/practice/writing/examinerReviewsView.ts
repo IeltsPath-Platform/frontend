@@ -6,6 +6,8 @@ export type ReviewFilter = 'ALL' | 'DONE' | 'WAITING'
 /** One essay of the list: what Learning knows of it, joined with how the examiner's job stands. */
 export interface ReviewRow extends ExaminerReviewItem {
   done: boolean
+  /** The learner gave up the request and took the credit back: it is neither waiting nor graded. */
+  cancelled: boolean
   band: number | null
   completedAt: string | null
   /** The job, so a late one can be told from one still within its 48 hours. */
@@ -18,22 +20,24 @@ export function joinReviews(items: readonly ExaminerReviewItem[], jobs: readonly
   return items.map((item) => {
     const job = byReview.get(item.reviewSubmissionId) ?? null
     const done = job?.state === 'COMPLETED'
-    return { ...item, job, done, band: done ? job?.band ?? null : null, completedAt: done ? job?.completedAt ?? null : null }
+    return { ...item, job, done, cancelled: job?.state === 'CANCELLED', band: done ? job?.band ?? null : null, completedAt: done ? job?.completedAt ?? null : null }
   })
 }
 
-/** Graded essays first (newest grade first), then the ones still waiting in the order they were sent. */
+const isWaiting = (row: ReviewRow) => !row.done && !row.cancelled
+
+/** Graded essays first (newest grade first), then the ones still waiting in the order they were sent, cancelled ones last. */
 export function viewReviews(rows: readonly ReviewRow[], filter: ReviewFilter): ReviewRow[] {
-  const shown = rows.filter((row) => filter === 'ALL' || (filter === 'DONE') === row.done)
+  const shown = rows.filter((row) => filter === 'ALL' || (filter === 'DONE' ? row.done : isWaiting(row)))
   const finishedAt = (row: ReviewRow) => (row.completedAt ? Date.parse(row.completedAt) : 0)
-  return [...shown].sort((a, b) => Number(b.done) - Number(a.done) || finishedAt(b) - finishedAt(a)
-    || Date.parse(b.requestedAt) - Date.parse(a.requestedAt))
+  return [...shown].sort((a, b) => Number(b.done) - Number(a.done) || Number(a.cancelled) - Number(b.cancelled)
+    || finishedAt(b) - finishedAt(a) || Date.parse(b.requestedAt) - Date.parse(a.requestedAt))
 }
 
 export const countReviews = (rows: readonly ReviewRow[]) => ({
   ALL: rows.length,
   DONE: rows.filter((row) => row.done).length,
-  WAITING: rows.filter((row) => !row.done).length,
+  WAITING: rows.filter(isWaiting).length,
 })
 
 /** The mean of the bands the teacher gave, to the nearest half band as IELTS rounds; null while nothing is graded. */

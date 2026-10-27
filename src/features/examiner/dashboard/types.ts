@@ -14,6 +14,8 @@ export const summarySchema = z.object({
   receivedToday: count,
   /** Null when the limit could not be read; the other numbers are still right. */
   dailyLimit: z.int().positive().nullish(),
+  /** With this many late jobs ({@code overdue}) the examiner takes no new submission until they grade some. */
+  overdueLimit: z.int().positive().nullish(),
 })
 export type Summary = z.infer<typeof summarySchema>
 

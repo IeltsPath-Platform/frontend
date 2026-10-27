@@ -1,4 +1,4 @@
-import { Sparkles, UserCheck } from 'lucide-react'
+import { Sparkles, UserCheck, Wallet } from 'lucide-react'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import type { GradeOptions } from './gradeOptions'
 import './writing-examiner.css'
@@ -39,13 +39,10 @@ export function GradeMethodDialog({ options, context, onTeacher, onAi, onClose }
               Chi phí {ai.cost} point{ai.balance === null ? '' : ` · số dư ${ai.balance} point`}
               {ai.enabled ? '' : ` · còn thiếu ${ai.shortBy} point`}
             </p>
-            <button type="button" className={ai.enabled ? 'ww-primary' : 'ww-secondary'} onClick={onAi}>
-              {ai.enabled ? `Chấm bằng AI · ${ai.cost} point` : 'Nạp point để AI chấm'}
+            <button type="button" className="ww-primary" onClick={onAi}>
+              {ai.enabled ? `Chấm bằng AI · ${ai.cost} point` : <><Wallet size={16} aria-hidden="true" />Nạp point để AI chấm</>}
             </button>
           </section>
-        </div>
-        <div className="ww-dialog-actions">
-          <button type="button" className="ww-secondary" onClick={onClose}>Quay lại chỉnh sửa</button>
         </div>
       </DialogContent>
     </Dialog>

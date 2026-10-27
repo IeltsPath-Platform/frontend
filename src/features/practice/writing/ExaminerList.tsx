@@ -27,9 +27,11 @@ export function TeacherCard({ examiner }: { examiner: Examiner | null }) {
  * Examiners to choose from, each with name, photo, IELTS band and certificates. One who already took their daily share
  * is shown but cannot be picked.
  */
-export function ExaminerList({ examiners, full, chosen, busy, onChoose }: {
+export function ExaminerList({ examiners, full, backlog, chosen, busy, onChoose }: {
   examiners: readonly Examiner[]
   full: ReadonlySet<string>
+  /** Those of {@code full} held back by late jobs, not by today's limit: they are worded differently. */
+  backlog?: ReadonlySet<string>
   chosen: string | null
   busy: boolean
   onChoose: (examinerId: string) => void
@@ -50,7 +52,7 @@ export function ExaminerList({ examiners, full, chosen, busy, onChoose }: {
                 {examiner.certificates.length > 0 && <span className="ww-muted">{examiner.certificates.map(certificateText).join(' · ')}</span>}
                 {examiner.bio && <span className="ww-muted">{examiner.bio}</span>}
               </span>
-              <span className={`we-state${isFull ? ' is-full' : ''}`}>{isFull ? 'Đã đủ bài hôm nay' : 'Còn nhận bài'}</span>
+              <span className={`we-state${isFull ? ' is-full' : ''}`}>{isFull ? (backlog?.has(examiner.id) ? 'Tạm chưa nhận bài mới' : 'Đã đủ bài hôm nay') : 'Còn nhận bài'}</span>
             </label>
           </li>
         )

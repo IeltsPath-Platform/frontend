@@ -1,4 +1,4 @@
-﻿import { render, screen, within } from '@testing-library/react'
+﻿import { fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AdminRoutes } from './AdminRoutes'
@@ -97,7 +97,7 @@ describe('AdminRoutes', () => {
     expect(menu).toHaveTextContent('Cây tri thức')
     expect(menu).not.toHaveTextContent('Bài học')
     expect(menu).not.toHaveTextContent('Người dùng')
-    expect(screen.getByRole('heading', { name: 'Xin chào Lê Hiếu' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Tổng quan chấm bài' })).toBeInTheDocument()
     expect(screen.getByTestId('location')).toHaveTextContent('/admin/examiner')
   })
 
@@ -115,6 +115,19 @@ describe('AdminRoutes', () => {
     }
   })
 
+  it('puts "Sửa hồ sơ" in the account menu of an examiner, and in nobody else\'s', () => {
+    auth.mockReturnValue(session(['EXAMINER']))
+    const examiner = renderAt('/admin')
+    fireEvent.click(document.querySelector('.adm-account__button') as HTMLElement)
+    expect(screen.getByRole('menuitem', { name: 'Sửa hồ sơ' })).toHaveAttribute('href', '/admin/examiner/profile')
+    examiner.unmount()
+
+    auth.mockReturnValue(session(['ADMIN']))
+    renderAt('/admin')
+    fireEvent.click(document.querySelector('.adm-account__button') as HTMLElement)
+    expect(screen.queryByRole('menuitem', { name: 'Sửa hồ sơ' })).not.toBeInTheDocument()
+  })
+
   it('opens the examiner profile screen for examiners only', () => {
     auth.mockReturnValue(session(['EXAMINER']))
     renderAt('/admin/examiner/profile')
@@ -125,7 +138,7 @@ describe('AdminRoutes', () => {
     auth.mockReturnValue(session([role]))
     for (const url of ['/admin/examiner', '/admin/examiner/profile']) {
       const view = renderAt(url)
-      expect(screen.queryByRole('heading', { name: /Xin chào|Hồ sơ của tôi/ })).not.toBeInTheDocument()
+      expect(screen.queryByRole('heading', { name: /Tổng quan chấm bài|Hồ sơ của tôi/ })).not.toBeInTheDocument()
       view.unmount()
     }
   })

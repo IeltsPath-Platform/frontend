@@ -11,7 +11,7 @@ import { listMyCompletedReviews, listMyOpenGradingJobs } from '../api/examinerGr
 import { GradeAction, ReviewAction } from '../components/JobActions'
 import { UNSUPPORTED_NOTE, canGradeHere, isDueSoon, statusBadge, timeOfDay } from '../lib/gradingLabels'
 import {
-  QUEUE_PAGE_SIZE, countByTab, deadlineText, jobCode, pageCount, sourceKey, viewCompleted, viewQueue,
+  QUEUE_PAGE_SIZE, countByTab, deadlineText, jobCode, pageCount, sourceKey, sourceOptions, viewCompleted, viewQueue,
   type QueueSort, type QueueTab,
 } from '../lib/queueView'
 import type { CompletedItem, GradingEntry } from '../types'
@@ -21,10 +21,16 @@ import '../examiner-grading.css'
 /** The open jobs by state, and the ones the examiner already finished. */
 type Tab = QueueTab | 'DONE'
 
+/** The dashboard links to the tab it is talking about (?tab=queued, processing, due-soon, overdue, done); anything else opens the whole list. */
+const TAB_LINKS: Record<string, Tab> = { done: 'DONE', queued: 'QUEUED', processing: 'PROCESSING', 'due-soon': 'DUE_SOON', overdue: 'OVERDUE' }
+const tabFromLink = (value: string | null): Tab => TAB_LINKS[value ?? ''] ?? 'ALL'
+
 const TABS: ReadonlyArray<{ key: Exclude<Tab, 'DONE'>; label: string }> = [
   { key: 'ALL', label: 'Tất cả' },
   { key: 'QUEUED', label: 'Chờ chấm' },
   { key: 'PROCESSING', label: 'Đang chấm' },
+  { key: 'DUE_SOON', label: 'Sắp quá hạn' },
+  { key: 'OVERDUE', label: 'Quá hạn' },
 ]
 
 function Row({ entry }: { entry: GradingEntry }) {
@@ -70,7 +76,7 @@ export function WritingQueuePage() {
   const location = useLocation()
   const [params] = useSearchParams()
   const completed = (location.state as { completed?: boolean } | null)?.completed === true
-  const [tab, setTab] = useState<Tab>(params.get('tab') === 'done' ? 'DONE' : 'ALL')
+  const [tab, setTab] = useState<Tab>(tabFromLink(params.get('tab')))
   const [source, setSource] = useState('')
   const [sort, setSort] = useState<QueueSort>('DUE_FIRST')
   const [search, setSearch] = useState('')
@@ -85,7 +91,7 @@ export function WritingQueuePage() {
   const finished = useMemo(() => (done.data?.content ?? []).filter((item) => item.skill === 'WRITING'), [done.data])
   const counts = countByTab(writing)
   const showingDone = tab === 'DONE'
-  const sources = [...new Set(showingDone ? finished.map((item) => item.source ?? '') : writing.map(sourceKey))].sort()
+  const sources = sourceOptions(showingDone ? finished.map((item) => item.source ?? '') : writing.map(sourceKey))
   const openRows = showingDone ? [] : viewQueue(writing, { tab, source, search, sort })
   const doneRows = showingDone ? viewCompleted(finished, { source, search }) : []
   const total = showingDone ? doneRows.length : openRows.length
@@ -104,15 +110,13 @@ export function WritingQueuePage() {
       <div className="adm-eg-workspace-list">
         {completed ? <p className="adm-alert" role="status">Đã hoàn tất chấm bài. Bài vừa chấm nằm ở tab "Đã chấm", bạn có thể xem lại bất cứ lúc nào.</p> : null}
 
+        {/* The tabs below already count what waits and what is being graded; only what they cannot show is said here. */}
         {summary.status === 'success' && summary.data ? (
-          <ul aria-label="Số liệu hàng đợi" className="ex-stats ex-stats--four">
-            <li className="adm-card ex-stat"><span>Chờ chấm</span><strong>{summary.data.queued}</strong></li>
-            <li className="adm-card ex-stat"><span>Đang chấm</span><strong>{summary.data.processing}</strong></li>
-            <li className={`adm-card ex-stat${summary.data.overdue > 0 ? ' ex-stat--danger' : ''}`}><span>Quá hạn 48 giờ</span><strong>{summary.data.overdue}</strong></li>
-            <li className="adm-card ex-stat"><span>Đã nhận hôm nay{limit ? ' / tối đa' : ''}</span><strong>{limit ? `${summary.data.receivedToday} / ${limit}` : summary.data.receivedToday}</strong></li>
-          </ul>
-        ) : null}
-        {summary.status === 'error'
+          <p aria-label="Số liệu hàng đợi" className="ex-queue-strip" role="status">
+            <span>Hôm nay đã nhận <strong>{limit ? `${summary.data.receivedToday} / ${limit}` : summary.data.receivedToday}</strong> bài{limit ? ' (tối đa mỗi ngày)' : ''}</span>
+            {summary.data.overdue > 0 ? <span className="ex-queue-strip__late">{summary.data.overdue} bài quá hạn 48 giờ, hãy chấm sớm</span> : null}
+          </p>
+        ) : null}        {summary.status === 'error'
           ? <p className="adm-muted">Không tải được số liệu. <button className="adm-btn adm-btn--small" onClick={summary.reload} type="button">Thử lại</button></p>
           : null}
 

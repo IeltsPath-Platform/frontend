@@ -23,12 +23,17 @@ export const gradingPageSchema = z.object({
   totalElements: z.number().int().nonnegative(),
 })
 
+/** A chart image of the prompt (Task 1), the one the learner saw. */
+export const promptImageSchema = z.object({ url: z.string().min(1), altText: z.string().nullish() })
+
 /** What the examiner reads: the prompt and the essay. `attemptId` is set for work that belongs to an exam attempt. */
 export const gradingEssaySchema = z.object({
   jobId: z.guid(),
   attemptId: z.guid().nullish(),
   attemptItemId: z.guid().nullish(),
   prompt: z.string().nullish(),
+  // Absent on essays sent before the chart was kept with the prompt.
+  images: z.array(promptImageSchema).nullish(),
   essay: z.string(),
   task: z.string().nullish(),
   rubric: z.unknown().nullish(),
@@ -69,6 +74,7 @@ export const gradedReviewSchema = z.object({
   skill: z.string().nullish(),
   task: z.string().nullish(),
   prompt: z.string().nullish(),
+  images: z.array(promptImageSchema).nullish(),
   essay: z.string(),
   band: z.number(),
   criteria: z.array(z.object({ criterion: z.string(), band: z.number(), comment: z.string().nullish() })),
