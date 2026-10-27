@@ -367,13 +367,18 @@ describe('WritingGradingPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Thêm lỗi' }))
   }
 
-  it('shows the chart the learner saw under the prompt, and opens it full size', async () => {
+  it('shows the chart the learner saw under the prompt, and enlarges it in a dialog', async () => {
     workspaceServer({ essayBody: essay({ task: 'TASK_1', images: [{ url: 'https://cdn.example/chart.png', altText: null }] }) })
     await open()
 
-    const chart = within(screen.getByRole('region', { name: 'Đề bài' })).getByRole('img', { name: 'Biểu đồ của đề bài' })
-    expect(chart).toHaveAttribute('src', 'https://cdn.example/chart.png')
-    expect(chart.closest('a')).toHaveAttribute('href', 'https://cdn.example/chart.png')
+    const prompt = screen.getByRole('region', { name: 'Đề bài' })
+    expect(within(prompt).getByRole('img', { name: 'Biểu đồ của đề bài' })).toHaveAttribute('src', 'https://cdn.example/chart.png')
+
+    // Large view in a dialog, not a link: a `data:` chart cannot be opened as a page.
+    expect(within(prompt).queryByRole('link')).not.toBeInTheDocument()
+    fireEvent.click(within(prompt).getByRole('button', { name: /Phóng to biểu đồ/ }))
+    const dialog = await screen.findByRole('dialog')
+    expect(within(dialog).getByRole('img', { name: 'Biểu đồ của đề bài' })).toHaveAttribute('src', 'https://cdn.example/chart.png')
   })
 
   it('takes the job first, then shows the prompt and the essay without any learner identity', async () => {

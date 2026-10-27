@@ -86,7 +86,6 @@ const memberNavigation: readonly NavItem[] = [
     children: [
       { to: '/overview', label: 'Dashboard' },
       { to: '/submission-history', label: 'Lịch sử nộp bài' },
-      { to: '/writing-reviews', label: 'Bài giáo viên chấm' },
       { to: '/learn', label: 'Khóa học của tôi' },
     ],
   },

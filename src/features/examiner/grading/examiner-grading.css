@@ -88,9 +88,12 @@
 }
 
 .adm-eg-text, .adm-eg-essay { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.75; }
-/* The chart of a Task 1 prompt, as wide as the pane; the link opens it full size. */
+/* The chart of a Task 1 prompt, as wide as the pane; the button under it opens it large in a dialog. */
 .adm-eg-chart { margin: 12px 0 0; padding: 6px; border: 1px solid var(--adm-border); border-radius: 8px; background: #ffffff; }
 .adm-eg-chart img { display: block; width: 100%; height: auto; }
+.adm-eg-zoom { margin-top: 8px; }
+.adm-eg-zoom-dialog { width: min(92vw, 1000px); max-width: min(92vw, 1000px); padding: 12px; background: #ffffff; }
+.adm-eg-zoom-dialog img { display: block; width: 100%; height: auto; }
 .adm-eg-essay { padding: 12px 14px; background: var(--adm-surface-2); border: 1px solid var(--adm-border); border-radius: var(--adm-radius); cursor: text; }
 .adm-eg-mark { background: rgb(224 138 18 / 28%); border-bottom: 2px solid var(--adm-warn); color: inherit; border-radius: 2px; }
 .adm-eg-mark__n { color: var(--adm-warn); font-weight: 700; font-size: .7rem; user-select: none; padding-left: 1px; }

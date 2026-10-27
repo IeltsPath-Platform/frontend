@@ -57,17 +57,12 @@ describe('SiteNavbar navigation', () => {
     expect(screen.queryByRole('navigation', { name: 'Khám phá' })).not.toBeInTheDocument()
   })
 
-  it('gives a signed-in learner a link to the essays teachers graded, lit on its own page, without a bell click', () => {
-    render(<MemoryRouter initialEntries={['/writing-reviews']}><SiteNavbar /></MemoryRouter>)
+  it('reaches the essays teachers graded through "Lịch sử nộp bài", with no link of its own', () => {
+    render(<MemoryRouter initialEntries={['/submission-history']}><SiteNavbar /></MemoryRouter>)
     const sections = screen.getByRole('navigation', { name: 'Trang chủ' })
-    const link = within(sections).getByRole('link', { name: 'Bài giáo viên chấm' })
-    expect(link).toHaveAttribute('href', '/writing-reviews')
-    expect(link).toHaveClass('active')
-  })
-
-  it('does not offer the graded essays link to a guest', () => {
-    authSessionMock.mockReturnValue({ isLoggedIn: false, userName: '' })
-    render(<MemoryRouter initialEntries={['/practice-tests']}><SiteNavbar /></MemoryRouter>)
+    const history = within(sections).getByRole('link', { name: 'Lịch sử nộp bài' })
+    expect(history).toHaveAttribute('href', '/submission-history')
+    expect(history).toHaveClass('active')
     expect(screen.queryByRole('link', { name: 'Bài giáo viên chấm' })).not.toBeInTheDocument()
   })
 
