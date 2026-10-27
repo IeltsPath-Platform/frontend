@@ -12,6 +12,7 @@ const ids = (rows: GradingEntry[]) => rows.map((row) => row.id)
 const a = '10000000-0000-4000-8000-00000000000a'
 const b = '20000000-0000-4000-8000-00000000000b'
 const c = '30000000-0000-4000-8000-00000000000c'
+const d = '40000000-0000-4000-8000-00000000000d'
 
 describe('viewQueue', () => {
   const jobs = [
@@ -63,12 +64,24 @@ describe('viewCompleted', () => {
 
 describe('queue labels', () => {
   it('counts each tab', () => {
-    expect(countByTab([entry(a), entry(b, { status: 'PROCESSING' }), entry(c)])).toEqual({ ALL: 3, QUEUED: 2, PROCESSING: 1 })
+    expect(countByTab([entry(a), entry(b, { status: 'PROCESSING' }), entry(c)])).toEqual({ ALL: 3, QUEUED: 2, PROCESSING: 1, DUE_SOON: 0, OVERDUE: 0 })
+  })
+
+  it('lists late soon and late jobs whether they wait or are being graded, and keeps the two apart', () => {
+    const jobs = [
+      entry(a, { waitSeconds: 40 * 3600 }),
+      entry(b, { status: 'PROCESSING', waitSeconds: 45 * 3600 }),
+      entry(c, { overdue: true, waitSeconds: 50 * 3600 }),
+      entry(d, { waitSeconds: 3600 }),
+    ]
+    expect(countByTab(jobs)).toMatchObject({ DUE_SOON: 2, OVERDUE: 1 })
+    expect(ids(viewQueue(jobs, { ...all, tab: 'DUE_SOON' }))).toEqual([b, a])
+    expect(ids(viewQueue(jobs, { ...all, tab: 'OVERDUE' }))).toEqual([c])
   })
 
   it('puts a job with a saved draft under "Đang chấm" even though it is still queued', () => {
     const jobs = [entry(a), entry(b, { hasDraft: true }), entry(c)]
-    expect(countByTab(jobs)).toEqual({ ALL: 3, QUEUED: 2, PROCESSING: 1 })
+    expect(countByTab(jobs)).toMatchObject({ ALL: 3, QUEUED: 2, PROCESSING: 1 })
     expect(ids(viewQueue(jobs, { ...all, tab: 'PROCESSING' }))).toEqual([b])
     expect(ids(viewQueue(jobs, { ...all, tab: 'QUEUED' }))).not.toContain(b)
   })

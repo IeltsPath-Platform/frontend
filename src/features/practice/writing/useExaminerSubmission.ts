@@ -10,7 +10,7 @@ const ERRORS: Record<string, string> = {
   ESSAY_TOO_SHORT: 'Bài viết còn quá ngắn để gửi giáo viên chấm.',
   ESSAY_TOO_LONG: 'Bài viết quá dài để chấm.',
   HUMAN_GRADING_CREDIT_REQUIRED: 'Gói Premium của bạn đã hết lượt giáo viên chấm, hoặc đã hết hạn.',
-  EXAMINER_UNAVAILABLE: 'Giáo viên này vừa đủ bài hôm nay hoặc đang tắt nhận bài. Hãy chọn giáo viên khác.',
+  EXAMINER_UNAVAILABLE: 'Giáo viên này vừa đủ bài hôm nay, đang tắt nhận bài hoặc tạm chưa nhận bài mới. Hãy chọn giáo viên khác.',
   HUMAN_REVIEW_UNAVAILABLE: 'Chưa gửi được cho giáo viên, lượt chấm của bạn chưa bị trừ. Hãy thử lại sau.',
   USER_SERVICE_UNAVAILABLE: 'Chưa kiểm tra được giáo viên. Hãy thử lại sau.',
   EXAMINER_REVIEW_PENDING: 'Bài này đã gửi giáo viên và đang chờ chấm, nên chưa gửi lại được. Bạn gửi lại được sau khi giáo viên chấm xong; lượt chấm của bạn không bị trừ thêm.',

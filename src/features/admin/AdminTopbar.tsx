@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { ChevronDown, GraduationCap, LogOut, Search } from 'lucide-react'
+import { ChevronDown, GraduationCap, LogOut, Search, UserRound } from 'lucide-react'
 import brandLogo from '@/assets/brand-logo-white.webp'
 import { logoutSession, useAuthSession } from '@/features/auth/authSession'
 import { hasAnyRole } from '@/features/auth/staffRoles'
@@ -13,7 +13,8 @@ function initialsOf(name: string): string {
 }
 
 function AccountMenu() {
-  const { userName, email } = useAuthSession()
+  const { userName, email, roles } = useAuthSession()
+  const isExaminer = hasAnyRole(roles, ['EXAMINER'])
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
@@ -58,6 +59,12 @@ function AccountMenu() {
       </button>
       {open ? (
         <div className="adm-menu" role="menu">
+          {isExaminer ? (
+            <Link className="adm-menu__item" onClick={() => setOpen(false)} role="menuitem" to="/admin/examiner/profile">
+              <UserRound aria-hidden="true" size={16} />
+              Sửa hồ sơ
+            </Link>
+          ) : null}
           <Link className="adm-menu__item" onClick={() => setOpen(false)} role="menuitem" to="/overview">
             <GraduationCap aria-hidden="true" size={16} />
             Về trang học

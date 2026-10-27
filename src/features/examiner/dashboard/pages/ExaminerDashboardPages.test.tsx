@@ -8,7 +8,7 @@ import { ExaminerProfilePage } from './ExaminerProfilePage'
 const EXAMINER = '20000000-0000-4000-8000-0000000000e1'
 vi.mock('@/features/auth/authSession', () => ({ useAuthSession: () => ({ userId: '20000000-0000-4000-8000-0000000000e1', userName: 'Lê Hiếu' }) }))
 
-const summary = (overrides = {}) => ({ queued: 6, processing: 2, dueSoon: 3, overdue: 1, completedToday: 3, completedThisWeek: 11, receivedToday: 7, dailyLimit: 10, ...overrides })
+const summary = (overrides = {}) => ({ queued: 6, processing: 2, dueSoon: 3, overdue: 1, completedToday: 3, completedThisWeek: 11, receivedToday: 7, dailyLimit: 10, overdueLimit: 5, ...overrides })
 const profile = (overrides = {}) => ({
   id: EXAMINER, displayName: 'Lê Hiếu', avatarUrl: null, bio: null, ieltsBand: 8,
   certificates: [{ name: 'IELTS Academic', issuer: 'British Council', year: 2023, score: '8.0' }], acceptingSubmissions: true, ...overrides,
@@ -68,7 +68,15 @@ describe('ExaminerDashboardPage', () => {
     expect(screen.getByRole('progressbar', { name: 'Số bài đã nhận hôm nay' })).toHaveAttribute('aria-valuenow', '70')
     expect(screen.getByText('Đã chấm hôm nay').nextSibling).toHaveTextContent('3')
     expect(screen.getByText('Đã chấm tuần này').nextSibling).toHaveTextContent('11')
-    expect(screen.getByRole('heading', { name: 'Xin chào Lê Hiếu' })).toBeInTheDocument()
+  })
+
+  it('has no greeting bar: the page opens on the numbers and keeps only a hidden title for screen readers', async () => {
+    server()
+    show('/admin/examiner')
+
+    await screen.findByRole('list', { name: 'Số bài theo trạng thái' })
+    expect(screen.queryByText(/Xin chào/)).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'Tổng quan chấm bài' })).toBeInTheDocument()
   })
 
   it('says so when the daily limit is reached, and shows only the count when the limit is unknown', async () => {
@@ -83,63 +91,83 @@ describe('ExaminerDashboardPage', () => {
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument()
   })
 
-  it('lists the five jobs closest to their deadline, each with a visible button to grade it, and counts the rest', async () => {
+  it('opens the matching tab of the queue from each number', async () => {
+    server()
+    show('/admin/examiner')
+
+    const stats = await screen.findByRole('list', { name: 'Số bài theo trạng thái' })
+    expect(within(stats).getByText('Chờ chấm').closest('a')).toHaveAttribute('href', '/admin/grading/writing?tab=queued')
+    expect(within(stats).getByText('Đang chấm').closest('a')).toHaveAttribute('href', '/admin/grading/writing?tab=processing')
+    expect(within(stats).getByText('Sắp quá hạn (36h)').closest('a')).toHaveAttribute('href', '/admin/grading/writing?tab=due-soon')
+    expect(within(stats).getByText('Quá hạn 48h').closest('a')).toHaveAttribute('href', '/admin/grading/writing?tab=overdue')
+  })
+
+  it('shows only the jobs that cannot wait, late ones first, each with why and a button, and counts the rest', async () => {
+    server({
+      queued: [
+        job(1, { overdue: true, waitSeconds: 200000 }),
+        job(2, { waitSeconds: 40 * 3600 }),
+        job(3, { waitSeconds: 3600 }),
+        job(4, { waitSeconds: 7200 }),
+      ],
+      processing: [job(5, { status: 'PROCESSING', hasDraft: true, waitSeconds: 30 * 3600 })],
+    })
+    show('/admin/examiner')
+
+    const todo = await screen.findByRole('region', { name: 'Việc cần làm ngay' })
+    const cards = within(todo).getAllByRole('listitem')
+    expect(cards).toHaveLength(3)
+    // Late first, then late soon, then the one started and left. The two jobs that only wait are not here.
+    expect(cards[0]).toHaveTextContent('Quá hạn')
+    expect(cards[0]).toHaveTextContent('học viên đổi giáo viên')
+    expect(within(cards[0]).getByRole('link', { name: 'Chấm bài' })).toHaveAttribute('href', `/admin/grading/writing/${job(1).id}`)
+    expect(cards[1]).toHaveTextContent('Sắp quá hạn')
+    expect(cards[2]).toHaveTextContent('Đang chấm dở')
+    expect(within(cards[2]).getByRole('link', { name: 'Tiếp tục chấm' })).toHaveAttribute('href', `/admin/grading/writing/${job(5).id}`)
+    expect(todo.querySelector(`a[href$="${job(3).id}"]`)).toBeNull()
+    expect(within(todo).getByText('Còn 2 bài khác trong hàng đợi.')).toBeInTheDocument()
+    expect(within(todo).getByRole('link', { name: /Xem toàn bộ hàng đợi/ })).toHaveAttribute('href', '/admin/grading/writing')
+  })
+
+  it('does not repeat the queue: with nothing urgent it says so and offers only the next job', async () => {
     server({ queued: Array.from({ length: 6 }, (_, index) => job(index)) })
     show('/admin/examiner')
 
-    const todo = await screen.findByRole('region', { name: 'Việc cần làm' })
-    const rows = (await within(todo).findAllByRole('row')).slice(1)
-    expect(rows).toHaveLength(5)
-    // The longest wait is due first: job 5, then 4 … 1. Job 0 waited least and is left out.
-    expect(within(rows[0]).getByRole('link', { name: 'Chấm bài' })).toHaveAttribute('href', `/admin/grading/writing/${job(5).id}`)
-    expect(within(todo).getAllByRole('link', { name: 'Chấm bài' })).toHaveLength(5)
-    expect(todo.querySelector(`a[href$="${job(0).id}"]`)).toBeNull()
-    expect(within(todo).getByText('Còn 1 bài nữa trong hàng đợi.')).toBeInTheDocument()
-    expect(within(todo).getByRole('link', { name: /Xem hàng đợi/ })).toHaveAttribute('href', '/admin/grading/writing')
+    const todo = await screen.findByRole('region', { name: 'Việc cần làm ngay' })
+    expect(within(todo).getByText(/Không có bài nào gấp/)).toBeInTheDocument()
+    // One card, the job that waited longest, not a table of five.
+    expect(within(todo).getAllByRole('listitem')).toHaveLength(1)
+    expect(within(todo).queryByRole('table')).not.toBeInTheDocument()
+    expect(within(todo).getByRole('link', { name: 'Chấm bài' })).toHaveAttribute('href', `/admin/grading/writing/${job(5).id}`)
+    expect(within(todo).getByText('Còn 5 bài khác trong hàng đợi.')).toBeInTheDocument()
   })
 
-  it('offers one button for the job to grade next, and continues a job that was started', async () => {
-    server({ queued: [job(1), job(2)], processing: [job(3, { status: 'PROCESSING', waitSeconds: 90000 })] })
-    show('/admin/examiner')
-
-    const next = await screen.findByRole('link', { name: 'Tiếp tục chấm bài' })
-    expect(next).toHaveAttribute('href', `/admin/grading/writing/${job(3).id}`)
-  })
-
-  it('offers a button to the queue when nothing can be graded yet', async () => {
+  it('says so when nothing waits for the examiner', async () => {
     server({ queued: [] })
     show('/admin/examiner')
 
-    expect(await screen.findByRole('link', { name: 'Mở hàng đợi chấm bài' })).toHaveAttribute('href', '/admin/grading/writing')
-    expect(screen.queryByRole('link', { name: 'Chấm bài tiếp theo' })).not.toBeInTheDocument()
+    expect(await screen.findByText('Chưa có bài nào chờ bạn chấm')).toBeInTheDocument()
   })
 
   it('offers no grading link for work that belongs to an exam attempt', async () => {
     server({ queued: [job(1, { attemptId: job(9).id, attemptType: 'MOCK' })] })
     show('/admin/examiner')
 
-    expect(await screen.findByText('Chưa hỗ trợ')).toBeInTheDocument()
+    expect(await screen.findByText(/chưa chấm được trên màn hình này/)).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'Chấm bài' })).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'Chấm bài tiếp theo' })).not.toBeInTheDocument()
   })
 
-  it('lists what the examiner graded most recently, each with a button to read it again', async () => {
+  it('does not list graded work: the intake card counts it and leads to the queue tab that lists it', async () => {
     server({ finished: [graded(1, { band: 7 }), graded(2)] })
     show('/admin/examiner')
 
-    const recent = await screen.findByRole('region', { name: 'Bài đã chấm gần đây' })
-    const rows = (await within(recent).findAllByRole('row')).slice(1)
-    expect(rows).toHaveLength(2)
-    expect(rows[0]).toHaveTextContent('7.0')
-    expect(within(rows[0]).getByRole('link', { name: 'Xem lại' })).toHaveAttribute('href', `/admin/grading/writing/${graded(1).jobId}/review`)
-    expect(within(recent).getByRole('link', { name: /Xem tất cả bài đã chấm/ })).toHaveAttribute('href', '/admin/grading/writing?tab=done')
-  })
-
-  it('says so when nothing was graded yet', async () => {
-    server({ finished: [] })
-    show('/admin/examiner')
-
-    expect(await screen.findByText('Bạn chưa chấm bài nào')).toBeInTheDocument()
+    expect(await screen.findByText('Đã nhận 7/10 bài hôm nay')).toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Bài đã chấm gần đây' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Xem lại' })).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Xem các bài đã chấm/ })).toHaveAttribute('href', '/admin/grading/writing?tab=done')
+    // The dashboard no longer asks for the graded list at all.
+    expect(calls.some((call) => call.path === '/api/assessments/examiners/me/completed')).toBe(false)
   })
 
   it('has no profile block: the profile is a menu item of its own, and the dashboard is about the work', async () => {
@@ -149,6 +177,27 @@ describe('ExaminerDashboardPage', () => {
     await screen.findByRole('region', { name: 'Hôm nay' })
     expect(screen.queryByRole('region', { name: 'Hồ sơ của tôi' })).not.toBeInTheDocument()
     expect(screen.queryByRole('checkbox', { name: /Đang nhận bài mới/ })).not.toBeInTheDocument()
+  })
+
+  it('does not edit the profile from the today block: that is in the account menu', async () => {
+    server()
+    show('/admin/examiner')
+
+    const today = await screen.findByRole('region', { name: 'Hôm nay' })
+    expect(within(today).queryByRole('link', { name: /Sửa hồ sơ/ })).not.toBeInTheDocument()
+  })
+
+  it('tells the examiner why learners cannot choose them: too many late jobs, and how to open again', async () => {
+    server({ summaryBody: summary({ overdue: 5 }) })
+    const { unmount } = show('/admin/examiner')
+    expect(await screen.findByText(/Bạn có 5 bài quá hạn nên học viên tạm chưa chọn được bạn/)).toBeInTheDocument()
+    expect(screen.getByText(/xuống dưới 5 bài quá hạn/)).toBeInTheDocument()
+    unmount()
+
+    server({ summaryBody: summary({ overdue: 4 }) })
+    show('/admin/examiner')
+    await screen.findByText('Đã nhận 7/10 bài hôm nay')
+    expect(screen.queryByText(/tạm chưa chọn được bạn/)).not.toBeInTheDocument()
   })
 
   it('says on the today block that the examiner paused new submissions', async () => {
@@ -169,7 +218,6 @@ describe('ExaminerDashboardPage', () => {
 
     expect(await screen.findByText('Dịch vụ chấm bài đang bận')).toBeInTheDocument()
     expect(await screen.findByText('Chưa có bài nào chờ bạn chấm')).toBeInTheDocument()
-    expect(screen.getByText('Bạn chưa chấm bài nào')).toBeInTheDocument()
   })
 })
 

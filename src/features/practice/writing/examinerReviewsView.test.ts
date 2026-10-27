@@ -9,7 +9,7 @@ const item = (n: number, requestedAt: string): ExaminerReviewItem => ({
 })
 const job = (n: number, overrides: Partial<MyGradingJob> = {}): MyGradingJob => ({
   id: id(200 + n), reviewSubmissionId: id(100 + n), skill: 'WRITING', source: 'PRACTICE', state: 'WAITING', examinerId: id(9),
-  requestedAt: '2026-10-25T01:00:00Z', deadline: '2026-10-27T01:00:00Z', canChoose: false, changesLeft: 2, createdAt: '2026-10-25T01:00:00Z', ...overrides,
+  requestedAt: '2026-10-25T01:00:00Z', deadline: '2026-10-27T01:00:00Z', canChoose: false, canCancel: false, changesLeft: 2, createdAt: '2026-10-25T01:00:00Z', ...overrides,
 })
 
 describe('the learner list of essays sent to a teacher', () => {
@@ -40,6 +40,17 @@ describe('the learner list of essays sent to a teacher', () => {
     expect(viewReviews(rows, 'DONE').map((row) => row.submissionId)).toEqual([id(2), id(1)])
     expect(viewReviews(rows, 'WAITING').map((row) => row.submissionId)).toEqual([id(3)])
     expect(countReviews(rows)).toEqual({ ALL: 3, DONE: 2, WAITING: 1 })
+  })
+
+  it('keeps a cancelled request out of the waiting ones, shows it last, and gives it no band', () => {
+    const rows = joinReviews(items, [...jobs, job(3, { state: 'CANCELLED' })])
+
+    expect(rows[2].cancelled).toBe(true)
+    expect(rows[2].done).toBe(false)
+    expect(viewReviews(rows, 'ALL').map((row) => row.submissionId)).toEqual([id(2), id(1), id(3)])
+    expect(viewReviews(rows, 'WAITING')).toEqual([])
+    expect(countReviews(rows)).toEqual({ ALL: 3, DONE: 2, WAITING: 0 })
+    expect(averageBand(rows)).toBe(7)
   })
 
   it('averages the teacher bands to the nearest half band, and has no average while nothing is graded', () => {

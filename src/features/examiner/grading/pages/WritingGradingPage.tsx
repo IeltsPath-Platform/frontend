@@ -15,10 +15,11 @@ import { AnnotatedEssay } from '../components/AnnotatedEssay'
 import { BandStepper } from '../components/BandStepper'
 import { CommentBox } from '../components/CommentBox'
 import { ErrorForm } from '../components/ErrorForm'
+import { PromptCard } from '../components/PromptCard'
 import { SplitPane } from '../components/SplitPane'
 import { CRITERION_HINTS, CRITERION_PHRASES, OVERALL_PHRASES } from '../lib/commentPhrases'
 import { usedCodes, type Range } from '../lib/annotations'
-import { BLIND_NOTE, UNSUPPORTED_NOTE, checklist, emptyComments, emptyScores, suggestedBand, timeOfDay, type Comments, type Scores } from '../lib/gradingLabels'
+import { BLIND_NOTE, UNSUPPORTED_NOTE, checklist, emptyComments, emptyScores, overallWorking, timeOfDay, type Comments, type Scores } from '../lib/gradingLabels'
 import { completionSchema, draftPayloadSchema, type Annotation, type Draft, type GradingEssay } from '../types'
 import '../examiner-grading.css'
 
@@ -39,7 +40,6 @@ async function loadWorkspace(jobId: string, signal: AbortSignal): Promise<Worksp
 function restore(draft: Draft | null, essay: string) {
   const scores = emptyScores()
   const comments = emptyComments()
-  let overall: number | null = null
   let feedback = ''
   let annotations: Annotation[] = []
   const parsed = draftPayloadSchema.safeParse(draft?.payload)
@@ -48,12 +48,10 @@ function restore(draft: Draft | null, essay: string) {
       const criterion = CRITERIA.find(({ key }) => key === item.criterion)
       if (criterion) { scores[criterion.key] = item.band ?? null; comments[criterion.key] = item.comment ?? '' }
     }
-    const suggested = suggestedBand(scores)
-    overall = parsed.data.band != null && parsed.data.band !== suggested ? parsed.data.band : null
     feedback = parsed.data.feedback ?? ''
     annotations = (parsed.data.annotations ?? []).filter((item) => essay.slice(item.start, item.end) === item.excerpt)
   }
-  return { scores, comments, overall, feedback, annotations }
+  return { scores, comments, feedback, annotations }
 }
 
 function Step({ done, children }: { done: boolean; children: string }) {
@@ -70,7 +68,6 @@ function GradingForm({ jobId, essay, draft, errorTypes }: { jobId: string; essay
   const [initial] = useState(() => restore(draft, essay.essay))
   const [scores, setScores] = useState<Scores>(initial.scores)
   const [comments, setComments] = useState<Comments>(initial.comments)
-  const [overall, setOverall] = useState<number | null>(initial.overall)
   const [feedback, setFeedback] = useState(initial.feedback)
   const [annotations, setAnnotations] = useState<Annotation[]>(initial.annotations)
   const [selection, setSelection] = useState<Range | null>(null)
@@ -80,8 +77,9 @@ function GradingForm({ jobId, essay, draft, errorTypes }: { jobId: string; essay
   const [error, setError] = useState<string | null>(null)
   const navigate = useNavigate()
 
-  const suggested = suggestedBand(scores)
-  const band = overall ?? suggested
+  // The overall band is worked out from the four criteria, never chosen: a saved draft keeps the criteria, not a band of its own.
+  const working = overallWorking(scores)
+  const band = working?.band ?? null
   const check = checklist(scores, comments, feedback)
   const typeOf = (code: string) => errorTypes.find((type) => type.code === code)
 
@@ -127,7 +125,7 @@ function GradingForm({ jobId, essay, draft, errorTypes }: { jobId: string; essay
 
   const essayPane = (
     <>
-      {essay.prompt ? <section className="adm-card"><h2>Đề bài</h2><p className="adm-eg-text">{essay.prompt}</p></section> : null}
+      <PromptCard images={essay.images} prompt={essay.prompt} />
       <section className="adm-card">
         <h2>Bài làm của học viên</h2>
         <p className="adm-muted">Bôi đen đoạn có lỗi rồi điền form bên dưới. Chỉ đọc: bạn không sửa được nội dung bài làm.</p>
@@ -158,7 +156,6 @@ function GradingForm({ jobId, essay, draft, errorTypes }: { jobId: string; essay
           </ol>
         )}
       </section>
-      {essay.rubric != null ? <details className="adm-card"><summary>Rubric tham khảo</summary><pre className="adm-eg-rubric">{JSON.stringify(essay.rubric, null, 2)}</pre></details> : null}
     </>
   )
 
@@ -189,14 +186,17 @@ function GradingForm({ jobId, essay, draft, errorTypes }: { jobId: string; essay
           <div className="eg-criterion__title">
             <div>
               <h2>Điểm tổng</h2>
-              <p className="eg-criterion__hint">Trung bình 4 tiêu chí, làm tròn 0,5</p>
+              <p className="eg-criterion__hint">Tự tính: trung bình 4 tiêu chí, làm tròn 0,5. Không nhập tay.</p>
             </div>
           </div>
-          <BandStepper label="Band tổng" onChange={setOverall} value={band} />
+          <output aria-label="Band tổng" className="eg-overall">{band === null ? '—' : band.toFixed(1)}</output>
         </header>
-        <p className="adm-muted">{suggested === null ? 'Chấm đủ 4 tiêu chí để có band đề xuất.' : `Đề xuất ${suggested}: trung bình 4 tiêu chí, làm tròn 0,5. Bạn có thể đổi.`}</p>
-      </section>
-      <section className="adm-card">
+        <p className="adm-muted">
+          {working === null
+            ? 'Chấm đủ 4 tiêu chí, band tổng sẽ tự hiện ở đây.'
+            : `(${working.bands.map((value) => value.toFixed(1)).join(' + ')}) ÷ 4 = ${Number(working.mean.toFixed(3))}, làm tròn thành ${working.band.toFixed(1)}.`}
+        </p>
+      </section>      <section className="adm-card">
         <h2>Nhận xét chung</h2>
         <CommentBox
           label="Nhận xét chung"

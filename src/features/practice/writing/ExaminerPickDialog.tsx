@@ -34,7 +34,7 @@ export function ExaminerPickDialog({ words, minWords, busy, error, onSend, onBac
         {loaded.status === 'error' && <p className="ww-error" role="alert">Chưa tải được danh sách giáo viên. Hãy quay lại và thử lại.</p>}
         {ready && ready.examiners.length === 0 && <p className="ww-muted" role="status">Hiện chưa có giáo viên nào nhận bài. Hãy thử lại sau hoặc chọn AI chấm.</p>}
         {ready && ready.examiners.length > 0 && (
-          <ExaminerList examiners={ready.examiners} full={ready.full} chosen={chosen} busy={busy} onChoose={setChosen} />
+          <ExaminerList examiners={ready.examiners} full={ready.full} backlog={ready.backlog} chosen={chosen} busy={busy} onChoose={setChosen} />
         )}
         {!longEnough && <p className="ww-error" role="alert">Cần ít nhất {minWords} từ để gửi giáo viên chấm (hiện có {words}).</p>}
         {error && <p className="ww-error" role="alert">{error}</p>}

@@ -21,8 +21,11 @@ export const examinerSchema = z.object({
 })
 export type Examiner = z.infer<typeof examinerSchema>
 
-const availabilitySchema = z.array(z.object({ examinerId: z.guid(), full: z.boolean() }))
+const availabilitySchema = z.array(z.object({ examinerId: z.guid(), full: z.boolean(), backlog: z.boolean().default(false) }))
 const MAX_AVAILABILITY_IDS = 50
+
+/** Examiners who cannot take another submission: {@code full} is all of them, {@code backlog} those held back by late jobs. */
+export interface ExaminerAvailability { full: Set<string>; backlog: Set<string> }
 
 /** The examiners who take new submissions. */
 export async function listExaminers(signal?: AbortSignal) {
@@ -33,13 +36,19 @@ export async function getExaminer(examinerId: string, signal?: AbortSignal) {
   return examinerSchema.parse(await apiRequest<unknown>(`/api/users/examiners/${z.guid().parse(examinerId)}`, { auth: true, signal }))
 }
 
-/** Which of the examiners cannot take another submission today (their daily limit is reached, or they stopped taking work). */
-export async function getFullExaminers(ids: string[], signal?: AbortSignal): Promise<Set<string>> {
-  if (ids.length === 0) return new Set()
+/**
+ * Which of the examiners cannot take another submission now: their daily limit is reached, they stopped taking work, or too
+ * many of their jobs are late (they take no new one until they grade some).
+ */
+export async function getFullExaminers(ids: string[], signal?: AbortSignal): Promise<ExaminerAvailability> {
+  if (ids.length === 0) return { full: new Set(), backlog: new Set() }
   const unique = [...new Set(ids)].slice(0, MAX_AVAILABILITY_IDS)
   const query = new URLSearchParams({ ids: unique.join(',') })
   const rows = availabilitySchema.parse(await apiRequest<unknown>(`/api/assessments/examiners/availability?${query}`, { auth: true, signal }))
-  return new Set(rows.filter((row) => row.full).map((row) => row.examinerId))
+  return {
+    full: new Set(rows.filter((row) => row.full).map((row) => row.examinerId)),
+    backlog: new Set(rows.filter((row) => row.backlog).map((row) => row.examinerId)),
+  }
 }
 
 export interface ExaminerSubmissionInput {
@@ -75,11 +84,14 @@ const annotationSchema = z.object({
   suggestion: z.string().nullish(),
 })
 
-/** The examiner's review of an essay: PENDING until they finish; the grade fields are only there when DONE. */
+/**
+ * The examiner's review of an essay: PENDING until they finish; the grade fields are only there when DONE. CANCELLED when
+ * the learner gave up a late request and took the credit back.
+ */
 export const humanReviewSchema = z.object({
   reviewSubmissionId: z.guid(),
   examinerId: z.guid().nullish(),
-  status: z.enum(['PENDING', 'DONE']),
+  status: z.enum(['PENDING', 'DONE', 'CANCELLED']),
   band: z.number().nullish(),
   criteria: z.array(z.object({ criterion: z.string(), band: z.number(), comment: z.string().nullish() })).nullish(),
   errorCodes: z.array(z.string()).nullish(),

@@ -1,13 +1,18 @@
 /* Choosing who grades (teacher or AI), choosing the teacher, and reading the teacher's review. Tokens come from the reading workspace. */
+/* The dialogs get the workspace colours from .ww-dialog (writing-workspace.css). */
 .we-method { max-width: 40rem; }
 .we-method-cards { display: grid; gap: 0.8rem; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); }
-.we-method-card { display: grid; align-content: start; gap: 0.5rem; padding: 0.9rem 1rem; border: 1px solid var(--rw-accent); border-radius: 12px; background: #eff6ff; }
+/* The status line takes the spare height, so both cards end in a button of the same size on the same line. */
+.we-method-card { display: grid; grid-template-rows: auto auto 1fr auto; gap: 0.5rem; padding: 0.9rem 1rem; border: 1px solid var(--rw-accent); border-radius: 12px; background: #eff6ff; }
 .we-method-card.is-off { border-color: var(--rw-line); background: #f8fafc; }
 .we-method-card h3 { display: flex; align-items: center; gap: 0.4rem; margin: 0; font-size: 1rem; }
 .we-method-card p { margin: 0; font-size: 0.84rem; line-height: 1.45; }
 .we-method-status { font-weight: 700; color: var(--rw-accent); }
 .we-method-card.is-off .we-method-status { color: #b45309; }
-.we-method-card .ww-primary, .we-method-card .ww-secondary { justify-self: stretch; }
+.we-method-card .ww-primary, .we-method-card .ww-secondary { justify-self: stretch; padding: 0.7rem 1rem; font-size: 0.9rem; font-weight: 700; }
+/* A button that is open must read as a button: solid accent with a shadow, the top-up one included. */
+.we-method-card .ww-primary:not(:disabled) { box-shadow: 0 3px 10px rgb(29 78 216 / 28%); }
+.we-method-card .ww-primary { gap: 0.5rem; }
 
 .we-pick { max-width: 38rem; }
 /* Many examiners: the list scrolls inside the dialog, so the buttons under it stay in view. */
@@ -101,6 +106,7 @@
 .we-badge--done { background: #dcfce7; color: #15803d; }
 .we-badge--wait { background: #fef3c7; color: #b45309; }
 .we-badge--late { background: #fee2e2; color: #b91c1c; }
+.we-badge--cancelled { background: #e2e8f0; color: #475569; }
 
 .we-cell-band { text-align: center; }
 .we-band-pill { display: inline-block; min-width: 3.2rem; padding: 0.2rem 0.6rem; border-radius: 10px; background: var(--wr-accent); color: #ffffff; font-size: 1.25rem; font-variant-numeric: tabular-nums; }

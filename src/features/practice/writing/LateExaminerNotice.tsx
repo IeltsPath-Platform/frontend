@@ -1,6 +1,7 @@
 import { useState } from 'react'
+import { CancelRequestDialog } from './CancelRequestDialog'
 import { ChangeExaminerDialog } from './ChangeExaminerDialog'
-import { changeExaminer, changeExaminerMessage } from './gradingJobApi'
+import { cancelRequest, cancelRequestMessage, changeExaminer, changeExaminerMessage } from './gradingJobApi'
 import type { MyGradingJob } from './gradingJobApi'
 import './writing-examiner.css'
 
@@ -17,8 +18,9 @@ function writeKept(job: MyGradingJob) {
 
 /**
  * What the learner can do once the chosen examiner is late (48 hours): keep waiting for the same examiner, or ask for
- * another one, at most twice per submission and without spending another credit. Nothing shows while the examiner still
- * has time. {@code onChanged} runs after the examiner was replaced.
+ * another one, at most twice per submission and without spending another credit. When no change is left, the learner may
+ * also cancel the request and take the credit back. Nothing shows while the examiner still has time. {@code onChanged}
+ * runs after the examiner was replaced or the request cancelled.
  */
 export function LateExaminerNotice(props: { job: MyGradingJob; examinerName?: string | null; onChanged: () => void }) {
   // A new examiner means a new deadline, so what the learner chose before no longer applies: start the state afresh.
@@ -32,10 +34,27 @@ function LateNotice({ job, examinerName, onChanged }: {
 }) {
   const [kept, setKept] = useState(() => readKept(job))
   const [choosing, setChoosing] = useState(false)
+  const [cancelling, setCancelling] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
   const who = examinerName ?? 'giáo viên hiện tại'
+  const reviewId = job.reviewSubmissionId ?? null
+
+  async function cancel() {
+    if (!reviewId) return
+    setBusy(true)
+    setError('')
+    try {
+      await cancelRequest(reviewId)
+      setCancelling(false)
+      onChanged()
+    } catch (cause) {
+      setError(cancelRequestMessage(cause))
+    } finally {
+      setBusy(false)
+    }
+  }
 
   async function change(examinerId: string) {
     setBusy(true)
@@ -65,9 +84,20 @@ function LateNotice({ job, examinerName, onChanged }: {
         )}
         {job.canChoose
           ? <button type="button" className="wr-primary" onClick={() => setChoosing(true)}>Yêu cầu đổi giáo viên</button>
-          : <p className="ww-muted">Bạn đã dùng hết {2 - job.changesLeft} lần đổi giáo viên cho bài này, hãy tiếp tục chờ.</p>}
+          : (
+            <p className="ww-muted">
+              Bạn đã dùng hết {2 - job.changesLeft} lần đổi giáo viên cho bài này.
+              {job.canCancel && reviewId ? ' Nếu không muốn chờ nữa, bạn có thể hủy yêu cầu và nhận lại lượt chấm.' : ' Hãy tiếp tục chờ.'}
+            </p>
+          )}
+        {job.canCancel && reviewId && (
+          <button type="button" className="wr-primary" onClick={() => { setError(''); setCancelling(true) }}>Hủy yêu cầu và nhận lại lượt</button>
+        )}
       </div>
       {job.canChoose && <p className="ww-muted">Còn {job.changesLeft} lần đổi cho bài này.</p>}
+      {cancelling && (
+        <CancelRequestDialog busy={busy} error={error} onCancel={() => void cancel()} onClose={() => { setCancelling(false); setError('') }} />
+      )}
       {choosing && (
         <ChangeExaminerDialog
           currentExaminerId={job.examinerId ?? null}

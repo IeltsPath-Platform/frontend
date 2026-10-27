@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { RefreshCw, X } from 'lucide-react'
+import { X } from 'lucide-react'
 import { SiteNavbar } from '@/components/SiteNavbar'
 import { ApiErrorState, LoadingState } from '@/features/learning-path/components/PageState'
 import { useApiResource } from '@/features/learning-path/lib/useApiResource'
@@ -18,7 +18,6 @@ import '../reading/reading-workspace.css'
 import './writing-result.css'
 import './writing-examiner.css'
 
-const CATALOG_PATH = '/practice-tests?skill=writing'
 const REVIEWS_PATH = '/writing-reviews'
 /** Time between checks while the teacher has not finished. */
 const POLL_MS = 60_000
@@ -183,17 +182,28 @@ function EssayPlain({ essay }: { essay: string }) {
   )
 }
 
-function Waiting({ essay, onCheck }: { essay: string; onCheck: () => void }) {
+/** The page checks again by itself every minute, and the X in the top bar leaves it, so there are no buttons here. */
+function Waiting({ essay }: { essay: string }) {
   return (
     <div className="we-waiting">
       <section className="wr-card" aria-label="Đang chờ giáo viên chấm">
         <header><h2>Đang chờ giáo viên chấm</h2></header>
         <p className="we-pill">Chưa có kết quả</p>
         <p>Bài của bạn đã được gửi. Giáo viên có tối đa 48 giờ để chấm; kết quả sẽ hiện ở trang này khi giáo viên chấm xong. Bạn có thể đóng trang và quay lại sau.</p>
-        <div className="wr-actions">
-          <button type="button" className="wr-primary" onClick={onCheck}><RefreshCw size={14} aria-hidden="true" /> Kiểm tra lại</button>
-          <Link className="wr-secondary" to={CATALOG_PATH}>Về danh mục Writing</Link>
-        </div>
+      </section>
+      <EssayPlain essay={essay} />
+    </div>
+  )
+}
+
+/** The learner gave up a late request: nobody grades the essay, and the credit is back. */
+function Cancelled({ essay }: { essay: string }) {
+  return (
+    <div className="we-waiting">
+      <section className="wr-card" aria-label="Đã hủy yêu cầu chấm bài">
+        <header><h2>Đã hủy yêu cầu chấm bài</h2></header>
+        <p className="we-pill">Không còn chấm</p>
+        <p>Bạn đã hủy yêu cầu này, giáo viên sẽ không chấm bài nữa. Lượt giáo viên chấm của bạn đã được hoàn lại, bạn có thể viết lại hoặc gửi bài này cho một giáo viên khác.</p>
       </section>
       <EssayPlain essay={essay} />
     </div>
@@ -205,6 +215,7 @@ export function ExaminerResult({ submission, submissionId }: { submission: Writi
   const review = useApiResource(`writing-review:${submissionId}`, () => getHumanReview(submissionId))
   const { reload } = review
   const done = review.data?.status === 'DONE'
+  const cancelled = review.data?.status === 'CANCELLED'
   const essay = submission.essayText ?? ''
   const context = useMemo(() => loadResultContext(submissionId), [submissionId])
   const examinerId = review.data?.examinerId ?? null
@@ -219,10 +230,10 @@ export function ExaminerResult({ submission, submissionId }: { submission: Writi
   const refresh = useCallback(() => { reload(); reloadJob() }, [reload, reloadJob])
 
   useEffect(() => {
-    if (done) return undefined
+    if (done || cancelled) return undefined
     const id = window.setInterval(refresh, POLL_MS)
     return () => window.clearInterval(id)
-  }, [done, refresh])
+  }, [done, cancelled, refresh])
 
   if (review.status === 'loading') return <LoadingState label="Đang tải kết quả chấm bài…" />
   if (review.status === 'error' && review.error) return <ApiErrorState error={review.error} onRetry={reload} />
@@ -231,15 +242,15 @@ export function ExaminerResult({ submission, submissionId }: { submission: Writi
   return (
     <div className={`wr-page`}>
       <SiteNavbar />
-      <header className="wr-top"><Link className="rw-exit" to={CATALOG_PATH} aria-label="Về danh mục Writing"><X size={16} aria-hidden="true" /></Link></header>
+      <header className="wr-top"><Link className="rw-exit" to={REVIEWS_PATH} aria-label="Về danh sách bài giáo viên chấm"><X size={16} aria-hidden="true" /></Link></header>
       <main className={`wr-main`}>
         <div className="we-headline">
           <h1 className="wr-h2">{context?.title ?? 'Bài Writing'}: giáo viên chấm</h1>
           {done && <Link className="we-all-reviews" to={REVIEWS_PATH}>Xem tất cả bài giáo viên đã chấm</Link>}
         </div>
         {data.examinerId && <TeacherCard examiner={profile.data} />}
-        {!done && job.data && <LateExaminerNotice job={job.data} examinerName={profile.data?.displayName} onChanged={refresh} />}
-        {done ? <Done review={data} essay={essay} types={types} /> : <Waiting essay={essay} onCheck={refresh} />}
+        {!done && !cancelled && job.data && <LateExaminerNotice job={job.data} examinerName={profile.data?.displayName} onChanged={refresh} />}
+        {done ? <Done review={data} essay={essay} types={types} /> : cancelled ? <Cancelled essay={essay} /> : <Waiting essay={essay} />}
       </main>
     </div>
   )

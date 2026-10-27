@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { HttpError, apiRequest } from '@/lib/httpClient'
 
 /** Where a learner's job stands: waiting for the chosen examiner, late (48 hours), finished or closed (human-review-v1). */
-export const jobStateSchema = z.enum(['AWAITING_CHOICE', 'WAITING', 'OVERDUE', 'COMPLETED', 'CLOSED'])
+export const jobStateSchema = z.enum(['AWAITING_CHOICE', 'WAITING', 'OVERDUE', 'COMPLETED', 'CANCELLED', 'CLOSED'])
 export type JobState = z.infer<typeof jobStateSchema>
 
 export const myGradingJobSchema = z.object({
@@ -16,6 +16,8 @@ export const myGradingJobSchema = z.object({
   requestedAt: z.string().nullish(),
   deadline: z.string().nullish(),
   canChoose: z.boolean(),
+  /** True for a late job whose examiner can no longer be changed: the learner may cancel it and take the credit back. */
+  canCancel: z.boolean().default(false),
   /** How many more times the learner may replace the examiner; starts at 2. */
   changesLeft: z.number().int().nonnegative(),
   createdAt: z.string(),
@@ -41,6 +43,23 @@ export async function changeExaminer(jobId: string, examinerId: string) {
   }))
 }
 
+/**
+ * Gives up a late request whose examiner can no longer be changed. The Premium credit goes back to the learner, who can send
+ * the essay again. Repeating it after a failure finishes what was left.
+ */
+export function cancelRequest(reviewSubmissionId: string) {
+  return apiRequest<unknown>(`/api/learning/examiner-reviews/${z.guid().parse(reviewSubmissionId)}/cancel`, { auth: true, method: 'POST' })
+}
+
+/** What to tell the learner when cancelling did not work. */
+export function cancelRequestMessage(cause: unknown) {
+  if (!(cause instanceof HttpError)) return 'Chưa hủy được yêu cầu. Hãy thử lại.'
+  if (cause.code === 'REVIEW_CANCEL_NOT_ALLOWED') return 'Chưa hủy được: bài chưa quá hạn hoặc bạn vẫn còn lần đổi giáo viên.'
+  if (cause.status === 409) return 'Giáo viên vừa chấm xong bài này nên không hủy được. Hãy tải lại trang để xem kết quả.'
+  if (cause.status === 503) return 'Chưa hoàn được lượt chấm. Bài đã hủy, hãy bấm hủy lại để nhận lại lượt.'
+  return cause.message
+}
+
 const CHANGE_REFUSED: Record<string, string> = {
   NOT_OVERDUE: 'Chưa quá 48 giờ nên chưa đổi được giáo viên.',
   LIMIT_REACHED: 'Bạn đã dùng hết 2 lần đổi giáo viên cho bài này.',
@@ -50,7 +69,7 @@ const CHANGE_REFUSED: Record<string, string> = {
 /** What to tell the learner when replacing the examiner did not work. */
 export function changeExaminerMessage(cause: unknown) {
   if (!(cause instanceof HttpError)) return 'Chưa đổi được giáo viên. Hãy thử lại.'
-  if (cause.code === 'EXAMINER_UNAVAILABLE') return 'Giáo viên này vừa đủ bài hôm nay hoặc đang tắt nhận bài. Hãy chọn giáo viên khác.'
+  if (cause.code === 'EXAMINER_UNAVAILABLE') return 'Giáo viên này vừa đủ bài hôm nay, đang tắt nhận bài hoặc tạm chưa nhận bài mới. Hãy chọn giáo viên khác.'
   if (cause.code === 'EXAMINER_CHANGE_NOT_ALLOWED') {
     const reason = (cause.body as { details?: { reason?: string } } | null)?.details?.reason ?? ''
     return CHANGE_REFUSED[reason] ?? cause.message

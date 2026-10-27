@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+﻿import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { clearAccessToken, setAccessToken } from '@/lib/httpClient'
@@ -37,11 +37,13 @@ interface Server {
   /** The subscription body; null answers 204 (none); 'error' answers 500. */
   subscription?: unknown
   full?: string[]
+  /** Teachers held back by too many late jobs: they cannot take a submission either, and are worded differently. */
+  backlog?: string[]
   submit?: () => Response
   /** The essay of this prompt that still waits for its teacher, if any. */
   waiting?: string | null
 }
-function server({ balance = 0, subscription: sub = subscription(), full = [], submit, waiting = null }: Server = {}) {
+function server({ balance = 0, subscription: sub = subscription(), full = [], backlog = [], submit, waiting = null }: Server = {}) {
   fetchMock.mockImplementation(async (input, options = {}) => {
     const url = new URL(String(input))
     const call = { path: url.pathname, method: options.method ?? 'GET', body: typeof options.body === 'string' ? JSON.parse(options.body) : options.body }
@@ -51,7 +53,7 @@ function server({ balance = 0, subscription: sub = subscription(), full = [], su
       case '/api/access/me/subscription': return sub === 'error' ? json({ message: 'down' }, 500) : sub === null ? json(null, 204) : json(sub)
       case '/api/learning/free-writing/grading-terms': return json({ pointCost: 3, minWords: 50, maxWords: 1000 })
       case '/api/users/examiners': return json([examiner(ids.lan, 'Ms Lan Phương'), examiner(ids.quan, 'Mr Minh Quân')])
-      case '/api/assessments/examiners/availability': return json(full.map((examinerId) => ({ examinerId, full: true })))
+      case '/api/assessments/examiners/availability': return json([...new Set([...full, ...backlog])].map((examinerId) => ({ examinerId, full: true, backlog: backlog.includes(examinerId) })))
       case '/api/learning/free-writing/examiner-submissions/pending': return json(waiting ? { pending: true, submissionId: waiting } : { pending: false })
       case '/api/learning/free-writing/examiner-submissions': return submit ? submit() : json({ submissionId: ids.submission, status: 'AWAITING_EXAMINER' })
       default: return json({}, 404)
@@ -127,6 +129,20 @@ describe('finishing a Writing essay', () => {
     expect(within(pick).getByRole('radio', { name: /Ms Lan Phương/ })).toBeEnabled()
   })
 
+  it('words a teacher held back by late jobs as not taking new submissions for now, and cannot be picked', async () => {
+    server({ backlog: [ids.quan], full: [] })
+    show()
+    const dialog = await finish()
+
+    fireEvent.click(cardOf(dialog, 'Giáo viên chấm').getByRole('button', { name: 'Chọn giáo viên' }))
+    const pick = await screen.findByRole('dialog', { name: 'Chọn giáo viên chấm bài' })
+
+    expect(await within(pick).findByText('Tạm chưa nhận bài mới')).toBeInTheDocument()
+    expect(within(pick).queryByText('Đã đủ bài hôm nay')).not.toBeInTheDocument()
+    expect(within(pick).getByRole('radio', { name: /Mr Minh Quân/ })).toBeDisabled()
+    expect(within(pick).getByRole('radio', { name: /Ms Lan Phương/ })).toBeEnabled()
+  })
+
   it('keeps the teacher closed without Premium and lets enough points go to the AI confirmation', async () => {
     server({ balance: 10, subscription: null })
     show()
@@ -179,7 +195,7 @@ describe('finishing a Writing essay', () => {
     fireEvent.click(await within(pick).findByRole('radio', { name: /Ms Lan Phương/ }))
     fireEvent.click(within(pick).getByRole('button', { name: 'Gửi cho Ms Lan Phương · 1 lượt' }))
 
-    expect(await within(pick).findByText(/vừa đủ bài hôm nay hoặc đang tắt nhận bài/)).toBeInTheDocument()
+    expect(await within(pick).findByText(/vừa đủ bài hôm nay, đang tắt nhận bài hoặc tạm chưa nhận bài mới/)).toBeInTheDocument()
     expect(screen.getByTestId('location')).toHaveTextContent('/practice/writing/tasks/s')
     fireEvent.click(within(pick).getByRole('radio', { name: /Mr Minh Quân/ }))
     fireEvent.click(within(pick).getByRole('button', { name: 'Gửi cho Mr Minh Quân · 1 lượt' }))

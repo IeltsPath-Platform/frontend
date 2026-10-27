@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+﻿import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { clearAccessToken, setAccessToken } from '@/lib/httpClient'
@@ -43,19 +43,32 @@ describe('the result of an essay sent to a teacher', () => {
   beforeEach(() => { calls.length = 0; fetchMock.mockReset(); vi.stubGlobal('fetch', fetchMock); setAccessToken('test-access-token') })
   afterEach(() => { clearAccessToken(); vi.unstubAllGlobals() })
 
-  it('says the teacher is still grading, shows who they are and the essay, and can be checked again', async () => {
+  it('says the teacher is still grading, shows who they are and the essay, with no buttons: it checks again by itself', async () => {
     server(() => json(pending))
     show()
 
-    expect(await screen.findByRole('region', { name: 'Đang chờ giáo viên chấm' })).toBeInTheDocument()
+    const waiting = await screen.findByRole('region', { name: 'Đang chờ giáo viên chấm' })
     expect(await screen.findByRole('region', { name: 'Giáo viên chấm bài' })).toHaveTextContent('Ms Lan Phương')
     expect(screen.getByRole('region', { name: 'Giáo viên chấm bài' })).toHaveTextContent('IELTS 8.5')
     expect(screen.getByRole('region', { name: 'Bài viết' })).toHaveTextContent(ESSAY)
     expect(screen.queryByLabelText('Band Score')).not.toBeInTheDocument()
 
-    const before = calls.filter((call) => call.path.endsWith('/human-review')).length
-    fireEvent.click(screen.getByRole('button', { name: /Kiểm tra lại/ }))
-    await waitFor(() => expect(calls.filter((call) => call.path.endsWith('/human-review')).length).toBe(before + 1))
+    expect(within(waiting).queryByRole('button')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Kiểm tra lại/ })).not.toBeInTheDocument()
+    expect(within(waiting).queryByRole('link', { name: 'Về danh mục Writing' })).not.toBeInTheDocument()
+    // The X leaves for the learner's list of essays sent to teachers, not the Writing catalogue.
+    expect(screen.getByRole('link', { name: 'Về danh sách bài giáo viên chấm' })).toHaveAttribute('href', '/writing-reviews')
+  })
+
+  it('says the request was cancelled and the credit is back, keeps the essay, and does not keep asking the server', async () => {
+    server(() => json({ ...pending, status: 'CANCELLED' }))
+    show()
+
+    const cancelled = await screen.findByRole('region', { name: 'Đã hủy yêu cầu chấm bài' })
+    expect(cancelled).toHaveTextContent('Lượt giáo viên chấm của bạn đã được hoàn lại')
+    expect(screen.getByRole('region', { name: 'Bài viết' })).toHaveTextContent(ESSAY)
+    expect(screen.queryByRole('region', { name: 'Đang chờ giáo viên chấm' })).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Band Score')).not.toBeInTheDocument()
   })
 
   it("shows the teacher's band, the four criteria with their comments, the feedback and the essay marked up", async () => {
@@ -247,7 +260,7 @@ describe('the result of an essay sent to a teacher', () => {
       expect(choices).toHaveTextContent('Mr Minh Quân')
       expect(choices).not.toHaveTextContent('Ms Lan Phương')
       fireEvent.click(within(dialog).getByRole('radio'))
-      fireEvent.click(within(dialog).getByRole('button', { name: 'Chuyển cho Mr Minh Quân' }))
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Gửi bài' }))
 
       await waitFor(() => expect(changes).toEqual([{ examinerId: other }]))
       await waitFor(() => expect(screen.queryByRole('region', { name: 'Giáo viên chưa chấm bài' })).not.toBeInTheDocument())
@@ -262,13 +275,13 @@ describe('the result of an essay sent to a teacher', () => {
       const dialog = await screen.findByRole('dialog')
       await within(dialog).findByRole('radiogroup', { name: 'Giáo viên' })
       fireEvent.click(within(dialog).getByRole('radio'))
-      fireEvent.click(within(dialog).getByRole('button', { name: 'Chuyển cho Mr Minh Quân' }))
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Gửi bài' }))
 
-      expect(await within(dialog).findByText(/vừa đủ bài hôm nay hoặc đang tắt nhận bài/)).toBeInTheDocument()
+      expect(await within(dialog).findByText(/vừa đủ bài hôm nay, đang tắt nhận bài hoặc tạm chưa nhận bài mới/)).toBeInTheDocument()
       // The dialog is modal, so the page behind it is hidden from the accessibility tree while it is open.
       expect(screen.getByRole('region', { name: 'Giáo viên chưa chấm bài', hidden: true })).toBeInTheDocument()
       // The choice stays, so the learner can send it again or pick someone else.
-      await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Chuyển cho Mr Minh Quân' })).toBeEnabled())
+      await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Gửi bài' })).toBeEnabled())
     })
 
     it('offers no change once both changes were used', async () => {

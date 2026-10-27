@@ -36,13 +36,13 @@ export function ChangeExaminerDialog({ currentExaminerId, changesLeft, busy, err
         {loaded.status === 'error' && <p className="ww-error" role="alert">Chưa tải được danh sách giáo viên. Hãy đóng và thử lại.</p>}
         {ready && others.length === 0 && <p className="ww-muted" role="status">Hiện chưa có giáo viên nào khác nhận bài. Bạn có thể tiếp tục chờ hoặc thử lại sau.</p>}
         {ready && others.length > 0 && (
-          <ExaminerList examiners={others} full={ready.full} chosen={chosen} busy={busy} onChoose={setChosen} />
+          <ExaminerList examiners={others} full={ready.full} backlog={ready.backlog} chosen={chosen} busy={busy} onChoose={setChosen} />
         )}
         {error && <p className="ww-error" role="alert">{error}</p>}
         <div className="ww-dialog-actions">
           <button type="button" className="ww-secondary" disabled={busy} onClick={onClose}>Quay lại</button>
           <button type="button" className="ww-primary" disabled={busy || !picked} onClick={() => picked && onChange(picked.id)}>
-            {busy ? 'Đang chuyển…' : picked ? `Chuyển cho ${picked.displayName}` : 'Chọn một giáo viên'}
+            {busy ? 'Đang gửi…' : picked ? 'Gửi bài' : 'Chọn một giáo viên'}
           </button>
         </div>
       </DialogContent>
