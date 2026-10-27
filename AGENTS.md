@@ -30,6 +30,7 @@ Repository này là một ứng dụng frontend React/Vite cho IeltsPath Platfor
 - Khi cần UI primitive có trong shadcn/ui, MUST dùng component shadcn/ui trong `src/components/ui/`; MUST NOT đưa thêm thư viện UI component khác hoặc tự viết lại primitive tương đương nếu chưa có quyết định được duyệt. Component nghiệp vụ MAY ghép và mở rộng các primitive này; chỉ thêm component shadcn khi tính năng thực sự cần.
 - Icon giao diện MUST dùng `lucide-react`; logo và hình minh họa thương hiệu không phải icon giao diện. MUST NOT thêm thư viện icon thứ hai nếu chưa có quyết định được duyệt.
 - Tách logic nghiệp vụ khỏi view khi có logic cần tách; ưu tiên pattern lân cận. Không ép router hoặc store vào một tính năng chỉ vì package đã được cài.
+- Khu quản trị (`src/features/admin/**`) có design system riêng (`.adm-*`, token trong `admin.css`) và quy ước giao diện riêng. MUST đọc [Quy ước UI khu quản trị](./.sdd/constraints/admin-ui.md) trước khi thêm hoặc sửa màn admin; không áp quy tắc shadcn của trang học viên cho khu này.
 
 ## 5. Quy trình làm việc và spec/skill
 
