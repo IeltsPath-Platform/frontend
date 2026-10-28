@@ -30,6 +30,16 @@ export async function analyzeCourseDraft(id: string, signal?: AbortSignal) {
   return courseAnalysisSchema.parse(await apiRequest<unknown>(`${draftPath(id)}/analysis`, { auth: true, signal }))
 }
 
+const FITTING_SETS_MAX_POINTS = 100
+const fittingSetsSchema = z.object({ packageIds: z.array(z.guid()) })
+
+/** The ids of the free practice sets that measure any of these knowledge points: the ones that fit a lesson teaching them. */
+export async function listFittingPracticeSets(knowledgePointIds: readonly string[], signal?: AbortSignal) {
+  if (knowledgePointIds.length === 0) return []
+  const query = new URLSearchParams({ knowledgePointIds: knowledgePointIds.slice(0, FITTING_SETS_MAX_POINTS).join(',') })
+  return fittingSetsSchema.parse(await apiRequest<unknown>(`${BASE}/practice-sets?${query}`, { auth: true, signal })).packageIds
+}
+
 export async function approveCourseDraft(id: string) {
   return courseApprovalSchema.parse(await apiRequest<unknown>(`${draftPath(id)}/approve`, { auth: true, method: 'POST' }))
 }

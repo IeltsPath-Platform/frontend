@@ -9,8 +9,12 @@ import {
   questionDraftSchema,
   questionGenerationRequestSchema,
   questionDraftItemPatchSchema,
+  practiceSetDraftSchema,
+  practiceSetGenerationRequestSchema,
   type AiDraft,
   type AiDraftQuery,
+  type PracticeSetDraft,
+  type PracticeSetGenerationRequest,
   type RejectAiDraftRequest,
   type ApproveQuestionDraftRequest,
   type QuestionDraft,
@@ -49,6 +53,19 @@ export async function requestQuestionDraft(body: QuestionGenerationRequest): Pro
   return questionDraftSchema.parse(await apiRequest<unknown>(`${ADMIN}/questions`, {
     method: 'POST', auth: true, body: request,
   }))
+}
+
+/** Queues a practice set for one lesson; the draft is read again with {@link getPracticeSetDraft} until it is READY or FAILED. */
+export async function requestPracticeSetDraft(body: PracticeSetGenerationRequest): Promise<PracticeSetDraft> {
+  const request = practiceSetGenerationRequestSchema.parse(body)
+  return practiceSetDraftSchema.parse(await apiRequest<unknown>(`${ADMIN}/practice-sets`, {
+    method: 'POST', auth: true, body: request,
+  }))
+}
+
+export async function getPracticeSetDraft(id: string, signal?: AbortSignal): Promise<PracticeSetDraft> {
+  const draftId = z.guid().parse(id)
+  return practiceSetDraftSchema.parse(await apiRequest<unknown>(`${ADMIN}/${draftId}`, { auth: true, signal }))
 }
 
 export async function approveQuestionDraft(id: string, body: ApproveQuestionDraftRequest): Promise<QuestionDraft> {

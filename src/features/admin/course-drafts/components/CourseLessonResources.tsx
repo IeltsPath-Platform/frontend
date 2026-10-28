@@ -41,7 +41,7 @@ export function CourseLessonResources({ value, onChange, disabled }: {
     <label className="adm-field">
       <span>Slide (đường dẫn)</span>
       <input aria-invalid={slideBad} aria-label="Slide (đường dẫn)" className="adm-input" disabled={disabled} inputMode="url" maxLength={2000} onChange={(event) => setSlide(event.target.value.trim())} placeholder="https://docs.google.com/presentation/…/embed" value={slide?.url ?? ''} />
-      {slideBad ? <small className="adm-field__error" role="alert">Đường dẫn phải bắt đầu bằng http:// hoặc https://.</small> : <small className="adm-muted">Mỗi bài một slide. Dùng link Google Slides dạng …/embed và bật quyền xem để học viên mở được.</small>}
+      {slideBad ? <small className="adm-field__error" role="alert">Đường dẫn phải bắt đầu bằng http:// hoặc https://.</small> : null}
     </label>
     <div className="adm-sec">
       <div className="adm-sec__head">

@@ -135,6 +135,13 @@
 .adm-drawer__body .adm-field > span { font-size: 1rem; font-weight: 700; color: var(--adm-text); }
 /* Red asterisk after the title of a required field; drawn by CSS so it stays out of the accessible name (the input itself carries `required`). */
 .adm-required::after { content: "*"; margin-left: 4px; color: var(--adm-danger); }
+/* A Markdown field: the text area, and a button that opens a preview of it in a dialog as the learner reads it. */
+.adm-mdfield { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.adm-mdfield__bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.adm-mdfield__bar label { font-size: .85rem; font-weight: 600; color: var(--adm-muted); }
+.adm-drawer__body .adm-mdfield__bar label { font-size: 1rem; font-weight: 700; color: var(--adm-text); }
+/* The preview fills the dialog body edge to edge on the learner's page colour, so its cards sit on it as they do for a learner. */
+.adm-mdfield__preview { margin: -16px -20px -20px; padding: 20px; min-height: 240px; background: var(--lp-canvas); border-radius: 0 0 12px 12px; }
 .adm-input, .adm-select, .adm-textarea { width: 100%; background: var(--adm-surface); color: var(--adm-text); border: 1px solid var(--adm-border); border-radius: 6px; padding: 9px 11px; font: inherit; }
 .adm-input:focus-visible, .adm-select:focus-visible, .adm-textarea:focus-visible { outline: 2px solid var(--adm-focus); outline-offset: 1px; border-color: var(--adm-accent); }
 .adm-textarea { min-height: 120px; resize: vertical; }

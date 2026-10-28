@@ -249,7 +249,7 @@ describe('CourseStructureEditor', () => {
     expect(within(dialog).getByText(/1\/50 đã chọn/)).toBeInTheDocument()
   })
 
-  it('lists the questions of an exercise block by code and type, opens one in full, and removes one from its row', async () => {
+  it('lists the questions of an exercise block by text and type, opens one in full, and removes one from its row', async () => {
     const withQuestion: CourseStructure = { ...structure, topics: [{ ...structure.topics[0]!, lessons: [{ ...structure.topics[0]!.lessons[0]!, blocks: [{ type: 'EXERCISE', text: null, knowledgePointIds: [], questionRefs: [versionId] }] }] }] }
     questions.getQuestion.mockResolvedValue({ id: 'question', questionType: 'MULTIPLE_CHOICE', skill: 'READING', versions: [{ id: versionId, stem: 'Chọn tiêu đề phù hợp nhất cho đoạn văn', difficulty: 'HARD', options: [{ optionKey: 'A', content: 'Lựa chọn một', sortOrder: 1 }], answerSpecJson: '{"type":"CHOICE","correct":"A"}', explanation: 'Vì đoạn nói về ý chính.' }] })
     questions.listVersionPassages.mockResolvedValue([{ assetId: 'asset', text: 'A. In autumn, many trees lose their green colour.', source: 'LESSON', sourceName: 'Reading lesson' }])
@@ -257,7 +257,9 @@ describe('CourseStructureEditor', () => {
     openLesson()
     const table = await screen.findByRole('table', { name: 'Câu hỏi của khối' })
     expect(within(table).getByText('Trắc nghiệm')).toBeInTheDocument()
-    expect(within(table).queryByText('Chọn tiêu đề phù hợp nhất cho đoạn văn')).not.toBeInTheDocument()
+    expect(await within(table).findByText('Chọn tiêu đề phù hợp nhất cho đoạn văn')).toBeInTheDocument()
+    expect(within(table).queryByText('Đang tải…')).not.toBeInTheDocument()
+    expect(within(table).queryByRole('columnheader', { name: 'Điểm kiến thức' })).not.toBeInTheDocument()
     fireEvent.click(within(table).getByRole('button', { name: 'Xem chi tiết câu hỏi 1' }))
     const dialog = await screen.findByRole('dialog', { name: 'Chi tiết câu hỏi' })
     expect(await within(dialog).findByText('Chọn tiêu đề phù hợp nhất cho đoạn văn')).toBeInTheDocument()
@@ -270,6 +272,19 @@ describe('CourseStructureEditor', () => {
     await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Chi tiết câu hỏi' })).not.toBeInTheDocument())
     fireEvent.click(within(table).getByRole('button', { name: 'Bỏ câu hỏi 1' }))
     expect((onChange.mock.lastCall![0] as CourseStructure).topics[0]?.lessons[0]?.blocks[0]?.questionRefs).toEqual([])
+  })
+
+  it('says so in the row when the text of a question cannot be read, and the row can still be removed', async () => {
+    const withQuestion: CourseStructure = { ...structure, topics: [{ ...structure.topics[0]!, lessons: [{ ...structure.topics[0]!.lessons[0]!, blocks: [{ type: 'EXERCISE', text: null, knowledgePointIds: [], questionRefs: [versionId] }] }] }] }
+    questions.getQuestion.mockRejectedValue(new Error('offline'))
+    show(withQuestion)
+    openLesson()
+
+    const table = await screen.findByRole('table', { name: 'Câu hỏi của khối' })
+
+    expect(await within(table).findByText('Không tải được đề bài')).toBeInTheDocument()
+    expect(within(table).getByText('Trắc nghiệm')).toBeInTheDocument()
+    expect(within(table).getByRole('button', { name: 'Bỏ câu hỏi 1' })).toBeEnabled()
   })
 
   it('opens a practice set to read its sections, passage and questions, from the table and from the chooser', async () => {

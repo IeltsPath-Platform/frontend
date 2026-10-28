@@ -160,35 +160,89 @@ describe('course draft pages through HTTP', () => {
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Duyệt khóa học' })).not.toBeInTheDocument())
   })
 
-  it('locks approval for dirty edits, saves only the structure and reloads server data before fresh analysis', async () => {
-    let draft = makeCourseDraft({ result: { ...makeStructure(), unmatchedTopics: ['An unmatched phrase'], warnings: [{ code: 'HALLUCINATED_REFERENCE', subject: 'invented-ref' }], gapHints: [{ knowledgePointId, reason: 'NO_PRACTICE_SET', action: 'REQUEST_QUESTION_DRAFT' }] } })
-    backend(({ path, method, body }) => {
-      if (path === `/api/content/admin/ai-drafts/${draftId}`) return json(draft)
-      if (path === `${base}/${draftId}/analysis`) return json(makeAnalysis())
-      if (path === `${base}/${draftId}` && method === 'PUT') {
-        const submitted = (body as { structure: ReturnType<typeof makeStructure> }).structure
-        draft = makeCourseDraft({ result: { ...submitted, course: { ...submitted.course!, name: 'Canonical server name' } } })
-        return json(draft)
-      }
-      throw new Error(`Unexpected ${method} ${path}`)
+  describe('saving as the author edits', () => {
+    const saveButton = () => screen.queryByRole('button', { name: 'Lưu cấu trúc' })
+    const state = () => screen.getByText(/^(Đã lưu|Đang chờ lưu…|Đang lưu…|Chưa lưu được)/)
+    const puts = () => requests.filter((request) => request.method === 'PUT')
+    const analyses = () => requests.filter((request) => request.path.endsWith('/analysis'))
+    const pause = (ms = 1600) => act(async () => { await vi.advanceTimersByTimeAsync(ms) })
+    function open(putResponse: (submitted: ReturnType<typeof makeStructure>) => Response | Promise<Response>) {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      backend(({ path, method, body }) => {
+        if (path === `/api/content/admin/ai-drafts/${draftId}`) return json(makeCourseDraft())
+        if (path === `${base}/${draftId}/analysis`) return json(makeAnalysis())
+        if (path === `${base}/${draftId}` && method === 'PUT') return putResponse((body as { structure: ReturnType<typeof makeStructure> }).structure)
+        throw new Error(`Unexpected ${method} ${path}`)
+      })
+      show(`/content-author/course-drafts/${draftId}`)
+    }
+    const canonical = (submitted: ReturnType<typeof makeStructure>, name = 'Canonical server name') => json(makeCourseDraft({ result: { ...submitted, course: { ...submitted.course!, name } } }))
+
+    it('saves a pause after the last edit with no button, holds approval meanwhile, and takes the server copy when nothing changed since', async () => {
+      open((submitted) => canonical(submitted))
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Duyệt khóa học' })).toBeEnabled())
+      expect(state()).toHaveTextContent('Đã lưu')
+      expect(saveButton()).not.toBeInTheDocument()
+
+      fireEvent.change(screen.getByLabelText('Tên khóa học'), { target: { value: 'Edited course' } })
+      expect(state()).toHaveTextContent('Đang chờ lưu…')
+      expect(screen.getByRole('button', { name: 'Duyệt khóa học' })).toBeDisabled()
+      expect(screen.getByRole('button', { name: 'Phân tích lại' })).toBeDisabled()
+      await pause(1000)
+      expect(puts()).toHaveLength(0)
+
+      await pause(800)
+      await waitFor(() => expect(screen.getByLabelText('Tên khóa học')).toHaveValue('Canonical server name'))
+      expect(puts()).toHaveLength(1)
+      expect(puts()[0]!.body).toEqual({ structure: { ...makeStructure(), course: { ...makeStructure().course!, name: 'Edited course' } } })
+      await waitFor(() => expect(analyses()).toHaveLength(2))
+      expect(requests.filter((request) => request.path === `/api/content/admin/ai-drafts/${draftId}`)).toHaveLength(1)
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Duyệt khóa học' })).toBeEnabled())
+      expect(state()).toHaveTextContent('Đã lưu')
     })
-    show(`/content-author/course-drafts/${draftId}`)
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Duyệt khóa học' })).toBeEnabled())
-    fireEvent.change(screen.getByLabelText('Tên khóa học'), { target: { value: 'Unsaved course edit' } })
-    expect(screen.getByRole('button', { name: 'Duyệt khóa học' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Phân tích lại' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Lưu cấu trúc' })).toBeEnabled()
-    expect(requests.filter((request) => request.path.endsWith('/analysis'))).toHaveLength(1)
-    fireEvent.click(screen.getByRole('button', { name: 'Lưu cấu trúc' }))
-    await waitFor(() => expect(screen.getByLabelText('Tên khóa học')).toHaveValue('Canonical server name'))
-    await waitFor(() => expect(requests.filter((request) => request.path.endsWith('/analysis'))).toHaveLength(2))
-    const write = requests.find((request) => request.method === 'PUT')!
-    expect(write.body).toEqual({ structure: { ...makeStructure(), course: { ...makeStructure().course!, name: 'Unsaved course edit' } } })
-    expect(requests.filter((request) => request.path === `/api/content/admin/ai-drafts/${draftId}`)).toHaveLength(2)
-    const paths = requests.map((request) => request.path)
-    expect(paths.lastIndexOf(`${base}/${draftId}/analysis`)).toBeGreaterThan(paths.lastIndexOf(`/api/content/admin/ai-drafts/${draftId}`))
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Duyệt khóa học' })).toBeEnabled())
-    expect(screen.getByRole('button', { name: 'Lưu cấu trúc' })).toBeDisabled()
+
+    it('keeps what is typed while a save is running, then saves that too', async () => {
+      let release: (response: Response) => void = () => undefined
+      let first = true
+      open((submitted) => {
+        if (!first) return canonical(submitted, 'Second save')
+        first = false
+        return new Promise<Response>((resolve) => { release = (response) => resolve(response) }).then(() => canonical(submitted, 'Server copy of the first edit'))
+      })
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Duyệt khóa học' })).toBeEnabled())
+
+      fireEvent.change(screen.getByLabelText('Tên khóa học'), { target: { value: 'First edit' } })
+      await pause()
+      expect(state()).toHaveTextContent('Đang lưu…')
+      expect(screen.getByLabelText('Tên khóa học')).toBeEnabled()
+      fireEvent.change(screen.getByLabelText('Tên khóa học'), { target: { value: 'Typed during the save' } })
+      await act(async () => { release(json({})) })
+
+      expect(screen.getByLabelText('Tên khóa học')).toHaveValue('Typed during the save')
+      await pause()
+      await waitFor(() => expect(puts()).toHaveLength(2))
+      expect((puts()[1]!.body as { structure: ReturnType<typeof makeStructure> }).structure.course!.name).toBe('Typed during the save')
+    })
+
+    it('says when it could not save, tells it once, does not keep retrying on its own and retries on request', async () => {
+      let fail = true
+      open((submitted) => fail ? json({ message: 'Máy chủ bận' }, 503) : canonical(submitted, 'Saved at last'))
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Duyệt khóa học' })).toBeEnabled())
+
+      fireEvent.change(screen.getByLabelText('Tên khóa học'), { target: { value: 'Edited course' } })
+      await pause()
+      await waitFor(() => expect(state()).toHaveTextContent('Chưa lưu được'))
+      expect(await screen.findByRole('alert')).toHaveTextContent('Máy chủ bận')
+      await pause(6000)
+      expect(puts()).toHaveLength(1)
+      expect(screen.getByLabelText('Tên khóa học')).toHaveValue('Edited course')
+
+      fail = false
+      fireEvent.click(screen.getByRole('button', { name: 'Thử lại' }))
+      await waitFor(() => expect(screen.getByLabelText('Tên khóa học')).toHaveValue('Saved at last'))
+      expect(puts()).toHaveLength(2)
+      expect(state()).toHaveTextContent('Đã lưu')
+    })
   })
 
   it.each([
@@ -249,8 +303,9 @@ describe('course draft pages through HTTP', () => {
     readyBackend(makeCourseDraft({ status }))
     show(`/content-author/course-drafts/${draftId}`)
     expect(await screen.findByLabelText('Tên khóa học')).toBeDisabled()
-    expect(screen.queryByRole('button', { name: 'Lưu cấu trúc' })).not.toBeInTheDocument()
+    expect(screen.queryByText('Đã lưu')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Duyệt khóa học' })).not.toBeInTheDocument()
     expect(requests.some((request) => request.path.endsWith('/analysis'))).toBe(false)
+    expect(requests.some((request) => request.method === 'PUT')).toBe(false)
   })
 })

@@ -36,7 +36,7 @@ Token nằm ở [`src/features/admin/admin.css`](../../src/features/admin/admin.
 - Dùng `.adm-table` trong `.adm-table-wrap`. **Mọi bảng có cột STT đầu tiên** (`th.adm-stt` / `td.adm-stt`); bảng phân trang đánh số nối tiếp (`page * size + index + 1`).
 - Hành động theo dòng nằm ở cột **"Hành động"** với nút "…" (`AdminRowMenu`): không viền, hiệu ứng rê và bấm, menu cố định trên mọi lớp. Nút chỉ-icon trong ô (xem 👁, gỡ ✕) giữ kiểu nhạt, rê mới có nền.
 - Bảng rỗng vẫn hiện đầu bảng và một dòng "Chưa … nào." (`.adm-kp-table__empty`).
-- Không in đoạn văn dài vào ô bảng. Hiện mã ngắn, loại, nhãn; nội dung đầy đủ xem bằng nút 👁 mở hộp chi tiết.
+- Không in đoạn văn dài vào ô bảng. Hiện mã ngắn, loại, nhãn; nội dung đầy đủ xem bằng nút 👁 mở hộp chi tiết. Một dòng đề bài cắt bằng "…" thì được (bảng câu hỏi của khối bài tập: Đề bài, Loại; điểm kiến thức xem trong hộp chi tiết, vì cả khối thường trùng một điểm nên thêm cột chỉ lặp chữ). Ô nút thao tác phải là ô bảng thật, không đặt `display: flex` lên `td`, nếu không đường kẻ dòng bị lệch khi dòng cao lên; không dùng 8 ký tự đầu của id làm "mã" vì các bản ghi seed trùng nhau.
 
 ## 4. Nút và thanh nút
 
@@ -48,6 +48,8 @@ Token nằm ở [`src/features/admin/admin.css`](../../src/features/admin/admin.
 ## 5. Form và chọn dữ liệu
 
 - Ít chữ giải thích. Bỏ đoạn mô tả dài dưới tiêu đề, bỏ bộ đếm ký tự; chỉ giữ gợi ý khi thiếu nó người dùng sai.
+- **MUST NOT thêm dòng chú thích/hướng dẫn** (`<small>`, đoạn chữ mờ dưới ô nhập, dưới tiêu đề hay dưới nút) để giải thích cách hệ thống chạy hay lời khuyên cách dùng, ví dụ "Mỗi bài một slide. Dùng link …/embed và bật quyền xem…" hoặc "Mục … được thêm tự động khi duyệt…". Điều đó nói ở câu trả lời cho người dùng, không đưa vào giao diện. Chỉ được in chữ tại chỗ cho: lỗi gắn với đúng một ô nhập, trạng thái rỗng, và ràng buộc mà thiếu nó người dùng chắc chắn nhập sai. Muốn thêm chú thích ngoài các trường hợp này thì hỏi trước.
+- Xem trước nội dung Markdown = nút **"Xem trước"** (👁) cạnh nhãn, mở `AdminModal` (có `stacked`); không dùng tab hay khung xem trước nằm cùng trang. Dùng `components/MarkdownField.tsx`.
 - Nhãn đứng trên, đậm, to hơn nội dung. Dòng "Kỹ năng" và các checkbox cùng hàng.
 - Danh sách ngắn (band 0.0–9.0) dùng **nút chọn một chạm** (nhóm theo cấp), không dùng dropdown gốc.
 - Chọn nhiều mục từ kho = một khối: **tiêu đề + chip đếm `n/giới hạn`** + nút "Chọn…/Sửa lựa chọn" + **bảng đã chọn có ✕** + **hộp chọn lớn** (ô tìm, lọc cấp, nhóm theo cấp có checkbox chọn tất cả và nút thu gọn, đếm đã chọn). Mục đã chọn nằm ngoài gợi ý vẫn hiện, tick sẵn.
@@ -69,4 +71,4 @@ Token nằm ở [`src/features/admin/admin.css`](../../src/features/admin/admin.
 
 ## 8. Thành phần dùng lại
 
-`components/AdminLayer.tsx` (Drawer, Modal, ConfirmDialog), `components/AdminRowMenu.tsx`, `components/AdminState.tsx` (Loading, Error, Empty), `pages/AdminPage.tsx`, `lib/useAdminResource.ts`, `lib/useAdminConfirm.tsx`; bộ chọn kiến thức/câu hỏi/gói/band và tiến trình sinh trong `course-drafts/components/`.
+`components/AdminLayer.tsx` (Drawer, Modal, ConfirmDialog), `components/MarkdownField.tsx` (ô Markdown + nút Xem trước), `components/AdminRowMenu.tsx`, `components/AdminState.tsx` (Loading, Error, Empty), `pages/AdminPage.tsx`, `lib/useAdminResource.ts`, `lib/useAdminConfirm.tsx`; bộ chọn kiến thức/câu hỏi/gói/band và tiến trình sinh trong `course-drafts/components/`.

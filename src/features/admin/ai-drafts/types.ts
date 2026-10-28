@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-export const AI_DRAFT_KINDS = ['QUESTIONS', 'COURSE'] as const
+export const AI_DRAFT_KINDS = ['QUESTIONS', 'COURSE', 'PRACTICE_SET'] as const
 export const AI_DRAFT_STATUSES = ['QUEUED', 'GENERATING', 'READY', 'FAILED', 'APPROVED', 'REJECTED'] as const
 
 export const aiDraftKindSchema = z.enum(AI_DRAFT_KINDS)
@@ -75,6 +75,39 @@ export const questionDraftSchema = aiDraftSchema.extend({
     rejected: z.array(z.object({ index: z.number().int().nonnegative(), reason: z.string() })),
   }).nullable(),
 })
+
+/** Question types a model-written practice set may use, and how many questions and knowledge points one request takes. */
+export const PRACTICE_SET_QUESTION_TYPES = ['MULTIPLE_CHOICE', 'TRUE_FALSE_NOT_GIVEN'] as const
+export const PRACTICE_SET_MIN_QUESTIONS = 3
+export const PRACTICE_SET_MAX_QUESTIONS = 10
+export const PRACTICE_SET_MAX_POINTS = 5
+
+/** Words of the lesson the passage should use, and the most one request takes. */
+export const PRACTICE_SET_MAX_VOCABULARY = 30
+
+export const practiceSetGenerationRequestSchema = z.object({
+  knowledgePointIds: z.array(z.guid()).min(1).max(PRACTICE_SET_MAX_POINTS),
+  lessonTitle: z.string().max(255).nullable().optional(),
+  vocabulary: z.array(z.string().trim().min(1).max(100)).max(PRACTICE_SET_MAX_VOCABULARY).optional(),
+  questionType: z.enum(PRACTICE_SET_QUESTION_TYPES),
+  count: z.number().int().min(PRACTICE_SET_MIN_QUESTIONS).max(PRACTICE_SET_MAX_QUESTIONS),
+  difficulty: z.enum(QUESTION_DIFFICULTIES),
+  instructions: z.string().max(500).nullable().optional(),
+})
+
+export const practiceSetDraftSchema = aiDraftSchema.extend({
+  kind: z.literal('PRACTICE_SET'),
+  result: z.object({
+    title: z.string(), instructions: z.string(), passage: nonblankText,
+    questionType: z.enum(PRACTICE_SET_QUESTION_TYPES), knowledgePointIds: z.array(z.guid()),
+    // The points each question tests; a set written before the model named them has none.
+    items: z.array(questionDraftItemSchema.extend({ knowledgePointIds: z.array(z.guid()).optional() })),
+    rejected: z.array(z.object({ index: z.number().int().nonnegative(), reason: z.string() })),
+  }).nullable(),
+})
+
+export type PracticeSetGenerationRequest = z.infer<typeof practiceSetGenerationRequestSchema>
+export type PracticeSetDraft = z.infer<typeof practiceSetDraftSchema>
 
 export const approveQuestionDraftRequestSchema = z.object({
   itemIndexes: z.array(z.number().int().nonnegative()).min(1)

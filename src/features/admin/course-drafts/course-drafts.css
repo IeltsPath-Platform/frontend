@@ -81,6 +81,7 @@
 .adm-draft-actions { display: grid; gap: 10px; }
 .adm-draft-actions .adm-btn { width: 100%; justify-content: center; }
 .adm-draft-state, .adm-draft-actions p { margin: 0; }
+.adm-draft-saved { color: var(--adm-muted); font-size: .88rem; font-weight: 600; }
 .adm-draft-confirm { display: grid; gap: 8px; margin-top: 10px; }
 .adm-draft-reject { display: grid; gap: 10px; padding-top: 12px; border-top: 1px solid var(--adm-border); }
 .adm-draft-reject .adm-field { margin: 0; }
@@ -281,6 +282,19 @@
 .adm-sec__title { margin: 0; font-size: 1rem; font-weight: 700; }
 .adm-sec__tools { display: flex; flex-wrap: wrap; gap: 8px; }
 .adm-sec__tools .adm-btn svg { margin-right: 4px; }
+
+/* Library word search: one search row, then the senses found, each with the action to add it. */
+.adm-vocab-search { display: flex; gap: 8px; }
+.adm-vocab-search .adm-kp-search { flex: 1 1 auto; min-width: 0; }
+.adm-vocab-hits { display: grid; gap: 8px; margin: 12px 0 0; padding: 0; list-style: none; }
+.adm-vocab-hits li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; background: var(--adm-surface); border: 1px solid var(--adm-border); border-radius: 8px; }
+.adm-vocab-hits li.is-picked { background: var(--adm-accent-soft); border-color: var(--adm-accent); }
+.adm-vocab-hit__text { display: grid; gap: 2px; min-width: 0; }
+.adm-vocab-hit__title { font-weight: 700; }
+.adm-vocab-hit__title em { margin-left: 8px; font-size: .8rem; font-style: normal; font-weight: 500; color: var(--adm-muted); }
+.adm-vocab-hit__text small { color: var(--adm-muted); font-size: .8rem; overflow-wrap: anywhere; }
+.adm-vocab-hits__empty { padding: 28px 0; text-align: center; }
+.adm-vocab-hits li .adm-badge svg { margin-right: 4px; }
 .adm-sec__foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--adm-border); }
 .adm-count { margin-left: 8px; padding: 1px 8px; background: var(--adm-surface-2); border: 1px solid var(--adm-border); border-radius: 99px; font-size: .78rem; font-weight: 600; color: var(--adm-muted); font-variant-numeric: tabular-nums; }
 .adm-bcard { display: grid; gap: 12px; padding: 12px 14px 14px; background: var(--adm-surface); border: 1px solid var(--adm-border); border-radius: var(--adm-radius); }
@@ -290,8 +304,15 @@
 @media (prefers-reduced-motion: reduce) { .adm-count { transition: none; } }
 
 /* Question rows: the eye and remove buttons sit side by side; the detail dialog reads like a small card. */
-.adm-kp-table__remove.adm-qrow__tools { display: flex; justify-content: flex-end; gap: 4px; width: auto; }
+/* The buttons stay inside a real table cell, so the cell follows the height of its row and the row lines run straight across. */
+.adm-kp-table__remove.adm-qrow__tools { width: 1%; white-space: nowrap; }
+.adm-kp-table__remove.adm-qrow__tools button + button { margin-left: 4px; }
 .adm-kp-table__remove.adm-qrow__tools button:first-child:not(:last-child):hover { background: var(--adm-accent-soft); border-color: var(--adm-accent); color: var(--adm-accent); }
+/* The text of a question takes the rest of the row and is cut to one line; the whole question is behind the eye button. */
+.adm-qrow__stem { width: 100%; min-width: 12rem; max-width: 0; }
+.adm-qrow__stem > span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.adm-qrow__stem > span.adm-muted { font-weight: 400; }
+.adm-qrow__type { white-space: nowrap; }
 .adm-qdetail { display: grid; gap: 6px; }
 .adm-qdetail h3 { margin: 12px 0 0; font-size: .85rem; font-weight: 700; color: var(--adm-muted); text-transform: uppercase; letter-spacing: .04em; }
 .adm-qdetail p { margin: 0; }
@@ -303,13 +324,46 @@
 
 .adm-qdetail__passage { display: grid; gap: 6px; max-height: 260px; padding: 12px 14px; overflow-y: auto; background: var(--adm-surface-2); border: 1px solid var(--adm-border); border-left: 3px solid var(--adm-accent); border-radius: 8px; }
 
+/* Practice set written by the model, read like an exam page: the passage on the left, the questions on the right, each
+   scrolling on its own inside the fixed-height dialog. On a narrow screen they stack and the whole view scrolls. */
+.adm-setview { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); flex: 1; min-height: 0; }
+.adm-setview > section { display: grid; align-content: start; gap: 10px; min-height: 0; padding: 18px 22px 24px; overflow-y: auto; overscroll-behavior: contain; }
+.adm-setview__passage { background: var(--adm-surface-2); border-right: 1px solid var(--adm-border); }
+.adm-setview > section > h3 { display: flex; align-items: center; margin: 0; font-size: .78rem; font-weight: 700; color: var(--adm-muted); text-transform: uppercase; letter-spacing: .05em; }
+.adm-setview > section > p { margin: 0; }
+.adm-setview__hint { padding: 8px 12px; background: var(--adm-surface); border-left: 3px solid var(--adm-accent); border-radius: 6px; font-size: .88rem; line-height: 1.5; color: var(--adm-muted); }
+.adm-setview__text { white-space: pre-wrap; font-size: 1rem; line-height: 1.75; }
+.adm-setview__questions .adm-pkgdetail__question { background: var(--adm-surface); }
+@media (max-width: 760px) {
+  .adm-setview { display: block; overflow-y: auto; }
+  .adm-setview > section { overflow: visible; padding: 16px; }
+  .adm-setview__passage { border-right: 0; border-bottom: 1px solid var(--adm-border); }
+}
+
 /* Lesson list inside a topic: the title opens the lesson drawer. */
 .adm-lesson-open { padding: 0; background: transparent; border: 0; color: var(--adm-text); font: inherit; font-weight: 600; text-align: left; cursor: pointer; }
 .adm-lesson-open:hover { color: var(--adm-accent); text-decoration: underline; }
 
-/* Practice-set dialog: one search box over a single column of cards. */
-.adm-pkg-search { margin-bottom: 12px; }
-.adm-pkg-list { display: grid; gap: 8px; max-height: 360px; margin: 0; padding: 0; overflow-y: auto; list-style: none; }
+/* Practice-set dialog: the dialog's list scrolls; sets another lesson already uses sit below the ones that can be ticked. */
+.adm-pkg-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.adm-kp-dialog__list > .adm-pkg-list:first-child { margin-top: 12px; }
+.adm-pkg-taken { display: flex; align-items: center; gap: 8px; margin: 20px 0 10px; font-size: .78rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--adm-muted); }
+.adm-pkg-note { margin: 12px 0 0; padding: 8px 12px; background: var(--adm-surface-2); border-radius: 8px; font-size: .85rem; }
+.adm-kp-dialog__list > .adm-pkg-note + .adm-pkg-list { margin-top: 12px; }
+/* Practice set written by the model: the generator dialog and the read-only detail. */
+.adm-pkg-wait { display: grid; gap: 12px; justify-items: center; padding: 8px 0 4px; text-align: center; }
+.adm-pkg-wait .adm-form-footer { margin-top: 4px; }
+.adm-pkg-points { display: grid; gap: 8px; }
+.adm-qdetail__options li.is-correct { background: rgb(18 134 90 / 8%); border-color: var(--adm-ok); }
+.adm-qdetail__options li .adm-badge { margin-left: auto; align-self: center; flex: none; }
+.adm-pkg-flag { margin-left: 8px; vertical-align: middle; }
+/* A button that reads as a link inside a sentence or under a list; it keeps a visible focus ring. */
+.adm-link { padding: 0; background: transparent; border: 0; color: var(--adm-accent); font: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+.adm-link:hover { color: var(--adm-accent-strong); }
+.adm-link:focus-visible { outline: 2px solid var(--adm-accent); outline-offset: 2px; border-radius: 3px; }
+.adm-pkg-more { margin: 16px 0 4px; text-align: center; font-size: .88rem; }
+.adm-pkg-item .adm-badge { flex: none; }
+.adm-pkg-taken span { padding: 1px 8px; background: var(--adm-surface-2); border-radius: 999px; font-size: .72rem; letter-spacing: 0; }
 
 /* An actions column keeps its header on one line and takes only the width its button needs. */
 .adm-col-actions { width: 1%; white-space: nowrap; text-align: right; }

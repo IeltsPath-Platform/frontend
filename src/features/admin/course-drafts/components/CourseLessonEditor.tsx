@@ -4,11 +4,13 @@ import { useAdminConfirm } from '../../lib/useAdminConfirm'
 import type { AdminResource } from '../../lib/useAdminResource'
 import type { PackageListItem } from '../../packages/types'
 import type { CourseLesson } from '../types'
+import { MarkdownField } from '../../components/MarkdownField'
 import { CourseBlockEditor } from './CourseBlockEditor'
 import { CourseKnowledgeField } from './CourseKnowledgeField'
 import { CourseLessonResources } from './CourseLessonResources'
 import { CourseLessonVocabulary } from './CourseLessonVocabulary'
 import { CoursePackagePicker } from './CoursePackagePicker'
+import { CourseSummaryPreview } from './CourseSummaryPreview'
 
 /**
  * One lesson: its names, the knowledge points it teaches, then its blocks as cards (each with its own move and remove
@@ -41,8 +43,8 @@ export function CourseLessonEditor({ value, onChange, disabled, practiceSets, us
     <div className="adm-course-draft-grid">
       <label className="adm-field"><span>Thời lượng dự kiến (phút)</span><input className="adm-input" inputMode="numeric" max={600} min={1} onChange={(event) => onChange({ ...value, estimatedMinutes: event.target.value === '' ? null : Number(event.target.value) })} step={1} type="number" value={value.estimatedMinutes ?? ''} /></label>
     </div>
-    <label className="adm-field"><span>Tóm tắt trang bài học (Markdown)</span><textarea className="adm-textarea adm-textarea--tall" maxLength={20000} onChange={(event) => onChange({ ...value, summaryMarkdown: event.target.value === '' ? null : event.target.value })} value={value.summaryMarkdown ?? ''} /></label>
-    <CourseLessonResources disabled={disabled} onChange={(resources) => onChange({ ...value, resources })} value={value.resources ?? []} />
+    <MarkdownField label="Tóm tắt trang bài học (Markdown)" maxLength={20000} onChange={(next) => onChange({ ...value, summaryMarkdown: next === '' ? null : next })}
+      preview={(markdown) => <CourseSummaryPreview lesson={value} markdown={markdown} />} textareaClassName="adm-textarea adm-textarea--tall" value={value.summaryMarkdown ?? ''} />    <CourseLessonResources disabled={disabled} onChange={(resources) => onChange({ ...value, resources })} value={value.resources ?? []} />
     <CourseLessonVocabulary disabled={disabled} onChange={onChange} value={value} />
     <CourseKnowledgeField disabled={disabled} onChange={(next) => { if (next.length <= 50) onChange({ ...value, knowledgePointIds: next }) }} skill={skill} title={`Điểm kiến thức bài học ${number}`} value={value.knowledgePointIds} />
     <div className="adm-sec">
@@ -73,6 +75,7 @@ export function CourseLessonEditor({ value, onChange, disabled, practiceSets, us
         {folded.includes(index) ? null : <CourseBlockEditor value={block} number={index + 1} disabled={disabled} onChange={(next) => onChange({ ...value, blocks: value.blocks.map((item, position) => position === index ? next : item) })} />}
       </section>)}
     </div>
-    <CoursePackagePicker value={value.practiceSetPackageIds} onChange={(practiceSetPackageIds) => onChange({ ...value, practiceSetPackageIds })} catalog={practiceSets} usedIds={usedPackageIds} disabled={disabled} />
+    <CoursePackagePicker value={value.practiceSetPackageIds} onChange={(practiceSetPackageIds) => onChange({ ...value, practiceSetPackageIds })} catalog={practiceSets} usedIds={usedPackageIds} knowledgePointIds={value.knowledgePointIds}
+      lessonTitle={value.title} vocabularySenseIds={value.vocabularySenseIds ?? []} newWordLemmas={(value.newVocabulary ?? []).map((word) => word.lemma)} newSets={value.newPracticeSets ?? []} onNewSetsChange={(newPracticeSets) => onChange({ ...value, newPracticeSets })} disabled={disabled} />
   </div>
 }
