@@ -70,6 +70,11 @@ export function useAuthSession() {
   return useSyncExternalStore(subscribe, getSnapshot, () => GUEST_SESSION)
 }
 
+export function updateAuthUserProfile(updates: { userName?: string; email?: string }) {
+  session = { ...session, ...updates }
+  emitChange()
+}
+
 export function setDemoTier(tier: UserTier) {
   session = { ...session, tier }
   emitChange()

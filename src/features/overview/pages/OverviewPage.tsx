@@ -9,6 +9,7 @@ import { OverviewLearningOrbit } from '../components/OverviewLearningOrbit'
 import { OverviewStudyPlanAndAutonomy } from '../components/OverviewStudyPlanAndAutonomy'
 import { OverviewAiRecommendations } from '../components/OverviewAiRecommendations'
 import { OverviewDetailedStats } from '../components/OverviewDetailedStats'
+import { ProfileTab } from '@/features/profile/ProfileTab'
 import {
   MOCK_USER_PROFILE,
   MOCK_GENERAL_STATS,
@@ -90,8 +91,13 @@ export const OverviewPage: React.FC = () => {
               <OverviewDetailedStats />
             )}
 
+            {activeSidebarTab === 'profile' && (
+              <ProfileTab />
+            )}
+
             {activeSidebarTab !== 'overview' &&
-              activeSidebarTab !== 'detailed-stats' && (
+              activeSidebarTab !== 'detailed-stats' &&
+              activeSidebarTab !== 'profile' && (
                 <div className="overview-placeholder-card">
                   <h3 className="font-bold text-lg text-slate-800 mb-2">
                     Tính năng đang được cập nhật
