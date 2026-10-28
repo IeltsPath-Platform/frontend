@@ -463,3 +463,4 @@ export const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
     </section>
   )
 }
+

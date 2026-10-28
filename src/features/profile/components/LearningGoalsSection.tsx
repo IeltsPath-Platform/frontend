@@ -375,3 +375,4 @@ export const LearningGoalsSection: React.FC<LearningGoalsSectionProps> = ({
     </section>
   )
 }
+

@@ -27,3 +27,4 @@ export const ProfileSkeleton: React.FC = () => {
     </div>
   )
 }
+

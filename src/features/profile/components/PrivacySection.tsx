@@ -117,3 +117,4 @@ export const PrivacySection: React.FC<PrivacySectionProps> = ({
     </section>
   )
 }
+

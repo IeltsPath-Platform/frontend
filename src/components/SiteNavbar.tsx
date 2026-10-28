@@ -5,7 +5,7 @@ import { SiteLogo } from './SiteLogo'
 import { NavOwl } from './NavOwl'
 import type { NavOwlHandle } from './NavOwl'
 import { UserTierDropdown } from './UserTierDropdown'
-import { logoutSession, setDemoTier, useAuthSession } from '@/features/auth/authSession'
+import { logoutSession, useAuthSession } from '@/features/auth/authSession'
 import { NotificationBell } from '@/features/community/components/NotificationBell'
 import { ReviewBasketBadge } from './ReviewBasketBadge'
 import { useReviewBasketSummary } from './useReviewBasketSummary'
@@ -284,12 +284,13 @@ export function SiteNavbar({ isLoggedIn, userName }: SiteNavbarProps) {
             {activeIsLoggedIn ? (
               <UserTierDropdown
                 className="site-user-tier-dropdown"
-                onToggleTier={setDemoTier}
                 onSignOut={handleLogout}
                 signingOut={loggingOut}
                 points={session.points}
                 tier={session.tier}
                 userName={activeUserName}
+                email={session.email}
+                avatarUrl={session.avatarUrl}
               />
             ) : !loginMatch && !registerMatch && (
               <>

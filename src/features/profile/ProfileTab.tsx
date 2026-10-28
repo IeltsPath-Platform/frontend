@@ -165,3 +165,4 @@ export const ProfileTab: React.FC = () => {
     </ErrorBoundary>
   )
 }
+

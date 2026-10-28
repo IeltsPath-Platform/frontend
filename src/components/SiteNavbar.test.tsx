@@ -13,7 +13,6 @@ vi.mock('@/features/learning-path/api', async (importOriginal) => ({
 
 vi.mock('@/features/auth/authSession', () => ({
   logoutSession: vi.fn(),
-  setDemoTier: vi.fn(),
   useAuthSession: authSessionMock,
 }))
 

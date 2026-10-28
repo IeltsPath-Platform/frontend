@@ -192,6 +192,7 @@ export function useProfile() {
     try {
       const updatedProfile = await profileApi.uploadAvatar(file)
       setProfile(updatedProfile)
+      updateAuthUserProfile({ avatarUrl: updatedProfile.avatarReference || null })
       window.dispatchEvent(new CustomEvent('user-profile-updated'))
       return updatedProfile
     } finally {
@@ -204,6 +205,7 @@ export function useProfile() {
     try {
       const updatedProfile = await profileApi.deleteAvatar()
       setProfile(updatedProfile)
+      updateAuthUserProfile({ avatarUrl: null })
       window.dispatchEvent(new CustomEvent('user-profile-updated'))
       return updatedProfile
     } finally {
@@ -279,3 +281,4 @@ export function useProfile() {
     unlinkOAuth,
   }
 }
+
