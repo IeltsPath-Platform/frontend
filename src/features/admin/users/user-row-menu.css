@@ -1,0 +1,78 @@
+/* Menu of a user row (the "…" button). Scoped to .um-rowmenu so the menus of other admin screens keep their look. */
+.adm-rowmenu.um-rowmenu {
+  min-width: 232px;
+  padding: 6px;
+  border-radius: 12px;
+  box-shadow: 0 18px 40px rgb(13 43 141 / 20%), 0 2px 6px rgb(13 43 141 / 8%);
+}
+
+.um-rowmenu .adm-rowmenu__item {
+  position: relative;
+  gap: 12px;
+  min-height: 40px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.um-rowmenu .adm-rowmenu__item svg {
+  flex: none;
+  color: var(--adm-muted);
+  transition: color 0.12s;
+}
+
+.um-rowmenu .adm-rowmenu__item:hover:not(:disabled) svg,
+.um-rowmenu .adm-rowmenu__item:focus-visible svg {
+  color: var(--adm-accent);
+}
+
+.um-rowmenu .adm-rowmenu__item.is-danger svg {
+  color: var(--adm-danger);
+}
+
+/* A group of related actions is set apart by a hairline across the menu. */
+.um-rowmenu .adm-rowmenu__item--divided {
+  margin-top: 9px;
+}
+
+.um-rowmenu .adm-rowmenu__item--divided::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  right: 4px;
+  left: 4px;
+  height: 1px;
+  background: var(--adm-border);
+}
+
+.um-rowmenu .adm-rowmenu__item:disabled {
+  opacity: 0.55;
+}
+
+.um-rowmenu .adm-rowmenu__hint {
+  margin-left: auto;
+  padding: 1px 8px;
+  border: 1px solid var(--adm-border);
+  border-radius: 999px;
+  background: var(--adm-surface-2);
+  color: var(--adm-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+/* The actions column hugs its button and the row it belongs to stays marked while the menu is open. */
+.um-col-actions {
+  width: 1%;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.adm-table tbody tr:has(.adm-rowmenu__trigger[aria-expanded='true']) {
+  background: var(--adm-accent-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .um-rowmenu .adm-rowmenu__item svg {
+    transition: none;
+  }
+}
