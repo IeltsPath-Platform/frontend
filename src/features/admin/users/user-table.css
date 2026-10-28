@@ -3,9 +3,8 @@
 .um-role--content_author { --um-tone: var(--adm-ok); }
 .um-role--examiner { --um-tone: var(--adm-warn); }
 .um-role--staff_manager { --um-tone: var(--adm-skill-all); }
-.um-role--staff { --um-tone: var(--adm-skill-listening); }
-.um-role--customer,
-.um-role--sales_staff { --um-tone: var(--adm-muted); }
+.um-role--sales_staff { --um-tone: var(--adm-skill-listening); }
+.um-role--customer { --um-tone: var(--adm-muted); }
 
 .adm-badge.um-role {
   border-color: color-mix(in srgb, var(--um-tone) 35%, transparent);

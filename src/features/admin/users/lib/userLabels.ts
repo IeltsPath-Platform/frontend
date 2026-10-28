@@ -2,18 +2,16 @@
 
 export const USER_ROLE_LABEL: Record<UserRole, string> = {
   ADMIN: 'Quản trị hệ thống',
-  CONTENT_AUTHOR: 'R&D',
+  CONTENT_AUTHOR: 'Content Author',
   EXAMINER: 'Examiner',
   STAFF_MANAGER: 'Staff Manager',
-  STAFF: 'Staff',
+  SALES_STAFF: 'Sales Staff',
   CUSTOMER: 'Learner',
-  // Not offered anywhere in the admin screens; kept so an account that still holds it shows a name.
-  SALES_STAFF: 'Kinh doanh',
 }
 
 /** Roles shown first win when an account holds several (the avatar takes the colour of the first). */
 export function primaryRole(roles: readonly { name: UserRole }[]): UserRole | null {
-  const order: readonly UserRole[] = ['ADMIN', 'CONTENT_AUTHOR', 'EXAMINER', 'STAFF_MANAGER', 'STAFF', 'CUSTOMER', 'SALES_STAFF']
+  const order: readonly UserRole[] = ['ADMIN', 'CONTENT_AUTHOR', 'EXAMINER', 'STAFF_MANAGER', 'SALES_STAFF', 'CUSTOMER']
   return order.find((role) => roles.some((item) => item.name === role)) ?? null
 }
 

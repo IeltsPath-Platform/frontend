@@ -49,23 +49,23 @@ describe('role labels', () => {
     search.query = ''
   })
 
-  it('names the roles R&D, Examiner, Staff Manager, Staff and Learner and offers no sales or mentor role', async () => {
+  it('names the six roles of the system and offers no mentor role', async () => {
     renderUsers([fixture('user-id', 'user@example.com')])
     await screen.findByText('user@example.com')
 
     const filter = screen.getByLabelText('Vai trò', { selector: 'select' })
     expect(within(filter).getAllByRole('option').map((option) => option.textContent)).toEqual([
-      'Tất cả vai trò', 'Quản trị hệ thống', 'R&D', 'Examiner', 'Staff Manager', 'Staff', 'Learner',
+      'Tất cả vai trò', 'Quản trị hệ thống', 'Content Author', 'Examiner', 'Staff Manager', 'Sales Staff', 'Learner',
     ])
     expect(screen.queryByText(/Mentor|Kinh doanh/)).not.toBeInTheDocument()
   })
 
-  it('keeps showing the name of a role an account still holds although it is not offered', async () => {
-    const legacy = fixture('legacy-id', 'legacy@example.com')
-    legacy.roles = [{ id: 'role-sales', name: 'SALES_STAFF' }]
-    renderUsers([legacy])
+  it('shows an account with the Sales Staff role under that name', async () => {
+    const sales = fixture('sales-id', 'sales@example.com')
+    sales.roles = [{ id: 'role-sales', name: 'SALES_STAFF' }]
+    renderUsers([sales])
 
-    expect(await screen.findByText('Kinh doanh')).toBeInTheDocument()
+    expect(await screen.findByText('Sales Staff', { selector: '.um-role' })).toBeInTheDocument()
   })
 })
 
@@ -121,10 +121,10 @@ describe('user row menu', () => {
 
     await userEvent.click(within(await openMenu('user@example.com')).getByRole('menuitem', { name: 'Phân quyền' }))
     const modal = await screen.findByRole('dialog', { name: 'Phân quyền' })
-    await userEvent.click(within(modal).getByLabelText('Staff'))
+    await userEvent.click(within(modal).getByLabelText('Sales Staff'))
     await userEvent.click(within(modal).getByRole('button', { name: 'Lưu vai trò' }))
 
-    await waitFor(() => expect(api.updateUserRoles).toHaveBeenCalledWith('user-id', ['CUSTOMER', 'STAFF']))
+    await waitFor(() => expect(api.updateUserRoles).toHaveBeenCalledWith('user-id', ['CUSTOMER', 'SALES_STAFF']))
     await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Phân quyền' })).not.toBeInTheDocument())
   })
 

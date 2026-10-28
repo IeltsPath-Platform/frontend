@@ -81,14 +81,14 @@ describe('UsersPage', () => {
     await user.type(screen.getByLabelText(/Mật khẩu tạm thời/), 'secret1')
     const roles = screen.getByRole('group', { name: 'Vai trò' })
     await user.click(within(roles).getByLabelText('Quản trị hệ thống'))
-    expect(within(roles).getByLabelText('R&D')).toBeDisabled()
+    expect(within(roles).getByLabelText('Content Author')).toBeDisabled()
     await user.click(screen.getByRole('button', { name: 'Tạo tài khoản' }))
     await waitFor(() => expect(api.createUser).toHaveBeenCalledWith({ email: 'author@example.com', fullName: 'Nội dung viên', password: 'secret1', roles: ['CUSTOMER', 'ADMIN'] }))
     expect(api.listUsers).toHaveBeenCalledTimes(2)
   })
 
   it.each([
-    ['ROLE_CONFLICT', 'Tài khoản quản trị hệ thống không được kiêm vai trò R&D hoặc Examiner.'],
+    ['ROLE_CONFLICT', 'Tài khoản quản trị hệ thống không được kiêm vai trò Content Author hoặc Examiner.'],
     ['SELF_ADMIN_REMOVAL', 'Bạn không thể tự gỡ quyền quản trị của chính mình.'],
     ['SELF_ACCOUNT_CHANGE', 'Bạn không thể tự khóa hoặc xóa tài khoản đang dùng.'],
     ['LAST_ADMIN', 'Đây là tài khoản quản trị cuối cùng đang hoạt động, không thể gỡ, khóa hay xóa.'],
