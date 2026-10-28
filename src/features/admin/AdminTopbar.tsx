@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { ChevronDown, GraduationCap, LogOut, Search } from 'lucide-react'
+import { ChevronDown, GraduationCap, LogOut, Search, UserRound } from 'lucide-react'
 import brandLogo from '@/assets/brand-logo-white.webp'
 import { logoutSession, useAuthSession } from '@/features/auth/authSession'
+import { hasAnyRole } from '@/features/auth/staffRoles'
+import { NotificationBell } from '@/features/community/components/NotificationBell'
 import { useAdminSearch } from './adminSearch'
 
 function initialsOf(name: string): string {
@@ -11,7 +13,8 @@ function initialsOf(name: string): string {
 }
 
 function AccountMenu() {
-  const { userName, email } = useAuthSession()
+  const { userName, email, roles } = useAuthSession()
+  const isExaminer = hasAnyRole(roles, ['EXAMINER'])
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
@@ -56,6 +59,12 @@ function AccountMenu() {
       </button>
       {open ? (
         <div className="adm-menu" role="menu">
+          {isExaminer ? (
+            <Link className="adm-menu__item" onClick={() => setOpen(false)} role="menuitem" to="/admin/examiner/profile">
+              <UserRound aria-hidden="true" size={16} />
+              Sửa hồ sơ
+            </Link>
+          ) : null}
           <Link className="adm-menu__item" onClick={() => setOpen(false)} role="menuitem" to="/overview">
             <GraduationCap aria-hidden="true" size={16} />
             Về trang học
@@ -73,6 +82,8 @@ function AccountMenu() {
 export function AdminTopbar() {
   const { query, setQuery } = useAdminSearch()
   const isAuthorArea = useLocation().pathname.startsWith('/content-author')
+  // An examiner is reminded here when a job will be late soon.
+  const isExaminer = hasAnyRole(useAuthSession().roles, ['EXAMINER'])
   return (
     <header className="adm-topbar">
       <Link aria-label={isAuthorArea ? 'Trang chủ biên soạn nội dung' : 'Trang chủ quản trị'} className="adm-brand" to={isAuthorArea ? '/content-author' : '/admin'}>
@@ -90,7 +101,10 @@ export function AdminTopbar() {
           value={query}
         />
       </label>
-      <AccountMenu />
+      <div className="adm-topbar__tools">
+        <NotificationBell enabled={isExaminer} />
+        <AccountMenu />
+      </div>
     </header>
   )
 }

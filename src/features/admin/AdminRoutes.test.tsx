@@ -1,4 +1,4 @@
-﻿import { render, screen } from '@/test/render'
+import { fireEvent, render, screen, within } from '@/test/render'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AdminRoutes } from './AdminRoutes'
@@ -11,6 +11,20 @@ vi.mock('./packages/api/packageApi', async (original) => ({ ...await original<ty
 vi.mock('./ai-drafts/api/aiDraftApi', async (original) => ({ ...await original<typeof import('./ai-drafts/api/aiDraftApi')>(), fetchAiDrafts: vi.fn().mockResolvedValue([]) }))
 vi.mock('./courses/api/courseApi', async (original) => ({ ...await original<typeof import('./courses/api/courseApi')>(), fetchCourses: vi.fn().mockResolvedValue([]) }))
 vi.mock('./lessons/api/lessonApi', async (original) => ({ ...await original<typeof import('./lessons/api/lessonApi')>(), fetchTopics: vi.fn().mockResolvedValue([]) }))
+
+vi.mock('@/features/community/components/NotificationBell', () => ({
+  NotificationBell: ({ enabled }: { enabled: boolean }) => (enabled ? <button aria-label="Thông báo" type="button" /> : null),
+}))
+vi.mock('@/features/examiner/dashboard/api/examinerDashboardApi', () => ({
+  getExaminerSummary: vi.fn().mockResolvedValue({ queued: 0, processing: 0, dueSoon: 0, overdue: 0, completedToday: 0, completedThisWeek: 0, receivedToday: 0, dailyLimit: 10 }),
+  getMyExaminerProfile: vi.fn().mockResolvedValue({ id: '20000000-0000-4000-8000-000000000001', displayName: 'Lê Hiếu', avatarUrl: null, bio: null, ieltsBand: 8, certificates: [], acceptingSubmissions: true }),
+  saveExaminerProfile: vi.fn(),
+}))
+vi.mock('@/features/examiner/grading/api/examinerGradingApi', async (original) => ({
+  ...await original<typeof import('@/features/examiner/grading/api/examinerGradingApi')>(),
+  listMyGradingJobs: vi.fn().mockResolvedValue({ content: [], page: 0, size: 20, totalElements: 0 }),
+  listMyOpenGradingJobs: vi.fn().mockResolvedValue({ entries: [], truncated: false }),
+}))
 
 function LocationProbe() {
   const { pathname, search, hash } = useLocation()
@@ -68,14 +82,81 @@ describe('AdminRoutes', () => {
     expect(screen.getByText('BIÊN SOẠN')).toBeInTheDocument()
   })
 
-  it('redirects examiners to the knowledge graph', () => {
+  it('redirects examiners to their dashboard and shows grading, their profile and the knowledge graph in the menu', () => {
     auth.mockReturnValue(session(['EXAMINER']))
     renderAt('/admin')
 
     const menu = screen.getByRole('navigation', { name: 'Menu quản trị' })
+    expect(menu).toHaveTextContent('Tổng quan chấm bài')
+    // The grading links are in the menu itself, not behind a group that opens on hover.
+    expect(within(menu).getByRole('link', { name: 'Chấm Writing' })).toHaveAttribute('href', '/admin/grading/writing')
+    expect(within(menu).getByRole('link', { name: 'Chấm Speaking' })).toHaveAttribute('href', '/admin/grading/speaking')
+    expect(menu).toHaveTextContent('Chấm Writing')
+    expect(menu).toHaveTextContent('Chấm Speaking')
+    expect(menu).not.toHaveTextContent('Hồ sơ của tôi')
     expect(menu).toHaveTextContent('Cây tri thức')
     expect(menu).not.toHaveTextContent('Bài học')
-    expect(screen.getByRole('heading', { name: 'Cây tri thức' })).toBeInTheDocument()
+    expect(menu).not.toHaveTextContent('Người dùng')
+    expect(screen.getByRole('heading', { name: 'Tổng quan chấm bài' })).toBeInTheDocument()
+    expect(screen.getByTestId('location')).toHaveTextContent('/admin/examiner')
+  })
+
+  it('gives examiners the notification bell, where they are reminded of jobs that will be late, and nobody else', () => {
+    auth.mockReturnValue(session(['EXAMINER']))
+    const examiner = renderAt('/admin')
+    expect(screen.getByRole('button', { name: 'Thông báo' })).toBeInTheDocument()
+    examiner.unmount()
+
+    for (const role of ['ADMIN', 'CONTENT_AUTHOR']) {
+      auth.mockReturnValue(session([role]))
+      const other = renderAt(role === 'ADMIN' ? '/admin' : '/content-author')
+      expect(screen.queryByRole('button', { name: 'Thông báo' })).not.toBeInTheDocument()
+      other.unmount()
+    }
+  })
+
+  it('puts "Sửa hồ sơ" in the account menu of an examiner, and in nobody else\'s', () => {
+    auth.mockReturnValue(session(['EXAMINER']))
+    const examiner = renderAt('/admin')
+    fireEvent.click(document.querySelector('.adm-account__button') as HTMLElement)
+    expect(screen.getByRole('menuitem', { name: 'Sửa hồ sơ' })).toHaveAttribute('href', '/admin/examiner/profile')
+    examiner.unmount()
+
+    auth.mockReturnValue(session(['ADMIN']))
+    renderAt('/admin')
+    fireEvent.click(document.querySelector('.adm-account__button') as HTMLElement)
+    expect(screen.queryByRole('menuitem', { name: 'Sửa hồ sơ' })).not.toBeInTheDocument()
+  })
+
+  it('opens the examiner profile screen for examiners only', () => {
+    auth.mockReturnValue(session(['EXAMINER']))
+    renderAt('/admin/examiner/profile')
+    expect(screen.getByRole('heading', { name: 'Hồ sơ của tôi' })).toBeInTheDocument()
+  })
+
+  it.each(['ADMIN', 'CONTENT_AUTHOR', 'CUSTOMER'])('does not grant %s access to the examiner dashboard or profile', (role) => {
+    auth.mockReturnValue(session([role]))
+    for (const url of ['/admin/examiner', '/admin/examiner/profile']) {
+      const view = renderAt(url)
+      expect(screen.queryByRole('heading', { name: /Tổng quan chấm bài|Hồ sơ của tôi/ })).not.toBeInTheDocument()
+      view.unmount()
+    }
+  })
+
+  it('lets an examiner choose between Writing and Speaking from the menu', () => {
+    auth.mockReturnValue(session(['EXAMINER']))
+    renderAt('/admin/grading/speaking')
+
+    expect(screen.getByRole('heading', { name: 'Chấm Speaking' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Chấm Writing' })).toHaveAttribute('href', '/admin/grading/writing')
+    expect(screen.getByRole('link', { name: 'Chấm Speaking' })).toHaveAttribute('href', '/admin/grading/speaking')
+  })
+
+  it.each(['ADMIN', 'CONTENT_AUTHOR', 'CUSTOMER'])('does not grant %s access to the grading screens', (role) => {
+    auth.mockReturnValue(session([role]))
+    renderAt('/admin/grading/writing')
+
+    expect(screen.queryByRole('heading', { name: 'Danh sách bài chờ chấm Writing' })).not.toBeInTheDocument()
   })
 
   it('denies administrators access to content author routes', () => {

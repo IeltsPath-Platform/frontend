@@ -48,13 +48,22 @@ describe('SiteNavbar navigation', () => {
     await user.keyboard('{Enter}')
     expect(trigger).toHaveAttribute('aria-expanded', 'true')
     const sections = screen.getByRole('navigation', { name: 'Khám phá' })
-    for (const label of ['Cộng đồng', 'Trò chơi', 'Nghe chép', 'Kho từ vựng', 'Flashcard của tôi']) {
+    for (const label of ['Cộng đồng', 'Trò chơi', 'Nghe chép', 'Từ điển', 'Sổ tay từ vựng', 'Flashcard của tôi']) {
       expect(within(sections).getByRole('link', { name: label })).toBeInTheDocument()
     }
     await user.keyboard('{Escape}')
     expect(trigger).toHaveAttribute('aria-expanded', 'false')
     expect(trigger).toHaveFocus()
     expect(screen.queryByRole('navigation', { name: 'Khám phá' })).not.toBeInTheDocument()
+  })
+
+  it('reaches the essays teachers graded through "Lịch sử nộp bài", with no link of its own', () => {
+    render(<MemoryRouter initialEntries={['/submission-history']}><SiteNavbar /></MemoryRouter>)
+    const sections = screen.getByRole('navigation', { name: 'Trang chủ' })
+    const history = within(sections).getByRole('link', { name: 'Lịch sử nộp bài' })
+    expect(history).toHaveAttribute('href', '/submission-history')
+    expect(history).toHaveClass('active')
+    expect(screen.queryByRole('link', { name: 'Bài giáo viên chấm' })).not.toBeInTheDocument()
   })
 
   it('lists the review basket with the main links for a signed-in learner, lit on its own page only', () => {
@@ -111,7 +120,7 @@ describe('SiteNavbar navigation', () => {
     ['/games/rooms/room-1', 'Trò chơi'],
     ['/video-dictation/video-1', 'Nghe chép'],
     ['/community/posts/post-1', 'Cộng đồng'],
-    ['/vocabulary/review', 'Kho từ vựng'],
+    ['/vocabulary/review', 'Từ điển'],
     ['/flashcards/decks/deck-1', 'Flashcard của tôi'],
   ])('keeps discovery active on %s', (path, label) => {
     render(<MemoryRouter initialEntries={[path]}><SiteNavbar /></MemoryRouter>)

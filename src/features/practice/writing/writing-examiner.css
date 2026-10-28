@@ -1,0 +1,205 @@
+/* Choosing who grades (teacher or AI), choosing the teacher, and reading the teacher's review. Tokens come from the reading workspace. */
+/* The dialogs get the workspace colours from .ww-dialog (writing-workspace.css). */
+.we-method { max-width: 40rem; }
+.we-method-cards { display: grid; gap: 0.8rem; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); }
+/* The status line takes the spare height, so both cards end in a button of the same size on the same line. */
+.we-method-card { display: grid; grid-template-rows: auto auto 1fr auto; gap: 0.5rem; padding: 0.9rem 1rem; border: 1px solid var(--rw-accent); border-radius: 12px; background: #eff6ff; }
+.we-method-card.is-off { border-color: var(--rw-line); background: #f8fafc; }
+.we-method-card h3 { display: flex; align-items: center; gap: 0.4rem; margin: 0; font-size: 1rem; }
+.we-method-card p { margin: 0; font-size: 0.84rem; line-height: 1.45; }
+.we-method-status { font-weight: 700; color: var(--rw-accent); }
+.we-method-card.is-off .we-method-status { color: #b45309; }
+.we-method-card .ww-primary, .we-method-card .ww-secondary { justify-self: stretch; padding: 0.7rem 1rem; font-size: 0.9rem; font-weight: 700; }
+/* A button that is open must read as a button: solid accent with a shadow, the top-up one included. */
+.we-method-card .ww-primary:not(:disabled) { box-shadow: 0 3px 10px rgb(29 78 216 / 28%); }
+.we-method-card .ww-primary { gap: 0.5rem; }
+
+.we-pick { max-width: 38rem; }
+/* Many examiners: the list scrolls inside the dialog, so the buttons under it stay in view. */
+.we-examiners { display: grid; gap: 0.5rem; margin: 0; padding: 0 0.35rem 0 0; list-style: none; max-height: min(45vh, 420px); overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
+.we-examiner { display: grid; grid-template-columns: auto auto 1fr auto; align-items: center; gap: 0.7rem; padding: 0.7rem 0.8rem; border: 1px solid var(--rw-line); border-radius: 10px; cursor: pointer; }
+.we-examiner.is-picked { border-color: var(--rw-accent); background: #eff6ff; box-shadow: 0 0 0 1px var(--rw-accent); }
+.we-examiner.is-full { opacity: 0.6; cursor: not-allowed; background: #f1f5f9; }
+.we-examiner:focus-within { outline: 2px solid var(--rw-accent); outline-offset: 2px; }
+.we-examiner-body { display: grid; gap: 0.15rem; min-width: 0; font-size: 0.84rem; }
+.we-examiner-body span { overflow-wrap: anywhere; }
+.we-band { justify-self: start; padding: 0.05rem 0.5rem; border-radius: 999px; background: var(--rw-accent); color: #ffffff; font-size: 0.72rem; font-weight: 700; }
+.we-avatar { display: inline-flex; align-items: center; justify-content: center; width: 2.6rem; height: 2.6rem; border-radius: 50%; background: #dbeafe; color: var(--rw-accent); font-weight: 800; object-fit: cover; }
+.we-state { font-size: 0.72rem; font-weight: 700; color: #047857; white-space: nowrap; }
+.we-state.is-full { color: #475569; }
+
+.we-waiting, .we-review { display: grid; gap: 1rem; }
+.we-teacher { display: flex; align-items: center; gap: 0.8rem; padding: 0.8rem 1rem; border: 1px solid var(--rw-line); border-radius: 12px; background: #ffffff; }
+.we-teacher > div { display: grid; gap: 0.15rem; }
+.we-teacher small { color: var(--rw-muted); }
+.we-comment { margin: 0.3rem 0 0; font-size: 0.9rem; }
+.we-feedback { padding: 0.8rem 1rem; border-left: 3px solid var(--rw-accent); background: #eff6ff; white-space: pre-wrap; overflow-wrap: anywhere; }
+.we-codes { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0; padding: 0; list-style: none; }
+.we-codes li { padding: 0.1rem 0.6rem; border-radius: 999px; background: #fff7ed; border: 1px solid #fdba74; font-size: 0.78rem; }
+/* The prompt was already sent to a teacher who has not graded it: said above the editor, before the learner writes. */
+.we-pending { display: flex; flex-wrap: wrap; align-items: center; grid-row: 2; align-self: start; gap: 0.75rem 1rem; margin: 0 0.9rem 0.7rem; padding: 0.75rem 1rem; border: 1px solid #fcd34d; border-left: 5px solid #f59e0b; border-radius: 12px; background: #fffbeb; color: #78350f; box-shadow: 0 1px 2px rgb(120 53 15 / 8%); }
+.we-pending__icon { display: grid; place-items: center; flex: none; width: 2.5rem; height: 2.5rem; border-radius: 50%; background: #fef3c7; color: #b45309; }
+.we-pending__body { flex: 1 1 260px; min-width: 0; display: grid; gap: 0.15rem; }
+.we-pending__body strong { font-size: 1rem; line-height: 1.35; }
+.we-pending__body p { margin: 0; font-size: 0.9rem; line-height: 1.45; color: #92400e; }
+.we-pending__action { flex: none; padding: 0.5rem 0.95rem; border-radius: 999px; background: #b45309; color: #fff; font-size: 0.9rem; font-weight: 700; text-decoration: none; white-space: nowrap; }
+.we-pending__action:hover { background: #92400e; }
+.we-pending__action:focus-visible { outline: 3px solid #f59e0b; outline-offset: 2px; }
+.we-late { display: grid; gap: 0.6rem; padding: 1rem; border: 1px solid #f59e0b; border-radius: 12px; background: #fffbeb; }
+.we-late h2 { margin: 0; font-size: 1.05rem; color: #92400e; }
+.we-late p { margin: 0; }
+.we-pill { justify-self: start; padding: 0.15rem 0.7rem; border-radius: 999px; background: #fef3c7; color: #92400e; font-size: 0.8rem; font-weight: 700; }
+
+/* What the learner reads once the teacher has graded: the meaning and fix of each kind of error. */
+.we-fixhint { margin: 0.15rem 0 0; font-size: 0.84rem; color: var(--wr-muted); }
+.we-glossary { display: grid; gap: 0.6rem; }
+.we-glossary h3 { margin: 0; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--wr-muted); }
+.we-glossary dl { display: grid; gap: 0.6rem; margin: 0; }
+.we-glossary dl > div { padding: 0.6rem 0.8rem; border-left: 3px solid #f59e0b; background: #fffbeb; border-radius: 0 8px 8px 0; }
+.we-glossary dt { font-weight: 800; }
+.we-glossary dd { margin: 0.15rem 0 0; font-size: 0.9rem; line-height: 1.5; }
+.we-all-reviews { justify-self: start; font-size: 0.9rem; font-weight: 700; color: var(--wr-accent); }
+
+/* The list of essays sent to a teacher: figures first, then one table whose columns line the essays up. */
+.we-main { max-width: 68rem; gap: 1.1rem; }
+.we-head h1 { margin: 0 0 0.25rem; font-size: 1.75rem; line-height: 1.2; }
+.we-head p { margin: 0; max-width: 46rem; font-size: 1rem; line-height: 1.55; color: var(--wr-muted); }
+.we-reviews { display: grid; gap: 1.1rem; }
+
+.we-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.8rem; margin: 0; padding: 0; list-style: none; }
+.we-stat { display: grid; gap: 0.2rem; padding: 0.9rem 1.1rem; border: 1px solid var(--wr-line); border-radius: 14px; background: #ffffff; border-top: 4px solid #94a3b8; }
+.we-stat span { font-size: 0.85rem; color: var(--wr-muted); }
+.we-stat strong { font-size: 1.9rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.we-stat--ok { border-top-color: #16a34a; }
+.we-stat--ok strong { color: #15803d; }
+.we-stat--wait { border-top-color: #f59e0b; }
+.we-stat--wait strong { color: #b45309; }
+.we-stat--band { border-top-color: var(--wr-accent); }
+.we-stat--band strong { color: var(--wr-accent); }
+
+.we-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.6rem 1rem; }
+.we-filters { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.we-filter { display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.4rem 0.9rem; border: 1px solid var(--wr-line); border-radius: 999px; background: #ffffff; font: inherit; font-size: 0.92rem; cursor: pointer; }
+.we-filter span { padding: 0 0.45rem; border-radius: 999px; background: #e2e8f0; font-size: 0.8rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.we-filter[aria-pressed="true"] { border-color: var(--wr-accent); background: var(--wr-accent); color: #ffffff; font-weight: 700; }
+.we-filter[aria-pressed="true"] span { background: rgb(255 255 255 / 25%); }
+.we-filter:focus-visible { outline: 3px solid #93c5fd; outline-offset: 2px; }
+.we-note { display: inline-flex; align-items: center; gap: 0.35rem; margin: 0; font-size: 0.85rem; color: var(--wr-muted); }
+.we-empty { display: flex; align-items: center; gap: 0.5rem; margin: 0; padding: 1.2rem; border: 1px dashed var(--wr-line); border-radius: 12px; background: #ffffff; color: var(--wr-muted); }
+
+.we-table-wrap { overflow-x: auto; border: 1px solid var(--wr-line); border-radius: 14px; background: #ffffff; }
+.we-table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+.we-table thead th { padding: 0.75rem 1rem; border-bottom: 1px solid var(--wr-line); background: #f8fafc; text-align: left; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--wr-muted); white-space: nowrap; }
+.we-table tbody td { padding: 0.9rem 1rem; border-bottom: 1px solid #eef2f6; vertical-align: middle; }
+.we-table tbody tr:last-child td { border-bottom: 0; }
+.we-table tbody tr:hover { background: #f8fafc; }
+.we-table tbody tr.is-done td:first-child { box-shadow: inset 4px 0 0 #16a34a; }
+.we-table tbody tr:not(.is-done) td:first-child { box-shadow: inset 4px 0 0 #f59e0b; }
+.we-table td small { display: block; margin-top: 0.15rem; color: var(--wr-muted); font-size: 0.78rem; }
+.we-cell-essay { min-width: 18rem; max-width: 30rem; }
+.we-chip { padding: 0.08rem 0.6rem; border-radius: 999px; background: #dbeafe; color: var(--wr-accent); font-size: 0.78rem; font-weight: 700; }
+.we-source { margin-left: 0.5rem; font-size: 0.82rem; color: var(--wr-muted); }
+.we-prompt { display: -webkit-box; margin: 0.4rem 0 0; overflow: hidden; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.45; font-weight: 600; overflow-wrap: anywhere; }
+.we-table td:nth-child(2), .we-table td:nth-child(3) { white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+.we-badge { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.25rem 0.7rem; border-radius: 999px; font-size: 0.82rem; font-weight: 700; white-space: nowrap; }
+.we-badge--done { background: #dcfce7; color: #15803d; }
+.we-badge--wait { background: #fef3c7; color: #b45309; }
+.we-badge--late { background: #fee2e2; color: #b91c1c; }
+.we-badge--cancelled { background: #e2e8f0; color: #475569; }
+
+.we-cell-band { text-align: center; }
+.we-band-pill { display: inline-block; min-width: 3.2rem; padding: 0.2rem 0.6rem; border-radius: 10px; background: var(--wr-accent); color: #ffffff; font-size: 1.25rem; font-variant-numeric: tabular-nums; }
+.we-cell-action { text-align: right; white-space: nowrap; }
+.we-open { display: inline-block; padding: 0.5rem 1rem; border: 1px solid var(--wr-line); border-radius: 10px; background: #ffffff; color: var(--wr-ink); font-size: 0.9rem; font-weight: 700; text-decoration: none; }
+.we-open:hover { border-color: var(--wr-accent); color: var(--wr-accent); }
+.we-open--done { border-color: var(--wr-accent); background: var(--wr-accent); color: #ffffff; }
+.we-open--done:hover { background: #1e40af; color: #ffffff; }
+.we-open:focus-visible { outline: 3px solid #93c5fd; outline-offset: 2px; }
+.we-more { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.8rem; }
+.we-more__btn { padding: 0.55rem 1.4rem; border: 1px solid var(--wr-line); border-radius: 999px; background: #ffffff; font: inherit; font-weight: 700; cursor: pointer; }
+.we-more__btn:hover:not(:disabled) { border-color: var(--wr-accent); color: var(--wr-accent); }
+.we-more__btn:disabled { opacity: 0.6; cursor: progress; }
+.we-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* A narrow screen turns each table row into a card: the figures first, the label in front of each value. */
+@media (max-width: 760px) {
+  .we-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .we-table-wrap { overflow: visible; border: 0; background: transparent; }
+  .we-table, .we-table tbody, .we-table tr, .we-table td { display: block; }
+  .we-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .we-table tbody { display: grid; gap: 0.7rem; }
+  .we-table tbody tr { border: 1px solid var(--wr-line); border-radius: 14px; background: #ffffff; overflow: hidden; }
+  .we-table tbody td { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.55rem 1rem; border-bottom: 1px solid #eef2f6; text-align: right; }
+  .we-table tbody td[data-label]::before { content: attr(data-label); font-size: 0.78rem; font-weight: 700; text-transform: uppercase; color: var(--wr-muted); text-align: left; }
+  .we-table tbody td.we-cell-essay { display: block; max-width: none; min-width: 0; text-align: left; }
+  .we-table tbody td.we-cell-essay::before { display: none; }
+  .we-table tbody td.we-cell-action { display: block; text-align: stretch; border-bottom: 0; }
+  .we-table tbody td.we-cell-action .we-open { display: block; text-align: center; }
+  .we-table tbody tr.is-done td:first-child, .we-table tbody tr:not(.is-done) td:first-child { box-shadow: none; }
+  .we-table tbody tr.is-done { border-left: 5px solid #16a34a; }
+  .we-table tbody tr:not(.is-done) { border-left: 5px solid #f59e0b; }
+}
+
+/* The teacher's review. First screen: a strip of figures, then the essay beside the errors to fix, each pane scrolling on its own.
+   Below it, the teacher's comments in full. */
+.we-main--wide { max-width: 100rem; }
+.we-headline { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.2rem 1rem; }
+.we-headline h1 { margin: 0; font-size: 1.4rem; }
+.we-review { display: grid; gap: 0.8rem; }
+
+.we-scorebar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem 1rem; padding: 0.55rem 0.8rem; border: 1px solid var(--wr-line); border-radius: 14px; background: #ffffff; }
+.we-score { display: flex; align-items: baseline; gap: 0.6rem; padding: 0.25rem 0.95rem; border-radius: 10px; background: var(--wr-accent); color: #ffffff; }
+.we-score span { font-size: 0.76rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+.we-score strong { font-size: 1.9rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.we-mini { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
+.we-mini li { display: grid; grid-template-columns: auto auto; align-items: center; gap: 0.15rem 0.55rem; min-width: 5.6rem; padding: 0.25rem 0.7rem; border: 1px solid var(--wr-line); border-radius: 10px; }
+.we-mini span { font-size: 0.76rem; font-weight: 700; color: var(--wr-muted); }
+.we-mini b { justify-self: end; font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+.we-mini i { grid-column: 1 / -1; display: block; height: 4px; border-radius: 999px; background: #e2e8f0; overflow: hidden; }
+.we-mini u { display: block; height: 100%; background: var(--wr-accent); text-decoration: none; }
+.we-hint { margin: 0 0 0 auto; font-size: 0.82rem; color: var(--wr-muted); }
+
+/* One screen high (the page above it is about 15rem), so the essay and its errors are always in view together. */
+.we-split { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 0.8rem; height: calc(100dvh - 16rem); min-height: 26rem; }
+.we-split--single { height: auto; min-height: 0; grid-template-columns: minmax(0, 1fr); }
+.we-pane { display: grid; align-content: start; gap: 0.7rem; min-height: 0; padding-right: 0.25rem; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
+.we-split--single .we-pane { overflow: visible; }
+.we-pane__head { position: sticky; top: 0; z-index: 1; padding: 0.1rem 0; background: #f1f3f5; }
+.we-pane__head h2 { margin: 0; font-size: 1.05rem; }
+.we-pane--essay .wr-essay { font-size: 1rem; line-height: 1.8; }
+.we-pane--errors { gap: 1rem; padding: 1rem; border: 1px solid var(--wr-line); border-radius: 14px; background: #ffffff; }
+.we-pane--errors .wr-fixes { margin: 0; }
+.we-muted { margin: 0; color: var(--wr-muted); font-size: 0.92rem; }
+
+.we-result { gap: 1rem; }
+.we-overall { padding: 0.9rem 1.1rem; border-left: 4px solid var(--wr-accent); border-radius: 0 10px 10px 0; background: #eff6ff; }
+.we-overall h3 { margin: 0 0 0.3rem; font-size: 1rem; }
+.we-overall p { margin: 0; font-size: 0.95rem; line-height: 1.65; white-space: pre-line; overflow-wrap: anywhere; }
+.we-sub { margin: 0; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--wr-muted); }
+.we-criteria { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.8rem; }
+.we-criterion { display: grid; align-content: start; gap: 0.5rem; padding: 0.9rem 1rem; border: 1px solid var(--wr-line); border-radius: 12px; background: #ffffff; }
+.we-criterion__head { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; }
+.we-criterion__head h4 { margin: 0; font-size: 0.95rem; line-height: 1.3; }
+.we-criterion__head b { flex: none; min-width: 2.8rem; padding: 0.1rem 0.55rem; border-radius: 8px; background: #dbeafe; color: var(--wr-accent); font-size: 1.1rem; text-align: center; font-variant-numeric: tabular-nums; }
+.we-criterion__bar { display: block; height: 6px; border-radius: 999px; background: #e2e8f0; overflow: hidden; }
+.we-criterion__bar u { display: block; height: 100%; border-radius: inherit; background: var(--wr-accent); text-decoration: none; }
+.we-criterion p { margin: 0; font-size: 0.92rem; line-height: 1.6; color: #334155; overflow-wrap: anywhere; white-space: pre-line; }
+.we-codes-row { display: grid; gap: 0.4rem; }
+.we-codes-row > span { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--wr-muted); }
+
+/* A marked piece of the essay and its error in the list answer each other. */
+.we-pane--essay mark[role="button"] { cursor: pointer; }
+.we-pane--essay mark[role="button"]:focus-visible { outline: 3px solid #93c5fd; outline-offset: 1px; }
+.wr-mark.is-active { background: #fde68a; box-shadow: 0 0 0 2px #f59e0b; }
+.wr-fixes li { cursor: pointer; }
+.wr-fixes li.is-active { background: #fffbeb; box-shadow: inset 3px 0 0 #f59e0b; }
+
+/* A narrow screen cannot hold two panes side by side: the page scrolls and the panes follow one another. */
+@media (max-width: 899px) {
+  .we-split { grid-template-columns: minmax(0, 1fr); height: auto; min-height: 0; }
+  .we-pane { overflow: visible; padding-right: 0; }
+  .we-pane__head { position: static; }
+  .we-criteria { grid-template-columns: minmax(0, 1fr); }
+  .we-hint { margin: 0; }
+}

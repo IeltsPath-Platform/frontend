@@ -1,6 +1,8 @@
 /* Writing practice: A top bar, B task (prompt, chart, guide), C essay or steps, D dictionary / hints. */
 
-.ww-root { grid-template-rows: auto minmax(0, 1fr); }
+/* Top bar, then the notice (an empty row takes no room), then the writing area, which fills what is left. */
+.ww-root { grid-template-rows: auto auto minmax(0, 1fr); }
+.ww-root > .ww-body { grid-row: 3; }
 
 .ww-topbar-center { display: grid; justify-items: center; gap: 0.3rem; min-width: 0; }
 .ww-step-label { margin: 0; font-size: 0.82rem; font-weight: 700; text-align: center; }
@@ -134,8 +136,8 @@
 .ww-hint .ww-link { margin-top: 0.8rem; }
 .ww-sample { margin: 0.8rem 0 0; padding: 0.55rem 0.7rem; border-left: 3px solid var(--rw-accent); background: #eff6ff; font-style: italic; }
 
-/* dialogs */
-.ww-dialog { max-width: 34rem; gap: 1rem; }
+/* dialogs: they are rendered outside the workspace, so they bring its colours with them (without these, the buttons and chips have no fill) */
+.ww-dialog { --rw-accent: #1d4ed8; --rw-line: #d9dee5; --rw-ink: #111827; --rw-muted: #64748b; --rw-surface: #ffffff; max-width: 34rem; gap: 1rem; }
 .ww-dialog-title { display: flex; align-items: center; gap: 0.5rem; font-size: 1.2rem; font-weight: 800; }
 .ww-dialog-context { margin: 0; color: var(--rw-accent); font-size: 0.82rem; font-weight: 700; }
 .ww-dialog-sub { display: flex; align-items: center; gap: 0.35rem; margin: 0 0 0.3rem; font-size: 0.9rem; font-weight: 700; }

@@ -16,8 +16,22 @@ describe('adminMenu', () => {
     ])
   })
 
-  it('shows an examiner only the knowledge graph', () => {
-    expect(menuFor(['EXAMINER']).map((item) => item.path)).toEqual(['/admin/knowledge-graph'])
+  it('shows an examiner their dashboard, the grading screens and the knowledge graph', () => {
+    expect(menuFor(['EXAMINER']).map((item) => item.path)).toEqual([
+      '/admin/examiner', '/admin/grading/writing', '/admin/grading/speaking', '/admin/knowledge-graph',
+    ])
+  })
+
+  it('keeps the examiner screens to examiners', () => {
+    for (const path of ['/admin/examiner', '/admin/examiner/profile', '/admin/grading/writing', '/admin/grading/speaking']) {
+      expect(rolesFor(path)).toEqual(['EXAMINER'])
+      for (const role of ['ADMIN', 'CONTENT_AUTHOR', 'CUSTOMER']) expect(menuFor([role]).some((item) => item.path === path)).toBe(false)
+    }
+  })
+
+  it('keeps the profile screen out of the sidebar but open to examiners', () => {
+    expect(menuFor(['EXAMINER']).some((item) => item.path === '/admin/examiner/profile')).toBe(false)
+    expect(rolesFor('/admin/examiner/profile')).toEqual(['EXAMINER'])
   })
 
   it('shows learners nothing', () => {

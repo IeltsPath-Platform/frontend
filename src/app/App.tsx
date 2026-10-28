@@ -8,6 +8,7 @@ import { lazy, Suspense } from 'react'
 import { USE_MOCK_ROCKET } from '@/lib/env'
 import { BrowserRouter, Navigate, Routes, Route, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { AdminRoutes } from '@/features/admin/AdminRoutes'
+import { PointManagementRoutes } from '@/features/point-management/routes'
 import { ErrorBoundary } from './ErrorBoundary'
 import { NotFoundPage, RouteStatusPage } from './RouteStatusPage'
 import { OverviewPage } from '@/features/overview/pages/OverviewPage'
@@ -15,6 +16,8 @@ import { PracticeCatalogPage } from '@/features/practice/pages/PracticeCatalogPa
 import { ListeningPracticePage } from '@/features/practice/listening/ListeningPracticePage'
 import { WritingWorkspacePage } from '@/features/practice/writing/WritingWorkspacePage'
 import { WritingResultPage } from '@/features/practice/writing/WritingResultPage'
+import { ExaminerReviewsPage } from '@/features/practice/writing/ExaminerReviewsPage'
+import { GradingJobPage } from '@/features/practice/writing/GradingJobPage'
 import { SpeakingWorkspacePage } from '@/features/practice/speaking/SpeakingWorkspacePage'
 import { ReadingPracticePage } from '@/features/practice/reading/ReadingPracticePage'
 import { ReadingResultPage } from '@/features/practice/reading/ReadingResultPage'
@@ -27,7 +30,12 @@ import { TestPage } from '@/features/flashcards/pages/TestPage'
 import { FlashcardStudyPage } from '@/features/flashcards/pages/FlashcardStudyPage'
 import { FlashcardsPage } from '@/features/flashcards/pages/FlashcardsPage'
 import { VocabularyPage } from '@/features/vocabulary/pages/VocabularyPage'
-import { VocabularyReviewPage } from '@/features/vocabulary/pages/VocabularyReviewPage'
+import { WordDetailPage } from '@/features/vocabulary/pages/WordDetailPage'
+import { VocabularySetPage } from '@/features/vocabulary/pages/VocabularySetPage'
+import { SetStudyPage } from '@/features/vocabulary/pages/SetStudyPage'
+import { VocabularyMapPage } from '@/features/vocabulary/pages/VocabularyMapPage'
+import { VocabularyNotebookPage } from '@/features/vocabulary/pages/VocabularyNotebookPage'
+import { NotebookReviewPage } from '@/features/vocabulary/pages/NotebookReviewPage'
 import { AuthPage } from '@/features/auth/pages/AuthPage'
 import { useAuthSession } from '@/features/auth/authSession'
 import { signInDestination } from '@/features/auth/staffRoles'
@@ -83,7 +91,7 @@ function AppContent() {
   const { isLoggedIn, roles } = useAuthSession()
   // The admin area has its own frame, so the learner footer stays out of it.
   const { pathname } = useLocation()
-  const inAdminArea = ['/admin', '/content-author'].some((base) => pathname === base || pathname.startsWith(`${base}/`))
+  const inAdminArea = ['/admin', '/content-author', '/point-management'].some((base) => pathname === base || pathname.startsWith(`${base}/`))
 
   return (
     <>
@@ -93,6 +101,7 @@ function AppContent() {
       <Route path="/games/rocket/:matchId" element={<RocketRoute />} />
       <Route path="/admin/*" element={<RequireAuth><AdminRoutes /></RequireAuth>} />
       <Route path="/content-author/*" element={<RequireAuth><AdminRoutes area="content-author" /></RequireAuth>} />
+      <Route path="/point-management/*" element={<PointManagementRoutes />} />
       <Route path="/games" element={<RequireAuth><GameLayout /></RequireAuth>}>
         <Route index element={<GameCatalogPage />} />
         <Route path="wordly/setup" element={<GameSetupPage />} />
@@ -108,7 +117,6 @@ function AppContent() {
       <Route path="/notifications/preferences" element={<RequireAuth><NotificationPreferencesPage /></RequireAuth>} />
       <Route path="/community/posts/:postId" element={<RequireAuth><CommunityPage /></RequireAuth>} />
       <Route path="/community/users/:userId" element={<RequireAuth><CommunityPage /></RequireAuth>} />
-      <Route path="/vocabulary/review" element={<RequireAuth><VocabularyReviewPage /></RequireAuth>} />
       <Route path="/learn" element={<RequireAuth><LearnLayout /></RequireAuth>}>
         <Route index element={<CourseListPage />} />
         <Route path="placement" element={<PlacementPage />} />
@@ -149,6 +157,8 @@ function AppContent() {
       <Route path="/practice/listening/attempts/:attemptId/review" element={<RequireAuth><ReadingResultPage skill="listening" review /></RequireAuth>} />
       <Route path="/practice/writing/tasks/:packageVersionId/:sectionId" element={<RequireAuth><WritingWorkspacePage /></RequireAuth>} />
       <Route path="/practice/writing/submissions/:submissionId/result" element={<RequireAuth><WritingResultPage /></RequireAuth>} />
+      <Route path="/grading-jobs/:jobId" element={<RequireAuth><GradingJobPage /></RequireAuth>} />
+      <Route path="/writing-reviews" element={<RequireAuth><ExaminerReviewsPage /></RequireAuth>} />
       <Route path="/practice/listening/:testId" element={<Navigate replace to="/practice-tests?skill=listening" />} />
       <Route path="/practice/writing/:taskId" element={<Navigate replace to="/practice-tests?skill=writing" />} />
       <Route path="/practice/reading/history" element={<RequireAuth><ReadingHistoryPage /></RequireAuth>} />
@@ -166,7 +176,14 @@ function AppContent() {
       <Route path="/video-dictation" element={<RequireAuth><VideoDictationLibraryPage /></RequireAuth>} />
       <Route path="/video-dictation/:videoId" element={<RequireAuth><VideoDictationPlayerPage /></RequireAuth>} />
       <Route path="/vocabulary" element={<VocabularyPage />} />
-      <Route path="/submission-history" element={<RequireAuth><RouteStatusPage title="Lịch sử nộp bài" /></RequireAuth>} />
+      <Route path="/vocabulary/:id" element={<WordDetailPage />} />
+      <Route path="/vocabulary/sets/:id" element={<VocabularySetPage />} />
+      <Route path="/vocabulary/sets/:id/study" element={<RequireAuth><SetStudyPage /></RequireAuth>} />
+      <Route path="/vocabulary/map" element={<RequireAuth><VocabularyMapPage /></RequireAuth>} />
+      <Route path="/vocabulary/notebook" element={<VocabularyNotebookPage />} />
+      <Route path="/vocabulary/notebook/review" element={<RequireAuth><NotebookReviewPage /></RequireAuth>} />
+      <Route path="/vocabulary/review" element={<Navigate replace to="/vocabulary/notebook/review" />} />
+      <Route path="/submission-history" element={<RequireAuth><ExaminerReviewsPage /></RequireAuth>} />
       <Route path="/flashcards" element={<RequireAuth><FlashcardsPage /></RequireAuth>} />
       <Route path="/flashcards/decks/new" element={<RequireAuth><DeckEditorPage /></RequireAuth>} />
       <Route path="/flashcards/decks/:deckId" element={<RequireAuth><DeckDetailPage /></RequireAuth>} />

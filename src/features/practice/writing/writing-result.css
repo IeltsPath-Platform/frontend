@@ -35,7 +35,13 @@
 .wr-summary { margin: 0; padding: 0.6rem 0.8rem; border-radius: 8px; background: #f1f5f9; font-size: 0.84rem; line-height: 1.5; }
 .wr-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; }
 .wr-primary,
-.wr-secondary { padding: 0.5rem 1.2rem; border-radius: 6px; font-size: 0.84rem; font-weight: 600; }
+.wr-secondary { display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; min-height: 2.4rem; padding: 0.5rem 1.2rem; border-radius: 6px; font: inherit; font-size: 0.84rem; font-weight: 600; line-height: 1.2; text-decoration: none; white-space: nowrap; cursor: pointer; box-sizing: border-box; }
+.wr-primary svg,
+.wr-secondary svg { flex: none; }
+.wr-primary:focus-visible,
+.wr-secondary:focus-visible { outline: 3px solid #93c5fd; outline-offset: 2px; }
+.wr-primary:disabled,
+.wr-secondary:disabled { opacity: 0.6; cursor: not-allowed; }
 .wr-primary { border: 1px solid var(--wr-accent); background: var(--wr-accent); color: #ffffff; }
 .wr-secondary { border: 1px solid var(--wr-line); background: #ffffff; color: var(--wr-ink); }
 .wr-time { margin-left: auto; color: var(--wr-muted); font-size: 0.8rem; }

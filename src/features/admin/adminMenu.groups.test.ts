@@ -26,11 +26,16 @@ describe('menuEntriesFor', () => {
     expect(summary(['ADMIN'])).toEqual(['Tổng quan hệ thống', 'Người dùng', 'Dịch vụ', 'Hoạt động'])
   })
 
-  it('shows an examiner the knowledge graph as a plain link, not a group of one', () => {
-    const [entry] = menuEntriesFor(['EXAMINER'])
-    expect(menuEntriesFor(['EXAMINER'])).toHaveLength(1)
-    expect(entry).toEqual(expect.objectContaining({ kind: 'link' }))
-    expect(entry.kind === 'link' && entry.item.path).toBe('/admin/knowledge-graph')
+  it('shows an examiner every screen as a plain link, Writing and Speaking grading included, with nothing hidden in a flyout', () => {
+    expect(summary(['EXAMINER'])).toEqual([
+      'Tổng quan chấm bài',
+      'Chấm Writing',
+      'Chấm Speaking',
+      'Cây tri thức',
+    ])
+    expect(menuEntriesFor(['EXAMINER']).every((entry) => entry.kind === 'link')).toBe(true)
+    const graph = menuEntriesFor(['EXAMINER'])[3]
+    expect(graph.kind === 'link' && graph.item.path).toBe('/admin/knowledge-graph')
   })
 
   it('shows learners nothing', () => {

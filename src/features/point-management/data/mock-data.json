@@ -1,0 +1,106 @@
+{
+  "seedNow": "2026-10-28T09:14:00+07:00",
+  "defaultExpiresAt": "2027-01-31",
+  "manager": { "name": "Hà Linh", "title": "Quản lý bán hàng" },
+  "currentSaleId": "ngoc-anh",
+  "products": [
+    { "id": "POINT_100", "name": "Gói 100 AI Points", "kind": "POINTS", "points": 100 },
+    { "id": "POINT_50", "name": "Gói 50 AI Points", "kind": "POINTS", "points": 50 },
+    { "id": "PREMIUM_30D", "name": "Gói Premium 30 ngày", "kind": "PREMIUM", "premiumDays": 30, "humanGradingCredits": 4 },
+    { "id": "PREMIUM_90D", "name": "Gói Premium 90 ngày", "kind": "PREMIUM", "premiumDays": 90, "humanGradingCredits": 12 }
+  ],
+  "sales": [
+    { "id": "ngoc-anh", "name": "Ngọc Anh", "active": true },
+    { "id": "minh-tuan", "name": "Minh Tuấn", "active": true },
+    { "id": "thu-trang", "name": "Thu Trang", "active": true }
+  ],
+  "batches": [
+    {
+      "code": "B-2611-001", "label": "Đợt 11/2026", "productId": "POINT_100", "quantity": 1000,
+      "expiresAt": "2027-01-31", "createdAt": "2026-10-27T09:14:00+07:00", "createdBy": "Hà Linh",
+      "segments": [
+        { "saleId": null, "ready": 360 },
+        { "saleId": "ngoc-anh", "ready": 40, "issued": 30, "activated": 50 },
+        { "saleId": "minh-tuan", "ready": 30, "issued": 20, "activated": 30 },
+        { "saleId": null, "issued": 108, "activated": 332 }
+      ]
+    },
+    {
+      "code": "B-2611-002", "label": "Đợt 11/2026", "productId": "POINT_100", "quantity": 500,
+      "expiresAt": null, "createdAt": "2026-10-26T10:30:00+07:00", "createdBy": "Hà Linh",
+      "segments": [
+        { "saleId": "ngoc-anh", "ready": 15, "issued": 15, "activated": 120 },
+        { "saleId": "minh-tuan", "ready": 15, "issued": 15, "activated": 100 },
+        { "saleId": "thu-trang", "ready": 15, "issued": 15, "activated": 30 },
+        { "saleId": null, "issued": 22, "activated": 138 }
+      ]
+    },
+    {
+      "code": "B-2610-003", "label": "Đợt 10/2026", "productId": "POINT_50", "quantity": 300,
+      "expiresAt": "2026-11-30", "createdAt": "2026-10-15T14:00:00+07:00", "createdBy": "Hà Linh",
+      "segments": [
+        { "saleId": "ngoc-anh", "ready": 5, "issued": 5, "activated": 40 },
+        { "saleId": "minh-tuan", "ready": 5, "issued": 5, "activated": 30 },
+        { "saleId": "thu-trang", "ready": 5, "issued": 5, "activated": 30 },
+        { "saleId": null, "issued": 14, "activated": 156 }
+      ]
+    },
+    {
+      "code": "B-2610-001", "label": "Đợt 10/2026", "productId": "POINT_100", "quantity": 1000,
+      "expiresAt": "2026-12-31", "createdAt": "2026-10-02T08:45:00+07:00", "createdBy": "Hà Linh",
+      "segments": [
+        { "saleId": "ngoc-anh", "ready": 28, "issued": 50, "activated": 102 },
+        { "saleId": "minh-tuan", "ready": 40, "issued": 42, "activated": 88 },
+        { "saleId": "thu-trang", "ready": 104, "issued": 58, "activated": 38 },
+        { "saleId": null, "issued": 4, "activated": 446 }
+      ]
+    },
+    {
+      "code": "B-2610-004", "label": "Đợt 10/2026", "productId": "PREMIUM_30D", "quantity": 200,
+      "expiresAt": "2027-03-31", "createdAt": "2026-10-24T10:00:00+07:00", "createdBy": "Hà Linh",
+      "segments": [
+        { "saleId": null, "ready": 60 },
+        { "saleId": "ngoc-anh", "ready": 12, "issued": 8, "activated": 20 },
+        { "saleId": "minh-tuan", "ready": 8, "issued": 6, "activated": 16 },
+        { "saleId": null, "issued": 14, "activated": 56 }
+      ]
+    },
+    {
+      "code": "B-2610-002", "label": "Đợt 10/2026", "productId": "PREMIUM_90D", "quantity": 100,
+      "expiresAt": "2027-03-31", "createdAt": "2026-10-10T10:00:00+07:00", "createdBy": "Hà Linh",
+      "segments": [
+        { "saleId": null, "ready": 20 },
+        { "saleId": "ngoc-anh", "ready": 4, "issued": 6, "activated": 10 },
+        { "saleId": "thu-trang", "ready": 6, "issued": 4, "activated": 8 },
+        { "saleId": null, "issued": 12, "activated": 30 }
+      ]
+    },
+    {
+      "code": "B-2609-002", "label": "Đợt 09/2026", "productId": "POINT_50", "quantity": 700,
+      "expiresAt": "2026-12-31", "createdAt": "2026-09-20T09:00:00+07:00", "createdBy": "Hà Linh",
+      "segments": [
+        { "saleId": null, "ready": 400 },
+        { "saleId": null, "issued": 300 }
+      ]
+    },
+    {
+      "code": "B-2609-001", "label": "Đợt 09/2026", "productId": "POINT_50", "quantity": 800,
+      "expiresAt": "2026-12-31", "createdAt": "2026-09-05T09:00:00+07:00", "createdBy": "Hà Linh",
+      "segments": [
+        { "saleId": null, "ready": 490 },
+        { "saleId": null, "issued": 170 },
+        { "saleId": null, "revoked": 140 }
+      ]
+    }
+  ],
+  "pinnedKeys": [
+    { "batch": "B-2611-001", "saleId": "ngoc-anh", "status": "READY", "code": "IP-3H7N-R2VT-K7MQ" },
+    { "batch": "B-2611-001", "saleId": "ngoc-anh", "status": "ISSUED", "code": "IP-8PDW-5CJX-A2XD",
+      "issuedAt": "2026-10-28T10:05:00+07:00" },
+    { "batch": "B-2611-001", "saleId": "ngoc-anh", "status": "ACTIVATED", "code": "IP-6TQB-2YKF-P9RT",
+      "issuedAt": "2026-10-27T14:20:00+07:00", "activatedAt": "2026-10-27T20:41:00+07:00" },
+    { "batch": "B-2611-001", "saleId": "ngoc-anh", "status": "READY", "code": "IP-9NXE-4MHV-M4WC" },
+    { "batch": "B-2610-003", "saleId": "ngoc-anh", "status": "ISSUED", "code": "IP-5RJA-7WZD-R3FV",
+      "issuedAt": "2026-10-28T08:31:00+07:00" }
+  ]
+}
