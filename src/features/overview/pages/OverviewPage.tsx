@@ -1,29 +1,14 @@
 import React from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { PracticeNavbar } from '@/features/practice/components/PracticeNavbar'
 import { OverviewSidebar } from '../components/OverviewSidebar'
-import { OverviewHeroBanner } from '../components/OverviewHeroBanner'
-import { OverviewActivityCalendar } from '../components/OverviewActivityCalendar'
-import { OverviewGeneralStats } from '../components/OverviewGeneralStats'
-import { OverviewLearningOrbit } from '../components/OverviewLearningOrbit'
-import { OverviewStudyPlanAndAutonomy } from '../components/OverviewStudyPlanAndAutonomy'
-import { OverviewAiRecommendations } from '../components/OverviewAiRecommendations'
+import { OverviewHome } from '../components/OverviewHome'
 import { OverviewDetailedStats } from '../components/OverviewDetailedStats'
 import { ProfileTab } from '@/features/profile/ProfileTab'
-import {
-  MOCK_USER_PROFILE,
-  MOCK_GENERAL_STATS,
-  MOCK_WEEKLY_STREAK,
-  MOCK_ORBIT_SKILLS,
-  MOCK_STUDY_PLAN_TASKS,
-  MOCK_SPACE_AUTONOMY_NODES,
-  MOCK_AI_RECOMMENDATIONS,
-} from '@/mocks/overviewData'
 import type { OverviewSidebarTab } from '@/types/overview'
 import '../overview.css'
 
 export const OverviewPage: React.FC = () => {
-  const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
   const tab = params.get('tab')
   const tabs: OverviewSidebarTab[] = ['overview', 'detailed-stats', 'favorites', 'history', 'orders', 'support', 'profile', 'ranking']
@@ -33,10 +18,6 @@ export const OverviewPage: React.FC = () => {
     next.set('tab', value)
     return next
   })
-
-  const handleStartPractice = () => {
-    navigate('/practice-tests')
-  }
 
   return (
     <div className="overview-page-root">
@@ -54,38 +35,7 @@ export const OverviewPage: React.FC = () => {
 
           {/* Right Main Content */}
           <main className="overview-main-content">
-            {activeSidebarTab === 'overview' && (
-              <div className="overview-flow-sections">
-                {/* Hero Banner (Top Box) */}
-                <OverviewHeroBanner
-                  profile={MOCK_USER_PROFILE}
-                  onContinueStudy={handleStartPractice}
-                />
-
-                {/* Dữ liệu học tổng quan và lịch hoạt động */}
-                <OverviewGeneralStats
-                  stats={MOCK_GENERAL_STATS}
-                />
-
-                <OverviewActivityCalendar streakDays={MOCK_WEEKLY_STREAK} currentStreakDays={MOCK_GENERAL_STATS.currentStreakDays} />
-
-                {/* My Learning Orbit */}
-                <OverviewLearningOrbit skills={MOCK_ORBIT_SKILLS} />
-
-                {/* Study Plan & SPACE Autonomy */}
-                <OverviewStudyPlanAndAutonomy
-                  tasks={MOCK_STUDY_PLAN_TASKS}
-                  autonomyNodes={MOCK_SPACE_AUTONOMY_NODES}
-                  onStartStudy={handleStartPractice}
-                />
-
-                {/* Gợi Ý Ôn Luyện Từ AI */}
-                <OverviewAiRecommendations
-                  recommendations={MOCK_AI_RECOMMENDATIONS}
-                  onAction={() => handleStartPractice()}
-                />
-              </div>
-            )}
+            {activeSidebarTab === 'overview' && <OverviewHome />}
 
             {activeSidebarTab === 'detailed-stats' && (
               <OverviewDetailedStats />

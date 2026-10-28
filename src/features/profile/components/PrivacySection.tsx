@@ -1,15 +1,15 @@
 import React, { useState } from 'react'
-import { Eye, Users, Lock, Check, Loader2 } from 'lucide-react'
-import type { LearnerProfile } from '../api/profileApi'
+import { Eye, Lock, Check, Loader2 } from 'lucide-react'
+import type { LearnerProfile, ProfileVisibilityChoice } from '../api/profileApi'
 
 interface PrivacySectionProps {
   profile: LearnerProfile | null
-  onUpdateVisibility: (visibility: 'PUBLIC' | 'COMMUNITY' | 'PRIVATE') => Promise<unknown>
+  onUpdateVisibility: (visibility: ProfileVisibilityChoice) => Promise<unknown>
   onShowToast: (message: string, tone?: 'success' | 'error' | 'info') => void
 }
 
 interface PrivacyOption {
-  value: 'PUBLIC' | 'COMMUNITY' | 'PRIVATE'
+  value: ProfileVisibilityChoice
   title: string
   description: string
   icon: React.ElementType
@@ -19,14 +19,8 @@ const privacyOptions: PrivacyOption[] = [
   {
     value: 'PUBLIC',
     title: 'Công khai (Public)',
-    description: 'Bất kỳ ai trên Internet đều có thể xem hồ sơ, band điểm và mục tiêu của bạn.',
+    description: 'Các học viên đã đăng nhập trên IeltsPath có thể xem tên, ảnh đại diện, tiểu sử và mục tiêu của bạn.',
     icon: Eye,
-  },
-  {
-    value: 'COMMUNITY',
-    title: 'Cộng đồng (Community)',
-    description: 'Chỉ các học viên đã đăng nhập trên IeltsPath mới có thể xem thông tin hồ sơ của bạn.',
-    icon: Users,
   },
   {
     value: 'PRIVATE',
@@ -44,7 +38,7 @@ export const PrivacySection: React.FC<PrivacySectionProps> = ({
   const currentVisibility = profile?.visibility ?? 'PUBLIC'
   const [updatingValue, setUpdatingValue] = useState<string | null>(null)
 
-  const handleSelectVisibility = async (value: 'PUBLIC' | 'COMMUNITY' | 'PRIVATE') => {
+  const handleSelectVisibility = async (value: ProfileVisibilityChoice) => {
     if (value === currentVisibility || updatingValue !== null) return
     setUpdatingValue(value)
     try {

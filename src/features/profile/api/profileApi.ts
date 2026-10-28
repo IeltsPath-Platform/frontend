@@ -30,6 +30,8 @@ export const learnerProfileSchema = z.object({
   updatedAt: z.string().optional(),
 })
 export type LearnerProfile = z.infer<typeof learnerProfileSchema>
+/** The values the server accepts when saving. A stored profile may still read as COMMUNITY, which cannot be chosen. */
+export type ProfileVisibilityChoice = 'PUBLIC' | 'PRIVATE'
 
 export const learningGoalSchema = z.object({
   id: z.string(),
@@ -128,11 +130,10 @@ export const profileApi = {
 
   updateProfile: async (body: {
     displayName: string
-    avatarReference?: string | null
     bio?: string | null
     selfReportedBand?: number | null
     timezone?: string | null
-    visibility?: 'PUBLIC' | 'COMMUNITY' | 'PRIVATE'
+    visibility?: ProfileVisibilityChoice
   }): Promise<LearnerProfile> => {
     const raw = await apiRequest('/api/users/me/profile', {
       method: 'PUT',

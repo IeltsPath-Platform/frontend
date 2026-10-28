@@ -106,7 +106,7 @@ describe('ProfileTab', () => {
     expect(screen.getByText('Mục tiêu đạt 7.5 IELTS trong năm nay.')).toBeInTheDocument()
   })
 
-  it('preserves existing avatarReference when updating personal info', async () => {
+  it('does not send the avatar when updating personal info, so it cannot be wiped', async () => {
     profileApiMock.updateMe.mockResolvedValue({
       ...mockUser,
       fullName: 'Nguyễn Văn Đạt',
@@ -140,13 +140,11 @@ describe('ProfileTab', () => {
       expect(profileApiMock.updateProfile).toHaveBeenCalled()
     })
 
-    // CRITICAL: verify avatarReference was sent back and NOT wiped!
+    // The server keeps the stored avatar unless upload or delete changes it.
     expect(profileApiMock.updateProfile).toHaveBeenCalledWith(
-      expect.objectContaining({
-        displayName: 'Đạt IELTS',
-        avatarReference: 'https://storage.ieltspath.com/avatars/hoc.png',
-      })
+      expect.objectContaining({ displayName: 'Đạt IELTS' })
     )
+    expect(profileApiMock.updateProfile.mock.calls[0][0]).not.toHaveProperty('avatarReference')
 
     expect(profileApiMock.updateMe).toHaveBeenCalledWith({
       fullName: 'Nguyễn Văn Đạt',

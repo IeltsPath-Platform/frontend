@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { ChevronLeft, ChevronRight, Flame } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import type { DayStreakItem } from '@/types/overview'
+import type { CalendarStatus } from '../overviewViewModel'
+import { OverviewBlockStatus } from './OverviewBlockStatus'
 
 const WEEKDAYS = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'] as const
 
@@ -23,31 +24,35 @@ function monthWeeks(month: Date) {
 }
 
 export function OverviewActivityCalendar({
-  streakDays,
+  statuses,
   currentStreakDays,
+  trackedFrom,
+  loading,
+  error,
+  onRetry,
 }: {
-  streakDays: DayStreakItem[]
-  currentStreakDays: number
+  /** Local year-month-day (no zero padding) to the day's status; untracked days are absent. */
+  statuses: Record<string, CalendarStatus>
+  currentStreakDays: number | null
+  /** First day study time was recorded, if known. */
+  trackedFrom: string | null
+  loading: boolean
+  error: string | null
+  onRetry: () => void
 }) {
   const [today] = useState(() => new Date())
   const [month, setMonth] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1))
   const [selection, setSelection] = useState<{ keys: string[]; label: string } | null>(null)
-  const monday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - (today.getDay() + 6) % 7)
-  // The existing fixture has weekday statuses only; keep it scoped to this week.
-  const statuses = new Map(streakDays.map((item) => {
-    const date = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + WEEKDAYS.indexOf(item.dayLabel))
-    return [dateKey(date), item.status] as const
-  }))
   const weeks = monthWeeks(month)
-  const selectedStatuses = selection?.keys.map((key) => statuses.get(key)) ?? []
+  const selectedStatuses = selection?.keys.map((key) => statuses[key]) ?? []
   const completed = selectedStatuses.filter((status) => status === 'completed').length
   const recorded = selectedStatuses.filter((status) => status !== undefined).length
   const selectionDetail = selection?.keys.length === 1
-    ? selectedStatuses[0] === 'completed' ? 'Đã học — có trong chuỗi tuần này.'
+    ? selectedStatuses[0] === 'completed' ? 'Đã học.'
       : selectedStatuses[0] === 'missed' ? 'Chưa học.'
         : selectedStatuses[0] === 'upcoming' ? 'Ngày học sắp tới.' : 'Chưa có dữ liệu cho ngày này.'
-    : recorded > 0 ? `${completed} ngày đã học / ${recorded} ngày có dữ liệu trong tuần này.`
-      : 'Chưa có dữ liệu cho tuần này.'
+    : recorded > 0 ? `${completed} ngày đã học / ${recorded} ngày có dữ liệu.`
+      : 'Chưa có dữ liệu cho khoảng này.'
 
   function changeMonth(offset: number) {
     setMonth(new Date(month.getFullYear(), month.getMonth() + offset, 1))
@@ -67,7 +72,7 @@ export function OverviewActivityCalendar({
       <div className="activity-calendar-toolbar">
         <span className="activity-streak-summary">
           <span className="activity-flame" aria-hidden="true"><Flame className="size-6" /></span>
-          <span><strong>{currentStreakDays} ngày</strong> giữ chuỗi</span>
+          <span><strong>{currentStreakDays ?? '—'} ngày</strong> giữ chuỗi</span>
         </span>
         <div className="activity-month-controls">
           <Button variant="ghost" size="icon" className="activity-month-arrow" aria-label="Tháng trước" onClick={() => changeMonth(-1)}><ChevronLeft /></Button>
@@ -91,12 +96,12 @@ export function OverviewActivityCalendar({
                     {week.map((date, dayIndex) => {
                       if (!date) return <td key={dayIndex} />
                       const key = dateKey(date)
-                      const isCompleted = statuses.get(key) === 'completed'
+                      const isCompleted = statuses[key] === 'completed'
                       const isToday = key === dateKey(today)
                       const isSelected = selection?.keys.includes(key) ?? false
                       return (
                         <td key={dayIndex}>
-                          <Button variant="ghost" className={`activity-day${isCompleted ? ' activity-day-completed' : ''}${isToday ? ' activity-day-today' : ''}`} aria-pressed={isSelected} aria-current={isToday ? 'date' : undefined} aria-label={`${date.toLocaleDateString('vi-VN')}${isToday ? ', hôm nay' : ''}, ${isCompleted ? 'đã học' : statuses.get(key) === 'missed' ? 'chưa học' : statuses.get(key) === 'upcoming' ? 'sắp tới' : 'chưa có dữ liệu'}`} onClick={() => setSelection({ keys: [key], label: date.toLocaleDateString('vi-VN') })}>
+                          <Button variant="ghost" className={`activity-day${isCompleted ? ' activity-day-completed' : ''}${isToday ? ' activity-day-today' : ''}`} aria-pressed={isSelected} aria-current={isToday ? 'date' : undefined} aria-label={`${date.toLocaleDateString('vi-VN')}${isToday ? ', hôm nay' : ''}, ${isCompleted ? 'đã học' : statuses[key] === 'missed' ? 'chưa học' : statuses[key] === 'upcoming' ? 'sắp tới' : 'chưa có dữ liệu'}`} onClick={() => setSelection({ keys: [key], label: date.toLocaleDateString('vi-VN') })}>
                             <span>{date.getDate()}</span>
                             {isCompleted && <span className="activity-flame activity-day-flame" aria-hidden="true"><Flame className="size-4" /></span>}
                           </Button>
@@ -112,7 +117,10 @@ export function OverviewActivityCalendar({
       <div className="activity-calendar-detail" aria-live="polite">
         {selection ? <><strong>{selection.label}</strong><span>{selectionDetail}</span></> : <span>Chọn một ngày hoặc tuần để xem chi tiết.</span>}
       </div>
-      <p className="activity-calendar-note">Dữ liệu mẫu · Hoạt động minh họa trong tuần hiện tại.</p>
+      <OverviewBlockStatus loading={loading} error={error} onRetry={onRetry} />
+      <p className="activity-calendar-note">
+        {trackedFrom ? `Thời gian học được ghi nhận từ ${new Date(trackedFrom).toLocaleDateString('vi-VN')}; các ngày trước đó chưa có dữ liệu.` : 'Ngày có thời gian học được ghi nhận sẽ hiện ở đây.'}
+      </p>
     </section>
   )
 }
