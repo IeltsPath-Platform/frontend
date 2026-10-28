@@ -10,7 +10,6 @@ const session = vi.hoisted(() => ({ current: { isLoggedIn: true, hydrated: true,
 
 vi.mock('@/features/auth/authSession', () => ({
   useAuthSession: () => session.current,
-  setDemoTier: vi.fn(),
 }))
 
 vi.mock('../api/notebookApi', () => ({

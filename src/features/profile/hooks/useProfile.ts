@@ -4,6 +4,7 @@ import {
   type LearnerProfile,
   type LearningGoal,
   type OAuthIdentity,
+  type ProfileVisibilityChoice,
   type StreakData,
   type UserResponse,
 } from '../api/profileApi'
@@ -126,16 +127,16 @@ export function useProfile() {
     }
 
     // 2. Update /api/users/me/profile
-    // Crucial: preserve current avatarReference and visibility
+    // The avatar is not sent: only upload and delete change it, so editing text cannot lose it.
     let profileError: unknown = null
     try {
       const updatedProfile = await profileApi.updateProfile({
         displayName: input.displayName.trim(),
-        avatarReference: profile?.avatarReference ?? null,
         bio: input.bio?.trim() || null,
         selfReportedBand: input.selfReportedBand ?? null,
         timezone: input.timezone?.trim() || null,
-        visibility: profile?.visibility ?? 'PUBLIC',
+        // A stored COMMUNITY profile cannot be re-sent; leaving the value out keeps it as it is.
+        visibility: profile?.visibility === 'PUBLIC' || profile?.visibility === 'PRIVATE' ? profile.visibility : undefined,
       })
       setProfile(updatedProfile)
       profileUpdated = true
@@ -213,11 +214,10 @@ export function useProfile() {
     }
   }, [])
 
-  const updateVisibility = useCallback(async (visibility: 'PUBLIC' | 'COMMUNITY' | 'PRIVATE'): Promise<LearnerProfile> => {
+  const updateVisibility = useCallback(async (visibility: ProfileVisibilityChoice): Promise<LearnerProfile> => {
     if (!profile) throw new Error('Hồ sơ chưa được tải')
     const updated = await profileApi.updateProfile({
       displayName: profile.displayName,
-      avatarReference: profile.avatarReference,
       bio: profile.bio,
       selfReportedBand: profile.selfReportedBand,
       timezone: profile.timezone,

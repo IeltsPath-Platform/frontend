@@ -18,7 +18,6 @@ vi.mock('../api/notebookApi', () => ({
 
 vi.mock('@/features/auth/authSession', () => ({
   useAuthSession: () => ({ isLoggedIn: true, userName: 'Learner' }),
-  setDemoTier: vi.fn(),
 }))
 
 const MOCK_DETAIL = {
