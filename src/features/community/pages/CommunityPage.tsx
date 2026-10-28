@@ -5,6 +5,7 @@ import { Bookmark, Lightbulb, Plus, Search, Users } from 'lucide-react'
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { OwlHero } from '@/components/OwlHero'
 import { SiteNavbar } from '@/components/SiteNavbar'
+import { useConfirmDialog } from '@/lib/useConfirmDialog'
 import { useAuthSession } from '@/features/auth/authSession'
 import { HttpError } from '@/lib/httpClient'
 import { communityApi, type Comment, type CommunityPost, type PublicProfile } from '../api/communityApi'
@@ -122,6 +123,7 @@ export function CommunityPage() {
   const [hasNext, setHasNext] = useState(true)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const { confirm, confirmDialog } = useConfirmDialog()
   const [composer, setComposer] = useState(false)
   const [composerMediaIntent, setComposerMediaIntent] = useState<'IMAGE' | 'VIDEO' | null>(null)
   const [editingPost, setEditingPost] = useState<CommunityPost | null>(null)
@@ -859,12 +861,13 @@ export function CommunityPage() {
                 setComposer(true)
               }}
               onDeletePost={(id) => {
-                if (window.confirm('Bạn muốn xóa bài viết này?')) {
+                void confirm({ title: 'Xóa bài viết?', message: 'Bạn muốn xóa bài viết này?', confirmLabel: 'Xóa bài viết', tone: 'danger' }).then((confirmed) => {
+                  if (!confirmed) return
                   void communityApi
                     .delete(id)
                     .then(() => setPosts((items) => items.filter((item) => item.id !== id)))
                     .catch(() => setError('Không thể xóa bài viết.'))
-                }
+                })
               }}
               onFollowAuthor={(authorId, following) => {
                 void communityApi
@@ -907,12 +910,13 @@ export function CommunityPage() {
                   onChangeEditedCommentBody={setEditedCommentBody}
                   onSaveCommentEdit={saveCommentEdit}
                   onDeleteComment={(commentId) => {
-                    if (window.confirm('Bạn muốn xóa bình luận này?')) {
+                    void confirm({ title: 'Xóa bình luận?', message: 'Bạn muốn xóa bình luận này?', confirmLabel: 'Xóa bình luận', tone: 'danger' }).then((confirmed) => {
+                      if (!confirmed) return
                       void communityApi
                         .deleteComment(commentId)
                         .then(() => setComments((items) => items.filter((item) => item.id !== commentId)))
                         .catch(() => setError('Không thể xóa bình luận.'))
-                    }
+                    })
                   }}
                   onOpenReplies={openReplies}
                   onOpenReport={setReportTarget}
@@ -1126,6 +1130,8 @@ export function CommunityPage() {
             </section>
           </div>
         )}
+
+        {confirmDialog}
 
         {/* Report Dialog */}
         <ReportDialog

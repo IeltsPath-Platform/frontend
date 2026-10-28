@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@/test/render'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { clearAccessToken, setAccessToken } from '@/lib/httpClient'
@@ -18,7 +18,7 @@ function backend(respond: (request: Request) => Response | Promise<Response>) {
     const request = { path: url.pathname, query: url.searchParams, method: options.method ?? 'GET', body: typeof options.body === 'string' ? JSON.parse(options.body) : options.body }
     requests.push(request)
     if (request.path === '/api/content/admin/packages') return json([])
-    if (request.path === '/api/content/knowledge-tree') return json({ nodes: [], edges: [] })
+    if (request.path === '/api/content/knowledge-tree') return json({ nodes: [{ id: knowledgePointId, code: 'KP_PARAPHRASE', name: 'Nhận diện cách diễn đạt', skill: 'READING', kind: 'SKILL', status: 'ACTIVE', cefrLevel: 'C1' }], edges: [] })
     return respond(request)
   })
 }
@@ -72,7 +72,7 @@ describe('course draft pages through HTTP', () => {
   })
 
   it.each([202, 429])('submits the AI form through HTTP and handles status %i', async (status) => {
-    const body = { bandLevel: 7, skills: ['READING', 'LISTENING'] as ('READING' | 'LISTENING')[], topics: ['Paraphrase', 'Inference'], knowledgePointIds: [], lessonCount: 10, instructions: 'Keep the foundation lessons first.' }
+    const body = { bandLevel: 7, skills: ['READING', 'LISTENING'] as ('READING' | 'LISTENING')[], topics: [], knowledgePointIds: [knowledgePointId], lessonCount: 10, instructions: 'Keep the foundation lessons first.', includePrerequisites: false }
     backend(({ path, method }) => {
       if (path === '/api/content/admin/ai-drafts') return json([])
       if (path === '/api/content/admin/ai-drafts/courses') return status === 429 ? json({ message: 'Quota exceeded', details: { code: 'AI_QUOTA_EXCEEDED' } }, 429) : json(makeCourseDraft({ status: 'QUEUED', request: body, result: null }), 202)
@@ -82,16 +82,20 @@ describe('course draft pages through HTTP', () => {
     show()
     fireEvent.click(screen.getByRole('button', { name: 'Sinh kế hoạch bằng AI' }))
     const form = screen.getByRole('form', { name: 'Sinh bản nháp khóa học' })
-    fireEvent.change(within(form).getByLabelText('Band mục tiêu'), { target: { value: '7' } })
+    fireEvent.click(within(form).getByRole('radio', { name: '7.0' }))
     fireEvent.click(within(form).getByRole('checkbox', { name: 'Nghe' }))
-    fireEvent.change(within(form).getByLabelText(/Chủ đề \(mỗi dòng một chủ đề/), { target: { value: '  Paraphrase  \nInference' } })
+    fireEvent.click(await within(form).findByRole('button', { name: 'Chọn điểm kiến thức' }))
+    const chooser = await screen.findByRole('dialog', { name: 'Chọn điểm kiến thức' })
+    fireEvent.click(within(chooser).getByRole('checkbox', { name: /KP_PARAPHRASE/ }))
+    fireEvent.click(within(chooser).getByRole('button', { name: 'Lưu' }))
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Chọn điểm kiến thức' })).not.toBeInTheDocument())
     fireEvent.change(within(form).getByLabelText('Số bài học'), { target: { value: '10' } })
-    fireEvent.change(within(form).getByLabelText(/Hướng dẫn thêm \(tùy chọn\)/), { target: { value: body.instructions } })
+    fireEvent.change(within(form).getByLabelText(/Hướng dẫn thêm/), { target: { value: body.instructions } })
     fireEvent.submit(form)
     if (status === 429) {
       expect(await screen.findByRole('alert')).toHaveTextContent('Bạn đã dùng hết lượt sinh hôm nay')
       expect(within(form).getByLabelText('Số bài học')).toHaveValue(10)
-      expect(within(form).getByLabelText(/Hướng dẫn thêm \(tùy chọn\)/)).toHaveValue(body.instructions)
+      expect(within(form).getByLabelText(/Hướng dẫn thêm/)).toHaveValue(body.instructions)
     } else {
       expect(await screen.findByRole('heading', { name: 'Bản nháp khóa học' })).toBeInTheDocument()
       expect(screen.getByTestId('location')).toHaveTextContent(`/content-author/course-drafts/${draftId}`)

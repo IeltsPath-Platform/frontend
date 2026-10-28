@@ -1,18 +1,21 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { ArrowDown, ArrowUp, Trash2 } from 'lucide-react'
+import { useAdminConfirm } from '../../lib/useAdminConfirm'
 import { QuestionChooser } from '../../lessons/components/QuestionChooser'
 import { addSectionQuestion, removeSectionQuestion, reorderSectionQuestions } from '../api/packageApi'
 import type { PackageSection, PackageType } from '../types'
+import { useAdminError } from '../../lib/useAdminError'
 
 export function SectionQuestionsEditor({ packageId, versionId, section, packageType, disabled, onSaved, onMutate }: {
   packageId: string; versionId: string; section: PackageSection; packageType: PackageType; disabled: boolean; onSaved: () => void
   onMutate: (action: () => Promise<unknown>, message: string) => Promise<boolean>
 }) {
+  const { confirm, confirmDialog } = useAdminConfirm()
   const [selected, setSelected] = useState<string[]>([])
   const [maxScore, setMaxScore] = useState('1')
   const [choosing, setChoosing] = useState(false)
   const [pending, setPending] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [, setError] = useAdminError()
   const mounted = useRef(true)
   useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [section.id, versionId])
   const purpose = packageType === 'MOCK_TEST' || packageType === 'PRACTICE_TEST' ? 'EXAM' : packageType === 'PLACEMENT_TEST' ? 'PLACEMENT' : 'LEARNING'
@@ -47,8 +50,8 @@ export function SectionQuestionsEditor({ packageId, versionId, section, packageT
   }
 
   return <section className="adm-package-questions" aria-label={`Câu hỏi của ${section.title}`}>
+    {confirmDialog}
     <h4>Câu hỏi ({questions.length})</h4>
-    {error ? <div className="adm-alert adm-alert--error" role="alert">{error}</div> : null}
     {!questions.length ? <p className="adm-muted">Phần chưa có câu hỏi.</p> : null}
     <ol className="adm-package-question-list">{questions.map((question, index) => <li key={question.id}>
       <p className="adm-package-question-stem">{question.stem || `Phiên bản ${question.questionVersionId}`}</p>
@@ -58,10 +61,16 @@ export function SectionQuestionsEditor({ packageId, versionId, section, packageT
       <div className="adm-package-actions">
         <button className="adm-btn" type="button" disabled={locked || index === 0} aria-label={`Đưa câu ${index + 1} lên`} onClick={() => move(index, -1)}><ArrowUp aria-hidden="true" size={16} /></button>
         <button className="adm-btn" type="button" disabled={locked || index === questions.length - 1} aria-label={`Đưa câu ${index + 1} xuống`} onClick={() => move(index, 1)}><ArrowDown aria-hidden="true" size={16} /></button>
-        <button className="adm-btn adm-btn--danger" type="button" disabled={locked} aria-label={`Gỡ câu ${index + 1}`} onClick={() => {
-          if (locked || !window.confirm(`Gỡ câu ${index + 1} khỏi phần này? Câu hỏi trong ngân hàng vẫn được giữ lại.`)) return
-          void mutate(() => removeSectionQuestion(packageId, versionId, section.id, question.id), 'Đã gỡ câu hỏi.')
-        }}><Trash2 aria-hidden="true" size={16} /> Gỡ</button>
+        <button className="adm-btn adm-btn--danger" type="button" disabled={locked} aria-label={`Gỡ câu ${index + 1}`} onClick={() => void (async () => {
+          if (locked) return
+          if (!(await confirm({
+            title: 'Gỡ câu hỏi khỏi phần này?',
+            message: `Gỡ câu ${index + 1}? Câu hỏi trong ngân hàng vẫn được giữ lại.`,
+            confirmLabel: 'Gỡ câu',
+            tone: 'danger',
+          }))) return
+          await mutate(() => removeSectionQuestion(packageId, versionId, section.id, question.id), 'Đã gỡ câu hỏi.')
+        })()}><Trash2 aria-hidden="true" size={16} /> Gỡ</button>
       </div>
     </li>)}</ol>
     {!choosing ? <button className="adm-btn" type="button" disabled={locked} onClick={() => setChoosing(true)}>Thêm câu hỏi</button> : <form aria-label={`Thêm câu hỏi vào ${section.title}`} noValidate onSubmit={add}>

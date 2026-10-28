@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Plus } from 'lucide-react'
 import { useAdminSearch } from '../../adminSearch'
+import { AdminDrawer } from '../../components/AdminLayer'
 import { AdminEmpty, AdminError, AdminLoading } from '../../components/AdminState'
 import { useAdminResource } from '../../lib/useAdminResource'
 import { AdminPage } from '../../pages/AdminPage'
@@ -11,6 +12,7 @@ import {
 } from '../lib/labels'
 import { PUBLICATION_STATUSES, PURPOSES, QUESTION_TYPES, SKILLS } from '../types'
 import '../questions.css'
+import { useAdminError } from '../../lib/useAdminError'
 
 const PAGE_SIZE = 25
 
@@ -20,7 +22,7 @@ function CreateQuestionPanel({ onDone }: { onDone: () => void }) {
   const [skill, setSkill] = useState<string>('READING')
   const [purpose, setPurpose] = useState<string>('LEARNING')
   const [accessLevel, setAccessLevel] = useState('FREE')
-  const [error, setError] = useState<string | null>(null)
+  const [, setError] = useAdminError()
   const [saving, setSaving] = useState(false)
 
   async function submit(event: FormEvent) {
@@ -37,9 +39,7 @@ function CreateQuestionPanel({ onDone }: { onDone: () => void }) {
   }
 
   return (
-    <form className="adm-card qb-create" onSubmit={(event) => void submit(event)}>
-      <h2>Câu hỏi mới</h2>
-      {error ? <div className="adm-alert adm-alert--error" role="alert">{error}</div> : null}
+    <form aria-label="Câu hỏi mới" onSubmit={(event) => void submit(event)}>
       <div className="adm-filters">
         <label className="adm-field">
           <span>Dạng câu hỏi</span>
@@ -67,9 +67,9 @@ function CreateQuestionPanel({ onDone }: { onDone: () => void }) {
           </select>
         </label>
       </div>
-      <div className="qb-form__actions">
-        <button className="adm-btn adm-btn--primary" disabled={saving} type="submit">{saving ? 'Đang tạo…' : 'Tạo và thêm phiên bản'}</button>
+      <div className="adm-form-footer">
         <button className="adm-btn" disabled={saving} onClick={onDone} type="button">Hủy</button>
+        <button className="adm-btn adm-btn--primary" disabled={saving} type="submit">{saving ? 'Đang tạo…' : 'Tạo và thêm phiên bản'}</button>
       </div>
     </form>
   )
@@ -99,14 +99,16 @@ export function QuestionBankPage() {
   return (
     <AdminPage
         actions={
-          <button className="adm-btn adm-btn--primary" onClick={() => setCreating((open) => !open)} type="button">
+          <button className="adm-btn adm-btn--primary" onClick={() => setCreating(true)} type="button">
             <Plus aria-hidden="true" size={16} /> Câu hỏi mới
           </button>
         }
         subtitle="Tạo câu hỏi, thêm phiên bản, rồi xuất bản để bài học dùng được. Câu chưa xuất bản không bao giờ tới học viên."
         title="Ngân hàng câu hỏi">
 
-      {creating ? <CreateQuestionPanel onDone={() => setCreating(false)} /> : null}
+      {creating ? <AdminDrawer title="Câu hỏi mới" onClose={() => setCreating(false)}>
+        {(close) => <CreateQuestionPanel onDone={close} />}
+      </AdminDrawer> : null}
 
       <div className="adm-filters">
         <label className="adm-field">
@@ -145,6 +147,7 @@ export function QuestionBankPage() {
               <caption className="adm-sr-only">Danh sách câu hỏi</caption>
               <thead>
                 <tr>
+                  <th className="adm-stt" scope="col">STT</th>
                   <th scope="col">Mã</th>
                   <th scope="col">Dạng</th>
                   <th scope="col">Kỹ năng</th>
@@ -154,8 +157,9 @@ export function QuestionBankPage() {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((question) => (
+                {rows.map((question, index) => (
                   <tr key={question.id}>
+                    <td className="adm-stt">{(list.data?.page ?? 0) * PAGE_SIZE + index + 1}</td>
                     <td><Link className="qb-link" to={`/content-author/questions/${question.id}`}>{question.id.slice(0, 8)}…</Link></td>
                     <td>{TYPE_LABEL[question.questionType] ?? question.questionType}</td>
                     <td>{question.skill ? SKILL_LABEL[question.skill] ?? question.skill : '—'}</td>

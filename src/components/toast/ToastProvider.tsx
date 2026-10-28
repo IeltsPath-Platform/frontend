@@ -22,11 +22,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const nextId = useRef(0)
   const regionRef = useRef<HTMLDivElement>(null)
 
-  // The site header is sticky and its height changes with the sub-navigation row, so the region is
+  // The site header (or the admin top bar) is sticky and its height changes with the sub-navigation row, so the region is
   // placed under it at the moment a toast opens (and again on resize) instead of covering it.
   const placeBelowHeader = useCallback(() => {
     const region = regionRef.current
-    const header = document.querySelector<HTMLElement>('.site-main-header')
+    const header = document.querySelector<HTMLElement>('.site-main-header, .adm-topbar')
     if (!region || !header) return
     const bottom = Math.round(header.getBoundingClientRect().bottom)
     region.style.top = `${Math.max(MIN_TOP_PX, bottom + HEADER_GAP_PX)}px`

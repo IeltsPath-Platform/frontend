@@ -1,6 +1,6 @@
 .adm-error-fields { min-width: 0; border: 0; margin: 0; padding: 0; }
 .adm-error-fields .adm-input, .adm-error-fields .adm-select, .adm-error-fields .adm-textarea { font-size: 1rem; }
-.adm-error-form { max-width: 860px; margin-bottom: 20px; }
+.adm-error-form { max-width: 860px; }
 .adm-error-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .adm-error-actions .adm-btn { min-height: 44px; }
 .adm-error-form .qb-kp { min-width: 0; }

@@ -19,7 +19,7 @@ const MIN_ATTEMPTS = 20
 
 const GRAPH = '/content-author/knowledge-graph'
 const QUESTIONS = '/content-author/questions'
-const LESSONS = '/content-author/lessons'
+const COURSES = '/content-author/courses'
 
 /** One block of the page: its own loading, error and empty states, so a failing source never blanks the rest. */
 function Block<T>({ title, to, toLabel, resource, empty, children }: {
@@ -133,7 +133,7 @@ function ContentCharts({ data }: { data: ContentOverview }) {
       >
         {lessonSlices ? (
           <>
-            <p className="ov-figure"><Link to={LESSONS}><strong>{formatCount(lessonTotal)}</strong> bài học</Link></p>
+            <p className="ov-figure"><Link to={COURSES}><strong>{formatCount(lessonTotal)}</strong> bài học</Link></p>
             <StackedBar slices={lessonSlices} summary={`Bài học theo trạng thái: ${lessonSlices.map((slice) => `${slice.label} ${slice.value}`).join(', ')}`} />
           </>
         ) : unknown}

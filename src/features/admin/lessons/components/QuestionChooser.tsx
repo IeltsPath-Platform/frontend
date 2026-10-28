@@ -6,6 +6,7 @@ import { getQuestion, listQuestions } from '../../questions/api/questionApi'
 import { SKILL_LABEL, TYPE_LABEL } from '../../questions/lib/labels'
 import { SKILLS } from '../../questions/types'
 import type { LessonBlock } from '../types'
+import { useAdminError } from '../../lib/useAdminError'
 
 export interface QuestionChooserProps {
   value: string[]
@@ -13,13 +14,15 @@ export interface QuestionChooserProps {
   /** The questions the block already has, so their text can be shown without another call. */
   known: LessonBlock['questions']
   purpose?: 'LEARNING' | 'EXAM' | 'PLACEMENT'
+  /** The owner already lists what is picked, so only the pool to choose from is shown. */
+  hideSelected?: boolean
 }
 
 /** Chooses the questions of an exercise block from the published learning questions of the bank. */
-export function QuestionChooser({ value, onChange, known, purpose = 'LEARNING' }: QuestionChooserProps) {
+export function QuestionChooser({ value, onChange, known, purpose = 'LEARNING', hideSelected = false }: QuestionChooserProps) {
   const [skill, setSkill] = useState('')
   const [previews, setPreviews] = useState<Record<string, string>>({})
-  const [previewError, setPreviewError] = useState<string | null>(null)
+  const [, setPreviewError] = useAdminError()
   const list = useAdminResource(`exercise-questions|${purpose}|${skill}`, (signal) =>
     listQuestions({ status: 'PUBLISHED', purpose, skill, size: 100 }, signal))
 
@@ -49,6 +52,7 @@ export function QuestionChooser({ value, onChange, known, purpose = 'LEARNING' }
 
   return (
     <div className="ls-questions">
+      {hideSelected ? null : <>
       <h4>Câu hỏi đã chọn ({value.length})</h4>
       {value.length === 0 ? <p className="adm-muted">Chưa chọn câu hỏi nào.</p> : null}
       <ol>
@@ -62,6 +66,7 @@ export function QuestionChooser({ value, onChange, known, purpose = 'LEARNING' }
           )
         })}
       </ol>
+      </>}
 
       <label className="adm-field">
         <span>Lọc kỹ năng</span>
@@ -73,7 +78,6 @@ export function QuestionChooser({ value, onChange, known, purpose = 'LEARNING' }
 
       {list.status === 'loading' ? <AdminLoading label="Đang tải câu hỏi đã xuất bản…" /> : null}
       {list.status === 'error' ? <AdminError message={list.error ?? 'Không tải được câu hỏi.'} onRetry={list.reload} /> : null}
-      {previewError ? <div className="adm-alert adm-alert--error" role="alert">{previewError}</div> : null}
       {list.status === 'success' && questions.length === 0 ? (
         <p className="adm-muted">Chưa có câu hỏi đã xuất bản dành cho bài học. Xuất bản câu hỏi ở mục Ngân hàng câu hỏi trước.</p>
       ) : null}

@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { questionDraftItemPatchSchema, type QuestionDraftItem, type QuestionDraftItemPatch } from '../types'
+import { useAdminError } from '../../lib/useAdminError'
 
 export function QuestionDraftItemEditor({ item, index, disabled, onSave, onCancel }: {
   item: QuestionDraftItem; index: number; disabled: boolean
@@ -13,7 +14,7 @@ export function QuestionDraftItemEditor({ item, index, disabled, onSave, onCance
   })))
   const [correct, setCorrect] = useState(item.answerSpec.type === 'CHOICE' ? item.answerSpec.correct : '')
   const [accepted, setAccepted] = useState(item.answerSpec.type === 'FILL' ? item.answerSpec.accepted.join('\n') : '')
-  const [error, setError] = useState<string | null>(null)
+  const [, setError] = useAdminError()
   const choice = item.answerSpec.type === 'CHOICE'
 
   async function submit(event: FormEvent) {
@@ -37,7 +38,6 @@ export function QuestionDraftItemEditor({ item, index, disabled, onSave, onCance
 
   return <form className="adm-card" aria-label={`Sửa câu ${index + 1}`} noValidate onSubmit={(event) => void submit(event)}>
     <h3>Sửa câu {index + 1}</h3>
-    {error ? <div className="adm-alert adm-alert--error" role="alert">{error}</div> : null}
     <fieldset className="adm-draft-fields" disabled={disabled}>
       <label className="adm-field"><span>Nội dung câu hỏi</span><textarea className="adm-textarea" maxLength={4000} value={stem} onChange={(event) => setStem(event.target.value)} /></label>
       {choice ? <>

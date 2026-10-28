@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { AdminDrawer } from '../../components/AdminLayer'
 import { AdminEmpty, AdminError, AdminLoading } from '../../components/AdminState'
 import { useAdminResource } from '../../lib/useAdminResource'
 import { AdminPage } from '../../pages/AdminPage'
@@ -48,7 +49,9 @@ function TaskRubrics({ task }: { task: WritingTask }) {
       {drafts.status === 'success' && !drafts.data?.length ? <AdminEmpty title="Chưa có bản nháp">Tạo bản nháp từ rubric đang dùng để giữ nguyên nội dung gốc.</AdminEmpty> : null}
       <ul>{drafts.data?.map((rubric) => <li key={`${rubric.code}-${rubric.version}`}><span>{rubric.code} · Phiên bản {rubric.version}</span><button className="adm-btn" type="button" disabled={!!editing} onClick={() => setEditing({ body: rubricRequest(rubric), persisted: true })}>Sửa bản nháp {rubric.version}</button></li>)}</ul>
     </section>
-    {editing ? <RubricEditor key={`${editing.body.code}-${editing.body.version}`} initial={editing.body} persisted={editing.persisted} onSaved={reload} onCancel={() => setEditing(null)} onActivated={() => { setEditing(null); setNotice('Đã kích hoạt rubric.'); reload() }} /> : null}
+    {editing ? <AdminDrawer title={`${editing.body.code} · Bản nháp ${editing.body.version}`} size="lg" onClose={() => setEditing(null)}>
+      {(close) => <RubricEditor key={`${editing.body.code}-${editing.body.version}`} initial={editing.body} persisted={editing.persisted} onSaved={reload} onCancel={close} onActivated={() => { setNotice('Đã kích hoạt rubric.'); reload(); close() }} />}
+    </AdminDrawer> : null}
   </>
 }
 

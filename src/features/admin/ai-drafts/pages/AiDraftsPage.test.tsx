@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@/test/render'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { HttpError } from '@/lib/httpClient'
@@ -69,7 +69,8 @@ describe('AiDraftsPage', () => {
     await settle()
     await act(async () => { await vi.advanceTimersByTimeAsync(5000) })
     expect(screen.getByRole('link', { name: `Bản nháp câu hỏi · ${draftId}` })).toBeInTheDocument()
-    expect(screen.getByText('Đang cập nhật danh sách…')).toBeInTheDocument()
+    // A poll refreshes behind the list: no loading line, and the list itself never goes away.
+    expect(screen.queryByText('Đang cập nhật danh sách…')).not.toBeInTheDocument()
     await act(async () => resolve([makeDraft({ status: 'GENERATING', result: null })]))
     view.unmount()
     await act(async () => { await vi.advanceTimersByTimeAsync(10000) })

@@ -9,7 +9,7 @@ function Issues({ items }: { items: readonly CourseAnalysisIssue[] }) {
 export function CourseAnalysisPanel({ analysis, unmatchedTopics = [], warnings = [], questionDraftsEnabled = false }: {
   analysis: CourseAnalysis; unmatchedTopics?: string[]; warnings?: Array<{ code: string; subject: string | null }>; questionDraftsEnabled?: boolean
 }) {
-  return <section className="adm-card adm-course-draft-analysis" aria-label="Phân tích khóa học">
+  return <section className="adm-block adm-course-draft-analysis" aria-label="Phân tích khóa học">
     <h2>Phân tích khóa học</h2>
     <p>Đã phủ {analysis.coverage.covered}/{analysis.coverage.expected} điểm kiến thức cần có.</p>
     <section aria-label="Lỗi chặn duyệt"><h3>Lỗi chặn duyệt ({analysis.errors.length})</h3>

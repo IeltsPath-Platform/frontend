@@ -1,9 +1,12 @@
 import { apiRequest } from '@/lib/httpClient'
+import { z } from 'zod'
 import {
   questionDetailSchema,
   questionPageSchema,
+  questionPassageSchema,
   questionSchema,
   type Question,
+  type QuestionPassage,
   type QuestionDetail,
   type QuestionFilters,
   type QuestionPage,
@@ -23,6 +26,11 @@ export async function listQuestions(filters: QuestionFilters, signal?: AbortSign
 
 export async function getQuestion(id: string, signal?: AbortSignal): Promise<QuestionDetail> {
   return questionDetailSchema.parse(await apiRequest<unknown>(`${BASE}/${id}`, { auth: true, signal }))
+}
+
+/** The reading passages that go with one version of a question (empty when it has none). */
+export async function listVersionPassages(versionId: string, signal?: AbortSignal): Promise<QuestionPassage[]> {
+  return z.array(questionPassageSchema).parse(await apiRequest<unknown>(`${BASE}/versions/${versionId}/passages`, { auth: true, signal }))
 }
 
 export interface CreateQuestionInput {

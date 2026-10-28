@@ -1,4 +1,5 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@/test/render'
+import { answerConfirm } from '@/test/confirm'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { clearAccessToken, setAccessToken } from '@/lib/httpClient'
@@ -135,7 +136,6 @@ describe('package authoring through HTTP', () => {
       if (path === `${sectionBase}/questions/${linkId}` && method === 'DELETE') { current.questions = current.questions.filter((question) => question.id !== linkId); return json(null, 204) }
       throw new Error(`Unexpected request ${method} ${path}`)
     })
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
     show()
     const passage = await screen.findByLabelText('Nội dung đoạn văn')
     fireEvent.change(passage, { target: { value: '  Passage saved through HTTP.  ' } })
@@ -160,6 +160,7 @@ describe('package authoring through HTTP', () => {
     expect(requests.find((request) => request.path === `${sectionBase}/questions/order`)!.body).toEqual({ sectionQuestionIds: [linkId, current.questions.find((question) => question.id !== linkId)!.id] })
     await waitFor(() => expect(screen.getByRole('button', { name: 'Gỡ câu 1' })).toBeEnabled())
     fireEvent.click(screen.getByRole('button', { name: 'Gỡ câu 1' }))
+    await answerConfirm(true)
     await waitFor(() => expect(screen.queryByText('A second question from the bank')).not.toBeInTheDocument())
     expect(requests.filter((request) => request.path === `${sectionBase}/questions/${linkId}` && request.method === 'DELETE')).toHaveLength(1)
   })
@@ -170,7 +171,6 @@ describe('package authoring through HTTP', () => {
     const version = pkg.versions[1]!
     const questionVersionId = version.sections[0]!.questions[0]!.questionVersionId
     let publishAt: string | null = null
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
     backend(({ path, method, body }) => {
       if (path === base && method === 'GET') return json(pkg)
       if (path === `${base}/publication-schedules`) return json(publishAt ? [{ packageId, versionId: draftId, publishAt, lastPublishError: null }] : [])
@@ -205,10 +205,11 @@ describe('package authoring through HTTP', () => {
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Hủy lịch' })).not.toBeInTheDocument())
     await waitFor(() => expect(screen.getByRole('button', { name: 'Xuất bản ngay' })).toBeEnabled())
     fireEvent.click(screen.getByRole('button', { name: 'Xuất bản ngay' }))
-    expect(confirm).toHaveBeenLastCalledWith(expect.stringContaining('học viên thi lại sẽ có thể nhận đề này'))
+    const popup = await answerConfirm(false)
+    expect(popup).toHaveTextContent('học viên thi lại sẽ có thể nhận đề này')
     expect(requests.filter((request) => request.path.endsWith('/publish'))).toHaveLength(0)
-    confirm.mockReturnValue(true)
     fireEvent.click(screen.getByRole('button', { name: 'Xuất bản ngay' }))
+    await answerConfirm(true)
     expect(await screen.findByRole('heading', { name: 'Bản 2 · Đã xuất bản' })).toBeInTheDocument()
     expect(requests.filter((request) => request.path.endsWith('/publish'))).toHaveLength(1)
     expect(requests.find((request) => request.path.endsWith('/publish'))!.body).toEqual({ versionId: draftId })
@@ -237,7 +238,6 @@ describe('package authoring through HTTP', () => {
   })
 
   it('translates publication validation failures and leaves the draft editable without retrying', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
     backend(({ path, method }) => {
       if (path === base && method === 'GET') return json(makePackage())
       if (path === `${base}/publication-schedules`) return json([{ packageId, versionId: draftId, publishAt: null, lastPublishError: 'QUESTION_ALREADY_USED' }])
@@ -248,6 +248,7 @@ describe('package authoring through HTTP', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: 'Xuất bản ngay' })).toBeEnabled())
     expect(screen.getByText('Có câu đã thuộc một đề khác đã xuất bản')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Xuất bản ngay' }))
+    await answerConfirm(true)
     expect(await screen.findByRole('alert')).toHaveTextContent('Có câu sai mục đích với loại đề')
     expect(screen.getByRole('button', { name: 'Sửa Reading One' })).toBeEnabled()
     expect(requests.filter((request) => request.path.endsWith('/publish'))).toHaveLength(1)

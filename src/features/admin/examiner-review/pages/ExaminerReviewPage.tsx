@@ -8,6 +8,7 @@ import { REVIEW_PAGE_SIZE, claimReview, listExaminerQuality, listMyReviews, list
 import { QUALITY_NOTE, byDifference, percentText, shortId, sourceLabel, taskLabel, waitText } from '../lib/reviewLabels'
 import type { QueueEntry } from '../types'
 import '../examiner-review.css'
+import { useAdminError } from '../../lib/useAdminError'
 
 type Tab = 'queue' | 'mine' | 'quality'
 const TAB_LABEL: Record<Tab, string> = { queue: 'Bài chờ chấm lại', mine: 'Bài tôi đang chấm', quality: 'Chất lượng giám khảo' }
@@ -16,10 +17,11 @@ function QueueTable({ entries, action }: { entries: QueueEntry[]; action: (entry
   return (
     <div className="adm-table-wrap">
       <table className="adm-table">
-        <thead><tr><th>Task</th><th>Nguồn bài</th><th>Thời gian chờ</th><th /></tr></thead>
+        <thead><tr><th className="adm-stt" scope="col">STT</th><th>Task</th><th>Nguồn bài</th><th>Thời gian chờ</th><th /></tr></thead>
         <tbody>
-          {entries.map((entry) => (
+          {entries.map((entry, index) => (
             <tr key={entry.id}>
+              <td className="adm-stt">{index + 1}</td>
               <td>{taskLabel(entry.task)}</td>
               <td>{sourceLabel(entry)}</td>
               <td>{waitText(entry.waitSeconds)}{entry.overdue ? <> <span className="adm-badge adm-badge--danger">Quá 48 giờ</span></> : null}</td>
@@ -53,10 +55,11 @@ function Quality() {
       <p className="adm-muted">{QUALITY_NOTE}</p>
       <div className="adm-table-wrap">
         <table className="adm-table">
-          <thead><tr><th>Giám khảo</th><th>Số bài đã chấm lại</th><th>Lệch trung bình (band)</th><th>Bài lệch hơn 1 band</th></tr></thead>
+          <thead><tr><th className="adm-stt" scope="col">STT</th><th>Giám khảo</th><th>Số bài đã chấm lại</th><th>Lệch trung bình (band)</th><th>Bài lệch hơn 1 band</th></tr></thead>
           <tbody>
-            {rows.map((row) => (
+            {rows.map((row, index) => (
               <tr key={row.examinerId}>
+                <td className="adm-stt">{index + 1}</td>
                 <td>{row.examinerName || shortId(row.examinerId)}</td>
                 <td>{row.reviewedEssays}</td>
                 <td>{row.averageAbsoluteBandDifference.toLocaleString('vi-VN', { maximumFractionDigits: 2 })}</td>
@@ -73,7 +76,7 @@ function Quality() {
 function Queue({ mine }: { mine: boolean }) {
   const [page, setPage] = useState(0)
   const [busy, setBusy] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [, setError] = useAdminError()
   const navigate = useNavigate()
   const list = useAdminResource(`examiner-review:${mine ? 'mine' : 'queue'}:${page}`, (signal) => (mine ? listMyReviews(page, signal) : listReviewQueue(page, signal)))
 
@@ -95,7 +98,6 @@ function Queue({ mine }: { mine: boolean }) {
   const data = list.data!
   return (
     <>
-      {error ? <p className="adm-alert adm-alert--error" role="alert">{error}</p> : null}
       {data.content.length === 0 ? <AdminEmpty title={mine ? 'Bạn chưa nhận bài nào' : 'Chưa có bài chờ chấm lại'} /> : (
         <QueueTable
           entries={data.content}

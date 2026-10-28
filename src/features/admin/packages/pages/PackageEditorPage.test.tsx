@@ -1,4 +1,5 @@
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@/test/render'
+import { answerConfirm } from '@/test/confirm'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { HttpError } from '@/lib/httpClient'
@@ -149,14 +150,14 @@ describe('PackageEditorPage', () => {
     expect(api.getPackage).toHaveBeenCalledTimes(1)
   })
   it('requires confirmation before deleting and reloads the package after deletion', async () => {
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
     show()
     const button = await screen.findByRole('button', { name: 'Xóa Reading One' })
     fireEvent.click(button)
-    expect(confirm).toHaveBeenCalledWith(expect.stringContaining('tài nguyên gốc được giữ lại'))
+    const popup = await answerConfirm(false)
+    expect(popup).toHaveTextContent('tài nguyên gốc được giữ lại')
     expect(api.deleteSection).not.toHaveBeenCalled()
-    confirm.mockReturnValue(true)
     fireEvent.click(button)
+    await answerConfirm(true)
     await waitFor(() => expect(api.deleteSection).toHaveBeenCalledExactlyOnceWith(packageId, draftId, sectionId))
     await waitFor(() => expect(api.getPackage).toHaveBeenCalledTimes(2))
   })

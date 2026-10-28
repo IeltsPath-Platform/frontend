@@ -1,5 +1,7 @@
 import { useId, useState, type FormEvent } from 'react'
-import { ArrowDown, ArrowUp, ExternalLink, Pencil, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, ExternalLink, Pencil, Plus, Trash2 } from 'lucide-react'
+import { AdminDrawer } from '../../components/AdminLayer'
+import { useAdminConfirm } from '../../lib/useAdminConfirm'
 import { AdminEmpty, AdminError, AdminLoading } from '../../components/AdminState'
 import { adminErrorMessage } from '../../lib/adminErrors'
 import { useAdminResource } from '../../lib/useAdminResource'
@@ -7,6 +9,7 @@ import { createLessonResource, deleteLessonResource, fetchLessonResources, reord
 import { moveId } from '../lib/blockForm'
 import { RESOURCE_REORDER_ENABLED } from '../lib/resource-reorder'
 import type { LessonResource, LessonResourceRequest, LessonResources, LessonResourceType } from '../types'
+import { useAdminError } from '../../lib/useAdminError'
 
 function httpsUrl(value: string) {
   try { return new URL(value).protocol === 'https:' } catch { return false }
@@ -16,6 +19,7 @@ function ResourceForm({ item, type, busy, onSave, onCancel }: {
   item?: LessonResource
   type: LessonResourceType
   busy: boolean
+  /** A failed save is shown here, in the drawer, because the page behind it is covered. */
   onSave: (body: Pick<LessonResourceRequest, 'title' | 'url'>) => Promise<boolean>
   onCancel?: () => void
 }) {
@@ -37,7 +41,6 @@ function ResourceForm({ item, type, busy, onSave, onCancel }: {
   return (
     <form aria-label={`${item ? 'Sửa' : 'Thêm'} ${label}`} noValidate onSubmit={(event) => void submit(event)}>
       <fieldset className="adm-resource-fields" disabled={busy}>
-        <legend>{item ? 'Sửa' : 'Thêm'} {label}</legend>
         <label className="adm-field">
           <span>Tiêu đề {label}</span>
           <input className="adm-input" maxLength={255} required value={title} onChange={(event) => setTitle(event.target.value)} aria-invalid={submitted && !title.trim()} />
@@ -49,25 +52,29 @@ function ResourceForm({ item, type, busy, onSave, onCancel }: {
           {invalidUrl ? <small id={`${id}-url-error`} role="alert">Nhập đường dẫn HTTPS hợp lệ.</small> : null}
         </label>
         {type === 'SLIDE' ? <p className="adm-muted">Dán link Google Slides dạng …/embed. Bật quyền xem hoặc xuất bản lên web để học viên mở được.</p> : null}
-        <div className="adm-resource-actions">
-          <button className="adm-btn adm-btn--primary" type="submit">{busy ? 'Đang lưu…' : item ? 'Lưu thay đổi' : `Thêm ${label}`}</button>
+        <div className="adm-form-footer">
           {onCancel ? <button className="adm-btn" type="button" onClick={onCancel}>Hủy</button> : null}
+          <button className="adm-btn adm-btn--primary" type="submit">{busy ? 'Đang lưu…' : item ? 'Lưu thay đổi' : `Thêm ${label}`}</button>
         </div>
       </fieldset>
     </form>
   )
 }
 
-function ResourceList({ lessonId, type, items, reload, busy, run }: {
+function ResourceList({ lessonId, type, items, reload, busy, clearError, run }: {
   lessonId: string
   type: LessonResourceType
   items: LessonResource[]
   reload: () => void
   busy: boolean
+  clearError: () => void
   run: (action: () => Promise<unknown>) => Promise<boolean>
 }) {
+  const { confirm, confirmDialog } = useAdminConfirm()
   const [editing, setEditing] = useState<string | null>(null)
+  const [adding, setAdding] = useState(false)
   const label = type === 'SLIDE' ? 'Slide' : 'Tài liệu'
+  const editingItem = editing ? items.find((item) => item.id === editing) : undefined
   const ordered = [...items].sort((a, b) => a.sortOrder - b.sortOrder)
   async function move(id: string, delta: -1 | 1) {
     const index = ordered.findIndex((item) => item.id === id)
@@ -87,13 +94,7 @@ function ResourceList({ lessonId, type, items, reload, busy, run }: {
       <ol>
         {ordered.map((item, index) => (
           <li key={item.id}>
-            {editing === item.id ? (
-              <ResourceForm item={item} type={type} busy={busy} onCancel={() => setEditing(null)} onSave={(body) => run(async () => {
-                await updateLessonResource(lessonId, item.id, { ...body, sortOrder: item.sortOrder })
-                setEditing(null)
-                reload()
-              })} />
-            ) : <>
+            <>
               <div className="adm-resource-head">
                 <div className="adm-resource-link">
                   <strong>{item.title}</strong>
@@ -102,21 +103,45 @@ function ResourceList({ lessonId, type, items, reload, busy, run }: {
                 <div className="adm-resource-actions">
                   <button className="adm-btn" type="button" disabled={!RESOURCE_REORDER_ENABLED || busy || index === 0} aria-label={`Đưa ${item.title} lên`} title={RESOURCE_REORDER_ENABLED ? undefined : 'Chờ API đổi thứ tự'} onClick={() => void move(item.id, -1)}><ArrowUp aria-hidden="true" size={16} /></button>
                   <button className="adm-btn" type="button" disabled={!RESOURCE_REORDER_ENABLED || busy || index === ordered.length - 1} aria-label={`Đưa ${item.title} xuống`} title={RESOURCE_REORDER_ENABLED ? undefined : 'Chờ API đổi thứ tự'} onClick={() => void move(item.id, 1)}><ArrowDown aria-hidden="true" size={16} /></button>
-                  <button className="adm-btn" type="button" disabled={busy} aria-label={`Sửa ${item.title}`} onClick={() => setEditing(item.id)}><Pencil aria-hidden="true" size={16} /> Sửa</button>
-                  <button className="adm-btn adm-btn--danger" type="button" disabled={busy} aria-label={`Xóa ${item.title}`} onClick={() => {
-                    if (window.confirm(`Xóa ${label.toLowerCase()} “${item.title}” khỏi bài học?`)) void run(async () => { await deleteLessonResource(lessonId, item.id); reload() })
-                  }}><Trash2 aria-hidden="true" size={16} /> Xóa</button>
+                  <button className="adm-btn" type="button" disabled={busy} aria-label={`Sửa ${item.title}`} onClick={() => { clearError(); setEditing(item.id) }}><Pencil aria-hidden="true" size={16} /> Sửa</button>
+                  <button className="adm-btn adm-btn--danger" type="button" disabled={busy} aria-label={`Xóa ${item.title}`} onClick={() => void (async () => {
+                    if (!(await confirm({
+                      title: `Xóa ${label.toLowerCase()}?`,
+                      message: `Xóa ${label.toLowerCase()} “${item.title}” khỏi bài học? Học viên sẽ không còn thấy nó.`,
+                      confirmLabel: 'Xóa',
+                      tone: 'danger',
+                    }))) return
+                    await run(async () => { await deleteLessonResource(lessonId, item.id); reload() })
+                  })()}><Trash2 aria-hidden="true" size={16} /> Xóa</button>
                 </div>
               </div>
-            </>}
+            </>
           </li>
         ))}
       </ol>
-      <ResourceForm type={type} busy={busy} onSave={(body) => run(async () => {
-        const sortOrder = items.length ? Math.max(...items.map((item) => item.sortOrder)) + 1 : 0
-        await createLessonResource(lessonId, { ...body, type, sortOrder })
-        reload()
-      })} />
+      <button className="adm-btn" type="button" disabled={busy} onClick={() => { clearError(); setAdding(true) }}><Plus aria-hidden="true" size={16} /> Thêm {label.toLowerCase()}</button>
+      {confirmDialog}
+      {adding ? <AdminDrawer title={`Thêm ${label.toLowerCase()}`} onClose={() => setAdding(false)}>
+        {(close) => <ResourceForm type={type} busy={busy} onCancel={close} onSave={async (body) => {
+          const saved = await run(async () => {
+            const sortOrder = items.length ? Math.max(...items.map((item) => item.sortOrder)) + 1 : 0
+            await createLessonResource(lessonId, { ...body, type, sortOrder })
+            reload()
+          })
+          if (saved) close()
+          return saved
+        }} />}
+      </AdminDrawer> : null}
+      {editingItem ? <AdminDrawer title={`Sửa ${label.toLowerCase()}`} description={editingItem.title} onClose={() => setEditing(null)}>
+        {(close) => <ResourceForm item={editingItem} type={type} busy={busy} onCancel={close} onSave={async (body) => {
+          const saved = await run(async () => {
+            await updateLessonResource(lessonId, editingItem.id, { ...body, sortOrder: editingItem.sortOrder })
+            reload()
+          })
+          if (saved) close()
+          return saved
+        }} />}
+      </AdminDrawer> : null}
     </section>
   )
 }
@@ -124,7 +149,7 @@ function ResourceList({ lessonId, type, items, reload, busy, run }: {
 export function LessonResourcesEditor({ lessonId }: { lessonId: string }) {
   const resources = useAdminResource(`lesson-resources|${lessonId}`, (signal) => fetchLessonResources(lessonId, signal))
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [, setError] = useAdminError()
   const [shown, setShown] = useState<LessonResources | null>(null)
   if (resources.status === 'success' && resources.data !== shown) setShown(resources.data)
   const current = resources.status === 'success' ? resources.data : shown
@@ -139,12 +164,11 @@ export function LessonResourcesEditor({ lessonId }: { lessonId: string }) {
       <h2>Slide và tài liệu</h2>
       <p className="adm-muted">Các đường dẫn này xuất hiện trong bài học của học viên.</p>
       {!RESOURCE_REORDER_ENABLED ? <p className="adm-muted">Chờ API đổi thứ tự. Bạn vẫn có thể thêm, sửa và xóa slide, tài liệu.</p> : null}
-      {error ? <div className="adm-alert adm-alert--error" role="alert">{error}</div> : null}
       {resources.status === 'loading' ? <AdminLoading label="Đang tải slide và tài liệu…" /> : null}
       {resources.status === 'error' ? <AdminError message={resources.error ?? 'Không tải được slide và tài liệu.'} onRetry={resources.reload} /> : null}
       {current ? <div className="adm-resources-grid">
-        <ResourceList lessonId={lessonId} type="SLIDE" items={current.slides} reload={resources.reload} busy={busy || resources.status !== 'success'} run={run} />
-        <ResourceList lessonId={lessonId} type="DOCUMENT" items={current.documents} reload={resources.reload} busy={busy || resources.status !== 'success'} run={run} />
+        <ResourceList lessonId={lessonId} type="SLIDE" items={current.slides} reload={resources.reload} busy={busy || resources.status !== 'success'} clearError={() => setError(null)} run={run} />
+        <ResourceList lessonId={lessonId} type="DOCUMENT" items={current.documents} reload={resources.reload} busy={busy || resources.status !== 'success'} clearError={() => setError(null)} run={run} />
       </div> : null}
     </section>
   )

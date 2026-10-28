@@ -1,4 +1,5 @@
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@/test/render'
+import { answerConfirm } from '@/test/confirm'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { HttpError } from '@/lib/httpClient'
@@ -235,7 +236,6 @@ describe('AiDraftDetailPage', () => {
   })
 
   it('confirms deletion, trusts the returned items and clears obsolete selected indexes', async () => {
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
     const initial = makeDraft()
     const changed = makeDraft({ result: { ...initial.result!, items: initial.result!.items.slice(1) } })
     const refresh = deferred<QuestionDraft>()
@@ -244,9 +244,10 @@ describe('AiDraftDetailPage', () => {
     show()
     await select()
     fireEvent.click(screen.getByRole('button', { name: 'Xóa câu 1' }))
+    await answerConfirm(false)
     expect(api.deleteQuestionDraftItem).not.toHaveBeenCalled()
-    confirm.mockReturnValue(true)
     fireEvent.click(screen.getByRole('button', { name: 'Xóa câu 1' }))
+    await answerConfirm(true)
     await waitFor(() => expect(api.deleteQuestionDraftItem).toHaveBeenCalledExactlyOnceWith(draftId, 0))
     await waitFor(() => expect(screen.getAllByRole('checkbox')).toHaveLength(2))
     expect(screen.queryByText('Question stem 1')).not.toBeInTheDocument()

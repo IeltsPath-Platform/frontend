@@ -75,9 +75,10 @@ export function ServicesPage() {
         <div className="adm-table-wrap">
           <table className="adm-table">
             <caption className="adm-sr-only">Trạng thái dịch vụ và các instance</caption>
-            <thead><tr><th scope="col">Dịch vụ</th><th scope="col">Trạng thái</th><th scope="col">Instance</th><th scope="col">Phản hồi nhanh nhất</th><th scope="col">URI instance</th></tr></thead>
-            <tbody>{snapshot.services.map((service) => (
+            <thead><tr><th className="adm-stt" scope="col">STT</th><th scope="col">Dịch vụ</th><th scope="col">Trạng thái</th><th scope="col">Instance</th><th scope="col">Phản hồi nhanh nhất</th><th scope="col">URI instance</th></tr></thead>
+            <tbody>{snapshot.services.map((service, index) => (
               <tr key={service.serviceId}>
+                <td className="adm-stt">{index + 1}</td>
                 <th scope="row">{serviceLabel(service.serviceId)}</th>
                 <td><span className={`adm-badge ${service.status === 'UP' ? 'adm-badge--ok' : 'adm-badge--danger'}`}>{service.status}</span></td>
                 <td>{service.instances.length}</td>

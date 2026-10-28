@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { z } from 'zod'
 import { HttpError } from '@/lib/httpClient'
+import { useAdminConfirm } from '../../lib/useAdminConfirm'
 import { AdminEmpty, AdminError, AdminLoading } from '../../components/AdminState'
 import { useAdminResource } from '../../lib/useAdminResource'
 import { AdminPage } from '../../pages/AdminPage'
@@ -27,6 +28,7 @@ function DraftDetail({ draftId }: { draftId: string }) {
   const [refreshPending, setRefreshPending] = useState(false)
   const [editing, setEditing] = useState<number | null>(null)
   const pending = useRef(false)
+  const { confirm, confirmDialog } = useAdminConfirm()
   const [selected, setSelected] = useState<number[]>([])
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
@@ -36,7 +38,7 @@ function DraftDetail({ draftId }: { draftId: string }) {
     setReceived(resource.data); setShown(resource.data); setRefreshPending(false); setEditing(null); setSelected([])
   }
   const draft = shown
-  useDraftPolling(resource.status === 'success' && !!draft && draftIsRunning(draft.status), resource.reload)
+  useDraftPolling(resource.status === 'success' && !!draft && draftIsRunning(draft.status), resource.refresh)
   const locked = busy || refreshPending || resource.status !== 'success'
   const ready = draft?.status === 'READY' && draft.result !== null
   const items = draft?.result?.items ?? []
@@ -68,8 +70,14 @@ function DraftDetail({ draftId }: { draftId: string }) {
   function saveItem(index: number, body: QuestionDraftItemPatch) {
     return mutateItem(index, () => patchQuestionDraftItem(draftId, index, body), `Đã lưu câu ${index + 1}.`)
   }
-  function removeItem(index: number) {
-    if (locked || !ready || editing !== null || !window.confirm(`Xóa câu ${index + 1} khỏi bản nháp? Các câu phía sau sẽ được đánh số lại.`)) return
+  async function removeItem(index: number) {
+    if (locked || !ready || editing !== null) return
+    if (!(await confirm({
+      title: 'Xóa câu này khỏi bản nháp?',
+      message: `Xóa câu ${index + 1}? Các câu phía sau sẽ được đánh số lại.`,
+      confirmLabel: 'Xóa câu',
+      tone: 'danger',
+    }))) return
     void mutateItem(index, () => deleteQuestionDraftItem(draftId, index), 'Đã xóa câu hỏi. Hãy chọn lại các câu cần duyệt.')
   }
   function approve() {
@@ -82,6 +90,7 @@ function DraftDetail({ draftId }: { draftId: string }) {
   }
   return <AdminPage title="Bản nháp câu hỏi" subtitle={draftId} actions={<Link className="adm-btn" to="/content-author/ai-drafts">Danh sách bản nháp</Link>}>
     <div className="adm-draft-workspace">
+    {confirmDialog}
       {resource.status === 'loading' && !draft ? <AdminLoading label="Đang tải bản nháp…" /> : null}
       {resource.status === 'loading' && draft ? <p className="adm-muted">Đang cập nhật bản nháp…</p> : null}
       {resource.status === 'error' ? <AdminError message={resource.error!} onRetry={resource.reload} /> : null}

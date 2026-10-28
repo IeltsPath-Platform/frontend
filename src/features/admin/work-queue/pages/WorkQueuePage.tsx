@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
+import { AdminDrawer } from '../../components/AdminLayer'
 import { AdminEmpty, AdminError, AdminLoading } from '../../components/AdminState'
 import { adminErrorMessage } from '../../lib/adminErrors'
 import { useAdminResource } from '../../lib/useAdminResource'
@@ -8,6 +9,7 @@ import { listWorkItems, updateWorkItem } from '../api/workQueueApi'
 import { KIND_HELP, KIND_LABEL, STATUS_LABEL, detailText, subjectText, workLinks } from '../lib/workQueueLabels'
 import { WORK_KINDS, type WorkItem, type WorkKind, type WorkUpdate } from '../types'
 import '../work-queue.css'
+import { useAdminError } from '../../lib/useAdminError'
 
 type StatusFilter = 'ACTIVE' | 'DONE' | 'ALL'
 
@@ -20,14 +22,14 @@ function DoneForm({ busy, onSubmit, onCancel }: { busy: boolean; onSubmit: (upda
     onSubmit({ status: 'DONE', action, result, note })
   }
   return (
-    <form className="adm-card" onSubmit={submit}>
+    <form aria-label="Hoàn thành công việc" onSubmit={submit}>
       <fieldset className="adm-wq-fields" disabled={busy}>
         <label className="adm-field"><span>Đã làm gì</span><textarea className="adm-textarea" maxLength={1000} value={action} onChange={(event) => setAction(event.target.value)} /></label>
         <label className="adm-field"><span>Kết quả</span><textarea className="adm-textarea" maxLength={1000} value={result} onChange={(event) => setResult(event.target.value)} /></label>
         <label className="adm-field"><span>Ghi chú</span><textarea className="adm-textarea" maxLength={1000} value={note} onChange={(event) => setNote(event.target.value)} /></label>
-        <div className="adm-wq-actions">
-          <button className="adm-btn adm-btn--primary" type="submit">Đánh dấu xong</button>
+        <div className="adm-form-footer">
           <button className="adm-btn" type="button" onClick={onCancel}>Hủy</button>
+          <button className="adm-btn adm-btn--primary" type="submit">Đánh dấu xong</button>
         </div>
       </fieldset>
     </form>
@@ -59,7 +61,9 @@ function ItemRow({ item, busy, onUpdate }: { item: WorkItem; busy: boolean; onUp
         {item.status === 'IN_PROGRESS' ? <button className="adm-btn" type="button" disabled={busy} onClick={() => onUpdate({ status: 'OPEN' })}>Trả lại</button> : null}
         {item.status !== 'DONE' ? <button className="adm-btn adm-btn--primary" type="button" disabled={busy || finishing} onClick={() => setFinishing(true)}>Xong</button> : null}
       </div>
-      {finishing ? <DoneForm busy={busy} onCancel={() => setFinishing(false)} onSubmit={(update) => { onUpdate(update); setFinishing(false) }} /> : null}
+      {finishing ? <AdminDrawer title="Hoàn thành công việc" description={subjectText(item)} onClose={() => setFinishing(false)}>
+        {(close) => <DoneForm busy={busy} onCancel={close} onSubmit={(update) => { onUpdate(update); close() }} />}
+      </AdminDrawer> : null}
     </li>
   )
 }
@@ -68,7 +72,7 @@ export function WorkQueuePage() {
   const [kind, setKind] = useState<WorkKind | ''>('')
   const [status, setStatus] = useState<StatusFilter>('ACTIVE')
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [, setError] = useAdminError()
   const items = useAdminResource(`work-queue:${kind}:${status}`, (signal) =>
     listWorkItems({ kind: kind || undefined, status: status === 'DONE' ? 'DONE' : undefined }, signal))
 
@@ -105,7 +109,6 @@ export function WorkQueuePage() {
             </select>
           </label>
         </div>
-        {error ? <p className="adm-alert adm-alert--error" role="alert">{error}</p> : null}
         {items.status === 'loading' ? <AdminLoading /> : null}
         {items.status === 'error' ? <AdminError message={items.error!} onRetry={items.reload} /> : null}
         {items.status === 'success' && shown.length === 0 ? <AdminEmpty title="Không có việc nào phù hợp" /> : null}

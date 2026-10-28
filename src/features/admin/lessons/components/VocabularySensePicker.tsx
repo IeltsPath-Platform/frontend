@@ -5,13 +5,14 @@ import { AdminLoading } from '../../components/AdminState'
 import { adminErrorMessage } from '../../lib/adminErrors'
 import { useAdminResource } from '../../lib/useAdminResource'
 import { searchVocabulary, type VocabularyHit } from '../api/lessonApi'
+import { useAdminError } from '../../lib/useAdminError'
 
 /** Picks the vocabulary senses of a block: the chosen ones are shown as cards, new ones come from a search. */
 export function VocabularySensePicker({ value, onChange }: { value: string[]; onChange: (next: string[]) => void }) {
   const [text, setText] = useState('')
   const [hits, setHits] = useState<VocabularyHit[] | null>(null)
   const [searching, setSearching] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [, setError] = useAdminError()
 
   const chosen = useAdminResource(`block-senses|${value.join(',')}`, (signal) => getLessonVocabularySenses(value, signal))
 
@@ -57,7 +58,6 @@ export function VocabularySensePicker({ value, onChange }: { value: string[]; on
         <input aria-label="Tìm từ vựng" className="adm-input" onChange={(event) => setText(event.target.value)} placeholder="Tìm từ (ví dụ: climate)" value={text} />
         <button className="adm-btn" disabled={searching} type="submit"><Search aria-hidden="true" size={14} /> Tìm</button>
       </form>
-      {error ? <div className="adm-alert adm-alert--error" role="alert">{error}</div> : null}
       {hits && hits.length === 0 ? <p className="adm-muted">Không tìm thấy từ nào.</p> : null}
       <ul className="ls-vocab__hits">
         {(hits ?? []).flatMap((hit) =>

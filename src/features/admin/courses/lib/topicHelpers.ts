@@ -28,3 +28,12 @@ export function swappedGroup(allTopics: readonly TopicOption[], topic: TopicOpti
   group[second] = topic.id
   return group
 }
+
+function bandNumber(value: number) { return value.toFixed(1) }
+
+/** The band range of a topic in words: "Mọi band" when it has no limit, "Từ 5.0", "Đến 6.5" or "5.0 – 6.5". */
+export function bandText(min?: number | null, max?: number | null): string {
+  if (min == null && max == null) return 'Mọi band'
+  if (min != null && max != null) return min === max ? `Band ${bandNumber(min)}` : `${bandNumber(min)} – ${bandNumber(max)}`
+  return min != null ? `Từ ${bandNumber(min)}` : `Đến ${bandNumber(max!)}`
+}

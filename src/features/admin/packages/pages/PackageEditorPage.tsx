@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowDown, ArrowUp, Pencil, Plus, Trash2 } from 'lucide-react'
 import { z } from 'zod'
+import { useAdminConfirm } from '../../lib/useAdminConfirm'
 import { AdminEmpty, AdminError, AdminLoading } from '../../components/AdminState'
 import { useAdminResource } from '../../lib/useAdminResource'
 import { AdminPage } from '../../pages/AdminPage'
@@ -19,6 +20,7 @@ import '../packages.css'
 function PackageEditor({ packageId }: { packageId: string }) {
   const resource = useAdminResource(`author-package:${packageId}`, (signal) => getPackage(packageId, signal))
   const [search, setSearch] = useSearchParams()
+  const { confirm, confirmDialog } = useAdminConfirm()
   const [shown, setShown] = useState<ContentPackage | null>(null)
   const [editing, setEditing] = useState<{ id: string; versionId: string } | null>(null)
   const [busy, setBusy] = useState(false)
@@ -68,9 +70,14 @@ function PackageEditor({ packageId }: { packageId: string }) {
     if (!selected || readOnly) return
     await mutate(() => section ? updateSection(packageId, selected.id, section.id, body) : addSection(packageId, selected.id, body), 'Đã lưu phần.', true)
   }
-  function remove(section: PackageSection) {
+  async function remove(section: PackageSection) {
     if (!selected || readOnly || locked || editing) return
-    if (!window.confirm(`Xóa phần “${section.title}”? Các câu hỏi và liên kết tài nguyên trong phần sẽ được gỡ khỏi phiên bản; tài nguyên gốc được giữ lại.`)) return
+    if (!(await confirm({
+      title: 'Xóa phần này?',
+      message: `Xóa phần “${section.title}”? Các câu hỏi và liên kết tài nguyên trong phần sẽ được gỡ khỏi phiên bản; tài nguyên gốc được giữ lại.`,
+      confirmLabel: 'Xóa phần',
+      tone: 'danger',
+    }))) return
     void mutate(() => deleteSection(packageId, selected.id, section.id), 'Đã xóa phần.')
   }
   function move(index: number, delta: number) {
@@ -83,6 +90,7 @@ function PackageEditor({ packageId }: { packageId: string }) {
   }
   return <AdminPage title={pkg?.title ?? 'Soạn gói câu hỏi'} subtitle={pkg ? `${pkg.code} · ${PACKAGE_TYPE_LABEL[pkg.packageType]} · ${pkg.accessLevel === 'FREE' ? 'Miễn phí' : 'Premium'}` : undefined} actions={<Link className="adm-btn" to="/content-author/packages">Đề & gói câu hỏi</Link>}>
     <div className="adm-package-workspace">
+      {confirmDialog}
       {resource.status === 'loading' ? <AdminLoading label="Đang tải gói…" /> : null}
       {resource.status === 'error' ? <AdminError message={resource.error!} onRetry={resource.reload} /> : null}
       {pkg ? <>

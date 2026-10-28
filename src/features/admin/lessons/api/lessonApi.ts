@@ -169,6 +169,14 @@ const vocabularySearchSchema = z.array(
 
 export type VocabularyHit = z.infer<typeof vocabularySearchSchema>[number]
 
+/** library-service `GET /api/content/vocabulary/by-lemmas`: the active words whose lemma is exactly one of those given. */
+export async function findVocabularyByLemmas(lemmas: readonly string[], signal?: AbortSignal): Promise<VocabularyHit[]> {
+  const params = new URLSearchParams({ lemmas: lemmas.join(',') })
+  return vocabularySearchSchema.parse(
+    await apiRequest<unknown>(`/api/content/vocabulary/by-lemmas?${params}`, { auth: true, signal }),
+  )
+}
+
 /** library-service `GET /api/content/vocabulary/search`: entries with their senses. */
 export async function searchVocabulary(query: string, signal?: AbortSignal): Promise<VocabularyHit[]> {
   const params = new URLSearchParams({ query })

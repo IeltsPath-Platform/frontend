@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { SECTION_SKILL_LABEL } from '../lib/packageLabels'
 import { sectionRequestSchema, type PackageSection, type SectionRequest } from '../types'
+import { useAdminError } from '../../lib/useAdminError'
 
 export function SectionEditor({ section, sortOrder, busy, onSave, onCancel }: {
   section?: PackageSection; sortOrder: number; busy: boolean
@@ -12,7 +13,7 @@ export function SectionEditor({ section, sortOrder, busy, onSave, onCancel }: {
   const initialMinutes = section?.timeLimitSeconds == null ? '' : String(section.timeLimitSeconds / 60)
   const [minutes, setMinutes] = useState(initialMinutes)
   const [instructions, setInstructions] = useState(section?.instructions ?? '')
-  const [error, setError] = useState<string | null>(null)
+  const [, setError] = useAdminError()
   async function submit(event: FormEvent) {
     event.preventDefault()
     if (busy) return
@@ -27,7 +28,6 @@ export function SectionEditor({ section, sortOrder, busy, onSave, onCancel }: {
   }
   return <form aria-label={section ? `Sửa phần ${section.title}` : 'Thêm phần'} className="adm-card" noValidate onSubmit={(event) => void submit(event)}>
     <h3>{section ? 'Sửa phần' : 'Thêm phần'}</h3>
-    {error ? <p className="adm-alert adm-alert--error" role="alert">{error}</p> : null}
     <fieldset className="adm-package-fields" disabled={busy}>
       <label className="adm-field"><span>Tiêu đề phần</span><input className="adm-input" required maxLength={255} value={title} onChange={(event) => setTitle(event.target.value)} /></label>
       <div className="adm-package-form-grid">

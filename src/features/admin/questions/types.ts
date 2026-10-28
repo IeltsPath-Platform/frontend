@@ -58,7 +58,16 @@ export const versionSchema = z.object({
 
 export const questionDetailSchema = questionSchema.extend({ versions: z.array(versionSchema).nullish() })
 
+/** A reading passage that goes with a question version; `source` says how it was found. */
+export const questionPassageSchema = z.object({
+  assetId: z.string(),
+  text: z.string(),
+  source: z.enum(['DIRECT', 'LESSON', 'SECTION']),
+  sourceName: z.string().nullish(),
+})
+
 export type Question = z.infer<typeof questionSchema>
+export type QuestionPassage = z.infer<typeof questionPassageSchema>
 export type QuestionPage = z.infer<typeof questionPageSchema>
 export type QuestionVersion = z.infer<typeof versionSchema>
 export type QuestionDetail = z.infer<typeof questionDetailSchema>

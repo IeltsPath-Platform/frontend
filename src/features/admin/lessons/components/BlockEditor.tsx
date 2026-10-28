@@ -6,6 +6,7 @@ import { lessonErrorText } from '../lib/lessonErrors'
 import type { BlockRequest, BlockType, LessonBlock } from '../types'
 import { QuestionChooser } from './QuestionChooser'
 import { VocabularySensePicker } from './VocabularySensePicker'
+import { useAdminError, useAdminErrorToast } from '../../lib/useAdminError'
 
 export interface BlockEditorProps {
   blockType: BlockType
@@ -17,8 +18,8 @@ export interface BlockEditorProps {
 
 export function BlockEditor({ blockType, block, onSave, onCancel }: BlockEditorProps) {
   const [state, setState] = useState<BlockFormState>(() => initialBlockState(blockType, block))
-  const [problems, setProblems] = useState<string[]>([])
-  const [serverError, setServerError] = useState<string | null>(null)
+  const [, setServerError] = useAdminError()
+  const fail = useAdminErrorToast()
   const [saving, setSaving] = useState(false)
   const patch = (changes: Partial<BlockFormState>) => setState((current) => ({ ...current, ...changes }))
 
@@ -26,10 +27,9 @@ export function BlockEditor({ blockType, block, onSave, onCancel }: BlockEditorP
     event.preventDefault()
     const result = buildBlockRequest(state)
     if (!result.ok) {
-      setProblems(result.problems)
+      fail(result.problems.join('\n'))
       return
     }
-    setProblems([])
     setServerError(null)
     setSaving(true)
     try {
@@ -44,12 +44,6 @@ export function BlockEditor({ blockType, block, onSave, onCancel }: BlockEditorP
   return (
     <form aria-label={`${block ? 'Sửa' : 'Thêm'} block ${BLOCK_LABEL[blockType]}`} className="adm-card ls-block-form" noValidate onSubmit={(event) => void submit(event)}>
       <h3>{block ? 'Sửa' : 'Thêm'} block: {BLOCK_LABEL[blockType]}</h3>
-      {problems.length > 0 ? (
-        <div className="adm-alert adm-alert--error" role="alert">
-          <ul>{problems.map((problem) => <li key={problem}>{problem}</li>)}</ul>
-        </div>
-      ) : null}
-      {serverError ? <div className="adm-alert adm-alert--error" role="alert">{serverError}</div> : null}
 
       {blockType === 'TEXT' ? (
         <>

@@ -1,4 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { answerConfirm } from '@/test/confirm'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { useForm } from 'react-hook-form'
 import { PostComposerModal, type PostFormValues } from './PostComposerModal'
@@ -115,21 +116,29 @@ describe('PostComposerModal', () => {
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 
-  it('prompts window.confirm on Escape when form is dirty', () => {
+  it('asks in a popup on Escape when the form is dirty, and closes only when the author agrees', async () => {
     const onClose = vi.fn()
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
 
     render(<TestWrapper onClose={onClose} defaultValues={{ body: 'Đang soạn dở...' }} />)
 
     fireEvent.keyDown(document, { key: 'Escape' })
-    expect(confirmSpy).toHaveBeenCalledWith('Bạn có chắc muốn hủy bài viết đang soạn?')
+    const popup = await answerConfirm(false)
+    expect(popup).toHaveTextContent('Bạn có chắc muốn hủy bài viết đang soạn?')
     expect(onClose).not.toHaveBeenCalled()
 
-    confirmSpy.mockReturnValue(true)
     fireEvent.keyDown(document, { key: 'Escape' })
-    expect(onClose).toHaveBeenCalledTimes(1)
+    await answerConfirm(true)
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1))
+  })
 
-    confirmSpy.mockRestore()
+  it('does not stack a second question when Escape is pressed while the popup is open', async () => {
+    const onClose = vi.fn()
+    render(<TestWrapper onClose={onClose} defaultValues={{ body: 'Đang soạn dở...' }} />)
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(await screen.findAllByRole('alertdialog')).toHaveLength(1)
+    fireEvent.keyDown(document, { key: 'Escape' })
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument())
+    expect(onClose).not.toHaveBeenCalled()
   })
 
   it('selects background swatch and switches to gradient theme', () => {

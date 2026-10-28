@@ -1,4 +1,5 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@/test/render'
+import { answerConfirm } from '@/test/confirm'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { HttpError } from '@/lib/httpClient'
 import { LessonResourcesEditor } from './LessonResourcesEditor'
@@ -29,17 +30,22 @@ describe('LessonResourcesEditor', () => {
 
   it('appends a slide after the largest existing sort order', async () => {
     render(<LessonResourcesEditor lessonId="l1" />)
-    const form = await screen.findByRole('form', { name: 'Thêm slide' })
+    fireEvent.click(await screen.findByRole('button', { name: 'Thêm slide' }))
+    const drawer = screen.getByRole('dialog', { name: 'Thêm slide' })
+    expect(drawer).toHaveClass('adm-drawer')
+    const form = within(drawer).getByRole('form', { name: 'Thêm slide' })
     fireEvent.change(within(form).getByLabelText('Tiêu đề slide'), { target: { value: 'Slide mới' } })
     fireEvent.change(within(form).getByLabelText('URL slide'), { target: { value: 'https://example.org/slides' } })
     fireEvent.submit(form)
     await waitFor(() => expect(api.createLessonResource).toHaveBeenCalledWith('l1', { type: 'SLIDE', title: 'Slide mới', url: 'https://example.org/slides', sortOrder: 8 }))
     await waitFor(() => expect(api.fetchLessonResources).toHaveBeenCalledTimes(2))
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
   })
 
   it.each(['http://example.org/slides', 'không phải URL', 'javascript:alert(1)'])('rejects unsafe or invalid URL %s', async (url) => {
     render(<LessonResourcesEditor lessonId="l1" />)
-    const form = await screen.findByRole('form', { name: 'Thêm slide' })
+    fireEvent.click(await screen.findByRole('button', { name: 'Thêm slide' }))
+    const form = screen.getByRole('form', { name: 'Thêm slide' })
     fireEvent.change(within(form).getByLabelText('Tiêu đề slide'), { target: { value: 'Slide mới' } })
     fireEvent.change(within(form).getByLabelText('URL slide'), { target: { value: url } })
     fireEvent.submit(form)
@@ -57,28 +63,26 @@ describe('LessonResourcesEditor', () => {
   })
 
   it('only deletes after confirmation', async () => {
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
     render(<LessonResourcesEditor lessonId="l1" />)
     fireEvent.click(await screen.findByRole('button', { name: 'Xóa Bài đọc' }))
+    await answerConfirm(false)
     expect(api.deleteLessonResource).not.toHaveBeenCalled()
-    confirm.mockReturnValue(true)
     fireEvent.click(screen.getByRole('button', { name: 'Xóa Bài đọc' }))
+    await answerConfirm(true)
     await waitFor(() => expect(api.deleteLessonResource).toHaveBeenCalledWith('l1', 'd1'))
-    confirm.mockRestore()
   })
 
-  it('retains an unfinished document while saving a slide and clears only the saved form', async () => {
+  it('opens add and edit one at a time in a drawer that Hủy closes', async () => {
     render(<LessonResourcesEditor lessonId="l1" />)
     fireEvent.click(await screen.findByRole('button', { name: 'Sửa Bài đọc' }))
-    const document = screen.getByRole('form', { name: 'Sửa tài liệu' })
-    fireEvent.change(within(document).getByLabelText('Tiêu đề tài liệu'), { target: { value: 'Bài đọc đang soạn' } })
-    const slide = screen.getByRole('form', { name: 'Thêm slide' })
-    fireEvent.change(within(slide).getByLabelText('Tiêu đề slide'), { target: { value: 'Slide mới' } })
-    fireEvent.change(within(slide).getByLabelText('URL slide'), { target: { value: 'https://example.org/new' } })
-    fireEvent.submit(slide)
-    await waitFor(() => expect(api.fetchLessonResources).toHaveBeenCalledTimes(2))
-    expect(within(screen.getByRole('form', { name: 'Sửa tài liệu' })).getByLabelText('Tiêu đề tài liệu')).toHaveValue('Bài đọc đang soạn')
-    await waitFor(() => expect(within(slide).getByLabelText('Tiêu đề slide')).toHaveValue(''))
+    const edit = screen.getByRole('dialog', { name: 'Sửa tài liệu' })
+    expect(within(edit).getByRole('form', { name: 'Sửa tài liệu' })).toBeInTheDocument()
+    // The page behind the drawer is out of reach, so a second form cannot be opened over it.
+    expect(screen.queryByRole('button', { name: 'Thêm slide' })).not.toBeInTheDocument()
+    fireEvent.click(within(edit).getByRole('button', { name: 'Hủy' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Thêm tài liệu' }))
+    expect(screen.getByRole('dialog', { name: 'Thêm tài liệu' })).toHaveClass('adm-drawer')
   })
 
   it('keeps reorder controls disabled until ordering is available', async () => {

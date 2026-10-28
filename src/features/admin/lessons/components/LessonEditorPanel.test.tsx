@@ -1,9 +1,8 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { fireEvent, render, screen, waitFor, within } from '@/test/render'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { HttpError } from '@/lib/httpClient'
 import type { LessonEditor } from '../types'
-import { LessonEditorPage } from './LessonEditorPage'
+import { LessonEditorPanel } from './LessonEditorPanel'
 
 const { api, graph, questions, vocab } = vi.hoisted(() => ({
   api: {
@@ -34,14 +33,10 @@ function lesson(overrides: Partial<LessonEditor> = {}): LessonEditor {
 }
 
 function renderPage() {
-  return render(
-    <MemoryRouter initialEntries={['/content-author/lessons/l1']}>
-      <Routes><Route element={<LessonEditorPage />} path="/content-author/lessons/:lessonId" /></Routes>
-    </MemoryRouter>,
-  )
+  return render(<LessonEditorPanel lessonId="l1" />)
 }
 
-describe('LessonEditorPage', () => {
+describe('LessonEditorPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     api.fetchLesson.mockResolvedValue(lesson())
@@ -54,7 +49,8 @@ describe('LessonEditorPage', () => {
   it('shows the blocks in order with the lesson status', async () => {
     renderPage()
 
-    expect(await screen.findByRole('heading', { name: 'Skimming' })).toBeInTheDocument()
+    expect(await screen.findByRole('form', { name: 'Thông tin bài học' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Tiêu đề')).toHaveValue('Skimming')
     expect(screen.getByText('Nháp')).toBeInTheDocument()
     expect(screen.getByText('Intro text')).toBeInTheDocument()
     expect(screen.getByText('1 câu hỏi')).toBeInTheDocument()
@@ -89,7 +85,7 @@ describe('LessonEditorPage', () => {
     const form = await screen.findByRole('form', { name: /Thêm block/ })
     fireEvent.click(within(form).getByRole('button', { name: 'Lưu block' }))
 
-    expect(await within(form).findByText('Cần nhập nội dung bài giảng.')).toBeInTheDocument()
+    expect(await screen.findByText('Cần nhập nội dung bài giảng.')).toBeInTheDocument()
     expect(api.addBlock).not.toHaveBeenCalled()
   })
 
@@ -100,8 +96,9 @@ describe('LessonEditorPage', () => {
     renderPage()
     fireEvent.click(await screen.findByRole('button', { name: 'Xuất bản' }))
 
-    const alert = await screen.findByText('Bài chưa gắn knowledge point nào đang hoạt động.')
-    expect(alert.closest('[role="alert"]')).toHaveTextContent('Chưa xuất bản được bài học.')
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('Chưa xuất bản được bài học.')
+    expect(alert).toHaveTextContent('Bài chưa gắn knowledge point nào đang hoạt động.')
   })
 
   it('locks exercise blocks once the lesson is published but keeps the others editable', async () => {
@@ -124,7 +121,7 @@ describe('LessonEditorPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Không tìm thấy bài học')
     api.fetchLesson.mockResolvedValue(lesson())
     fireEvent.click(screen.getByRole('button', { name: 'Thử lại' }))
-    expect(await screen.findByRole('heading', { name: 'Skimming' })).toBeInTheDocument()
+    expect(await screen.findByLabelText('Tiêu đề')).toHaveValue('Skimming')
   })
 
   it('keeps lesson information editable when resources cannot load', async () => {

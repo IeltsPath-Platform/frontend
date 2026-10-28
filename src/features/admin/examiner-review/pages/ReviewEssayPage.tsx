@@ -9,6 +9,7 @@ import { getReviewEssay, submitReview } from '../api/examinerReviewApi'
 import { BLIND_NOTE, overallBand, taskLabel } from '../lib/reviewLabels'
 import { CRITERIA, reviewSchema, type CriterionKey, type ReviewEssay } from '../types'
 import '../examiner-review.css'
+import { useAdminError } from '../../lib/useAdminError'
 
 const BANDS = Array.from({ length: 19 }, (_, index) => index / 2)
 type Scores = Record<CriterionKey, number>
@@ -28,7 +29,7 @@ function ReviewForm({ jobId, essay }: { jobId: string; essay: ReviewEssay }) {
   const [overall, setOverall] = useState<number | null>(null)
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [, setError] = useAdminError()
   const navigate = useNavigate()
   const band = overall ?? overallBand(scores)
 
@@ -78,7 +79,6 @@ function ReviewForm({ jobId, essay }: { jobId: string; essay: ReviewEssay }) {
           <Link className="adm-btn" to="/content-author/examiner-review">Quay lại danh sách</Link>
         </div>
       </fieldset>
-      {error ? <p className="adm-alert adm-alert--error" role="alert">{error}</p> : null}
       <p className="adm-muted">Bài {taskLabel(essay.task)}.</p>
     </form>
   )

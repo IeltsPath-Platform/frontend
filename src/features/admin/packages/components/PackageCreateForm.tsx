@@ -6,6 +6,7 @@ import { useAdminResource } from '../../lib/useAdminResource'
 import { createDraftVersion, createPackage, listPracticeSources } from '../api/packageApi'
 import { PACKAGE_TYPE_LABEL, packageError } from '../lib/packageLabels'
 import type { CreatePackageRequest, PackageType } from '../types'
+import { useAdminError } from '../../lib/useAdminError'
 
 const CREATE_TYPES = ['PRACTICE_SET', 'PRACTICE_TEST', 'MOCK_TEST', 'PLACEMENT_TEST', 'QUIZ', 'TOPIC_TEST', 'COURSE_TEST'] as const
 
@@ -22,7 +23,7 @@ export function PackageCreateForm({ onCreated, onCancel, initialType }: {
   const [sourceCode, setSourceCode] = useState('')
   const [pending, setPending] = useState(false)
   const [createdId, setCreatedId] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [, setError] = useAdminError()
   const mounted = useRef(true)
   useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [])
   const courses = useAdminResource('package-create-courses', fetchCourses)
@@ -62,9 +63,7 @@ export function PackageCreateForm({ onCreated, onCancel, initialType }: {
     finally { if (mounted.current) setPending(false) }
   }
 
-  return <form aria-label="Tạo gói câu hỏi" className="adm-card adm-package-create" noValidate onSubmit={(event) => void submit(event)}>
-    <h2>Gói mới</h2>
-    {error ? <div className="adm-alert adm-alert--error" role="alert">{error}</div> : null}
+  return <form aria-label="Tạo gói câu hỏi" className="adm-package-create" noValidate onSubmit={(event) => void submit(event)}>
     {createdId && !pending ? <button className="adm-btn adm-btn--primary" type="button" onClick={() => onCreated(createdId)}>Mở gói đã tạo</button> : null}
     <fieldset className="adm-package-fields" disabled={pending || !!createdId}>
       <label className="adm-field"><span>Mã gói</span><input className="adm-input" required maxLength={100} value={code} onChange={(event) => setCode(event.target.value)} /></label>
@@ -91,7 +90,7 @@ export function PackageCreateForm({ onCreated, onCancel, initialType }: {
         {sources.status === 'error' ? <AdminError message={sources.error!} onRetry={sources.reload} /> : null}
         <label className="adm-field"><span>Nguồn đề (tùy chọn)</span><select className="adm-select" value={sourceCode} onChange={(event) => setSourceCode(event.target.value)}><option value="">Không (đề kiểm tra nội bộ của khóa)</option>{sources.data?.map((source) => <option key={source.code} value={source.code}>{source.name}</option>)}</select></label>
       </> : null}
-      <div className="adm-package-actions"><button className="adm-btn adm-btn--primary" type="submit">{pending ? 'Đang tạo gói…' : 'Tạo gói và bản nháp'}</button><button className="adm-btn" type="button" onClick={onCancel}>Hủy</button></div>
+      <div className="adm-form-footer"><button className="adm-btn" type="button" onClick={onCancel}>Hủy</button><button className="adm-btn adm-btn--primary" type="submit">{pending ? 'Đang tạo gói…' : 'Tạo gói và bản nháp'}</button></div>
     </fieldset>
   </form>
 }

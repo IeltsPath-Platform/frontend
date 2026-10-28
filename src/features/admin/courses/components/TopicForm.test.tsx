@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@/test/render'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { HttpError } from '@/lib/httpClient'
 import type { TopicOption } from '../../lessons/types'
@@ -15,7 +15,8 @@ const courses = [
 ]
 const topic: TopicOption = { id: 'topic-edit', code: 'ORIGINAL', name: 'Tên ban đầu', parentTopicId: null, courseId: courses[0]!.id, sortOrder: 1, status: 'ACTIVE', skill: 'WRITING', bandMin: 5, bandMax: 6 }
 const parent: TopicOption = { ...topic, id: 'parent', code: 'PARENT', name: 'Chủ đề cha', sortOrder: 2 }
-const body = { name: 'Tên đang chỉnh sửa', parentTopicId: parent.id, courseId: courses[1]!.id, skill: 'READING', bandMin: 6.5, bandMax: 8, sortOrder: 4 }
+const legacyChild: TopicOption = { ...topic, id: 'legacy-child', code: 'LEGACY', name: 'Chủ đề con cũ', parentTopicId: parent.id, sortOrder: 3 }
+const body = { name: 'Tên đang chỉnh sửa', parentTopicId: null, courseId: courses[1]!.id, skill: 'READING', bandMin: 6.5, bandMax: 8, sortOrder: 4 }
 function show(editing = false) {
   const saved = vi.fn()
   render(<TopicForm topic={editing ? topic : undefined} parentId={null} courseId={courses[0]!.id} courses={courses} topics={[parent, topic]} onSaved={saved} onCancel={vi.fn()} />)
@@ -25,7 +26,6 @@ function fill(editing = false) {
   if (!editing) fireEvent.change(screen.getByLabelText('Mã chủ đề'), { target: { value: 'NEW_TOPIC' } })
   fireEvent.change(screen.getByLabelText('Tên chủ đề'), { target: { value: body.name } })
   fireEvent.change(screen.getByLabelText('Thuộc khóa học'), { target: { value: body.courseId } })
-  fireEvent.change(screen.getByLabelText('Chủ đề cha'), { target: { value: body.parentTopicId } })
   fireEvent.change(screen.getByLabelText('Kỹ năng'), { target: { value: body.skill } })
   fireEvent.change(screen.getByLabelText('Band thấp nhất'), { target: { value: String(body.bandMin) } })
   fireEvent.change(screen.getByLabelText('Band cao nhất'), { target: { value: String(body.bandMax) } })
@@ -36,7 +36,6 @@ function expectRetained(editing = false) {
   expect(screen.getByLabelText('Mã chủ đề')).toHaveValue(editing ? topic.code : 'NEW_TOPIC')
   expect(screen.getByLabelText('Tên chủ đề')).toHaveValue(body.name)
   expect(screen.getByLabelText('Thuộc khóa học')).toHaveValue(body.courseId)
-  expect(screen.getByLabelText('Chủ đề cha')).toHaveValue(body.parentTopicId)
   expect(screen.getByLabelText('Kỹ năng')).toHaveValue(body.skill)
   expect(screen.getByLabelText('Band thấp nhất')).toHaveValue(body.bandMin)
   expect(screen.getByLabelText('Band cao nhất')).toHaveValue(body.bandMax)
@@ -109,20 +108,40 @@ describe('TopicForm order conflicts', () => {
     expect(saved).not.toHaveBeenCalled()
   })
 
-  it('clears a stale sibling conflict when the parent changes without submitting automatically', async () => {
-    api.createTopic.mockRejectedValue(conflict())
-    show()
+  it('offers no parent for a new topic or a top-level one', () => {
+    const { unmount } = render(<TopicForm parentId={null} courseId={courses[0]!.id} courses={courses} topics={[parent, topic]} onSaved={vi.fn()} onCancel={vi.fn()} />)
+    expect(screen.queryByLabelText('Chủ đề cha')).not.toBeInTheDocument()
+    unmount()
+    render(<TopicForm topic={topic} parentId={null} courseId={courses[0]!.id} courses={courses} topics={[parent, topic]} onSaved={vi.fn()} onCancel={vi.fn()} />)
+    expect(screen.queryByLabelText('Chủ đề cha')).not.toBeInTheDocument()
+  })
+
+  it('creates a new topic at the top level', async () => {
+    api.createTopic.mockResolvedValue(topic)
+    const saved = show()
     fill()
     fireEvent.submit(screen.getByRole('form'))
+    await waitFor(() => expect(saved).toHaveBeenCalledTimes(1))
+    expect(api.createTopic).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ code: 'NEW_TOPIC', parentTopicId: null }))
+  })
+
+  it('still shows the parent of a topic that has one, so it can be moved back to the top level', async () => {
+    api.updateTopic.mockRejectedValueOnce(conflict()).mockResolvedValue(legacyChild)
+    const saved = vi.fn()
+    render(<TopicForm topic={legacyChild} parentId={parent.id} courseId={courses[0]!.id} courses={courses} topics={[parent, legacyChild]} onSaved={saved} onCancel={vi.fn()} />)
+    const select = screen.getByLabelText('Chủ đề cha')
+    expect(select).toHaveValue(parent.id)
+    fireEvent.change(screen.getByLabelText('Thứ tự chủ đề'), { target: { value: '4' } })
+    fireEvent.submit(screen.getByRole('form'))
     await screen.findByRole('alert')
-    fireEvent.change(screen.getByLabelText('Chủ đề cha'), { target: { value: '' } })
+    // A stale sibling conflict goes away once the parent changes, without submitting by itself.
+    fireEvent.change(select, { target: { value: '' } })
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     expect(screen.getByLabelText('Thứ tự chủ đề')).not.toHaveAttribute('aria-invalid', 'true')
-    expect(screen.getByLabelText('Thứ tự chủ đề')).not.toHaveAttribute('aria-describedby')
-    expect(screen.getByLabelText('Thứ tự chủ đề')).toHaveValue(4)
-    expect(screen.getByLabelText('Tên chủ đề')).toHaveValue(body.name)
-    expect(api.createTopic).toHaveBeenCalledTimes(1)
-    expect(api.updateTopic).not.toHaveBeenCalled()
+    expect(api.updateTopic).toHaveBeenCalledTimes(1)
+    fireEvent.submit(screen.getByRole('form'))
+    await waitFor(() => expect(saved).toHaveBeenCalledTimes(1))
+    expect(api.updateTopic).toHaveBeenNthCalledWith(2, legacyChild.id, expect.objectContaining({ parentTopicId: null, sortOrder: 4 }))
   })
 
   it('sends a metadata edit with the unchanged parent and order even when displayed siblings are tied', async () => {
