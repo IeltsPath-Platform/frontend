@@ -8,6 +8,7 @@ import { lazy, Suspense } from 'react'
 import { USE_MOCK_ROCKET } from '@/lib/env'
 import { BrowserRouter, Navigate, Routes, Route, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { AdminRoutes } from '@/features/admin/AdminRoutes'
+import { PointManagementRoutes } from '@/features/point-management/routes'
 import { ErrorBoundary } from './ErrorBoundary'
 import { NotFoundPage, RouteStatusPage } from './RouteStatusPage'
 import { OverviewPage } from '@/features/overview/pages/OverviewPage'
@@ -90,7 +91,7 @@ function AppContent() {
   const { isLoggedIn, roles } = useAuthSession()
   // The admin area has its own frame, so the learner footer stays out of it.
   const { pathname } = useLocation()
-  const inAdminArea = ['/admin', '/content-author'].some((base) => pathname === base || pathname.startsWith(`${base}/`))
+  const inAdminArea = ['/admin', '/content-author', '/point-management'].some((base) => pathname === base || pathname.startsWith(`${base}/`))
 
   return (
     <>
@@ -100,6 +101,7 @@ function AppContent() {
       <Route path="/games/rocket/:matchId" element={<RocketRoute />} />
       <Route path="/admin/*" element={<RequireAuth><AdminRoutes /></RequireAuth>} />
       <Route path="/content-author/*" element={<RequireAuth><AdminRoutes area="content-author" /></RequireAuth>} />
+      <Route path="/point-management/*" element={<PointManagementRoutes />} />
       <Route path="/games" element={<RequireAuth><GameLayout /></RequireAuth>}>
         <Route index element={<GameCatalogPage />} />
         <Route path="wordly/setup" element={<GameSetupPage />} />
