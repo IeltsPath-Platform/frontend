@@ -912,3 +912,11 @@
   border-radius: 999px;
   cursor: pointer;
 }
+
+/* Loading and failure lines of the blocks that read live data. */
+.overview-block-status { margin: 0.5rem 0; color: var(--overview-muted, #64748b); font-size: 0.8125rem; }
+.overview-block-error { color: #b42318; }
+.overview-block-retry { padding: 0.1rem 0.5rem; border: 1px solid currentColor; border-radius: 999px; background: transparent; color: inherit; font-weight: 700; cursor: pointer; }
+.overview-hero-empty { margin: 0.4rem 0 0.75rem; color: var(--overview-muted, #64748b); font-size: 0.8125rem; line-height: 1.5; }
+.overview-hero-empty-link { color: var(--overview-primary, #123ab5); font-size: 0.8125rem; font-weight: 700; text-decoration: none; }
+.overview-hero-empty-link:hover { text-decoration: underline; }

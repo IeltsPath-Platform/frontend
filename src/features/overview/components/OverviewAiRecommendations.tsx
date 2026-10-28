@@ -1,10 +1,10 @@
 import React from 'react'
-import { Headphones, RefreshCw, PenTool, Play } from 'lucide-react'
+import { BookOpen, Headphones, Mic, RefreshCw, PenTool, Play } from 'lucide-react'
 import type { AiRecommendationItem } from '@/types/overview'
 
 interface OverviewAiRecommendationsProps {
   recommendations: AiRecommendationItem[]
-  onAction?: (id: string) => void
+  onAction?: (item: AiRecommendationItem) => void
 }
 
 export const OverviewAiRecommendations: React.FC<OverviewAiRecommendationsProps> = ({
@@ -31,6 +31,8 @@ export const OverviewAiRecommendations: React.FC<OverviewAiRecommendationsProps>
                 {item.iconType === 'headphones' && <Headphones size={22} />}
                 {item.iconType === 'refresh' && <RefreshCw size={22} />}
                 {item.iconType === 'pen' && <PenTool size={22} />}
+                {item.iconType === 'book' && <BookOpen size={22} />}
+                {item.iconType === 'mic' && <Mic size={22} />}
               </div>
               <span className="rec-badge">{item.badgeText}</span>
             </div>
@@ -41,7 +43,7 @@ export const OverviewAiRecommendations: React.FC<OverviewAiRecommendationsProps>
             <button
               type="button"
               className="rec-action-btn"
-              onClick={() => onAction && onAction(item.id)}
+              onClick={() => onAction?.(item)}
             >
               <Play size={12} fill="currentColor" className="mr-1 inline" />
               <span>Bắt đầu ngay</span>

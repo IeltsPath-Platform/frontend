@@ -73,18 +73,43 @@ export interface BandStatistics {
   delta: number | null
 }
 export type VocabularyState = 'NEW' | 'L1' | 'L2' | 'L3' | 'RETAINED'
-export interface VocabularyStatistics {
-  availability: string
-  generatedAt: string
-  dataFrom: string | null
-  countingUnit: string
-  scheduleVersion: number
-  recallSource: string
+export interface LearnerReportSkill {
+  skill: string
+  mastery: number | null
+  tierCounts: Record<string, number>
+  kpCount: number
+  band: number | null
+}
+/** The parts of GET /api/learning/report the overview uses. */
+export interface LearnerReportSummary {
+  skills: LearnerReportSkill[]
+  estimatedBand: { value: number | null; estimated: boolean } | null
+  target: { targetBand: number | null; gap: number | null; examDate: string | null } | null
+}
+/** The parts of GET /api/learning-support/flashcards/notebook/summary the overview uses. */
+export interface NotebookSummary {
   total: number
-  retained: number
-  dueCount: number
-  retainedPercent: number | null
-  buckets: { state: VocabularyState; count: number }[]
+  dueNow: number
+  learnedCount: number
+  masteredCount: number
+  byLevel: Record<'UNKNOWN' | 'FAMILIAR' | 'LEARNING' | 'MASTERED', number>
+}
+/** One finished practice attempt of GET /api/assessments/practice/history; `percent` is 0-100. */
+export interface PracticeHistoryItem {
+  attemptId: string
+  skill: string
+  status: string
+  submittedAt: string | null
+  percent: number | null
+}
+export interface PracticeHistory {
+  totalElements: number
+  items: PracticeHistoryItem[]
+}
+export interface StreakSummary {
+  currentDays: number
+  longestDays: number
+  activeToday: boolean
 }
 function query(values: Record<string, string | number | undefined>) {
   const params = new URLSearchParams()
@@ -92,6 +117,10 @@ function query(values: Record<string, string | number | undefined>) {
   return params.toString()
 }
 export const overviewApi = {
+  report: (signal: AbortSignal) => apiRequest<LearnerReportSummary>('/api/learning/report', { signal, auth: true }),
+  notebook: (signal: AbortSignal) =>
+    apiRequest<NotebookSummary>(`/api/learning-support/flashcards/notebook/summary?${query({ timezone: Intl.DateTimeFormat().resolvedOptions().timeZone })}`, { signal, auth: true }),
+  streak: (signal: AbortSignal) => apiRequest<StreakSummary>('/api/learning/me/streak', { signal, auth: true }),
   time: (from: string, to: string, courseId: string, signal: AbortSignal) =>
     apiRequest<StudyTimeStatistics>(`/api/users/me/statistics/study-time?${query({ from, to, grain: 'DAY', courseId })}`, { signal, auth: true }),
   progress: async (page: number, courseId: string, signal: AbortSignal) => {
@@ -108,6 +137,8 @@ export const overviewApi = {
   },
   bands: (from: string, to: string, skill: BandSkill, seriesKind: SeriesKind, cursor: string, signal: AbortSignal) =>
     apiRequest<BandStatistics>(`/api/assessments/me/statistics/bands?${query({ from, to, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, skill, seriesKind, cursor, limit: 100 })}`, { signal, auth: true }),
-  vocabulary: (signal: AbortSignal) => apiRequest<VocabularyStatistics>('/api/learning-support/flashcards/statistics/vocabulary', { signal, auth: true }),
+  /** The 50 most recent finished attempts (the server's page limit) and how many there are in all. */
+  practiceHistory: (signal: AbortSignal) =>
+    apiRequest<PracticeHistory>(`/api/assessments/practice/history?${query({ page: 0, size: 50 })}`, { signal, auth: true }),
 }
 

@@ -19,6 +19,8 @@ function currentRange(period: string) {
   else { start.setDate(start.getDate() - (start.getDay() + 6) % 7); end.setTime(start.getTime()); end.setDate(end.getDate() + 6) }
   return { from: dayString(start), to: dayString(end) }
 }
+const NOTEBOOK_LEVELS = { UNKNOWN: 'Chưa hiểu', FAMILIAR: 'Quen mặt', LEARNING: 'Đang học', MASTERED: 'Đã thuộc' } as const
+
 export function OverviewDetailedStats() {
   const [params, setParams] = useSearchParams()
   const period = params.get('period') === 'month' ? 'month' : 'week'
@@ -37,7 +39,7 @@ export function OverviewDetailedStats() {
   const time = useStatisticsResource(`time:${from}:${to}:${courseId}`, (signal) => overviewApi.time(from, to, courseId, signal))
   const progress = useStatisticsResource(`progress:${page}:${courseId}`, (signal) => overviewApi.progress(page, courseId, signal))
   const bands = useStatisticsResource(`bands:${bandKey}:${cursor}`, (signal) => overviewApi.bands(from, to, skill, series, cursor, signal))
-  const vocabulary = useStatisticsResource('vocabulary', overviewApi.vocabulary)
+  const vocabulary = useStatisticsResource('notebook', overviewApi.notebook)
   function filter(name: string, value: string) {
     setParams((previous) => {
       const next = new URLSearchParams(previous)
@@ -65,9 +67,9 @@ export function OverviewDetailedStats() {
       </>}</StatisticsCard>
     </div>
     <StatisticsCard title="Từ vựng cần ôn" resource={vocabulary}>{(data) => <>
-      <p><strong className="statistics-number">{percentLabel(data.retainedPercent)}</strong> đã ghi nhớ · {data.retained}/{data.total} nghĩa từ · {data.dueCount} đến hạn ôn</p>
-      <ul className="statistics-buckets">{data.buckets.map((bucket) => <li key={bucket.state}><strong>{bucket.count}</strong><span>{bucket.state === 'NEW' ? 'Từ mới' : bucket.state === 'RETAINED' ? 'Đã ghi nhớ' : `Cấp ${bucket.state.slice(1)}`}</span></li>)}</ul>
-      <p className="statistics-muted">Mỗi nghĩa từ chỉ tính một lần. Mức ghi nhớ dựa trên tự đánh giá sau khi lật đáp án.</p><Button asChild><Link to="/vocabulary/review">{data.total ? 'Ôn ngay / thêm từ' : 'Thêm từ để bắt đầu'}</Link></Button>
+      <p><strong className="statistics-number">{percentLabel(data.total ? (data.masteredCount / data.total) * 100 : null)}</strong> đã thuộc · {data.learnedCount}/{data.total} từ đã học · {data.dueNow} đến hạn ôn</p>
+      <ul className="statistics-buckets">{(Object.keys(NOTEBOOK_LEVELS) as (keyof typeof NOTEBOOK_LEVELS)[]).map((level) => <li key={level}><strong>{data.byLevel[level] ?? 0}</strong><span>{NOTEBOOK_LEVELS[level]}</span></li>)}</ul>
+      <p className="statistics-muted">Mỗi nghĩa từ chỉ tính một lần. Mức hiểu dựa trên tự đánh giá sau khi lật đáp án.</p><Button asChild><Link to={data.dueNow ? '/vocabulary/notebook/review' : '/vocabulary/notebook'}>{data.total ? (data.dueNow ? 'Ôn ngay' : 'Mở sổ tay từ vựng') : 'Thêm từ để bắt đầu'}</Link></Button>
     </>}</StatisticsCard>
     <StatisticsCard title="Các khóa học của tôi" resource={progress}>{(data) => <>
       {data.courses.length === 0 ? <p>Chưa bắt đầu khóa học nào. <Link to="/learn">Khám phá khóa học</Link></p> : <div className="statistics-course-grid">{data.courses.map((course) => <article className="statistics-course" key={course.courseId}><h3>{course.name}</h3><p>{course.completedLessons}/{course.totalLessons} bài · {percentLabel(course.percent)}</p>{course.percent !== null && <progress max={100} value={course.percent} aria-label={`Tiến độ ${course.name}`} />}<p className="statistics-muted">Học gần nhất: {course.lastStudiedAt ? new Date(course.lastStudiedAt).toLocaleString('vi-VN') : 'Chưa có lịch sử thời gian'}</p><div className="statistics-controls"><Button asChild><Link to={`/learn/courses/${course.resumeTarget.courseId}`}>Tiếp tục học</Link></Button><Button variant="outline" onClick={() => filter('course', course.courseId)}>Xem số liệu</Button></div></article>)}</div>}

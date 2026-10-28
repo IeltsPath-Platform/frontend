@@ -8,43 +8,10 @@ export type OverviewSidebarTab =
   | 'profile'
   | 'ranking'
 
-export interface UserAcademicProfile {
-  username: string
-  currentBand: number
-  targetBand: number
-  currentCourse: string
-  startDate: string
-  endDate: string
-  courseCompletedPercent: number
-  lessonsCount: number
-  totalLessons: number
-  remainingLessons: number
-  nextLessonText: string
-  journeyStart: number
-  journeyCurrent: number
-  journeyTarget: number
-}
-
-export interface GeneralStudyStats {
-  totalStudyTime: string
-  studyTimeWeeklyDiff: string
-  totalStudyDays: number
-  testsCompletedCount: number
-  averageAccuracyRate: number
-  currentStreakDays: number
-  streakRecordMonth: string
-}
-
-export interface DayStreakItem {
-  dayLabel: 'T2' | 'T3' | 'T4' | 'T5' | 'T6' | 'T7' | 'CN'
-  status: 'completed' | 'missed' | 'upcoming'
-  badgeColor?: 'red' | 'blue' | 'gray'
-}
-
 export interface LearningOrbitSkill {
   name: 'Listening' | 'Reading' | 'Writing' | 'Speaking'
-  band: number
-  badgeText: 'PRIORITY FOCUS' | 'IMPROVE'
+  band: number | null
+  badgeText: 'PRIORITY FOCUS' | 'ĐANG TỐT' | 'CHƯA CÓ DỮ LIỆU'
   badgeType: 'red' | 'green' | 'orange' | 'blue'
   percent: number
   details: { label: string; score?: string }[]
@@ -68,10 +35,12 @@ export interface SpaceAutonomyNode {
 
 export interface AiRecommendationItem {
   id: string
-  iconType: 'headphones' | 'refresh' | 'pen'
+  iconType: 'headphones' | 'refresh' | 'pen' | 'book' | 'mic'
   title: string
   badgeText: string
   description: string
+  /** Where "Bắt đầu ngay" goes: the screen for exactly this kind of practice. */
+  to: string
 }
 
 export interface SkillProgressItem {
