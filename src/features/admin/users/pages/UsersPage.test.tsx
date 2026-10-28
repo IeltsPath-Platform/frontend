@@ -35,6 +35,11 @@ function renderUsers(users: User[] = [fixture('self-id', 'admin@example.com', 'A
   return render(<MemoryRouter><UsersPage /></MemoryRouter>)
 }
 
+async function chooseAction(row: HTMLElement, email: string, action: string) {
+  await userEvent.click(within(row).getByRole('button', { name: `Hành động của ${email}` }))
+  await userEvent.click(await screen.findByRole('menuitem', { name: action }))
+}
+
 describe('UsersPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -76,14 +81,14 @@ describe('UsersPage', () => {
     await user.type(screen.getByLabelText(/Mật khẩu tạm thời/), 'secret1')
     const roles = screen.getByRole('group', { name: 'Vai trò' })
     await user.click(within(roles).getByLabelText('Quản trị hệ thống'))
-    expect(within(roles).getByLabelText('R&D (nội dung)')).toBeDisabled()
+    expect(within(roles).getByLabelText('R&D')).toBeDisabled()
     await user.click(screen.getByRole('button', { name: 'Tạo tài khoản' }))
     await waitFor(() => expect(api.createUser).toHaveBeenCalledWith({ email: 'author@example.com', fullName: 'Nội dung viên', password: 'secret1', roles: ['CUSTOMER', 'ADMIN'] }))
     expect(api.listUsers).toHaveBeenCalledTimes(2)
   })
 
   it.each([
-    ['ROLE_CONFLICT', 'Tài khoản quản trị hệ thống không được kiêm vai trò R&D hoặc Mentor.'],
+    ['ROLE_CONFLICT', 'Tài khoản quản trị hệ thống không được kiêm vai trò R&D hoặc Examiner.'],
     ['SELF_ADMIN_REMOVAL', 'Bạn không thể tự gỡ quyền quản trị của chính mình.'],
     ['SELF_ACCOUNT_CHANGE', 'Bạn không thể tự khóa hoặc xóa tài khoản đang dùng.'],
     ['LAST_ADMIN', 'Đây là tài khoản quản trị cuối cùng đang hoạt động, không thể gỡ, khóa hay xóa.'],
@@ -114,12 +119,14 @@ describe('UsersPage', () => {
     await screen.findByText('admin@example.com')
     const row = screen.getByText('admin@example.com').closest('tr')
     if (!row) throw new Error('Current user row is missing')
-    await userEvent.click(within(row).getByRole('button', { name: 'Sửa' }))
+    await chooseAction(row, 'admin@example.com', 'Chỉnh sửa')
     const editor = screen.getByRole('region', { name: 'Quản lý admin@example.com' })
-    expect(within(editor).getByLabelText('Quản trị hệ thống')).toBeDisabled()
     expect(within(editor).getByRole('option', { name: 'Bị khóa' })).toBeDisabled()
     expect(within(editor).queryByRole('button', { name: 'Xóa tài khoản' })).not.toBeInTheDocument()
     expect(within(editor).getByRole('button', { name: 'Lưu trạng thái' })).toBeDisabled()
+    await userEvent.click(screen.getByRole('button', { name: 'Đóng' }))
+    await chooseAction(row, 'admin@example.com', 'Phân quyền')
+    expect(within(screen.getByRole('region', { name: 'Quản lý admin@example.com' })).getByLabelText('Quản trị hệ thống')).toBeDisabled()
   })
 
   it('asks for confirmation before deleting another account', async () => {
@@ -127,7 +134,7 @@ describe('UsersPage', () => {
     await screen.findByText('user@example.com')
     const row = screen.getByText('user@example.com').closest('tr')
     if (!row) throw new Error('User row is missing')
-    await userEvent.click(within(row).getByRole('button', { name: 'Sửa' }))
+    await chooseAction(row, 'user@example.com', 'Chỉnh sửa')
     await userEvent.click(await screen.findByRole('button', { name: 'Xóa tài khoản' }))
     const popup = await answerConfirm(false)
     expect(popup).toHaveTextContent('Xóa user@example.com? Thao tác này không thể hoàn tác.')
@@ -140,7 +147,7 @@ describe('UsersPage', () => {
   it('asks before locking an account and locks it only when confirmed', async () => {
     renderUsers()
     const row = (await screen.findByText('user@example.com')).closest('tr')!
-    await userEvent.click(within(row).getByRole('button', { name: 'Sửa' }))
+    await chooseAction(row, 'user@example.com', 'Chỉnh sửa')
     const editor = await screen.findByRole('region', { name: 'Quản lý user@example.com' })
     await userEvent.selectOptions(within(editor).getByLabelText('Trạng thái'), 'LOCKED')
     await userEvent.click(within(editor).getByRole('button', { name: 'Lưu trạng thái' }))
@@ -152,7 +159,7 @@ describe('UsersPage', () => {
     await waitFor(() => expect(api.updateUserStatus).toHaveBeenCalledWith('user-id', 'LOCKED'))
   })
 
-  it('opens create and edit in a right drawer', async () => {
+  it('opens create in a right drawer and edit in a centred modal', async () => {
     renderUsers()
     await userEvent.click(await screen.findByRole('button', { name: 'Tài khoản mới' }))
     const create = screen.getByRole('dialog', { name: 'Tài khoản nhân sự mới' })
@@ -160,22 +167,22 @@ describe('UsersPage', () => {
     await userEvent.click(within(create).getByRole('button', { name: 'Hủy' }))
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     const row = screen.getByText('user@example.com').closest('tr')!
-    await userEvent.click(within(row).getByRole('button', { name: 'Sửa' }))
-    expect(screen.getByRole('dialog', { name: 'user' })).toHaveClass('adm-drawer')
+    await chooseAction(row, 'user@example.com', 'Chỉnh sửa')
+    expect(screen.getByRole('dialog', { name: 'user' })).toHaveClass('adm-modal')
     await userEvent.click(screen.getByRole('button', { name: 'Đóng' }))
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
-  it('shows a user in a centred modal and moves to the edit drawer from it', async () => {
+  it('shows a user in a centred modal and moves to the edit form from it', async () => {
     renderUsers()
     const row = (await screen.findByText('user@example.com')).closest('tr')!
-    await userEvent.click(within(row).getByRole('button', { name: 'Chi tiết' }))
+    await chooseAction(row, 'user@example.com', 'Chi tiết')
     const modal = screen.getByRole('dialog', { name: 'user' })
     expect(modal).toHaveClass('adm-modal')
     expect(modal).toHaveTextContent('user@example.com')
-    expect(modal).toHaveTextContent('Học viên')
+    expect(modal).toHaveTextContent('Learner')
     await userEvent.click(within(modal).getByRole('button', { name: 'Sửa' }))
-    expect(screen.getByRole('dialog', { name: 'user' })).toHaveClass('adm-drawer')
+    expect(screen.getByRole('dialog', { name: 'user' })).toHaveClass('adm-modal')
     expect(screen.getByRole('region', { name: 'Quản lý user@example.com' })).toBeInTheDocument()
   })
 })

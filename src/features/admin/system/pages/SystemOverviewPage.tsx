@@ -5,7 +5,7 @@ import { useAdminResource, type AdminResource } from '../../lib/useAdminResource
 import { AdminPage } from '../../pages/AdminPage'
 import { listUsers } from '../../users/api/userAdminApi'
 import { USER_ROLE_LABEL } from '../../users/lib/userLabels'
-import type { User, UserRole } from '../../users/types'
+import { ASSIGNABLE_USER_ROLES, type User, type UserRole } from '../../users/types'
 import { fetchActivityStats, fetchServiceSnapshot } from '../api/systemAdminApi'
 import type { ActivityStats, DateRange, ServiceSnapshot } from '../types'
 import '../system.css'
@@ -48,7 +48,7 @@ function UserSummary({ users }: { users: User[] }) {
   const locked = users.filter((user) => user.status === 'LOCKED').length
   return <>
     <p><strong>{users.length}</strong> tài khoản · <strong>{locked}</strong> bị khóa</p>
-    <ul className="sys-summary-list">{(['ADMIN', 'CONTENT_AUTHOR', 'EXAMINER', 'CUSTOMER', 'SALES_STAFF'] as const).map((role) => <li key={role}>{USER_ROLE_LABEL[role]}: {count(role)}</li>)}</ul>
+    <ul className="sys-summary-list">{ASSIGNABLE_USER_ROLES.map((role) => <li key={role}>{USER_ROLE_LABEL[role]}: {count(role)}</li>)}</ul>
     <Link className="qb-link" to="/admin/users">Quản lý người dùng</Link>
   </>
 }

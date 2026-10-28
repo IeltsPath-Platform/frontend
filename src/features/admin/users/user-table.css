@@ -1,0 +1,155 @@
+/* Colour of the users table. Each role carries one tone (--um-tone) that its badge and its avatar both use. */
+.um-role--admin { --um-tone: var(--adm-accent); }
+.um-role--content_author { --um-tone: var(--adm-ok); }
+.um-role--examiner { --um-tone: var(--adm-warn); }
+.um-role--staff_manager { --um-tone: var(--adm-skill-all); }
+.um-role--staff { --um-tone: var(--adm-skill-listening); }
+.um-role--customer,
+.um-role--sales_staff { --um-tone: var(--adm-muted); }
+
+.adm-badge.um-role {
+  border-color: color-mix(in srgb, var(--um-tone) 35%, transparent);
+  background: color-mix(in srgb, var(--um-tone) 11%, transparent);
+  color: var(--um-tone);
+}
+
+/* Status: a dot and a tint, so a locked account stands out in a long list. */
+.adm-badge.um-status {
+  gap: 6px;
+}
+
+.adm-badge.um-status::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.adm-badge.um-status--active {
+  border-color: color-mix(in srgb, var(--adm-ok) 35%, transparent);
+  background: color-mix(in srgb, var(--adm-ok) 11%, transparent);
+  color: var(--adm-ok);
+}
+
+.adm-badge.um-status--locked {
+  border-color: color-mix(in srgb, var(--adm-danger) 35%, transparent);
+  background: color-mix(in srgb, var(--adm-danger) 11%, transparent);
+  color: var(--adm-danger);
+}
+
+.adm-badge.um-status--pending_verify {
+  border-color: color-mix(in srgb, var(--adm-warn) 35%, transparent);
+  background: color-mix(in srgb, var(--adm-warn) 11%, transparent);
+  color: var(--adm-warn);
+}
+
+.adm-badge.um-status--inactive {
+  background: var(--adm-surface-2);
+  color: var(--adm-muted);
+}
+
+/* Table: tinted head, striped rows, a hover tint, and a soft lift off the page. */
+.adm-table-wrap.um-table-wrap {
+  box-shadow: 0 1px 3px rgb(13 43 141 / 8%);
+}
+
+.um-table th {
+  border-bottom: 2px solid color-mix(in srgb, var(--adm-accent) 18%, var(--adm-border));
+  background: color-mix(in srgb, var(--adm-accent) 7%, var(--adm-surface));
+  color: var(--adm-accent-strong);
+}
+
+.um-table tbody tr:nth-child(even) {
+  background: color-mix(in srgb, var(--adm-accent) 3%, var(--adm-surface));
+}
+
+.um-table tbody tr:hover {
+  background: color-mix(in srgb, var(--adm-accent) 8%, var(--adm-surface));
+}
+
+.um-table td {
+  vertical-align: middle;
+}
+
+.um-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.um-avatar {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--um-tone, var(--adm-accent)) 14%, var(--adm-surface));
+  color: var(--um-tone, var(--adm-accent));
+  font-size: 0.85rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+/* Role choices: one selectable card per role, tinted with the colour of the role once ticked. */
+.um-role-list.um-role-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 10px;
+}
+
+.um-role-grid legend {
+  grid-column: 1 / -1;
+  margin-bottom: 2px;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.um-role-grid .um-role-choice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+  border: 1px solid var(--adm-border);
+  border-radius: 10px;
+  background: var(--adm-surface);
+  cursor: pointer;
+  font-weight: 600;
+  transition: border-color 0.12s, background-color 0.12s, color 0.12s;
+}
+
+.um-role-grid .um-role-choice input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--um-tone);
+}
+
+.um-role-grid .um-role-choice:hover:not(:has(input:disabled)) {
+  border-color: color-mix(in srgb, var(--um-tone) 55%, transparent);
+  background: color-mix(in srgb, var(--um-tone) 5%, var(--adm-surface));
+}
+
+.um-role-grid .um-role-choice:has(input:checked) {
+  border-color: var(--um-tone);
+  background: color-mix(in srgb, var(--um-tone) 11%, var(--adm-surface));
+  color: var(--um-tone);
+}
+
+.um-role-grid .um-role-choice:has(input:disabled) {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.um-role-grid .um-role-choice:has(input:focus-visible) {
+  outline: 2px solid var(--adm-focus);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .um-role-grid .um-role-choice {
+    transition: none;
+  }
+}

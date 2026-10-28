@@ -1,7 +1,9 @@
 ﻿import { z } from 'zod'
 
-export const USER_ROLES = ['ADMIN', 'CUSTOMER', 'CONTENT_AUTHOR', 'EXAMINER', 'SALES_STAFF'] as const
+export const USER_ROLES = ['ADMIN', 'CUSTOMER', 'CONTENT_AUTHOR', 'EXAMINER', 'SALES_STAFF', 'STAFF_MANAGER', 'STAFF'] as const
 export const USER_STATUSES = ['ACTIVE', 'INACTIVE', 'LOCKED', 'PENDING_VERIFY'] as const
+/** Roles an admin can give, filter by and count. SALES_STAFF still parses (an account may hold it) but is not offered. */
+export const ASSIGNABLE_USER_ROLES = ['ADMIN', 'CONTENT_AUTHOR', 'EXAMINER', 'STAFF_MANAGER', 'STAFF', 'CUSTOMER'] as const
 export const CHANGEABLE_USER_STATUSES = ['ACTIVE', 'INACTIVE', 'LOCKED'] as const
 
 export type UserRole = (typeof USER_ROLES)[number]

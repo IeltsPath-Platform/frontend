@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { MoreHorizontal } from 'lucide-react'
 
@@ -10,17 +10,25 @@ export interface RowMenuItem {
   icon?: ReactNode
   disabled?: boolean
   tone?: 'default' | 'danger'
+  /** Draws a divider above the item, to set a group of related actions apart. */
+  separatorBefore?: boolean
+  /** A short note at the end of the item, such as "Sắp có". */
+  hint?: string
   onSelect: () => void
 }
+
+const MENU_GAP = 6
+const EDGE_GAP = 8
 
 /**
  * The "..." button at the end of a table row and the menu of actions it opens. The menu is drawn on the page, outside
  * the table, so a table that scrolls or clips its cells never cuts it off.
  */
-export function AdminRowMenu({ label, items }: { label: string; items: readonly RowMenuItem[] }) {
+export function AdminRowMenu({ label, items, className }: { label: string; items: readonly RowMenuItem[]; className?: string }) {
   const trigger = useRef<HTMLButtonElement>(null)
   const menu = useRef<HTMLDivElement>(null)
-  const [spot, setSpot] = useState<{ top: number; right: number } | null>(null)
+  // `anchorTop` is the top edge of the button, where the menu opens upward from when it has no room below.
+  const [spot, setSpot] = useState<{ top: number; right: number; anchorTop: number } | null>(null)
 
   function close(returnFocus = false) {
     setSpot(null)
@@ -45,10 +53,21 @@ export function AdminRowMenu({ label, items }: { label: string; items: readonly 
     }
   }, [spot])
 
+  // The menu opens below the button; the last rows of a page have no room there, so it moves above, or against the
+  // bottom edge when it fits in neither place. A move leaves it with room, so this settles after one pass.
+  useLayoutEffect(() => {
+    if (!spot || !menu.current) return
+    const height = menu.current.offsetHeight
+    if (spot.top + height <= window.innerHeight - EDGE_GAP) return
+    const above = spot.anchorTop - MENU_GAP - height
+    const top = above >= EDGE_GAP ? above : Math.max(EDGE_GAP, window.innerHeight - height - EDGE_GAP)
+    if (top !== spot.top) setSpot({ ...spot, top })
+  }, [spot])
+
   function toggle() {
     if (spot) { close(); return }
     const box = trigger.current?.getBoundingClientRect()
-    setSpot({ top: (box?.bottom ?? 0) + 6, right: window.innerWidth - (box?.right ?? 0) })
+    setSpot({ top: (box?.bottom ?? 0) + MENU_GAP, right: window.innerWidth - (box?.right ?? 0), anchorTop: box?.top ?? 0 })
   }
 
   function onKeyDown(event: React.KeyboardEvent) {
@@ -66,9 +85,9 @@ export function AdminRowMenu({ label, items }: { label: string; items: readonly 
     </button>
     {spot ? createPortal(
       <div className="adm-theme">
-        <div aria-label={label} className="adm-rowmenu" onKeyDown={onKeyDown} ref={menu} role="menu" style={{ top: spot.top, right: spot.right }}>
-          {items.map((item) => <button aria-label={item.ariaLabel} className={`adm-rowmenu__item${item.tone === 'danger' ? ' is-danger' : ''}`} disabled={item.disabled} key={item.key}
-            onClick={() => { close(); item.onSelect() }} role="menuitem" type="button">{item.icon}{item.label}</button>)}
+        <div aria-label={label} className={`adm-rowmenu${className ? ` ${className}` : ''}`} onKeyDown={onKeyDown} ref={menu} role="menu" style={{ top: spot.top, right: spot.right, maxHeight: `calc(100dvh - ${EDGE_GAP * 2}px)`, overflowY: 'auto' }}>
+          {items.map((item) => <button aria-label={item.ariaLabel} className={`adm-rowmenu__item${item.tone === 'danger' ? ' is-danger' : ''}${item.separatorBefore ? ' adm-rowmenu__item--divided' : ''}`} disabled={item.disabled} key={item.key}
+            onClick={() => { close(); item.onSelect() }} role="menuitem" type="button">{item.icon}{item.label}{item.hint ? <span className="adm-rowmenu__hint">{item.hint}</span> : null}</button>)}
         </div>
       </div>, document.body) : null}
   </>
