@@ -2,6 +2,7 @@ import { useSyncExternalStore } from 'react'
 import type { UserTier } from '@/components/UserTierDropdown'
 import { accessApi } from './api/accessApi'
 import { authApi } from './api/authApi'
+import { profileApi } from '@/features/profile/api/profileApi'
 import type { UserResponse } from './api/types'
 import { clearAccessToken, setAccessToken, tryRestoreSession } from '@/lib/httpClient'
 
@@ -12,6 +13,7 @@ export interface AuthSessionSnapshot {
   tier: UserTier
   userName: string
   email: string | null
+  avatarUrl: string | null
   userId: string | null
   roles: string[]
 }
@@ -23,6 +25,7 @@ const GUEST_SESSION: AuthSessionSnapshot = {
   tier: 'FREE',
   userName: 'Học viên',
   email: null,
+  avatarUrl: null,
   userId: null,
   roles: [],
 }
@@ -53,6 +56,16 @@ async function refreshPoints() {
   }
 }
 
+async function refreshAvatar() {
+  try {
+    const profile = await profileApi.getProfile()
+    session = { ...session, avatarUrl: profile.avatarReference || null }
+    emitChange()
+  } catch {
+    // The initials stand in for the avatar when the profile cannot be read.
+  }
+}
+
 function applyUser(user: UserResponse) {
   session = {
     ...session,
@@ -70,8 +83,8 @@ export function useAuthSession() {
   return useSyncExternalStore(subscribe, getSnapshot, () => GUEST_SESSION)
 }
 
-export function setDemoTier(tier: UserTier) {
-  session = { ...session, tier }
+export function updateAuthUserProfile(updates: { userName?: string; email?: string; avatarUrl?: string | null }) {
+  session = { ...session, ...updates }
   emitChange()
 }
 
@@ -92,7 +105,7 @@ export async function hydrateAuthSession(): Promise<boolean> {
     }
     const user = await authApi.me()
     applyUser(user)
-    await refreshPoints()
+    await Promise.all([refreshPoints(), refreshAvatar()])
     return true
   } catch {
     clearAccessToken()
@@ -106,7 +119,7 @@ export async function loginWithAccessToken(accessToken: string) {
   setAccessToken(accessToken)
   const user = await authApi.me()
   applyUser(user)
-  await refreshPoints()
+  await Promise.all([refreshPoints(), refreshAvatar()])
   return user
 }
 
