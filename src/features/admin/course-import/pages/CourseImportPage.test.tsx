@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@/test/render'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { clearAccessToken, setAccessToken } from '@/lib/httpClient'
@@ -81,11 +81,11 @@ describe('CourseImportPage', () => {
     show()
 
     pick(workbook('big.xlsx', 5 * 1024 * 1024 + 1))
-    expect(screen.getByRole('alert')).toHaveTextContent('File lớn hơn 5 MB')
+    expect(screen.getByText(/File lớn hơn 5 MB/)).toBeInTheDocument()
     expect(button('Kiểm tra')).toBeDisabled()
 
     pick(workbook('data.csv'))
-    expect(screen.getByRole('alert')).toHaveTextContent('Chọn file Excel .xlsx có dữ liệu')
+    expect(screen.getByText(/Chọn file Excel .xlsx có dữ liệu/)).toBeInTheDocument()
     expect(button('Kiểm tra')).toBeDisabled()
     expect(calls).toHaveLength(0)
   })

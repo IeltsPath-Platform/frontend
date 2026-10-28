@@ -7,6 +7,7 @@ import type { CourseLesson } from '../types'
 import { CourseBlockEditor } from './CourseBlockEditor'
 import { CourseKnowledgeField } from './CourseKnowledgeField'
 import { CourseLessonResources } from './CourseLessonResources'
+import { CourseLessonVocabulary } from './CourseLessonVocabulary'
 import { CoursePackagePicker } from './CoursePackagePicker'
 
 /**
@@ -42,6 +43,7 @@ export function CourseLessonEditor({ value, onChange, disabled, practiceSets, us
     </div>
     <label className="adm-field"><span>Tóm tắt trang bài học (Markdown)</span><textarea className="adm-textarea adm-textarea--tall" maxLength={20000} onChange={(event) => onChange({ ...value, summaryMarkdown: event.target.value === '' ? null : event.target.value })} value={value.summaryMarkdown ?? ''} /></label>
     <CourseLessonResources disabled={disabled} onChange={(resources) => onChange({ ...value, resources })} value={value.resources ?? []} />
+    <CourseLessonVocabulary disabled={disabled} onChange={onChange} value={value} />
     <CourseKnowledgeField disabled={disabled} onChange={(next) => { if (next.length <= 50) onChange({ ...value, knowledgePointIds: next }) }} skill={skill} title={`Điểm kiến thức bài học ${number}`} value={value.knowledgePointIds} />
     <div className="adm-sec">
       <div className="adm-sec__head">

@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { adminErrorMessage } from '../../lib/adminErrors'
 import { createCourse, updateCourse } from '../api/courseApi'
 import { validBand, type Course } from '../types'
+import { useAdminError } from '../../lib/useAdminError'
 
 export function CourseForm({ course, onSaved, onCancel }: { course?: Course; onSaved: () => void; onCancel?: () => void }) {
   const [code, setCode] = useState(course?.code ?? '')
@@ -9,7 +10,7 @@ export function CourseForm({ course, onSaved, onCancel }: { course?: Course; onS
   const [band, setBand] = useState(course?.bandLevel.toString() ?? '')
   const [status, setStatus] = useState(course?.status ?? 'INACTIVE')
   const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [, setError] = useAdminError()
   async function submit(event: FormEvent) {
     event.preventDefault()
     if (saving) return
@@ -23,7 +24,6 @@ export function CourseForm({ course, onSaved, onCancel }: { course?: Course; onS
     } catch (reason) { setError(adminErrorMessage(reason)) } finally { setSaving(false) }
   }
   return <form aria-label={course ? 'Sửa khóa học' : 'Tạo khóa học'} noValidate onSubmit={(event) => void submit(event)}>
-    {error ? <div className="adm-alert adm-alert--error" role="alert">{error}</div> : null}
     <fieldset className="adm-author-fields" disabled={saving}>
       <label className="adm-field"><span>Mã khóa học</span><input className="adm-input" maxLength={100} required disabled={!!course} value={code} onChange={(event) => setCode(event.target.value)} /></label>
       <label className="adm-field"><span>Tên khóa học</span><input className="adm-input" maxLength={255} required value={name} onChange={(event) => setName(event.target.value)} /></label>

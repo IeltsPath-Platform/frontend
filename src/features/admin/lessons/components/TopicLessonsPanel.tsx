@@ -7,6 +7,7 @@ import { fetchLessons, reorderLessons } from '../api/lessonApi'
 import { lessonErrorText } from '../lib/lessonErrors'
 import { moveId } from '../lib/blockForm'
 import '../lessons.css'
+import { useAdminError } from '../../lib/useAdminError'
 
 /** The lessons of one topic, in teaching order, with their status. Opening one hands its id to the drawer. */
 export function TopicLessonsPanel({ topicId, onOpen, onCreate }: {
@@ -16,7 +17,7 @@ export function TopicLessonsPanel({ topicId, onOpen, onCreate }: {
 }) {
   const lessons = useAdminResource(`lessons|${topicId}`, (signal) => fetchLessons(topicId, signal))
   const [busy, setBusy] = useState(false)
-  const [actionError, setActionError] = useState<string | null>(null)
+  const [, setActionError] = useAdminError()
   const rows = lessons.data ?? []
 
   async function move(id: string, delta: -1 | 1) {
@@ -39,7 +40,6 @@ export function TopicLessonsPanel({ topicId, onOpen, onCreate }: {
         <p className="adm-muted">Mọi trạng thái: nháp, đã xuất bản, đã lưu trữ. Bấm tên bài để soạn nội dung ngay trong khung này.</p>
         <button className="adm-btn adm-btn--primary" onClick={onCreate} type="button"><Plus aria-hidden="true" size={16} /> Bài học mới</button>
       </div>
-      {actionError ? <div className="adm-alert adm-alert--error" role="alert">{actionError}</div> : null}
       {lessons.status === 'loading' && !lessons.data ? <AdminLoading label="Đang tải bài học…" /> : null}
       {lessons.status === 'error' ? <AdminError message={lessons.error ?? 'Không tải được bài học.'} onRetry={lessons.reload} /> : null}
       {lessons.status === 'success' && rows.length === 0 ? <AdminEmpty title="Chủ đề này chưa có bài học">Bấm “Bài học mới” để tạo bài nháp đầu tiên.</AdminEmpty> : null}

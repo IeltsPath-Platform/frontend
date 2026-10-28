@@ -12,6 +12,7 @@ import { TopicTree } from '../components/TopicTree'
 import type { Course } from '../types'
 import type { TopicOption } from '../../lessons/types'
 import '../courses.css'
+import { useAdminError } from '../../lib/useAdminError'
 
 export function CoursesPage() {
   const courses = useAdminResource('author-courses', fetchCourses)
@@ -21,7 +22,7 @@ export function CoursesPage() {
   const [editing, setEditing] = useState(false)
   const [creating, setCreating] = useState(false)
   const [addingTopic, setAddingTopic] = useState(false)
-  const [actionError, setActionError] = useState<string | null>(null)
+  const [, setActionError] = useAdminError()
   const [shownCourses, setShownCourses] = useState<Course[] | null>(null)
   const [shownTopics, setShownTopics] = useState<TopicOption[] | null>(null)
   if (courses.status === 'success' && courses.data !== shownCourses) setShownCourses(courses.data)
@@ -58,7 +59,6 @@ export function CoursesPage() {
         </header>
       </section>
       <div aria-labelledby={`course-tab-${selectedId}`} className="adm-course-panel" id={panelId} role="tabpanel">
-        {actionError ? <div className="adm-alert adm-alert--error" role="alert">{actionError}</div> : null}
         {editing && course ? <AdminDrawer title="Sửa khóa học" description={course.code} onClose={() => setEditing(false)}>
           {(close) => <CourseForm key={course.id} course={course} onCancel={close} onSaved={() => { courses.reload(); close() }} />}
         </AdminDrawer> : null}

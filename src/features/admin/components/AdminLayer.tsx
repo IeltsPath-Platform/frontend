@@ -92,7 +92,7 @@ export function AdminModal({ title, description, size = 'md', stacked = false, o
   title: string
   description?: string
   /** `lg` is a wide panel of a fixed height whose body lays itself out (a picker with its own scrolling list). */
-  size?: 'md' | 'lg'
+  size?: 'md' | 'lg' | 'xl'
   /** Opened from inside a drawer or another layer: sits above it and dims it. */
   stacked?: boolean
   onClose: () => void
@@ -103,7 +103,7 @@ export function AdminModal({ title, description, size = 'md', stacked = false, o
     <Dialog.Root open onOpenChange={(open) => { if (!open) close() }}>
       <Layer>
         <Dialog.Overlay className={`adm-layer__overlay${stacked ? ' adm-layer__overlay--stacked' : ''}${closing ? ' is-closing' : ''}`} />
-        <Dialog.Content aria-describedby={undefined} className={`adm-modal${size === 'lg' ? ' adm-modal--lg' : ''}${stacked ? ' adm-modal--stacked' : ''}${closing ? ' is-closing' : ''}`} ref={panel}>
+        <Dialog.Content aria-describedby={undefined} className={`adm-modal${size === 'lg' ? ' adm-modal--lg' : size === 'xl' ? ' adm-modal--lg adm-modal--xl' : ''}${stacked ? ' adm-modal--stacked' : ''}${closing ? ' is-closing' : ''}`} ref={panel}>
           <header className="adm-modal__header">
             <div>
               <Dialog.Title className="adm-layer__title">{title}</Dialog.Title>

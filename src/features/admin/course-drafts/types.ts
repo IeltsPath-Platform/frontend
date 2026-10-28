@@ -33,13 +33,27 @@ export const courseBlockSchema = z.object({
 export const lessonResourceSchema = z.object({
   type: z.enum(['SLIDE', 'DOCUMENT']), title: nonblank.max(255), url: z.string().max(2000).regex(/^https?:\/\/\S+$/i),
 })
-/** `summaryMarkdown`, `estimatedMinutes` and `resources` are optional so a draft saved before they existed still reads. */
+/** The parts of speech the vocabulary library knows. */
+export const COURSE_PARTS_OF_SPEECH = ['NOUN', 'VERB', 'ADJECTIVE', 'ADVERB', 'PREPOSITION', 'CONJUNCTION', 'IDIOM', 'PHRASAL_VERB'] as const
+/** Most senses a lesson may list, picked from the library or proposed as new words; and most new words alone. */
+export const COURSE_VOCABULARY_LIMIT = 50
+export const COURSE_NEW_WORD_LIMIT = 20
+/** A word the model proposed for a lesson. The library keeps its own sense for a lemma it already has. */
+export const courseNewWordSchema = z.object({
+  lemma: z.string().max(100).regex(/^\p{L}[\p{L}\p{N}' .-]*$/u), ipa: z.string().max(100).nullish(),
+  partOfSpeech: z.enum(COURSE_PARTS_OF_SPEECH), englishDefinition: z.string().max(1000).nullish(),
+  vietnameseMeaning: nonblank.max(1000), exampleSentence: nonblank.max(1000),
+})
+/** `summaryMarkdown`, `estimatedMinutes`, `resources` and the vocabulary are optional so a draft saved before they existed still reads. */
 export const courseLessonSchema = z.object({
   code: codeSchema, title: nonblank.max(255), summary: z.string().max(2000).nullable(),
   knowledgePointIds: z.array(z.guid()).max(50), blocks: z.array(courseBlockSchema).max(50), practiceSetPackageIds: z.array(z.guid()).max(20),
   summaryMarkdown: z.string().max(20000).nullish(), estimatedMinutes: z.int().min(1).max(600).nullish(),
   resources: z.array(lessonResourceSchema).max(20).optional(),
+  vocabularySenseIds: z.array(z.guid()).max(COURSE_VOCABULARY_LIMIT).optional(),
+  newVocabulary: z.array(courseNewWordSchema).max(COURSE_NEW_WORD_LIMIT).optional(),
 }).refine((lesson) => (lesson.resources ?? []).filter((item) => item.type === 'SLIDE').length <= 1, { path: ['resources'], message: 'Mỗi bài chỉ có một slide.' })
+  .refine((lesson) => (lesson.vocabularySenseIds?.length ?? 0) + (lesson.newVocabulary?.length ?? 0) <= COURSE_VOCABULARY_LIMIT, { path: ['newVocabulary'], message: 'Quá nhiều từ vựng trong một bài.' })
 export const courseTopicSchema = z.object({
   code: codeSchema, name: nonblank.max(255), skill: skillSchema, sortOrder: z.int().min(0).max(2147483647),
   lessons: z.array(courseLessonSchema).max(50), topicTest: finalTestSchema.nullable(),
@@ -77,6 +91,8 @@ export const courseGenerationRequestSchema = z.object({
   topics: z.array(nonblank.max(100)).max(10).default([]),
   knowledgePointIds: z.array(z.guid()).max(COURSE_CANDIDATE_LIMIT).default([]),
   lessonCount: z.int().min(1).max(30).nullable().optional(), instructions: z.string().max(500).nullable().optional(),
+  /** Whether the generator adds the prerequisites itself. The request form lets the author pick them, so it sends false. */
+  includePrerequisites: z.boolean().nullish(),
 }).refine((body) => body.topics.length > 0 || body.knowledgePointIds.length > 0, { message: 'Chọn kiến thức hoặc nhập chủ đề.' })
 
 export const courseDraftResultSchema = courseStructureSchema.safeExtend({
@@ -99,6 +115,8 @@ export type CourseDraftStructure = CourseStructure
 export type CourseTopic = z.infer<typeof courseTopicSchema>
 export type CourseLesson = z.infer<typeof courseLessonSchema>
 export type CourseLessonResource = z.infer<typeof lessonResourceSchema>
+export type CourseNewWord = z.infer<typeof courseNewWordSchema>
+export type CoursePartOfSpeech = (typeof COURSE_PARTS_OF_SPEECH)[number]
 export type CourseBlock = z.infer<typeof courseBlockSchema>
 export type CourseFinalTest = z.infer<typeof finalTestSchema>
 export type CourseMilestone = CourseStructure['practiceTestMilestones'][number]

@@ -3,6 +3,7 @@ import { KnowledgePointPicker } from '../../questions/components/KnowledgePointP
 import { createErrorType, updateErrorType } from '../api/errorTypeApi'
 import { ERROR_CATEGORY_LABEL, SEVERITY_LABEL, errorTypeMessage } from '../lib/errorTypeLabels'
 import { ERROR_CATEGORIES, type ErrorCategory, type ErrorType, type ErrorTypeCreate } from '../types'
+import { useAdminError } from '../../lib/useAdminError'
 
 export function ErrorTypeForm({ item, onSaved, onCancel }: { item?: ErrorType; onSaved: () => void; onCancel: () => void }) {
   const [code, setCode] = useState(item?.code ?? '')
@@ -14,7 +15,7 @@ export function ErrorTypeForm({ item, onSaved, onCancel }: { item?: ErrorType; o
   const [status, setStatus] = useState(item?.status ?? 'ACTIVE')
   const [review, setReview] = useState(item?.reviewStatus ?? 'DRAFT')
   const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [, setError] = useAdminError()
   async function submit(event: FormEvent) {
     event.preventDefault()
     if (saving) return
@@ -30,7 +31,6 @@ export function ErrorTypeForm({ item, onSaved, onCancel }: { item?: ErrorType; o
     } catch (reason) { setError(errorTypeMessage(reason)) } finally { setSaving(false) }
   }
   return <form aria-label={item ? 'Sửa mã lỗi' : 'Tạo mã lỗi'} className="adm-error-form" noValidate onSubmit={(event) => void submit(event)}>
-    {error ? <div className="adm-alert adm-alert--error" role="alert">{error}</div> : null}
     <fieldset className="adm-error-fields" disabled={saving}>
       <label className="adm-field"><span>Mã lỗi</span><input className="adm-input" required maxLength={60} disabled={!!item} value={code} onChange={(event) => setCode(event.target.value)} /></label>
       <label className="adm-field"><span>Tên mã lỗi</span><input className="adm-input" required maxLength={255} value={name} onChange={(event) => setName(event.target.value)} /></label>

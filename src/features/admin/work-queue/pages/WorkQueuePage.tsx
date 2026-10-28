@@ -9,6 +9,7 @@ import { listWorkItems, updateWorkItem } from '../api/workQueueApi'
 import { KIND_HELP, KIND_LABEL, STATUS_LABEL, detailText, subjectText, workLinks } from '../lib/workQueueLabels'
 import { WORK_KINDS, type WorkItem, type WorkKind, type WorkUpdate } from '../types'
 import '../work-queue.css'
+import { useAdminError } from '../../lib/useAdminError'
 
 type StatusFilter = 'ACTIVE' | 'DONE' | 'ALL'
 
@@ -71,7 +72,7 @@ export function WorkQueuePage() {
   const [kind, setKind] = useState<WorkKind | ''>('')
   const [status, setStatus] = useState<StatusFilter>('ACTIVE')
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [, setError] = useAdminError()
   const items = useAdminResource(`work-queue:${kind}:${status}`, (signal) =>
     listWorkItems({ kind: kind || undefined, status: status === 'DONE' ? 'DONE' : undefined }, signal))
 
@@ -108,7 +109,6 @@ export function WorkQueuePage() {
             </select>
           </label>
         </div>
-        {error ? <p className="adm-alert adm-alert--error" role="alert">{error}</p> : null}
         {items.status === 'loading' ? <AdminLoading /> : null}
         {items.status === 'error' ? <AdminError message={items.error!} onRetry={items.reload} /> : null}
         {items.status === 'success' && shown.length === 0 ? <AdminEmpty title="Không có việc nào phù hợp" /> : null}

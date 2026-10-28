@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@/test/render'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { HttpError } from '@/lib/httpClient'
 import { ErrorTypesPage } from './ErrorTypesPage'
@@ -84,7 +84,7 @@ describe('ErrorTypesPage', () => {
     const form = screen.getByRole('form', { name: 'Tạo mã lỗi' })
     fireEvent.change(within(form).getByLabelText('Mã lỗi'), { target: { value: 'lower_case' } })
     fireEvent.submit(form)
-    expect(await within(form).findByRole('alert')).toHaveTextContent('Mã bắt đầu bằng chữ in hoa')
+    expect(await screen.findByText(/Mã bắt đầu bằng chữ in hoa/)).toBeInTheDocument()
     expect(api.createErrorType).not.toHaveBeenCalled()
   })
   it('opens create and edit in a side drawer and closes it with Hủy', async () => {

@@ -4,6 +4,7 @@ import type { TopicOption } from '../../lessons/types'
 import { createTopic, updateTopic } from '../api/courseApi'
 import { SKILL_LABEL, TOPIC_SKILLS, validBand, type Course, type TopicCreate } from '../types'
 import { topicError } from '../lib/topicHelpers'
+import { useAdminError } from '../../lib/useAdminError'
 
 /**
  * A new topic is always top level, and the parent field shows only for a topic that already has one, so it can be moved
@@ -21,7 +22,7 @@ export function TopicForm({ topic, parentId, courseId, courses, topics, onSaved,
   const [max, setMax] = useState(topic?.bandMax?.toString() ?? '')
   const [order, setOrder] = useState(topic?.sortOrder.toString() ?? String(Math.max(-1, ...topics.filter((item) => (item.parentTopicId ?? null) === parentId).map((item) => item.sortOrder)) + 1))
   const [status, setStatus] = useState(topic?.status ?? 'ACTIVE')
-  const [error, setError] = useState<string | null>(null)
+  const [, setError] = useAdminError()
   const [orderError, setOrderError] = useState<string | null>(null)
   const orderId = useId()
   const [saving, setSaving] = useState(false)
@@ -52,7 +53,6 @@ export function TopicForm({ topic, parentId, courseId, courses, topics, onSaved,
     } finally { setSaving(false) }
   }
   return <form aria-label={topic ? 'Sửa chủ đề' : 'Tạo chủ đề'} noValidate onSubmit={(event) => void submit(event)}>
-    {error ? <div className="adm-alert adm-alert--error" role="alert">{error}</div> : null}
     <fieldset className="adm-author-fields" disabled={saving}>
       <label className="adm-field"><span>Mã chủ đề</span><input className="adm-input" required maxLength={100} disabled={!!topic} value={code} onChange={(event) => setCode(event.target.value)} /></label>
       <label className="adm-field"><span>Tên chủ đề</span><input className="adm-input" required maxLength={255} value={name} onChange={(event) => setName(event.target.value)} /></label>

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useAdminConfirm } from '../../lib/useAdminConfirm'
 import { deleteAudio, deletePassage, updateAudio, updatePassage, uploadAudio } from '../api/packageApi'
 import type { AudioUpload, PackageSection } from '../types'
+import { useAdminError } from '../../lib/useAdminError'
 
 function safeMediaUrl(value: string | null | undefined): string | undefined {
   if (!value) return undefined
@@ -21,7 +22,7 @@ export function SectionContentEditor({ packageId, versionId, section, disabled, 
   const [file, setFile] = useState<File | null>(null)
   const [uploaded, setUploaded] = useState<{ value: AudioUpload; generation: number } | null>(null)
   const [pending, setPending] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [, setError] = useAdminError()
   const mounted = useRef(true)
   const generation = useRef(0)
   const manualDuration = useRef(false)
@@ -78,7 +79,6 @@ export function SectionContentEditor({ packageId, versionId, section, disabled, 
 
   return <div className="adm-package-content">
     {confirmDialog}
-    {error ? <div className="adm-alert adm-alert--error" role="alert">{error}</div> : null}
     <form aria-label={`Đoạn văn của ${section.title}`} noValidate onSubmit={savePassage}>
       <h4>Đoạn văn</h4>
       <fieldset className="adm-package-fields" disabled={locked}>

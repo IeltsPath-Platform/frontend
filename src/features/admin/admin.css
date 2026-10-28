@@ -198,6 +198,7 @@
 .adm-modal { position: fixed; inset: 0; z-index: 71; display: flex; flex-direction: column; width: min(640px, calc(100vw - 32px)); height: fit-content; max-height: calc(100dvh - 32px); margin: auto; background: var(--adm-surface); color: var(--adm-text); border: 1px solid var(--adm-border); border-radius: 12px; box-shadow: 0 24px 56px rgb(13 43 141 / 28%); animation: adm-modal-in .2s ease both; }
 .adm-modal.is-closing { animation: adm-modal-out .18s ease-in both; }
 .adm-modal--lg { width: min(980px, calc(100vw - 32px)); height: min(720px, calc(100dvh - 32px)); }
+.adm-modal--xl { width: min(1480px, calc(100vw - 32px)); height: min(940px, calc(100dvh - 32px)); }
 .adm-modal--lg .adm-modal__body { display: flex; flex-direction: column; overflow: hidden; padding: 0; }
 .adm-layer__overlay--stacked { z-index: 80; }
 .adm-modal--stacked { z-index: 81; }

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@/test/render'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { HttpError } from '@/lib/httpClient'
 import type { LessonEditor } from '../types'
@@ -85,7 +85,7 @@ describe('LessonEditorPanel', () => {
     const form = await screen.findByRole('form', { name: /Thêm block/ })
     fireEvent.click(within(form).getByRole('button', { name: 'Lưu block' }))
 
-    expect(await within(form).findByText('Cần nhập nội dung bài giảng.')).toBeInTheDocument()
+    expect(await screen.findByText('Cần nhập nội dung bài giảng.')).toBeInTheDocument()
     expect(api.addBlock).not.toHaveBeenCalled()
   })
 
@@ -96,8 +96,9 @@ describe('LessonEditorPanel', () => {
     renderPage()
     fireEvent.click(await screen.findByRole('button', { name: 'Xuất bản' }))
 
-    const alert = await screen.findByText('Bài chưa gắn knowledge point nào đang hoạt động.')
-    expect(alert.closest('[role="alert"]')).toHaveTextContent('Chưa xuất bản được bài học.')
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('Chưa xuất bản được bài học.')
+    expect(alert).toHaveTextContent('Bài chưa gắn knowledge point nào đang hoạt động.')
   })
 
   it('locks exercise blocks once the lesson is published but keeps the others editable', async () => {

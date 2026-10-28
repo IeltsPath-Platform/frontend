@@ -10,6 +10,7 @@ import { ERROR_CATEGORY_LABEL, SEVERITY_LABEL, errorTypeMessage, errorTypeUpdate
 import { ERROR_CATEGORIES, type ErrorType, type ErrorTypeUpdate } from '../types'
 import '../error-types.css'
 import '../../questions/questions.css'
+import { useAdminError } from '../../lib/useAdminError'
 
 export function ErrorTypesPage() {
   const resource = useAdminResource('author-error-types', fetchErrorTypes)
@@ -20,7 +21,7 @@ export function ErrorTypesPage() {
   const [editing, setEditing] = useState<{ item?: ErrorType } | null>(null)
   const [viewing, setViewing] = useState<ErrorType | null>(null)
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [, setError] = useAdminError()
   const text = query.trim().toLocaleLowerCase('vi')
   const rows = (resource.data ?? []).filter((item) => (!category || item.category === category) && (!review || item.reviewStatus === review) && (!text || `${item.code} ${item.name}`.toLocaleLowerCase('vi').includes(text)))
   const names = new Map(points.data?.nodes.map((point) => [point.id, point.name]) ?? [])
@@ -53,7 +54,6 @@ export function ErrorTypesPage() {
       <label className="adm-field"><span>Lọc trạng thái duyệt</span><select className="adm-select" value={review} onChange={(event) => setReview(event.target.value)}><option value="">Tất cả</option><option value="DRAFT">Chưa duyệt</option><option value="APPROVED">Đã duyệt</option></select></label>
       <label className="adm-field"><span>Tìm mã hoặc tên</span><input className="adm-input" type="search" value={query} onChange={(event) => setQuery(event.target.value)} /></label>
     </div>
-    {error ? <div className="adm-alert adm-alert--error" role="alert">{error}</div> : null}
     {resource.status === 'loading' ? <AdminLoading label="Đang tải mã lỗi…" /> : null}
     {resource.status === 'error' ? <AdminError message={resource.error!} onRetry={resource.reload} /> : null}
     {points.status === 'error' ? <AdminError message="Chưa tải được tên điểm kiến thức. Danh sách mã lỗi vẫn dùng được." onRetry={points.reload} /> : null}

@@ -8,6 +8,7 @@ import { REVIEW_PAGE_SIZE, claimReview, listExaminerQuality, listMyReviews, list
 import { QUALITY_NOTE, byDifference, percentText, shortId, sourceLabel, taskLabel, waitText } from '../lib/reviewLabels'
 import type { QueueEntry } from '../types'
 import '../examiner-review.css'
+import { useAdminError } from '../../lib/useAdminError'
 
 type Tab = 'queue' | 'mine' | 'quality'
 const TAB_LABEL: Record<Tab, string> = { queue: 'Bài chờ chấm lại', mine: 'Bài tôi đang chấm', quality: 'Chất lượng giám khảo' }
@@ -75,7 +76,7 @@ function Quality() {
 function Queue({ mine }: { mine: boolean }) {
   const [page, setPage] = useState(0)
   const [busy, setBusy] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [, setError] = useAdminError()
   const navigate = useNavigate()
   const list = useAdminResource(`examiner-review:${mine ? 'mine' : 'queue'}:${page}`, (signal) => (mine ? listMyReviews(page, signal) : listReviewQueue(page, signal)))
 
@@ -97,7 +98,6 @@ function Queue({ mine }: { mine: boolean }) {
   const data = list.data!
   return (
     <>
-      {error ? <p className="adm-alert adm-alert--error" role="alert">{error}</p> : null}
       {data.content.length === 0 ? <AdminEmpty title={mine ? 'Bạn chưa nhận bài nào' : 'Chưa có bài chờ chấm lại'} /> : (
         <QueueTable
           entries={data.content}

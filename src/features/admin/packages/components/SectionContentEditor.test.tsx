@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@/test/render'
 import { answerConfirm } from '@/test/confirm'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PackageSection } from '../types'

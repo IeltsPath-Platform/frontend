@@ -12,6 +12,7 @@ import { questionErrorText } from '../lib/labels'
 import { DIFFICULTIES, type VersionRequest } from '../types'
 import { DIFFICULTY_LABEL } from '../lib/labels'
 import { KnowledgePointPicker } from './KnowledgePointPicker'
+import { useAdminError, useAdminErrorToast } from '../../lib/useAdminError'
 
 export interface VersionFormProps {
   questionType: string
@@ -23,8 +24,8 @@ export interface VersionFormProps {
 /** A new version of a question. The answer fields follow the question type; the version starts as a draft. */
 export function VersionForm({ questionType, nextVersionNumber, onSubmit, onCancel }: VersionFormProps) {
   const [form, setForm] = useState<VersionFormState>(() => initialFormState(questionType, nextVersionNumber))
-  const [problems, setProblems] = useState<string[]>([])
-  const [serverError, setServerError] = useState<string | null>(null)
+  const [, setServerError] = useAdminError()
+  const fail = useAdminErrorToast()
   const [saving, setSaving] = useState(false)
   const shape = answerShapeOf(questionType)
   const fixedOptions = questionType === 'TRUE_FALSE_NOT_GIVEN'
@@ -37,10 +38,9 @@ export function VersionForm({ questionType, nextVersionNumber, onSubmit, onCance
     event.preventDefault()
     const result = buildVersionRequest(questionType, form)
     if (!result.ok) {
-      setProblems(result.problems)
+      fail(['Chưa lưu được:', ...result.problems].join('\n'))
       return
     }
-    setProblems([])
     setServerError(null)
     setSaving(true)
     try {
@@ -55,13 +55,6 @@ export function VersionForm({ questionType, nextVersionNumber, onSubmit, onCance
   return (
     <form aria-label="Phiên bản mới" className="qb-form" noValidate onSubmit={(event) => void submit(event)}>
 
-      {problems.length > 0 ? (
-        <div className="adm-alert adm-alert--error" role="alert">
-          Chưa lưu được:
-          <ul>{problems.map((problem) => <li key={problem}>{problem}</li>)}</ul>
-        </div>
-      ) : null}
-      {serverError ? <div className="adm-alert adm-alert--error" role="alert">{serverError}</div> : null}
 
       <label className="adm-field">
         <span>Số phiên bản</span>

@@ -7,6 +7,7 @@ import {
   QUESTION_DIFFICULTIES, QUESTION_DRAFT_MAX_ITEMS, QUESTION_DRAFT_TYPES,
   questionGenerationRequestSchema, type QuestionDraft, type QuestionGenerationRequest,
 } from '../types'
+import { useAdminError } from '../../lib/useAdminError'
 
 export function QuestionDraftForm({ initialKnowledgePointId, onCreated, onCancel }: {
   initialKnowledgePointId?: string; onCreated: (draft: QuestionDraft) => void; onCancel: () => void
@@ -17,7 +18,7 @@ export function QuestionDraftForm({ initialKnowledgePointId, onCreated, onCancel
   const [difficulty, setDifficulty] = useState<QuestionGenerationRequest['difficulty']>('MEDIUM')
   const [instructions, setInstructions] = useState('')
   const [pending, setPending] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [, setError] = useAdminError()
   const mounted = useRef(true)
 
   useEffect(() => {
@@ -52,7 +53,6 @@ export function QuestionDraftForm({ initialKnowledgePointId, onCreated, onCancel
 
   return <form className="adm-draft-form" aria-label="Tạo bản nháp câu hỏi" noValidate onSubmit={(event) => void submit(event)}>
     <p className="adm-muted">Chọn một điểm kiến thức và cấu hình câu hỏi. Bạn sẽ xem lại và chọn câu cần giữ trước khi duyệt.</p>
-    {error ? <div className="adm-alert adm-alert--error" role="alert">{error}</div> : null}
     <fieldset className="adm-draft-fields" disabled={pending}>
       <legend className="adm-sr-only">Cấu hình bản nháp câu hỏi</legend>
       <section aria-label="Điểm kiến thức cho câu hỏi">

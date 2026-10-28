@@ -29,6 +29,12 @@ export function CourseKnowledgeDialog({ offered, picked, limit, description, onC
     onChange(checked ? [...picked, id] : picked.filter((item) => item !== id))
   }
 
+  /** Ticks every point on the list now (after the level and text filters), as many as the limit leaves room for. */
+  function selectAll() {
+    const fresh = shown.map((node) => node.id).filter((id) => !picked.includes(id))
+    onChange([...picked, ...fresh.slice(0, Math.max(0, limit - picked.length))])
+  }
+
   /** Ticks the points of one level that are on the list now, as many as the limit leaves room for; unticks them all when every one is ticked. */
   function toggleGroup(nodes: readonly TreeNode[]) {
     const ids = nodes.map((node) => node.id)
@@ -80,6 +86,7 @@ export function CourseKnowledgeDialog({ offered, picked, limit, description, onC
       <footer className="adm-kp-dialog__footer">
         <span aria-live="polite" className="adm-muted">{picked.length}/{limit} đã chọn{atLimit ? ' · đã đạt tối đa' : ''}</span>
         <div className="adm-kp-dialog__actions">
+          <button className="adm-btn" disabled={atLimit || shown.every((node) => picked.includes(node.id))} onClick={selectAll} type="button">Chọn tất cả</button>
           <button className="adm-btn" disabled={!picked.length} onClick={() => onChange([])} type="button">Bỏ chọn tất cả</button>
           <button className="adm-btn adm-btn--primary" onClick={close} type="button">Lưu</button>
         </div>

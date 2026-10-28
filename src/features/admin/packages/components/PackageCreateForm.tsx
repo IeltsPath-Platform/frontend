@@ -6,6 +6,7 @@ import { useAdminResource } from '../../lib/useAdminResource'
 import { createDraftVersion, createPackage, listPracticeSources } from '../api/packageApi'
 import { PACKAGE_TYPE_LABEL, packageError } from '../lib/packageLabels'
 import type { CreatePackageRequest, PackageType } from '../types'
+import { useAdminError } from '../../lib/useAdminError'
 
 const CREATE_TYPES = ['PRACTICE_SET', 'PRACTICE_TEST', 'MOCK_TEST', 'PLACEMENT_TEST', 'QUIZ', 'TOPIC_TEST', 'COURSE_TEST'] as const
 
@@ -22,7 +23,7 @@ export function PackageCreateForm({ onCreated, onCancel, initialType }: {
   const [sourceCode, setSourceCode] = useState('')
   const [pending, setPending] = useState(false)
   const [createdId, setCreatedId] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [, setError] = useAdminError()
   const mounted = useRef(true)
   useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [])
   const courses = useAdminResource('package-create-courses', fetchCourses)
@@ -63,7 +64,6 @@ export function PackageCreateForm({ onCreated, onCancel, initialType }: {
   }
 
   return <form aria-label="Tạo gói câu hỏi" className="adm-package-create" noValidate onSubmit={(event) => void submit(event)}>
-    {error ? <div className="adm-alert adm-alert--error" role="alert">{error}</div> : null}
     {createdId && !pending ? <button className="adm-btn adm-btn--primary" type="button" onClick={() => onCreated(createdId)}>Mở gói đã tạo</button> : null}
     <fieldset className="adm-package-fields" disabled={pending || !!createdId}>
       <label className="adm-field"><span>Mã gói</span><input className="adm-input" required maxLength={100} value={code} onChange={(event) => setCode(event.target.value)} /></label>

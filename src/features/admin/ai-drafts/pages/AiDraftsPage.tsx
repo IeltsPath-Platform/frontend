@@ -29,7 +29,7 @@ function DraftList() {
   if (resource.status === 'success' && resource.data && (shown?.data !== resource.data || shown.key !== key)) setShown({ key, data: resource.data })
   const drafts = resource.status === 'success' ? resource.data : shown?.key === key ? shown.data : null
   const running = resource.status === 'success' && !!drafts?.some((draft) => draftIsRunning(draft.status))
-  useDraftPolling(running, resource.reload)
+  useDraftPolling(running, resource.refresh)
   const creating = params.get('new') === 'questions'
   function changePage(nextPage: number) {
     setParams((previous) => { const next = new URLSearchParams(previous); next.set('page', String(nextPage)); return next })

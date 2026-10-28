@@ -1,12 +1,13 @@
 import { useState, type FormEvent } from 'react'
 import { createLesson } from '../api/lessonApi'
 import { lessonErrorText } from '../lib/lessonErrors'
+import { useAdminError } from '../../lib/useAdminError'
 
 export function NewLessonForm({ topicId, onCreated, onCancel }: { topicId: string; onCreated: () => void; onCancel: () => void }) {
   const [code, setCode] = useState('')
   const [title, setTitle] = useState('')
   const [summary, setSummary] = useState('')
-  const [error, setError] = useState<string | null>(null)
+  const [, setError] = useAdminError()
   const [saving, setSaving] = useState(false)
 
   async function submit(event: FormEvent) {
@@ -28,7 +29,6 @@ export function NewLessonForm({ topicId, onCreated, onCancel }: { topicId: strin
 
   return (
     <form aria-label="Bài học mới" noValidate onSubmit={(event) => void submit(event)}>
-      {error ? <div className="adm-alert adm-alert--error" role="alert">{error}</div> : null}
       <div className="adm-filters">
         <label className="adm-field">
           <span>Mã bài học</span>

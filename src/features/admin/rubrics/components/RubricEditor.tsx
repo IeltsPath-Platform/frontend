@@ -6,6 +6,7 @@ import { activateRubric, createRubric, updateRubric } from '../api/rubricApi'
 import { activationProblem, rubricRequest } from '../lib/rubricDraft'
 import { RUBRIC_BANDS, rubricRequestSchema, type RubricRequest } from '../types'
 import { CriterionEditor } from './CriterionEditor'
+import { useAdminError } from '../../lib/useAdminError'
 
 export function RubricEditor({ initial, persisted, onSaved, onActivated, onCancel }: {
   initial: RubricRequest; persisted: boolean; onSaved: () => void; onActivated: () => void; onCancel: () => void
@@ -15,7 +16,7 @@ export function RubricEditor({ initial, persisted, onSaved, onActivated, onCance
   const [saved, setSaved] = useState(persisted)
   const [dirty, setDirty] = useState(!persisted)
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [, setError] = useAdminError()
   const [notice, setNotice] = useState<string | null>(null)
   function change(next: RubricRequest) { setDraft(next); setDirty(true); setNotice(null) }
   function move(index: number, delta: number) {
@@ -57,7 +58,6 @@ export function RubricEditor({ initial, persisted, onSaved, onActivated, onCance
   return <form className="adm-rubric-editor" aria-label="Soạn rubric" noValidate onSubmit={(event) => void save(event)}>
     {confirmDialog}
     <p className="adm-muted">Kích hoạt cần đúng {draft.task === 'TASK_1' ? 'TA' : 'TR'}, CC, LR, GRA; mỗi tiêu chí có đủ band 4,0–9,0 theo bước 0,5. Lưu bản nháp trước khi kích hoạt.</p>
-    {error ? <div className="adm-alert adm-alert--error" role="alert">{error}</div> : null}
     {notice ? <p role="status">{notice}</p> : null}
     <fieldset className="adm-rubric-fields" disabled={busy}>
       <label className="adm-field"><span>Nguồn rubric</span><textarea className="adm-textarea" required maxLength={10000} value={draft.sourceNote} onChange={(event) => change({ ...draft, sourceNote: event.target.value })} /></label>

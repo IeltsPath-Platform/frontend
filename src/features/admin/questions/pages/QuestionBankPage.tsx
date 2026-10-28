@@ -12,6 +12,7 @@ import {
 } from '../lib/labels'
 import { PUBLICATION_STATUSES, PURPOSES, QUESTION_TYPES, SKILLS } from '../types'
 import '../questions.css'
+import { useAdminError } from '../../lib/useAdminError'
 
 const PAGE_SIZE = 25
 
@@ -21,7 +22,7 @@ function CreateQuestionPanel({ onDone }: { onDone: () => void }) {
   const [skill, setSkill] = useState<string>('READING')
   const [purpose, setPurpose] = useState<string>('LEARNING')
   const [accessLevel, setAccessLevel] = useState('FREE')
-  const [error, setError] = useState<string | null>(null)
+  const [, setError] = useAdminError()
   const [saving, setSaving] = useState(false)
 
   async function submit(event: FormEvent) {
@@ -39,7 +40,6 @@ function CreateQuestionPanel({ onDone }: { onDone: () => void }) {
 
   return (
     <form aria-label="Câu hỏi mới" onSubmit={(event) => void submit(event)}>
-      {error ? <div className="adm-alert adm-alert--error" role="alert">{error}</div> : null}
       <div className="adm-filters">
         <label className="adm-field">
           <span>Dạng câu hỏi</span>

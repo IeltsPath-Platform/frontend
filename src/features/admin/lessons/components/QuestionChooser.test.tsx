@@ -1,4 +1,4 @@
-import { render, waitFor } from '@testing-library/react'
+import { render, waitFor } from '@/test/render'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { QuestionChooser } from './QuestionChooser'
 

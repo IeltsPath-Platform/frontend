@@ -4,6 +4,7 @@ import { useAdminConfirm } from '../../lib/useAdminConfirm'
 import { QuestionChooser } from '../../lessons/components/QuestionChooser'
 import { addSectionQuestion, removeSectionQuestion, reorderSectionQuestions } from '../api/packageApi'
 import type { PackageSection, PackageType } from '../types'
+import { useAdminError } from '../../lib/useAdminError'
 
 export function SectionQuestionsEditor({ packageId, versionId, section, packageType, disabled, onSaved, onMutate }: {
   packageId: string; versionId: string; section: PackageSection; packageType: PackageType; disabled: boolean; onSaved: () => void
@@ -14,7 +15,7 @@ export function SectionQuestionsEditor({ packageId, versionId, section, packageT
   const [maxScore, setMaxScore] = useState('1')
   const [choosing, setChoosing] = useState(false)
   const [pending, setPending] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [, setError] = useAdminError()
   const mounted = useRef(true)
   useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [section.id, versionId])
   const purpose = packageType === 'MOCK_TEST' || packageType === 'PRACTICE_TEST' ? 'EXAM' : packageType === 'PLACEMENT_TEST' ? 'PLACEMENT' : 'LEARNING'
@@ -51,7 +52,6 @@ export function SectionQuestionsEditor({ packageId, versionId, section, packageT
   return <section className="adm-package-questions" aria-label={`Câu hỏi của ${section.title}`}>
     {confirmDialog}
     <h4>Câu hỏi ({questions.length})</h4>
-    {error ? <div className="adm-alert adm-alert--error" role="alert">{error}</div> : null}
     {!questions.length ? <p className="adm-muted">Phần chưa có câu hỏi.</p> : null}
     <ol className="adm-package-question-list">{questions.map((question, index) => <li key={question.id}>
       <p className="adm-package-question-stem">{question.stem || `Phiên bản ${question.questionVersionId}`}</p>

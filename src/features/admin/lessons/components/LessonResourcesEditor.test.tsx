@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@/test/render'
 import { answerConfirm } from '@/test/confirm'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { HttpError } from '@/lib/httpClient'
@@ -102,7 +102,6 @@ describe('LessonResourcesEditor', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Sửa Bài đọc' }))
     fireEvent.submit(screen.getByRole('form', { name: 'Sửa tài liệu' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('Chưa lưu được tài liệu')
-    expect(within(screen.getByRole('dialog', { name: 'Sửa tài liệu' })).getByRole('alert')).toHaveTextContent('Chưa lưu được tài liệu')
     expect(screen.getByLabelText('URL tài liệu', { selector: 'input[value="https://example.org/reading.pdf"]' })).toBeInTheDocument()
   })
 })

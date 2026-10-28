@@ -6,6 +6,7 @@ import { getQuestion, listQuestions } from '../../questions/api/questionApi'
 import { SKILL_LABEL, TYPE_LABEL } from '../../questions/lib/labels'
 import { SKILLS } from '../../questions/types'
 import type { LessonBlock } from '../types'
+import { useAdminError } from '../../lib/useAdminError'
 
 export interface QuestionChooserProps {
   value: string[]
@@ -21,7 +22,7 @@ export interface QuestionChooserProps {
 export function QuestionChooser({ value, onChange, known, purpose = 'LEARNING', hideSelected = false }: QuestionChooserProps) {
   const [skill, setSkill] = useState('')
   const [previews, setPreviews] = useState<Record<string, string>>({})
-  const [previewError, setPreviewError] = useState<string | null>(null)
+  const [, setPreviewError] = useAdminError()
   const list = useAdminResource(`exercise-questions|${purpose}|${skill}`, (signal) =>
     listQuestions({ status: 'PUBLISHED', purpose, skill, size: 100 }, signal))
 
@@ -77,7 +78,6 @@ export function QuestionChooser({ value, onChange, known, purpose = 'LEARNING', 
 
       {list.status === 'loading' ? <AdminLoading label="Đang tải câu hỏi đã xuất bản…" /> : null}
       {list.status === 'error' ? <AdminError message={list.error ?? 'Không tải được câu hỏi.'} onRetry={list.reload} /> : null}
-      {previewError ? <div className="adm-alert adm-alert--error" role="alert">{previewError}</div> : null}
       {list.status === 'success' && questions.length === 0 ? (
         <p className="adm-muted">Chưa có câu hỏi đã xuất bản dành cho bài học. Xuất bản câu hỏi ở mục Ngân hàng câu hỏi trước.</p>
       ) : null}

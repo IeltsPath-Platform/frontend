@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@/test/render'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { clearAccessToken, setAccessToken } from '@/lib/httpClient'
 import { LessonResourcesEditor } from './LessonResourcesEditor'

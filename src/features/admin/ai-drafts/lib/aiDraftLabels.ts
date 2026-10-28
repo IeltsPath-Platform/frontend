@@ -13,9 +13,14 @@ export const REJECTED_REASON_LABEL: Record<string, string> = {
 }
 const FAILURE_LABEL: Record<string, string> = {
   NOT_CONFIGURED: 'Chưa cấu hình mô hình AI', INVALID_REPLY: 'AI trả kết quả không hợp lệ', FAILED: 'Gọi AI thất bại',
+  TIMEOUT: 'AI trả lời quá lâu, chưa kịp xong. Hãy thử lại hoặc chọn ít điểm kiến thức hơn.',
   UNSUPPORTED_KIND: 'Loại bản nháp chưa được hỗ trợ', INTERNAL: 'Không xử lý được yêu cầu. Hãy gửi yêu cầu mới.',
 }
+const HTTP_FAILURE = /^HTTP_(\d{3})$/
 export function aiDraftFailure(code: string | null) {
+  const status = code ? HTTP_FAILURE.exec(code)?.[1] : undefined
+  if (status === '429') return 'Dịch vụ AI đang giới hạn lượt gọi (429). Đợi một lúc rồi thử lại.'
+  if (status) return `Dịch vụ AI trả lỗi ${status}. Hãy thử lại sau.`
   return code ? FAILURE_LABEL[code] ?? 'Không tạo được nội dung. Hãy gửi yêu cầu mới.' : 'Không tạo được nội dung. Hãy gửi yêu cầu mới.'
 }
 export function aiDraftError(reason: unknown) {

@@ -16,6 +16,7 @@ import { moveId } from '../lib/blockForm'
 import { lessonErrorText, publishProblems } from '../lib/lessonErrors'
 import { BLOCK_TYPES, type BlockRequest, type BlockType, type LessonBlock, type LessonEditor } from '../types'
 import '../lessons.css'
+import { useAdminError, useAdminErrorToast } from '../../lib/useAdminError'
 
 const EXERCISE_LOCK_NOTE =
   'Bài đã xuất bản: không đổi được bộ câu hỏi của block bài tập vì học viên đã có tiến độ theo block. Các block khác vẫn sửa được.'
@@ -34,7 +35,7 @@ function MetaForm({ lesson, onSaved }: { lesson: LessonEditor; onSaved: () => vo
   const [summary, setSummary] = useState(lesson.summary)
   const [markdown, setMarkdown] = useState(lesson.summaryMarkdown)
   const [minutes, setMinutes] = useState(lesson.estimatedMinutes?.toString() ?? '')
-  const [error, setError] = useState<string | null>(null)
+  const [, setError] = useAdminError()
   const [saving, setSaving] = useState(false)
 
   async function submit(event: FormEvent) {
@@ -63,7 +64,6 @@ function MetaForm({ lesson, onSaved }: { lesson: LessonEditor; onSaved: () => vo
   return (
     <form aria-label="Thông tin bài học" className="adm-card ls-meta" noValidate onSubmit={(event) => void submit(event)}>
       <h2>Thông tin bài học</h2>
-      {error ? <div className="adm-alert adm-alert--error" role="alert">{error}</div> : null}
       <div className="adm-filters">
         <label className="adm-field ls-grow">
           <span>Tiêu đề</span>
@@ -89,7 +89,7 @@ function MetaForm({ lesson, onSaved }: { lesson: LessonEditor; onSaved: () => vo
 
 function KnowledgePointsPanel({ lesson, onSaved }: { lesson: LessonEditor; onSaved: () => void }) {
   const [ids, setIds] = useState(lesson.knowledgePointIds)
-  const [error, setError] = useState<string | null>(null)
+  const [, setError] = useAdminError()
   const [saving, setSaving] = useState(false)
 
   async function save() {
@@ -109,7 +109,6 @@ function KnowledgePointsPanel({ lesson, onSaved }: { lesson: LessonEditor; onSav
     <section aria-label="Knowledge point của bài" className="adm-card ls-meta">
       <h2>Knowledge point của bài</h2>
       <p className="adm-muted">Bài chỉ xuất bản được khi gắn ít nhất một KP đang hoạt động.</p>
-      {error ? <div className="adm-alert adm-alert--error" role="alert">{error}</div> : null}
       <KnowledgePointPicker onChange={(next) => setIds(next.map((item) => item.knowledgePointId))} value={ids.map((knowledgePointId) => ({ knowledgePointId, weight: 1 }))} />
       <button className="adm-btn adm-btn--primary" disabled={saving} onClick={() => void save()} type="button">{saving ? 'Đang lưu…' : 'Lưu KP'}</button>
     </section>
@@ -121,21 +120,17 @@ type Editing = { mode: 'new'; blockType: BlockType } | { mode: 'edit'; block: Le
 function LessonEditorBody({ lesson, reload }: { lesson: LessonEditor; reload: () => void }) {
   const { confirm, confirmDialog } = useAdminConfirm()
   const [editing, setEditing] = useState<Editing>(null)
-  const [actionError, setActionError] = useState<string | null>(null)
-  const [problems, setProblems] = useState<string[]>([])
+  const fail = useAdminErrorToast()
   const [busy, setBusy] = useState(false)
   const isDraft = lesson.status === 'DRAFT'
   const exerciseLocked = !isDraft
 
   async function run(action: () => Promise<void>) {
     setBusy(true)
-    setActionError(null)
-    setProblems([])
     try {
       await action()
     } catch (reason) {
-      setActionError(lessonErrorText(reason))
-      setProblems(publishProblems(reason))
+      fail([lessonErrorText(reason), ...publishProblems(reason)].join('\n'))
     } finally {
       setBusy(false)
       reload()
@@ -184,12 +179,6 @@ function LessonEditorBody({ lesson, reload }: { lesson: LessonEditor; reload: ()
         </span>
       </div>
 
-      {actionError ? (
-        <div className="adm-alert adm-alert--error" role="alert">
-          {actionError}
-          {problems.length > 0 ? <ul>{problems.map((problem) => <li key={problem}>{problem}</li>)}</ul> : null}
-        </div>
-      ) : null}
       {exerciseLocked ? <div className="adm-alert" role="note">{EXERCISE_LOCK_NOTE}</div> : null}
 
       <MetaForm key={`meta-${lesson.title}-${lesson.summary}-${lesson.estimatedMinutes}`} lesson={lesson} onSaved={reload} />

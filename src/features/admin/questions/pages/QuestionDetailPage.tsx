@@ -13,13 +13,14 @@ import {
 } from '../lib/labels'
 import type { QuestionVersion, VersionRequest } from '../types'
 import '../questions.css'
+import { useAdminError } from '../../lib/useAdminError'
 
 export function QuestionDetailPage() {
   const { questionId = '' } = useParams()
   const detail = useAdminResource(`question|${questionId}`, (signal) => getQuestion(questionId, signal))
   const [adding, setAdding] = useState(false)
   const [busyId, setBusyId] = useState<string | null>(null)
-  const [actionError, setActionError] = useState<string | null>(null)
+  const [, setActionError] = useAdminError()
   const [notice, setNotice] = useState<string | null>(null)
 
   const question = detail.data
@@ -79,7 +80,6 @@ export function QuestionDetailPage() {
           </p>
 
           {notice ? <div className="adm-alert" role="status">{notice}</div> : null}
-          {actionError ? <div className="adm-alert adm-alert--error" role="alert">{actionError}</div> : null}
 
           {adding ? (
             <AdminDrawer title="Phiên bản mới (nháp)" description={`Mã ${question.id}`} size="lg" onClose={() => setAdding(false)}>

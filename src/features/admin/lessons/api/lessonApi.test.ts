@@ -3,7 +3,7 @@ import { clearAccessToken, HttpError, setAccessToken } from '@/lib/httpClient'
 import { API_BASE_URL } from '@/lib/env'
 import { lessonResourceOrderSchema } from '../types'
 import { RESOURCE_REORDER_ENABLED } from '../lib/resource-reorder'
-import { reorderLessonResources } from './lessonApi'
+import { findVocabularyByLemmas, reorderLessonResources } from './lessonApi'
 
 const lessonId = '00000000-0000-4000-8000-000000000001'
 const resourceIds = ['00000000-0000-4000-8000-000000000003', '00000000-0000-4000-8000-000000000002']
@@ -63,5 +63,29 @@ describe('reorderLessonResources', () => {
 
   it('keeps the rollout disabled by default', () => {
     expect(RESOURCE_REORDER_ENABLED).toBe(false)
+  })
+})
+
+describe('findVocabularyByLemmas', () => {
+  beforeEach(() => {
+    fetchMock.mockReset()
+    vi.stubGlobal('fetch', fetchMock)
+    setAccessToken('test-access-token')
+  })
+
+  afterEach(() => {
+    clearAccessToken()
+    vi.unstubAllGlobals()
+  })
+
+  it('asks the library for the exact lemmas in one authenticated call', async () => {
+    fetchMock.mockResolvedValue(new Response(JSON.stringify([{ id: 'item', lemma: 'trend', senses: [{ id: 'sense', status: 'ACTIVE', vietnameseMeaning: 'xu hướng' }] }]), { status: 200 }))
+
+    const hits = await findVocabularyByLemmas(['trend', 'plummet'])
+
+    const [url, options] = fetchMock.mock.calls[0]!
+    expect(url).toBe(`${API_BASE_URL}/api/content/vocabulary/by-lemmas?lemmas=trend%2Cplummet`)
+    expect(options).toMatchObject({ headers: { Authorization: 'Bearer test-access-token' } })
+    expect(hits[0]?.senses?.[0]?.id).toBe('sense')
   })
 })

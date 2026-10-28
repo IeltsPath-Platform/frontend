@@ -12,6 +12,7 @@ import { hasRoleConflict, USER_ROLE_LABEL, USER_STATUS_LABEL } from '../lib/user
 import { userAdminErrorText } from '../lib/userErrors'
 import { CHANGEABLE_USER_STATUSES, USER_ROLES, USER_STATUSES, type CreateUserInput, type User, type UserRole, type UserStatus } from '../types'
 import '../users.css'
+import { useAdminError } from '../../lib/useAdminError'
 
 const PAGE_SIZE = 25
 
@@ -65,7 +66,7 @@ function CreateUserForm({ onCreated, onCancel }: { onCreated: () => void; onCanc
   const [phoneNumber, setPhoneNumber] = useState('')
   const [password, setPassword] = useState('')
   const [roles, setRoles] = useState<UserRole[]>(['CUSTOMER'])
-  const [error, setError] = useState<string | null>(null)
+  const [, setError] = useAdminError()
   const [saving, setSaving] = useState(false)
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -85,7 +86,6 @@ function CreateUserForm({ onCreated, onCancel }: { onCreated: () => void; onCanc
 
   return (
     <form aria-label="Tài khoản nhân sự mới" className="um-form" onSubmit={(event) => void submit(event)}>
-      {error ? <div className="adm-alert adm-alert--error" role="alert">{error}</div> : null}
       <div className="um-form-grid">
         <label className="adm-field"><span>Email</span><input autoComplete="email" className="adm-input" onChange={(event) => setEmail(event.target.value)} required type="email" value={email} /></label>
         <label className="adm-field"><span>Họ tên</span><input autoComplete="name" className="adm-input" onChange={(event) => setFullName(event.target.value)} required value={fullName} /></label>
@@ -112,7 +112,7 @@ function UserEditor({ user, self, onSaved, onDeleted }: {
   const [phoneNumber, setPhoneNumber] = useState(user.phoneNumber ?? '')
   const [roles, setRoles] = useState<UserRole[]>(user.roles.map((role) => role.name))
   const [status, setStatus] = useState<UserStatus>(user.status)
-  const [error, setError] = useState<string | null>(null)
+  const [, setError] = useAdminError()
   const [saving, setSaving] = useState(false)
   const statusOptions: UserStatus[] = user.status === 'PENDING_VERIFY'
     ? ['PENDING_VERIFY', ...CHANGEABLE_USER_STATUSES]
@@ -158,7 +158,6 @@ function UserEditor({ user, self, onSaved, onDeleted }: {
   return (
     <section aria-label={`Quản lý ${user.email}`} className="um-editor">
       {confirmDialog}
-      {error ? <div className="adm-alert adm-alert--error" role="alert">{error}</div> : null}
       <form className="um-form-grid" onSubmit={(event) => { event.preventDefault(); void save(() => updateUser(user.id, { fullName: fullName.trim(), phoneNumber: phoneNumber.trim() || null })) }}>
         <label className="adm-field"><span>Họ tên</span><input className="adm-input" onChange={(event) => setFullName(event.target.value)} required value={fullName} /></label>
         <label className="adm-field"><span>Số điện thoại</span><input className="adm-input" onChange={(event) => setPhoneNumber(event.target.value)} type="tel" value={phoneNumber} /></label>

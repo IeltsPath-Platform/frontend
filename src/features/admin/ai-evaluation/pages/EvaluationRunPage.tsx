@@ -9,13 +9,14 @@ import { useDraftPolling } from '../../ai-drafts/lib/useDraftPolling'
 import { activateEvaluation, getEvaluation } from '../api/evaluationApi'
 import { percent, score } from '../lib/evaluationLabels'
 import '../evaluation.css'
+import { useAdminError } from '../../lib/useAdminError'
 
 function EvaluationRun({ id }: { id: string }) {
   const run = useAdminResource(`evaluation-run:${id}`, (signal) => getEvaluation(id, signal))
-  useDraftPolling(run.status === 'success' && run.data?.status === 'RUNNING', run.reload)
+  useDraftPolling(run.status === 'success' && run.data?.status === 'RUNNING', run.refresh)
   const [confirming, setConfirming] = useState(false)
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [, setError] = useAdminError()
   const [notice, setNotice] = useState<string | null>(null)
   const canActivate = run.status === 'success' && run.data?.status === 'DONE' && run.data.passed === true && !busy
   async function activate() {
@@ -34,7 +35,7 @@ function EvaluationRun({ id }: { id: string }) {
       <button className="adm-btn adm-btn--primary" type="button" disabled={!canActivate} onClick={() => setConfirming(true)}>Kích hoạt bản này</button>
       {confirming ? <div className="adm-alert" role="alert"><p>Từ lúc kích hoạt, mọi bài Writing của học viên (cả thi topic lẫn bài học) được chấm bằng bản này. Sửa rubric sau đó sẽ không tự áp dụng cho tới khi một lượt mới đạt và được kích hoạt.</p><button className="adm-btn adm-btn--primary" type="button" disabled={!canActivate} onClick={() => void activate()}>Xác nhận kích hoạt</button><button className="adm-btn" type="button" disabled={busy} onClick={() => setConfirming(false)}>Hủy kích hoạt</button></div> : null}
       {run.data.status === 'DONE' && !run.data.passed ? <p>Xem tiêu chí lệch nhiều nhất, sửa mô tả band ở <Link to="/content-author/rubrics">Rubric chấm Writing</Link> rồi chạy lại.</p> : null}
-    </> : null}{error ? <p className="adm-alert adm-alert--error" role="alert">{error}</p> : null}{notice ? <p role="status">{notice} <Link to="/content-author/ai-evaluation">Xem bản đang sử dụng</Link></p> : null}
+    </> : null}{notice ? <p role="status">{notice} <Link to="/content-author/ai-evaluation">Xem bản đang sử dụng</Link></p> : null}
   </div></AdminPage>
 }
 export function EvaluationRunPage() { const { runId } = useParams<{ runId: string }>(); const id = z.guid().safeParse(runId); return id.success ? <EvaluationRun id={id.data} key={id.data} /> : <AdminPage title="Chi tiết lượt đánh giá"><AdminError message="ID lượt đánh giá không hợp lệ." /></AdminPage> }

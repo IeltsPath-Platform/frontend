@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { ExternalLink, X } from 'lucide-react'
 import { AdminModal } from '../../components/AdminLayer'
 import type { CourseLessonResource } from '../types'
+import { useAdminError } from '../../lib/useAdminError'
 
 const LIMIT = 20
 const SLIDE_TITLE = 'Slide bài học'
@@ -17,7 +18,7 @@ export function CourseLessonResources({ value, onChange, disabled }: {
   const [adding, setAdding] = useState(false)
   const [title, setTitle] = useState('')
   const [url, setUrl] = useState('')
-  const [error, setError] = useState<string | null>(null)
+  const [, setError] = useAdminError()
   const slide = value.find((item) => item.type === 'SLIDE')
   const documents = value.filter((item) => item.type === 'DOCUMENT')
   const slideBad = !!slide?.url && !WEB_LINK.test(slide.url.trim())
@@ -60,7 +61,6 @@ export function CourseLessonResources({ value, onChange, disabled }: {
       </div>
       {adding ? <AdminModal title="Thêm tài liệu" description="Học viên mở bằng đường dẫn này" onClose={() => setAdding(false)} stacked>
         {(close) => <form aria-label="Thêm tài liệu" noValidate onSubmit={(event) => submit(event, close)}>
-          {error ? <div className="adm-alert adm-alert--error" role="alert">{error}</div> : null}
           <label className="adm-field"><span>Tên<span aria-hidden="true" className="adm-required" /></span><input className="adm-input" maxLength={255} onChange={(event) => setTitle(event.target.value)} value={title} /></label>
           <label className="adm-field"><span>Đường dẫn<span aria-hidden="true" className="adm-required" /></span><input className="adm-input" inputMode="url" maxLength={2000} onChange={(event) => setUrl(event.target.value)} placeholder="https://" value={url} /></label>
           <div className="adm-form-footer"><button className="adm-btn" onClick={close} type="button">Đóng</button><button className="adm-btn adm-btn--primary" type="submit">Lưu</button></div>

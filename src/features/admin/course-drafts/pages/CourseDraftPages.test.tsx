@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@/test/render'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { clearAccessToken, setAccessToken } from '@/lib/httpClient'
@@ -72,7 +72,7 @@ describe('course draft pages through HTTP', () => {
   })
 
   it.each([202, 429])('submits the AI form through HTTP and handles status %i', async (status) => {
-    const body = { bandLevel: 7, skills: ['READING', 'LISTENING'] as ('READING' | 'LISTENING')[], topics: [], knowledgePointIds: [knowledgePointId], lessonCount: 10, instructions: 'Keep the foundation lessons first.' }
+    const body = { bandLevel: 7, skills: ['READING', 'LISTENING'] as ('READING' | 'LISTENING')[], topics: [], knowledgePointIds: [knowledgePointId], lessonCount: 10, instructions: 'Keep the foundation lessons first.', includePrerequisites: false }
     backend(({ path, method }) => {
       if (path === '/api/content/admin/ai-drafts') return json([])
       if (path === '/api/content/admin/ai-drafts/courses') return status === 429 ? json({ message: 'Quota exceeded', details: { code: 'AI_QUOTA_EXCEEDED' } }, 429) : json(makeCourseDraft({ status: 'QUEUED', request: body, result: null }), 202)

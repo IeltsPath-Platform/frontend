@@ -5,6 +5,7 @@ import { useAdminResource } from '../../lib/useAdminResource'
 import { cancelSchedule, listSchedules, publishVersion, scheduleVersion } from '../api/packageApi'
 import { publicationError } from '../lib/packageLabels'
 import type { PackageType, PackageVersion } from '../types'
+import { useAdminError } from '../../lib/useAdminError'
 
 export function PublishPanel({ packageId, version, packageType, disabled, onMutate, onPreview }: {
   packageId: string; version: PackageVersion; packageType: PackageType; disabled: boolean
@@ -13,7 +14,7 @@ export function PublishPanel({ packageId, version, packageType, disabled, onMuta
   const { confirm, confirmDialog } = useAdminConfirm()
   const schedules = useAdminResource(`package-schedules:${packageId}:${version.id}`, (signal) => listSchedules(packageId, signal))
   const [publishAt, setPublishAt] = useState('')
-  const [error, setError] = useState<string | null>(null)
+  const [, setError] = useAdminError()
   const current = schedules.data?.find((schedule) => schedule.versionId === version.id)
   const scheduledAt = current?.publishAt ?? version.publishAt
   const lastError = current?.lastPublishError ?? version.lastPublishError
@@ -49,7 +50,6 @@ export function PublishPanel({ packageId, version, packageType, disabled, onMuta
       <button className="adm-btn adm-btn--primary" type="button" disabled={locked} onClick={publish}>Xuất bản ngay</button>
       <form noValidate onSubmit={(event) => void schedule(event)} aria-label="Lên lịch xuất bản">
         <label className="adm-field"><span>Thời gian xuất bản (giờ địa phương)</span><input className="adm-input" type="datetime-local" value={publishAt} disabled={locked} onChange={(event) => setPublishAt(event.target.value)} /></label>
-        {error ? <p className="adm-alert adm-alert--error" role="alert">{error}</p> : null}
         <div className="adm-package-actions"><button className="adm-btn" type="submit" disabled={locked}>Lên lịch</button>{scheduledAt ? <button className="adm-btn" type="button" disabled={locked} onClick={() => void onMutate(() => cancelSchedule(packageId, version.id), 'Đã hủy lịch xuất bản.').then((ok) => { if (ok) schedules.reload() })}>Hủy lịch</button> : null}</div>
       </form>
     </> : null}

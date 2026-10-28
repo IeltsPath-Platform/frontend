@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@/test/render'
 import { answerConfirm } from '@/test/confirm'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { CourseStructure } from '../types'
@@ -186,7 +186,7 @@ describe('CourseStructureEditor', () => {
     fireEvent.change(within(form).getByLabelText(/^Tên/), { target: { value: 'Phiếu bài tập' } })
     fireEvent.change(within(form).getByLabelText(/^Đường dẫn/), { target: { value: 'not a link' } })
     fireEvent.submit(form)
-    expect(within(form).getByRole('alert')).toHaveTextContent('http://')
+    expect(screen.getByText(/http:\/\//)).toBeInTheDocument()
     fireEvent.change(within(form).getByLabelText(/^Đường dẫn/), { target: { value: 'https://docs.example/sheet' } })
     fireEvent.submit(form)
     expect((onChange.mock.lastCall![0] as CourseStructure).topics[0]?.lessons[0]?.resources).toEqual([{ type: 'DOCUMENT', title: 'Phiếu bài tập', url: 'https://docs.example/sheet' }])

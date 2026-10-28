@@ -15,6 +15,7 @@ import { CourseDraftProgress } from '../components/CourseDraftProgress'
 import { courseDraftError } from '../lib/courseDraftLabels'
 import type { CourseApproval, CourseDraft, CourseStructure } from '../types'
 import '../course-drafts.css'
+import { useAdminError } from '../../lib/useAdminError'
 
 function CourseDetail({ id }: { id: string }) {
   const resource = useAdminResource(`course-draft:${id}`, (signal) => getCourseDraft(id, signal))
@@ -26,10 +27,10 @@ function CourseDetail({ id }: { id: string }) {
   }
   const draft = resource.status === 'success' ? resource.data : loaded
   const ready = draft?.status === 'READY'
-  useDraftPolling(resource.status === 'success' && !!draft && draftIsRunning(draft.status), resource.reload)
+  useDraftPolling(resource.status === 'success' && !!draft && draftIsRunning(draft.status), resource.refresh)
   const analysis = useAdminResource(`course-analysis:${id}:${revision}:${ready}`, (signal) => ready ? analyzeCourseDraft(id, signal) : Promise.resolve(null))
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [, setError] = useAdminError()
   const [note, setNote] = useState('')
   const [confirming, setConfirming] = useState(false)
   const [approved, setApproved] = useState<CourseApproval | null>(null)
@@ -49,15 +50,14 @@ function CourseDetail({ id }: { id: string }) {
     {resource.status === 'error' ? <div className="adm-block"><AdminError message={resource.error!} onRetry={resource.reload} /></div> : null}
     {draft ? <div className="adm-course-workspace">
       {draft.status === 'FAILED' ? <p className="adm-alert adm-alert--error" role="alert">{aiDraftFailure(draft.errorCode)}</p> : null}
-      {notice ? <p className="adm-alert" role="status">{notice}</p> : null}{error ? <p className="adm-alert adm-alert--error" style={{ whiteSpace: 'pre-wrap' }} role="alert">{error}</p> : null}
-      <div className="adm-draft-detail">
+      {notice ? <p className="adm-alert" role="status">{notice}</p> : null}
+      {draftIsRunning(draft.status) ? <CourseDraftProgress createdAt={draft.createdAt} request={draft.request} status={draft.status} /> : <div className="adm-draft-detail">
         <div className="adm-draft-main">
-          {structure ? <CourseStructureEditor value={structure} onChange={(value) => { setStructure(value); setConfirming(false) }} disabled={locked} /> : draftIsRunning(draft.status) ? <CourseDraftProgress createdAt={draft.createdAt} status={draft.status} /> : <div className="adm-block"><p className="adm-muted">Bản nháp chưa có cấu trúc để soạn.</p></div>}
+          {structure ? <CourseStructureEditor value={structure} onChange={(value) => { setStructure(value); setConfirming(false) }} disabled={locked} /> : <div className="adm-block"><p className="adm-muted">Bản nháp chưa có cấu trúc để soạn.</p></div>}
         </div>
         <aside className="adm-draft-side" aria-label="Thao tác và kiểm tra">
           <section className="adm-block adm-draft-actions" aria-label="Thao tác bản nháp">
             <p role="status" className="adm-draft-state"><span className={draftBadgeClass(draft.status)}>{DRAFT_STATUS_LABEL[draft.status]}</span></p>
-            {draftIsRunning(draft.status) ? <p className="adm-muted">Trang tự cập nhật khi bản nháp xong.</p> : null}
             {ready && structure ? <>
               <button className="adm-btn adm-btn--primary" type="button" disabled={locked || !dirty} onClick={() => void run(() => saveCourseDraft(id, structure), 'Đã lưu cấu trúc. Đang phân tích lại bản đã lưu.')}>Lưu cấu trúc</button>
               {dirty ? <p className="adm-muted">Có thay đổi chưa lưu. Lưu để phân tích và duyệt đúng bản này.</p> : null}
@@ -70,7 +70,7 @@ function CourseDetail({ id }: { id: string }) {
           {ready ? <section aria-label="Kiểm tra bản nháp">{analysis.status === 'loading' ? <div className="adm-block"><AdminLoading /></div> : analysis.status === 'error' ? <div className="adm-block"><AdminError message={analysis.error!} onRetry={analysis.reload} /></div> : analysis.data ? <CourseAnalysisPanel analysis={analysis.data} unmatchedTopics={draft.result?.unmatchedTopics} warnings={draft.result?.warnings} questionDraftsEnabled={QUESTION_DRAFTS_ENABLED} /> : null}</section> : null}
           {approved ? <section className="adm-block"><h2>Đã tạo khóa học (chưa kích hoạt)</h2><Link to="/content-author/courses">Mở Khóa học &amp; chủ đề</Link><p>Khóa học và chủ đề: Chưa kích hoạt. Bài học và đề cuối: Nháp.</p><ul>{approved.finalTestPackageIds.map((packageId) => <li key={packageId}><Link to={`/content-author/packages/${packageId}`}>Hoàn thiện đề cuối {packageId}</Link></li>)}</ul></section> : null}
         </aside>
-      </div>
+      </div>}
     </div> : null}
   </AdminPage>
 }

@@ -9,17 +9,17 @@ import { createLessonResource, deleteLessonResource, fetchLessonResources, reord
 import { moveId } from '../lib/blockForm'
 import { RESOURCE_REORDER_ENABLED } from '../lib/resource-reorder'
 import type { LessonResource, LessonResourceRequest, LessonResources, LessonResourceType } from '../types'
+import { useAdminError } from '../../lib/useAdminError'
 
 function httpsUrl(value: string) {
   try { return new URL(value).protocol === 'https:' } catch { return false }
 }
 
-function ResourceForm({ item, type, busy, error, onSave, onCancel }: {
+function ResourceForm({ item, type, busy, onSave, onCancel }: {
   item?: LessonResource
   type: LessonResourceType
   busy: boolean
   /** A failed save is shown here, in the drawer, because the page behind it is covered. */
-  error?: string | null
   onSave: (body: Pick<LessonResourceRequest, 'title' | 'url'>) => Promise<boolean>
   onCancel?: () => void
 }) {
@@ -40,7 +40,6 @@ function ResourceForm({ item, type, busy, error, onSave, onCancel }: {
 
   return (
     <form aria-label={`${item ? 'Sửa' : 'Thêm'} ${label}`} noValidate onSubmit={(event) => void submit(event)}>
-      {error ? <div className="adm-alert adm-alert--error" role="alert">{error}</div> : null}
       <fieldset className="adm-resource-fields" disabled={busy}>
         <label className="adm-field">
           <span>Tiêu đề {label}</span>
@@ -62,13 +61,12 @@ function ResourceForm({ item, type, busy, error, onSave, onCancel }: {
   )
 }
 
-function ResourceList({ lessonId, type, items, reload, busy, error, clearError, run }: {
+function ResourceList({ lessonId, type, items, reload, busy, clearError, run }: {
   lessonId: string
   type: LessonResourceType
   items: LessonResource[]
   reload: () => void
   busy: boolean
-  error: string | null
   clearError: () => void
   run: (action: () => Promise<unknown>) => Promise<boolean>
 }) {
@@ -124,7 +122,7 @@ function ResourceList({ lessonId, type, items, reload, busy, error, clearError, 
       <button className="adm-btn" type="button" disabled={busy} onClick={() => { clearError(); setAdding(true) }}><Plus aria-hidden="true" size={16} /> Thêm {label.toLowerCase()}</button>
       {confirmDialog}
       {adding ? <AdminDrawer title={`Thêm ${label.toLowerCase()}`} onClose={() => setAdding(false)}>
-        {(close) => <ResourceForm type={type} busy={busy} error={error} onCancel={close} onSave={async (body) => {
+        {(close) => <ResourceForm type={type} busy={busy} onCancel={close} onSave={async (body) => {
           const saved = await run(async () => {
             const sortOrder = items.length ? Math.max(...items.map((item) => item.sortOrder)) + 1 : 0
             await createLessonResource(lessonId, { ...body, type, sortOrder })
@@ -135,7 +133,7 @@ function ResourceList({ lessonId, type, items, reload, busy, error, clearError, 
         }} />}
       </AdminDrawer> : null}
       {editingItem ? <AdminDrawer title={`Sửa ${label.toLowerCase()}`} description={editingItem.title} onClose={() => setEditing(null)}>
-        {(close) => <ResourceForm item={editingItem} type={type} busy={busy} error={error} onCancel={close} onSave={async (body) => {
+        {(close) => <ResourceForm item={editingItem} type={type} busy={busy} onCancel={close} onSave={async (body) => {
           const saved = await run(async () => {
             await updateLessonResource(lessonId, editingItem.id, { ...body, sortOrder: editingItem.sortOrder })
             reload()
@@ -151,7 +149,7 @@ function ResourceList({ lessonId, type, items, reload, busy, error, clearError, 
 export function LessonResourcesEditor({ lessonId }: { lessonId: string }) {
   const resources = useAdminResource(`lesson-resources|${lessonId}`, (signal) => fetchLessonResources(lessonId, signal))
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [, setError] = useAdminError()
   const [shown, setShown] = useState<LessonResources | null>(null)
   if (resources.status === 'success' && resources.data !== shown) setShown(resources.data)
   const current = resources.status === 'success' ? resources.data : shown
@@ -166,12 +164,11 @@ export function LessonResourcesEditor({ lessonId }: { lessonId: string }) {
       <h2>Slide và tài liệu</h2>
       <p className="adm-muted">Các đường dẫn này xuất hiện trong bài học của học viên.</p>
       {!RESOURCE_REORDER_ENABLED ? <p className="adm-muted">Chờ API đổi thứ tự. Bạn vẫn có thể thêm, sửa và xóa slide, tài liệu.</p> : null}
-      {error ? <div className="adm-alert adm-alert--error" role="alert">{error}</div> : null}
       {resources.status === 'loading' ? <AdminLoading label="Đang tải slide và tài liệu…" /> : null}
       {resources.status === 'error' ? <AdminError message={resources.error ?? 'Không tải được slide và tài liệu.'} onRetry={resources.reload} /> : null}
       {current ? <div className="adm-resources-grid">
-        <ResourceList lessonId={lessonId} type="SLIDE" items={current.slides} reload={resources.reload} busy={busy || resources.status !== 'success'} error={error} clearError={() => setError(null)} run={run} />
-        <ResourceList lessonId={lessonId} type="DOCUMENT" items={current.documents} reload={resources.reload} busy={busy || resources.status !== 'success'} error={error} clearError={() => setError(null)} run={run} />
+        <ResourceList lessonId={lessonId} type="SLIDE" items={current.slides} reload={resources.reload} busy={busy || resources.status !== 'success'} clearError={() => setError(null)} run={run} />
+        <ResourceList lessonId={lessonId} type="DOCUMENT" items={current.documents} reload={resources.reload} busy={busy || resources.status !== 'success'} clearError={() => setError(null)} run={run} />
       </div> : null}
     </section>
   )

@@ -11,6 +11,7 @@ import { createCourseDraft, listCourseDrafts } from '../api/courseDraftApi'
 import { CourseGenerationForm } from '../components/CourseGenerationForm'
 import { courseDraftError } from '../lib/courseDraftLabels'
 import '../course-drafts.css'
+import { useAdminError } from '../../lib/useAdminError'
 
 export function CourseDraftsPage() {
   const navigate = useNavigate()
@@ -18,11 +19,11 @@ export function CourseDraftsPage() {
   const [page, setPage] = useState(0)
   const [generating, setGenerating] = useState(false)
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [, setError] = useAdminError()
   const mounted = useRef(true)
   useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [])
   const drafts = useAdminResource(`course-drafts:${status}:${page}`, (signal) => listCourseDrafts({ status: status || undefined, page, size: 20 }, signal))
-  useDraftPolling(drafts.status === 'success' && !!drafts.data?.some((draft) => draftIsRunning(draft.status)), drafts.reload)
+  useDraftPolling(drafts.status === 'success' && !!drafts.data?.some((draft) => draftIsRunning(draft.status)), drafts.refresh)
   async function create() {
     if (busy) return
     setBusy(true); setError(null)
@@ -35,7 +36,6 @@ export function CourseDraftsPage() {
     {generating ? <AdminDrawer title="Sinh khóa học bằng AI" size="xl" onClose={() => setGenerating(false)}>
       {(close) => <CourseGenerationForm onCancel={close} onCreated={(draft) => navigate(`/content-author/course-drafts/${draft.id}`)} />}
     </AdminDrawer> : null}
-    {error ? <p className="adm-alert adm-alert--error" role="alert">{error}</p> : null}
     <section aria-label="Danh sách bản nháp" className="adm-draft-section">
       <div className="adm-draft-toolbar">
         <label className="adm-field adm-draft-filter"><span>Trạng thái bản nháp khóa học</span><select className="adm-select" value={status} onChange={(event) => { setStatus(event.target.value as AiDraftStatus | ''); setPage(0) }}><option value="">Tất cả trạng thái</option>{AI_DRAFT_STATUSES.map((item) => <option key={item} value={item}>{DRAFT_STATUS_LABEL[item]}</option>)}</select></label>

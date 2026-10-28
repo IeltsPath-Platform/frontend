@@ -38,7 +38,7 @@ function DraftDetail({ draftId }: { draftId: string }) {
     setReceived(resource.data); setShown(resource.data); setRefreshPending(false); setEditing(null); setSelected([])
   }
   const draft = shown
-  useDraftPolling(resource.status === 'success' && !!draft && draftIsRunning(draft.status), resource.reload)
+  useDraftPolling(resource.status === 'success' && !!draft && draftIsRunning(draft.status), resource.refresh)
   const locked = busy || refreshPending || resource.status !== 'success'
   const ready = draft?.status === 'READY' && draft.result !== null
   const items = draft?.result?.items ?? []

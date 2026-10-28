@@ -52,11 +52,13 @@ Token nằm ở [`src/features/admin/admin.css`](../../src/features/admin/admin.
 - Danh sách ngắn (band 0.0–9.0) dùng **nút chọn một chạm** (nhóm theo cấp), không dùng dropdown gốc.
 - Chọn nhiều mục từ kho = một khối: **tiêu đề + chip đếm `n/giới hạn`** + nút "Chọn…/Sửa lựa chọn" + **bảng đã chọn có ✕** + **hộp chọn lớn** (ô tìm, lọc cấp, nhóm theo cấp có checkbox chọn tất cả và nút thu gọn, đếm đã chọn). Mục đã chọn nằm ngoài gợi ý vẫn hiện, tick sẵn.
 - Đổi điều kiện làm danh sách đề xuất đổi (band, kỹ năng) thì xóa lựa chọn cũ.
+- Điểm kiến thức tiên quyết của nhau (`KnowledgeRelations`): dưới tên ở bảng đã chọn và trong thẻ ở hộp chọn hiện dòng "Tiên quyết của …" / "Cần học trước …" với mã dạng chip (tối đa 3, còn lại "+n"); thẻ là tiên quyết của một điểm đang chọn có vạch xanh mảnh bên trái (`is-prerequisite`). Không dùng màu riêng cho quan hệ này.
 - Hiện **tên**, không hiện id. Mục đã chọn phải xem được chi tiết (👁): câu hỏi (kèm đoạn văn, lựa chọn, đáp án, giải thích), gói luyện tập (phần, câu mở được).
 
 ## 6. Trạng thái tải và lỗi
 
 - Đang sinh/xử lý: hiện tiến trình **thật** (bước theo trạng thái máy chủ, đồng hồ chạy), không thanh phần trăm giả; trang tự cập nhật, cảnh báo khi chờ lâu.
+- **Lỗi của form và của thao tác (kiểm tra dữ liệu, lưu/xóa/duyệt thất bại) là toast lỗi, không in banner đỏ trong form.** Dùng `useAdminError()` (`lib/useAdminError.ts`): giống `useState<string | null>`, mỗi thông báo đặt vào cũng bắn toast; `useAdminErrorToast()` khi chỉ cần bắn. Danh sách nhiều lỗi nối bằng `\n`, toast giữ xuống dòng. Chỉ giữ chỗ in tại chỗ cho: lỗi tải trang kèm "Thử lại" (`AdminError`), trạng thái bền như bản nháp `FAILED`, lời nhắc ràng buộc luôn hiện, lỗi gắn với đúng một ô nhập (`aria-describedby`), và lỗi kèm một nút hành động cần ở lại. Test của màn dùng toast phải `render` từ `@/test/render` (đã bọc `ToastProvider`).
 - Lỗi mạng và lỗi đăng nhập phải phân biệt được (401 không kèm CORS hiện như "không kết nối"): khi báo lỗi tải, chỉ cách xử lý (đăng nhập lại, Thử lại).
 
 ## 7. Kiểm thử và kiểm tra

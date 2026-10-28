@@ -13,7 +13,7 @@ export interface CourseDraftCatalog {
   bandLevel: number | null
 }
 
-const idle = { status: 'success', data: null, error: null, reload: () => undefined } as const
+const idle = { status: 'success', data: null, error: null, reload: () => undefined, refresh: () => undefined } as const
 export const CourseDraftCatalogContext = createContext<CourseDraftCatalog>({ knowledge: idle, questions: idle, bandLevel: null })
 
 export function useCourseDraftCatalog() { return useContext(CourseDraftCatalogContext) }

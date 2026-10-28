@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { adminErrorMessage } from '../../lib/adminErrors'
 import { addGoldEssay } from '../api/evaluationApi'
 import { newGoldEssaySchema, type WritingTask } from '../types'
+import { useAdminError } from '../../lib/useAdminError'
 
 export function GoldEssayForm({ onSaved, onCancel }: { onSaved: () => void; onCancel: () => void }) {
   const [task, setTask] = useState<WritingTask>('TASK_2')
@@ -13,7 +14,7 @@ export function GoldEssayForm({ onSaved, onCancel }: { onSaved: () => void; onCa
   const [criteria, setCriteria] = useState(['6.5', '6.5', '6.5', '6.5'])
   const [codes, setCodes] = useState('')
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [, setError] = useAdminError()
   async function submit(event: FormEvent) {
     event.preventDefault(); if (busy) return
     const body = newGoldEssaySchema.safeParse({ task, prompt, chartFacts: task === 'TASK_1' ? chartFacts : undefined, essay, examinerBand: Number(band), examinerCriteria: withCriteria ? [task === 'TASK_1' ? 'TA' : 'TR', 'CC', 'LR', 'GRA'].map((code, index) => ({ code, band: Number(criteria[index]) })) : undefined, examinerErrorCodes: codes.trim() ? codes.split(/[,;\n]+/).map((code) => code.trim()).filter(Boolean) : undefined })
@@ -23,7 +24,7 @@ export function GoldEssayForm({ onSaved, onCancel }: { onSaved: () => void; onCa
     catch (reason) { setError(adminErrorMessage(reason)) }
     finally { setBusy(false) }
   }
-  return <form aria-label="Thêm bài chuẩn" onSubmit={(event) => void submit(event)}>{error ? <p role="alert" className="adm-alert adm-alert--error">{error}</p> : null}<fieldset className="adm-evaluation-fields" disabled={busy}>
+  return <form aria-label="Thêm bài chuẩn" onSubmit={(event) => void submit(event)}><fieldset className="adm-evaluation-fields" disabled={busy}>
     <label className="adm-field"><span>Task bài chuẩn</span><select className="adm-select" value={task} onChange={(event) => setTask(event.target.value as WritingTask)}><option value="TASK_1">Task 1</option><option value="TASK_2">Task 2</option></select></label>
     <label className="adm-field"><span>Đề bài</span><textarea className="adm-textarea" required value={prompt} onChange={(event) => setPrompt(event.target.value)} /></label>
     {task === 'TASK_1' ? <label className="adm-field"><span>Số liệu biểu đồ (bắt buộc)</span><textarea className="adm-textarea" required value={chartFacts} onChange={(event) => setChartFacts(event.target.value)} /></label> : null}

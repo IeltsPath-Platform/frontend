@@ -5,6 +5,7 @@ import { courseDraftError } from '../lib/courseDraftLabels'
 import { BandPicker } from './BandPicker'
 import { CourseKnowledgePicker } from './CourseKnowledgePicker'
 import { COURSE_CANDIDATE_LIMIT, COURSE_DRAFT_SKILLS, courseGenerationRequestSchema, type CourseDraft, type CourseGenerationRequest } from '../types'
+import { useAdminError } from '../../lib/useAdminError'
 
 export function CourseGenerationForm({ onCreated, onCancel }: {
   onCreated: (draft: CourseDraft) => void; onCancel: () => void
@@ -16,7 +17,7 @@ export function CourseGenerationForm({ onCreated, onCancel }: {
   const [lessonCount, setLessonCount] = useState('8')
   const [instructions, setInstructions] = useState('')
   const [pending, setPending] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [, setError] = useAdminError()
   const mounted = useRef(true)
   useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [])
 
@@ -32,7 +33,7 @@ export function CourseGenerationForm({ onCreated, onCancel }: {
   async function submit(event: FormEvent) {
     event.preventDefault()
     if (pending) return
-    const parsed = courseGenerationRequestSchema.safeParse({ bandLevel, skills, knowledgePointIds, topics: [], lessonCount: Number(lessonCount), instructions })
+    const parsed = courseGenerationRequestSchema.safeParse({ bandLevel, skills, knowledgePointIds, topics: [], lessonCount: Number(lessonCount), instructions, includePrerequisites: false })
     if (!parsed.success) {
       const field = parsed.error.issues[0]?.path[0]
       setError(field === 'skills' ? 'Chọn ít nhất một kỹ năng.'
@@ -51,7 +52,6 @@ export function CourseGenerationForm({ onCreated, onCancel }: {
   }
 
   return <form className="adm-course-draft-generation" aria-label="Sinh bản nháp khóa học" noValidate onSubmit={(event) => void submit(event)}>
-    {error ? <div className="adm-alert adm-alert--error" role="alert">{error}</div> : null}
     <fieldset className="adm-course-draft-fields" disabled={pending}>
       <legend className="adm-sr-only">Yêu cầu dựng khóa học</legend>
       <BandPicker onChange={changeBand} value={bandLevel} />

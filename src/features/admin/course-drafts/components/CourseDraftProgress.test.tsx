@@ -1,4 +1,4 @@
-import { act, render, screen, within } from '@testing-library/react'
+import { act, render, screen, within } from '@/test/render'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { elapsedText } from '../lib/elapsedText'
 import { CourseDraftProgress } from './CourseDraftProgress'
@@ -34,6 +34,23 @@ describe('CourseDraftProgress', () => {
     expect(steps[2]).toHaveAttribute('aria-current', 'step')
     expect(steps[1]).toHaveClass('is-done')
     expect(steps[3]).toHaveClass('is-todo')
+  })
+
+  it('shows the request that was sent, only the parts it has', () => {
+    const request = { bandLevel: 6.5, skills: ['READING' as const], topics: [], knowledgePointIds: ['a1111111-1111-4111-8111-111111111111', 'a2222222-2222-4222-8222-222222222222'], lessonCount: 8 }
+    render(<CourseDraftProgress createdAt={started} request={request} status="QUEUED" />)
+
+    const facts = screen.getByRole('region', { name: 'Yêu cầu đã gửi' })
+    expect(within(facts).getByText('Band').nextSibling).toHaveTextContent('6.5')
+    expect(within(facts).getByText('Kỹ năng').nextSibling).toHaveTextContent('Đọc')
+    expect(within(facts).getByText('Số bài học').nextSibling).toHaveTextContent('8')
+    expect(within(facts).getByText('Điểm kiến thức').nextSibling).toHaveTextContent('2')
+    expect(within(facts).queryByText('Chủ đề')).not.toBeInTheDocument()
+  })
+
+  it('has no request section for a draft that carries no request', () => {
+    render(<CourseDraftProgress createdAt={started} request={{}} status="QUEUED" />)
+    expect(screen.queryByRole('region', { name: 'Yêu cầu đã gửi' })).not.toBeInTheDocument()
   })
 
   it('keeps the clock running and warns only when the wait is longer than usual', () => {

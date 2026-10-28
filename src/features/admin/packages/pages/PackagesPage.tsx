@@ -12,6 +12,7 @@ import { PackageCreateForm } from '../components/PackageCreateForm'
 import { PACKAGE_STATUS_LABEL, PACKAGE_TYPE_LABEL } from '../lib/packageLabels'
 import { PACKAGE_TYPES, type PackageFilters } from '../types'
 import '../packages.css'
+import { useAdminError } from '../../lib/useAdminError'
 
 export function PackagesPage() {
   const [search, setSearch] = useSearchParams()
@@ -23,7 +24,7 @@ export function PackagesPage() {
   const [text, setText] = useState('')
   const [query, setQuery] = useState('')
   const [id, setId] = useState('')
-  const [error, setError] = useState<string | null>(null)
+  const [, setError] = useAdminError()
   const navigate = useNavigate()
   useEffect(() => { const timer = window.setTimeout(() => setQuery(text.trim()), 300); return () => window.clearTimeout(timer) }, [text])
   const courses = useAdminResource('package-filter-courses', fetchCourses)
@@ -63,7 +64,6 @@ export function PackagesPage() {
       <details><summary>Mở trực tiếp bằng ID</summary><form className="adm-card" aria-label="Mở gói có sẵn" noValidate onSubmit={open}>
         <h2>Mở gói có sẵn</h2>
         <label className="adm-field"><span>ID gói (UUID)</span><input className="adm-input" value={id} onChange={(event) => setId(event.target.value)} required autoCapitalize="none" spellCheck={false} /></label>
-        {error ? <p className="adm-alert adm-alert--error" role="alert">{error}</p> : null}
         <button className="adm-btn adm-btn--primary" type="submit">Mở gói</button>
       </form></details>
     </div>
