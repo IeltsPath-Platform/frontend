@@ -58,7 +58,7 @@ function RoleChoices({ value, onChange, currentUser }: {
         )
       })}
       {hasRoleConflict(value) ? (
-        <p className="adm-alert adm-alert--error" role="alert">Tài khoản quản trị không được kiêm vai trò R&amp;D hoặc Examiner.</p>
+        <p className="adm-alert adm-alert--error" role="alert">Tài khoản quản trị không được kiêm vai trò Content Author hoặc Examiner.</p>
       ) : null}
     </fieldset>
   )
