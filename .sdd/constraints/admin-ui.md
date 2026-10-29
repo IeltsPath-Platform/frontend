@@ -26,8 +26,10 @@ Token nằm ở [`src/features/admin/admin.css`](../../src/features/admin/admin.
 ## 2. Bố cục và lớp phủ
 
 - Tạo hoặc sửa bản ghi = **drawer bên phải** (`AdminDrawer`, cỡ `md`/`lg`/`xl`). Xem chi tiết một dòng = **hộp thoại giữa màn** (`AdminModal`). Hộp xác nhận = `useAdminConfirm`.
+- "Xem chi tiết" MUST là `AdminModal` ở mọi trang, kể cả trang cây/đồ thị: không dùng panel dính bên cạnh (`aside`) hay chi tiết nằm cạnh bảng. Chi tiết mở từ hộp khác (sơ đồ) thì `stacked`. Dòng bảng mở chi tiết/sửa/xóa bằng **cột "Hành động" + `AdminRowMenu`**, không dùng mã/tên màu xanh làm link để mở.
 - Hộp mở từ trong drawer hoặc hộp khác MUST có `stacked`.
 - Không lồng trình soạn trong trình soạn: danh sách con (bài học trong chủ đề) là **bảng gọn**, sửa mở drawer; khối dài thì **thu gọn** (mũi tên, "Mở tất cả / Thu gọn tất cả", trạng thái đi theo phần tử khi đổi thứ tự).
+- Mỗi nhóm nội dung độc lập (bộ lọc, từng kỹ năng, từng danh sách) là **một `.adm-block` riêng** xếp trong `AdminPage plain`, có tiêu đề + bảng bên trong; không nhét nhiều nhóm vào chung một khung hay thẻ lồng thẻ (cây tri thức: bộ lọc một khối, mỗi kỹ năng một khối).
 - Trang dùng `AdminPage plain`; bảng đứng riêng, không bọc thẻ trắng thừa; vùng tiêu đề của danh sách nằm trong khung trắng như `.adm-block`.
 - Dữ liệu tải một lần ở cấp cha rồi chia qua context (`courseDraftCatalog`), không để mỗi dòng tự gọi API.
 
@@ -36,7 +38,7 @@ Token nằm ở [`src/features/admin/admin.css`](../../src/features/admin/admin.
 - Dùng `.adm-table` trong `.adm-table-wrap`. **Mọi bảng có cột STT đầu tiên** (`th.adm-stt` / `td.adm-stt`); bảng phân trang đánh số nối tiếp (`page * size + index + 1`).
 - Hành động theo dòng nằm ở cột **"Hành động"** với nút "…" (`AdminRowMenu`): không viền, hiệu ứng rê và bấm, menu cố định trên mọi lớp. Nút chỉ-icon trong ô (xem 👁, gỡ ✕) giữ kiểu nhạt, rê mới có nền.
 - Bảng rỗng vẫn hiện đầu bảng và một dòng "Chưa … nào." (`.adm-kp-table__empty`).
-- Không in đoạn văn dài vào ô bảng. Hiện mã ngắn, loại, nhãn; nội dung đầy đủ xem bằng nút 👁 mở hộp chi tiết.
+- Không in đoạn văn dài vào ô bảng. Hiện mã ngắn, loại, nhãn; nội dung đầy đủ xem bằng nút 👁 mở hộp chi tiết. Một dòng đề bài cắt bằng "…" thì được (bảng câu hỏi của khối bài tập: Đề bài, Loại; điểm kiến thức xem trong hộp chi tiết, vì cả khối thường trùng một điểm nên thêm cột chỉ lặp chữ). Ô nút thao tác phải là ô bảng thật, không đặt `display: flex` lên `td`, nếu không đường kẻ dòng bị lệch khi dòng cao lên; không dùng 8 ký tự đầu của id làm "mã" vì các bản ghi seed trùng nhau.
 
 ## 4. Nút và thanh nút
 
@@ -48,6 +50,8 @@ Token nằm ở [`src/features/admin/admin.css`](../../src/features/admin/admin.
 ## 5. Form và chọn dữ liệu
 
 - Ít chữ giải thích. Bỏ đoạn mô tả dài dưới tiêu đề, bỏ bộ đếm ký tự; chỉ giữ gợi ý khi thiếu nó người dùng sai.
+- **MUST NOT thêm dòng chú thích/hướng dẫn** (`<small>`, đoạn chữ mờ dưới ô nhập, dưới tiêu đề hay dưới nút) để giải thích cách hệ thống chạy hay lời khuyên cách dùng, ví dụ "Mỗi bài một slide. Dùng link …/embed và bật quyền xem…" hoặc "Mục … được thêm tự động khi duyệt…". Điều đó nói ở câu trả lời cho người dùng, không đưa vào giao diện. Chỉ được in chữ tại chỗ cho: lỗi gắn với đúng một ô nhập, trạng thái rỗng, và ràng buộc mà thiếu nó người dùng chắc chắn nhập sai. Muốn thêm chú thích ngoài các trường hợp này thì hỏi trước.
+- Xem trước nội dung Markdown = nút **"Xem trước"** (👁) cạnh nhãn, mở `AdminModal` (có `stacked`); không dùng tab hay khung xem trước nằm cùng trang. Dùng `components/MarkdownField.tsx`.
 - Nhãn đứng trên, đậm, to hơn nội dung. Dòng "Kỹ năng" và các checkbox cùng hàng.
 - Danh sách ngắn (band 0.0–9.0) dùng **nút chọn một chạm** (nhóm theo cấp), không dùng dropdown gốc.
 - Chọn nhiều mục từ kho = một khối: **tiêu đề + chip đếm `n/giới hạn`** + nút "Chọn…/Sửa lựa chọn" + **bảng đã chọn có ✕** + **hộp chọn lớn** (ô tìm, lọc cấp, nhóm theo cấp có checkbox chọn tất cả và nút thu gọn, đếm đã chọn). Mục đã chọn nằm ngoài gợi ý vẫn hiện, tick sẵn.
@@ -69,4 +73,6 @@ Token nằm ở [`src/features/admin/admin.css`](../../src/features/admin/admin.
 
 ## 8. Thành phần dùng lại
 
-`components/AdminLayer.tsx` (Drawer, Modal, ConfirmDialog), `components/AdminRowMenu.tsx`, `components/AdminState.tsx` (Loading, Error, Empty), `pages/AdminPage.tsx`, `lib/useAdminResource.ts`, `lib/useAdminConfirm.tsx`; bộ chọn kiến thức/câu hỏi/gói/band và tiến trình sinh trong `course-drafts/components/`.
+`components/AdminLayer.tsx` (Drawer, Modal, ConfirmDialog), `components/MarkdownField.tsx` (ô Markdown + nút Xem trước), `components/AdminRowMenu.tsx`, `components/AdminState.tsx` (Loading, Error, Empty), `pages/AdminPage.tsx`, `lib/useAdminResource.ts`, `lib/useAdminConfirm.tsx`; bộ chọn kiến thức/câu hỏi/gói/band và tiến trình sinh trong `course-drafts/components/`.
+
+`components/KnowledgeOrgChart.tsx` (+ `lib/chartZoom.ts`): sơ đồ tổ chức dùng chung cho cây kiến thức — một ô gốc lớn, các ô bên dưới nối bằng đường vuông, đường nối chéo và thu phóng. Hộp chọn điểm kiến thức (`course-drafts`) và trang Cây tri thức (`knowledge-graph`, mỗi kỹ năng một sơ đồ) đều vẽ bằng nó; ô vẽ qua `renderBox`, không tự vẽ lại cây. Ô đầu của bảng cây điểm kiến thức (mũi tên thu gọn + thụt lề theo độ sâu) là `components/KnowledgeTreeCell.tsx`, dùng chung cho bộ chọn và trang Cây tri thức (mỗi kỹ năng một bảng; sơ đồ mở trong popup). Mỗi bảng kỹ năng có "Mở tất cả" / "Thu gọn tất cả". Tạo/sửa điểm kiến thức là drawer `KnowledgePointDrawer` (chip chọn một chạm `ChoiceChips`, danh sách tick `PrerequisitePicker`), mở từ nút "Tạo điểm kiến thức" và mục "Sửa" của menu dòng; chỉ vai trò CONTENT_AUTHOR thấy (API từ chối ADMIN). "Ngừng dùng" hỏi xác nhận, "Kích hoạt" không.

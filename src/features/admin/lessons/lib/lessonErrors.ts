@@ -6,6 +6,7 @@ const ERROR_TEXT: Record<string, string> = {
     'Bài học đã xuất bản nên không đổi được bộ câu hỏi của block bài tập (học viên đã có tiến độ theo block). ' +
     'Muốn thay câu hỏi, hãy tạo block mới trong một bài ở trạng thái nháp.',
   LESSON_BLOCK_INVALID: 'Nội dung block chưa hợp lệ.',
+  QUESTION_ALREADY_OWNED: 'Có câu hỏi đã thuộc bài học hoặc gói khác. Mỗi câu chỉ dùng ở một nơi, hãy chọn câu khác.',
   LESSON_SORT_CONFLICT: 'Thứ tự bị xung đột với thay đổi khác. Hãy tải lại trang rồi sắp xếp lại.',
 }
 

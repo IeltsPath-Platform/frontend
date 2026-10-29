@@ -1,14 +1,16 @@
-import { X } from 'lucide-react'
+import { AdminModal } from '../../components/AdminLayer'
 import type { TreeNode } from '../types'
-import { LANE_LABEL, laneOf } from '../lib/layout'
+import { SKILL_LABEL, skillOf } from '../lib/skills'
 
-export interface NodeDetailPanelProps {
+export interface NodeDetailDialogProps {
   node: TreeNode
   prerequisites: readonly TreeNode[]
   dependents: readonly TreeNode[]
   courseLabel: string | null
   isolated: boolean
   missingMetadata: boolean
+  /** Opened from the org chart popup, so it sits above it. */
+  stacked: boolean
   onSelect: (id: string) => void
   onClose: () => void
 }
@@ -36,27 +38,18 @@ function RelatedList({ title, items, onSelect }: { title: string; items: readonl
   )
 }
 
-export function NodeDetailPanel(props: NodeDetailPanelProps) {
-  const { node, prerequisites, dependents, courseLabel, isolated, missingMetadata, onSelect, onClose } = props
+/** The details of one knowledge point in a dialog: what it is, where it sits, and what comes before and after it. */
+export function NodeDetailDialog(props: NodeDetailDialogProps) {
+  const { node, prerequisites, dependents, courseLabel, isolated, missingMetadata, stacked, onSelect, onClose } = props
   const lessonCount = node.lessonIds?.length ?? 0
   return (
-    <aside aria-label={`Chi tiết ${node.code}`} className="adm-card kg-panel">
-      <div className="kg-panel__head">
-        <div>
-          <p className="kg-panel__code">{node.code}</p>
-          <h2>{node.name}</h2>
-        </div>
-        <button aria-label="Đóng chi tiết" className="adm-btn adm-btn--small" onClick={onClose} type="button">
-          <X aria-hidden="true" size={14} />
-        </button>
-      </div>
-
+    <AdminModal description={node.name} onClose={onClose} stacked={stacked} title={`Chi tiết ${node.code}`}>
       <div className="kg-panel__badges">
         <span className={`adm-badge ${node.status === 'ACTIVE' ? 'adm-badge--ok' : 'adm-badge--muted'}`}>
           {node.status === 'ACTIVE' ? 'Đang dùng' : 'Chưa kích hoạt'}
         </span>
         <span className="adm-badge">{node.cefrLevel ?? 'Chưa có cấp CEFR'}</span>
-        <span className="adm-badge">{LANE_LABEL[laneOf(node.skill)]}</span>
+        <span className="adm-badge">{SKILL_LABEL[skillOf(node.skill)]}</span>
         <span className="adm-badge">{node.kind}</span>
         {isolated ? <span className="adm-badge adm-badge--warn">Chưa nối vào đồ thị</span> : null}
         {missingMetadata ? <span className="adm-badge adm-badge--danger">Thiếu CEFR hoặc can-do</span> : null}
@@ -77,6 +70,6 @@ export function NodeDetailPanel(props: NodeDetailPanelProps) {
 
       <RelatedList items={prerequisites} onSelect={onSelect} title="Cần học trước" />
       <RelatedList items={dependents} onSelect={onSelect} title="Mở ra" />
-    </aside>
+    </AdminModal>
   )
 }

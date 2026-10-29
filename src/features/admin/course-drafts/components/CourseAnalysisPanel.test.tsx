@@ -27,6 +27,31 @@ describe('CourseAnalysisPanel', () => {
     expect(screen.getByRole('link', { name: 'Sinh thêm câu cho KP này' })).toHaveAttribute('href', `/content-author/ai-drafts?new=questions&knowledgePointId=${knowledgePointId}`)
   })
 
+  it('shows knowledge points by name and code when the names are known, and the id otherwise', () => {
+    const names = new Map([[knowledgePointId, { code: 'DR_TOPIC_SENTENCE', name: 'Câu chủ đề' }]])
+    render(<MemoryRouter><CourseAnalysisPanel analysis={analysis} names={names} /></MemoryRouter>)
+
+    const gaps = within(screen.getByRole('region', { name: 'Thiếu nội dung trong kho' }))
+    expect(gaps.getByText('Câu chủ đề')).toBeInTheDocument()
+    expect(gaps.getByText('DR_TOPIC_SENTENCE')).toBeInTheDocument()
+    expect(gaps.queryByText(knowledgePointId)).not.toBeInTheDocument()
+    expect(within(screen.getByRole('region', { name: 'Lỗi chặn duyệt' })).getByText('prerequisite-id')).toBeInTheDocument()
+  })
+
+  it('groups what the library lacks by knowledge point, with every reason and one action each', () => {
+    const other = '22222222-2222-4222-8222-222222222222'
+    const gapped: CourseAnalysis = { ...analysis, gaps: [
+      { knowledgePointId, reason: 'NO_PRACTICE_SET' }, { knowledgePointId, reason: 'NO_EXERCISE_QUESTION' }, { knowledgePointId: other, reason: 'FEW_PRACTICE_SETS' },
+    ] }
+    render(<MemoryRouter><CourseAnalysisPanel analysis={gapped} questionDraftsEnabled /></MemoryRouter>)
+
+    const region = screen.getByRole('region', { name: 'Thiếu nội dung trong kho' })
+    expect(within(region).getByRole('heading', { name: 'Thiếu nội dung trong kho (2 điểm kiến thức)' })).toBeInTheDocument()
+    expect(within(region).getAllByRole('listitem')).toHaveLength(2)
+    expect(within(region).getByText('Thiếu bộ luyện tập · Thiếu câu hỏi luyện tập')).toBeInTheDocument()
+    expect(within(region).getAllByRole('link', { name: 'Sinh thêm câu cho KP này' })).toHaveLength(2)
+  })
+
   it('shows unmatched topics and model warnings as safe text', () => {
     render(<MemoryRouter><CourseAnalysisPanel analysis={{ ...analysis, errors: [], valid: true }} unmatchedTopics={['<script>topic</script>']} warnings={[{ code: 'HALLUCINATED_REFERENCE', subject: 'UNKNOWN_REF' }]} /></MemoryRouter>)
     expect(screen.getByText('Không có lỗi chặn trong lần phân tích này.')).toBeInTheDocument()

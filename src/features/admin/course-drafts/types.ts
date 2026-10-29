@@ -44,7 +44,24 @@ export const courseNewWordSchema = z.object({
   partOfSpeech: z.enum(COURSE_PARTS_OF_SPEECH), englishDefinition: z.string().max(1000).nullish(),
   vietnameseMeaning: nonblank.max(1000), exampleSentence: nonblank.max(1000),
 })
-/** `summaryMarkdown`, `estimatedMinutes`, `resources` and the vocabulary are optional so a draft saved before they existed still reads. */
+/** Practice sets the model wrote for a lesson: most per lesson, and the questions one set may hold. */
+export const COURSE_NEW_SET_LIMIT = 3
+export const COURSE_SET_MIN_QUESTIONS = 3
+export const COURSE_SET_MAX_QUESTIONS = 10
+export const courseSetQuestionSchema = z.object({
+  stem: nonblank.max(4000),
+  options: z.array(z.object({ optionKey: nonblank.max(20), content: nonblank.max(4000) })).min(2).max(6),
+  correctKey: nonblank.max(20), explanation: nonblank.max(4000), difficulty: z.enum(['EASY', 'MEDIUM', 'HARD']).nullish(),
+  /** The points of the set this question tests; none means all of them. */
+  knowledgePointIds: z.array(z.guid()).max(50).optional(),
+})
+/** A set approval creates as a draft package with draft questions; nothing in it is published. */
+export const coursePracticeSetSchema = z.object({
+  title: nonblank.max(255), instructions: z.string().max(1000).nullish(), passage: nonblank.max(6000),
+  questionType: z.enum(['MULTIPLE_CHOICE', 'TRUE_FALSE_NOT_GIVEN']), knowledgePointIds: z.array(z.guid()).min(1).max(50),
+  questions: z.array(courseSetQuestionSchema).min(COURSE_SET_MIN_QUESTIONS).max(COURSE_SET_MAX_QUESTIONS),
+})
+/** `summaryMarkdown`, `estimatedMinutes`, `resources`, the vocabulary and the new practice sets are optional so a draft saved before they existed still reads. */
 export const courseLessonSchema = z.object({
   code: codeSchema, title: nonblank.max(255), summary: z.string().max(2000).nullable(),
   knowledgePointIds: z.array(z.guid()).max(50), blocks: z.array(courseBlockSchema).max(50), practiceSetPackageIds: z.array(z.guid()).max(20),
@@ -52,6 +69,7 @@ export const courseLessonSchema = z.object({
   resources: z.array(lessonResourceSchema).max(20).optional(),
   vocabularySenseIds: z.array(z.guid()).max(COURSE_VOCABULARY_LIMIT).optional(),
   newVocabulary: z.array(courseNewWordSchema).max(COURSE_NEW_WORD_LIMIT).optional(),
+  newPracticeSets: z.array(coursePracticeSetSchema).max(COURSE_NEW_SET_LIMIT).optional(),
 }).refine((lesson) => (lesson.resources ?? []).filter((item) => item.type === 'SLIDE').length <= 1, { path: ['resources'], message: 'Mỗi bài chỉ có một slide.' })
   .refine((lesson) => (lesson.vocabularySenseIds?.length ?? 0) + (lesson.newVocabulary?.length ?? 0) <= COURSE_VOCABULARY_LIMIT, { path: ['newVocabulary'], message: 'Quá nhiều từ vựng trong một bài.' })
 export const courseTopicSchema = z.object({
@@ -116,6 +134,8 @@ export type CourseTopic = z.infer<typeof courseTopicSchema>
 export type CourseLesson = z.infer<typeof courseLessonSchema>
 export type CourseLessonResource = z.infer<typeof lessonResourceSchema>
 export type CourseNewWord = z.infer<typeof courseNewWordSchema>
+export type CoursePracticeSet = z.infer<typeof coursePracticeSetSchema>
+export type CourseSetQuestion = z.infer<typeof courseSetQuestionSchema>
 export type CoursePartOfSpeech = (typeof COURSE_PARTS_OF_SPEECH)[number]
 export type CourseBlock = z.infer<typeof courseBlockSchema>
 export type CourseFinalTest = z.infer<typeof finalTestSchema>

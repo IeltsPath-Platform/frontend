@@ -1,18 +1,27 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Controls, ReactFlow } from '@xyflow/react'
-import '@xyflow/react/dist/style.css'
 import { useAuthSession } from '@/features/auth/authSession'
 import { hasAnyRole } from '@/features/auth/staffRoles'
 import { useAdminSearch } from '../../adminSearch'
 import { AdminEmpty, AdminError, AdminLoading } from '../../components/AdminState'
+import { useToast } from '@/components/toast/toastContext'
+import { adminErrorMessage } from '../../lib/adminErrors'
+import { useAdminConfirm } from '../../lib/useAdminConfirm'
+import { useAdminErrorToast } from '../../lib/useAdminError'
 import { useAdminResource } from '../../lib/useAdminResource'
+import { fetchTopics } from '../../lessons/api/lessonApi'
 import { AdminPage } from '../../pages/AdminPage'
 import { fetchCourses, fetchKnowledgeTree, fetchKnowledgeTreeHealth } from '../api/knowledgeGraphApi'
+import { activateKnowledgePoint, deactivateKnowledgePoint } from '../api/knowledgePointApi'
+import { ChartDialog } from '../components/ChartDialog'
+import { KnowledgePointDrawer } from '../components/KnowledgePointDrawer'
+import type { PointActions } from '../components/KnowledgePointMenu'
 import { KnowledgeTable } from '../components/KnowledgeTable'
-import { NodeDetailPanel } from '../components/NodeDetailPanel'
-import { NODE_TYPES } from '../components/nodeTypes'
-import { buildFlow, flagsOf, matchesQuery } from '../lib/graphView'
+import { NodeDetailDialog } from '../components/NodeDetailDialog'
+import { SkillTable } from '../components/SkillTable'
+import { buildChartModel } from '../lib/chartModel'
+import { flagsOf, matchesQuery } from '../lib/graphView'
+import type { SkillKey } from '../lib/skills'
 import type { KnowledgeTreeHealth, TreeNode } from '../types'
 import '../knowledge-graph.css'
 
@@ -48,12 +57,15 @@ function HealthSummary({ health }: { health: KnowledgeTreeHealth }) {
 export function KnowledgeGraphPage() {
   const { roles } = useAuthSession()
   const canSeeInactive = hasAnyRole(roles, ['ADMIN', 'CONTENT_AUTHOR'])
+  // Only an author may write: the API refuses an admin who is not one.
+  const canWrite = hasAnyRole(roles, ['CONTENT_AUTHOR'])
   const { query } = useAdminSearch()
   const [skill, setSkill] = useState('')
   const [courseId, setCourseId] = useState('')
   const [includeInactive, setIncludeInactive] = useState(false)
   const [onlyFlagged, setOnlyFlagged] = useState(false)
-  const [view, setView] = useState<'graph' | 'table'>('graph')
+  // The skill whose org chart is open in its popup, if any.
+  const [chartSkill, setChartSkill] = useState<SkillKey | null>(null)
   const [searchParams] = useSearchParams()
   const [selectedId, setSelectedId] = useState<string | null>(searchParams.get('kp'))
 
@@ -64,9 +76,38 @@ export function KnowledgeGraphPage() {
   const health = useAdminResource('health', (signal) => fetchKnowledgeTreeHealth(signal))
   const courses = useAdminResource('courses', (signal) => fetchCourses(signal))
 
+  const topics = useAdminResource('topics', (signal) => fetchTopics(signal))
+  const { confirm, confirmDialog } = useAdminConfirm()
+  const { toast } = useToast()
+  const reportError = useAdminErrorToast()
+  // The point being edited, or 'new' while a point is being created; null when the drawer is closed.
+  const [editing, setEditing] = useState<TreeNode | 'new' | null>(null)
+
   const normalizedQuery = query.trim().toLowerCase()
   const select = useCallback((id: string) => setSelectedId(id), [])
   const reloadAll = () => { tree.reload(); health.reload() }
+
+  async function toggleStatus(node: TreeNode) {
+    const active = node.status === 'ACTIVE'
+    if (active && !(await confirm({
+      title: 'Ngừng dùng điểm kiến thức?',
+      message: `${node.code} sẽ không còn hiện cho học viên và khi soạn bài. Bạn có thể kích hoạt lại sau.`,
+      confirmLabel: 'Ngừng dùng',
+      tone: 'danger',
+    }))) return
+    try {
+      await (active ? deactivateKnowledgePoint(node.id) : activateKnowledgePoint(node.id))
+      toast({ title: 'Thành công', description: active ? `Đã ngừng dùng ${node.code}.` : `Đã kích hoạt ${node.code}.`, tone: 'success' })
+      reloadAll()
+    } catch (reason) {
+      reportError(adminErrorMessage(reason))
+    }
+  }
+
+  const actions: PointActions = {
+    onView: select,
+    ...(canWrite ? { onEdit: setEditing, onToggleStatus: (node: TreeNode) => void toggleStatus(node) } : {}),
+  }
 
   const model = useMemo(() => {
     const nodes = tree.data?.nodes ?? []
@@ -84,15 +125,31 @@ export function KnowledgeGraphPage() {
   }, [tree.data])
 
   const flags = useMemo(() => flagsOf(health.data), [health.data])
-  const flow = useMemo(
-    () => (tree.data
-      ? buildFlow({ tree: tree.data, health: health.data, selectedId, query: normalizedQuery, onlyFlagged, onSelect: select })
-      : null),
-    [tree.data, health.data, selectedId, normalizedQuery, onlyFlagged, select],
+  // Why a point carries a warning, by point id: no link, no CEFR level or can-do, or a link that runs from a higher level down.
+  const warnings = useMemo(() => {
+    const reasons = new Map<string, string[]>()
+    const add = (id: string, reason: string) => reasons.set(id, [...(reasons.get(id) ?? []), reason])
+    flags.isolated.forEach((id) => add(id, 'Chưa nối với KP active nào'))
+    flags.missing.forEach((id) => add(id, 'Thiếu CEFR hoặc can-do'))
+    health.data?.levelViolations.forEach((edge) => { add(edge.from, 'Có liên kết ngược cấp'); add(edge.to, 'Có liên kết ngược cấp') })
+    return new Map([...reasons].map(([id, list]) => [id, [...new Set(list)].join('; ')]))
+  }, [flags, health.data])
+  const isDimmed = useCallback(
+    (node: TreeNode) => !matchesQuery(node, normalizedQuery) || (onlyFlagged && !flags.isolated.has(node.id) && !flags.missing.has(node.id)),
+    [flags, normalizedQuery, onlyFlagged],
   )
 
-  const tableNodes = model.nodes.filter((node) =>
-    matchesQuery(node, normalizedQuery) && (!onlyFlagged || flags.isolated.has(node.id) || flags.missing.has(node.id)))
+  const charts = useMemo(() => buildChartModel(model.nodes, tree.data?.edges ?? []), [model.nodes, tree.data])
+  // What a search or the warning filter keeps; null when neither is on, so every point is listed and branches can be folded.
+  const keep = useMemo(
+    () => (normalizedQuery || onlyFlagged
+      ? (node: TreeNode) => matchesQuery(node, normalizedQuery) && (!onlyFlagged || flags.isolated.has(node.id) || flags.missing.has(node.id))
+      : null),
+    [flags, normalizedQuery, onlyFlagged],
+  )
+  const looseNodes = keep ? charts.loose.filter(keep) : charts.loose
+  const nothingKept = keep !== null && !model.nodes.some(keep)
+  const openedSection = charts.sections.find((section) => section.skill === chartSkill) ?? null
   const matchCount = normalizedQuery ? model.nodes.filter((node) => matchesQuery(node, normalizedQuery)).length : null
   const selected = selectedId ? model.byId.get(selectedId) ?? null : null
   const courseLabel = (node: TreeNode) => {
@@ -103,10 +160,15 @@ export function KnowledgeGraphPage() {
 
   return (
     <AdminPage
-        actions={<button className="adm-btn" onClick={reloadAll} type="button">Tải lại</button>}
-        subtitle="Mỗi nút là một knowledge point: cột là cấp CEFR, hàng là kỹ năng, mũi tên chỉ từ kiến thức cần học trước."
+        actions={<>
+          <button className="adm-btn" onClick={reloadAll} type="button">Tải lại</button>
+          {canWrite ? <button className="adm-btn adm-btn--primary" onClick={() => setEditing('new')} type="button">Tạo điểm kiến thức</button> : null}
+        </>}
+        plain
+        subtitle="Mỗi ô là một knowledge point. Điểm nằm dưới phải học trước điểm ngay trên nó."
         title="Cây tri thức">
 
+      <section className="adm-block">
       <div className="adm-filters">
         <label className="adm-field">
           <span>Kỹ năng</span>
@@ -135,10 +197,6 @@ export function KnowledgeGraphPage() {
           <input checked={onlyFlagged} onChange={(event) => setOnlyFlagged(event.target.checked)} type="checkbox" />
           Chỉ KP có cảnh báo
         </label>
-        <div aria-label="Cách hiển thị" className="kg-tabs" role="group">
-          <button aria-pressed={view === 'graph'} className="adm-btn" onClick={() => setView('graph')} type="button">Đồ thị</button>
-          <button aria-pressed={view === 'table'} className="adm-btn" onClick={() => setView('table')} type="button">Bảng</button>
-        </div>
       </div>
 
       {health.status === 'success' && health.data ? <HealthSummary health={health.data} /> : null}
@@ -153,54 +211,77 @@ export function KnowledgeGraphPage() {
       ) : null}
 
       {tree.status === 'success' && model.nodes.length > 0 ? (
-        <>
-          <p className="adm-muted kg-count">
-            {model.nodes.length} KP · {tree.data?.edges.length ?? 0} cạnh
-            {matchCount !== null ? ` · ${matchCount} khớp “${query.trim()}”` : ''}
-          </p>
-          <div className={`kg-layout${selected ? ' has-panel' : ''}`}>
-            {view === 'graph' && flow ? (
-              <div aria-label="Đồ thị knowledge point" className="kg-canvas" role="group">
-                <ReactFlow
-                  colorMode="dark"
-                  edges={flow.edges}
-                  fitView
-                  fitViewOptions={{ padding: 0.08 }}
-                  key={filterKey}
-                  maxZoom={1.5}
-                  minZoom={0.15}
-                  nodes={flow.nodes}
-                  nodesConnectable={false}
-                  nodesDraggable={false}
-                  nodeTypes={NODE_TYPES}
-                  onPaneClick={() => setSelectedId(null)}
-                >
-                  <Controls showInteractive={false} />
-                </ReactFlow>
-              </div>
-            ) : (
+        <p className="adm-muted kg-count">
+          {model.nodes.length} KP · {tree.data?.edges.length ?? 0} cạnh
+          {matchCount !== null ? ` · ${matchCount} khớp “${query.trim()}”` : ''}
+        </p>
+      ) : null}
+      </section>
+
+      {tree.status === 'success' && model.nodes.length > 0 ? (
+        nothingKept ? <section className="adm-block"><AdminEmpty title="Không có knowledge point nào khớp">Thử đổi từ khóa hoặc bỏ bộ lọc cảnh báo.</AdminEmpty></section> : <>
+          {charts.sections.map((section) => (
+            <SkillTable
+              isolated={flags.isolated}
+              keep={keep}
+              key={`${filterKey}|${section.skill}`}
+              actions={actions}
+              missing={flags.missing}
+              onOpenChart={() => setChartSkill(section.skill)}
+              section={section}
+              selectedId={selectedId}
+            />
+          ))}
+          {looseNodes.length ? (
+            <section aria-label="Điểm kiến thức chưa nối" className="adm-block kg-skill kg-skill--loose">
+              <header className="kg-skill__head">
+                <h2>Chưa nối với điểm nào<span className="kg-skill__count">{looseNodes.length}</span></h2>
+              </header>
               <KnowledgeTable
                 isolated={flags.isolated}
                 missing={flags.missing}
-                nodes={tableNodes}
-                onSelect={select}
+                actions={actions}
+                nodes={looseNodes}
                 selectedId={selectedId}
               />
-            )}
-            {selected ? (
-              <NodeDetailPanel
-                courseLabel={courseLabel(selected)}
-                dependents={model.dependents.get(selected.id) ?? []}
-                isolated={flags.isolated.has(selected.id)}
-                missingMetadata={flags.missing.has(selected.id)}
-                node={selected}
-                onClose={() => setSelectedId(null)}
-                onSelect={select}
-                prerequisites={model.prerequisites.get(selected.id) ?? []}
-              />
-            ) : null}
-          </div>
+            </section>
+          ) : null}
         </>
+      ) : null}
+
+      {selected ? (
+        <NodeDetailDialog
+          courseLabel={courseLabel(selected)}
+          dependents={model.dependents.get(selected.id) ?? []}
+          isolated={flags.isolated.has(selected.id)}
+          missingMetadata={flags.missing.has(selected.id)}
+          node={selected}
+          onClose={() => setSelectedId(null)}
+          onSelect={select}
+          prerequisites={model.prerequisites.get(selected.id) ?? []}
+          stacked={openedSection !== null}
+        />
+      ) : null}
+
+      {editing ? (
+        <KnowledgePointDrawer
+          node={editing === 'new' ? null : editing}
+          onClose={() => setEditing(null)}
+          onSaved={reloadAll}
+          topics={topics.data ?? []}
+        />
+      ) : null}
+      {confirmDialog}
+
+      {openedSection ? (
+        <ChartDialog
+          isDimmed={isDimmed}
+          onClose={() => setChartSkill(null)}
+          onSelect={select}
+          section={openedSection}
+          selectedId={selectedId}
+          warnings={warnings}
+        />
       ) : null}
     </AdminPage>
   )

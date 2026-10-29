@@ -32,6 +32,10 @@
 .adm-course-draft-skills__label { margin-right: 4px; }
 .adm-course-draft-analysis section { border-top: 1px solid var(--adm-border); margin-top: 16px; padding-top: 12px; }
 .adm-course-draft-analysis li { margin-block: 12px; }
+.adm-analysis-gaps { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.adm-analysis-gaps li { margin: 0; padding: 10px 12px; border: 1px solid var(--adm-border); border-radius: var(--adm-radius); }
+.adm-analysis-gaps p { margin: 0 0 4px; }
+.adm-analysis-gaps .adm-btn { margin-top: 6px; min-height: 36px; }
 .adm-course-draft-analysis code { word-break: break-all; }
 @media (min-width: 760px) {
   .adm-course-draft-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -81,6 +85,7 @@
 .adm-draft-actions { display: grid; gap: 10px; }
 .adm-draft-actions .adm-btn { width: 100%; justify-content: center; }
 .adm-draft-state, .adm-draft-actions p { margin: 0; }
+.adm-draft-saved { color: var(--adm-muted); font-size: .88rem; font-weight: 600; }
 .adm-draft-confirm { display: grid; gap: 8px; margin-top: 10px; }
 .adm-draft-reject { display: grid; gap: 10px; padding-top: 12px; border-top: 1px solid var(--adm-border); }
 .adm-draft-reject .adm-field { margin: 0; }
@@ -106,59 +111,10 @@
 .adm-kp-table__remove button:hover { background: rgb(196 45 45 / 8%); border-color: var(--adm-danger); color: var(--adm-danger); }
 .adm-kp-field__actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .adm-kp-field__actions .adm-btn--icon { min-width: 44px; }
-.adm-kp-treecell { display: flex; align-items: center; gap: 6px; padding-left: calc(var(--depth, 0) * 22px); }
-.adm-kp-tree__toggle { display: inline-grid; flex: none; place-items: center; width: 28px; height: 28px; padding: 0; background: transparent; border: 1px solid transparent; border-radius: 6px; color: var(--adm-muted); cursor: pointer; }
-.adm-kp-tree__toggle:hover { background: var(--adm-surface-2); border-color: var(--adm-border); color: var(--adm-text); }
-.adm-kp-tree__toggle:focus-visible { outline: 2px solid var(--adm-focus); outline-offset: 1px; }
-.adm-kp-tree__toggle svg { transition: transform .15s ease; }
-.adm-kp-tree__toggle[aria-expanded='false'] svg { transform: rotate(-90deg); }
-.adm-kp-tree__spacer { flex: none; width: 28px; }
 .adm-kp-dialog__bar.adm-kp-chart__hint { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
 .adm-kp-dialog__bar.adm-kp-chart__hint p { margin: 0; font-size: .85rem; }
 .adm-modal--lg .adm-layer__description { font-size: 1rem; }
 .adm-btn--icon { min-width: 38px; padding: 0; }
-.adm-kp-chart__zoom { display: flex; align-items: center; gap: 6px; }
-.adm-kp-chart__zoom-value { min-width: 64px; font-variant-numeric: tabular-nums; }
-.adm-kp-chart { --kp-line: color-mix(in srgb, var(--adm-muted) 45%, var(--adm-surface)); display: flex; padding-block: 14px 8px; }
-.adm-kp-chart__frame { position: relative; flex: none; margin-inline: auto; }
-.adm-kp-chart__tree { position: absolute; top: 0; left: 0; width: max-content; transform-origin: 0 0; }
-.adm-kp-chart__links { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
-.adm-kp-chart__link { color: var(--adm-accent); transition: opacity .12s ease; }
-.adm-kp-chart__link--1 { color: var(--adm-ok); }
-.adm-kp-chart__link--2 { color: var(--adm-warn); }
-.adm-kp-chart__link circle, .adm-kp-chart__link path { fill: currentColor; stroke: none; }
-.adm-kp-chart__link .adm-kp-chart__line { fill: none; stroke: currentColor; stroke-linejoin: round; stroke-width: 1.5; }
-.adm-kp-chart__link.is-active .adm-kp-chart__line { stroke-width: 2.5; }
-.adm-kp-chart__link.is-dim { opacity: .18; }
-.adm-kp-chart__root { position: relative; z-index: 1; display: flex; align-items: center; gap: 12px; padding: 12px 22px; background: var(--adm-accent-strong); border-radius: 10px; box-shadow: 0 2px 6px rgb(13 43 141 / 25%); color: #fff; }
-.adm-kp-chart__root > span { display: grid; gap: 2px; }
-.adm-kp-chart__root strong { font-size: 1.05rem; }
-.adm-kp-chart__root small { color: rgb(255 255 255 / 80%); font-size: .8rem; }
-.adm-kp-chart ul { position: relative; display: flex; justify-content: center; margin: 0; padding: 22px 0 0; list-style: none; }
-.adm-kp-chart__tree > ul { padding-top: 0; }
-.adm-kp-chart ul ul::before { content: ''; position: absolute; top: 0; left: 50%; height: 22px; border-left: 1.5px solid var(--kp-line); }
-.adm-kp-chart li { position: relative; display: flex; flex-direction: column; align-items: center; padding: 22px 16px 0; }
-.adm-kp-chart li::before, .adm-kp-chart li::after { content: ''; position: absolute; top: 0; right: 50%; width: 50%; height: 22px; border-top: 1.5px solid var(--kp-line); }
-.adm-kp-chart li::after { right: auto; left: 50%; border-left: 1.5px solid var(--kp-line); }
-.adm-kp-chart__tree > ul > li { padding-top: 0; }
-.adm-kp-chart__tree > ul > li::before, .adm-kp-chart__tree > ul > li::after { display: none; }
-/* An only child keeps the same gap as siblings, so every level sits on the same row across the chart. */
-.adm-kp-chart ul ul > li:only-child::after { display: none; }
-.adm-kp-chart ul ul > li:only-child::before { right: auto; left: 50%; width: 0; border: 0; border-left: 1.5px solid var(--kp-line); border-radius: 0; }
-.adm-kp-chart li:first-child::before, .adm-kp-chart li:last-child::after { border: 0; }
-.adm-kp-chart li:last-child::before { border-right: 1.5px solid var(--kp-line); border-radius: 0 7px 0 0; }
-.adm-kp-chart li:first-child::after { border-radius: 7px 0 0 0; }
-.adm-kp-chart__box { position: relative; z-index: 1; display: flex; align-items: flex-start; gap: 8px; box-sizing: border-box; width: 236px; height: 78px; padding: 8px 10px; background: var(--adm-surface); border: 1px solid var(--adm-border); border-radius: 8px; box-shadow: 0 1px 2px rgb(13 43 141 / 8%); cursor: pointer; transition: border-color .12s ease, background-color .12s ease; }
-.adm-kp-chart__box:hover { border-color: var(--adm-accent); }
-.adm-kp-chart__box:has(input:checked) { background: color-mix(in srgb, var(--adm-accent) 9%, var(--adm-surface)); border-color: var(--adm-accent); }
-.adm-kp-chart__box:has(input:disabled) { opacity: .5; cursor: not-allowed; }
-.adm-kp-chart__box:has(input:focus-visible) { outline: 2px solid var(--adm-focus); outline-offset: 2px; }
-.adm-kp-chart__box input { flex: none; width: 18px; height: 18px; margin: 1px 0 0; }
-.adm-kp-chart__text { display: grid; flex: 1; gap: 3px; min-width: 0; }
-.adm-kp-chart__head { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-width: 0; }
-.adm-kp-chart__head code { min-width: 0; color: var(--adm-muted); font-size: .72rem; font-weight: 500; overflow-wrap: break-word; }
-.adm-kp-chart__name { display: -webkit-box; overflow: hidden; font-size: .88rem; font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
-@media (prefers-reduced-motion: reduce) { .adm-kp-tree__toggle svg, .adm-kp-chart__box, .adm-kp-chart__link { transition: none; } }
 .adm-kp-dialog__bar { display: grid; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--adm-border); }
 .adm-kp-search { position: relative; display: block; }
 .adm-kp-search svg { position: absolute; top: 50%; left: 12px; translate: 0 -50%; color: var(--adm-muted); pointer-events: none; }
@@ -203,6 +159,15 @@
 .adm-band legend, .adm-pos legend, .adm-course-draft-skills__label, .adm-kp-field__title h3 { font-size: 1rem; font-weight: 700; color: var(--adm-text); }
 .adm-pos { border: 0; margin: 0 0 14px; padding: 0; }
 .adm-pos legend { margin-bottom: 8px; padding: 0; }
+/* The library column of a proposed word: what approval will do, and the meaning the library already holds. */
+.adm-vocab-library { display: block; margin-top: 4px; font-size: .82rem; }
+.adm-vocab-advice { margin: 0 0 8px; padding: 10px 12px; background: var(--adm-accent-soft); border-radius: var(--adm-radius); color: var(--adm-accent-strong); font-size: .95rem; line-height: 1.45; }
+.adm-vocab-senses { display: grid; gap: 8px; margin: 0 0 8px; padding: 0; list-style: none; }
+.adm-vocab-senses li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 12px; border: 1px solid var(--adm-border); border-radius: var(--adm-radius); }
+.adm-vocab-badge { white-space: nowrap; }
+.adm-vocab-note { display: block; margin: 0 0 14px; font-size: .88rem; }
+ul.adm-vocab-note { padding: 0; list-style: none; display: grid; gap: 4px; }
+.adm-vocab-senses p { margin: 2px 0 0; font-size: .88rem; }
 .adm-pos .adm-band__chips { flex-wrap: wrap; width: fit-content; max-width: 100%; }
 .adm-pos .adm-band__chip span { padding-inline: 12px; }
 
@@ -281,6 +246,19 @@
 .adm-sec__title { margin: 0; font-size: 1rem; font-weight: 700; }
 .adm-sec__tools { display: flex; flex-wrap: wrap; gap: 8px; }
 .adm-sec__tools .adm-btn svg { margin-right: 4px; }
+
+/* Library word search: one search row, then the senses found, each with the action to add it. */
+.adm-vocab-search { display: flex; gap: 8px; }
+.adm-vocab-search .adm-kp-search { flex: 1 1 auto; min-width: 0; }
+.adm-vocab-hits { display: grid; gap: 8px; margin: 12px 0 0; padding: 0; list-style: none; }
+.adm-vocab-hits li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; background: var(--adm-surface); border: 1px solid var(--adm-border); border-radius: 8px; }
+.adm-vocab-hits li.is-picked { background: var(--adm-accent-soft); border-color: var(--adm-accent); }
+.adm-vocab-hit__text { display: grid; gap: 2px; min-width: 0; }
+.adm-vocab-hit__title { font-weight: 700; }
+.adm-vocab-hit__title em { margin-left: 8px; font-size: .8rem; font-style: normal; font-weight: 500; color: var(--adm-muted); }
+.adm-vocab-hit__text small { color: var(--adm-muted); font-size: .8rem; overflow-wrap: anywhere; }
+.adm-vocab-hits__empty { padding: 28px 0; text-align: center; }
+.adm-vocab-hits li .adm-badge svg { margin-right: 4px; }
 .adm-sec__foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--adm-border); }
 .adm-count { margin-left: 8px; padding: 1px 8px; background: var(--adm-surface-2); border: 1px solid var(--adm-border); border-radius: 99px; font-size: .78rem; font-weight: 600; color: var(--adm-muted); font-variant-numeric: tabular-nums; }
 .adm-bcard { display: grid; gap: 12px; padding: 12px 14px 14px; background: var(--adm-surface); border: 1px solid var(--adm-border); border-radius: var(--adm-radius); }
@@ -290,8 +268,15 @@
 @media (prefers-reduced-motion: reduce) { .adm-count { transition: none; } }
 
 /* Question rows: the eye and remove buttons sit side by side; the detail dialog reads like a small card. */
-.adm-kp-table__remove.adm-qrow__tools { display: flex; justify-content: flex-end; gap: 4px; width: auto; }
+/* The buttons stay inside a real table cell, so the cell follows the height of its row and the row lines run straight across. */
+.adm-kp-table__remove.adm-qrow__tools { width: 1%; white-space: nowrap; }
+.adm-kp-table__remove.adm-qrow__tools button + button { margin-left: 4px; }
 .adm-kp-table__remove.adm-qrow__tools button:first-child:not(:last-child):hover { background: var(--adm-accent-soft); border-color: var(--adm-accent); color: var(--adm-accent); }
+/* The text of a question takes the rest of the row and is cut to one line; the whole question is behind the eye button. */
+.adm-qrow__stem { width: 100%; min-width: 12rem; max-width: 0; }
+.adm-qrow__stem > span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.adm-qrow__stem > span.adm-muted { font-weight: 400; }
+.adm-qrow__type { white-space: nowrap; }
 .adm-qdetail { display: grid; gap: 6px; }
 .adm-qdetail h3 { margin: 12px 0 0; font-size: .85rem; font-weight: 700; color: var(--adm-muted); text-transform: uppercase; letter-spacing: .04em; }
 .adm-qdetail p { margin: 0; }
@@ -303,16 +288,47 @@
 
 .adm-qdetail__passage { display: grid; gap: 6px; max-height: 260px; padding: 12px 14px; overflow-y: auto; background: var(--adm-surface-2); border: 1px solid var(--adm-border); border-left: 3px solid var(--adm-accent); border-radius: 8px; }
 
+/* Practice set written by the model, read like an exam page: the passage on the left, the questions on the right, each
+   scrolling on its own inside the fixed-height dialog. On a narrow screen they stack and the whole view scrolls. */
+.adm-setview { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); flex: 1; min-height: 0; }
+.adm-setview > section { display: grid; align-content: start; gap: 10px; min-height: 0; padding: 18px 22px 24px; overflow-y: auto; overscroll-behavior: contain; }
+.adm-setview__passage { background: var(--adm-surface-2); border-right: 1px solid var(--adm-border); }
+.adm-setview > section > h3 { display: flex; align-items: center; margin: 0; font-size: .78rem; font-weight: 700; color: var(--adm-muted); text-transform: uppercase; letter-spacing: .05em; }
+.adm-setview > section > p { margin: 0; }
+.adm-setview__hint { padding: 8px 12px; background: var(--adm-surface); border-left: 3px solid var(--adm-accent); border-radius: 6px; font-size: .88rem; line-height: 1.5; color: var(--adm-muted); }
+.adm-setview__text { white-space: pre-wrap; font-size: 1rem; line-height: 1.75; }
+.adm-setview__questions .adm-pkgdetail__question { background: var(--adm-surface); }
+@media (max-width: 760px) {
+  .adm-setview { display: block; overflow-y: auto; }
+  .adm-setview > section { overflow: visible; padding: 16px; }
+  .adm-setview__passage { border-right: 0; border-bottom: 1px solid var(--adm-border); }
+}
+
 /* Lesson list inside a topic: the title opens the lesson drawer. */
 .adm-lesson-open { padding: 0; background: transparent; border: 0; color: var(--adm-text); font: inherit; font-weight: 600; text-align: left; cursor: pointer; }
 .adm-lesson-open:hover { color: var(--adm-accent); text-decoration: underline; }
 
-/* Practice-set dialog: one search box over a single column of cards. */
-.adm-pkg-search { margin-bottom: 12px; }
-.adm-pkg-list { display: grid; gap: 8px; max-height: 360px; margin: 0; padding: 0; overflow-y: auto; list-style: none; }
+/* Practice-set dialog: the dialog's list scrolls; sets another lesson already uses sit below the ones that can be ticked. */
+.adm-pkg-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.adm-kp-dialog__list > .adm-pkg-list:first-child { margin-top: 12px; }
+.adm-pkg-taken { display: flex; align-items: center; gap: 8px; margin: 20px 0 10px; font-size: .78rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--adm-muted); }
+.adm-pkg-note { margin: 12px 0 0; padding: 8px 12px; background: var(--adm-surface-2); border-radius: 8px; font-size: .85rem; }
+.adm-kp-dialog__list > .adm-pkg-note + .adm-pkg-list { margin-top: 12px; }
+/* Practice set written by the model: the generator dialog and the read-only detail. */
+.adm-pkg-wait { display: grid; gap: 12px; justify-items: center; padding: 8px 0 4px; text-align: center; }
+.adm-pkg-wait .adm-form-footer { margin-top: 4px; }
+.adm-pkg-points { display: grid; gap: 8px; }
+.adm-qdetail__options li.is-correct { background: rgb(18 134 90 / 8%); border-color: var(--adm-ok); }
+.adm-qdetail__options li .adm-badge { margin-left: auto; align-self: center; flex: none; }
+.adm-pkg-flag { margin-left: 8px; vertical-align: middle; }
+/* A button that reads as a link inside a sentence or under a list; it keeps a visible focus ring. */
+.adm-link { padding: 0; background: transparent; border: 0; color: var(--adm-accent); font: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+.adm-link:hover { color: var(--adm-accent-strong); }
+.adm-link:focus-visible { outline: 2px solid var(--adm-accent); outline-offset: 2px; border-radius: 3px; }
+.adm-pkg-more { margin: 16px 0 4px; text-align: center; font-size: .88rem; }
+.adm-pkg-item .adm-badge { flex: none; }
+.adm-pkg-taken span { padding: 1px 8px; background: var(--adm-surface-2); border-radius: 999px; font-size: .72rem; letter-spacing: 0; }
 
-/* An actions column keeps its header on one line and takes only the width its button needs. */
-.adm-col-actions { width: 1%; white-space: nowrap; text-align: right; }
 .adm-kp-table .adm-table th.adm-col-actions { padding-right: 16px; }
 
 /* Practice-set detail: sections, instructions, passage and the questions as a numbered list. */

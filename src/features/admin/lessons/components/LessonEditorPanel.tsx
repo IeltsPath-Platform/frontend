@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { ArrowDown, ArrowUp, Archive, Pencil, Plus, Send, Trash2 } from 'lucide-react'
 import { useAdminConfirm } from '../../lib/useAdminConfirm'
 import { AdminError, AdminLoading } from '../../components/AdminState'
+import { MarkdownField } from '../../components/MarkdownField'
 import { useAdminResource } from '../../lib/useAdminResource'
 import { KnowledgePointPicker } from '../../questions/components/KnowledgePointPicker'
 import { STATUS_LABEL, statusBadgeClass } from '../../questions/lib/labels'
@@ -78,10 +79,7 @@ function MetaForm({ lesson, onSaved }: { lesson: LessonEditor; onSaved: () => vo
         <span>Tóm tắt</span>
         <input className="adm-input" onChange={(event) => setSummary(event.target.value)} value={summary} />
       </label>
-      <label className="adm-field">
-        <span>Tóm tắt chi tiết (Markdown)</span>
-        <textarea className="adm-textarea ls-textarea" onChange={(event) => setMarkdown(event.target.value)} value={markdown} />
-      </label>
+      <MarkdownField label="Tóm tắt chi tiết (Markdown)" onChange={setMarkdown} textareaClassName="adm-textarea ls-textarea" value={markdown} />
       <button className="adm-btn adm-btn--primary" disabled={saving} type="submit">{saving ? 'Đang lưu…' : 'Lưu thông tin'}</button>
     </form>
   )

@@ -1,16 +1,17 @@
 import type { TreeNode } from '../types'
-import { LANE_LABEL, laneOf } from '../lib/layout'
+import { SKILL_LABEL, skillOf } from '../lib/skills'
+import { KnowledgePointMenu, type PointActions } from './KnowledgePointMenu'
 
 export interface KnowledgeTableProps {
   nodes: readonly TreeNode[]
   selectedId: string | null
   isolated: ReadonlySet<string>
   missing: ReadonlySet<string>
-  onSelect: (id: string) => void
+  actions: PointActions
 }
 
-/** The same points as the graph, as a table: easier to scan, to filter and to use with a screen reader. */
-export function KnowledgeTable({ nodes, selectedId, isolated, missing, onSelect }: KnowledgeTableProps) {
+/** Points as a flat table, for the ones that no link reaches and so have no tree to sit in. */
+export function KnowledgeTable({ nodes, selectedId, isolated, missing, actions }: KnowledgeTableProps) {
   return (
     <div className="adm-table-wrap">
       <table className="adm-table">
@@ -24,24 +25,16 @@ export function KnowledgeTable({ nodes, selectedId, isolated, missing, onSelect 
             <th scope="col">CEFR</th>
             <th scope="col">Trạng thái</th>
             <th scope="col">Cảnh báo</th>
+            <th className="adm-col-actions" scope="col">Hành động</th>
           </tr>
         </thead>
         <tbody>
           {nodes.map((node, index) => (
-            <tr key={node.id}>
+            <tr className={node.id === selectedId ? 'is-selected' : undefined} key={node.id}>
               <td className="adm-stt">{index + 1}</td>
-              <td>
-                <button
-                  aria-pressed={node.id === selectedId}
-                  className="kg-link"
-                  onClick={() => onSelect(node.id)}
-                  type="button"
-                >
-                  {node.code}
-                </button>
-              </td>
+              <td><code>{node.code}</code></td>
               <td>{node.name}</td>
-              <td>{LANE_LABEL[laneOf(node.skill)]}</td>
+              <td>{SKILL_LABEL[skillOf(node.skill)]}</td>
               <td>{node.cefrLevel ?? '—'}</td>
               <td>
                 <span className={`adm-badge ${node.status === 'ACTIVE' ? 'adm-badge--ok' : 'adm-badge--muted'}`}>
@@ -52,6 +45,7 @@ export function KnowledgeTable({ nodes, selectedId, isolated, missing, onSelect 
                 {isolated.has(node.id) ? <span className="adm-badge adm-badge--warn">Chưa nối</span> : null}{' '}
                 {missing.has(node.id) ? <span className="adm-badge adm-badge--danger">Thiếu metadata</span> : null}
               </td>
+              <td className="adm-col-actions"><KnowledgePointMenu actions={actions} node={node} /></td>
             </tr>
           ))}
         </tbody>

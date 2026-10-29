@@ -5,6 +5,7 @@ import type { CoursePartOfSpeech } from '../types'
 const LABELS: Record<string, string> = {
   PREREQUISITE_ORDER: 'Kiến thức nền phải được dạy ở bài trước', KNOWLEDGE_POINT_UNKNOWN: 'Không tìm thấy điểm kiến thức',
   KNOWLEDGE_POINT_INACTIVE: 'Điểm kiến thức chưa hoạt động', QUESTION_REF_UNKNOWN: 'Không tìm thấy câu hỏi tham chiếu',
+  QUESTION_ALREADY_OWNED: 'Câu hỏi đã thuộc bài học hoặc gói khác', QUESTION_REUSED: 'Câu hỏi bị dùng ở nhiều chỗ trong bản nháp',
   PACKAGE_UNKNOWN: 'Không tìm thấy gói bài', PACKAGE_NOT_PUBLISHED: 'Gói bài chưa xuất bản', PACKAGE_WRONG_TYPE: 'Gói bài không đúng loại',
   PACKAGE_ALREADY_LINKED: 'Gói bài đã được gắn hoặc chọn nhiều lần', CODE_TAKEN: 'Mã đã được sử dụng', BAND_TAKEN: 'Band đã có khóa học',
   TOPIC_SORT_ORDER_TAKEN: 'Thứ tự chủ đề đã được sử dụng', KP_NOT_COVERED: 'Chưa dạy điểm kiến thức cần có',
