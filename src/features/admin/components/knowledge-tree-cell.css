@@ -1,0 +1,10 @@
+/* The first cell of a knowledge point tree table: a fold arrow, or a spacer where there is nothing to fold, then the content,
+   indented by how deep the point sits. Shared by the course request chooser and the knowledge tree screen. */
+.adm-kp-treecell { display: flex; align-items: center; gap: 6px; padding-left: calc(var(--depth, 0) * 22px); }
+.adm-kp-tree__toggle { display: inline-grid; flex: none; place-items: center; width: 28px; height: 28px; padding: 0; background: transparent; border: 1px solid transparent; border-radius: 6px; color: var(--adm-muted); cursor: pointer; }
+.adm-kp-tree__toggle:hover { background: var(--adm-surface-2); border-color: var(--adm-border); color: var(--adm-text); }
+.adm-kp-tree__toggle:focus-visible { outline: 2px solid var(--adm-focus); outline-offset: 1px; }
+.adm-kp-tree__toggle svg { transition: transform .15s ease; }
+.adm-kp-tree__toggle[aria-expanded='false'] svg { transform: rotate(-90deg); }
+.adm-kp-tree__spacer { flex: none; width: 28px; }
+@media (prefers-reduced-motion: reduce) { .adm-kp-tree__toggle svg { transition: none; } }

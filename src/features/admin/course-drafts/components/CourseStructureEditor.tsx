@@ -87,9 +87,6 @@ export function CourseStructureEditor({ value, onChange, disabled }: {
       </article>)}
       <button className="adm-btn" type="button" disabled={disabled || value.topics.length >= 30} onClick={addTopic}>Thêm chủ đề</button>
     </section>
-    <section className="adm-block">
-      <CourseFinalTestEditor label="Đề cuối khóa" value={value.courseTest} disabled={disabled} onChange={(courseTest) => change({ ...value, courseTest })} />
-    </section>
     <section className="adm-block" aria-label="Mốc đề luyện tập">
       <h2>Mốc đề luyện tập ({value.practiceTestMilestones.length}/100)</h2>
       {milestoneTests.status === 'loading' ? <AdminLoading label="Đang tải đề luyện tập…" /> : null}
@@ -107,6 +104,9 @@ export function CourseStructureEditor({ value, onChange, disabled }: {
         <button className="adm-btn adm-btn--danger" type="button" onClick={() => change({ ...value, practiceTestMilestones: value.practiceTestMilestones.filter((_, position) => position !== index) })}>Gỡ mốc {index + 1}</button>
       </div>)}
       <button className="adm-btn" type="button" disabled={disabled || !value.topics.length || value.practiceTestMilestones.length >= 100} onClick={() => change({ ...value, practiceTestMilestones: [...value.practiceTestMilestones, { packageId: '', afterTopicSequence: 1 }] })}>Thêm mốc đề luyện tập</button>
+    </section>
+    <section className="adm-block">
+      <CourseFinalTestEditor label="Đề cuối khóa" value={value.courseTest} disabled={disabled} onChange={(courseTest) => change({ ...value, courseTest })} />
     </section>
   </fieldset></CourseDraftCatalogContext>
 }

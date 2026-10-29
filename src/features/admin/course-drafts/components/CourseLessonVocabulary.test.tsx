@@ -39,8 +39,8 @@ describe('CourseLessonVocabulary', () => {
     senses.getLessonVocabularySenses.mockResolvedValue([])
   })
 
-  it('lists the proposed words and marks the ones the library already has', async () => {
-    library.findVocabularyByLemmas.mockResolvedValue([{ id: 'item', lemma: 'Trend', senses: [{ id: trendSense, status: 'ACTIVE', vietnameseMeaning: 'xu thế' }] }])
+  it('lists the proposed words and marks the ones the library already has with the same meaning', async () => {
+    library.findVocabularyByLemmas.mockResolvedValue([{ id: 'item', lemma: 'Trend', senses: [{ id: trendSense, status: 'ACTIVE', partOfSpeech: 'NOUN', vietnameseMeaning: ' Xu  hướng ' }] }])
     show(lesson({ newVocabulary: [fluctuate, trend] }))
 
     const table = screen.getByRole('table', { name: 'Từ vựng của bài' })
@@ -48,7 +48,7 @@ describe('CourseLessonVocabulary', () => {
     expect(within(table).getByRole('columnheader', { name: 'Câu ví dụ' })).toBeTruthy()
     expect(within(table).getByText('Prices fluctuate.')).toBeTruthy()
     expect(await within(table).findByText('Từ mới')).toBeTruthy()
-    expect(within(table).getByText('Đã có: xu thế')).toBeTruthy()
+    expect(within(table).getByText('Đã có')).toBeTruthy()
     expect(library.findVocabularyByLemmas).toHaveBeenCalledWith(['fluctuate', 'trend'], expect.anything())
   })
 
@@ -148,14 +148,65 @@ describe('CourseLessonVocabulary', () => {
     expect(last().newVocabulary?.map((word) => word.lemma)).toEqual(['trend'])
   })
 
-  it('lets the author adopt the sense the library already has instead of the proposal', async () => {
-    library.findVocabularyByLemmas.mockResolvedValue([{ id: 'item', lemma: 'trend', senses: [{ id: trendSense, status: 'ACTIVE', vietnameseMeaning: 'xu thế' }] }])
+  const otherMeaning = { id: trendSense, status: 'ACTIVE', partOfSpeech: 'NOUN', vietnameseMeaning: 'bản án', exampleSentence: 'A prison sentence.' }
+  const sentence = { lemma: 'sentence', ipa: null, partOfSpeech: 'NOUN' as const, englishDefinition: null, vietnameseMeaning: 'câu', exampleSentence: 'The topic sentence opens the paragraph.' }
+
+  it('says a word the library has under another meaning will gain a meaning, and shows the library meaning', async () => {
+    library.findVocabularyByLemmas.mockResolvedValue([{ id: 'item', lemma: 'sentence', senses: [otherMeaning] }])
+    show(lesson({ newVocabulary: [sentence] }))
+
+    const table = screen.getByRole('table', { name: 'Từ vựng của bài' })
+    expect(await within(table).findByText('Thêm nghĩa mới')).toBeTruthy()
+    expect(within(table).getByText('Thư viện: bản án')).toBeTruthy()
+  })
+
+  it('advises keeping a different meaning and shows what approval does, leaving the word as proposed when kept', async () => {
+    library.findVocabularyByLemmas.mockResolvedValue([{ id: 'item', lemma: 'sentence', senses: [otherMeaning] }])
+    const { last } = show(lesson({ newVocabulary: [sentence] }))
+    await screen.findByText('Thêm nghĩa mới')
+
+    const form = openDetail('sentence')
+    expect(within(form).getByRole('note')).toHaveTextContent('Thư viện chưa có nghĩa “câu” cho từ này')
+    expect(within(form).getByText('bản án')).toBeTruthy()
+    expect(within(form).getByText(/được thêm vào từ “sentence”/)).toBeTruthy()
+    expect(within(form).getByText(/bài dùng nghĩa đó và bỏ “câu”; thư viện không đổi/)).toBeTruthy()
+    expect(within(form).getByRole('button', { name: 'Dùng nghĩa “bản án”' })).toHaveTextContent('Dùng thay “câu”')
+    fireEvent.click(within(form).getByRole('button', { name: 'Lưu' }))
+
+    expect(last().newVocabulary?.map((word) => word.lemma)).toEqual(['sentence'])
+    expect(last().vocabularySenseIds).toBeUndefined()
+  })
+
+  it('advises adopting a library meaning that reads like the proposal', async () => {
+    library.findVocabularyByLemmas.mockResolvedValue([{ id: 'item', lemma: 'trend', senses: [{ id: trendSense, status: 'ACTIVE', partOfSpeech: 'NOUN', vietnameseMeaning: 'xu hướng, chiều hướng' }] }])
+    show(lesson({ newVocabulary: [trend] }))
+
+    expect(await screen.findByText('Gần nghĩa có sẵn')).toBeTruthy()
+    const form = openDetail('trend')
+    expect(within(form).getByRole('note')).toHaveTextContent('Nên dùng nghĩa thư viện')
+  })
+
+  it('lets the author adopt one of the library meanings instead of the proposal', async () => {
+    const second = '22222222-2222-4222-8222-222222222222'
+    library.findVocabularyByLemmas.mockResolvedValue([{ id: 'item', lemma: 'sentence', senses: [otherMeaning, { id: second, status: 'ACTIVE', partOfSpeech: 'VERB', vietnameseMeaning: 'tuyên án' }] }])
+    const { last } = show(lesson({ newVocabulary: [fluctuate, sentence] }))
+    await screen.findByText('Thêm nghĩa mới')
+
+    const form = openDetail('sentence')
+    fireEvent.click(within(form).getByRole('button', { name: 'Dùng nghĩa “tuyên án”' }))
+
+    expect(last().vocabularySenseIds).toEqual([second])
+    expect(last().newVocabulary?.map((word) => word.lemma)).toEqual(['fluctuate'])
+  })
+
+  it('lets the author adopt the sense the library already has with the same meaning', async () => {
+    library.findVocabularyByLemmas.mockResolvedValue([{ id: 'item', lemma: 'trend', senses: [{ id: trendSense, status: 'ACTIVE', partOfSpeech: 'NOUN', vietnameseMeaning: 'xu hướng' }] }])
     const { last } = show(lesson({ newVocabulary: [fluctuate, trend] }))
-    await screen.findByText('Đã có: xu thế')
+    await screen.findByText('Đã có')
 
     const form = openDetail('trend')
-    expect(within(form).getByText('xu thế')).toBeTruthy()
-    fireEvent.click(within(form).getByRole('button', { name: 'Dùng nghĩa có sẵn' }))
+    expect(within(form).getByText(/Thư viện đã có đúng nghĩa này/)).toBeTruthy()
+    fireEvent.click(within(form).getByRole('button', { name: 'Dùng nghĩa “xu hướng”' }))
 
     expect(last().vocabularySenseIds).toEqual([trendSense])
     expect(last().newVocabulary?.map((word) => word.lemma)).toEqual(['fluctuate'])
@@ -167,7 +218,7 @@ describe('CourseLessonVocabulary', () => {
 
     const form = openDetail('fluctuate')
 
-    expect(within(form).queryByRole('button', { name: 'Dùng nghĩa có sẵn' })).toBeNull()
+    expect(within(form).queryByRole('button', { name: /^Dùng nghĩa/ })).toBeNull()
     expect(within(form).getByText(/chưa có trong thư viện/)).toBeTruthy()
     expect(within(form).getByRole('button', { name: 'Gỡ từ này' })).toBeTruthy()
   })

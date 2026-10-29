@@ -156,6 +156,8 @@
 .adm-badge--muted { color: var(--adm-muted); }
 
 .adm-table-wrap { overflow-x: auto; border: 1px solid var(--adm-border); border-radius: var(--adm-radius); }
+/* An actions column keeps its header on one line and takes only the width its button needs. */
+.adm-col-actions { width: 1%; white-space: nowrap; text-align: right; }
 .adm-table { width: 100%; border-collapse: collapse; font-size: .92rem; }
 .adm-table th, .adm-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--adm-border); vertical-align: top; }
 .adm-table th { color: var(--adm-muted); font-size: .78rem; text-transform: uppercase; letter-spacing: .03em; background: var(--adm-surface-2); }

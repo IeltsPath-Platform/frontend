@@ -3,8 +3,9 @@ import { BookPlus, Eye, Library, Trash2, X } from 'lucide-react'
 import { getLessonVocabularySenses } from '@/features/learning-path/api/lessonVocabularyApi'
 import { AdminModal } from '../../components/AdminLayer'
 import { useAdminResource } from '../../lib/useAdminResource'
-import { findVocabularyByLemmas, type VocabularyHit } from '../../lessons/api/lessonApi'
+import { findVocabularyByLemmas } from '../../lessons/api/lessonApi'
 import { PART_OF_SPEECH_LABELS } from '../lib/courseDraftLabels'
+import { reviewAdvice, reviewWord, type LibrarySense, type WordReview } from '../lib/vocabularyReview'
 import { COURSE_NEW_WORD_LIMIT, COURSE_PARTS_OF_SPEECH, COURSE_VOCABULARY_LIMIT, courseNewWordSchema, type CourseLesson, type CourseNewWord } from '../types'
 import '../../lessons/lessons.css'
 import { useAdminError } from '../../lib/useAdminError'
@@ -15,8 +16,9 @@ const key = (lemma: string) => lemma.trim().toLowerCase()
 
 /**
  * The vocabulary of a lesson: senses already in the library, picked by search, and the words the model proposed. A
- * proposed word is reviewed here and only written to the library when the draft is approved; one the library already
- * has keeps its own sense, which the author may adopt right away.
+ * proposed word is reviewed here and only written to the library when the draft is approved. For a word the library
+ * already has under other meanings the author decides: keep the proposal, which is then added as one more meaning of the
+ * word, or adopt one of the library's meanings instead, which leaves the library as it is.
  */
 export function CourseLessonVocabulary({ value, onChange, disabled }: {
   value: CourseLesson; onChange: (next: CourseLesson) => void; disabled: boolean
@@ -32,12 +34,10 @@ export function CourseLessonVocabulary({ value, onChange, disabled }: {
   const lemmas = [...new Set(words.map((word) => key(word.lemma)))]
   const found = useAdminResource(`course-new-words|${lemmas.join(',')}`, (signal) => (lemmas.length ? findVocabularyByLemmas(lemmas, signal) : Promise.resolve([])))
   const library = new Map((found.data ?? []).map((hit) => [key(hit.lemma), hit]))
-  const librarySense = (word: CourseNewWord) => library.get(key(word.lemma))?.senses?.find((sense) => sense.status !== 'INACTIVE')
+  const reviewOf = (word: CourseNewWord): WordReview => reviewWord(word, library.get(key(word.lemma)))
 
-  /** The library's own sense replaces the proposal, so the lesson does not carry the same word twice. */
-  function adopt(index: number) {
-    const sense = librarySense(words[index]!)
-    if (!sense) return
+  /** A sense of the library replaces the proposal, so the lesson does not carry the same word twice. */
+  function adopt(index: number, sense: LibrarySense) {
     onChange({ ...value, vocabularySenseIds: picked.includes(sense.id) ? picked : [...picked, sense.id], newVocabulary: words.filter((_, position) => position !== index) })
   }
   function save(word: CourseNewWord, index: number | null) {
@@ -65,14 +65,14 @@ export function CourseLessonVocabulary({ value, onChange, disabled }: {
               <td>{card ? PART_OF_SPEECH_LABELS[card.partOfSpeech as CourseNewWord['partOfSpeech']] ?? card.partOfSpeech : ''}</td>
               <td>{card?.vietnameseMeaning ?? card?.englishDefinition ?? ''}</td>
               <td>{card?.exampleSentence ?? ''}</td>
-              <td>{card || cards.status === 'loading' ? <span className="adm-badge adm-badge--ok">Đã có</span> : <span className="adm-badge adm-badge--warn">Không còn khả dụng</span>}</td>
+              <td>{card || cards.status === 'loading' ? <span className="adm-badge adm-badge--ok adm-vocab-badge">Đã có</span> : <span className="adm-badge adm-badge--warn">Không còn khả dụng</span>}</td>
               <td className="adm-kp-table__remove adm-qrow__tools">
                 <button aria-label={`Bỏ từ ${card?.lemma ?? id}`} disabled={disabled} onClick={() => onChange({ ...value, vocabularySenseIds: picked.filter((item) => item !== id) })} type="button"><X aria-hidden="true" size={16} /></button>
               </td>
             </tr>
           })}
           {words.map((word, index) => {
-          const sense = librarySense(word)
+          const review = reviewOf(word)
           return <tr key={`${word.lemma}-${index}`}>
             <td className="adm-stt">{picked.length + index + 1}</td>
             <td><strong>{word.lemma}</strong></td>
@@ -81,8 +81,7 @@ export function CourseLessonVocabulary({ value, onChange, disabled }: {
             <td>{word.exampleSentence}</td>
             <td>{found.status === 'loading' ? <span className="adm-muted">Đang kiểm tra…</span>
               : found.status === 'error' ? <span className="adm-muted">Chưa kiểm tra được</span>
-              : sense ? <span className="adm-badge adm-badge--ok">Đã có: {sense.vietnameseMeaning ?? sense.englishDefinition}</span>
-              : <span className="adm-badge adm-badge--warn">Từ mới</span>}</td>
+              : <LibraryStatus review={review} />}</td>
             <td className="adm-kp-table__remove adm-qrow__tools">
               <button aria-label={`Xem chi tiết từ ${word.lemma}`} onClick={() => setEditing({ index, word })} type="button"><Eye aria-hidden="true" size={16} /></button>
             </td>
@@ -93,23 +92,35 @@ export function CourseLessonVocabulary({ value, onChange, disabled }: {
     {searching ? <VocabularyLibraryDialog limit={COURSE_VOCABULARY_LIMIT} onAdd={(senseId) => onChange({ ...value, vocabularySenseIds: picked.includes(senseId) ? picked : [...picked, senseId] })} onClose={() => setSearching(false)} picked={picked} total={total} /> : null}
     {editing ? <WordDialog
       index={editing.index} initial={editing.word} others={words.filter((_, position) => position !== editing.index)} readOnly={disabled}
-      librarySense={editing.index === null ? undefined : librarySense(editing.word)}
-      onAdopt={editing.index === null ? undefined : () => adopt(editing.index!)}
+      review={editing.index === null ? undefined : reviewOf(editing.word)}
+      onAdopt={editing.index === null ? undefined : (sense) => adopt(editing.index!, sense)}
       onRemove={editing.index === null ? undefined : () => onChange({ ...value, newVocabulary: words.filter((_, position) => position !== editing.index) })}
       onClose={() => setEditing(null)} onSave={(word) => save(word, editing.index)} /> : null}
   </div>
 }
 
-type LibrarySense = NonNullable<VocabularyHit['senses']>[number]
+const meaningOf = (sense: LibrarySense) => sense.vietnameseMeaning ?? sense.englishDefinition ?? ''
+const partLabel = (sense: LibrarySense) => PART_OF_SPEECH_LABELS[sense.partOfSpeech as CourseNewWord['partOfSpeech']] ?? sense.partOfSpeech ?? ''
+
+/** What approval will do with a proposed word, in one badge, and the library's meaning when it differs. */
+function LibraryStatus({ review }: { review: WordReview }) {
+  if (review.kind === 'new') return <span className="adm-badge adm-badge--warn adm-vocab-badge">Từ mới</span>
+  if (review.kind === 'same') return <span className="adm-badge adm-badge--ok">Đã có</span>
+  const first = review.senses[0]!
+  return <>
+    <span className="adm-badge adm-badge--warn adm-vocab-badge">{review.similar ? 'Gần nghĩa có sẵn' : 'Thêm nghĩa mới'}</span>
+    <small className="adm-muted adm-vocab-library">Thư viện: {meaningOf(review.similar ?? first)}{review.senses.length > 1 && !review.similar ? ` +${review.senses.length - 1}` : ''}</small>
+  </>
+}
 
 /**
  * One proposed word: adds a new one, or shows an existing one with what the library holds for it. The fields are
- * read-only when the draft cannot be edited; otherwise the word can be saved, removed or swapped for the library's
- * sense. The lemma may not repeat another word of the lesson.
+ * read-only when the draft cannot be edited; otherwise the word can be saved, removed or swapped for a sense of the
+ * library. The lemma may not repeat another word of the lesson.
  */
-function WordDialog({ index, initial, others, readOnly, librarySense, onAdopt, onRemove, onClose, onSave }: {
-  index: number | null; initial: CourseNewWord; others: readonly CourseNewWord[]; readOnly: boolean; librarySense?: LibrarySense
-  onAdopt?: () => void; onRemove?: () => void; onClose: () => void; onSave: (word: CourseNewWord) => void
+function WordDialog({ index, initial, others, readOnly, review, onAdopt, onRemove, onClose, onSave }: {
+  index: number | null; initial: CourseNewWord; others: readonly CourseNewWord[]; readOnly: boolean; review?: WordReview
+  onAdopt?: (sense: LibrarySense) => void; onRemove?: () => void; onClose: () => void; onSave: (word: CourseNewWord) => void
 }) {
   const title = index === null ? 'Thêm từ vựng' : 'Chi tiết từ vựng'
   const [word, setWord] = useState<CourseNewWord>({ ...EMPTY_WORD, ...initial, ipa: initial.ipa ?? '', englishDefinition: initial.englishDefinition ?? '' })
@@ -137,12 +148,24 @@ function WordDialog({ index, initial, others, readOnly, librarySense, onAdopt, o
     {(close) => <form aria-label={title} noValidate onSubmit={(event) => submit(event, close)}>
       {index !== null ? <div className="adm-sec">
         <h5 className="adm-sec__title">Trong thư viện</h5>
-        {librarySense
+        {review && review.kind !== 'new'
           ? <>
-            <p><strong>{librarySense.vietnameseMeaning ?? librarySense.englishDefinition}</strong></p>
-            {librarySense.exampleSentence ? <p className="adm-muted">{librarySense.exampleSentence}</p> : null}
-            <small className="adm-muted">Khi duyệt bản nháp, nghĩa này được dùng thay cho nghĩa đề xuất bên dưới.</small>
-            {!readOnly && onAdopt ? <div><button className="adm-btn adm-btn--small" onClick={() => { onAdopt(); close() }} type="button">Dùng nghĩa có sẵn</button></div> : null}
+            {review.kind === 'same'
+              ? <small className="adm-muted adm-vocab-note">Thư viện đã có đúng nghĩa này. Khi duyệt, bài dùng lại nghĩa đó và không thêm gì.</small>
+              : <p className="adm-vocab-advice" role="note">{reviewAdvice(initial, review)}</p>}
+            <ul className="adm-vocab-senses">
+              {(review.kind === 'same' ? [review.sense] : review.senses).map((sense) => <li key={sense.id}>
+                <div>
+                  <strong>{meaningOf(sense)}</strong>{partLabel(sense) ? <span className="adm-muted"> · {partLabel(sense)}</span> : null}
+                  {sense.exampleSentence ? <p className="adm-muted">{sense.exampleSentence}</p> : null}
+                </div>
+                {!readOnly && onAdopt ? <button aria-label={`Dùng nghĩa “${meaningOf(sense)}”`} className="adm-btn adm-btn--small" onClick={() => { onAdopt(sense); close() }} type="button">{review.kind === 'different' ? `Dùng thay “${initial.vietnameseMeaning}”` : 'Dùng nghĩa này'}</button> : null}
+              </li>)}
+            </ul>
+            {review.kind === 'different' ? <ul className="adm-vocab-note adm-muted">
+              <li><strong>Giữ “{initial.vietnameseMeaning}”:</strong> bấm Lưu. Khi duyệt, nghĩa này được thêm vào từ “{initial.lemma}”; các nghĩa cũ vẫn như cũ.</li>
+              <li><strong>Dùng một nghĩa ở trên:</strong> bài dùng nghĩa đó và bỏ “{initial.vietnameseMeaning}”; thư viện không đổi.</li>
+            </ul> : null}
           </>
           : <p className="adm-muted">Từ này chưa có trong thư viện; nó được tạo khi duyệt bản nháp.</p>}
       </div> : null}

@@ -1,5 +1,5 @@
-import { useState, type CSSProperties } from 'react'
-import { ChevronDown, Network, X } from 'lucide-react'
+import { useState } from 'react'
+import { Network, X } from 'lucide-react'
 import { useToast } from '@/components/toast/toastContext'
 import { AdminError, AdminLoading } from '../../components/AdminState'
 import { SKILL_LABEL } from '../../courses/types'
@@ -8,6 +8,7 @@ import { CEFR_LEVELS, type CefrLevel } from '../../knowledge-graph/types'
 import { useAdminResource } from '../../lib/useAdminResource'
 import { courseKnowledgeLevels, courseKnowledgeOptions } from '../lib/courseKnowledgeOptions'
 import { coursePrerequisites } from '../lib/coursePrerequisites'
+import { KnowledgeTreeCell } from '../../components/KnowledgeTreeCell'
 import { courseKnowledgeTree, visibleKnowledgeLines } from '../lib/courseKnowledgeTree'
 import { CourseKnowledgeDialog } from './CourseKnowledgeDialog'
 import { CourseKnowledgeChartDialog } from './CourseKnowledgeChartDialog'
@@ -124,12 +125,9 @@ export function CourseKnowledgePicker({ value, onChange, bandLevel, skills, limi
           const open = !closed.has(node.id)
           return <tr key={`${node.id}-${index}`}>
           <td className="adm-stt">{index + 1}</td>
-          <td><span className="adm-kp-treecell" style={{ '--depth': depth } as CSSProperties}>
-            {row.children.length
-              ? <button aria-expanded={open} aria-label={`${open ? 'Thu gọn' : 'Mở'} ${node.code}`} className="adm-kp-tree__toggle" onClick={() => fold(node.id)} type="button"><ChevronDown aria-hidden="true" size={16} /></button>
-              : <span aria-hidden="true" className="adm-kp-tree__spacer" />}
+          <td><KnowledgeTreeCell code={node.code} depth={depth} foldable={row.children.length > 0} onToggle={() => fold(node.id)} open={open}>
             <code>{node.code}</code>
-          </span></td>
+          </KnowledgeTreeCell></td>
           <td>{node.name}</td>
           <td className="adm-muted">{node.skill && node.skill !== 'ALL' ? SKILL_LABEL[node.skill as keyof typeof SKILL_LABEL] ?? node.skill : 'Chung'}</td>
           <td>{node.cefrLevel ? <span className="adm-badge">{node.cefrLevel}</span> : null}</td>

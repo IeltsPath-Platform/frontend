@@ -46,6 +46,39 @@ export const courseSchema = z.object({
   status: z.string().nullish(),
 })
 
+/** `GET /api/content/knowledge-points`: the whole record of a point, which the tree leaves part of out (the description). */
+export const knowledgePointSchema = z.object({
+  id: z.string(),
+  topicId: z.string(),
+  code: z.string(),
+  name: z.string(),
+  kind: z.string(),
+  learningType: z.string().nullish(),
+  skill: z.string().nullish(),
+  description: z.string().nullish(),
+  status: z.string(),
+  cefrLevel: z.enum(CEFR_LEVELS).nullish(),
+  canDo: z.string().nullish(),
+  scopeIn: z.string().nullish(),
+  scopeOut: z.string().nullish(),
+})
+
+/** The body of `POST /api/content/knowledge-points` and `PUT /api/content/knowledge-points/{id}`. */
+export interface KnowledgePointRequest {
+  topicId: string
+  code: string
+  name: string
+  kind: string
+  learningType: string
+  skill: string | null
+  description: string
+  cefrLevel: string | null
+  canDo: string
+  scopeIn: string
+  scopeOut: string
+}
+
+export type KnowledgePoint = z.infer<typeof knowledgePointSchema>
 export type TreeNode = z.infer<typeof treeNodeSchema>
 export type TreeEdge = z.infer<typeof treeEdgeSchema>
 export type KnowledgeTree = z.infer<typeof knowledgeTreeSchema>

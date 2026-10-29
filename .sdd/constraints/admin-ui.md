@@ -26,8 +26,10 @@ Token nằm ở [`src/features/admin/admin.css`](../../src/features/admin/admin.
 ## 2. Bố cục và lớp phủ
 
 - Tạo hoặc sửa bản ghi = **drawer bên phải** (`AdminDrawer`, cỡ `md`/`lg`/`xl`). Xem chi tiết một dòng = **hộp thoại giữa màn** (`AdminModal`). Hộp xác nhận = `useAdminConfirm`.
+- "Xem chi tiết" MUST là `AdminModal` ở mọi trang, kể cả trang cây/đồ thị: không dùng panel dính bên cạnh (`aside`) hay chi tiết nằm cạnh bảng. Chi tiết mở từ hộp khác (sơ đồ) thì `stacked`. Dòng bảng mở chi tiết/sửa/xóa bằng **cột "Hành động" + `AdminRowMenu`**, không dùng mã/tên màu xanh làm link để mở.
 - Hộp mở từ trong drawer hoặc hộp khác MUST có `stacked`.
 - Không lồng trình soạn trong trình soạn: danh sách con (bài học trong chủ đề) là **bảng gọn**, sửa mở drawer; khối dài thì **thu gọn** (mũi tên, "Mở tất cả / Thu gọn tất cả", trạng thái đi theo phần tử khi đổi thứ tự).
+- Mỗi nhóm nội dung độc lập (bộ lọc, từng kỹ năng, từng danh sách) là **một `.adm-block` riêng** xếp trong `AdminPage plain`, có tiêu đề + bảng bên trong; không nhét nhiều nhóm vào chung một khung hay thẻ lồng thẻ (cây tri thức: bộ lọc một khối, mỗi kỹ năng một khối).
 - Trang dùng `AdminPage plain`; bảng đứng riêng, không bọc thẻ trắng thừa; vùng tiêu đề của danh sách nằm trong khung trắng như `.adm-block`.
 - Dữ liệu tải một lần ở cấp cha rồi chia qua context (`courseDraftCatalog`), không để mỗi dòng tự gọi API.
 
@@ -72,3 +74,5 @@ Token nằm ở [`src/features/admin/admin.css`](../../src/features/admin/admin.
 ## 8. Thành phần dùng lại
 
 `components/AdminLayer.tsx` (Drawer, Modal, ConfirmDialog), `components/MarkdownField.tsx` (ô Markdown + nút Xem trước), `components/AdminRowMenu.tsx`, `components/AdminState.tsx` (Loading, Error, Empty), `pages/AdminPage.tsx`, `lib/useAdminResource.ts`, `lib/useAdminConfirm.tsx`; bộ chọn kiến thức/câu hỏi/gói/band và tiến trình sinh trong `course-drafts/components/`.
+
+`components/KnowledgeOrgChart.tsx` (+ `lib/chartZoom.ts`): sơ đồ tổ chức dùng chung cho cây kiến thức — một ô gốc lớn, các ô bên dưới nối bằng đường vuông, đường nối chéo và thu phóng. Hộp chọn điểm kiến thức (`course-drafts`) và trang Cây tri thức (`knowledge-graph`, mỗi kỹ năng một sơ đồ) đều vẽ bằng nó; ô vẽ qua `renderBox`, không tự vẽ lại cây. Ô đầu của bảng cây điểm kiến thức (mũi tên thu gọn + thụt lề theo độ sâu) là `components/KnowledgeTreeCell.tsx`, dùng chung cho bộ chọn và trang Cây tri thức (mỗi kỹ năng một bảng; sơ đồ mở trong popup). Mỗi bảng kỹ năng có "Mở tất cả" / "Thu gọn tất cả". Tạo/sửa điểm kiến thức là drawer `KnowledgePointDrawer` (chip chọn một chạm `ChoiceChips`, danh sách tick `PrerequisitePicker`), mở từ nút "Tạo điểm kiến thức" và mục "Sửa" của menu dòng; chỉ vai trò CONTENT_AUTHOR thấy (API từ chối ADMIN). "Ngừng dùng" hỏi xác nhận, "Kích hoạt" không.

@@ -53,7 +53,6 @@ export function CourseDraftProgress({ status, createdAt, request }: { status: Ai
         <span aria-hidden="true" className="adm-gen__orb"><Sparkles size={20} /></span>
         <div className="adm-gen__title">
           <h2 role="status">{status === 'GENERATING' ? 'AI đang lập kế hoạch khóa học' : 'Yêu cầu đang chờ tới lượt'}</h2>
-          <p className="adm-muted">Trang tự cập nhật. Bạn có thể rời đi, bản nháp vẫn nằm trong Danh sách bản nháp.</p>
         </div>
         <time aria-label="Thời gian đã chạy" className="adm-gen__clock" dateTime={`PT${Math.floor(seconds)}S`}>{elapsedText(seconds)}</time>
       </header>

@@ -8,6 +8,7 @@ import { rejectAiDraft } from '../../ai-drafts/api/aiDraftApi'
 import { DRAFT_STATUS_LABEL, aiDraftFailure, draftBadgeClass, draftIsRunning } from '../../ai-drafts/lib/aiDraftLabels'
 import { useDraftPolling } from '../../ai-drafts/lib/useDraftPolling'
 import { QUESTION_DRAFTS_ENABLED } from '../../ai-drafts/draftFlags'
+import { fetchKnowledgeTree } from '../../knowledge-graph/api/knowledgeGraphApi'
 import { analyzeCourseDraft, approveCourseDraft, getCourseDraft, saveCourseDraft } from '../api/courseDraftApi'
 import { CourseStructureEditor } from '../components/CourseStructureEditor'
 import { CourseAnalysisPanel } from '../components/CourseAnalysisPanel'
@@ -39,6 +40,9 @@ function CourseDetail({ id }: { id: string }) {
   const draft = resource.status === 'success' ? resource.data : loaded
   const ready = draft?.status === 'READY'
   useDraftPolling(resource.status === 'success' && !!draft && draftIsRunning(draft.status), resource.refresh)
+  // Names for the knowledge points the analysis mentions by id; without them the panel shows the ids.
+  const knowledge = useAdminResource('course-analysis-names', (signal) => fetchKnowledgeTree({}, signal))
+  const names = new Map((knowledge.data?.nodes ?? []).map((node) => [node.id, { code: node.code, name: node.name }]))
   const analysis = useAdminResource(`course-analysis:${id}:${revision}:${ready}`, (signal) => ready ? analyzeCourseDraft(id, signal) : Promise.resolve(null))
   const [busy, setBusy] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -127,7 +131,7 @@ function CourseDetail({ id }: { id: string }) {
               <fieldset disabled={locked || saving} className="adm-course-fields adm-draft-reject"><label className="adm-field"><span>Ghi chú từ chối</span><textarea className="adm-textarea" maxLength={1000} value={note} onChange={(event) => setNote(event.target.value)} /></label><button className="adm-btn adm-btn--danger" type="button" onClick={() => void run(() => rejectAiDraft(id, { note }), 'Đã từ chối bản nháp khóa học.')}>Từ chối bản nháp</button></fieldset>
             </> : null}
           </section>
-          {ready ? <section aria-label="Kiểm tra bản nháp">{analysis.status === 'loading' ? <div className="adm-block"><AdminLoading /></div> : analysis.status === 'error' ? <div className="adm-block"><AdminError message={analysis.error!} onRetry={analysis.reload} /></div> : analysis.data ? <CourseAnalysisPanel analysis={analysis.data} unmatchedTopics={draft.result?.unmatchedTopics} warnings={draft.result?.warnings} questionDraftsEnabled={QUESTION_DRAFTS_ENABLED} /> : null}</section> : null}
+          {ready ? <section aria-label="Kiểm tra bản nháp">{analysis.status === 'loading' ? <div className="adm-block"><AdminLoading /></div> : analysis.status === 'error' ? <div className="adm-block"><AdminError message={analysis.error!} onRetry={analysis.reload} /></div> : analysis.data ? <CourseAnalysisPanel analysis={analysis.data} names={names} unmatchedTopics={draft.result?.unmatchedTopics} warnings={draft.result?.warnings} questionDraftsEnabled={QUESTION_DRAFTS_ENABLED} /> : null}</section> : null}
           {approved ? <section className="adm-block"><h2>Đã tạo khóa học (chưa kích hoạt)</h2><Link to="/content-author/courses">Mở Khóa học &amp; chủ đề</Link><p>Khóa học và chủ đề: Chưa kích hoạt. Bài học và đề cuối: Nháp.</p><ul>{approved.finalTestPackageIds.map((packageId) => <li key={packageId}><Link to={`/content-author/packages/${packageId}`}>Hoàn thiện đề cuối {packageId}</Link></li>)}</ul></section> : null}
         </aside>
       </div>}
