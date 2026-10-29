@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import { Search, LayoutGrid, List as ListIcon, X, Filter } from 'lucide-react'
 import type { UnderstandingLevel } from '../lib/understanding'
 import { UNDERSTANDING_LEVELS, ALL_LEVELS } from '../lib/understanding'
@@ -41,6 +42,24 @@ export function NotebookToolbar({
 }: NotebookToolbarProps) {
   const isAllSelected = selectedLevels.length === 0
 
+  // The box owns what is typed: writing every key to the URL trimmed spaces away ("make up" could not be typed) and
+  // fought Vietnamese IMEs that rewrite letters. The URL only follows after a short pause.
+  const [text, setText] = useState(searchQuery)
+  const [syncedQuery, setSyncedQuery] = useState(searchQuery)
+  const timer = useRef<number | undefined>(undefined)
+  if (searchQuery !== syncedQuery) {
+    // The URL changed from outside (e.g. "Xóa tất cả bộ lọc"): show that value unless it is what the box already holds.
+    setSyncedQuery(searchQuery)
+    if (searchQuery !== text.trim()) setText(searchQuery)
+  }
+  useEffect(() => () => window.clearTimeout(timer.current), [])
+
+  const changeText = (value: string, delay = 350) => {
+    setText(value)
+    window.clearTimeout(timer.current)
+    timer.current = window.setTimeout(() => onSearchChange(value), delay)
+  }
+
   return (
     <div className="vocab-toolbar" role="search" aria-label="Bộ lọc và tìm kiếm sổ từ">
       <div className="vocab-toolbar__top">
@@ -49,15 +68,21 @@ export function NotebookToolbar({
           <input
             type="text"
             className="vocab-search-input"
-            placeholder="Tìm từ, nghĩa tiếng Việt hoặc câu ví dụ..."
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
+            placeholder="Tìm trong sổ tay và từ điển: từ tiếng Anh hoặc nghĩa tiếng Việt…"
+            value={text}
+            onChange={(e) => changeText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') changeText(text, 0)
+              if (e.key === 'Escape') changeText('', 0)
+            }}
             aria-label="Tìm kiếm trong sổ từ vựng"
+            autoComplete="off"
+            spellCheck={false}
           />
-          {searchQuery && (
+          {text && (
             <button
               type="button"
-              onClick={() => onSearchChange('')}
+              onClick={() => changeText('', 0)}
               style={{
                 position: 'absolute',
                 right: '0.75rem',

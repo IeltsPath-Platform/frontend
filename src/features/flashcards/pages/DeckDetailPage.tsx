@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, BookOpenCheck, ClipboardCheck, Layers, Pencil, Repeat, Trash2 } from 'lucide-react'
+import { ArrowLeft, BookOpenCheck, BookOpenText, ClipboardCheck, Layers, Pencil, Repeat, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { SiteNavbar } from '@/components/SiteNavbar'
 import { useToast } from '@/components/toast/toastContext'
@@ -8,9 +8,10 @@ import { flashcardApi, flashcardErrorMessage, loadAllDeckItems, type DeckItem, t
 import { CardFormDialog } from '../components/CardFormDialog'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { DeckBrowser } from '../components/DeckBrowser'
+import { DictionaryImportDialog } from '../components/DictionaryImportDialog'
 import '../flashcards.css'
 
-type Modal = { kind: 'card'; card: Flashcard } | { kind: 'delete-deck' } | { kind: 'remove'; item: DeckItem } | null
+type Modal = { kind: 'card'; card: Flashcard } | { kind: 'delete-deck' } | { kind: 'remove'; item: DeckItem } | { kind: 'import' } | null
 
 export function DeckDetailPage() {
   const { deckId = '' } = useParams()
@@ -61,6 +62,7 @@ export function DeckDetailPage() {
               <small>{count} thuật ngữ</small>
             </div>
             <div className="deck-hub-actions">
+              <Button onClick={() => setModal({ kind: 'import' })}><BookOpenText />Thêm từ từ điển</Button>
               <Button variant="outline" onClick={() => navigate(`/flashcards/decks/${deck.id}/edit`)}><Pencil />Chỉnh sửa</Button>
               <Button variant="ghost" size="icon" aria-label="Xóa học phần" onClick={() => setModal({ kind: 'delete-deck' })}><Trash2 /></Button>
             </div>
@@ -86,12 +88,20 @@ export function DeckDetailPage() {
             : items.length === 0 ? (
               <div className="flashcards-empty">
                 <p>Học phần chưa có thẻ.</p>
-                <Button onClick={() => navigate(`/flashcards/decks/${deckId}/edit`)}><Pencil />Thêm thẻ</Button>
+                <div className="fc-empty-actions">
+                  <Button onClick={() => setModal({ kind: 'import' })}><BookOpenText />Thêm từ từ điển</Button>
+                  <Button variant="outline" onClick={() => navigate(`/flashcards/decks/${deckId}/edit`)}><Pencil />Tự soạn thẻ</Button>
+                </div>
               </div>
             ) : <DeckBrowser items={items} onEdit={(item) => void editCard(item)} onRemove={(item) => setModal({ kind: 'remove', item })} />}
         </div>
       </main>
 
+      {modal?.kind === 'import' && deck && <DictionaryImportDialog deckId={deck.id} onClose={() => setModal(null)}
+        onImported={(_deckId, added, failed) => {
+          setModal(null); load()
+          toast({ title: `Đã thêm ${added} thẻ vào học phần`, description: failed ? `${failed} từ chưa thêm được.` : undefined, tone: failed ? 'info' : 'success' })
+        }} />}
       {modal?.kind === 'card' && deck && <CardFormDialog card={modal.card} decks={[deck]} onClose={() => setModal(null)}
         onSaved={() => { setModal(null); load(); toast({ title: 'Đã cập nhật thẻ.', tone: 'success' }) }} />}
       {modal?.kind === 'delete-deck' && deck && <ConfirmDialog title={`Xóa học phần “${deck.name}”?`}

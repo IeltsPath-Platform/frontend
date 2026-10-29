@@ -63,7 +63,7 @@
 .deck-hub-header h1 { color: #243a7f; font-size: clamp(1.4rem, 3vw, 2rem); font-weight: 800; letter-spacing: -.02em; overflow-wrap: anywhere; }
 .deck-hub-header p { color: var(--classroom-text-muted); font-size: .88rem; }
 .deck-hub-header small { color: var(--classroom-primary); font-size: .75rem; font-weight: 700; }
-.deck-hub-actions { display: flex; gap: .35rem; }
+.deck-hub-actions { display: flex; flex-wrap: wrap; gap: .35rem; justify-content: flex-end; }
 .deck-hub-actions button:first-child { border-radius: 999px; }
 .deck-hub-modes { display: grid; gap: .75rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); }
 .deck-hub-mode { animation: hub-tile-enter 340ms cubic-bezier(.2, .8, .2, 1) backwards; background: var(--classroom-surface); border: 1px solid var(--classroom-border); border-radius: 1rem; box-shadow: var(--classroom-shadow); display: grid; gap: .2rem; padding: .9rem 1rem; transition: transform 160ms ease, border-color 160ms ease; }

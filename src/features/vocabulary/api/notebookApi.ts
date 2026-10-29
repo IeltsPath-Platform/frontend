@@ -110,19 +110,21 @@ export interface VocabularySetsPage {
   total: number
 }
 
+export type MindmapNodeType = 'TOPIC' | 'WORD' | 'COLLOCATION' | 'SYNONYM'
+
+/** Shape of library-service `VocabularyMindmapResult.Node`; `itemId` is set on word nodes only. */
 export interface MindmapNode {
   id: string
+  type: MindmapNodeType
   label: string
-  type?: string
-  data?: Record<string, unknown>
-  position?: { x: number; y: number }
+  itemId: string | null
 }
 
+/** Shape of library-service `VocabularyMindmapResult.Edge`: topic → word, word → collocation/synonym. */
 export interface MindmapEdge {
-  id: string
-  source: string
-  target: string
-  label?: string
+  from: string
+  to: string
+  kind: 'TOPIC_WORD' | 'COLLOCATION' | 'SYNONYM'
 }
 
 export interface MindmapResponse {
@@ -618,25 +620,35 @@ export const notebookApi = {
     })
   },
 
-  /** Save or update note for a sense */
-  saveSenseNote: async (senseId: string, body: string, existingNoteId?: string) => {
-    if (existingNoteId) {
-      return apiRequest<{ id: string; body: string }>(`/api/learning-support/notes/${existingNoteId}`, {
+  /**
+   * Saves the learner's one note for a sense and returns its id (null once cleared). Without a known id the existing
+   * note is looked up first, so autosave updates that note instead of creating a new one on every pause; an empty
+   * text deletes it, since the API rejects a blank body.
+   */
+  saveSenseNote: async (senseId: string, body: string, knownNoteId?: string | null): Promise<string | null> => {
+    const text = body.slice(0, 300)
+    const noteId = knownNoteId ?? (await apiRequest<{ items: Array<{ id: string }> }>(
+      `/api/learning-support/notes?sourceType=VOCABULARY_SENSE&sourceReferenceId=${encodeURIComponent(senseId)}&size=1`,
+      { auth: true },
+    )).items[0]?.id ?? null
+    if (!text.trim()) {
+      if (noteId) await apiRequest<void>(`/api/learning-support/notes/${noteId}`, { method: 'DELETE', auth: true })
+      return null
+    }
+    if (noteId) {
+      await apiRequest<{ id: string }>(`/api/learning-support/notes/${noteId}`, {
         method: 'PUT',
         auth: true,
-        body: { body: body.slice(0, 300) },
+        body: { title: 'Vocabulary Note', body: text, status: 'ACTIVE' },
       })
+      return noteId
     }
-    return apiRequest<{ id: string; body: string }>('/api/learning-support/notes', {
+    const created = await apiRequest<{ id: string }>('/api/learning-support/notes', {
       method: 'POST',
       auth: true,
-      body: {
-        title: 'Vocabulary Note',
-        body: body.slice(0, 300),
-        sourceType: 'VOCABULARY_SENSE',
-        sourceReferenceId: senseId,
-      },
+      body: { title: 'Vocabulary Note', body: text, sourceType: 'VOCABULARY_SENSE', sourceReferenceId: senseId },
     })
+    return created.id
   },
 
   // --------------------------------------------------------------------------

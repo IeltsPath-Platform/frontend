@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Sparkles, AlertCircle, ArrowRight } from 'lucide-react'
+import { AlertCircle, ArrowRight, BookMarked, Flame, GraduationCap, Sparkles, TrendingUp } from 'lucide-react'
+import { OwlHero } from '@/components/OwlHero'
 import type { NotebookSummaryResponse } from '../api/notebookApi'
 
 interface NotebookHeroProps {
@@ -8,98 +9,74 @@ interface NotebookHeroProps {
   loading?: boolean
 }
 
-export function NotebookHero({ summary, loading }: NotebookHeroProps) {
-  const [displayCount, setDisplayCount] = useState(0)
-  const targetTotal = summary?.total ?? 0
-
+/** Counts up to `target` in about 600 ms; jumps straight there under reduced motion. */
+function useCountUp(target: number, enabled: boolean) {
+  const [value, setValue] = useState(0)
   useEffect(() => {
-    let frameId: number
-    if (loading || targetTotal === 0) {
-      frameId = requestAnimationFrame(() => setDisplayCount(targetTotal))
-      return () => cancelAnimationFrame(frameId)
+    let frame = 0
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    if (!enabled || reduce || target === 0) {
+      frame = requestAnimationFrame(() => setValue(target))
+      return () => cancelAnimationFrame(frame)
     }
-
-    const durationMs = 600
     const start = performance.now()
-
     const step = (now: number) => {
-      const progress = Math.min((now - start) / durationMs, 1)
-      const current = Math.round(progress * targetTotal)
-      setDisplayCount(current)
-      if (progress < 1) {
-        frameId = requestAnimationFrame(step)
-      }
+      const progress = Math.min((now - start) / 600, 1)
+      setValue(Math.round((1 - (1 - progress) ** 3) * target))
+      if (progress < 1) frame = requestAnimationFrame(step)
     }
+    frame = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(frame)
+  }, [target, enabled])
+  return value
+}
 
-    frameId = requestAnimationFrame(step)
-    return () => cancelAnimationFrame(frameId)
-  }, [targetTotal, loading])
-
+export function NotebookHero({ summary, loading }: NotebookHeroProps) {
+  const total = useCountUp(summary?.total ?? 0, !loading)
   const mastered = summary?.byLevel.MASTERED ?? 0
   const inProgress = (summary?.byLevel.LEARNING ?? 0) + (summary?.byLevel.FAMILIAR ?? 0)
   const dueNow = summary?.dueNow ?? 0
   const addedWeek = summary?.addedLast7Days ?? 0
+  const show = (value: number) => (loading ? '—' : value)
+
+  const stats = [
+    { key: 'total', icon: BookMarked, label: 'Tổng số từ', value: loading ? '—' : total, tone: 'blue' },
+    { key: 'mastered', icon: GraduationCap, label: 'Đã nhớ', value: show(mastered), tone: 'green' },
+    { key: 'learning', icon: TrendingUp, label: 'Đang học', value: show(inProgress), tone: 'violet' },
+    { key: 'due', icon: Flame, label: 'Cần ôn ngay', value: show(dueNow), tone: dueNow > 0 ? 'orange' : 'slate' },
+  ]
 
   return (
-    <div className="vocab-hero" role="region" aria-label="Thống kê sổ từ vựng">
-      <div className="vocab-hero__grid">
-        <div>
-          <h1 className="vocab-hero__title">Sổ tay từ vựng của bạn</h1>
-          <p className="vocab-hero__subtitle">
-            Học và củng cố vốn từ vựng học thuật theo phương pháp lặp lại ngắt quãng (Spaced Repetition).
-          </p>
-
-          <div className="vocab-hero__stats-row">
-            <div className="vocab-hero__stat-chip">
-              <span className="vocab-hero__stat-val">{loading ? '—' : displayCount}</span>
-              <span className="vocab-hero__stat-lbl">Tổng số từ</span>
-            </div>
-            <div className="vocab-hero__stat-chip">
-              <span className="vocab-hero__stat-val">{loading ? '—' : mastered}</span>
-              <span className="vocab-hero__stat-lbl">Đã nhớ</span>
-            </div>
-            <div className="vocab-hero__stat-chip">
-              <span className="vocab-hero__stat-val">{loading ? '—' : inProgress}</span>
-              <span className="vocab-hero__stat-lbl">Đang học</span>
-            </div>
-            <div className="vocab-hero__stat-chip">
-              <span className="vocab-hero__stat-val" style={{ color: dueNow > 0 ? '#ffb076' : 'white' }}>
-                {loading ? '—' : dueNow}
-              </span>
-              <span className="vocab-hero__stat-lbl">Cần ôn ngay</span>
-            </div>
-            {addedWeek > 0 && (
-              <div className="vocab-hero__stat-chip">
-                <span className="vocab-hero__stat-val" style={{ color: '#86efac' }}>
-                  +{addedWeek}
-                </span>
-                <span className="vocab-hero__stat-lbl">Tuần này</span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div>
-          <Link
-            to="/vocabulary/notebook/review"
-            className={`vocab-hero__cta ${dueNow > 0 ? 'has-pulse' : ''}`}
-            aria-label={dueNow > 0 ? `Ôn ${dueNow} từ cần nhớ` : 'Vào phòng ôn tập'}
-          >
-            {dueNow > 0 ? (
-              <>
-                <AlertCircle size={20} aria-hidden="true" />
-                Ôn {dueNow} từ cần nhớ
-              </>
-            ) : (
-              <>
-                <Sparkles size={20} aria-hidden="true" />
-                Vào phiên ôn tập
-              </>
-            )}
-            <ArrowRight size={18} aria-hidden="true" />
-          </Link>
-        </div>
+    <section className="nb-hero" aria-label="Thống kê sổ từ vựng">
+      <div className="nb-hero__copy">
+        <p className="nb-eyebrow"><Sparkles size={14} aria-hidden="true" />SỔ TAY THÔNG MINH</p>
+        <h1>Sổ tay từ vựng của bạn</h1>
+        <p className="nb-hero__lead">
+          Lưu từ từ điển, đặt mức hiểu, ghi chú riêng và ôn đúng lúc sắp quên theo lịch lặp lại ngắt quãng.
+          {addedWeek > 0 && <> Tuần này bạn đã thêm <b>+{addedWeek}</b> từ!</>}
+        </p>
+        <ul className="nb-stats">
+          {stats.map(({ key, icon: Icon, label, value, tone }, index) => (
+            <li key={key} className={`is-${tone}`} style={{ animationDelay: `${120 + index * 70}ms` }}>
+              <Icon size={18} aria-hidden="true" />
+              <strong>{value}</strong>
+              <span>{label}</span>
+            </li>
+          ))}
+        </ul>
+        <Link
+          to="/vocabulary/notebook/review"
+          className={`nb-cta${dueNow > 0 ? ' has-pulse' : ''}`}
+          aria-label={dueNow > 0 ? `Ôn ${dueNow} từ cần nhớ` : 'Vào phòng ôn tập'}
+        >
+          {dueNow > 0 ? <AlertCircle size={18} aria-hidden="true" /> : <Sparkles size={18} aria-hidden="true" />}
+          {dueNow > 0 ? `Ôn ${dueNow} từ cần nhớ` : 'Vào phiên ôn tập'}
+          <ArrowRight size={17} aria-hidden="true" />
+        </Link>
       </div>
-    </div>
+      <div className="nb-hero__owl" aria-hidden="true">
+        <OwlHero pose={dueNow > 0 ? 'idea' : 'cheer'} frames={['idea', 'cheer']} size="md" celebrateKey={!loading && dueNow === 0 && (summary?.total ?? 0) > 0 ? 'all-reviewed' : null} />
+      </div>
+    </section>
   )
 }

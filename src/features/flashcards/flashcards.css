@@ -1,4 +1,5 @@
 @import './flashcard-modes.css';
+@import './flashcards-overview.css';
 .flashcards-page { background: var(--classroom-canvas); color: var(--classroom-text); min-block-size: 100dvh; }
 .flashcards-shell { display: grid; gap: 1rem; margin-inline: auto; max-inline-size: 76rem; padding: clamp(1.5rem, 4vw, 3rem) clamp(1rem, 3vw, 2.5rem) 3rem; }
 .flashcards-hero { align-items: end; background: radial-gradient(circle at 90% 18%, rgb(127 178 255 / 38%), transparent 18rem), linear-gradient(118deg, var(--classroom-hero-start), var(--classroom-hero-end)); border-radius: 1.15rem; color: white; display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-between; padding: clamp(1.25rem, 4vw, 2.25rem); }
