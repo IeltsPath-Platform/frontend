@@ -1,17 +1,33 @@
 import { useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
+import { ArrowUpRight, Check, Hand, Undo2 } from 'lucide-react'
 import { AdminDrawer } from '../../components/AdminLayer'
+import { AdminRowMenu, type RowMenuItem } from '../../components/AdminRowMenu'
 import { AdminEmpty, AdminError, AdminLoading } from '../../components/AdminState'
 import { adminErrorMessage } from '../../lib/adminErrors'
+import { useAdminError } from '../../lib/useAdminError'
 import { useAdminResource } from '../../lib/useAdminResource'
 import { AdminPage } from '../../pages/AdminPage'
 import { listWorkItems, updateWorkItem } from '../api/workQueueApi'
 import { KIND_HELP, KIND_LABEL, STATUS_LABEL, detailText, subjectText, workLinks } from '../lib/workQueueLabels'
 import { WORK_KINDS, type WorkItem, type WorkKind, type WorkUpdate } from '../types'
 import '../work-queue.css'
-import { useAdminError } from '../../lib/useAdminError'
 
 type StatusFilter = 'ACTIVE' | 'DONE' | 'ALL'
+
+/** The tone of each kind: a learner with no practice is the most urgent, a question off its level the next. */
+const KIND_TONE: Record<WorkKind, string> = {
+  CONTENT_GAP: 'adm-badge--danger',
+  QUESTION_TOO_EASY: 'adm-badge--warn',
+  QUESTION_TOO_HARD: 'adm-badge--warn',
+  EDGE_SUSPECT: 'adm-badge--muted',
+}
+
+const STATUS_TONE: Record<WorkItem['status'], string> = {
+  OPEN: '',
+  IN_PROGRESS: 'adm-badge--ok',
+  DONE: 'adm-badge--muted',
+}
 
 function DoneForm({ busy, onSubmit, onCancel }: { busy: boolean; onSubmit: (update: WorkUpdate) => void; onCancel: () => void }) {
   const [action, setAction] = useState('')
@@ -36,55 +52,68 @@ function DoneForm({ busy, onSubmit, onCancel }: { busy: boolean; onSubmit: (upda
   )
 }
 
-function ItemRow({ item, busy, onUpdate }: { item: WorkItem; busy: boolean; onUpdate: (update: WorkUpdate) => void }) {
-  const [finishing, setFinishing] = useState(false)
+function WorkRow({ item, number, busy, onUpdate, onFinish, onOpen }: {
+  item: WorkItem
+  number: number
+  busy: boolean
+  onUpdate: (change: WorkUpdate) => void
+  onFinish: () => void
+  onOpen: (to: string) => void
+}) {
   const kind = item.kind as WorkKind
-  const links = workLinks(item)
+  const subject = subjectText(item)
+  const actions: RowMenuItem[] = [
+    ...workLinks(item).map((link) => ({
+      key: link.to,
+      label: link.label,
+      icon: <ArrowUpRight aria-hidden="true" size={16} />,
+      onSelect: () => onOpen(link.to),
+    })),
+    ...(item.status === 'OPEN' ? [{ key: 'take', label: 'Nhận', icon: <Hand aria-hidden="true" size={16} />, disabled: busy, onSelect: () => onUpdate({ status: 'IN_PROGRESS' }) }] : []),
+    ...(item.status === 'IN_PROGRESS' ? [{ key: 'return', label: 'Trả lại', icon: <Undo2 aria-hidden="true" size={16} />, disabled: busy, onSelect: () => onUpdate({ status: 'OPEN' }) }] : []),
+    ...(item.status !== 'DONE' ? [{ key: 'finish', label: 'Xong', icon: <Check aria-hidden="true" size={16} />, disabled: busy, onSelect: onFinish }] : []),
+  ]
+  const outcome = [item.action, item.result, item.note].filter(Boolean).join(' · ')
   return (
-    <li className="adm-card adm-wq-item">
-      <div className="adm-wq-head">
-        <strong>{KIND_LABEL[kind] ?? item.kind}</strong>
-        <details className="adm-wq-help">
-          <summary aria-label={`Giải thích: ${KIND_LABEL[kind] ?? item.kind}`}>?</summary>
-          <p>{KIND_HELP[kind] ?? ''}</p>
-        </details>
-        <span className="adm-badge">{STATUS_LABEL[item.status]}</span>
-      </div>
-      <p>{subjectText(item)}</p>
-      <p className="adm-muted">{detailText(item)}{item.createdAt ? ` · tạo ${new Date(item.createdAt).toLocaleString('vi-VN')}` : ''}</p>
-      {item.status === 'DONE' && (item.action || item.result || item.note) ? (
-        <p className="adm-muted">{[item.action, item.result, item.note].filter(Boolean).join(' · ')}</p>
-      ) : null}
-      <div className="adm-wq-actions">
-        {links.map((link) => <Link className="adm-btn" key={link.to} to={link.to}>{link.label}</Link>)}
-        {item.status === 'OPEN' ? <button className="adm-btn" type="button" disabled={busy} onClick={() => onUpdate({ status: 'IN_PROGRESS' })}>Nhận</button> : null}
-        {item.status === 'IN_PROGRESS' ? <button className="adm-btn" type="button" disabled={busy} onClick={() => onUpdate({ status: 'OPEN' })}>Trả lại</button> : null}
-        {item.status !== 'DONE' ? <button className="adm-btn adm-btn--primary" type="button" disabled={busy || finishing} onClick={() => setFinishing(true)}>Xong</button> : null}
-      </div>
-      {finishing ? <AdminDrawer title="Hoàn thành công việc" description={subjectText(item)} onClose={() => setFinishing(false)}>
-        {(close) => <DoneForm busy={busy} onCancel={close} onSubmit={(update) => { onUpdate(update); close() }} />}
-      </AdminDrawer> : null}
-    </li>
+    <tr>
+      <td className="adm-stt">{number}</td>
+      <td><span className={`adm-badge ${KIND_TONE[kind] ?? ''}`} title={KIND_HELP[kind]}>{KIND_LABEL[kind] ?? item.kind}</span></td>
+      <td>
+        {subject}
+        {item.status === 'DONE' && outcome ? <small className="adm-muted wq-outcome">{outcome}</small> : null}
+      </td>
+      <td className="adm-muted">{detailText(item)}</td>
+      <td><span className={`adm-badge ${STATUS_TONE[item.status]}`}>{STATUS_LABEL[item.status]}</span></td>
+      <td className="adm-muted">{item.createdAt ? new Date(item.createdAt).toLocaleString('vi-VN') : '—'}</td>
+      <td className="adm-col-actions">
+        {actions.length ? <AdminRowMenu items={actions} label={`Hành động cho ${subject}`} /> : null}
+      </td>
+    </tr>
   )
 }
 
 export function WorkQueuePage() {
+  const navigate = useNavigate()
   const [kind, setKind] = useState<WorkKind | ''>('')
   const [status, setStatus] = useState<StatusFilter>('ACTIVE')
   const [busy, setBusy] = useState(false)
+  const [finishing, setFinishing] = useState<WorkItem | null>(null)
   const [, setError] = useAdminError()
   const items = useAdminResource(`work-queue:${kind}:${status}`, (signal) =>
     listWorkItems({ kind: kind || undefined, status: status === 'DONE' ? 'DONE' : undefined }, signal))
 
-  async function update(id: string, change: WorkUpdate) {
-    if (busy) return
+  /** Returns whether the change was saved, so a form can stay open when it was not. */
+  async function update(id: string, change: WorkUpdate): Promise<boolean> {
+    if (busy) return false
     setBusy(true)
     setError(null)
     try {
       await updateWorkItem(id, change)
       items.reload()
+      return true
     } catch (reason) {
       setError(adminErrorMessage(reason))
+      return false
     } finally {
       setBusy(false)
     }
@@ -92,9 +121,9 @@ export function WorkQueuePage() {
 
   const shown = (items.data ?? []).filter((item) => status !== 'ACTIVE' || item.status !== 'DONE')
   return (
-    <AdminPage title="Việc cần làm" subtitle="Việc hệ thống tự phát hiện cho R&D: thiếu bài luyện, câu quá dễ hoặc quá khó, quan hệ tiên quyết đáng ngờ.">
-      <div className="adm-wq-workspace">
-        <div className="adm-wq-actions">
+    <AdminPage plain subtitle="Việc hệ thống tự phát hiện từ dữ liệu học viên." title="Việc cần làm">
+      <section aria-label="Bộ lọc" className="adm-block">
+        <div className="adm-filters">
           <label className="adm-field"><span>Loại việc</span>
             <select className="adm-select" value={kind} onChange={(event) => setKind(event.target.value as WorkKind | '')}>
               <option value="">Tất cả loại</option>
@@ -109,15 +138,57 @@ export function WorkQueuePage() {
             </select>
           </label>
         </div>
+      </section>
+
+      <section aria-label="Danh sách việc" className="adm-block">
+        <header className="adm-wq-head">
+          <h2>Việc</h2>
+          {items.status === 'success' ? <span className="adm-badge">{shown.length}</span> : null}
+        </header>
         {items.status === 'loading' ? <AdminLoading /> : null}
         {items.status === 'error' ? <AdminError message={items.error!} onRetry={items.reload} /> : null}
         {items.status === 'success' && shown.length === 0 ? <AdminEmpty title="Không có việc nào phù hợp" /> : null}
         {items.status === 'success' && shown.length > 0 ? (
-          <ul className="adm-wq-list">
-            {shown.map((item) => <ItemRow key={item.id} item={item} busy={busy} onUpdate={(change) => void update(item.id, change)} />)}
-          </ul>
+          <div className="adm-table-wrap">
+            <table aria-label="Danh sách việc cần làm" className="adm-table">
+              <thead>
+                <tr>
+                  <th className="adm-stt" scope="col">STT</th>
+                  <th scope="col">Loại việc</th>
+                  <th scope="col">Đối tượng</th>
+                  <th scope="col">Số liệu</th>
+                  <th scope="col">Trạng thái</th>
+                  <th scope="col">Tạo lúc</th>
+                  <th className="adm-col-actions" scope="col">Hành động</th>
+                </tr>
+              </thead>
+              <tbody>
+                {shown.map((item, index) => (
+                  <WorkRow
+                    busy={busy}
+                    item={item}
+                    key={item.id}
+                    number={index + 1}
+                    onFinish={() => setFinishing(item)}
+                    onOpen={navigate}
+                    onUpdate={(change) => void update(item.id, change)}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </div>
         ) : null}
-      </div>
+      </section>
+
+      {finishing ? (
+        <AdminDrawer description={subjectText(finishing)} onClose={() => setFinishing(null)} title="Hoàn thành công việc">
+          {(close) => <DoneForm busy={busy} onCancel={close} onSubmit={(change) => {
+            void update(finishing.id, { ...change, status: 'DONE' }).then((saved) => {
+              if (saved) close()
+            })
+          }} />}
+        </AdminDrawer>
+      ) : null}
     </AdminPage>
   )
 }

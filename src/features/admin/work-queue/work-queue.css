@@ -1,9 +1,9 @@
-.adm-wq-workspace { display: grid; gap: 1rem; min-width: 0; }
-.adm-wq-list { display: grid; gap: .75rem; margin: 0; padding: 0; list-style: none; }
-.adm-wq-item { display: grid; gap: .5rem; min-width: 0; overflow-wrap: anywhere; }
-.adm-wq-head { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem; }
-.adm-wq-help summary { cursor: pointer; min-width: 44px; min-height: 44px; display: inline-grid; place-items: center; }
+/* The list's heading sits inside its block, above the table. */
+.adm-wq-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 14px; }
+.adm-wq-head h2 { margin: 0; font-size: 1.05rem; font-weight: 800; }
+
+/* What a finished item says it did, under its subject in the same cell. */
+.wq-outcome { display: block; margin-top: 2px; }
+
 .adm-wq-fields { display: grid; gap: .75rem; border: 0; padding: 0; min-width: 0; }
 .adm-wq-fields textarea { font-size: 1rem; }
-.adm-wq-actions { display: flex; align-items: end; flex-wrap: wrap; gap: .5rem; }
-.adm-wq-actions .adm-btn { min-height: 44px; }
