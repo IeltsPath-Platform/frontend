@@ -1,93 +1,102 @@
-import type { MindmapNode, MindmapEdge } from '../api/notebookApi'
+import type { MindmapEdge, MindmapNode } from '../api/notebookApi'
 
 export interface PositionedNode extends MindmapNode {
   position: { x: number; y: number }
+  /** The word a collocation/synonym hangs from; null for the topic and the words. */
+  parentId: string | null
+  /** Collocations and synonyms attached to a word; 0 for every other node. */
+  childCount: number
+  /** Ring index of a word (0 is the closest to the topic); used to stagger the entry animation. */
+  ring: number
 }
+
+export interface MindmapLayout {
+  nodes: PositionedNode[]
+  edges: MindmapEdge[]
+  rootId: string | null
+}
+
+/** Radius of the first ring of words around the topic. */
+const FIRST_RING = 250
+/** Distance between two rings of words. */
+const RING_GAP = 170
+/** Arc length kept free for one word chip so neighbours do not overlap. */
+const WORD_ARC = 150
+/** Distance from a word to its collocations and synonyms. */
+const CHILD_DISTANCE = 165
+/** Widest fan (radians) the children of one word may use. */
+const MAX_FAN = 1.6
+
+/** How many words fit on ring `index` without overlapping. */
+const ringCapacity = (index: number) => Math.max(6, Math.floor((2 * Math.PI * (FIRST_RING + index * RING_GAP)) / WORD_ARC))
 
 /**
- * Deterministically computes (x, y) coordinates for mindmap nodes
- * if positions are not already assigned by the API.
- * Layout organizes the tree radially / hierarchically outward from the root.
+ * Lays the API graph out as a real mind map: the topic sits in the centre, its words on concentric rings, and each
+ * word's collocations and synonyms fan outwards from that word, away from the centre, so every link points outward
+ * and branches of different words do not cross. Edges naming unknown nodes are dropped. Deterministic: the same
+ * graph always gets the same positions.
  */
-export function layoutMindmap(
-  nodes: MindmapNode[],
-  edges: MindmapEdge[]
-): { nodes: PositionedNode[]; edges: MindmapEdge[] } {
-  if (nodes.length === 0) {
-    return { nodes: [], edges }
+export function layoutMindmap(nodes: readonly MindmapNode[], edges: readonly MindmapEdge[]): MindmapLayout {
+  if (nodes.length === 0) return { nodes: [], edges: [], rootId: null }
+
+  const byId = new Map(nodes.map((node) => [node.id, node]))
+  const validEdges = edges.filter((edge) => byId.has(edge.from) && byId.has(edge.to) && edge.from !== edge.to)
+  const children = new Map<string, string[]>()
+  for (const edge of validEdges) {
+    const list = children.get(edge.from) ?? []
+    list.push(edge.to)
+    children.set(edge.from, list)
   }
 
-  // If all nodes already have positions, keep them
-  const allHavePosition = nodes.every(
-    (n) => n.position && typeof n.position.x === 'number' && typeof n.position.y === 'number'
-  )
-  if (allHavePosition) {
-    return { nodes: nodes as PositionedNode[], edges }
-  }
+  const root = nodes.find((node) => node.type === 'TOPIC') ?? null
+  // A topic map lists its words as the topic's children; a word map has no topic, so its words are the roots.
+  const wordIds = root
+    ? (children.get(root.id) ?? []).filter((id) => byId.get(id)?.type === 'WORD')
+    : nodes.filter((node) => node.type === 'WORD').map((node) => node.id)
 
-  // Find root node (node that is not the target of any edge, or first node)
-  const targetIds = new Set(edges.map((e) => e.target))
-  const sourceIds = new Set(edges.map((e) => e.source))
-  let root = nodes.find((n) => !targetIds.has(n.id) && sourceIds.has(n.id))
-  if (!root) {
-    root = nodes[0]
-  }
+  const placed = new Map<string, Omit<PositionedNode, keyof MindmapNode>>()
+  if (root) placed.set(root.id, { position: { x: 0, y: 0 }, parentId: null, childCount: 0, ring: 0 })
 
-  // Build adjacency list
-  const childrenMap = new Map<string, string[]>()
-  for (const edge of edges) {
-    const list = childrenMap.get(edge.source) || []
-    list.push(edge.target)
-    childrenMap.set(edge.source, list)
-  }
+  let ring = 0
+  let start = 0
+  while (start < wordIds.length) {
+    const onRing = wordIds.slice(start, start + ringCapacity(ring))
+    const radius = FIRST_RING + ring * RING_GAP
+    // Odd rings are rotated half a step so their words sit in the gaps of the ring inside them.
+    const offset = ring % 2 === 1 ? Math.PI / onRing.length : 0
+    onRing.forEach((wordId, index) => {
+      const angle = -Math.PI / 2 + offset + (index / onRing.length) * 2 * Math.PI
+      const x = radius * Math.cos(angle)
+      const y = radius * Math.sin(angle)
+      const branch = (children.get(wordId) ?? []).filter((id) => !placed.has(id) && id !== root?.id)
+      placed.set(wordId, { position: { x, y }, parentId: null, childCount: branch.length, ring })
 
-  const positions = new Map<string, { x: number; y: number }>()
-  const centerX = 500
-  const centerY = 350
-  positions.set(root.id, { x: centerX, y: centerY })
-
-  const level1 = childrenMap.get(root.id) || []
-  const l1Count = level1.length
-
-  level1.forEach((childId, idx) => {
-    // Arrange level 1 nodes in an ellipse around the center
-    const angle = (idx / Math.max(1, l1Count)) * 2 * Math.PI - Math.PI / 2
-    const radiusX = 280
-    const radiusY = 200
-    const x = centerX + radiusX * Math.cos(angle)
-    const y = centerY + radiusY * Math.sin(angle)
-    positions.set(childId, { x, y })
-
-    // Level 2 nodes (grandchildren)
-    const level2 = childrenMap.get(childId) || []
-    const l2Count = level2.length
-    level2.forEach((gcId, gcIdx) => {
-      // Fan out in the same general direction as the parent
-      const spreadAngle = l2Count > 1 ? (gcIdx - (l2Count - 1) / 2) * 0.45 : 0
-      const subAngle = angle + spreadAngle
-      const subRadius = 180
-      const subX = x + subRadius * Math.cos(subAngle)
-      const subY = y + subRadius * Math.sin(subAngle)
-      positions.set(gcId, { x: subX, y: subY })
+      const fan = Math.min(MAX_FAN, Math.max(0, branch.length - 1) * 0.38)
+      branch.forEach((childId, childIndex) => {
+        const childAngle = branch.length > 1 ? angle - fan / 2 + (childIndex / (branch.length - 1)) * fan : angle
+        placed.set(childId, {
+          position: { x: x + CHILD_DISTANCE * Math.cos(childAngle), y: y + CHILD_DISTANCE * Math.sin(childAngle) },
+          parentId: wordId,
+          childCount: 0,
+          ring,
+        })
+      })
     })
+    start += onRing.length
+    ring += 1
+  }
+
+  // Anything the edges did not reach (bad data) still shows up, on one more ring outside the rest.
+  const orphans = nodes.filter((node) => !placed.has(node.id))
+  const outer = FIRST_RING + ring * RING_GAP + CHILD_DISTANCE
+  orphans.forEach((node, index) => {
+    const angle = -Math.PI / 2 + (index / orphans.length) * 2 * Math.PI
+    placed.set(node.id, { position: { x: outer * Math.cos(angle), y: outer * Math.sin(angle) }, parentId: null, childCount: 0, ring })
   })
 
-  // Assign any remaining unplaced nodes a default grid position
-  let unplacedIndex = 0
-  const positionedNodes: PositionedNode[] = nodes.map((node) => {
-    if (node.position && typeof node.position.x === 'number' && typeof node.position.y === 'number') {
-      return { ...node, position: node.position }
-    }
-    const computed = positions.get(node.id)
-    if (computed) {
-      return { ...node, position: computed }
-    }
-    const fallbackX = 100 + (unplacedIndex % 4) * 220
-    const fallbackY = 700 + Math.floor(unplacedIndex / 4) * 120
-    unplacedIndex++
-    return { ...node, position: { x: fallbackX, y: fallbackY } }
-  })
-
-  return { nodes: positionedNodes, edges }
+  return {
+    nodes: nodes.map((node) => ({ ...node, ...placed.get(node.id)! })),
+    edges: validEdges,
+    rootId: root?.id ?? null,
+  }
 }
-

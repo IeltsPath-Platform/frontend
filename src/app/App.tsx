@@ -4,9 +4,9 @@ import { GameSetupPage } from '@/features/games/pages/GameSetupPage'
 import { GameRoomPage } from '@/features/games/pages/GameRoomPage'
 import { WordlyPlayPage } from '@/features/games/pages/WordlyPlayPage'
 import { GameResultPage } from '@/features/games/pages/GameResultPage'
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useLayoutEffect } from 'react'
 import { USE_MOCK_ROCKET } from '@/lib/env'
-import { BrowserRouter, Navigate, Routes, Route, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { BrowserRouter, Navigate, Routes, Route, useLocation, useNavigate, useNavigationType, useParams } from 'react-router-dom'
 import { AdminRoutes } from '@/features/admin/AdminRoutes'
 import { PointManagementRoutes } from '@/features/point-management/routes'
 import { ErrorBoundary } from './ErrorBoundary'
@@ -95,6 +95,7 @@ function AppContent() {
 
   return (
     <>
+      <ScrollToTopOnNavigate />
       <Routes>
       <Route path="/" element={<Navigate replace to={isLoggedIn ? signInDestination(roles) : '/home'} />} />
       <Route path="/games/rocket" element={<RocketRoute />} />
@@ -210,6 +211,20 @@ function AppContent() {
       {inAdminArea ? null : <OwlMascot />}
     </>
   )
+}
+
+/**
+ * BrowserRouter keeps the window scroll between pages, so a link clicked at the bottom of a long list opened the
+ * next page at its bottom too. New pages start at the top; back/forward (POP) keeps the browser's own restoration,
+ * and query-only changes (filters, tabs) keep the current position.
+ */
+function ScrollToTopOnNavigate() {
+  const { pathname } = useLocation()
+  const navigationType = useNavigationType()
+  useLayoutEffect(() => {
+    if (navigationType !== 'POP') window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+  }, [pathname, navigationType])
+  return null
 }
 
 /** Lessons live in the learning area; the old top-level lesson URL forwards there. */

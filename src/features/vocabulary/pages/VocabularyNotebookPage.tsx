@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { BookOpen, RefreshCw, AlertCircle, LogIn } from 'lucide-react'
+import { BookOpen, RefreshCw, AlertCircle, LogIn, Library } from 'lucide-react'
 import {
   notebookApi,
   type NotebookEntryResponse,
@@ -12,13 +12,16 @@ import { NotebookHero } from '../components/NotebookHero'
 import { NotebookToolbar } from '../components/NotebookToolbar'
 import { QuickAddWord } from '../components/QuickAddWord'
 import { WordCard } from '../components/WordCard'
-import { WordDetailSheet } from '../components/WordDetailSheet'
-import { WordOfTheDayCard } from '../components/WordOfTheDayCard'
+import { WordDetailDialog } from '../components/WordDetailDialog'
+import { DictionaryPickList } from '../components/DictionaryPickList'
+import { useDictionarySearch } from '../lib/dictionary-search'
+import { useNotebookSaver } from '../lib/use-notebook-saver'
 import { useToast } from '@/components/toast/toastContext'
 import { OwlHero } from '@/components/OwlHero'
 import { useAuthSession } from '@/features/auth/authSession'
 import { VocabularyShell } from '../components/VocabularyShell'
 import '../vocabulary-notebook.css'
+import '../notebook.css'
 
 const LOCAL_STORAGE_VIEW_MODE_KEY = 'ieltspath_vocab_view_mode'
 
@@ -67,11 +70,8 @@ function NotebookContent() {
   const [entriesError, setEntriesError] = useState<string | null>(null)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
 
-  // Drawer / Selection State
+  // Popup selection
   const [selectedEntry, setSelectedEntry] = useState<NotebookEntryResponse | null>(null)
-  const [isSheetOpen, setIsSheetOpen] = useState(false)
-
-
 
   // Fetch Summary on demand
   const fetchSummary = useCallback(async () => {
@@ -233,14 +233,11 @@ function NotebookContent() {
   }
 
   // Drawer Open & Selection
-  const handleOpenDetail = (entry: NotebookEntryResponse) => {
-    setSelectedEntry(entry)
-    setIsSheetOpen(true)
-  }
+  const handleOpenDetail = (entry: NotebookEntryResponse) => setSelectedEntry(entry)
+  const handleCloseDetail = () => setSelectedEntry(null)
 
-  const handleCloseDetail = () => {
-    setIsSheetOpen(false)
-    setSelectedEntry(null)
+  const handleNoteSaved = (flashcardId: string, note: string | null) => {
+    setEntries((prev) => prev.map((e) => (e.flashcardId === flashcardId ? { ...e, note } : e)))
   }
 
   // Level update with optimistic local update
@@ -325,27 +322,20 @@ function NotebookContent() {
     fetchEntries(0, false)
   }
 
+  // Searching the notebook also searches the dictionary, so a word that is not saved yet can be added from here.
+  const dictionary = useDictionarySearch(searchQuery, 'EN', { size: 8, delayMs: 0 })
+  const dictionarySaver = useNotebookSaver(dictionary.items, handleWordAdded)
+  const notSavedYet = dictionary.items.filter((item) => item.senses.some((sense) => !dictionarySaver.savedSenseIds.has(sense.id)))
+
   const hasActiveFilters = searchQuery !== '' || levelParams.length > 0 || dueParam
 
   return (
-    <div className="vocab-container">
+    <div className="vocab-container nb-page">
       {/* 1. Hero Thống kê */}
       <NotebookHero summary={summary} loading={isSummaryLoading} />
 
-      {/* 2. Quick Add & Word of the Day Section */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-          gap: '1.25rem',
-          marginBottom: '1.75rem',
-        }}
-      >
-        <QuickAddWord onWordAdded={handleWordAdded} />
-        {entries.length > 0 && (
-          <WordOfTheDayCard entries={entries} onSelectWord={handleOpenDetail} />
-        )}
-      </div>
+      {/* 2. Quick add from the dictionary */}
+      <QuickAddWord onWordAdded={handleWordAdded} />
 
       {/* 3. Toolbar: Search, Filters, Sort, View Toggle */}
       <NotebookToolbar
@@ -362,6 +352,20 @@ function NotebookContent() {
         onViewModeChange={handleViewModeChange}
         summary={summary}
       />
+
+      {/* 3b. Dictionary words matching the search that are not in the notebook yet */}
+      {searchQuery && notSavedYet.length > 0 && (
+        <section className="nb-suggest" aria-label="Gợi ý từ từ điển">
+          <div className="nb-suggest__head">
+            <Library size={17} aria-hidden="true" />
+            <h2>Từ điển có {dictionary.total} từ khớp “{dictionary.query}”</h2>
+            <span>Nhấn “Thêm” để lưu vào sổ tay</span>
+          </div>
+          <DictionaryPickList items={notSavedYet} keyword={dictionary.query} lang={dictionary.lang} max={6}
+            savedSenseIds={dictionarySaver.savedSenseIds} savingSenseId={dictionarySaver.savingSenseId}
+            onSave={(sense, lemma) => void dictionarySaver.save(sense, lemma)} />
+        </section>
+      )}
 
       {/* 4. Main Cards Grid / List */}
       {isEntriesLoading ? (
@@ -521,11 +525,11 @@ function NotebookContent() {
         </>
       )}
 
-      {/* 5. Ngăn chi tiết từ (Drawer Sheet) */}
-      <WordDetailSheet
+      {/* 5. Popup chi tiết từ */}
+      <WordDetailDialog
         entry={selectedEntry}
-        isOpen={isSheetOpen}
         onClose={handleCloseDetail}
+        onNoteSaved={handleNoteSaved}
         onLevelChange={handleLevelChange}
         onDelete={handleDeleteEntry}
         onNavigatePrev={handleNavigatePrev}
