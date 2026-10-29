@@ -47,7 +47,7 @@ describe('adminMenu', () => {
 
   it('shows the work queue, examiner review and AI evaluation only to content authors', () => {
     const paths = ['/content-author/work-items', '/content-author/examiner-review', '/content-author/ai-evaluation', '/content-author/course-import']
-    const labels = ['Việc cần làm', 'Đánh giá giám khảo', 'Đánh giá AI chấm Writing', 'Nhập Excel']
+    const labels = ['Việc cần làm', 'Đánh giá giám khảo', 'Đánh giá AI chấm Writing', 'Nhập khóa học từ Excel']
     paths.forEach((path, index) => {
       expect(menuFor(['CONTENT_AUTHOR']).find((item) => item.path === path)?.label).toBe(labels[index])
       expect(rolesFor(path)).toEqual(['CONTENT_AUTHOR'])
