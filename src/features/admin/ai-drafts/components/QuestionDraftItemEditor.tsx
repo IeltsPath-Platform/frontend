@@ -1,7 +1,9 @@
 import { useState, type FormEvent } from 'react'
+import { Save, X } from 'lucide-react'
 import { questionDraftItemPatchSchema, type QuestionDraftItem, type QuestionDraftItemPatch } from '../types'
 import { useAdminError } from '../../lib/useAdminError'
 
+/** The form of one generated question, opened in a drawer. A save that succeeds closes the drawer through its owner. */
 export function QuestionDraftItemEditor({ item, index, disabled, onSave, onCancel }: {
   item: QuestionDraftItem; index: number; disabled: boolean
   onSave: (body: QuestionDraftItemPatch) => Promise<boolean>; onCancel: () => void
@@ -36,27 +38,33 @@ export function QuestionDraftItemEditor({ item, index, disabled, onSave, onCance
     await onSave(parsed.data)
   }
 
-  return <form className="adm-card" aria-label={`Sửa câu ${index + 1}`} noValidate onSubmit={(event) => void submit(event)}>
-    <h3>Sửa câu {index + 1}</h3>
-    <fieldset className="adm-draft-fields" disabled={disabled}>
+  return <form aria-label={`Sửa câu ${index + 1}`} className="dr-edit" noValidate onSubmit={(event) => void submit(event)}>
+    <fieldset className="dr-edit__fields" disabled={disabled}>
       <label className="adm-field"><span>Nội dung câu hỏi</span><textarea className="adm-textarea" maxLength={4000} value={stem} onChange={(event) => setStem(event.target.value)} /></label>
       {choice ? <>
-        {options.map((option, oi) => <fieldset className="adm-draft-fields" key={oi}>
+        {options.map((option, oi) => <fieldset className="dr-edit__option" key={oi}>
           <legend>Lựa chọn {oi + 1}</legend>
-          <label className="adm-field"><span>Mã lựa chọn {oi + 1}</span><input className="adm-input" maxLength={100} value={option.optionKey} onChange={(event) => {
-            const nextKey = event.target.value
-            if (correct === option.optionKey) setCorrect(nextKey)
-            setOptions((current) => current.map((value, vi) => vi === oi ? { ...value, optionKey: nextKey } : value))
-          }} /></label>
+          <div className="dr-edit__row">
+            <label className="adm-field"><span>Mã lựa chọn {oi + 1}</span><input className="adm-input" maxLength={100} value={option.optionKey} onChange={(event) => {
+              const nextKey = event.target.value
+              if (correct === option.optionKey) setCorrect(nextKey)
+              setOptions((current) => current.map((value, vi) => vi === oi ? { ...value, optionKey: nextKey } : value))
+            }} /></label>
+            {option.optionKey !== correct ? <label className="adm-field"><span>Mã lỗi lựa chọn {oi + 1} (không bắt buộc)</span><input className="adm-input" maxLength={100} value={option.errorCode} onChange={(event) => setOptions((current) => current.map((value, vi) => vi === oi ? { ...value, errorCode: event.target.value } : value))} /></label> : null}
+          </div>
           <label className="adm-field"><span>Nội dung lựa chọn {oi + 1}</span><textarea className="adm-textarea" maxLength={4000} value={option.content} onChange={(event) => setOptions((current) => current.map((value, vi) => vi === oi ? { ...value, content: event.target.value } : value))} /></label>
-          {option.optionKey !== correct ? <label className="adm-field"><span>Mã lỗi lựa chọn {oi + 1} (không bắt buộc)</span><input className="adm-input" maxLength={100} value={option.errorCode} onChange={(event) => setOptions((current) => current.map((value, vi) => vi === oi ? { ...value, errorCode: event.target.value } : value))} /></label> : null}
-          <button className="adm-btn" type="button" disabled={disabled || options.length <= 2} onClick={() => setOptions((current) => current.filter((_, vi) => vi !== oi))}>Gỡ lựa chọn {oi + 1}</button>
+          <button className="adm-btn adm-btn--small" type="button" disabled={disabled || options.length <= 2} onClick={() => setOptions((current) => current.filter((_, vi) => vi !== oi))}>Gỡ lựa chọn {oi + 1}</button>
         </fieldset>)}
-        <button className="adm-btn" type="button" disabled={disabled || options.length >= 6} onClick={() => setOptions((current) => [...current, { optionKey: '', content: '', errorCode: '' }])}>Thêm lựa chọn</button>
-        <label className="adm-field"><span>Đáp án đúng</span><select className="adm-select" value={correct} onChange={(event) => setCorrect(event.target.value)}><option value="">Chọn đáp án</option>{options.map((option, oi) => <option key={oi} value={option.optionKey}>{option.optionKey || `Lựa chọn ${oi + 1}`}</option>)}</select></label>
-      </> : <><label className="adm-field"><span>Đáp án được chấp nhận (mỗi dòng một đáp án)</span><textarea className="adm-textarea" value={accepted} onChange={(event) => setAccepted(event.target.value)} /></label><small>Tối đa 20 đáp án, mỗi đáp án 500 ký tự.</small></>}
+        <div className="dr-edit__bar">
+          <button className="adm-btn" type="button" disabled={disabled || options.length >= 6} onClick={() => setOptions((current) => [...current, { optionKey: '', content: '', errorCode: '' }])}>Thêm lựa chọn</button>
+          <label className="adm-field"><span>Đáp án đúng</span><select className="adm-select" value={correct} onChange={(event) => setCorrect(event.target.value)}><option value="">Chọn đáp án</option>{options.map((option, oi) => <option key={oi} value={option.optionKey}>{option.optionKey || `Lựa chọn ${oi + 1}`}</option>)}</select></label>
+        </div>
+      </> : <label className="adm-field"><span>Đáp án được chấp nhận (mỗi dòng một đáp án)</span><textarea className="adm-textarea" value={accepted} onChange={(event) => setAccepted(event.target.value)} /></label>}
       <label className="adm-field"><span>Giải thích</span><textarea className="adm-textarea" maxLength={4000} value={explanation} onChange={(event) => setExplanation(event.target.value)} /></label>
-      <div className="adm-draft-actions"><button className="adm-btn adm-btn--primary" type="submit">{disabled ? 'Đang lưu…' : 'Lưu câu hỏi'}</button><button className="adm-btn" type="button" onClick={onCancel}>Hủy sửa</button></div>
     </fieldset>
+    <div className="adm-form-footer">
+      <button className="adm-btn adm-btn--danger" disabled={disabled} onClick={onCancel} type="button"><X aria-hidden="true" size={16} /> Đóng</button>
+      <button className="adm-btn adm-btn--primary" disabled={disabled} type="submit"><Save aria-hidden="true" size={16} /> {disabled ? 'Đang lưu…' : 'Lưu'}</button>
+    </div>
   </form>
 }

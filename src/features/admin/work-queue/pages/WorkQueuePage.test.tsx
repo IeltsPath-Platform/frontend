@@ -1,7 +1,8 @@
 import { fireEvent, render, screen, waitFor, within } from '@/test/render'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { clearAccessToken, setAccessToken } from '@/lib/httpClient'
+import { KIND_HELP } from '../lib/workQueueLabels'
 import { WorkQueuePage } from './WorkQueuePage'
 
 const ids = {
@@ -29,24 +30,47 @@ function backend(list: unknown[], patch: () => Response = () => json({})) {
     return call.method === 'PATCH' ? patch() : json(list)
   })
 }
-const show = () => render(<MemoryRouter><WorkQueuePage /></MemoryRouter>)
-const card = (text: string) => screen.getByText(text).closest('li')!
+function Where() {
+  const location = useLocation()
+  return <p data-testid="where">{location.pathname + location.search}</p>
+}
+const show = () => render(<MemoryRouter><WorkQueuePage /><Where /></MemoryRouter>)
+/** The table row of an item, found by what it is about. */
+const row = (text: string) => screen.getByText(text).closest('tr')!
+/** Opens the action menu of an item and returns its menu. */
+async function menuOf(text: string) {
+  fireEvent.click(within(row(text)).getByRole('button', { name: `Hành động cho ${text}` }))
+  return screen.findByRole('menu', { name: `Hành động cho ${text}` })
+}
 
 describe('WorkQueuePage', () => {
   beforeEach(() => { calls.length = 0; fetchMock.mockReset(); vi.stubGlobal('fetch', fetchMock); setAccessToken('test-access-token') })
   afterEach(() => { clearAccessToken(); vi.unstubAllGlobals() })
 
-  it('lists the R&D queue with the subject and the numbers of each item, without finished ones by default', async () => {
+  it('lists the items in one table with the kind, subject and numbers of each, without finished ones by default', async () => {
     backend([gap, easy, edge, done])
     show()
 
     expect(await screen.findByText('Paraphrase')).toBeInTheDocument()
     expect(calls[0].query.get('queue')).toBe('CONTENT_AUTHOR')
     expect(calls[0].query.has('status')).toBe(false)
-    expect(within(card('Paraphrase')).getByText(/Hết bài ôn 5 lần/)).toBeInTheDocument()
-    expect(within(card('Which statement is supported?')).getByText(/Đúng 97% trên 120 lượt/)).toBeInTheDocument()
-    expect(within(card('Skimming → Scanning')).getByText(/30 lượt dò, KP nền đạt 90%, là gốc lỗi 5%/)).toBeInTheDocument()
-    expect(screen.queryByText('A hard one')).not.toBeInTheDocument()
+    const table = screen.getByRole('table', { name: 'Danh sách việc cần làm' })
+    expect(within(row('Paraphrase')).getByText(/Hết bài ôn 5 lần/)).toBeInTheDocument()
+    expect(within(row('Which statement is supported?')).getByText(/Đúng 97% trên 120 lượt/)).toBeInTheDocument()
+    expect(within(row('Skimming → Scanning')).getByText(/30 lượt dò, KP nền đạt 90%, là gốc lỗi 5%/)).toBeInTheDocument()
+    expect(within(table).queryByText('A hard one')).not.toBeInTheDocument()
+    expect(within(table).getAllByRole('row')).toHaveLength(4)
+  })
+
+  it('puts no question mark or explanation text on the rows: the kind keeps its explanation as a tooltip', async () => {
+    backend([gap])
+    show()
+    await screen.findByText('Paraphrase')
+
+    const kind = within(row('Paraphrase')).getByText('KP thiếu bài luyện')
+    expect(kind).toHaveAttribute('title', KIND_HELP.CONTENT_GAP)
+    expect(screen.queryByText('?')).not.toBeInTheDocument()
+    expect(screen.queryByText(/Học viên làm hết bộ luyện của KP này mà chưa đạt/)).not.toBeInTheDocument()
   })
 
   it('names an item whose subject could not be loaded by a short code instead of hiding it', async () => {
@@ -81,16 +105,19 @@ describe('WorkQueuePage', () => {
     show()
     await screen.findByText('Paraphrase')
 
-    fireEvent.click(within(card('Paraphrase')).getByRole('button', { name: 'Nhận' }))
+    fireEvent.click(within(await menuOf('Paraphrase')).getByRole('menuitem', { name: 'Nhận' }))
     await waitFor(() => expect(calls.some((call) => call.method === 'PATCH')).toBe(true))
     const take = calls.find((call) => call.method === 'PATCH')!
     expect(take.path).toBe(`/api/learning/admin/work-items/${ids.gap}`)
     expect(take.body).toEqual({ status: 'IN_PROGRESS' })
     await waitFor(() => expect(calls.filter((call) => call.method === 'GET').length).toBeGreaterThan(1))
 
-    fireEvent.click(within(card('Which statement is supported?')).getByRole('button', { name: 'Trả lại' }))
+    fireEvent.click(within(await menuOf('Which statement is supported?')).getByRole('menuitem', { name: 'Trả lại' }))
     await waitFor(() => expect(calls.filter((call) => call.method === 'PATCH')).toHaveLength(2))
     expect(calls.filter((call) => call.method === 'PATCH')[1].body).toEqual({ status: 'OPEN' })
+    // Let the reload that follows finish here: a request still running when the test ends would clear the next test's token.
+    await waitFor(() => expect(calls.filter((call) => call.method === 'GET').length).toBeGreaterThan(2))
+    await waitFor(() => expect(screen.getByRole('table', { name: 'Danh sách việc cần làm' })).toBeInTheDocument())
   })
 
   it('finishes an item with what was done, the result and a note', async () => {
@@ -98,42 +125,49 @@ describe('WorkQueuePage', () => {
     show()
     await screen.findByText('Paraphrase')
 
-    fireEvent.click(within(card('Paraphrase')).getByRole('button', { name: 'Xong' }))
-    fireEvent.change(screen.getByLabelText('Đã làm gì'), { target: { value: 'Thêm 3 bộ luyện' } })
-    fireEvent.change(screen.getByLabelText('Kết quả'), { target: { value: 'Đủ bộ ôn' } })
-    fireEvent.change(screen.getByLabelText('Ghi chú'), { target: { value: 'Theo dõi tuần sau' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Đánh dấu xong' }))
+    fireEvent.click(within(await menuOf('Paraphrase')).getByRole('menuitem', { name: 'Xong' }))
+    const drawer = await screen.findByRole('dialog', { name: 'Hoàn thành công việc' })
+    fireEvent.change(within(drawer).getByLabelText('Đã làm gì'), { target: { value: 'Thêm 3 bộ luyện' } })
+    fireEvent.change(within(drawer).getByLabelText('Kết quả'), { target: { value: 'Đủ bộ ôn' } })
+    fireEvent.change(within(drawer).getByLabelText('Ghi chú'), { target: { value: 'Theo dõi tuần sau' } })
+    fireEvent.click(within(drawer).getByRole('button', { name: 'Đánh dấu xong' }))
 
     await waitFor(() => expect(calls.some((call) => call.method === 'PATCH')).toBe(true))
     expect(calls.find((call) => call.method === 'PATCH')!.body).toEqual({ status: 'DONE', action: 'Thêm 3 bộ luyện', result: 'Đủ bộ ôn', note: 'Theo dõi tuần sau' })
   })
 
-  it('keeps the list and shows the server message when an update fails', async () => {
+  it('keeps the list and the finishing form, and shows the server message, when an update fails', async () => {
     backend([gap], () => json({ message: 'Không đủ quyền', details: { code: 'QUEUE_NOT_ALLOWED' } }, 403))
     show()
     await screen.findByText('Paraphrase')
 
-    fireEvent.click(within(card('Paraphrase')).getByRole('button', { name: 'Nhận' }))
+    fireEvent.click(within(await menuOf('Paraphrase')).getByRole('menuitem', { name: 'Nhận' }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Không đủ quyền')
     expect(screen.getByText('Paraphrase')).toBeInTheDocument()
   })
 
-  it('links each kind to the place where it is fixed', async () => {
+  it('opens the place where each kind is fixed from its action menu', async () => {
     backend([gap, easy, edge])
     show()
     await screen.findByText('Paraphrase')
 
-    expect(within(card('Paraphrase')).getByRole('link', { name: 'Tạo gói luyện' })).toHaveAttribute('href', '/content-author/packages?create=PRACTICE_SET')
-    expect(within(card('Which statement is supported?')).getByRole('link', { name: 'Mở câu hỏi' })).toHaveAttribute('href', `/content-author/questions/${ids.question}`)
-    expect(within(card('Skimming → Scanning')).getByRole('link', { name: 'Xem trên cây tri thức' })).toHaveAttribute('href', `/content-author/knowledge-graph?kp=${ids.from}`)
+    fireEvent.click(within(await menuOf('Paraphrase')).getByRole('menuitem', { name: 'Tạo gói luyện' }))
+    await waitFor(() => expect(screen.getByTestId('where')).toHaveTextContent('/content-author/packages?create=PRACTICE_SET'))
+    fireEvent.click(within(await menuOf('Which statement is supported?')).getByRole('menuitem', { name: 'Mở câu hỏi' }))
+    await waitFor(() => expect(screen.getByTestId('where')).toHaveTextContent(`/content-author/questions/${ids.question}`))
+    fireEvent.click(within(await menuOf('Skimming → Scanning')).getByRole('menuitem', { name: 'Xem trên cây tri thức' }))
+    await waitFor(() => expect(screen.getByTestId('where')).toHaveTextContent(`/content-author/knowledge-graph?kp=${ids.from}`))
   })
 
-  it('explains a kind when its question mark is opened', async () => {
-    backend([gap])
+  it('offers a finished item only its link, with no take, return or finish', async () => {
+    backend([done])
     show()
-    await screen.findByText('Paraphrase')
+    fireEvent.change(await screen.findByLabelText('Trạng thái'), { target: { value: 'ALL' } })
+    await screen.findByText('A hard one')
 
-    expect(screen.getByText(/Học viên làm hết bộ luyện của KP này mà chưa đạt/)).toBeInTheDocument()
+    const menu = await menuOf('A hard one')
+    expect(within(menu).getByRole('menuitem', { name: 'Mở câu hỏi' })).toBeInTheDocument()
+    expect(within(menu).queryByRole('menuitem', { name: /Nhận|Trả lại|Xong/ })).not.toBeInTheDocument()
   })
 })
