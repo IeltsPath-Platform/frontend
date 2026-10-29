@@ -5,12 +5,13 @@ import { DIFFICULTY_LABEL, STATUS_LABEL, statusBadgeClass } from '../lib/labels'
 export interface VersionCardProps {
   version: QuestionVersion
   current: boolean
-  busy: boolean
-  onPublish: (version: QuestionVersion) => void
-  onArchive: (version: QuestionVersion) => void
+  busy?: boolean
+  /** Without the handlers the card only shows the version, as in the detail dialog. */
+  onPublish?: (version: QuestionVersion) => void
+  onArchive?: (version: QuestionVersion) => void
 }
 
-export function VersionCard({ version, current, busy, onPublish, onArchive }: VersionCardProps) {
+export function VersionCard({ version, current, busy = false, onPublish, onArchive }: VersionCardProps) {
   const links = version.knowledgePoints ?? []
   return (
     <article aria-label={`Phiên bản ${version.versionNumber}`} className="adm-card qb-version">
@@ -22,12 +23,12 @@ export function VersionCard({ version, current, busy, onPublish, onArchive }: Ve
           {version.difficulty ? DIFFICULTY_LABEL[version.difficulty] : 'Chưa chọn độ khó'}
         </span>
         <span className="qb-version__actions">
-          {version.status === 'DRAFT' ? (
+          {version.status === 'DRAFT' && onPublish ? (
             <button className="adm-btn adm-btn--primary adm-btn--small" disabled={busy} onClick={() => onPublish(version)} type="button">
               Xuất bản
             </button>
           ) : null}
-          {version.status === 'PUBLISHED' ? (
+          {version.status === 'PUBLISHED' && onArchive ? (
             <button className="adm-btn adm-btn--small adm-btn--danger" disabled={busy} onClick={() => onArchive(version)} type="button">
               Lưu trữ
             </button>

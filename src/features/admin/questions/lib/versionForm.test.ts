@@ -1,5 +1,44 @@
 import { describe, expect, it } from 'vitest'
-import { answerShapeOf, buildVersionRequest, describeAnswerSpec, initialFormState } from './versionForm'
+import { answerShapeOf, buildVersionRequest, describeAnswerSpec, formStateFromVersion, initialFormState } from './versionForm'
+import type { QuestionVersion } from '../types'
+
+describe('formStateFromVersion', () => {
+  const version: QuestionVersion = {
+    id: 'v1', versionNumber: 1, stem: 'Pick one', status: 'PUBLISHED', difficulty: 'HARD',
+    answerSpecJson: '{"type":"CHOICE","correct":"B"}', explanation: 'Because', hint: null,
+    options: [{ optionKey: 'B', content: 'Rivers', sortOrder: 2 }, { optionKey: 'A', content: 'Trees', sortOrder: 1 }],
+    knowledgePoints: [{ knowledgePointId: 'kp1', weight: null }],
+  }
+
+  it('copies the content of a choice version under the next number, options in sort order', () => {
+    const form = formStateFromVersion('MULTIPLE_CHOICE', version, 2)
+
+    expect(form).toMatchObject({ versionNumber: 2, stem: 'Pick one', correctKey: 'B', difficulty: 'HARD', explanation: 'Because', hint: '' })
+    expect(form.options).toEqual([{ key: 'A', content: 'Trees' }, { key: 'B', content: 'Rivers' }])
+    expect(form.knowledgePoints).toEqual([{ knowledgePointId: 'kp1', weight: 1 }])
+  })
+
+  it('round-trips through buildVersionRequest', () => {
+    const result = buildVersionRequest('MULTIPLE_CHOICE', formStateFromVersion('MULTIPLE_CHOICE', version, 2))
+
+    expect(result.ok).toBe(true)
+  })
+
+  it('reads fill and essay answer specs', () => {
+    const fill = formStateFromVersion('FILL_IN_BLANK', { ...version, options: [], answerSpecJson: '{"type":"FILL","accepted":["a","b"],"maxWords":2}' }, 3)
+    const essay = formStateFromVersion('ESSAY', { ...version, options: [], answerSpecJson: '{"type":"ESSAY","task":"TASK_1","minWords":150,"passBand":6.5,"chartFacts":"Up"}' }, 3)
+
+    expect(fill).toMatchObject({ accepted: 'a\nb', maxWords: '2' })
+    expect(essay).toMatchObject({ essayTask: 'TASK_1', minWords: '150', passBand: '6.5', chartFacts: 'Up' })
+  })
+
+  it('keeps the fixed options of true/false/not given and tolerates an unreadable spec', () => {
+    const form = formStateFromVersion('TRUE_FALSE_NOT_GIVEN', { ...version, answerSpecJson: 'not json' }, 2)
+
+    expect(form.options.map((option) => option.key)).toEqual(['TRUE', 'FALSE', 'NOT_GIVEN'])
+    expect(form.correctKey).toBe('')
+  })
+})
 
 function choiceForm() {
   const form = initialFormState('MULTIPLE_CHOICE', 2)

@@ -19,11 +19,13 @@ export interface VersionFormProps {
   nextVersionNumber: number
   onSubmit: (body: VersionRequest) => Promise<void>
   onCancel: () => void
+  /** Starts the form from an existing version instead of an empty one. */
+  initialState?: VersionFormState
 }
 
 /** A new version of a question. The answer fields follow the question type; the version starts as a draft. */
-export function VersionForm({ questionType, nextVersionNumber, onSubmit, onCancel }: VersionFormProps) {
-  const [form, setForm] = useState<VersionFormState>(() => initialFormState(questionType, nextVersionNumber))
+export function VersionForm({ questionType, nextVersionNumber, onSubmit, onCancel, initialState }: VersionFormProps) {
+  const [form, setForm] = useState<VersionFormState>(() => initialState ?? initialFormState(questionType, nextVersionNumber))
   const [, setServerError] = useAdminError()
   const fail = useAdminErrorToast()
   const [saving, setSaving] = useState(false)

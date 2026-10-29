@@ -50,6 +50,11 @@ export async function addQuestionVersion(questionId: string, body: VersionReques
   )
 }
 
+/** Soft delete: the question stays in the bank with status ARCHIVED. */
+export async function archiveQuestion(questionId: string): Promise<Question> {
+  return questionSchema.parse(await apiRequest<unknown>(`${BASE}/${questionId}/archive`, { method: 'POST', auth: true }))
+}
+
 export async function publishQuestionVersion(questionId: string, versionId: string): Promise<QuestionDetail> {
   return questionDetailSchema.parse(
     await apiRequest<unknown>(`${BASE}/${questionId}/versions/${versionId}/publish`, { method: 'POST', auth: true }),

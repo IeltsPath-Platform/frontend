@@ -3,6 +3,7 @@
 .qb-meta { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 16px; }
 .qb-pager { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; flex-wrap: wrap; }
 .qb-form { max-width: 860px; }
+.qb-section-title { margin: 20px 0 10px; font-size: 1.05rem; font-weight: 800; }
 .qb-form__actions { display: flex; gap: 8px; margin-top: 8px; }
 .qb-options { border: 1px solid var(--adm-border); border-radius: 8px; padding: 12px; margin: 0 0 14px; }
 .qb-options legend { padding: 0 6px; font-size: .85rem; font-weight: 600; color: var(--adm-muted); }
@@ -12,6 +13,8 @@
 .qb-kp__list { list-style: none; margin: 8px 0 0; padding: 8px; max-height: 220px; overflow-y: auto; border: 1px solid var(--adm-border); border-radius: 8px; background: var(--adm-bg); }
 .qb-kp__list code { color: var(--adm-muted); font-size: .8rem; }
 .qb-versions { display: grid; gap: 12px; max-width: 860px; }
+/* Inside a dialog or drawer the cards fill the panel instead of stopping at the page's reading width. */
+.adm-modal .qb-versions, .adm-drawer .qb-versions { max-width: none; }
 .qb-version__head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .qb-version__head h3 { margin: 0 8px 0 0; font-size: 1rem; }
 .qb-version__actions { margin-left: auto; display: inline-flex; gap: 6px; }
