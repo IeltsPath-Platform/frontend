@@ -1,4 +1,4 @@
-import type { Difficulty, QuestionType, VersionRequest } from '../types'
+import type { Difficulty, QuestionType, QuestionVersion, VersionRequest } from '../types'
 
 export interface VersionFormState {
   versionNumber: number
@@ -67,7 +67,37 @@ export function initialFormState(type: QuestionType | string, nextVersionNumber:
   }
 }
 
-export type BuildResult = { ok: true; body: VersionRequest } | { ok: false; problems: string[] }
+/** A new draft that starts from an existing version: the same content under the next version number. */
+export function formStateFromVersion(type: QuestionType | string, version: QuestionVersion, nextVersionNumber: number): VersionFormState {
+  const base = initialFormState(type, nextVersionNumber)
+  let spec: Record<string, unknown> = {}
+  try {
+    spec = JSON.parse(version.answerSpecJson ?? '{}') as Record<string, unknown>
+  } catch {
+    // An unreadable answer spec leaves the answer fields empty for the author to fill in again.
+  }
+  const stored = [...(version.options ?? [])]
+    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+    .map((option) => ({ key: option.optionKey, content: option.content }))
+  return {
+    ...base,
+    stem: version.stem ?? '',
+    options: type === 'TRUE_FALSE_NOT_GIVEN' || stored.length === 0 ? base.options : stored,
+    correctKey: typeof spec.correct === 'string' ? spec.correct : '',
+    accepted: Array.isArray(spec.accepted) ? spec.accepted.join('\n') : '',
+    maxWords: typeof spec.maxWords === 'number' ? String(spec.maxWords) : '',
+    essayTask: spec.task === 'TASK_1' ? 'TASK_1' : 'TASK_2',
+    minWords: typeof spec.minWords === 'number' ? String(spec.minWords) : base.minWords,
+    passBand: typeof spec.passBand === 'number' ? String(spec.passBand) : base.passBand,
+    chartFacts: typeof spec.chartFacts === 'string' ? spec.chartFacts : '',
+    difficulty: version.difficulty ?? '',
+    explanation: version.explanation ?? '',
+    hint: version.hint ?? '',
+    knowledgePoints: (version.knowledgePoints ?? []).map((link) => ({ knowledgePointId: link.knowledgePointId, weight: link.weight ?? 1 })),
+  }
+}
+
+export type BuildResult ={ ok: true; body: VersionRequest } | { ok: false; problems: string[] }
 
 function parseNumber(text: string): number | null {
   if (text.trim() === '') return null
