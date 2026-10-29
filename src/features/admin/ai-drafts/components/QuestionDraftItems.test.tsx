@@ -12,27 +12,24 @@ const fill: QuestionDraftItem = {
   stem: 'Complete the answer.', difficulty: 'HARD', explanation: 'Both spellings are accepted.', options: [],
   answerSpec: { type: 'FILL', accepted: ['colour', 'color'], maxWords: 2 },
 }
+const actions = { onView: vi.fn(), onEdit: vi.fn(), onRemove: vi.fn() }
 
 describe('QuestionDraftItems', () => {
-  it('sorts options visually and marks the correct answer with text and an accent class', () => {
-    render(<QuestionDraftItems items={[choice]} selected={[]} disabled={false} onChange={vi.fn()} />)
-    const options = within(screen.getByRole('article', { name: 'Câu 1' })).getAllByRole('listitem')
-    expect(options[0]).toHaveTextContent('A.The incorrect statement')
-    expect(options[0]).toHaveTextContent('Mã lỗi: READING_INFERENCE')
-    expect(options[1]).toHaveTextContent('B.The supported statement')
-    expect(options[1]).toHaveTextContent('Đáp án đúng')
-    expect(options[1]).toHaveClass('adm-draft-option--correct')
-    expect(choice.options[0]?.optionKey).toBe('B')
-    expect(screen.getByText(choice.explanation)).toBeInTheDocument()
-    expect(screen.getByText('Độ khó: Vừa')).toBeInTheDocument()
+  it('shows each question on one row with the key of its correct answer and its difficulty', () => {
+    render(<QuestionDraftItems items={[choice, fill]} selected={[]} disabled={false} onChange={vi.fn()} />)
+    const table = screen.getByRole('table', { name: 'Câu hỏi sinh được' })
+    const first = within(table).getAllByRole('row')[1]!
+    expect(within(first).getByText('B')).toBeInTheDocument()
+    expect(within(first).getByText('The supported statement')).toBeInTheDocument()
+    expect(within(first).getByText('Vừa')).toBeInTheDocument()
+    expect(within(first).getByText('Which statement matches the passage?')).toBeInTheDocument()
   })
 
-  it('shows every accepted typed answer and the word limit', () => {
+  it('shows the first accepted answer of a typed question and how many more there are', () => {
     render(<QuestionDraftItems items={[fill]} selected={[]} disabled={false} onChange={vi.fn()} />)
-    expect(screen.getByRole('heading', { name: 'Đáp án được chấp nhận' })).toBeInTheDocument()
-    expect(screen.getByText('colour')).toBeInTheDocument()
-    expect(screen.getByText('color')).toBeInTheDocument()
-    expect(screen.getByText('Tối đa 2 từ.')).toBeInTheDocument()
+    const row = screen.getByRole('table', { name: 'Câu hỏi sinh được' })
+    expect(within(row).getByText('colour')).toBeInTheDocument()
+    expect(within(row).getByText('+1')).toBeInTheDocument()
   })
 
   it('emits the original zero-based item indexes when selecting or deselecting', () => {
@@ -47,14 +44,34 @@ describe('QuestionDraftItems', () => {
 
   it('locks selection during review and renders content as plain text', () => {
     const onChange = vi.fn()
-    render(<QuestionDraftItems items={[{ ...choice, stem: '<img src=x onerror=alert(1)>', explanation: '<script>alert(1)</script>' }]} selected={[0]} disabled onChange={onChange} />)
+    render(<QuestionDraftItems items={[{ ...choice, stem: '<img src=x onerror=alert(1)>' }]} selected={[0]} disabled onChange={onChange} />)
     const checkbox = screen.getByRole('checkbox', { name: 'Chọn câu 1 để duyệt' })
     expect(checkbox).toBeChecked()
     expect(checkbox).toBeDisabled()
     fireEvent.click(checkbox)
     expect(onChange).not.toHaveBeenCalled()
     expect(screen.getByText('<img src=x onerror=alert(1)>')).toBeInTheDocument()
-    expect(screen.getByText('<script>alert(1)</script>')).toBeInTheDocument()
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
+  })
+
+  it('puts a row menu with view, edit and remove on each question while the draft is under review', () => {
+    render(<QuestionDraftItems actions={actions} items={[choice]} selected={[]} disabled={false} onChange={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Hành động của câu 1' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Xem câu 1' }))
+    expect(actions.onView).toHaveBeenCalledWith(0)
+  })
+
+  it('disables edit and remove in the menu while locked, but keeps viewing', () => {
+    render(<QuestionDraftItems actions={actions} items={[choice]} selected={[]} disabled onChange={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Hành động của câu 1' }))
+    expect(screen.getByRole('menuitem', { name: 'Sửa câu 1' })).toBeDisabled()
+    expect(screen.getByRole('menuitem', { name: 'Xóa câu 1' })).toBeDisabled()
+    expect(screen.getByRole('menuitem', { name: 'Xem câu 1' })).toBeEnabled()
+  })
+
+  it('has no action column once the draft has left the review', () => {
+    render(<QuestionDraftItems items={[choice]} selected={[]} disabled onChange={vi.fn()} />)
+    expect(screen.queryByRole('columnheader', { name: 'Hành động' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Hành động/ })).not.toBeInTheDocument()
   })
 })
