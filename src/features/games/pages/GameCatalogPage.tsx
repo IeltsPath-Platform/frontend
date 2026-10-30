@@ -4,7 +4,10 @@ import {
   ArrowRight,
   Gamepad2,
   KeyRound,
-  Rocket,
+  Lock,
+  Recycle,
+  Send,
+  Sparkle,
   UserRound,
   Users,
 } from 'lucide-react'
@@ -23,6 +26,9 @@ import type { ActiveGame, GameCatalog } from '../types/game'
 import { ActiveGameDialog } from '../components/ActiveGameDialog'
 import { activeGamePath, isActiveGameConflict } from '../lib/activeGame'
 import { gameName, setupPath, type GameType } from '../lib/gameRoutes'
+import heroOwl from '../assets/catalog-owl.webp'
+import rocketArt from '../assets/catalog-rocket.webp'
+import wordArt from '../assets/catalog-word.webp'
 import '../games-room.css'
 
 export function GameCatalogPage() {
@@ -40,6 +46,8 @@ export function GameCatalogPage() {
   const [pendingCode, setPendingCode] = useState('')
   const [replacing, setReplacing] = useState(false)
   const [replaceError, setReplaceError] = useState('')
+  // The in-browser Rocket mock has no rooms, so only solo play works there.
+  const roomsOff = modeGame === 'ROCKET' && USE_MOCK_ROCKET
   async function joinRoom(roomCode: string) {
     try {
       const room = await gameApi.join(roomCode)
@@ -100,11 +108,36 @@ export function GameCatalogPage() {
     return () => controller.abort()
   }, [retry])
   return (
-    <main className="game-room-page">
-      <header className="game-page-heading">
-        <span className="game-eyebrow">HỌC QUA TRÒ CHƠI</span>
-        <h1>Mỗi từ mới, một thử thách</h1>
-        <p>Khám phá trò chơi, luyện từ vựng và chơi cùng bạn bè.</p>
+    <main className="game-room-page game-catalog-page">
+      <header className="game-catalog-hero">
+        <div className="game-catalog-hero-text">
+          <span className="game-eyebrow">
+            <Gamepad2 aria-hidden="true" /> HỌC QUA TRÒ CHƠI
+          </span>
+          <h1>
+            Mỗi từ mới,
+            <br />
+            <span className="game-catalog-highlight">một thử thách</span>
+          </h1>
+          <p>
+            Khám phá từ vựng qua trò chơi, luyện tư duy
+            <br />
+            và chinh phục mục tiêu IELTS một cách thú vị hơn.
+          </p>
+        </div>
+        <div className="game-catalog-hero-art" aria-hidden="true">
+          <img src={heroOwl} alt="" width={380} height={229} />
+        </div>
+        <Sparkle className="game-catalog-deco is-star-blue" aria-hidden="true" />
+        <Sparkle className="game-catalog-deco is-star-gold" aria-hidden="true" />
+        <Send className="game-catalog-deco is-plane" aria-hidden="true" />
+        <p className="game-catalog-motto" aria-hidden="true">
+          Learn
+          <br />
+          Play
+          <br />
+          Grow
+        </p>
       </header>
       {error ? (
         <div className="game-panel game-state" role="alert">
@@ -136,36 +169,29 @@ export function GameCatalogPage() {
               (game.gameType === 'WORDLY' && game.status === 'AVAILABLE') || rocket
             return (
               <article
-                className={`game-catalog-card ${available ? 'game-catalog-wordly' : ''}`}
+                className={`game-catalog-card ${game.gameType === 'ROCKET' ? 'is-rocket' : 'is-wordly'}`}
                 key={game.gameType}
               >
                 <div className="game-card-art" aria-hidden="true">
-                  {game.gameType === 'WORDLY' ? (
-                    <div className="game-letter-demo">
-                      {'WORD'.split('').map((letter, i) => (
-                        <span key={i}>{letter}</span>
-                      ))}
-                    </div>
-                  ) : (
-                    <Rocket size={64} strokeWidth={1.3} />
-                  )}
+                  <img
+                    src={game.gameType === 'WORDLY' ? wordArt : rocketArt}
+                    alt=""
+                    width={game.gameType === 'WORDLY' ? 210 : 170}
+                    height={game.gameType === 'WORDLY' ? 130 : 150}
+                  />
                 </div>
                 <div className="game-card-body">
-                  <span className="game-eyebrow">
-                    {available ? 'LUYỆN TỪ VỰNG' : 'SẮP RA MẮT'}
+                  <span className="game-card-chip">
+                    <Recycle aria-hidden="true" /> {available ? 'LUYỆN TỪ VỰNG' : 'SẮP RA MẮT'}
                   </span>
                   <h2>{game.name}</h2>
                   <p>{game.description}</p>
-                  <Button
-                    disabled={!available}
-                    className="game-primary-action"
-                    onClick={() =>
-                      // The in-browser mock has no rooms, so it can only play solo.
-                      rocket && USE_MOCK_ROCKET
-                        ? navigate(setupPath('ROCKET', 'SOLO'))
-                        : setModeGame(rocket ? 'ROCKET' : 'WORDLY')
-                    }
-                  >
+                </div>
+                <Button
+                  disabled={!available}
+                  className="game-primary-action"
+                  onClick={() => setModeGame(rocket ? 'ROCKET' : 'WORDLY')}
+                >
                     {available ? (
                       <>
                         <Gamepad2 /> {rocket ? 'Chơi Tên lửa' : 'Chơi Wordly'} <ArrowRight />
@@ -173,19 +199,19 @@ export function GameCatalogPage() {
                     ) : (
                       'Sắp ra mắt'
                     )}
-                  </Button>
-                </div>
+                </Button>
               </article>
             )
           })}
         </section>
       )}
       <section className="game-panel game-join-panel">
+        <span className="game-join-icon" aria-hidden="true">
+          <Users />
+        </span>
         <div>
-          <h2>
-            <Users size={22} /> Tham gia phòng bạn bè
-          </h2>
-          <p>Nhập mã phòng gồm 6 ký tự để vào sảnh chờ.</p>
+          <h2>Tham gia phòng bạn bè</h2>
+          <p>Nhập mã phòng để cùng ôn tập và so tài kiến thức.</p>
         </div>
         <form
           className="game-join-form"
@@ -212,7 +238,9 @@ export function GameCatalogPage() {
           <label className="sr-only" htmlFor="game-room-code">
             Mã phòng
           </label>
-          <Input
+          <span className="game-join-field">
+            <Lock aria-hidden="true" />
+            <Input
             ref={codeInput}
             id="game-room-code"
             value={code}
@@ -229,6 +257,7 @@ export function GameCatalogPage() {
             aria-invalid={!!joinError}
             aria-describedby={joinError ? 'game-join-error' : undefined}
           />
+          </span>
           <Button type="submit" disabled={joining}>
             {joining ? 'Đang vào…' : 'Vào phòng'}
             <ArrowRight />
@@ -271,6 +300,9 @@ export function GameCatalogPage() {
               Luyện tập theo nhịp của bạn hoặc tạo phòng cùng bạn bè.
             </DialogDescription>
           </DialogHeader>
+          {modeGame === 'ROCKET' && USE_MOCK_ROCKET && (
+            <p className="game-mode-note">Đang chạy dữ liệu thử: chỉ chơi đơn được, chơi nhiều người cần máy chủ.</p>
+          )}
           <div className="game-mode-options">
             <Button variant="outline" asChild>
               <Link to={setupPath(modeGame ?? 'WORDLY', 'SOLO')}>
@@ -282,18 +314,30 @@ export function GameCatalogPage() {
                 <ArrowRight />
               </Link>
             </Button>
-            <Button variant="outline" asChild>
-              <Link to={setupPath(modeGame ?? 'WORDLY', 'MULTIPLAYER')}>
+            {roomsOff ? (
+              <Button variant="outline" disabled>
                 <Users />
                 <span>
                   <strong>Nhiều người</strong>
-                  <small>Thi đấu cùng tối đa 4 người</small>
+                  <small>Cần máy chủ</small>
                 </span>
                 <ArrowRight />
-              </Link>
-            </Button>
+              </Button>
+            ) : (
+              <Button variant="outline" asChild>
+                <Link to={setupPath(modeGame ?? 'WORDLY', 'MULTIPLAYER')}>
+                  <Users />
+                  <span>
+                    <strong>Nhiều người</strong>
+                    <small>Thi đấu cùng tối đa 4 người</small>
+                  </span>
+                  <ArrowRight />
+                </Link>
+              </Button>
+            )}
             <Button
               variant="outline"
+              disabled={roomsOff}
               onClick={() => {
                 setModeGame(null)
                 // After the dialog has returned focus, so the field keeps it.
