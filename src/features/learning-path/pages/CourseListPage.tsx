@@ -13,6 +13,8 @@ import { SegmentMeter } from '../components/SegmentMeter'
 import { ApiErrorState, CourseCatalogSkeleton, EmptyState } from '../components/PageState'
 import { timeAgo } from '../lib/relativeTime'
 import { useApiResource } from '../lib/useApiResource'
+import type { CourseUnlockTarget, LearningSkill } from '~types/learningPath'
+import { UnlockDialog } from '../components/UnlockDialog'
 
 type CourseFilter = 'ALL' | 'RECOMMENDED' | 'IN_PROGRESS' | 'PASSED'
 
@@ -103,6 +105,7 @@ export function CourseListPage() {
                 focused={course.id === focusCourse?.id}
                 index={index}
                 lastVisited={course.id === recentCourse?.id}
+                refreshCourses={courses.reload}
                 key={course.id}
               />
             ))}
@@ -222,13 +225,15 @@ function PlacementSpotlight() {
   )
 }
 
-function CourseTile({ course, focused, index, lastVisited }: {
+function CourseTile({ course, focused, index, lastVisited, refreshCourses }: {
   course: CourseSummary
   focused: boolean
   index: number
   /** The course the learner studied most recently: it says when, from the server's own record. */
   lastVisited: boolean
+  refreshCourses: () => void
 }) {
+  const [unlockTarget, setUnlockTarget] = useState<CourseUnlockTarget | null>(null)
   const chip = lastVisited && course.lastStudiedAt
     ? { label: `Lần cuối vào · ${timeAgo(course.lastStudiedAt)}`, tone: 'primary' as const }
     : courseChip(course)
@@ -281,6 +286,13 @@ function CourseTile({ course, focused, index, lastVisited }: {
           </span>
         </div>
       </Link>
+      {(course.premium || course.availableSkills?.length || course.comboPayablePoints != null) ? <div className="lp-tile__body" aria-label="Tùy chọn mở khóa">
+        {course.premium ? <p>Premium: mở quyền truy cập trong thời hạn gói.</p> : null}
+        {course.availableSkills?.filter((skill) => skill !== 'SPEAKING' && course.skillUnlockPoints?.[skill] != null && !course.unlockedSkills?.includes(skill)).map((skill: LearningSkill) => <Button key={skill} variant="outline" onClick={() => setUnlockTarget(skill)} type="button">Mở {({ LISTENING: 'Nghe', READING: 'Đọc', WRITING: 'Viết', SPEAKING: 'Nói' } as const)[skill]} · {course.skillUnlockPoints?.[skill]} Points</Button>)}
+        {course.availableSkills && !course.availableSkills.includes('SPEAKING') ? <p>Nói: sắp ra mắt.</p> : null}
+        {course.comboPayablePoints != null && !course.comboUnlocked ? <Button variant="outline" onClick={() => setUnlockTarget('COMBO')} type="button">Mở gói kết hợp · {course.comboPayablePoints} Points</Button> : null}
+      </div> : null}
+      {unlockTarget ? <UnlockDialog courseId={course.id} target={unlockTarget} onClose={() => setUnlockTarget(null)} onChanged={() => { refreshCourses(); setUnlockTarget(null) }} /> : null}
     </li>
   )
 }

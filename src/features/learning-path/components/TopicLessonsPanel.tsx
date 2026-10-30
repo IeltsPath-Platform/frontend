@@ -8,6 +8,8 @@ import { totalLessonMinutes } from '../lib/lessonMinutes'
 import { reportApiError, usePendingReviews } from '../lib/reviewGate'
 import { useApiResource } from '../lib/useApiResource'
 import { lessonStatusMeta } from '../lib/statusMeta'
+import type { CourseUnlockTarget } from '~types/learningPath'
+import { UnlockDialog } from './UnlockDialog'
 
 /** Lessons of one topic, shown inside its expanded card on the course screen. Mount it only once the card is first opened. */
 export function TopicLessonsPanel({ topicId }: { topicId: string }) {
@@ -35,6 +37,8 @@ export function TopicLessonsPanel({ topicId }: { topicId: string }) {
   return (
     <TopicLessonsView
       finalTest={resource.data.finalTest}
+      courseId={resource.data.topic.course?.id ?? null}
+      skill={resource.data.topic.skill ?? null}
       lessons={resource.data.lessons}
       onChanged={resource.reload}
       pendingReviews={resource.data.pendingReviews}
@@ -51,6 +55,8 @@ export function TopicLessonsView({
   onChanged,
   pendingReviews = [],
   showCounts = true,
+  courseId = null,
+  skill = null,
 }: {
   lessons: LessonSummary[]
   finalTest: FinalTestSummary
@@ -60,7 +66,10 @@ export function TopicLessonsView({
   pendingReviews?: ReviewRef[]
   /** The "4 bài học · khoảng 40 phút" line; off where the page already says it. */
   showCounts?: boolean
+  courseId?: string | null
+  skill?: string | null
 }) {
+  const [unlockTarget, setUnlockTarget] = useState<CourseUnlockTarget | null>(null)
   const lessons = [...unsorted].sort((a, b) => a.sortOrder - b.sortOrder)
   if (lessons.length === 0) return <p className="lp-mini__empty">Chặng này chưa có bài học.</p>
 
@@ -90,20 +99,23 @@ export function TopicLessonsView({
             isNext={lesson.id === nextId}
             key={lesson.id}
             lesson={lesson}
+            onUnlock={courseId && skill && ['LISTENING', 'READING', 'WRITING'].includes(skill) ? () => setUnlockTarget(skill as CourseUnlockTarget) : undefined}
           />
         ))}
       </ol>
 
       <SummitTile lessons={lessons} onChanged={onChanged} test={finalTest} topicId={topicId} />
+      {courseId && unlockTarget ? <UnlockDialog courseId={courseId} target={unlockTarget} onClose={() => setUnlockTarget(null)} onChanged={onChanged} /> : null}
     </>
   )
 }
 
-function LessonTile({ lesson, isNext, review, index }: {
+function LessonTile({ lesson, isNext, review, index, onUnlock }: {
   lesson: LessonSummary
   isNext: boolean
   review?: ReviewRef
   index: number
+  onUnlock?: () => void
 }) {
   const locked = lesson.status === 'LOCKED'
   const completed = lesson.status === 'COMPLETED'
@@ -138,10 +150,12 @@ function LessonTile({ lesson, isNext, review, index }: {
           {needsReview ? <span className="lp-ltile__badge is-review">Cần làm bài ôn</span> : null}
           {optionalReview ? <span className="lp-ltile__badge is-optional">Ôn tự chọn</span> : null}
           {needsPractice ? <span className="lp-ltile__badge is-review">Cần đạt phần Luyện tập</span> : null}
-          {locked ? <span className="lp-ltile__reason" id={reasonId}>{lesson.lockedReason ?? 'Chưa mở'}</span> : null}
+          {lesson.freePreview ? <span className="lp-ltile__badge">Học thử miễn phí</span> : null}
+          {locked ? <span className="lp-ltile__reason" id={reasonId}>{lesson.paywall && !onUnlock ? 'Kỹ năng sắp ra mắt.' : lesson.lockedReason ?? 'Chưa mở'}</span> : null}
         </span>
       </span>
 
+      {locked && lesson.paywall && onUnlock ? <button className="lp-ltile__go" onClick={onUnlock} type="button">Mở khóa</button> : null}
       {!locked && !hasReview ? (
         <span className="lp-ltile__go">
           {action}

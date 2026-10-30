@@ -21,6 +21,7 @@ import type {
   TestStatus,
   TopicLessonsResponse,
   CourseSummary,
+  CourseUnlockTarget,
   EssayStudyPoint,
   TopicStatus,
   TopicSummary,
@@ -57,6 +58,21 @@ export type CourseSummaryDto = {
   lastStudiedAt?: string | null
   recommended: boolean
   testStatus: TestStatus
+  skillPrices?: Partial<Record<'LISTENING' | 'READING' | 'WRITING' | 'SPEAKING', number>>
+  comboUnlockPoints?: number | null
+  unlockedSkills?: Array<'LISTENING' | 'READING' | 'WRITING' | 'SPEAKING'>
+  comboUnlocked?: boolean
+  comboPayablePoints?: number | null
+  availableSkills?: Array<'LISTENING' | 'READING' | 'WRITING' | 'SPEAKING'>
+  premium?: boolean
+}
+
+export type CourseUnlockDto = {
+  courseId: string
+  target: CourseUnlockTarget
+  pointCost: number
+  status: 'ACTIVE' | 'PENDING' | 'CANCELLED'
+  ledgerEntryId: string | null
 }
 
 export type LessonSummaryDto = {
@@ -69,12 +85,17 @@ export type LessonSummaryDto = {
   practicePassReason?: string | null
   estimatedMinutes?: number | null
   blockingReviewId?: string | null
+  paywall?: boolean
+  freePreview?: boolean
 }
 
 export type TopicLessonsDto = {
   topicId: string
   lessons: LessonSummaryDto[]
   testStatus: TestStatus
+  skill?: 'LISTENING' | 'READING' | 'WRITING' | 'SPEAKING' | null
+  skills?: Array<'LISTENING' | 'READING' | 'WRITING' | 'SPEAKING'>
+  hasTopicTest?: boolean
 }
 
 export type QuestionOptionDto = {
@@ -404,11 +425,17 @@ export function mapCourseSummary(dto: CourseSummaryDto): CourseSummary {
     lastStudiedAt: dto.lastStudiedAt ?? null,
     recommended: dto.recommended,
     testStatus: dto.testStatus,
+    skillUnlockPoints: dto.skillPrices ?? {},
+    comboUnlockPoints: dto.comboUnlockPoints ?? null,
+    unlockedSkills: dto.unlockedSkills ?? [],
+    comboUnlocked: dto.comboUnlocked ?? false,
+    comboPayablePoints: dto.comboPayablePoints ?? null,
+    availableSkills: dto.availableSkills ?? [],
+    premium: dto.premium ?? false,
   }
 }
 
 export function mapTopicSummary(dto: TopicSummaryDto): TopicSummary {
-  const premium = dto.accessLevel === 'PREMIUM'
   return {
     id: dto.topicId,
     course: dto.course
@@ -419,15 +446,13 @@ export function mapTopicSummary(dto: TopicSummaryDto): TopicSummary {
       : null,
     code: dto.code,
     title: dto.name,
-    description: dto.description?.trim() || (premium ? 'Nội dung Premium.' : ''),
+    description: dto.description?.trim() ?? '',
     sequenceOrder: dto.sequenceOrder,
-    status: premium && dto.status !== 'PASSED' ? 'LOCKED' : dto.status,
+    status: dto.status,
     completedLessons: dto.completedLessonCount,
     totalLessons: dto.totalLessonCount,
-    lockedReason: premium && dto.status !== 'PASSED'
-      ? 'Topic Premium — chưa mở trong giai đoạn này.'
-      : dto.status === 'LOCKED'
-        ? 'Hoàn thành chặng trước để mở khóa.'
+    lockedReason: dto.status === 'LOCKED'
+      ? 'Hoàn thành chặng trước để mở khóa.'
         : null,
     skill: dto.skill ?? null,
     accessLevel: dto.accessLevel ?? null,
@@ -448,6 +473,8 @@ export function mapTopicLessons(dto: TopicLessonsDto, topic: TopicSummary): Topi
     blockingReviewId: lesson.blockingReviewId ?? null,
     practiceStatus: lesson.practiceStatus ?? null,
     practicePassReason: lesson.practicePassReason ?? null,
+    paywall: lesson.paywall ?? false,
+    freePreview: lesson.freePreview ?? false,
   }))
   const completed = lessons.filter((lesson) => lesson.status === 'COMPLETED').length
   return {

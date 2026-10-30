@@ -27,7 +27,17 @@ export interface CourseSummary extends CourseRef {
   /** Placement guidance only; every course stays open. */
   recommended: boolean
   testStatus: TestStatus
+  skillUnlockPoints?: Partial<Record<LearningSkill, number>>
+  comboUnlockPoints?: number | null
+  comboPayablePoints?: number | null
+  unlockedSkills?: LearningSkill[]
+  availableSkills?: LearningSkill[]
+  comboUnlocked?: boolean
+  premium?: boolean
 }
+
+export type LearningSkill = 'LISTENING' | 'READING' | 'WRITING' | 'SPEAKING'
+export type CourseUnlockTarget = LearningSkill | 'COMBO'
 
 export interface TopicSummary {
   id: string
@@ -58,6 +68,8 @@ export interface LessonSummary {
   /** From BE topic lessons; omitted/null in mock when unused. */
   practiceStatus?: PracticeStatus | null
   practicePassReason?: string | null
+  paywall?: boolean
+  freePreview?: boolean
 }
 
 export interface FinalTestSummary {
@@ -662,6 +674,7 @@ export interface TreePoint {
   prerequisiteIds: string[]
   /** An upper bound: the start route can still answer `FREE_PRACTICE_EXHAUSTED`. */
   practiceAvailable: boolean
+  locked?: boolean
   /** The mistakes the learner has made on this point, with how well they avoid each; only those with evidence. */
   errorTraps?: ErrorTrapPoint[]
 }

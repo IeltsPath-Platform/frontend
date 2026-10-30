@@ -5,6 +5,7 @@ import type {
   AttemptStructure,
   Badge,
   CourseSummary,
+  CourseUnlockTarget,
   DailyQuests,
   HeartsStatus,
   League,
@@ -65,6 +66,13 @@ export interface LearningApi {
   getPlacementResult(attemptId: string): Promise<PlacementResult>
   submitLearnerSubmission(request: LearnerSubmissionRequest): Promise<{ id: string }>
   listCourses(): Promise<CourseSummary[]>
+  unlockCourse(courseId: string, target: CourseUnlockTarget, idempotencyKey: string): Promise<{
+    courseId: string
+    target: CourseUnlockTarget
+    pointCost: number
+    status: 'ACTIVE' | 'PENDING' | 'CANCELLED'
+    ledgerEntryId: string | null
+  }>
   listTopics(): Promise<TopicSummary[]>
   getPendingReviews(): Promise<ReviewRef[]>
   getTopicLessons(topicId: string): Promise<TopicLessonsResponse>

@@ -131,6 +131,17 @@ describe('KnowledgeTreePage', () => {
     expect(learningApi.startFreePractice).toHaveBeenCalledExactlyOnceWith('main')
   })
 
+  it('marks a paywalled point separately and opens the unlock dialog instead of practice', async () => {
+    const locked = { ...base, knowledgePointId: 'locked', code: 'R55_LOCKED', name: 'Bài đọc tính phí', locked: true, practiceAvailable: false }
+    vi.mocked(learningApi.getLearnerTree).mockResolvedValue({ courseId: 'course-1', knowledgePoints: [locked] })
+    renderTree()
+    const point = await screen.findByRole('heading', { name: 'Bài đọc tính phí' }).then((heading) => heading.closest('li') as HTMLElement)
+    expect(point).toHaveAttribute('data-locked', 'true')
+    expect(within(point).queryByRole('button', { name: 'Luyện' })).not.toBeInTheDocument()
+    fireEvent.click(within(point).getByRole('button', { name: 'Mở khóa' }))
+    expect(await screen.findByRole('dialog', { name: 'Mở khóa Đọc' })).toBeInTheDocument()
+  })
+
   it('keeps an empty course out of the diagram', async () => {
     vi.mocked(learningApi.getLearnerTree).mockResolvedValue({ courseId: 'course-1', knowledgePoints: [] })
     renderTree()

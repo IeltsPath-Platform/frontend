@@ -63,6 +63,7 @@ export function createMockLearningApi({ storage = null, latencyMs = 0, now = () 
       throw new ApiError(404, 'NOT_FOUND', 'Mock learning không nhận bài Writing/Speaking của placement.')
     },
     listCourses: () => respond(lessons.listCourses),
+    unlockCourse: async () => { throw new ApiError(404, 'NOT_FOR_SALE', 'Mock learning không hỗ trợ giao dịch mở khóa. Dùng API thật để mua bằng Points.') },
     listTopics: () => respond(lessons.listTopics),
     getPendingReviews: () => respond(pendingReviewRefs),
     getTopicLessons: (topicId) => respond((s) => lessons.getTopicLessons(s, topicId)),

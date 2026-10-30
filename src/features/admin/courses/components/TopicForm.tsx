@@ -41,6 +41,7 @@ export function TopicForm({ topic, parentId, courseId, courses, topics, onSaved,
     if ((min !== '' && !validBand(min)) || (max !== '' && !validBand(max))) { setError('Band phải từ 0 đến 9 theo bước 0,5.'); return }
     if (min !== '' && max !== '' && Number(min) > Number(max)) { setError('Band thấp nhất phải nhỏ hơn hoặc bằng band cao nhất.'); return }
     if (order.trim() === '' || !Number.isInteger(Number(order)) || Number(order) < 0) { setOrderError('Thứ tự phải là số nguyên không âm.'); return }
+    if (course && !skill) { setError('Chọn kỹ năng cho chủ đề thuộc khóa học.'); return }
     const body: Omit<TopicCreate, 'code'> = { name: name.trim(), description: description.trim() || null, parentTopicId: parent || null, courseId: course || null, skill: skill as TopicCreate['skill'] || null, bandMin: min === '' ? null : Number(min), bandMax: max === '' ? null : Number(max), sortOrder: Number(order) }
     setSaving(true)
     setError(null)

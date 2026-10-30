@@ -74,7 +74,7 @@ describe('CoursesPage', () => {
     fireEvent.change(within(form).getByLabelText('Ảnh bìa (URL)'), { target: { value: '' } })
     fireEvent.change(within(form).getByLabelText('Mô tả khóa học'), { target: { value: 'Mô tả mới' } })
     fireEvent.submit(form)
-    await waitFor(() => expect(api.updateCourse).toHaveBeenCalledWith('c1', { name: course.name, bandLevel: 5.5, status: 'INACTIVE', coverImageUrl: null, description: 'Mô tả mới' }))
+    await waitFor(() => expect(api.updateCourse).toHaveBeenCalledWith('c1', { name: course.name, bandLevel: 5.5, status: 'INACTIVE', coverImageUrl: null, description: 'Mô tả mới', skillUnlockPoints: {}, comboUnlockPoints: null }))
   })
   it('blocks a reversed band range', async () => {
     show()

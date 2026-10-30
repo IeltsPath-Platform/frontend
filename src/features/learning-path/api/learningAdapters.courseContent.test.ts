@@ -29,4 +29,12 @@ describe('course content adapters', () => {
       },
     })
   })
+
+  it('preserves the API topic status and does not infer a Premium lock from access level', () => {
+    expect(mapTopicSummary({
+      topicId: 'topic-premium', code: 'READING', name: 'Reading', description: null,
+      sequenceOrder: 1, status: 'IN_PROGRESS', completedLessonCount: 0, totalLessonCount: 3,
+      accessLevel: 'PREMIUM',
+    })).toMatchObject({ status: 'IN_PROGRESS', lockedReason: null, description: '' })
+  })
 })
