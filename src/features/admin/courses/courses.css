@@ -1,5 +1,6 @@
 .adm-author-fields { min-width: 0; border: 0; padding: 0; margin: 0; }
 .adm-author-fields .adm-input, .adm-author-fields .adm-select, .adm-author-fields .adm-textarea { font-size: 1rem; }
+.adm-course-cover-preview { display: block; width: min(100%, 24rem); aspect-ratio: 16 / 9; margin: 0 0 14px; border: 1px solid var(--adm-border); border-radius: 8px; object-fit: cover; }
 
 /* Course tabs: one per course. They scroll sideways on a narrow screen so the page itself never does. */
 .adm-course-tabs { display: flex; gap: 2px; overflow-x: auto; border-bottom: 1px solid var(--adm-border); scrollbar-width: thin; }

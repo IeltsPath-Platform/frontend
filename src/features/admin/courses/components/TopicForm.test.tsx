@@ -10,13 +10,13 @@ vi.mock('../api/courseApi', () => api)
 const message = 'Thứ tự 4 đã có chủ đề khác cùng cấp'
 const conflict = () => new HttpError(409, message, { message, details: { code: 'SORT_ORDER_TAKEN' } })
 const courses = [
-  { id: 'course-one', code: 'FIRST', name: 'Khóa đầu tiên', bandLevel: 5.5, status: 'ACTIVE' as const, createdAt: '', updatedAt: '' },
-  { id: 'course-two', code: 'SECOND', name: 'Khóa thứ hai', bandLevel: 7, status: 'ACTIVE' as const, createdAt: '', updatedAt: '' },
+  { id: 'course-one', code: 'FIRST', name: 'Khóa đầu tiên', bandLevel: 5.5, coverImageUrl: null, description: null, status: 'ACTIVE' as const, createdAt: '', updatedAt: '' },
+  { id: 'course-two', code: 'SECOND', name: 'Khóa thứ hai', bandLevel: 7, coverImageUrl: null, description: null, status: 'ACTIVE' as const, createdAt: '', updatedAt: '' },
 ]
 const topic: TopicOption = { id: 'topic-edit', code: 'ORIGINAL', name: 'Tên ban đầu', parentTopicId: null, courseId: courses[0]!.id, sortOrder: 1, status: 'ACTIVE', skill: 'WRITING', bandMin: 5, bandMax: 6 }
 const parent: TopicOption = { ...topic, id: 'parent', code: 'PARENT', name: 'Chủ đề cha', sortOrder: 2 }
 const legacyChild: TopicOption = { ...topic, id: 'legacy-child', code: 'LEGACY', name: 'Chủ đề con cũ', parentTopicId: parent.id, sortOrder: 3 }
-const body = { name: 'Tên đang chỉnh sửa', parentTopicId: null, courseId: courses[1]!.id, skill: 'READING', bandMin: 6.5, bandMax: 8, sortOrder: 4 }
+const body = { name: 'Tên đang chỉnh sửa', description: null, parentTopicId: null, courseId: courses[1]!.id, skill: 'READING', bandMin: 6.5, bandMax: 8, sortOrder: 4 }
 function show(editing = false) {
   const saved = vi.fn()
   render(<TopicForm topic={editing ? topic : undefined} parentId={null} courseId={courses[0]!.id} courses={courses} topics={[parent, topic]} onSaved={saved} onCancel={vi.fn()} />)
@@ -152,11 +152,23 @@ describe('TopicForm order conflicts', () => {
     fireEvent.submit(screen.getByRole('form'))
     await waitFor(() => expect(saved).toHaveBeenCalledTimes(1))
     expect(api.updateTopic).toHaveBeenCalledExactlyOnceWith(topic.id, {
-      name: 'Chỉ đổi tên', parentTopicId: topic.parentTopicId, courseId: topic.courseId,
+      name: 'Chỉ đổi tên', description: null, parentTopicId: topic.parentTopicId, courseId: topic.courseId,
       skill: topic.skill, bandMin: topic.bandMin, bandMax: topic.bandMax,
       sortOrder: topic.sortOrder, status: topic.status,
     })
     expect(api.createTopic).not.toHaveBeenCalled()
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+})
+
+describe('TopicForm descriptions', () => {
+  it('sends a trimmed topic description', async () => {
+    api.createTopic.mockResolvedValue(topic)
+    const saved = show()
+    fill()
+    fireEvent.change(screen.getByLabelText('Mô tả chủ đề'), { target: { value: '  Mô tả bài học  ' } })
+    fireEvent.submit(screen.getByRole('form'))
+    await waitFor(() => expect(api.createTopic).toHaveBeenCalledWith({ ...body, code: 'NEW_TOPIC', description: 'Mô tả bài học' }))
+    expect(saved).toHaveBeenCalledOnce()
   })
 })

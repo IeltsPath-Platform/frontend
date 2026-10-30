@@ -12,6 +12,8 @@ export interface CourseRef {
   code: string
   title: string
   bandLevel: number
+  coverImageUrl?: string | null
+  description?: string | null
 }
 
 export interface CourseSummary extends CourseRef {

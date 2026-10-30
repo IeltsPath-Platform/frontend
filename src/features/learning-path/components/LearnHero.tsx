@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { CheckCircle2 } from 'lucide-react'
 import { isDarkArt } from '../lib/courseMeta'
-import { CourseArt } from './CourseArt'
+import { CourseCoverArt } from './CourseCoverArt'
 
 export interface HeroFact {
   icon: ReactNode
@@ -11,6 +11,7 @@ export interface HeroFact {
 interface LearnHeroProps {
   /** Band of the course; picks the illustration. Without it the hero has no picture. */
   band: number | null
+  coverImageUrl?: string | null
   eyebrow: string
   title: string
   lead?: string | null
@@ -20,12 +21,13 @@ interface LearnHeroProps {
 }
 
 /** Banner of a course or a topic: the band's mountain fills it, the text sits on its open sky. */
-export function LearnHero({ band, eyebrow, title, lead, facts, done }: LearnHeroProps) {
+export function LearnHero({ band, coverImageUrl, eyebrow, title, lead, facts, done }: LearnHeroProps) {
+  const hasCover = Boolean(coverImageUrl?.trim())
   return (
-    <header className={`lp-hero${band !== null && isDarkArt(band) ? ' lp-hero--dark' : ''}`}>
+    <header className={`lp-hero${band !== null && isDarkArt(band) ? ' lp-hero--dark' : ''}${hasCover ? ' lp-hero--photo' : ''}`}>
       {band !== null ? (
         <div className="lp-hero__art" aria-hidden="true">
-          <CourseArt band={band} wide />
+          <CourseCoverArt band={band} coverImageUrl={coverImageUrl} wide loading="eager" />
         </div>
       ) : null}
 

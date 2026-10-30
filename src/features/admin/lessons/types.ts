@@ -106,6 +106,7 @@ export interface TopicOption {
   id: string
   code: string
   name: string
+  description?: string | null
   skill: string | null
   courseId: string | null
   status: string

@@ -15,6 +15,7 @@ export function TopicForm({ topic, parentId, courseId, courses, topics, onSaved,
 }) {
   const [code, setCode] = useState(topic?.code ?? '')
   const [name, setName] = useState(topic?.name ?? '')
+  const [description, setDescription] = useState(topic?.description ?? '')
   const [parent, setParent] = useState(topic?.parentTopicId ?? parentId ?? '')
   const [course, setCourse] = useState(topic?.courseId ?? courseId ?? '')
   const [skill, setSkill] = useState(topic?.skill ?? '')
@@ -40,7 +41,7 @@ export function TopicForm({ topic, parentId, courseId, courses, topics, onSaved,
     if ((min !== '' && !validBand(min)) || (max !== '' && !validBand(max))) { setError('Band phải từ 0 đến 9 theo bước 0,5.'); return }
     if (min !== '' && max !== '' && Number(min) > Number(max)) { setError('Band thấp nhất phải nhỏ hơn hoặc bằng band cao nhất.'); return }
     if (order.trim() === '' || !Number.isInteger(Number(order)) || Number(order) < 0) { setOrderError('Thứ tự phải là số nguyên không âm.'); return }
-    const body: Omit<TopicCreate, 'code'> = { name: name.trim(), parentTopicId: parent || null, courseId: course || null, skill: skill as TopicCreate['skill'] || null, bandMin: min === '' ? null : Number(min), bandMax: max === '' ? null : Number(max), sortOrder: Number(order) }
+    const body: Omit<TopicCreate, 'code'> = { name: name.trim(), description: description.trim() || null, parentTopicId: parent || null, courseId: course || null, skill: skill as TopicCreate['skill'] || null, bandMin: min === '' ? null : Number(min), bandMax: max === '' ? null : Number(max), sortOrder: Number(order) }
     setSaving(true)
     setError(null)
     try {
@@ -56,6 +57,7 @@ export function TopicForm({ topic, parentId, courseId, courses, topics, onSaved,
     <fieldset className="adm-author-fields" disabled={saving}>
       <label className="adm-field"><span>Mã chủ đề</span><input className="adm-input" required maxLength={100} disabled={!!topic} value={code} onChange={(event) => setCode(event.target.value)} /></label>
       <label className="adm-field"><span>Tên chủ đề</span><input className="adm-input" required maxLength={255} value={name} onChange={(event) => setName(event.target.value)} /></label>
+      <label className="adm-field"><span>Mô tả chủ đề</span><textarea className="adm-textarea" maxLength={2000} value={description} onChange={(event) => setDescription(event.target.value)} /></label>
       <label className="adm-field"><span>Thuộc khóa học</span><select className="adm-select" value={course} onChange={(event) => setCourse(event.target.value)}>{!topic?.courseId ? <option value="">Chưa gán khóa</option> : null}{courses.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
       {topic?.parentTopicId ? <label className="adm-field"><span>Chủ đề cha</span><select className="adm-select" value={parent} onChange={(event) => { setParent(event.target.value); setOrderError(null) }}><option value="">Không có (cấp đầu)</option>{topics.filter((item) => !excluded.has(item.id)).map((item) => <option key={item.id} value={item.id}>{item.code} · {item.name}</option>)}</select></label> : null}
       <label className="adm-field"><span>Kỹ năng</span><select className="adm-select" value={skill} onChange={(event) => setSkill(event.target.value)}>{!topic?.skill ? <option value="">Chưa chọn</option> : null}{TOPIC_SKILLS.map((item) => <option key={item} value={item}>{SKILL_LABEL[item]}</option>)}</select></label>

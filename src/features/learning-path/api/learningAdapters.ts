@@ -33,13 +33,14 @@ export type TopicSummaryDto = {
   topicId: string
   code: string
   name: string
+  description?: string | null
   sequenceOrder: number
   status: TopicStatus
   completedLessonCount: number
   totalLessonCount: number
   accessLevel?: 'FREE' | 'PREMIUM'
   skill?: string | null
-  course?: { courseId: string; code: string; name: string; bandLevel: number } | null
+  course?: { courseId: string; code: string; name: string; bandLevel: number; coverImageUrl?: string | null; description?: string | null } | null
 }
 
 export type CourseSummaryDto = {
@@ -47,6 +48,8 @@ export type CourseSummaryDto = {
   code: string
   name: string
   bandLevel: number
+  coverImageUrl?: string | null
+  description?: string | null
   topicCount: number
   passedTopicCount: number
   completedLessonCount?: number
@@ -391,6 +394,8 @@ export function mapCourseSummary(dto: CourseSummaryDto): CourseSummary {
     id: dto.courseId,
     code: dto.code,
     title: dto.name,
+    coverImageUrl: dto.coverImageUrl ?? null,
+    description: dto.description ?? null,
     bandLevel: Number(dto.bandLevel),
     topicCount: dto.topicCount,
     passedTopicCount: dto.passedTopicCount,
@@ -407,11 +412,14 @@ export function mapTopicSummary(dto: TopicSummaryDto): TopicSummary {
   return {
     id: dto.topicId,
     course: dto.course
-      ? { id: dto.course.courseId, code: dto.course.code, title: dto.course.name, bandLevel: Number(dto.course.bandLevel) }
+      ? {
+          id: dto.course.courseId, code: dto.course.code, title: dto.course.name, bandLevel: Number(dto.course.bandLevel),
+          coverImageUrl: dto.course.coverImageUrl ?? null, description: dto.course.description ?? null,
+        }
       : null,
     code: dto.code,
     title: dto.name,
-    description: premium ? 'Nội dung Premium.' : '',
+    description: dto.description?.trim() || (premium ? 'Nội dung Premium.' : ''),
     sequenceOrder: dto.sequenceOrder,
     status: premium && dto.status !== 'PASSED' ? 'LOCKED' : dto.status,
     completedLessons: dto.completedLessonCount,
