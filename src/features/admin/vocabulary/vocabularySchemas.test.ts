@@ -48,6 +48,7 @@ describe('vocabularySchemas', () => {
       status: 'ACTIVE',
     }
     expect(adminTopicSchema.safeParse(valid).success).toBe(true)
+    expect(adminTopicSchema.safeParse({ ...valid, coverKey: null }).success).toBe(true)
 
     const invalid = {
       slug: 'a', // too short
@@ -66,6 +67,7 @@ describe('vocabularySchemas', () => {
       status: 'ACTIVE',
     }
     expect(adminSetSchema.safeParse(valid).success).toBe(true)
+    expect(adminSetSchema.safeParse({ ...valid, coverKey: null }).success).toBe(true)
 
     const invalid = {
       title: '',
