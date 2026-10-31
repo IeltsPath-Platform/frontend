@@ -45,102 +45,293 @@
   align-items: center;
   gap: 10px;
 }
+/* Game catalog: hero, two game cards, join-by-code panel. Illustrations sit on white and blend with multiply. */
+.game-catalog-page {
+  position: relative;
+  isolation: isolate;
+  width: min(910px, calc(100% - 40px));
+  padding-top: 34px;
+}
+.game-catalog-page::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 100%;
+  z-index: -1;
+  /* Full-bleed without a horizontal scrollbar: the border-image outset paints past the page box. */
+  border-image: linear-gradient(180deg, var(--classroom-soft) 0%, color-mix(in srgb, var(--classroom-soft) 55%, var(--classroom-surface)) 70%, var(--classroom-surface) 100%) fill 0 / 0 / 0 100vmax;
+}
+.game-catalog-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  align-items: end;
+  min-height: 250px;
+  margin-bottom: -4px;
+}
+.game-catalog-hero-text {
+  padding-bottom: 26px;
+}
+.game-catalog-hero .game-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.74rem;
+  letter-spacing: 0.04em;
+  color: var(--classroom-primary-strong);
+}
+.game-catalog-hero .game-eyebrow svg {
+  width: 22px;
+  height: 22px;
+  color: var(--classroom-primary);
+}
+.game-catalog-hero h1 {
+  font-size: clamp(2.2rem, 4.2vw, 2.95rem);
+  line-height: 1.12;
+  margin: 14px 0 22px;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  color: var(--classroom-text);
+}
+.game-catalog-highlight {
+  position: relative;
+  color: var(--classroom-hero-end);
+}
+.game-catalog-highlight::after {
+  content: '';
+  position: absolute;
+  left: 4%;
+  right: 30%;
+  bottom: -10px;
+  height: 10px;
+  /* A brush stroke, thicker in the middle. */
+  background: radial-gradient(60% 55% at 50% 50%, var(--particle-yellow) 0 98%, transparent 100%);
+  border-radius: 50%;
+  transform: rotate(-1.5deg);
+}
+.game-catalog-hero p {
+  margin: 0;
+  font-size: 0.96rem;
+  line-height: 1.6;
+}
+.game-catalog-hero-art img {
+  display: block;
+  width: 100%;
+  height: auto;
+  mix-blend-mode: multiply;
+}
+.game-catalog-deco {
+  position: absolute;
+  pointer-events: none;
+}
+.game-catalog-deco.is-star-blue {
+  left: -92px;
+  top: 112px;
+  width: 30px;
+  height: 30px;
+  color: color-mix(in srgb, var(--classroom-hero-end) 55%, var(--classroom-surface));
+  fill: currentColor;
+}
+.game-catalog-deco.is-star-gold {
+  left: -62px;
+  top: 158px;
+  width: 18px;
+  height: 18px;
+  color: var(--particle-yellow);
+  fill: currentColor;
+}
+.game-catalog-deco.is-plane {
+  left: 392px;
+  top: 104px;
+  width: 26px;
+  height: 26px;
+  color: var(--particle-yellow);
+  transform: rotate(-150deg);
+}
+.game-catalog-motto {
+  position: absolute;
+  right: -150px;
+  top: 64px;
+  margin: 0 !important;
+  font-family: 'Segoe Print', 'Bradley Hand', 'Comic Sans MS', cursive;
+  font-size: 1.25rem !important;
+  line-height: 1.25 !important;
+  color: var(--classroom-primary-strong) !important;
+  transform: rotate(-6deg);
+  text-align: center;
+}
 .game-catalog-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 24px;
-  margin-bottom: 28px;
+  gap: 14px;
+  margin-bottom: 14px;
 }
 .game-catalog-card {
-  overflow: hidden;
-  border: 1px solid var(--classroom-border);
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: 1fr auto;
+  gap: 10px 4px;
+  padding: 22px 22px 14px;
+  border: 1px solid color-mix(in srgb, var(--classroom-border) 70%, transparent);
   border-radius: 22px;
-  background: var(--classroom-surface);
-  box-shadow: var(--classroom-shadow);
+  background: linear-gradient(135deg, var(--classroom-surface) 0%, var(--classroom-soft) 100%);
+  box-shadow: 0 14px 30px rgb(32 55 115 / 9%);
+  overflow: hidden;
 }
-.game-card-art {
-  min-height: 205px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--classroom-canvas);
-  color: var(--color-text-muted);
-}
-.game-catalog-wordly .game-card-art {
-  background: var(--classroom-soft);
-  color: var(--classroom-primary);
+.game-catalog-card.is-wordly {
+  background: linear-gradient(135deg, var(--classroom-surface) 0%, color-mix(in srgb, var(--particle-yellow) 10%, var(--classroom-surface)) 100%);
 }
 .game-card-body {
+  grid-column: 1;
+  grid-row: 1;
   display: grid;
-  gap: 12px;
-  padding: 26px;
+  align-content: start;
+  gap: 8px;
+  padding: 6px 0 0 10px;
+}
+.game-card-chip {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 11px;
+  border: 1px solid color-mix(in srgb, var(--classroom-primary) 18%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--classroom-soft) 70%, var(--classroom-surface));
+  color: var(--classroom-primary-strong);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.game-card-chip svg {
+  width: 13px;
+  height: 13px;
 }
 .game-card-body h2 {
-  font-size: 1.6rem;
+  margin-top: 6px !important;
+  font-size: clamp(1.6rem, 2.6vw, 1.85rem) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.03em;
 }
 .game-card-body p {
-  min-height: 52px;
+  margin: 0;
+  max-width: 15rem;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+.game-card-art {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: center;
+  width: clamp(130px, 18vw, 190px);
+}
+.game-catalog-card.is-wordly .game-card-art {
+  width: clamp(150px, 21vw, 210px);
+}
+.game-card-art img {
+  display: block;
+  width: 100%;
+  height: auto;
+  mix-blend-mode: multiply;
 }
 .game-primary-action {
+  grid-column: 1 / -1;
   width: 100%;
   min-height: 48px !important;
-}
-.game-letter-demo {
-  display: flex;
-  gap: 7px;
-  justify-content: center;
-}
-.game-letter-demo span {
-  display: grid;
-  place-items: center;
-  width: clamp(30px, 5vw, 53px);
-  aspect-ratio: 1;
-  border: 2px solid var(--classroom-primary);
-  border-radius: 9px;
-  font-size: clamp(1rem, 2.5vw, 1.65rem);
-  font-weight: 800;
-  color: var(--classroom-primary);
-  background: var(--classroom-surface);
-  transform: rotate(-4deg);
-}
-.game-letter-demo span:nth-child(even) {
-  transform: rotate(4deg);
-  background: var(--classroom-primary);
-  color: var(--primary-foreground);
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  background: linear-gradient(90deg, var(--classroom-hero-end), var(--classroom-primary));
+  box-shadow: 0 8px 18px rgb(18 58 181 / 22%);
 }
 .game-join-panel {
   display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 18px 24px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px 22px;
   align-items: center;
+  padding: 18px 22px 18px 30px;
+  border-radius: 18px;
+}
+.game-join-icon {
+  display: grid;
+  place-items: center;
+  color: var(--classroom-primary);
+}
+.game-join-icon svg {
+  width: 28px;
+  height: 28px;
 }
 .game-join-panel h2 {
-  margin-bottom: 5px;
+  margin-bottom: 2px;
+  font-size: 1rem !important;
+}
+.game-join-panel p {
+  margin: 0;
+  font-size: 0.82rem;
 }
 .game-join-form {
   display: flex;
   align-items: center;
   gap: 10px;
 }
+.game-join-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.game-join-field > svg {
+  position: absolute;
+  left: 16px;
+  width: 17px;
+  height: 17px;
+  color: var(--classroom-text-muted);
+  pointer-events: none;
+}
 .game-join-form input {
   min-height: 46px;
-  max-width: 170px;
-  letter-spacing: 0.18em;
-  font-weight: 700;
+  width: 210px;
+  padding-left: 44px;
+  border-radius: 12px;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+.game-join-form button {
+  min-height: 46px !important;
+  padding-inline: 20px;
+  border-radius: 10px;
+  background: linear-gradient(90deg, var(--classroom-hero-end), var(--classroom-primary));
 }
 .game-join-panel > .game-error {
   grid-column: 1 / -1;
+}
+@media (max-width: 1180px) {
+  .game-catalog-motto,
+  .game-catalog-deco.is-star-blue,
+  .game-catalog-deco.is-star-gold {
+    display: none;
+  }
 }
 .game-mode-options {
   display: grid;
   gap: 14px;
 }
-.game-mode-options a {
+.game-mode-options > * {
   min-height: 85px;
   justify-content: flex-start;
   padding: 18px;
   gap: 15px;
   white-space: normal;
+  text-align: left;
+  height: auto;
+}
+.game-mode-note {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--classroom-soft);
+  color: var(--classroom-primary-strong);
+  font-size: 0.88rem;
 }
 .game-mode-options span {
   display: grid;
@@ -405,7 +596,23 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .game-join-panel {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .game-join-form {
+    grid-column: 1 / -1;
+  }
+  .game-join-field {
+    flex: 1;
+  }
+  .game-join-form input {
+    width: 100%;
+  }
+  .game-catalog-hero {
     grid-template-columns: 1fr;
+  }
+  .game-catalog-hero-art,
+  .game-catalog-deco {
+    display: none;
   }
   .game-room-stats {
     flex-basis: 100%;
@@ -419,6 +626,9 @@
   .game-catalog-grid {
     grid-template-columns: 1fr;
     gap: 18px;
+  }
+  .game-catalog-card {
+    padding: 20px;
   }
   .game-panel {
     padding: 20px;
