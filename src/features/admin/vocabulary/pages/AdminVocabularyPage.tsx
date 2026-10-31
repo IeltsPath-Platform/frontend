@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { AdminPage } from '../../pages/AdminPage'
 import { useToast } from '@/components/toast/toastContext'
+import { uploadAdminImage } from '@/features/admin/media/api/mediaUploadApi'
 import {
   notebookApi,
   type VocabularyCatalogItem,
@@ -185,6 +186,8 @@ export function AdminVocabularyPage() {
   const [loadingTopics, setLoadingTopics] = useState(false)
   const [isTopicModalOpen, setIsTopicModalOpen] = useState(false)
   const [editingTopicId, setEditingTopicId] = useState<string | null>(null)
+  const [topicCoverPreview, setTopicCoverPreview] = useState<string | null>(null)
+  const [uploadingTopicCover, setUploadingTopicCover] = useState(false)
 
   const topicForm = useForm<AdminTopicPayload>({
     defaultValues: {
@@ -227,10 +230,11 @@ export function AdminVocabularyPage() {
       slug: '',
       name: '',
       nameVi: '',
-      coverKey: '',
+      coverKey: null,
       sortOrder: topics.length,
       status: 'ACTIVE',
     })
+    setTopicCoverPreview(null)
     setIsTopicModalOpen(true)
   }
 
@@ -240,11 +244,26 @@ export function AdminVocabularyPage() {
       slug: t.slug,
       name: t.name,
       nameVi: t.nameVi,
-      coverKey: t.coverKey || '',
+      coverKey: t.coverKey,
       sortOrder: t.sortOrder,
       status: 'ACTIVE',
     })
+    setTopicCoverPreview(t.coverUrl)
     setIsTopicModalOpen(true)
+  }
+
+  const handleTopicCoverUpload = async (file?: File) => {
+    if (!file) return
+    setUploadingTopicCover(true)
+    try {
+      const uploaded = await uploadAdminImage('/api/content/admin/vocabulary/covers', file)
+      topicForm.setValue('coverKey', uploaded.mediaReference, { shouldDirty: true })
+      setTopicCoverPreview(uploaded.mediaUrl)
+    } catch {
+      toast({ title: 'Lỗi', description: 'Không thể tải ảnh bìa chủ đề.', tone: 'error' })
+    } finally {
+      setUploadingTopicCover(false)
+    }
   }
 
   const handleSaveTopic = async (values: AdminTopicPayload) => {
@@ -287,6 +306,8 @@ export function AdminVocabularyPage() {
   const [loadingSets, setLoadingSets] = useState(false)
   const [isSetModalOpen, setIsSetModalOpen] = useState(false)
   const [editingSetId, setEditingSetId] = useState<string | null>(null)
+  const [setCoverPreview, setSetCoverPreview] = useState<string | null>(null)
+  const [uploadingSetCover, setUploadingSetCover] = useState(false)
 
   // Reordering modal
   const [reorderSetId, setReorderSetId] = useState<string | null>(null)
@@ -338,10 +359,11 @@ export function AdminVocabularyPage() {
       kind: 'BAND',
       cefrLevel: 'B2',
       topicId: '',
-      coverKey: '',
+      coverKey: null,
       sortOrder: sets.length,
       status: 'ACTIVE',
     })
+    setSetCoverPreview(null)
     setIsSetModalOpen(true)
   }
 
@@ -353,11 +375,26 @@ export function AdminVocabularyPage() {
       kind: s.kind,
       cefrLevel: s.cefrLevel || '',
       topicId: '',
-      coverKey: s.coverKey || '',
+      coverKey: s.coverKey,
       sortOrder: s.sortOrder,
       status: s.status,
     })
+    setSetCoverPreview(s.coverUrl)
     setIsSetModalOpen(true)
+  }
+
+  const handleSetCoverUpload = async (file?: File) => {
+    if (!file) return
+    setUploadingSetCover(true)
+    try {
+      const uploaded = await uploadAdminImage('/api/content/admin/vocabulary/covers', file)
+      setForm.setValue('coverKey', uploaded.mediaReference, { shouldDirty: true })
+      setSetCoverPreview(uploaded.mediaUrl)
+    } catch {
+      toast({ title: 'Lỗi', description: 'Không thể tải ảnh bìa bộ từ.', tone: 'error' })
+    } finally {
+      setUploadingSetCover(false)
+    }
   }
 
   const handleSaveSet = async (values: AdminSetPayload) => {
@@ -1021,6 +1058,12 @@ export function AdminVocabularyPage() {
                 <input type="text" {...topicForm.register('slug')} placeholder="VD: environment" style={{ width: '100%', padding: '0.45rem', borderRadius: '0.4rem', border: '1px solid #cbd5e1' }} />
               </div>
               <div>
+                <label htmlFor="topic-cover" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.2rem' }}>Ảnh bìa chủ đề</label>
+                <input id="topic-cover" type="file" accept="image/png,image/jpeg,image/webp" disabled={uploadingTopicCover} onChange={(event) => handleTopicCoverUpload(event.target.files?.[0])} />
+                {topicCoverPreview && <img src={topicCoverPreview} alt="Xem trước ảnh bìa chủ đề" style={{ display: 'block', maxWidth: '100%', maxHeight: '8rem', objectFit: 'cover', marginTop: '0.5rem' }} />}
+                {topicCoverPreview && <button type="button" onClick={() => { topicForm.setValue('coverKey', null, { shouldDirty: true }); setTopicCoverPreview(null) }} style={{ marginTop: '0.4rem' }}>Xóa ảnh bìa</button>}
+              </div>
+              <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.2rem' }}>Thứ tự hiển thị</label>
                 <input type="number" {...topicForm.register('sortOrder')} style={{ width: '100%', padding: '0.45rem', borderRadius: '0.4rem', border: '1px solid #cbd5e1' }} />
               </div>
@@ -1059,6 +1102,12 @@ export function AdminVocabularyPage() {
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.2rem' }}>Mô tả</label>
                 <textarea {...setForm.register('description')} rows={3} style={{ width: '100%', padding: '0.45rem', borderRadius: '0.4rem', border: '1px solid #cbd5e1' }} />
+              </div>
+              <div>
+                <label htmlFor="set-cover" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.2rem' }}>Ảnh bìa bộ từ</label>
+                <input id="set-cover" type="file" accept="image/png,image/jpeg,image/webp" disabled={uploadingSetCover} onChange={(event) => handleSetCoverUpload(event.target.files?.[0])} />
+                {setCoverPreview && <img src={setCoverPreview} alt="Xem trước ảnh bìa bộ từ" style={{ display: 'block', maxWidth: '100%', maxHeight: '8rem', objectFit: 'cover', marginTop: '0.5rem' }} />}
+                {setCoverPreview && <button type="button" onClick={() => { setForm.setValue('coverKey', null, { shouldDirty: true }); setSetCoverPreview(null) }} style={{ marginTop: '0.4rem' }}>Xóa ảnh bìa</button>}
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem' }}>
                 <div>
