@@ -222,12 +222,19 @@ export function LessonView({ lesson, onLessonChanged }: { lesson: LessonDetail; 
     reloadSiblings()
   }
 
+  async function refreshAudioUrl(blockId: string): Promise<string | null> {
+    const refreshed = await learningApi.getLesson(lesson.id)
+    const audio = refreshed.blocks?.find((block) => block.id === blockId)
+    return audio?.type === 'ASSET' && audio.assetType === 'AUDIO' ? audio.mediaUrl : null
+  }
+
   function panel() {
     if (tab === 'vocabulary') {
       return <LessonVocabulary senseIds={vocabularySenseIds} />
     }
     if (tab === 'exercises') {
-      return <LessonExercises blocks={lesson.blocks ?? []} lessonId={lesson.id} onChanged={exercisesChanged} />
+      return <LessonExercises blocks={lesson.blocks ?? []} lessonId={lesson.id} onChanged={exercisesChanged}
+        refreshAudioUrl={refreshAudioUrl} />
     }
     if (tab === 'practice') {
       return <LessonPractice lessonId={lesson.id} onChanged={practiceChanged} reviewOrigin={reviewOrigin} />
