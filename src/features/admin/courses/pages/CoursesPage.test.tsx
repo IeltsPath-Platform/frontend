@@ -5,9 +5,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { HttpError } from '@/lib/httpClient'
 import { CoursesPage } from './CoursesPage'
 
-const { api, lessons } = vi.hoisted(() => ({ api: { fetchCourses: vi.fn(), createCourse: vi.fn(), updateCourse: vi.fn(), createTopic: vi.fn(), updateTopic: vi.fn(), reorderTopics: vi.fn() }, lessons: { fetchTopics: vi.fn(), fetchLessons: vi.fn() } }))
+const { api, lessons, media } = vi.hoisted(() => ({ api: { fetchCourses: vi.fn(), createCourse: vi.fn(), updateCourse: vi.fn(), createTopic: vi.fn(), updateTopic: vi.fn(), reorderTopics: vi.fn() }, lessons: { fetchTopics: vi.fn(), fetchLessons: vi.fn() }, media: { uploadAdminImage: vi.fn() } }))
 vi.mock('../api/courseApi', () => api)
 vi.mock('../../lessons/api/lessonApi', () => lessons)
+vi.mock('../../media/api/mediaUploadApi', () => media)
 const course = { id: 'c1', code: 'FOUNDATION', name: 'Nền tảng 5.5', bandLevel: 5.5, coverImageUrl: null, description: null, status: 'ACTIVE', createdAt: '', updatedAt: '' }
 const topics = [
   { id: 't1', code: 'WRITING', name: 'Viết học thuật', parentTopicId: null, courseId: 'c1', sortOrder: 1, status: 'ACTIVE', skill: 'WRITING', bandMin: 5, bandMax: 6 },
@@ -25,11 +26,13 @@ describe('CoursesPage', () => {
     vi.clearAllMocks()
     api.updateTopic.mockReset()
     api.reorderTopics.mockReset()
+    media.uploadAdminImage.mockReset()
     api.reorderTopics.mockResolvedValue(undefined)
     api.fetchCourses.mockResolvedValue([course])
     lessons.fetchTopics.mockResolvedValue(topics)
     lessons.fetchLessons.mockResolvedValue([])
     api.createCourse.mockResolvedValue(course)
+    media.uploadAdminImage.mockResolvedValue({ mediaReference: 'content-image/author-1/cover.png', mediaUrl: 'https://storage.example/content-image/author-1/cover.png', contentType: 'image/png', sizeBytes: 3 })
     api.updateCourse.mockResolvedValue(course)
     api.createTopic.mockResolvedValue(topics[0])
     api.updateTopic.mockResolvedValue(topics[0])
@@ -61,17 +64,18 @@ describe('CoursesPage', () => {
     fireEvent.change(within(form).getByLabelText('Mã khóa học'), { target: { value: 'INTENSIVE_70' } })
     fireEvent.change(within(form).getByLabelText('Tên khóa học'), { target: { value: 'Intensive 7.0' } })
     fireEvent.change(within(form).getByLabelText('Band khóa học'), { target: { value: '7' } })
-    fireEvent.change(within(form).getByLabelText('Ảnh bìa (URL)'), { target: { value: 'https://example.com/cover.jpg' } })
+    const file = new File(['png'], 'cover.png', { type: 'image/png' })
+    fireEvent.change(within(form).getByLabelText('Ảnh bìa khóa học'), { target: { files: [file] } })
+    await waitFor(() => expect(media.uploadAdminImage).toHaveBeenCalledWith('/api/content/admin/media/image', file))
     fireEvent.change(within(form).getByLabelText('Mô tả khóa học'), { target: { value: 'Lộ trình nền tảng.' } })
     fireEvent.submit(form)
-    await waitFor(() => expect(api.createCourse).toHaveBeenCalledWith({ code: 'INTENSIVE_70', name: 'Intensive 7.0', bandLevel: 7, coverImageUrl: 'https://example.com/cover.jpg', description: 'Lộ trình nền tảng.' }))
+    await waitFor(() => expect(api.createCourse).toHaveBeenCalledWith({ code: 'INTENSIVE_70', name: 'Intensive 7.0', bandLevel: 7, coverImageUrl: 'content-image/author-1/cover.png', description: 'Lộ trình nền tảng.' }))
   })
   it('updates course status without sending its code', async () => {
     show()
     fireEvent.click(await screen.findByRole('button', { name: 'Sửa khóa học' }))
     const form = screen.getByRole('form', { name: 'Sửa khóa học' })
     fireEvent.change(within(form).getByLabelText('Trạng thái khóa học'), { target: { value: 'INACTIVE' } })
-    fireEvent.change(within(form).getByLabelText('Ảnh bìa (URL)'), { target: { value: '' } })
     fireEvent.change(within(form).getByLabelText('Mô tả khóa học'), { target: { value: 'Mô tả mới' } })
     fireEvent.submit(form)
     await waitFor(() => expect(api.updateCourse).toHaveBeenCalledWith('c1', { name: course.name, bandLevel: 5.5, status: 'INACTIVE', coverImageUrl: null, description: 'Mô tả mới', skillUnlockPoints: {}, comboUnlockPoints: null }))
