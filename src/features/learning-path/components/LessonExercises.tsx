@@ -22,10 +22,11 @@ interface LessonExercisesProps {
   blocks: LessonBlock[]
   /** Called after an answer was graded, so the page can refresh the lesson and the side navigation. */
   onChanged: () => void
+  refreshAudioUrl?: (blockId: string) => Promise<string | null>
 }
 
 /** The lesson's passages, audio and exercises, in the order Content gives them. Passing every exercise completes the lesson. */
-export function LessonExercises({ lessonId, blocks, onChanged }: LessonExercisesProps) {
+export function LessonExercises({ lessonId, blocks, onChanged, refreshAudioUrl }: LessonExercisesProps) {
   // The hearts are an extra: if they cannot be read, the exercises still open and the server refuses them when needed.
   const hearts = useApiResource('hearts', () => learningApi.getHearts())
   const [rewards, setRewards] = useState<Record<string, GamificationSummary | null>>({})
@@ -74,7 +75,8 @@ export function LessonExercises({ lessonId, blocks, onChanged }: LessonExercises
     return (
       <section className="lp-split" aria-label="Bài đọc và bài tập">
         <div className="lp-split__passage">
-          {blocks.filter(isAudio).map((block) => <AudioBlock key={block.id} audio={block} />)}
+          {blocks.filter(isAudio).map((block) => <AudioBlock key={block.id} audio={block}
+            refreshAudioUrl={refreshAudioUrl ? () => refreshAudioUrl(block.id) : undefined} />)}
           {blocks.filter(isPassage).map((block) => (
             <PassageBlock key={block.id} passage={block} />
           ))}
@@ -92,7 +94,8 @@ export function LessonExercises({ lessonId, blocks, onChanged }: LessonExercises
       {heartsNotice}
       {blocks.map((block) => {
         if (isExercise(block)) return exerciseNodes(block)
-        if (isAudio(block)) return <AudioBlock key={block.id} audio={block} />
+        if (isAudio(block)) return <AudioBlock key={block.id} audio={block}
+          refreshAudioUrl={refreshAudioUrl ? () => refreshAudioUrl(block.id) : undefined} />
         return isPassage(block) ? <PassageBlock key={block.id} passage={block} /> : null
       })}
     </div>
