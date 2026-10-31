@@ -10,6 +10,7 @@ import { startSoloRoom } from '../lib/startSoloRoom'
 
 vi.mock('../api/gameApi', () => ({
   gameApi: {
+    wordFilters: vi.fn(() => Promise.reject(new Error('unavailable'))),
     createRoom: vi.fn(),
     createRocketRoom: vi.fn(),
     room: vi.fn(),
@@ -111,6 +112,8 @@ describe('Solo setup direct start', () => {
       playMode: 'FINITE',
       wordLimit: 10,
       timeEnabled: true,
+      cefrLevel: null,
+      topicId: null,
     })
     expect(gameApi.ready).toHaveBeenCalledWith(room.id, true)
     expect(gameApi.start).toHaveBeenCalledWith(room.id)
@@ -404,8 +407,40 @@ describe('Rocket multiplayer setup', () => {
       questionCount: 12,
       initialLives: 4,
       secondsPerQuestion: 20,
+      cefrLevel: null,
+      topicId: null,
     })
     expect(gameApi.createRoom).not.toHaveBeenCalled()
+  })
+
+  it('still creates a room when the filters fail to load, and offers a retry', async () => {
+    vi.mocked(gameApi.createRocketRoom).mockResolvedValue({ ...room, id: 'rocket-room', gameType: 'ROCKET' })
+    setupRocket()
+    expect(await screen.findByRole('button', { name: 'Thử lại' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Tạo phòng chơi' }))
+    await screen.findByRole('heading', { name: 'Sảnh nhiều người' })
+  })
+
+  it('blocks a question count the chosen words cannot cover, until it is lowered', async () => {
+    vi.mocked(gameApi.wordFilters).mockResolvedValueOnce({
+      topics: [],
+      availability: [{ cefrLevel: null, topicId: null, words: 8 }],
+    })
+    setupRocket()
+    expect(await screen.findByText(/chỉ có 8 từ, cần 10 từ/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Tạo phòng chơi' })).toBeDisabled()
+    fireEvent.change(screen.getByLabelText(/Số câu/), { target: { value: '8' } })
+    expect(screen.queryByText(/chỉ có 8 từ/)).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Tạo phòng chơi' })).toBeEnabled()
+  })
+
+  it('explains a shortage reported by the server', async () => {
+    vi.mocked(gameApi.createRocketRoom).mockRejectedValue(
+      new HttpError(409, 'Conflict', { details: { available: 3 } }, 'NOT_ENOUGH_WORDS'),
+    )
+    setupRocket()
+    fireEvent.click(screen.getByRole('button', { name: 'Tạo phòng chơi' }))
+    expect(await screen.findByText(/hiện có 3 từ/)).toBeInTheDocument()
   })
 
   it('rejects a question count outside 5–20', async () => {

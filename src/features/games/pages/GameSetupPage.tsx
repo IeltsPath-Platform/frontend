@@ -12,6 +12,14 @@ import type { ActiveGame, CreateRoomInput, GameRoom } from '../types/game'
 import { HttpError } from '@/lib/httpClient'
 import { startSoloRoom } from '../lib/startSoloRoom'
 import { ActiveGameDialog } from '../components/ActiveGameDialog'
+import { WordFilterFields } from '../components/WordFilterFields'
+import { gameErrorMessage } from '../lib/gameErrorMessage'
+import {
+  ANY_WORDS,
+  useWordFilters,
+  wordFilterError,
+  wordlyRequiredWords,
+} from '../lib/wordFilters'
 import { activeGamePath, isActiveGameConflict } from '../lib/activeGame'
 import { gameName, playPath, setupPath, type GameType } from '../lib/gameRoutes'
 import {
@@ -44,6 +52,16 @@ function SetupContent({ gameType }: { gameType: GameType }) {
     wordLimit: 10,
     timeEnabled: true,
   })
+  const [wordFilter, setWordFilter] = useState(ANY_WORDS)
+  const wordFilters = useWordFilters()
+  const requiredWords = rocket
+    ? (rocketValue.questionCount ?? 0)
+    : wordlyRequiredWords(value.wordLimit)
+  const wordError = wordFilterError(
+    wordFilters.filters,
+    wordFilter,
+    requiredWords,
+  )
   const [pending, setPending] = useState(false)
   const [error, setError] = useState('')
   const submitting = useRef(false)
@@ -60,7 +78,7 @@ function SetupContent({ gameType }: { gameType: GameType }) {
 
   /** checkActive=false only after the user chose to leave their previous room. */
   async function submit(checkActive: boolean) {
-    if (submitting.current) return
+    if (submitting.current || wordError) return
     const countError = rocket
       ? rocketQuestionCountError(rocketValue.questionCount)
       : null
@@ -102,6 +120,7 @@ function SetupContent({ gameType }: { gameType: GameType }) {
           questionCount: rocketValue.questionCount ?? 0,
           initialLives: rocketValue.initialLives,
           secondsPerQuestion: rocketValue.secondsPerQuestion,
+          ...wordFilter,
         })
         signal?.throwIfAborted()
         navigate(`/games/rooms/${room.id}`)
@@ -126,7 +145,9 @@ function SetupContent({ gameType }: { gameType: GameType }) {
           (room.settings?.initialLives !== value.initialLives ||
             room.settings?.playMode !== value.playMode ||
             room.settings?.wordLimit !== value.wordLimit ||
-            room.settings?.timeEnabled !== value.timeEnabled)
+            room.settings?.timeEnabled !== value.timeEnabled ||
+            (room.settings?.cefrLevel ?? null) !== wordFilter.cefrLevel ||
+            (room.settings?.topicId ?? null) !== wordFilter.topicId)
         ) {
           await gameApi.leaveRoom(room.id)
           signal?.throwIfAborted()
@@ -134,7 +155,11 @@ function SetupContent({ gameType }: { gameType: GameType }) {
           room = null
         }
         if (!room) {
-          room = await gameApi.createRoom({ ...value, playerMode })
+          room = await gameApi.createRoom({
+            ...value,
+            ...wordFilter,
+            playerMode,
+          })
           pendingSoloRoom.current = room
           signal?.throwIfAborted()
         }
@@ -146,7 +171,11 @@ function SetupContent({ gameType }: { gameType: GameType }) {
         })
         return
       }
-      const room = await gameApi.createRoom({ ...value, playerMode })
+      const room = await gameApi.createRoom({
+        ...value,
+        ...wordFilter,
+        playerMode,
+      })
       signal?.throwIfAborted()
       navigate(`/games/rooms/${room.id}`)
     } catch (cause) {
@@ -160,6 +189,10 @@ function SetupContent({ gameType }: { gameType: GameType }) {
           setActiveGame(active)
           return
         }
+      }
+      if (cause instanceof HttpError && cause.code === 'NOT_ENOUGH_WORDS') {
+        setError(gameErrorMessage(cause))
+        return
       }
       setError(
         playerMode === 'SOLO'
@@ -234,6 +267,13 @@ function SetupContent({ gameType }: { gameType: GameType }) {
                 disabled={pending}
               />
             )}
+            <WordFilterFields
+              value={wordFilter}
+              onChange={setWordFilter}
+              required={requiredWords}
+              state={wordFilters}
+              disabled={pending}
+            />
             <GameNoticeDialog message={error} onClose={() => setError('')} />
             <ActiveGameDialog
               game={activeGame}
@@ -248,7 +288,7 @@ function SetupContent({ gameType }: { gameType: GameType }) {
             />
             <Button
               type="submit"
-              disabled={pending}
+              disabled={pending || Boolean(wordError)}
               className="game-primary-action"
             >
               <Play size={18} />

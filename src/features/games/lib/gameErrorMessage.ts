@@ -17,7 +17,17 @@ const messages: Record<string, string> = {
   MATCH_NOT_FINISHED: 'Lượt chơi chưa kết thúc.',
   MULTIPLAYER_NOT_AVAILABLE: 'Chế độ nhiều người của Tên lửa chưa mở.',
 }
+function notEnoughWordsMessage(body: unknown) {
+  const available = (body as { details?: { available?: unknown } } | null)
+    ?.details?.available
+  return `Không đủ từ cho trình độ và chủ đề này${
+    typeof available === 'number' ? ` (hiện có ${available} từ)` : ''
+  }. Hãy đổi lựa chọn hoặc giảm số từ.`
+}
+
 export function gameErrorMessage(reason: unknown) {
+  if (reason instanceof HttpError && reason.code === 'NOT_ENOUGH_WORDS')
+    return notEnoughWordsMessage(reason.body)
   if (reason instanceof HttpError && reason.code && messages[reason.code])
     return messages[reason.code]
   return reason instanceof Error

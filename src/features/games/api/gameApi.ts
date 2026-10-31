@@ -17,6 +17,7 @@ import type {
   RocketRoomInput,
   UpdateRocketRoomSettingsInput,
   UpdateRoomSettingsInput,
+  WordFilters,
 } from '../types/game'
 
 const roomPath = (id: string) => `/api/games/rooms/${encodeURIComponent(id)}`
@@ -25,6 +26,8 @@ const matchPath = (id: string) => `/api/games/matches/${encodeURIComponent(id)}`
 export const gameApi = {
   catalog: (signal?: AbortSignal) =>
     apiRequest<GameCatalog>('/api/games/catalog', { auth: true, signal }),
+  wordFilters: (signal?: AbortSignal) =>
+    apiRequest<WordFilters>('/api/games/word-filters', { auth: true, signal }),
   createRoom: (body: CreateRoomInput) =>
     apiRequest<GameRoom>('/api/games/wordly/rooms', {
       auth: true,

@@ -1,4 +1,4 @@
-import type { GameRanking, PlayerMode } from '../../types/game'
+import type { GameRanking, PlayerMode, WordFilter } from '../../types/game'
 
 /** Shapes follow backend docs/contracts/rocket-game-v1.md (round model shared by solo and multiplayer). */
 
@@ -141,7 +141,9 @@ export type RocketEvent =
   | { type: 'ROOM_CLOSED'; matchId?: string; message?: string }
 
 export type RocketApi = {
-  startSolo: (settings: Pick<RocketSoloSettings, 'questionCount'>) => Promise<{ matchId: string }>
+  startSolo: (
+    settings: Pick<RocketSoloSettings, 'questionCount'> & Partial<WordFilter>,
+  ) => Promise<{ matchId: string }>
   current: (matchId: string, signal?: AbortSignal) => Promise<RocketCurrent>
   answer: (matchId: string, roundId: string, body: RocketAnswerInput) => Promise<RocketAnswerAck>
   leave: (matchId: string) => Promise<void>

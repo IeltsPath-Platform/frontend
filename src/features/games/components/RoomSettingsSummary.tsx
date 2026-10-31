@@ -1,6 +1,19 @@
-import { Clock3, Heart, Users } from 'lucide-react'
+import { BookOpen, Clock3, Heart, Users } from 'lucide-react'
 import type { RoomSettings } from '../types/game'
 import type { GameType } from '../lib/gameRoutes'
+import { roomWordFilter, useWordFilters, wordFilterLabel } from '../lib/wordFilters'
+
+/** The topic list is only fetched when there is a topic to name. */
+function WordFilterSummary({ settings }: { settings: RoomSettings }) {
+  const choice = roomWordFilter(settings)
+  const { filters } = useWordFilters(Boolean(choice.topicId))
+  return (
+    <span>
+      <BookOpen />
+      {wordFilterLabel(choice, filters)}
+    </span>
+  )
+}
 
 function WordlySettingsSummary({ settings }: { settings: RoomSettings }) {
   return (
@@ -51,9 +64,14 @@ export function RoomSettingsSummary({
   gameType: GameType
   settings: RoomSettings
 }) {
-  return gameType === 'ROCKET' ? (
-    <RocketSettingsSummary settings={settings} />
-  ) : (
-    <WordlySettingsSummary settings={settings} />
+  return (
+    <>
+      {gameType === 'ROCKET' ? (
+        <RocketSettingsSummary settings={settings} />
+      ) : (
+        <WordlySettingsSummary settings={settings} />
+      )}
+      <WordFilterSummary settings={settings} />
+    </>
   )
 }

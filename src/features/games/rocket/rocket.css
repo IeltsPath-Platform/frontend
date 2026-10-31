@@ -784,3 +784,22 @@
   .rocket-ranking-avatar small { font-size: 11px; }
   .rocket-ranking-avatar .rocket-ranking-answered { position: absolute; top: 0; right: 0; }
 }
+
+.rocket-setup .game-word-filters {
+  display: grid;
+  gap: 12px;
+}
+.rocket-setup .game-field {
+  display: grid;
+  gap: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.rocket-setup .game-word-filters-note {
+  color: var(--rocket-muted);
+  font-size: 0.875rem;
+}
+.rocket-setup .game-word-filters-error {
+  color: #ffb4c4;
+  font-size: 0.875rem;
+}
