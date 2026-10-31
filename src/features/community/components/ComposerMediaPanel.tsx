@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Image, Video, X, UploadCloud, Link as LinkIcon, Plus, Loader2 } from 'lucide-react'
 import { communityApi, getMediaUploadErrorMessage } from '../api/communityApi'
 import { safeVideoEmbed } from '../utils/communityFormat'
+import { isAllowedImageHost } from '../utils/mediaHostPolicy'
 
 export interface ComposerMediaPanelProps {
   imageUrls: string[]
@@ -14,7 +15,6 @@ export interface ComposerMediaPanelProps {
   onUploadingChange?: (uploading: boolean) => void
 }
 
-const ALLOWED_IMAGE_HOSTS = ['images.unsplash.com', 'i.imgur.com', 'supabase.co']
 const ALLOWED_VIDEO_HOSTS = ['youtube.com', 'youtu.be', 'www.youtube.com', 'loom.com', 'www.loom.com', 'drive.google.com']
 const IMAGE_ACCEPT = 'image/jpeg,image/png,image/webp,image/gif'
 
@@ -85,7 +85,7 @@ export function ComposerMediaPanel({
     }
     if (mediaType === 'IMAGE') {
       if (imageUrls.length >= 4) return setError('Bạn chỉ được đính kèm tối đa 4 hình ảnh.')
-      const hostAllowed = ALLOWED_IMAGE_HOSTS.some((host) => parsed.hostname === host || parsed.hostname.endsWith(`.${host}`))
+      const hostAllowed = isAllowedImageHost(parsed.hostname)
       if (!hostAllowed) return setError('Chỉ chấp nhận ảnh từ images.unsplash.com, i.imgur.com hoặc kho media đã tải lên.')
       if (imageUrls.includes(trimmed)) return setError('Ảnh này đã được thêm vào danh sách.')
       onUpdateImageUrls([...imageUrls, trimmed])
