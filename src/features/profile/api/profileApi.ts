@@ -231,7 +231,7 @@ export const profileApi = {
 
   getStreak: async (): Promise<StreakData> => {
     try {
-      const raw = await apiRequest('/api/learning-support/streak', { auth: true })
+      const raw = await apiRequest('/api/learning/me/streak', { auth: true })
       return streakSchema.parse(raw)
     } catch {
       return { currentDays: 0, longestDays: 0 }
