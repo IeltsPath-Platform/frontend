@@ -6,6 +6,7 @@ import { reportApiError } from '../lib/reviewGate'
 import { PlacementExamShell, type SectionRunnerProps } from './PlacementExamShell'
 import { partLabel } from './placementGroups'
 import { questionItems, readSpokenSeconds, spokenAnswer } from './placementSkills'
+import { uploadSpeakingRecording } from './speakingRecordingApi'
 import { useMicRecorder } from './useMicRecorder'
 
 const MIC_TEST_SECONDS = 20
@@ -34,10 +35,11 @@ export function SpeakingSectionRunner(props: SectionRunnerProps) {
   const [phase, setPhase] = useState<Phase>({ kind: 'guide' })
   const [error, setError] = useState<string | null>(null)
   const [finishing, setFinishing] = useState(false)
-  // Playback URLs of this visit's takes by question. Recordings are never uploaded, so a take from an earlier visit
-  // has nothing to play.
+  // Playback URLs and blobs stay in memory for this visit so failed uploads can be retried without another recording.
   const [takes, setTakes] = useState<Record<string, string>>({})
   const takeUrls = useRef<string[]>([])
+  const recordings = useRef<Record<string, Blob>>({})
+  const uploadedReferences = useRef<Record<string, string>>({})
 
   useEffect(() => () => { takeUrls.current.forEach((url) => URL.revokeObjectURL(url)) }, [])
 
@@ -52,6 +54,8 @@ export function SpeakingSectionRunner(props: SectionRunnerProps) {
   function keepTake(itemId: string, recording: Blob) {
     const url = URL.createObjectURL(recording)
     takeUrls.current.push(url)
+    recordings.current[itemId] = recording
+    delete uploadedReferences.current[itemId]
     setTakes((previous) => ({ ...previous, [itemId]: url }))
   }
   // Recorded lengths live in the answer map, so a resumed section knows which questions are done.
@@ -71,15 +75,29 @@ export function SpeakingSectionRunner(props: SectionRunnerProps) {
   async function finish() {
     setFinishing(true)
     setError(null)
+    const missingIndex = items.findIndex((item) => isRecorded(item.id)
+      && !recordings.current[item.id] && !uploadedReferences.current[item.id])
+    if (missingIndex >= 0) {
+      setError('Một số bản ghi không còn trên thiết bị. Hãy ghi lại câu được mở để có thể nộp bài.')
+      setFinishing(false)
+      setPhase({ kind: 'question', index: missingIndex, stage: 'countdown' })
+      return
+    }
     try {
       for (const item of items) {
         if (!isRecorded(item.id)) continue
-        // The backend stores a reference only; recordings are not uploaded yet.
+        let mediaReference = uploadedReferences.current[item.id]
+        if (!mediaReference) {
+          const recording = recordings.current[item.id]
+          if (!recording) continue
+          mediaReference = (await uploadSpeakingRecording(recording)).mediaReference
+          uploadedReferences.current[item.id] = mediaReference
+        }
         await learningApi.submitLearnerSubmission({
           attemptItemId: item.id,
           promptSnapshot: JSON.stringify({ stem: item.question?.prompt ?? '' }),
           skill: 'SPEAKING',
-          audioReference: `local-recording:${attemptId}:${item.id}`,
+          audioReference: mediaReference,
           submissionKey: `placement-speaking-${attemptId}-${item.id}`,
         })
       }
@@ -171,7 +189,7 @@ export function SpeakingSectionRunner(props: SectionRunnerProps) {
               <li><strong>Làm bài ở nơi yên tĩnh.</strong> Nói gần micro để bản ghi rõ ràng.</li>
               <li><strong>Mỗi câu ghi âm tối đa {ANSWER_SECONDS} giây.</strong> Ghi âm tự bắt đầu sau khi hiện câu hỏi; trả lời xong hãy bấm dừng để sang câu tiếp.</li>
             </ul>
-            <p className="lp-hint">Phần Speaking hiện chưa được chấm riêng; bản ghi chỉ lưu trên trình duyệt của bạn.</p>
+            <p className="lp-hint">Phần Speaking hiện chưa được chấm riêng; bản ghi sẽ được gửi lên khi bạn nộp bài.</p>
             <Button className="pl-btn pl-btn--accent" onClick={() => setPhase({ kind: 'mic' })} type="button">Tiếp tục<ArrowRight aria-hidden="true" /></Button>
           </section>
         ) : null}
