@@ -22,6 +22,7 @@ interface TopicNode {
   id: string
   code: string
   name: string
+  description?: string | null
   sortOrder?: number | null
   status?: string | null
   skill?: string | null
@@ -37,6 +38,7 @@ const topicNodeSchema: z.ZodType<TopicNode> = z.lazy(() =>
     id: z.string(),
     code: z.string(),
     name: z.string(),
+    description: z.string().nullish(),
     sortOrder: z.number().nullish(),
     status: z.string().nullish(),
     skill: z.string().nullish(),
@@ -53,6 +55,7 @@ function flatten(nodes: readonly TopicNode[], parentTopicId: string | null = nul
       id: node.id,
       code: node.code,
       name: node.name,
+      description: node.description ?? null,
       skill: node.skill ?? null,
       courseId: node.courseId ?? null,
       status: node.status ?? 'ACTIVE',

@@ -64,7 +64,7 @@ describe('package authoring through HTTP', () => {
     pkg.currentPublishedVersionId = null
     backend(({ path, method, body }) => {
       if (path === '/api/content/admin/packages' && method === 'GET') return json([makeCatalogPackage()])
-      if (path === '/api/content/courses') return json([{ id: courseId, code: 'FOUNDATION', name: 'Foundation course', bandLevel: 5.5, status: 'ACTIVE', createdAt: '', updatedAt: '' }])
+      if (path === '/api/content/courses') return json([{ id: courseId, code: 'FOUNDATION', name: 'Foundation course', bandLevel: 5.5, coverImageUrl: null, description: null, status: 'ACTIVE', createdAt: '', updatedAt: '' }])
       if (path === '/api/content/topics') return json([{ id: topicId, code: 'READING', name: 'Reading topic', courseId, children: [] }])
       if (path === '/api/content/practice-tests/sources' || path === `/api/content/admin/topics/${topicId}/lessons`) return json([])
       if (path === '/api/content/admin/packages' && method === 'POST') { Object.assign(pkg, body); return json(pkg, 201) }

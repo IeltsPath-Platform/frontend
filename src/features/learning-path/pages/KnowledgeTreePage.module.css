@@ -39,6 +39,7 @@
 .point[data-tier="PRIORITY"] { --point-tone: var(--lp-accent); }
 .point[data-tier="CONSOLIDATE"] { --point-tone: var(--lp-primary); }
 .point[data-tier="MAINTAIN"] { --point-tone: var(--lp-success); }
+.point[data-locked="true"] { --point-tone: var(--lp-accent); background: color-mix(in srgb, var(--lp-accent) 5%, var(--lp-surface)); }
 .point::before { content: ''; position: absolute; inset-inline-start: calc(-1.2rem - 3px); inset-block-start: calc(-.8rem - 1px); inset-block-end: -.8rem; inline-size: 1.2rem; border-inline-start: 2px solid var(--branch-line); pointer-events: none; }
 .point:first-child::before { inset-block-start: calc(-.9rem - 1px); }
 .point:last-child::before { inset-block-end: auto; block-size: calc(2.6rem + 1px); }

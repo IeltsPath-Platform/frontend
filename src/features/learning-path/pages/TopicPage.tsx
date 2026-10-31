@@ -68,9 +68,12 @@ export function TopicPage() {
 
       <section className="lp-section" aria-labelledby="lp-topic-lessons">
         <h2 id="lp-topic-lessons">Bài học trong chặng</h2>
+        {finalTest.testStatus === 'LOCKED' && lessons.some((lesson) => lesson.paywall) ? <p role="status">Mở khóa kỹ năng để làm bài kiểm tra chủ đề.</p> : null}
         <div className="lp-topic-sheet">
           <TopicLessonsView
             finalTest={finalTest}
+            courseId={course?.id ?? null}
+            skill={topic.skill ?? null}
             lessons={lessons}
             onChanged={resource.reload}
             pendingReviews={pendingReviews}

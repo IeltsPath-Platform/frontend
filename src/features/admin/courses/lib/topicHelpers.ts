@@ -7,7 +7,7 @@ export function topicError(reason: unknown) {
 }
 
 export function topicUpdate(topic: TopicOption): TopicUpdate {
-  return { parentTopicId: topic.parentTopicId ?? null, name: topic.name, sortOrder: topic.sortOrder,
+  return { parentTopicId: topic.parentTopicId ?? null, name: topic.name, description: topic.description ?? null, sortOrder: topic.sortOrder,
     status: topic.status as Course['status'], bandMin: topic.bandMin ?? null, bandMax: topic.bandMax ?? null,
     skill: topic.skill as TopicCreate['skill'], courseId: topic.courseId }
 }

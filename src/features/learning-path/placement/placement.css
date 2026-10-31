@@ -389,6 +389,7 @@ button.pl-qnav__num { cursor: pointer; }
 .pl-course[data-recommended='true'] .pl-course__badge { background: var(--lp-accent); color: #fff; }
 .pl-course h3 { margin: .25rem 0 0; font-size: 1.15rem; font-weight: 800; }
 .pl-course__band { margin: 0; color: var(--pl-blue); font-size: 1.6rem; font-weight: 900; }
+.pl-course__description { display: -webkit-box; overflow: hidden; margin: 0; color: var(--lp-muted); line-height: 1.5; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .pl-course[data-recommended='true'] .pl-course__band { color: var(--lp-accent); }
 .pl-course__meta { flex: 1; margin: 0; color: var(--lp-muted); font-size: .9rem; }
 .pl-course__cta { width: 100%; margin-top: .5rem; }

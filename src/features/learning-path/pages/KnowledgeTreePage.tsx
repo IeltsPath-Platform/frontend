@@ -13,6 +13,8 @@ import { reportApiError } from '../lib/reviewGate'
 import { masteryPercent, orderedTreeSkills, pointSkill, prerequisiteNames, tierMeta, visiblePoints } from '../lib/treeMeta'
 import { useApiResource } from '../lib/useApiResource'
 import styles from './KnowledgeTreePage.module.css'
+import { UnlockDialog } from '../components/UnlockDialog'
+import type { CourseUnlockTarget } from '~types/learningPath'
 
 const SKILL_ICONS: Record<string, LucideIcon> = {
   LISTENING: Headphones, READING: BookOpen, WRITING: PenLine, SPEAKING: Mic, GRAMMAR: Languages, VOCABULARY: Layers,
@@ -50,8 +52,10 @@ export function KnowledgeTreePage() {
         <TreeView
           backTo={knowledgeTreePath(courseId)}
           courseName={courseLabel}
+          courseId={courseId}
           depleted={hearts.data?.hearts === 0}
           onHeartsChanged={hearts.reload}
+          onCourseChanged={tree.reload}
           tree={tree.data}
         />
       ) : null}
@@ -74,12 +78,14 @@ function TreeLoadError({ error, onRetry }: { error: ApiError; onRetry: () => voi
   )
 }
 
-function TreeView({ tree, courseName, backTo, depleted, onHeartsChanged }: {
+function TreeView({ tree, courseName, courseId, backTo, depleted, onHeartsChanged, onCourseChanged }: {
   tree: LearnerTree
   courseName: string
+  courseId: string
   backTo: string
   depleted: boolean
   onHeartsChanged: () => void
+  onCourseChanged: () => void
 }) {
   const [skill, setSkill] = useState('ALL')
   const points = tree.knowledgePoints
@@ -145,9 +151,11 @@ function TreeView({ tree, courseName, backTo, depleted, onHeartsChanged }: {
                       {branchPoints.map((point) => (
                         <PointCard
                           backTo={backTo}
+                          courseId={courseId}
                           depleted={depleted}
                           key={point.knowledgePointId}
                           onHeartsChanged={onHeartsChanged}
+                          onCourseChanged={onCourseChanged}
                           point={point}
                           prerequisites={prerequisiteNames(point, byId)}
                         />
@@ -165,16 +173,19 @@ function TreeView({ tree, courseName, backTo, depleted, onHeartsChanged }: {
   )
 }
 
-function PointCard({ point, prerequisites, backTo, depleted, onHeartsChanged }: {
+function PointCard({ point, prerequisites, backTo, courseId, depleted, onHeartsChanged, onCourseChanged }: {
   point: TreePoint
   prerequisites: string[]
   backTo: string
+  courseId: string
   depleted: boolean
   onHeartsChanged: () => void
+  onCourseChanged: () => void
 }) {
   const navigate = useNavigate()
   const [starting, setStarting] = useState(false)
   const [failure, setFailure] = useState<ApiError | null>(null)
+  const [unlockOpen, setUnlockOpen] = useState(false)
   const inFlight = useRef(false)
   const tier = tierMeta(point.tier)
   const percent = masteryPercent(point.mastery)
@@ -194,6 +205,7 @@ function PointCard({ point, prerequisites, backTo, depleted, onHeartsChanged }: 
     } catch (reason) {
       const error = toApiError(reason)
       reportApiError(error)
+      if (error.code === 'PAYWALL') { setUnlockOpen(true); inFlight.current = false; setStarting(false); return }
       setFailure(error)
       if (error.code === 'HEARTS_DEPLETED') onHeartsChanged()
       inFlight.current = false
@@ -202,7 +214,7 @@ function PointCard({ point, prerequisites, backTo, depleted, onHeartsChanged }: 
   }
 
   return (
-    <li className={`lp-point ${styles.point}`} data-tier={point.tier ?? 'UNTOUCHED'}>
+    <li className={`lp-point ${styles.point}`} data-tier={point.tier ?? 'UNTOUCHED'} data-locked={point.locked ? 'true' : undefined}>
       <div className="lp-point__head">
         <div>
           <h4 className="lp-point__name">{point.name}</h4>
@@ -246,7 +258,7 @@ function PointCard({ point, prerequisites, backTo, depleted, onHeartsChanged }: 
       ) : null}
 
       <div className="lp-point__actions">
-        <Button
+        {point.locked ? <Button aria-describedby={noteId} className="lp-btn lp-btn--accent" onClick={() => setUnlockOpen(true)} type="button">Mở khóa</Button> : <Button
           aria-describedby={noteId}
           className="lp-btn lp-btn--accent"
           disabled={!point.practiceAvailable || starting || depleted}
@@ -255,7 +267,7 @@ function PointCard({ point, prerequisites, backTo, depleted, onHeartsChanged }: 
         >
           {starting ? <Loader2 aria-hidden="true" className="lp-spin" size={16} /> : <Dumbbell aria-hidden="true" size={16} />}
           {starting ? 'Đang mở bộ…' : 'Luyện'}
-        </Button>
+        </Button>}
         <span className="lp-hint" id={noteId}>
           {depleted
             ? 'Hết tim, hồi tim để luyện.'
@@ -271,6 +283,8 @@ function PointCard({ point, prerequisites, backTo, depleted, onHeartsChanged }: 
           {review ? <> <Link to={`/learn/reviews/${review.reviewId}`}>Làm bài ôn</Link></> : null}
         </p>
       ) : null}
+      {unlockOpen && point.skill && ['LISTENING', 'READING', 'WRITING'].includes(point.skill) ? <UnlockDialog courseId={courseId} target={point.skill as CourseUnlockTarget} onClose={() => setUnlockOpen(false)} onChanged={() => { onCourseChanged(); setUnlockOpen(false) }} /> : null}
+      {unlockOpen && point.skill === 'SPEAKING' ? <p role="status">Kỹ năng Nói sắp ra mắt.</p> : null}
     </li>
   )
 }

@@ -35,6 +35,7 @@ type RequestOptions = {
   signal?: AbortSignal
   /** Override default REQUEST_TIMEOUT_MS (e.g. writing grade ≥60s). */
   timeoutMs?: number
+  headers?: Record<string, string>
 }
 
 type TokenPair = { accessToken: string; refreshToken?: string }
@@ -68,6 +69,7 @@ async function send(path: string, options: RequestOptions, bearer?: string | nul
   const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData
   if (options.body !== undefined && !isFormData) headers['Content-Type'] = 'application/json'
   if (bearer) headers.Authorization = `Bearer ${bearer}`
+  Object.assign(headers, options.headers)
 
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), options.timeoutMs ?? REQUEST_TIMEOUT_MS)

@@ -81,6 +81,7 @@ describe('getAnswerReaction', () => {
       kind: 'mixed-up',
       expected: 'pollution',
       mixedUpWith: 'conservation',
+      random: () => 0,
     })
     expect(reaction.pose).toBe('confused')
     expect(reaction.motion).toBe('calm')
@@ -103,7 +104,7 @@ describe('getAnswerReaction', () => {
   })
 
   it('returns tired pose for repeated wrong answer on the same card', () => {
-    const reaction = getAnswerReaction({ kind: 'wrong', expected: 'pollution', wrongCount: 2 })
+    const reaction = getAnswerReaction({ kind: 'wrong', expected: 'pollution', wrongCount: 2, random: () => 0 })
     expect(reaction.pose).toBe('tired')
     expect(reaction.motion).toBe('calm')
     expect(reaction.text).toMatch(/khó nhằn|ví dụ|ghi chú|khắc sâu/i)

@@ -7,12 +7,14 @@ import { OwlHero } from '@/components/OwlHero'
 import type { CourseSummary } from '~types/learningPath'
 import { learningApi } from '../api'
 import { NoticeBanner } from '../components/NoticeBanner'
-import { CourseArt } from '../components/CourseArt'
+import { CourseCoverArt } from '../components/CourseCoverArt'
 import { SuggestionStrip } from '../components/guide/SuggestionStrip'
 import { SegmentMeter } from '../components/SegmentMeter'
 import { ApiErrorState, CourseCatalogSkeleton, EmptyState } from '../components/PageState'
 import { timeAgo } from '../lib/relativeTime'
 import { useApiResource } from '../lib/useApiResource'
+import type { CourseUnlockTarget, LearningSkill } from '~types/learningPath'
+import { UnlockDialog } from '../components/UnlockDialog'
 
 type CourseFilter = 'ALL' | 'RECOMMENDED' | 'IN_PROGRESS' | 'PASSED'
 
@@ -103,6 +105,7 @@ export function CourseListPage() {
                 focused={course.id === focusCourse?.id}
                 index={index}
                 lastVisited={course.id === recentCourse?.id}
+                refreshCourses={courses.reload}
                 key={course.id}
               />
             ))}
@@ -161,7 +164,10 @@ function CourseSpotlight({ course, resuming }: { course: CourseSummary; resuming
   const pct = progressPct(course)
 
   return (
-    <section className="lp-spotlight" aria-labelledby="lp-spotlight-title">
+    <section className="lp-spotlight lp-spotlight--course" aria-labelledby="lp-spotlight-title">
+      <div className="lp-spotlight__art" aria-hidden="true">
+        <CourseCoverArt band={course.bandLevel} coverImageUrl={course.coverImageUrl} wide />
+      </div>
       <div className="lp-band-ticket" aria-hidden="true">
         <span>Band</span>
         <strong>{course.bandLevel.toFixed(1)}</strong>
@@ -173,6 +179,7 @@ function CourseSpotlight({ course, resuming }: { course: CourseSummary; resuming
         <p className="lp-spotlight__meta">
           {course.topicCount} chặng topic · kết thúc bằng bài thi cuối khóa
         </p>
+        {course.description ? <p className="lp-spotlight__description">{course.description}</p> : null}
         {isStarted(course) ? (
           <div className="lp-meter lp-spotlight__meter">
             <progress className="lp-progress" max={100} value={pct}>{pct}%</progress>
@@ -218,13 +225,15 @@ function PlacementSpotlight() {
   )
 }
 
-function CourseTile({ course, focused, index, lastVisited }: {
+function CourseTile({ course, focused, index, lastVisited, refreshCourses }: {
   course: CourseSummary
   focused: boolean
   index: number
   /** The course the learner studied most recently: it says when, from the server's own record. */
   lastVisited: boolean
+  refreshCourses: () => void
 }) {
+  const [unlockTarget, setUnlockTarget] = useState<CourseUnlockTarget | null>(null)
   const chip = lastVisited && course.lastStudiedAt
     ? { label: `Lần cuối vào · ${timeAgo(course.lastStudiedAt)}`, tone: 'primary' as const }
     : courseChip(course)
@@ -241,12 +250,12 @@ function CourseTile({ course, focused, index, lastVisited }: {
 
   return (
     <li
-      className={`lp-tile${focused ? ' is-focused' : ''}${passed ? ' is-passed' : ''}`}
+      className={`lp-tile${focused ? ' is-focused' : ''}${passed ? ' is-passed' : ''}${course.description ? ' has-description' : ''}`}
       style={{ '--i': index } as CSSProperties}
     >
       <Link className="lp-tile__link" to={`/learn/courses/${course.id}`}>
         <div className="lp-tile__art">
-          <CourseArt band={course.bandLevel} />
+          <CourseCoverArt band={course.bandLevel} coverImageUrl={course.coverImageUrl} />
           <span className="lp-tile__band">
             <small>Band</small>
             {course.bandLevel.toFixed(1)}
@@ -256,6 +265,7 @@ function CourseTile({ course, focused, index, lastVisited }: {
 
         <div className="lp-tile__body">
           <h3 className="lp-tile__title">{course.title}</h3>
+          {course.description ? <p className="lp-tile__description">{course.description}</p> : null}
           <ul className="lp-tile__facts" aria-label="Thông tin khóa học">
             <li>
               <Route aria-hidden="true" size={14} />
@@ -276,6 +286,13 @@ function CourseTile({ course, focused, index, lastVisited }: {
           </span>
         </div>
       </Link>
+      {(course.premium || course.availableSkills?.length || course.comboPayablePoints != null) ? <div className="lp-tile__body" aria-label="Tùy chọn mở khóa">
+        {course.premium ? <p>Premium: mở quyền truy cập trong thời hạn gói.</p> : null}
+        {course.availableSkills?.filter((skill) => skill !== 'SPEAKING' && course.skillUnlockPoints?.[skill] != null && !course.unlockedSkills?.includes(skill)).map((skill: LearningSkill) => <Button key={skill} variant="outline" onClick={() => setUnlockTarget(skill)} type="button">Mở {({ LISTENING: 'Nghe', READING: 'Đọc', WRITING: 'Viết', SPEAKING: 'Nói' } as const)[skill]} · {course.skillUnlockPoints?.[skill]} Points</Button>)}
+        {course.availableSkills && !course.availableSkills.includes('SPEAKING') ? <p>Nói: sắp ra mắt.</p> : null}
+        {course.comboPayablePoints != null && !course.comboUnlocked ? <Button variant="outline" onClick={() => setUnlockTarget('COMBO')} type="button">Mở gói kết hợp · {course.comboPayablePoints} Points</Button> : null}
+      </div> : null}
+      {unlockTarget ? <UnlockDialog courseId={course.id} target={unlockTarget} onClose={() => setUnlockTarget(null)} onChanged={() => { refreshCourses(); setUnlockTarget(null) }} /> : null}
     </li>
   )
 }

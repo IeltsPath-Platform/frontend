@@ -146,6 +146,7 @@ export function PlacementResultView({ attemptId }: { attemptId: string }) {
                 <span className="pl-course__badge">{course.recommended ? 'Đề xuất cho bạn' : courseNote(course, recommendedBand)}</span>
                 <h3>{course.title}</h3>
                 <p className="pl-course__band">Band {course.bandLevel.toFixed(1)}</p>
+                {course.description ? <p className="pl-course__description">{course.description}</p> : null}
                 <p className="pl-course__meta">
                   {course.topicCount} topic{course.passedTopicCount > 0 ? ` · đã qua ${course.passedTopicCount}/${course.topicCount}` : ''}
                 </p>

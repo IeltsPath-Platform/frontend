@@ -23,6 +23,7 @@ import {
   toStartAttemptBody,
   toWireAnswers,
   type CourseSummaryDto,
+  type CourseUnlockDto,
   type EssayGradeDto,
   type LearnerAttemptResultDto,
   type LessonCompletionDto,
@@ -85,6 +86,10 @@ const ASSESSMENTS = '/api/assessments'
 const CODE_MAP: Record<string, ApiErrorCode> = {
   TOPIC_LOCKED: 'TOPIC_LOCKED',
   LESSON_LOCKED: 'LESSON_LOCKED',
+  PAYWALL: 'PAYWALL',
+  ALREADY_UNLOCKED: 'ALREADY_UNLOCKED',
+  NOT_FOR_SALE: 'NOT_FOR_SALE',
+  SKILL_NOT_AVAILABLE: 'SKILL_NOT_AVAILABLE',
   TEST_LOCKED: 'TEST_LOCKED',
   TEST_UNAVAILABLE: 'TEST_UNAVAILABLE',
   PRACTICE_REQUIRED: 'PRACTICE_REQUIRED',
@@ -196,6 +201,14 @@ export function createHttpLearningApi(): LearningApi {
     async listCourses() {
       const rows = await learningRequest<CourseSummaryDto[]>('/courses')
       return rows.map(mapCourseSummary)
+    },
+
+    async unlockCourse(courseId, target, idempotencyKey) {
+      return learningRequest<CourseUnlockDto>(`/courses/${encodeURIComponent(courseId)}/unlocks`, {
+        method: 'POST',
+        body: { target },
+        headers: { 'Idempotency-Key': idempotencyKey },
+      })
     },
 
     async listTopics() {

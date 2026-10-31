@@ -4,6 +4,10 @@ import type { ReviewRef } from '~types/learningPath'
 export type ApiErrorCode =
   | 'TOPIC_LOCKED'
   | 'LESSON_LOCKED'
+  | 'PAYWALL'
+  | 'ALREADY_UNLOCKED'
+  | 'NOT_FOR_SALE'
+  | 'SKILL_NOT_AVAILABLE'
   | 'TEST_LOCKED'
   | 'TEST_UNAVAILABLE'
   | 'PRACTICE_REQUIRED'
@@ -79,6 +83,14 @@ export function isApiError(error: unknown): error is ApiError {
 /** What to show the learner. The hearts and points errors come from the server in English, so they get their own copy. */
 export function userMessage(error: ApiError): string {
   switch (error.code) {
+    case 'PAYWALL':
+      return 'Mở khóa kỹ năng hoặc gói Premium để học tiếp bài này.'
+    case 'NOT_FOR_SALE':
+      return 'Kỹ năng này hiện chưa được mở bán.'
+    case 'SKILL_NOT_AVAILABLE':
+      return 'Kỹ năng này sắp ra mắt trong khóa học.'
+    case 'ALREADY_UNLOCKED':
+      return 'Bạn đã mở khóa kỹ năng này rồi.'
     case 'HEARTS_DEPLETED':
       return 'Bạn đã hết tim. Chờ tim hồi lại hoặc dùng điểm để hồi đầy.'
     case 'HEARTS_FULL':
@@ -115,6 +127,10 @@ export function userMessage(error: ApiError): string {
 const CODE_MAP: Record<string, ApiErrorCode> = {
   TOPIC_LOCKED: 'TOPIC_LOCKED',
   LESSON_LOCKED: 'LESSON_LOCKED',
+  PAYWALL: 'PAYWALL',
+  ALREADY_UNLOCKED: 'ALREADY_UNLOCKED',
+  NOT_FOR_SALE: 'NOT_FOR_SALE',
+  SKILL_NOT_AVAILABLE: 'SKILL_NOT_AVAILABLE',
   TEST_LOCKED: 'TEST_LOCKED',
   TEST_UNAVAILABLE: 'TEST_UNAVAILABLE',
   PRACTICE_REQUIRED: 'PRACTICE_REQUIRED',

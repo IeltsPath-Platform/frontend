@@ -8,7 +8,7 @@ import { CoursesPage } from './CoursesPage'
 const { api, lessons } = vi.hoisted(() => ({ api: { fetchCourses: vi.fn(), createCourse: vi.fn(), updateCourse: vi.fn(), createTopic: vi.fn(), updateTopic: vi.fn(), reorderTopics: vi.fn() }, lessons: { fetchTopics: vi.fn(), fetchLessons: vi.fn() } }))
 vi.mock('../api/courseApi', () => api)
 vi.mock('../../lessons/api/lessonApi', () => lessons)
-const course = { id: 'c1', code: 'FOUNDATION', name: 'Nền tảng 5.5', bandLevel: 5.5, status: 'ACTIVE', createdAt: '', updatedAt: '' }
+const course = { id: 'c1', code: 'FOUNDATION', name: 'Nền tảng 5.5', bandLevel: 5.5, coverImageUrl: null, description: null, status: 'ACTIVE', createdAt: '', updatedAt: '' }
 const topics = [
   { id: 't1', code: 'WRITING', name: 'Viết học thuật', parentTopicId: null, courseId: 'c1', sortOrder: 1, status: 'ACTIVE', skill: 'WRITING', bandMin: 5, bandMax: 6 },
   { id: 't2', code: 'PARAPHRASE', name: 'Diễn đạt lại', parentTopicId: 't1', courseId: 'c1', sortOrder: 1, status: 'ACTIVE', skill: 'WRITING', bandMin: 5, bandMax: 6 },
@@ -61,16 +61,20 @@ describe('CoursesPage', () => {
     fireEvent.change(within(form).getByLabelText('Mã khóa học'), { target: { value: 'INTENSIVE_70' } })
     fireEvent.change(within(form).getByLabelText('Tên khóa học'), { target: { value: 'Intensive 7.0' } })
     fireEvent.change(within(form).getByLabelText('Band khóa học'), { target: { value: '7' } })
+    fireEvent.change(within(form).getByLabelText('Ảnh bìa (URL)'), { target: { value: 'https://example.com/cover.jpg' } })
+    fireEvent.change(within(form).getByLabelText('Mô tả khóa học'), { target: { value: 'Lộ trình nền tảng.' } })
     fireEvent.submit(form)
-    await waitFor(() => expect(api.createCourse).toHaveBeenCalledWith({ code: 'INTENSIVE_70', name: 'Intensive 7.0', bandLevel: 7 }))
+    await waitFor(() => expect(api.createCourse).toHaveBeenCalledWith({ code: 'INTENSIVE_70', name: 'Intensive 7.0', bandLevel: 7, coverImageUrl: 'https://example.com/cover.jpg', description: 'Lộ trình nền tảng.' }))
   })
   it('updates course status without sending its code', async () => {
     show()
     fireEvent.click(await screen.findByRole('button', { name: 'Sửa khóa học' }))
     const form = screen.getByRole('form', { name: 'Sửa khóa học' })
     fireEvent.change(within(form).getByLabelText('Trạng thái khóa học'), { target: { value: 'INACTIVE' } })
+    fireEvent.change(within(form).getByLabelText('Ảnh bìa (URL)'), { target: { value: '' } })
+    fireEvent.change(within(form).getByLabelText('Mô tả khóa học'), { target: { value: 'Mô tả mới' } })
     fireEvent.submit(form)
-    await waitFor(() => expect(api.updateCourse).toHaveBeenCalledWith('c1', { name: course.name, bandLevel: 5.5, status: 'INACTIVE' }))
+    await waitFor(() => expect(api.updateCourse).toHaveBeenCalledWith('c1', { name: course.name, bandLevel: 5.5, status: 'INACTIVE', coverImageUrl: null, description: 'Mô tả mới', skillUnlockPoints: {}, comboUnlockPoints: null }))
   })
   it('blocks a reversed band range', async () => {
     show()
@@ -173,7 +177,7 @@ describe('CoursesPage', () => {
     fireEvent.submit(form)
     expect((await screen.findByRole('alert')).textContent).toBe(message)
     expect(api.updateTopic).toHaveBeenCalledExactlyOnceWith('t2', {
-      name: 'Tên đang chỉnh sửa', parentTopicId: 't1', courseId: 'c1', skill: 'WRITING',
+      name: 'Tên đang chỉnh sửa', description: null, parentTopicId: 't1', courseId: 'c1', skill: 'WRITING',
       bandMin: 5, bandMax: 6, sortOrder: 5, status: 'ACTIVE',
     })
     expect(within(form).getByLabelText('Tên chủ đề')).toHaveValue('Tên đang chỉnh sửa')
@@ -333,7 +337,7 @@ describe('CoursesPage', () => {
     expect(api.updateTopic).not.toHaveBeenCalled()
     fireEvent.click(within(popup).getByRole('button', { name: 'Ngừng dùng' }))
     await waitFor(() => expect(api.updateTopic).toHaveBeenCalledExactlyOnceWith('t2', {
-      parentTopicId: 't1', courseId: 'c1', name: 'Diễn đạt lại', skill: 'WRITING', bandMin: 5, bandMax: 6, sortOrder: 1, status: 'INACTIVE',
+      parentTopicId: 't1', courseId: 'c1', name: 'Diễn đạt lại', description: null, skill: 'WRITING', bandMin: 5, bandMax: 6, sortOrder: 1, status: 'INACTIVE',
     }))
     await waitFor(() => expect(lessons.fetchTopics).toHaveBeenCalledTimes(2))
   })
