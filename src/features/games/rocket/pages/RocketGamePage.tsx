@@ -6,7 +6,7 @@ import { gameApi } from '../../api/gameApi'
 import { ActiveGameDialog } from '../../components/ActiveGameDialog'
 import { activeGamePath, isActiveGameConflict } from '../../lib/activeGame'
 import { gameErrorMessage } from '../../lib/gameErrorMessage'
-import type { ActiveGame } from '../../types/game'
+import type { ActiveGame, WordFilter } from '../../types/game'
 import { rocketApi } from '../api/rocketApi'
 import { RocketCanvas } from '../components/RocketCanvas'
 import { RocketEndScreen } from '../components/RocketEndScreen'
@@ -87,17 +87,19 @@ function RocketSetup({ scene }: { scene: RocketScene | null }) {
   const [replacing, setReplacing] = useState(false)
   const [replaceError, setReplaceError] = useState('')
   const lastCount = useRef(0)
+  const lastWordFilter = useRef<WordFilter | null>(null)
 
   useEffect(() => {
     void scene?.idle()
   }, [scene])
 
-  async function start(questionCount: number) {
+  async function start(questionCount: number, wordFilter?: WordFilter) {
     lastCount.current = questionCount
+    if (wordFilter) lastWordFilter.current = wordFilter
     setStarting(true)
     setError(null)
     try {
-      const { matchId } = await rocketApi.startSolo({ questionCount })
+      const { matchId } = await rocketApi.startSolo({ questionCount, ...lastWordFilter.current })
       navigate(`/games/rocket/${encodeURIComponent(matchId)}`)
     } catch (cause) {
       // One room per user across games: offer to go back to it or leave it, as the Wordly setup does.
@@ -129,7 +131,7 @@ function RocketSetup({ scene }: { scene: RocketScene | null }) {
 
   return (
     <main className="rocket-center">
-      <RocketSetupCard starting={starting} error={error} onStart={(questionCount) => void start(questionCount)} />
+      <RocketSetupCard starting={starting} error={error} onStart={(questionCount, wordFilter) => void start(questionCount, wordFilter)} />
       <ActiveGameDialog
         game={activeGame}
         busy={replacing}

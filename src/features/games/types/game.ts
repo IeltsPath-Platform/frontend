@@ -12,6 +12,25 @@ export type RoomSettings = {
   questionCount?: number | null
   /** Rocket rooms only; null in Wordly rooms. */
   secondsPerQuestion?: number | null
+  /** Null means any level. */
+  cefrLevel?: string | null
+  /** Null means any topic. */
+  topicId?: string | null
+}
+
+export type WordFilter = {
+  cefrLevel: string | null
+  topicId: string | null
+}
+
+export type WordFilters = {
+  topics: { id: string; slug: string; name: string; nameVi: string | null }[]
+  /** A null level or topic on a row is the total across all of them. */
+  availability: {
+    cefrLevel: string | null
+    topicId: string | null
+    words: number
+  }[]
 }
 
 export type CreateRoomInput = {
@@ -20,12 +39,15 @@ export type CreateRoomInput = {
   playMode: PlayMode
   wordLimit: number | null
   timeEnabled: boolean
+  cefrLevel?: string | null
+  topicId?: string | null
 }
 
 export type UpdateRoomSettingsInput = Pick<
   RoomSettings,
   'initialLives' | 'wordLimit' | 'timeEnabled'
->
+> &
+  WordFilter
 
 /** A Rocket multiplayer room; solo rooms are started by the Rocket API. */
 export type RocketRoomInput = {
@@ -33,14 +55,16 @@ export type RocketRoomInput = {
   questionCount: number
   initialLives: number
   secondsPerQuestion: number
+  cefrLevel?: string | null
+  topicId?: string | null
 }
 
-/** null keeps the current value. */
+/** null keeps the current value, except the word filter, where null means any. */
 export type UpdateRocketRoomSettingsInput = {
   initialLives: number
   questionCount: number | null
   secondsPerQuestion: number | null
-}
+} & WordFilter
 
 export type GameRoomMember = {
   userId: string

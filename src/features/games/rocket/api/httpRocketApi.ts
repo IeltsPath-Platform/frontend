@@ -9,11 +9,11 @@ const roomPath = (id: string) => `/api/games/rooms/${encodeURIComponent(id)}`
 
 export function createHttpRocketApi(): RocketApi {
   return {
-    async startSolo({ questionCount }) {
+    async startSolo({ questionCount, cefrLevel, topicId }) {
       const room = await apiRequest<GameRoom>('/api/games/rocket/rooms', {
         auth: true,
         method: 'POST',
-        body: { playerMode: 'SOLO', questionCount },
+        body: { playerMode: 'SOLO', questionCount, cefrLevel, topicId },
       })
       await apiRequest<GameRoom>(`${roomPath(room.id)}/ready`, { auth: true, method: 'POST', body: { ready: true } })
       const match = await apiRequest<GameMatch>(`${roomPath(room.id)}/start`, { auth: true, method: 'POST' })

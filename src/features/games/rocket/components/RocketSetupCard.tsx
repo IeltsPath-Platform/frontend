@@ -3,15 +3,22 @@ import { ArrowLeft, Heart, Rocket, Timer } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { isMockRocket, ROCKET_DEFAULT_WORD_COUNT, ROCKET_WORD_COUNTS } from '../api/rocketApi'
 import { MOCK_DEFAULTS } from '../api/mockRocketApi'
+import { WordFilterFields } from '../../components/WordFilterFields'
+import { ANY_WORDS, useWordFilters, wordFilterError } from '../../lib/wordFilters'
+import type { WordFilter } from '../../types/game'
 
 type RocketSetupCardProps = {
   starting: boolean
   error: string | null
-  onStart: (questionCount: number) => void
+  onStart: (questionCount: number, wordFilter: WordFilter) => void
 }
 
 export function RocketSetupCard({ starting, error, onStart }: RocketSetupCardProps) {
   const [count, setCount] = useState(ROCKET_DEFAULT_WORD_COUNT)
+  const [wordFilter, setWordFilter] = useState(ANY_WORDS)
+  // The mock has a fixed word list with no levels or topics.
+  const wordFilters = useWordFilters(!isMockRocket)
+  const wordError = wordFilterError(wordFilters.filters, wordFilter, count)
 
   return (
     <section className="rocket-card rocket-setup" aria-labelledby="rocket-setup-title">
@@ -34,6 +41,16 @@ export function RocketSetupCard({ starting, error, onStart }: RocketSetupCardPro
         </div>
       </fieldset>
 
+      {!isMockRocket && (
+        <WordFilterFields
+          value={wordFilter}
+          onChange={setWordFilter}
+          required={count}
+          state={wordFilters}
+          disabled={starting}
+        />
+      )}
+
       <ul className="rocket-rules">
         <li>
           <Heart size={16} /> {MOCK_DEFAULTS.initialLives} mạng — sai hoặc hết giờ mất 1 mạng
@@ -49,7 +66,7 @@ export function RocketSetupCard({ starting, error, onStart }: RocketSetupCardPro
         </p>
       )}
 
-      <button type="button" className="rocket-primary" disabled={starting} onClick={() => onStart(count)}>
+      <button type="button" className="rocket-primary" disabled={starting || Boolean(wordError)} onClick={() => onStart(count, wordFilter)}>
         <Rocket size={18} /> {starting ? 'Đang chuẩn bị…' : 'Bắt đầu bay'}
       </button>
       {isMockRocket && <p className="rocket-mock-note">Đang dùng dữ liệu thử (10 từ mẫu, chưa nối máy chủ).</p>}

@@ -662,3 +662,27 @@
     flex: 1;
   }
 }
+
+.game-word-filters {
+  display: grid;
+  gap: 16px;
+}
+@media (min-width: 640px) {
+  .game-word-filters {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.game-word-filters-note,
+.game-word-filters-error {
+  grid-column: 1 / -1;
+  font-size: 0.875rem;
+}
+.game-word-filters-note {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  color: var(--muted-foreground);
+}
+.game-word-filters-error {
+  color: var(--destructive);
+}
