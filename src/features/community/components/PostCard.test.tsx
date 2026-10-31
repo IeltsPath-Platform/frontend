@@ -1,5 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
 import { PostCard } from './PostCard'
 import type { CommunityPost } from '../api/communityApi'
@@ -26,6 +26,7 @@ const basePost: CommunityPost = {
 }
 
 describe('PostCard', () => {
+  afterEach(() => vi.unstubAllEnvs())
   it('renders standard post body when background is not present', () => {
     render(
       <MemoryRouter>
@@ -105,6 +106,7 @@ describe('PostCard', () => {
   })
 
   it('renders uploaded video with native controls and metadata preload', () => {
+    vi.stubEnv('VITE_SUPABASE_MEDIA_HOST', 'bucket.supabase.co')
     render(
       <MemoryRouter>
         <PostCard post={{ ...basePost, videoUrl: 'https://bucket.supabase.co/storage/v1/object/public/community/videos/demo.mp4' }} isCommentsOpen={false} onToggleComments={vi.fn()} onReaction={vi.fn()} onToggleBookmark={vi.fn()} onEditPost={vi.fn()} onDeletePost={vi.fn()} onFollowAuthor={vi.fn()} onOpenReport={vi.fn()} onImageClick={vi.fn()} />

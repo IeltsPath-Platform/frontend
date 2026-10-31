@@ -12,6 +12,7 @@ import {
   type ReactionType,
 } from '../utils/communityFormat'
 import { getComposerBackground } from './composerBackgrounds'
+import { isUploadedVideo } from '../utils/mediaHostPolicy'
 
 function PostImage({ url, index, onClick }: { url: string; index: number; onClick: (url: string) => void }) {
   const [failed, setFailed] = useState(false)
@@ -20,15 +21,6 @@ function PostImage({ url, index, onClick }: { url: string; index: number; onClic
       {failed ? <span className="community-image-fallback" role="img" aria-label={`Ảnh ${index + 1} không tải được`}>Không thể tải ảnh</span> : <img src={url} alt={`Ảnh đính kèm bài viết ${index + 1}`} loading="lazy" referrerPolicy="no-referrer" onError={() => setFailed(true)} />}
     </button>
   )
-}
-
-function isUploadedVideo(raw: string) {
-  try {
-    const url = new URL(raw)
-    return url.protocol === 'https:' && (/\.(mp4|webm|mov)$/i.test(url.pathname) || (url.hostname.endsWith('.supabase.co') && url.pathname.includes('/community/videos/')))
-  } catch {
-    return false
-  }
 }
 
 export interface PostCardProps {
