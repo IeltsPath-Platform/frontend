@@ -1,0 +1,162 @@
+/* Practice layout of the Reading workspace: a softer, roomier skin over the shared frame. Everything is scoped to .rw-practice,
+   so the exam layout, the review screen and Listening keep their own look. */
+
+.rw-root.rw-practice {
+  --rw-canvas: #f3f6fc;
+  --rw-line: #e1e7f3;
+  --rw-ink: #0f172a;
+  background:
+    radial-gradient(1100px 420px at 50% -8%, #e2eaff 0%, rgba(226, 234, 255, 0) 70%),
+    var(--rw-canvas);
+}
+
+/* Top bar */
+.rw-practice .rw-topbar { padding: 0.75rem 1.2rem; }
+.rw-practice .rw-timer { padding: 0.42rem 1.3rem; font-size: 0.92rem; letter-spacing: 0.02em; box-shadow: 0 8px 18px rgba(29, 78, 216, 0.3); }
+.rw-practice .rw-exit,
+.rw-practice .rw-settings-button { border-color: var(--rw-line); box-shadow: 0 3px 10px rgba(15, 23, 42, 0.07); transition: background-color 0.15s ease, box-shadow 0.15s ease; }
+.rw-practice .rw-exit:hover,
+.rw-practice .rw-settings-button:hover { background: #eef3ff; box-shadow: 0 5px 14px rgba(15, 23, 42, 0.1); }
+
+/* Body */
+.rw-practice .rw-body { grid-template-columns: 8.4rem minmax(0, 1fr) minmax(0, 1fr); gap: 1rem; padding: 0 1.2rem 0.9rem 0.8rem; }
+
+/* Tool rail as a card */
+.rw-practice .rw-tools {
+  align-self: start;
+  gap: 0.6rem;
+  margin-top: 0.1rem;
+  padding: 0.85rem 0.6rem;
+  border: 1px solid var(--rw-line);
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+}
+
+.rw-practice .rw-tools-title { margin-bottom: 0.1rem; color: var(--rw-muted); font-size: 0.66rem; letter-spacing: 0.1em; text-transform: uppercase; }
+
+.rw-practice .rw-tool {
+  padding: 0.65rem 0.3rem;
+  border: 1px solid #c9d8fb;
+  border-radius: 10px;
+  background: #f5f8ff;
+  color: var(--rw-accent);
+  font-weight: 600;
+  transition: background-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.rw-practice .rw-tool:hover:not(:disabled) { background: #e6eeff; transform: translateY(-1px); box-shadow: 0 6px 14px rgba(29, 78, 216, 0.18); }
+.rw-practice .rw-tool-quiet { border-color: var(--rw-line); background: #ffffff; color: var(--rw-muted); }
+.rw-practice .rw-tools-help { overflow-wrap: anywhere; padding-top: 0.3rem; border-top: 1px dashed var(--rw-line); }
+
+/* Passage and questions: two cards */
+.rw-practice .rw-passage,
+.rw-practice .rw-questions {
+  border: 1px solid var(--rw-line);
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.07);
+}
+
+.rw-practice .rw-passage-title {
+  padding: 1.15rem 1.9rem 0.85rem;
+  border-bottom: 1px solid #edf1f8;
+  color: #12307a;
+  font-size: 1.15rem;
+  letter-spacing: -0.01em;
+}
+
+.rw-practice .rw-passage-scroll { padding: 1.1rem 1.9rem 1.8rem; color: #1e293b; font-size: calc(var(--rw-text-size) + 0.1rem); line-height: 1.85; }
+.rw-practice .rw-passage-scroll p { margin: 0 0 1.2rem; }
+.rw-practice .rw-passage-scroll p > strong { margin-right: 0.15rem; color: var(--rw-accent); }
+.rw-practice .rw-passage-scroll mark { padding: 0.05rem 0.15rem; border-radius: 4px; background: #fde68a; }
+
+.rw-practice .rw-questions-scroll { padding: 1.3rem 1.7rem 1.8rem; }
+
+.rw-practice .rw-group { margin-bottom: 1.9rem; }
+
+.rw-practice .rw-group-title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: #12307a;
+  font-size: 1.12rem;
+}
+
+.rw-practice .rw-group-title::before { content: ''; flex: none; width: 4px; height: 1.15em; border-radius: 2px; background: var(--rw-accent); }
+
+.rw-practice .rw-group-instructions {
+  margin-bottom: 1.1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid #dbe5ff;
+  border-radius: 10px;
+  background: #f2f6ff;
+  color: #334155;
+  line-height: 1.65;
+}
+
+/* One question: a soft card that lights up while the learner works in it */
+.rw-practice .rw-question {
+  margin-bottom: 0.9rem;
+  padding: 0.95rem 1.05rem 1rem;
+  border: 1px solid #e8edf7;
+  border-radius: 12px;
+  background: #fbfcff;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.rw-practice .rw-question:focus-within { border-color: #bcd0ff; box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.08); }
+
+.rw-practice .rw-questions .lp-question__prompt { color: var(--rw-ink); font-weight: 600; line-height: 1.55; }
+.rw-practice .rw-questions .lp-question__num { min-width: 1.65rem; height: 1.65rem; font-size: 0.8rem; box-shadow: 0 3px 8px rgba(29, 78, 216, 0.3); }
+
+.rw-practice .rw-questions .lp-options { gap: 0.4rem; margin: 0.7rem 0 0 1.95rem; }
+
+.rw-practice .rw-questions .lp-option {
+  padding: 0.6rem 0.8rem;
+  border: 1px solid #e3e9f6;
+  border-radius: 10px;
+  background: #ffffff;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.rw-practice .rw-questions .lp-option:hover { border-color: #b9ccff; background: #f5f8ff; }
+.rw-practice .rw-questions .lp-option[data-checked='true'] { border-color: var(--rw-accent); background: #eaf0ff; box-shadow: inset 0 0 0 1px var(--rw-accent); }
+
+/* Footer: question numbers as round buttons, the finish button as the call to action */
+.rw-practice .rw-footer { padding: 0.75rem 1.2rem; border-top: 1px solid var(--rw-line); background: rgba(255, 255, 255, 0.88); backdrop-filter: blur(6px); }
+.rw-practice .rw-qnav { margin-left: 0; padding: 0.3rem 0.7rem; border-color: #c9d8fb; border-radius: 999px; box-shadow: 0 5px 16px rgba(15, 23, 42, 0.07); }
+.rw-practice .rw-qnav-label { color: #12307a; }
+
+.rw-practice .rw-qnum {
+  min-width: 1.95rem;
+  height: 1.95rem;
+  border: 0;
+  border-radius: 999px;
+  color: #475569;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.rw-practice .rw-qnum:hover { background: #eaf0ff; transform: translateY(-1px); }
+.rw-practice .rw-qnum.is-answered { background: #dbe6ff; color: var(--rw-accent); }
+.rw-practice .rw-qnum.is-current { background: var(--rw-accent); color: #ffffff; box-shadow: 0 5px 12px rgba(29, 78, 216, 0.35); }
+
+.rw-practice .rw-finish {
+  padding: 0.6rem 1.9rem;
+  border-color: var(--rw-line);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #475569;
+  font-weight: 700;
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.07);
+}
+
+.rw-practice .rw-finish.is-ready { border-color: transparent; background: linear-gradient(135deg, #1d4ed8, #2563eb); color: #ffffff; box-shadow: 0 10px 22px rgba(29, 78, 216, 0.35); }
+.rw-practice .rw-finish.is-ready:hover:not(:disabled) { background: linear-gradient(135deg, #1e40af, #1d4ed8); }
+
+@media (max-width: 900px) {
+  .rw-practice .rw-body { grid-template-columns: 1fr; }
+  .rw-practice .rw-passage-title,
+  .rw-practice .rw-passage-scroll,
+  .rw-practice .rw-questions-scroll { padding-left: 1.1rem; padding-right: 1.1rem; }
+}

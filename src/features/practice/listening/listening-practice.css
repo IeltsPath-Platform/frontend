@@ -1,0 +1,139 @@
+/* Practice layout of the Listening workspace, laid out like the test paper on a computer: the tool rail on the left, the section
+   line and the questions stacked in ONE column on a white page, the recording bar along the bottom above the section numbers.
+   It sits on the Reading practice skin (reading-workspace-practice.css) and is scoped to .rw-practice, so the exam layout and
+   the review screen keep their own look. */
+
+.rw-root.rw-practice.lw-root {
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  background: #ffffff;
+}
+
+/* The page: tool rail and one column */
+.rw-root.rw-practice .lw-body { grid-template-columns: 7.2rem minmax(0, 1fr); gap: 1.2rem; padding: 0 1.4rem 0 0.8rem; }
+.rw-practice .lw-main { grid-template-rows: auto minmax(0, 1fr); }
+
+/* The section line above the questions */
+.lw-hero { display: flex; align-items: flex-start; justify-content: space-between; gap: 1.5rem; margin: 0 0 0.5rem; padding: 0.3rem 0.4rem 0; }
+.lw-hero-text { min-width: 0; }
+
+.lw-hero-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  background: #eaf0ff;
+  color: #1d4ed8;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.lw-hero-text h1 { margin: 0.4rem 0 0.1rem; color: #12307a; font-size: 1.4rem; font-weight: 800; letter-spacing: -0.015em; line-height: 1.25; }
+.lw-hero-text p { margin: 0; color: var(--rw-muted); font-size: calc(var(--rw-text-size) - 0.02rem); line-height: 1.5; }
+
+.lw-hero-progress { display: grid; flex: none; justify-items: end; gap: 0.35rem; margin: 0; color: var(--rw-muted); font-size: 0.82rem; font-weight: 600; }
+.lw-hero-progress strong { color: #12307a; font-size: 1.25rem; font-weight: 800; }
+.lw-hero-bar { display: block; width: 9.5rem; height: 6px; border-radius: 999px; background: #e6edfb; overflow: hidden; }
+.lw-hero-bar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #2563eb, #1d4ed8); transition: width 0.25s ease; }
+
+/* The questions: no card, one column, large type */
+.rw-practice .lw-main .rw-questions { border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.rw-practice .lw-main .rw-questions-scroll { padding: 0.4rem 1rem 1.6rem 0.4rem; }
+
+.rw-practice .lw-main .rw-group { margin-bottom: 2rem; }
+.rw-practice .lw-main .rw-group-title { color: #1e293b; font-size: 1.4rem; font-weight: 600; letter-spacing: -0.01em; }
+.rw-practice .lw-main .rw-group-title::before { display: none; }
+.rw-practice .lw-main .rw-group-instructions { margin-bottom: 1.2rem; padding: 0; border: 0; background: transparent; color: #1e293b; font-size: 1.05rem; }
+
+.rw-practice .lw-main .rw-question { margin-bottom: 1.3rem; padding: 0.3rem 0; border: 0; border-radius: 0; background: transparent; }
+.rw-practice .lw-main .rw-question:focus-within { border-color: transparent; box-shadow: none; }
+.rw-practice .lw-main .rw-questions .lp-question__prompt { color: #1e293b; font-size: 1.1rem; font-weight: 400; }
+
+/* An option is a plain row: the letter, the radio, the words */
+.rw-practice .lw-main .rw-questions .lp-options { gap: 0.1rem; margin: 0.45rem 0 0 2.4rem; }
+
+.rw-practice .lw-main .rw-questions .lp-option {
+  gap: 0.9rem;
+  min-height: 0;
+  padding: 0.55rem 0.8rem;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  box-shadow: none;
+  font-size: 1.05rem;
+}
+.rw-practice .lw-main .rw-questions .lp-option:hover { background: #f1f4f9; }
+.rw-practice .lw-main .rw-questions .lp-option[data-checked='true'] { background: #eaf0ff; box-shadow: none; }
+.rw-practice .lw-main .rw-questions .lp-option__key { order: -1; width: 1.4rem; height: auto; background: transparent; color: #64748b; font-size: 1.05rem; font-weight: 400; }
+.rw-practice .lw-main .rw-questions .lp-option[data-checked='true'] .lp-option__key { background: transparent; color: var(--rw-accent); font-weight: 600; }
+
+/* The recording bar along the bottom */
+.lw-audio.lw-audio-dock {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0.7rem 1.6rem 0.6rem;
+  border: 0;
+  border-top: 1px solid var(--rw-line);
+  border-radius: 0;
+  background: #ffffff;
+  box-shadow: 0 -8px 24px rgba(15, 23, 42, 0.04);
+}
+
+.lw-dock-row { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 1rem; }
+.lw-dock-left { display: flex; align-items: center; gap: 1rem; min-width: 0; }
+.lw-dock-center { display: flex; align-items: center; justify-content: center; gap: 1.1rem; }
+.lw-dock-right { justify-self: end; }
+
+.lw-audio-dock .lw-audio-time { min-width: 0; font-size: 0.82rem; }
+.lw-audio-dock .lw-audio-volume input { width: 6rem; }
+.lw-audio-dock .lw-audio-play { width: 2.9rem; height: 2.9rem; background: linear-gradient(135deg, #1d4ed8, #2563eb); box-shadow: 0 8px 18px rgba(29, 78, 216, 0.35); transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.lw-audio-dock .lw-audio-play:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 12px 22px rgba(29, 78, 216, 0.4); }
+.lw-audio-dock .lw-audio-step { padding: 0.3rem 0.45rem; border-radius: 999px; font-size: 0.8rem; transition: background-color 0.15s ease; }
+.lw-audio-dock .lw-audio-step:hover { background: #eaf0ff; }
+
+.lw-audio-rate-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 1.1rem;
+  border: 1px solid var(--rw-line);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #1e293b;
+  font-size: 0.92rem;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+.lw-audio-rate-button:hover { background: #f5f8ff; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08); }
+
+/* The progress line: filled up to the position, a dot at the end of it */
+.lw-audio-dock .lw-audio-seek {
+  appearance: none;
+  width: 100%;
+  min-width: 0;
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--rw-accent) var(--lw-seek, 0%), #e5e9f2 var(--lw-seek, 0%));
+  cursor: pointer;
+}
+.lw-audio-dock .lw-audio-seek::-webkit-slider-thumb { appearance: none; width: 14px; height: 14px; border: 2px solid #ffffff; border-radius: 50%; background: var(--rw-accent); box-shadow: 0 1px 4px rgba(15, 23, 42, 0.35); }
+.lw-audio-dock .lw-audio-seek::-moz-range-thumb { width: 12px; height: 12px; border: 2px solid #ffffff; border-radius: 50%; background: var(--rw-accent); box-shadow: 0 1px 4px rgba(15, 23, 42, 0.35); }
+
+/* Sections that are not open fold to "Section 2  0 of 10"; the open one shows its numbers. */
+.rw-practice .rw-qnav { gap: 0.4rem; padding: 0.3rem 0.5rem; }
+.rw-practice .rw-qnav-part { gap: 0.55rem; padding: 0.3rem 0.85rem; border-radius: 999px; color: #12307a; transition: background-color 0.15s ease; }
+.rw-practice .rw-qnav-part:hover { background: #eaf0ff; }
+.rw-practice .rw-qnav-count { color: #64748b; font-weight: 600; }
+.rw-practice .rw-qnav-group { padding: 0.1rem 0.3rem; border-radius: 999px; background: #f5f8ff; }
+
+@media (max-width: 900px) {
+  .rw-root.rw-practice .lw-body { grid-template-columns: minmax(0, 1fr); padding: 0 0.7rem; }
+  .lw-hero { flex-direction: column; gap: 0.6rem; }
+  .lw-hero-progress { justify-items: start; }
+  .rw-practice .lw-main .rw-questions .lp-options { margin-left: 0.4rem; }
+  .lw-audio.lw-audio-dock { padding: 0.6rem 0.8rem; }
+  .lw-dock-row { grid-template-columns: 1fr; justify-items: center; gap: 0.5rem; }
+  .lw-dock-right { justify-self: center; }
+}

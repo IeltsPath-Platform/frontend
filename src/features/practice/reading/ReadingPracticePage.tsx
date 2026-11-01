@@ -1,13 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
-import { LoaderCircle } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, LoaderCircle } from 'lucide-react'
 import type { AttemptItemResponse } from '~types/learningPath'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
-import { ReadingQuestionNav, ReadingToolRail, ReadingTopBar } from './ReadingWorkspaceParts'
+import { ReadingQuestionNav, ReadingSplitHandle, ReadingToolRail, ReadingTopBar } from './ReadingWorkspaceParts'
 import type { QuestionNavGroup, WorkspaceFontSize } from './ReadingWorkspaceParts'
 import { ReadingQuestionsPanel } from './ReadingQuestionsPanel'
+import { ExamNotesPanel, ExamSelectionPopup } from './ExamAnnotationUi'
+import { ExamFinishBar } from './ExamFinishBar'
+import { useExamAnnotations } from './useExamAnnotations'
+import { useWordLookup } from './useWordLookup'
+import { WordLookupPopover } from './WordLookupPopover'
 import { readPassageSelection, mergeHighlights } from '../lib/passageTools'
 import type { PassageSelection, TextHighlight } from '@/types/practice'
 import { LoadingState, ApiErrorState } from '@/features/learning-path/components/PageState'
@@ -21,6 +26,7 @@ import '@/features/learning-path/learning-path.css'
 import { parseSections } from './readingSections'
 import './reading-practice.css'
 import './reading-workspace.css'
+import './reading-workspace-practice.css'
 
 const CATALOG_PATH = '/practice-tests?skill=reading'
 
@@ -65,8 +71,15 @@ function ReadingRunner({ attemptId, attempt, sections, saved }: {
   const [fontSize, setFontSize] = useState<WorkspaceFontSize>('medium')
   const [selection, setSelection] = useState<PassageSelection | null>(null)
   const [hint, setHint] = useState('')
+  // Exam layout: the screen the tick opens, before the learner confirms the submission.
+  const [finishing, setFinishing] = useState(false)
+  // The learner can close the notes panel; adding or reopening a note shows it again.
+  const [notesClosed, setNotesClosed] = useState(false)
+  // Share of the width the passage takes in the exam layout; the learner drags the divider to change it.
+  const [split, setSplit] = useState(50)
   const [highlightsBySection, setHighlightsBySection] = useState<Record<string, TextHighlight[]>>({})
   const passageRef = useRef<HTMLDivElement>(null)
+  const questionsRef = useRef<HTMLDivElement>(null)
   const activeSectionRef = useRef<string | undefined>(sections[0]?.id)
   const spentRef = useRef<Record<string, number>>({})
   const submittingRef = useRef(false)
@@ -74,16 +87,21 @@ function ReadingRunner({ attemptId, attempt, sections, saved }: {
   const timed = attempt.mode === 'TIMED'
   const answers = useAttemptAnswers(attemptId, saved, async (id, itemId, answer, revision) => saveAttemptAnswer(id, itemId, answer, revision))
   const section = sections[activeIndex]
+  const annotations = useExamAnnotations({ enabled: timed, sectionId: section?.id, passageRef, questionsRef })
+  // Practice layout only: clicking a word of the passage looks it up in the vocabulary library.
+  const wordLookup = useWordLookup(!timed)
   const allItems = useMemo(() => sections.flatMap((item) => item.items.filter((question) => question.question !== null)), [sections])
   // One continuous numbering across every passage, in the order the learner sees the questions.
   const numberByItem = useMemo(() => new Map(allItems.map((item, index) => [item.id, index + 1])), [allItems])
   const navGroups = useMemo<QuestionNavGroup[]>(() => sections.map((candidate, index) => ({
-    label: `Passage ${candidate.partNo ?? index + 1}`,
+    label: `${timed ? 'Part' : 'Passage'} ${candidate.partNo ?? index + 1}`,
     numbers: candidate.items.flatMap((item) => (item.question ? [numberByItem.get(item.id) ?? 0] : [])),
-  })), [sections, numberByItem])
+    active: index === activeIndex && !finishing,
+  })), [sections, numberByItem, timed, activeIndex, finishing])
   const answeredNumbers = useMemo(() => new Set(allItems.filter((item) => Boolean(answers.answers[item.id]?.trim())).map((item) => numberByItem.get(item.id) ?? 0)), [allItems, answers.answers, numberByItem])
   const unanswered = allItems.length - answeredNumbers.size
-  const activeHighlights = section ? highlightsBySection[section.id] ?? [] : []
+  // In the exam layout highlights live in useExamAnnotations, so the passage markup carries none.
+  const activeHighlights = !timed && section ? highlightsBySection[section.id] ?? [] : []
 
   useEffect(() => {
     const firstSection = sections[0]
@@ -138,11 +156,13 @@ function ReadingRunner({ attemptId, attempt, sections, saved }: {
     setActiveIndex(index)
     activeSectionRef.current = sections[index]!.id
     setSelection(null)
+    wordLookup.close()
   }
 
   function goToQuestion(questionNumber: number) {
     const target = allItems[questionNumber - 1]
     if (!target) return
+    setFinishing(false)
     setCurrentQuestion(questionNumber)
     const targetSection = sections.findIndex((candidate) => candidate.items.some((item) => item.id === target.id))
     const reveal = () => window.setTimeout(() => document.getElementById(`reading-question-${target.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 0)
@@ -159,6 +179,15 @@ function ReadingRunner({ attemptId, attempt, sections, saved }: {
     setSelection(null)
     setHint('')
     window.getSelection()?.removeAllRanges()
+  }
+
+  /** Clicking a highlighted stretch takes it off again (not when the click ends a text selection). */
+  function removeHighlight(range: TextHighlight) {
+    if (!section || !window.getSelection()?.isCollapsed) return
+    setHighlightsBySection((current) => ({
+      ...current,
+      [section.id]: (current[section.id] ?? []).filter((item) => !(item.paragraph === range.paragraph && item.start === range.start && item.end === range.end)),
+    }))
   }
 
   useEffect(() => {
@@ -194,7 +223,7 @@ function ReadingRunner({ attemptId, attempt, sections, saved }: {
     for (const range of ranges) {
       if (range.start < cursor || range.end > text.length) continue
       pieces.push(text.slice(cursor, range.start))
-      pieces.push(<mark key={`${label}-${range.start}`}>{text.slice(range.start, range.end)}</mark>)
+      pieces.push(<mark key={`${label}-${range.start}`} title="Bấm để bỏ highlight" onClick={() => removeHighlight(range)}>{text.slice(range.start, range.end)}</mark>)
       cursor = range.end
     }
     pieces.push(text.slice(cursor))
@@ -204,11 +233,15 @@ function ReadingRunner({ attemptId, attempt, sections, saved }: {
   if (!section || sections.length === 0) return <main className="reading-state reading-empty"><h1>Đề chưa có câu hỏi</h1><Link to={CATALOG_PATH}>Về danh mục Reading</Link></main>
 
   const title = section.snapshot?.title ?? `Passage ${section.partNo ?? activeIndex + 1}`
+  const partLabel = `Part ${section.partNo ?? activeIndex + 1}`
+  const sectionNumbers = navGroups[activeIndex]?.numbers ?? []
+  const hasNotes = timed && !notesClosed && annotations.notes.length > 0
 
-  return <div className={`rw-root lp-tokens${eyeComfort ? ' rw-eye-comfort' : ''} rw-text-${fontSize}`}>
+  return <div className={`rw-root lp-tokens${timed ? ' rw-exam' : ' rw-practice'}${hasNotes ? ' rw-has-notes' : ''}${eyeComfort ? ' rw-eye-comfort' : ''} rw-text-${fontSize}`}>
     <ReadingTopBar
       seconds={seconds}
       timed={timed}
+      showClock={!finishing}
       exitTo={CATALOG_PATH}
       eyeComfort={eyeComfort}
       onToggleEyeComfort={setEyeComfort}
@@ -216,7 +249,15 @@ function ReadingRunner({ attemptId, attempt, sections, saved }: {
       onChangeFontSize={setFontSize}
     />
 
-    <div className={`rw-body${timed ? ' rw-body-exam' : ''}`}>
+    {timed && finishing && <ExamFinishBar onNext={() => void submit(true)} />}
+    {timed && !finishing && sectionNumbers.length > 0 && (
+      <div className="rw-exam-banner">
+        <strong>{partLabel}</strong>
+        <p>Read the text and answer questions {sectionNumbers[0]}–{sectionNumbers[sectionNumbers.length - 1]}.</p>
+      </div>
+    )}
+
+    <div className={`rw-body${timed ? ' rw-body-exam' : ''}${finishing ? ' rw-body-finish' : ''}`} style={timed ? ({ '--rw-split': split } as CSSProperties) : undefined}>
       {!timed && (
         <ReadingToolRail
           hasSelection={selection !== null}
@@ -229,7 +270,7 @@ function ReadingRunner({ attemptId, attempt, sections, saved }: {
 
       <section className="rw-passage" aria-label="Bài đọc">
         <h1 className="rw-passage-title">{title}</h1>
-        <div ref={passageRef} className="rw-passage-scroll" aria-label="Nội dung bài đọc">
+        <div ref={passageRef} className="rw-passage-scroll" aria-label="Nội dung bài đọc" onClick={wordLookup.onClick} onScroll={() => { if (wordLookup.state) wordLookup.close() }}>
           {section.snapshot?.passage?.paragraphs.map((paragraph, index) => {
             const label = paragraph.label ?? `P${index + 1}`
             return <p key={`${label}-${index}`}>{paragraph.label ? <strong>{paragraph.label}. </strong> : null}<span data-passage-text={label}>{renderPassageText(paragraph.text, label)}</span></p>
@@ -237,8 +278,11 @@ function ReadingRunner({ attemptId, attempt, sections, saved }: {
         </div>
       </section>
 
+      {timed && <ReadingSplitHandle value={split} onChange={setSplit} />}
+
       <ReadingQuestionsPanel
         section={section}
+        scrollRef={questionsRef}
         numberByItem={numberByItem}
         answers={answers.answers}
         disabled={submitting || section.completedAt !== null}
@@ -246,17 +290,50 @@ function ReadingRunner({ attemptId, attempt, sections, saved }: {
         onBlur={(itemId) => void answers.saveAnswer(itemId, answers.answers[itemId] ?? '')}
         onFocusQuestion={setCurrentQuestion}
       />
+
+      {timed && (
+        <div className="rw-exam-arrows">
+          <button type="button" className="rw-arrow rw-arrow-prev" aria-label={finishing ? 'Quay lại bài làm' : 'Câu trước'} disabled={!finishing && currentQuestion <= 1} onClick={() => (finishing ? setFinishing(false) : goToQuestion(currentQuestion - 1))}>
+            <ArrowLeft size={20} aria-hidden="true" />
+          </button>
+          <button type="button" className="rw-arrow rw-arrow-next" aria-label="Câu tiếp theo" disabled={finishing || currentQuestion >= allItems.length} onClick={() => goToQuestion(currentQuestion + 1)}>
+            <ArrowRight size={20} aria-hidden="true" />
+          </button>
+        </div>
+      )}
     </div>
 
     <footer className="rw-footer">
-      <ReadingQuestionNav groups={navGroups} currentQuestion={currentQuestion} answeredNumbers={answeredNumbers} onSelect={goToQuestion} />
+      <ReadingQuestionNav groups={navGroups} alwaysLabel={timed} collapseInactive={timed} currentQuestion={currentQuestion} answeredNumbers={answeredNumbers} onSelect={goToQuestion} />
       <div className="rw-footer-actions">
         {error && <p className="rw-error" role="alert">{error}</p>}
-        <button type="button" className={`rw-finish${unanswered === 0 ? ' is-ready' : ''}`} disabled={submitting} onClick={() => void submit()}>
-          {submitting ? <LoaderCircle className="animate-spin" size={16} aria-hidden="true" /> : null} Hoàn thành
+        <button type="button" className={`rw-finish${unanswered === 0 ? ' is-ready' : ''}${finishing ? ' is-finishing' : ''}`} disabled={submitting} aria-label={timed ? 'Hoàn thành bài làm' : undefined} onClick={() => (timed && !finishing ? setFinishing(true) : void submit(timed))}>
+          {submitting ? <LoaderCircle className="animate-spin" size={timed ? 20 : 16} aria-hidden="true" /> : timed ? <Check size={22} aria-hidden="true" /> : null}{timed ? '' : ' Hoàn thành'}
         </button>
       </div>
     </footer>
+
+    {wordLookup.state && <WordLookupPopover state={wordLookup.state} onClose={wordLookup.close} onRetry={wordLookup.retry} />}
+    {timed && (
+      <ExamSelectionPopup
+        popup={annotations.popup}
+        onNote={() => { setNotesClosed(false); annotations.note() }}
+        onOpenNote={() => { setNotesClosed(false); annotations.openNote() }}
+        onHighlight={annotations.highlight}
+        onClear={annotations.clear}
+      />
+    )}
+    {hasNotes && (
+      <ExamNotesPanel
+        notes={annotations.notes}
+        partLabel={partLabel}
+        focusId={annotations.focusNoteId}
+        onChange={annotations.setNoteText}
+        onDelete={annotations.remove}
+        onFocused={annotations.noteFocused}
+        onClose={() => setNotesClosed(true)}
+      />
+    )}
 
     <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
       <DialogContent className="rw-confirm">

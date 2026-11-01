@@ -1,16 +1,28 @@
 import type { Ref } from 'react'
 import { QuestionField } from '@/features/learning-path/components/blocks/QuestionField'
 import type { TestSection } from '@/features/learning-path/lib/attemptSnapshot'
+import type { QuestionOption } from '~types/learningPath'
+import { MatchingBoard } from '../components/MatchingBoard'
 
 /** "Questions 1-3. Do the following…" -> "Do the following…": the numbers are drawn again from the real order. */
 function stripQuestionRange(text: string | null | undefined) {
   return text?.replace(/^Questions?\s+\d+\s*[-–]\s*\d+[.:]?\s*/i, '').trim() ?? ''
 }
 
+/** The options every question of a matching group offers, or null when they are not all the same list. */
+function sharedOptions(items: TestSection['items']): QuestionOption[] | null {
+  const first = items[0]?.question?.options
+  if (!first || first.length === 0) return null
+  const key = JSON.stringify(first)
+  return items.every((item) => JSON.stringify(item.question?.options) === key) ? first : null
+}
+
 /** Area D: the questions of one passage, grouped the way the test paper groups them. */
-export function ReadingQuestionsPanel({ section, numberByItem, answers, disabled, onChange, onBlur, onFocusQuestion, label = 'Câu hỏi Reading', scrollRef }: {
+export function ReadingQuestionsPanel({ section, numberByItem, answers, disabled, onChange, onBlur, onFocusQuestion, label = 'Câu hỏi Reading', scrollRef, matchingBoard = false }: {
   section: TestSection
   label?: string
+  /** Draws a matching group as statements on the left and one list of options to drop into them (Listening practice). */
+  matchingBoard?: boolean
   scrollRef?: Ref<HTMLDivElement>
   numberByItem: ReadonlyMap<string, number>
   answers: Record<string, string>
@@ -54,7 +66,18 @@ export function ReadingQuestionsPanel({ section, numberByItem, answers, disabled
             <div className="rw-group" key={group.groupId}>
               <h2 className="rw-group-title">{Math.min(...numbers) === Math.max(...numbers) ? `Question ${numbers[0]}` : `Questions ${Math.min(...numbers)} - ${Math.max(...numbers)}`}</h2>
               {instructions && <p className="rw-group-instructions">{instructions}</p>}
-              {groupItems.map(renderItem)}
+              {matchingBoard && group.formatCode === 'MATCHING' && sharedOptions(groupItems)
+                ? (
+                  <MatchingBoard
+                    rows={groupItems.map((item) => ({ id: item.id, number: numberByItem.get(item.id) ?? 0, prompt: item.question?.prompt ?? '', value: answers[item.id] ?? '' }))}
+                    options={sharedOptions(groupItems) ?? []}
+                    disabled={disabled}
+                    rowIdPrefix="reading-question-"
+                    onChange={(itemId, value) => onChange(itemId, value)}
+                    onFocusRow={onFocusQuestion}
+                  />
+                )
+                : groupItems.map(renderItem)}
             </div>
           )
         })}

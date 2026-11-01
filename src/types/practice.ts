@@ -32,6 +32,10 @@ export interface PracticeCard {
   /** Cover of the test as the library stores it; absent when the test has none. */
   imageUrl?: string
   bulletPoints: string[]
+  /** Question formats of the test, shown as tags on its catalog card. */
+  formatLabels?: string[]
+  /** Size of the test in one line ("8 câu · 20 phút"), shown at the foot of its catalog card. */
+  meta?: string
   questionsCount?: number
   partsCount?: number
   attemptsCount?: number

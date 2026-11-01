@@ -15,7 +15,7 @@ const ids = {
 const task: WritingTask = {
   packageId: 'p', packageVersionId: ids.version, sectionId: 's', questionVersionId: ids.question, packageTitle: 'Cambridge 18',
   title: 'Library visits', partNo: 1, task: 'TASK_1', minWords: null, timeLimitSeconds: 1200, instructions: null,
-  prompt: 'Summarise the table.', guide: null, guideSteps: null, images: [],
+  prompt: 'Summarise the table.', guide: null, images: [],
 }
 const ESSAY = 'word '.repeat(60).trim()
 const SHORT_ESSAY = 'word '.repeat(10).trim()
@@ -62,7 +62,7 @@ function server({ balance = 0, subscription: sub = subscription(), full = [], ba
 }
 
 function Harness({ essay }: { essay: string }) {
-  const grade = useGradeFlow({ task, mode: 'free', draftKey: 'draft', essay, seconds: 60, label: 'Viết tự do', benefits: ['Band tổng'], extraChecks: [] })
+  const grade = useGradeFlow({ task, mode: 'practice', draftKey: 'draft', essay, seconds: 60, label: 'Luyện tập', benefits: ['Band tổng'], extraChecks: [] })
   return <>{grade.pendingNotice}<button type="button" onClick={grade.start}>Hoàn thành</button>{grade.dialogs}</>
 }
 function Location() { const { pathname } = useLocation(); return <output data-testid="location">{pathname}</output> }

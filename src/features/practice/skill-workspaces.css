@@ -17,9 +17,7 @@
 .audio-player,
 .listening-instruction-card,
 .writing-prompt-panel,
-.writing-editor-panel,
-.speaking-cue-card,
-.recording-interface {
+.writing-editor-panel {
   border: 1px solid var(--classroom-border);
   border-radius: 1rem;
   background: var(--workspace-surface);
@@ -108,39 +106,8 @@
 .word-counter.is-target-met { color: var(--site-green); }
 .word-counter.is-target-met strong { color: var(--site-green); }
 
-.speaking-focus-layout { display: grid; grid-template-columns: minmax(0, 1fr); align-items: center; gap: 1.25rem; inline-size: min(100%, 72rem); min-block-size: calc(100dvh - 9rem); margin-inline: auto; padding: clamp(1rem, 4vw, 3rem) 1rem; }
-.speaking-cue-card, .recording-interface { padding: clamp(1.25rem, 3vw, 2.5rem); }
-.speaking-cue-card h1 { margin: 0 0 1rem; color: var(--site-text-dark); font-size: clamp(2rem, 5vw, 3.25rem); line-height: 1.1; }
-.speaking-cue-card > p { color: var(--site-text-muted); line-height: 1.7; }
-.speaking-cue-card ul { display: grid; gap: .7rem; margin: 1.5rem 0 0; padding: 0; list-style: none; }
-.speaking-cue-card li { display: flex; align-items: baseline; gap: .6rem; color: var(--site-text-dark); line-height: 1.55; }
-.speaking-cue-card li::before { inline-size: .5rem; block-size: .5rem; flex: 0 0 auto; border-radius: 50%; background: var(--site-blue); content: ''; }
-.speaking-question-nav { display: flex; flex-wrap: wrap; gap: .75rem; margin-block-start: 1.5rem; }
-.speaking-next-part { margin: 1rem 0 0; }
-.speaking-next-part a { color: var(--site-blue); font-weight: 700; }
-.recording-interface { display: grid; justify-items: center; gap: 1rem; text-align: center; }
-.recording-interface h2 { margin: 0; color: var(--site-text-dark); font-size: 1.5rem; }
-.recording-microphone { display: grid; place-items: center; inline-size: 7.5rem; block-size: 7.5rem; border: 1px solid var(--classroom-border); border-radius: 50%; background: var(--classroom-soft); color: var(--site-blue); }
-.recording-microphone.is-recording { border-color: var(--site-orange); background: color-mix(in srgb, var(--site-orange) 12%, var(--workspace-surface)); color: var(--site-orange); animation: microphone-pulse 1.4s ease-in-out infinite; }
-.audio-visualizer { display: flex; align-items: end; justify-content: center; gap: .25rem; inline-size: min(100%, 32rem); block-size: 7rem; padding: 1rem; border-radius: .8rem; background: var(--classroom-soft); }
-.audio-visualizer span { display: block; inline-size: clamp(3px, 1.2vw, 8px); block-size: 100%; border-radius: 999px; background: var(--site-blue); transform-origin: bottom; transition: transform 65ms linear; }
-.audio-visualizer.is-active span { background: var(--site-orange); }
-.speaking-timer { display: grid; gap: .15rem; }
-.speaking-timer span { color: var(--site-text-muted); font-size: .78rem; }
-.speaking-timer strong { color: var(--site-text-dark); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 1.7rem; font-variant-numeric: tabular-nums; }
-.recording-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: .6rem; }
-.recording-actions [data-slot=button] { min-block-size: 44px; }
-.recording-start-button { background: var(--site-blue); color: var(--classroom-surface); }
-.recording-error { margin: 0; color: var(--destructive); font-size: .85rem; line-height: 1.55; }
-.recording-privacy-note { max-inline-size: 50ch; margin: 0; color: var(--site-text-muted); font-size: .76rem; line-height: 1.5; }
-
-@keyframes microphone-pulse {
-  50% { transform: scale(1.04); box-shadow: 0 0 0 .65rem color-mix(in srgb, var(--site-orange) 12%, transparent); }
-}
-
 @media (min-width: 46rem) {
   .skill-workspace-grid { grid-template-areas: "map center" "questions questions"; grid-template-columns: minmax(11rem, .42fr) minmax(0, 1fr); padding: 1.5rem; }
-  .speaking-focus-layout { grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); }
 }
 
 @media (min-width: 65rem) {
@@ -159,8 +126,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .single-question-view, .recording-microphone.is-recording { animation: none; }
-  .audio-visualizer span { transition: none; }
+  .single-question-view { animation: none; }
 }
 .writing-points-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: .65rem; width: min(100% - 2rem, 1480px); margin: .8rem auto; padding: .7rem .9rem; border: 1px solid var(--border); border-radius: .75rem; background: var(--card); }
 .writing-points-bar p { margin: 0 auto 0 0; }

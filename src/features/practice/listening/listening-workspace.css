@@ -48,7 +48,23 @@
 .lw-audio-error { color: #b91c1c; font-size: 0.78rem; }
 
 .lw-body { grid-template-columns: 6.5rem minmax(0, 1fr); }
-.lw-body.rw-body-exam { grid-template-columns: minmax(0, 1fr); }
+.lw-body.rw-body-exam,
+.rw-exam .lw-body.rw-body-exam { grid-template-columns: minmax(0, 1fr); }
+
+/* Exam: the banner names the part; on its right the recording plays by itself and only the volume can be changed. */
+.lw-exam-banner { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.lw-exam-audio { display: flex; flex: none; align-items: center; gap: 0.9rem; }
+.lw-exam-audio-state { display: inline-flex; align-items: center; gap: 0.45rem; color: #374151; font-size: 0.85rem; font-weight: 600; }
+.lw-exam-audio-state.is-playing::before { width: 0.55rem; height: 0.55rem; border-radius: 50%; background: #16a34a; content: ''; animation: lw-blink 1.1s ease-in-out infinite; }
+.lw-exam-audio-state.is-failed { color: #b91c1c; }
+.lw-exam-audio-start { padding: 0.4rem 1.1rem; border: 1px solid #111111; border-radius: 4px; background: #111111; color: #ffffff; font-size: 0.82rem; font-weight: 700; cursor: pointer; }
+.lw-exam-audio-start:hover { background: #333333; }
+
+@keyframes lw-blink { 50% { opacity: 0.3; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .lw-exam-audio-state.is-playing::before { animation: none; }
+}
 
 .lw-main {
   display: grid;
@@ -57,10 +73,6 @@
   min-width: 0;
 }
 
-.lw-title { margin: 0 0 0.3rem; font-size: 1.05rem; font-weight: 700; }
-.lw-instructions { margin: 0 0 0.6rem; color: var(--rw-muted); font-size: calc(var(--rw-text-size) - 0.08rem); line-height: 1.5; }
-.lw-main .rw-questions { grid-row: 3; }
-.lw-tool-on { background: #fef3c7; border-color: #f59e0b; }
 
 @media (max-width: 900px) {
   .lw-audio { flex-wrap: wrap; border-radius: 12px; margin: 0 0.6rem 0.5rem; }

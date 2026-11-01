@@ -12,9 +12,11 @@ import {
   formatMinutes,
   formatTip,
   mascotMessage,
+  skippedFormats,
   weakFormats,
 } from '../lib/practiceAnalysis'
 import type { RatedFormat } from '../lib/practiceAnalysis'
+import { ResultPriorityCard } from './ResultPriorityCard'
 
 const clampPercent = (value: number) => Math.min(100, Math.max(0, value))
 
@@ -128,13 +130,13 @@ export function ResultDetailTable({ rated, scopeLabel }: { rated: RatedFormat[];
               <tr key={row.formatCode} className={row.priority ? 'rr-row-priority' : undefined}>
                 <th scope="row">
                   {practiceFormatLabel(row.formatCode)}
-                  {row.priority && <span className="rr-priority">Ưu tiên {row.priority}</span>}
+                  {row.priority && <span className={`rr-priority rr-priority-${row.priority}`}>Ưu tiên {row.priority}</span>}
                 </th>
                 <td>{row.total}</td>
-                <td><span className="rr-pill rr-pill-correct">{row.correct}</span></td>
-                <td><span className="rr-pill rr-pill-wrong">{row.incorrect}</span></td>
+                <td><span className={`rr-pill rr-pill-correct${row.correct === 0 ? ' is-zero' : ''}`}>{row.correct}</span></td>
+                <td><span className={`rr-pill rr-pill-wrong${row.incorrect === 0 ? ' is-zero' : ''}`}>{row.incorrect}</span></td>
                 <td><span className="rr-pill">{row.blank}</span></td>
-                <td className="rr-percent"><Bar percent={row.percent} /> <span>{row.percent}%</span></td>
+                <td className="rr-percent"><Bar percent={row.percent} tone={row.rating} /> <span className={`rr-percent-value rr-tone-${row.rating}`}>{row.percent}%</span></td>
                 <td><span className={`rr-rating rr-rating-${row.rating}`}>{RATING_LABELS[row.rating]}</span></td>
                 <td>
                   {row.percent < WEAK_BELOW_PERCENT
@@ -161,8 +163,12 @@ export function ResultAnalysis({ view, rated, practiceHref, partLabel = 'Passage
 }) {
   const totalQuestions = view.sections.reduce((sum, section) => sum + section.total, 0)
   const weak = weakFormats(rated)
-  const priority = rated.find((format) => format.priority === 1)
-  const fine = rated.filter((format) => format.percent >= WEAK_BELOW_PERCENT)
+  const skipped = skippedFormats(rated)
+  const skippedQuestions = skipped.reduce((sum, format) => sum + format.total, 0)
+  const skippedNames = skipped.map((format) => practiceFormatLabel(format.formatCode)).join(', ')
+  const fine = rated.filter((format) => format.rating !== 'skipped' && format.percent >= WEAK_BELOW_PERCENT)
+  // What the advice rests on is what the learner answered, not every question of the test.
+  const answeredQuestions = view.counts.correct + view.counts.incorrect
 
   const sections = view.sections.map((section, index) => ({
     ...section,
@@ -178,49 +184,44 @@ export function ResultAnalysis({ view, rated, practiceHref, partLabel = 'Passage
   return (
     <section className="rr-analysis" aria-labelledby="rr-analysis-title">
       <h2 id="rr-analysis-title">Phân tích &amp; gợi ý cho bạn</h2>
-      <p className="rr-muted">Dựa trên {totalQuestions} câu bạn vừa làm, hệ thống chỉ ra điểm yếu và việc nên làm tiếp theo.</p>
+      <p className="rr-muted">
+        {answeredQuestions === 0
+          ? <>Bạn chưa trả lời câu nào trong <strong>{totalQuestions}</strong> câu của bài, nên chưa có gì để phân tích theo dạng câu hỏi.</>
+          : answeredQuestions === totalQuestions
+            ? <>Dựa trên <strong>{totalQuestions}</strong> câu bạn vừa làm.</>
+            : <>Dựa trên <strong>{answeredQuestions}</strong> câu bạn đã trả lời (còn {totalQuestions - answeredQuestions}/{totalQuestions} câu bỏ trống, không được đánh giá).</>}
+      </p>
 
-      {priority ? (
-        <div className="rr-priority-card">
-          <div>
-            <h3>Ưu tiên số 1: {practiceFormatLabel(priority.formatCode)}</h3>
-            <p>
-              Đúng {priority.correct}/{priority.total} câu, chiếm {totalQuestions ? Math.round(priority.total / totalQuestions * 100) : 0}% tổng số câu của bài.
-              Đây là dạng đang kéo điểm của bạn xuống nhiều nhất: cải thiện dạng này sẽ giúp tăng điểm nhanh nhất.
-            </p>
-          </div>
-          <Link className="rr-cta" to={practiceHref(priority.formatCode)}>Luyện {practiceFormatLabel(priority.formatCode)}</Link>
-        </div>
-      ) : (
-        <div className="rr-priority-card rr-priority-ok">
-          <div><h3>Không có dạng nào dưới {WEAK_BELOW_PERCENT}%</h3><p>Bạn làm đều tay ở mọi dạng câu hỏi. Hãy thử một đề khó hơn để tiếp tục nâng điểm.</p></div>
-          <Link className="rr-cta" to={catalogTo}>Chọn đề khác</Link>
-        </div>
-      )}
+      <ResultPriorityCard rated={rated} answeredQuestions={answeredQuestions} totalQuestions={totalQuestions} practiceHref={practiceHref} catalogTo={catalogTo} />
 
       <div className="rr-analysis-grid">
         <div className="rr-card">
           <h3>Vì sao bạn mất điểm?</h3>
           {weak.length ? (
             <>
-              <p className="rr-muted">Các dạng đúng dưới {WEAK_BELOW_PERCENT}%: nên học lại phương pháp làm bài.</p>
+              <p className="rr-muted">Các dạng đúng dưới {WEAK_BELOW_PERCENT}%: cần luyện tập thêm các dạng này.</p>
               <ul className="rr-weak-list">
                 {weak.map((format) => (
-                  <li key={format.formatCode}>
+                  <li key={format.formatCode} className={`rr-weak-item rr-tone-${format.rating}`}>
                     <div className="rr-weak-head">
                       <strong>{practiceFormatLabel(format.formatCode)}</strong>
                       <Bar percent={format.percent} tone={format.rating} />
-                      <span>{format.percent}% · {format.correct}/{format.total}</span>
+                      <span className="rr-weak-score">{format.percent}% · {format.correct}/{format.total}</span>
                       <Link className="rr-link" to={practiceHref(format.formatCode)}>Luyện dạng này ›</Link>
                     </div>
-                    <p>{formatTip(format.formatCode)}</p>
+                    <p><strong>Cách làm:</strong> {formatTip(format.formatCode)}</p>
                   </li>
                 ))}
               </ul>
             </>
-          ) : <p className="rr-muted">Không có dạng nào dưới {WEAK_BELOW_PERCENT}%, bạn chưa mất điểm nặng ở dạng nào.</p>}
+          ) : skipped.length > 0
+            ? <p className="rr-muted">Chưa có dạng nào bạn làm mà sai nhiều. Điểm đang mất chủ yếu do bỏ trống <strong>{skippedQuestions}</strong> câu.</p>
+            : <p className="rr-muted">Không có dạng nào dưới {WEAK_BELOW_PERCENT}%, bạn chưa mất điểm nặng ở dạng nào.</p>}
           {fine.length > 0 && weak.length > 0 && (
-            <p className="rr-fine">✓ Các dạng còn lại đang ổn (từ {WEAK_BELOW_PERCENT}% trở lên): {fine.map((format) => practiceFormatLabel(format.formatCode)).join(', ')}</p>
+            <p className="rr-note rr-note-fine"><strong>✓ Đang ổn</strong> (từ {WEAK_BELOW_PERCENT}% trở lên): {fine.map((format) => practiceFormatLabel(format.formatCode)).join(', ')}</p>
+          )}
+          {skipped.length > 0 && weak.length > 0 && (
+            <p className="rr-note"><strong>Chưa làm:</strong> {skippedNames} ({skippedQuestions} câu).</p>
           )}
         </div>
 

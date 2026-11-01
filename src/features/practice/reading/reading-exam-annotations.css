@@ -1,0 +1,134 @@
+/* Exam layout: highlights, notes and their popup. The colour behind annotated text is painted by the CSS Custom Highlight API. */
+
+::highlight(rw-exam-highlight) { background-color: #1d44c1; color: #ffffff; }
+::highlight(rw-exam-note) { background-color: #7a2e4d; color: #ffffff; }
+
+.rw-annot-popup {
+  position: fixed;
+  z-index: 70;
+  display: flex;
+  gap: 0.15rem;
+  padding: 0.3rem;
+  border: 1px solid #6b7280;
+  border-radius: 6px;
+  background: #ffffff;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+  transform: translate(-50%, -100%);
+}
+
+.rw-annot-popup.is-below { transform: translate(-50%, 0); }
+
+/* The little arrow that points at the text. */
+.rw-annot-popup::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  width: 10px;
+  height: 10px;
+  border-right: 1px solid #6b7280;
+  border-bottom: 1px solid #6b7280;
+  background: #ffffff;
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.rw-annot-popup.is-below::after {
+  top: -6px;
+  bottom: auto;
+  border: 0;
+  border-top: 1px solid #6b7280;
+  border-left: 1px solid #6b7280;
+}
+
+.rw-annot-popup button {
+  display: grid;
+  justify-items: center;
+  gap: 0.15rem;
+  min-width: 3.6rem;
+  padding: 0.35rem 0.5rem;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #374151;
+  font-size: 0.72rem;
+}
+
+.rw-annot-popup button:hover { background: #e5e7eb; color: #000000; }
+
+/* Notes on the right edge; the rest of the screen gives up that width while there are notes. */
+.rw-root.rw-has-notes { padding-right: 19rem; }
+
+.rw-notes-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  width: 19rem;
+  background: #eceef1;
+  border-left: 1px solid #d1d5db;
+}
+
+.rw-notes-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 1rem;
+  background: #ffffff;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.25);
+}
+
+.rw-notes-header h2 { margin: 0; font-size: 1.05rem; font-weight: 400; }
+.rw-notes-close { display: grid; place-items: center; width: 1.8rem; height: 1.8rem; border: 0; background: transparent; color: #111111; cursor: pointer; }
+.rw-notes-close:hover { background: #e5e7eb; }
+
+.rw-notes-list { display: flex; flex-direction: column; gap: 0.3rem; margin-top: 0.4rem; overflow-y: auto; }
+
+.rw-note { padding: 1rem 1.1rem 0.8rem; background: #ffffff; color: #000000; }
+.rw-note.is-active { background: #1d44c1; color: #ffffff; }
+
+.rw-note-quote { margin: 0 0 0.8rem; font-size: 0.95rem; line-height: 1.45; }
+.rw-note-quote strong { margin-right: 0.3rem; }
+
+.rw-note-field {
+  display: block;
+  width: 100%;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid #9ca3af;
+  border-radius: 3px;
+  background: #ffffff;
+  color: #000000;
+  font: inherit;
+  resize: vertical;
+}
+
+.rw-note-field:focus-visible { outline: 2px solid #111111; outline-offset: 1px; }
+.rw-note.is-active .rw-note-field:focus-visible { outline-color: #ffffff; }
+
+.rw-note-delete {
+  display: block;
+  margin: 0.7rem 0 0 auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #0b4a8f;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.rw-note-delete:hover { text-decoration: underline; }
+.rw-note.is-active .rw-note-delete { color: #ffffff; }
+
+/* Part banner under the top bar. */
+.rw-exam-banner {
+  margin: 0 0.9rem 0.5rem;
+  padding: 0.6rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background: #f0f0ec;
+}
+
+.rw-exam-banner strong { display: block; font-size: 1rem; }
+.rw-exam-banner p { margin: 0.2rem 0 0; }

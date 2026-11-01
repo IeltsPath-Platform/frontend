@@ -1,5 +1,6 @@
 import { apiRequest } from '@/lib/httpClient'
 import { buildReadingAttemptRequest } from '../lib/attemptRequest'
+import { attemptCovers, isExactScope } from '../lib/completedAttempt'
 
 export type ReadingScope = 'PART' | 'FULL'
 export type ReadingMode = 'practice' | 'exam'
@@ -212,10 +213,38 @@ export function getReadingResult(attemptId: string, signal?: AbortSignal) {
   return apiRequest<ReadingResult>(`/api/assessments/attempts/${attemptId}/result`, { auth: true, signal })
 }
 
-export function getReadingHistory(page: number, signal?: AbortSignal) {
+export function getPracticeHistory(skill: PracticeSkill, page: number, size: number, signal?: AbortSignal) {
   return apiRequest<{ totalElements: number; page: number; size: number; items: ReadingHistoryItem[] }>(
-    `/api/assessments/practice/history?skill=READING&page=${page}&size=10`, { auth: true, signal },
+    `/api/assessments/practice/history?skill=${skill}&page=${page}&size=${size}`, { auth: true, signal },
   )
+}
+
+export function getReadingHistory(page: number, signal?: AbortSignal) {
+  return getPracticeHistory('READING', page, 10, signal)
+}
+
+const HISTORY_PAGE_SIZE = 50
+/** Far more than a learner's real history; stops the search from walking an endless list. */
+const MAX_HISTORY_PAGES = 20
+
+/**
+ * The attempt whose result a "completed" catalog card should open: the learner's most recent submitted run of that test
+ * (history comes newest first). A run of the card's own scope wins; a full attempt that included the part is the fallback.
+ * Null when no submitted attempt is found.
+ */
+export async function findSubmittedAttemptId(skill: PracticeSkill, card: Pick<ReadingTestCard, 'packageId' | 'scope'>, partNo: number | undefined, signal?: AbortSignal): Promise<string | null> {
+  const wantedPart = card.scope === 'PART' ? partNo : undefined
+  let fallback: string | null = null
+  for (let page = 0; page < MAX_HISTORY_PAGES; page += 1) {
+    const result = await getPracticeHistory(skill, page, HISTORY_PAGE_SIZE, signal)
+    for (const item of result.items) {
+      if (!attemptCovers(item, card.packageId, wantedPart)) continue
+      if (isExactScope(item, card.scope)) return item.attemptId
+      fallback ??= item.attemptId
+    }
+    if ((page + 1) * HISTORY_PAGE_SIZE >= result.totalElements) break
+  }
+  return fallback
 }
 
 export function restartReadingAttempt(packageVersionId: string, scope: ReadingScope, sectionIds: string[], mode: ReadingMode) {

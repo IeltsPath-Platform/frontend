@@ -1,24 +1,7 @@
 import { apiRequest } from '@/lib/httpClient'
 
-export type WritingMode = 'free' | 'guided'
-
-export interface GuideVocabulary {
-  en: string
-  vi: string
-}
-
-/** One step of the step-by-step mode: what to write, the theory behind it, a sentence frame and a sample. */
-export interface GuideStep {
-  no: number
-  /** The part of the essay the step belongs to: Introduction, Overview, Body 1, Body 2, Conclusion. */
-  section: string
-  title: string
-  instruction: string
-  theory: string
-  structure: string
-  vocabulary: GuideVocabulary[]
-  example: string
-}
+/** 'practice' is the screen with the guide and the dictionary; 'exam' is the timed screen that copies the real test. */
+export type WritingMode = 'practice' | 'exam'
 
 export interface WritingTask {
   packageId: string
@@ -34,7 +17,6 @@ export interface WritingTask {
   instructions: string | null
   prompt: string
   guide: string | null
-  guideSteps: GuideStep[] | null
   images: Array<{ url: string; altText: string | null }>
 }
 

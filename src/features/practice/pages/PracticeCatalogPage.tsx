@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { BookOpen, Search } from 'lucide-react'
 import { HttpError } from '@/lib/httpClient'
 import type { PracticeCard, PracticeMode, SkillType } from '@/types/practice'
@@ -7,10 +7,15 @@ import { PracticeNavbar } from '../components/PracticeNavbar'
 import { PracticeSidebar } from '../components/PracticeSidebar'
 import { PracticeCosmicBanner } from '../components/PracticeCosmicBanner'
 import { PracticeTestCard } from '../components/PracticeTestCard'
+import { PracticeCardSkeleton } from '../components/PracticeCardSkeleton'
+import { preloadImages } from '../lib/preloadImages'
 import { PracticeModeModal } from '../components/PracticeModeModal'
+import { CompletedTestDialog } from '../components/CompletedTestDialog'
+import { SpeakingReadyModal } from '../components/SpeakingReadyModal'
 import { WritingModeModal } from '../components/WritingModeModal'
 import type { WritingMode } from '../writing/writingApi'
 import {
+  findSubmittedAttemptId,
   getPracticeFormats,
   getReadingProgress,
   searchReadingTests,
@@ -28,10 +33,15 @@ import {
 } from '../lib/practiceSkillConfig'
 import type { PracticePart } from '../lib/practiceSkillConfig'
 import '../reading/reading-practice.css'
+import '../practice-catalog-responsive.css'
 
 type CatalogTab = 'uncompleted' | 'completed'
 
 const PAGE_SIZE = 9
+/** How long the skeleton waits for the photos of the cards before it shows the cards anyway. */
+const IMAGE_WAIT_MS = 2500
+/** Skeleton cards while the list loads: two rows of the three-column grid. */
+const SKELETON_COUNT = 6
 
 export interface PracticeCatalogPageProps {
   /** Opens the workspace of a skill that is not wired to attempts yet (everything except Reading). */
@@ -49,6 +59,13 @@ function formatDuration(seconds: number | null) {
   return minutes >= 60 ? `${Math.floor(minutes / 60)} giờ${minutes % 60 ? ` ${minutes % 60} phút` : ''}` : `${minutes} phút`
 }
 
+/** The part a link asks for, when the skill has it; otherwise the first part the skill offers. */
+function partFromParam(value: string | null, config: typeof PRACTICE_SKILL_CONFIG[SkillType]): PracticePart {
+  if (value === 'full' && config.hasFull) return 'full'
+  const number = Number(value)
+  return config.parts.includes(number) ? number : defaultPracticePart(config)
+}
+
 function cardKey(card: ReadingTestCard) {
   return `${card.packageId}:${card.scope === 'FULL' ? 'full' : (card.parts[0]?.partNo ?? 'part')}`
 }
@@ -63,7 +80,9 @@ export function PracticeCatalogPage({ onOpenTest }: PracticeCatalogPageProps) {
 function PracticeCatalog({ skill, onOpenTest }: PracticeCatalogPageProps & { skill: SkillType }) {
   const navigate = useNavigate()
   const config = PRACTICE_SKILL_CONFIG[skill]
-  const [part, setPart] = useState<PracticePart>(defaultPracticePart(config))
+  const [searchParams] = useSearchParams()
+  // A link from a result ("Reading › Passage 2") opens the catalog on that part: ?part=2 or ?part=full.
+  const [part, setPart] = useState<PracticePart>(() => partFromParam(searchParams.get('part'), config))
   const [tab, setTab] = useState<CatalogTab>('uncompleted')
   const [query, setQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
@@ -71,7 +90,6 @@ function PracticeCatalog({ skill, onOpenTest }: PracticeCatalogPageProps & { ski
   // When the formats endpoint is unavailable the filter falls back to the formats seen on the loaded cards.
   const [formatsUnavailable, setFormatsUnavailable] = useState(false)
   const [seenFormats, setSeenFormats] = useState<string[]>([])
-  const [searchParams] = useSearchParams()
   const [selectedFormats, setSelectedFormats] = useState<string[]>(() =>
     (searchParams.get('format') ?? '').split(',').filter((code) => /^[A-Z][A-Z_]{0,39}$/.test(code)).slice(0, 10))
   const [cards, setCards] = useState<ReadingTestCard[]>([])
@@ -80,6 +98,11 @@ function PracticeCatalog({ skill, onOpenTest }: PracticeCatalogPageProps & { ski
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [modeCard, setModeCard] = useState<ReadingTestCard | null>(null)
+  const [readyCard, setReadyCard] = useState<ReadingTestCard | null>(null)
+  // A card of the "done" tab asks what to do with it: see the result, or do the test again.
+  const [doneCard, setDoneCard] = useState<ReadingTestCard | null>(null)
+  const [findingResult, setFindingResult] = useState(false)
+  const [doneError, setDoneError] = useState('')
   const [starting, setStarting] = useState(false)
   const [startError, setStartError] = useState('')
   const [reload, setReload] = useState(0)
@@ -129,6 +152,10 @@ function PracticeCatalog({ skill, onOpenTest }: PracticeCatalogPageProps & { ski
         page: currentPage,
         size: PAGE_SIZE,
       }, controller.signal)
+    }).then(async (result) => {
+      // The cards appear together with their photos: the skeleton stays until the photos are in (or 2.5 s have passed).
+      await preloadImages(result.items.map((item) => item.coverUrl), IMAGE_WAIT_MS, controller.signal)
+      return result
     }).then((result) => {
       if (controller.signal.aborted) return
       setCards(result.items)
@@ -167,6 +194,8 @@ function PracticeCatalog({ skill, onOpenTest }: PracticeCatalogPageProps & { ski
       ...card.formats.slice(0, 3).map(practiceFormatLabel),
       `${card.questionCount} ${config.unit} · ${formatDuration(card.timeLimitSeconds)}`,
     ],
+    formatLabels: card.formats.slice(0, 3).map(practiceFormatLabel),
+    meta: `${card.questionCount} ${config.unit} · ${formatDuration(card.timeLimitSeconds)}`,
     questionsCount: card.questionCount,
   })), [visibleCards, config, partNo, skill])
 
@@ -184,7 +213,38 @@ function PracticeCatalog({ skill, onOpenTest }: PracticeCatalogPageProps & { ski
     const found = visibleCards.find((item) => cardKey(item) === card.id)
     if (!found) return
     setStartError('')
+    // Reading and Listening keep a result for every attempt; the other skills have no result page to go back to.
+    if (tab === 'completed' && (skill === 'reading' || skill === 'listening')) {
+      setDoneError('')
+      setDoneCard(found)
+      return
+    }
+    // Speaking has a single workspace, so there is no interface to choose: the learner only confirms they are ready.
+    if (skill === 'speaking') {
+      setReadyCard(found)
+      return
+    }
     setModeCard(found)
+  }
+
+  /** Opens the result of the learner's latest submitted attempt of the test. */
+  function viewResult(card: ReadingTestCard) {
+    if (findingResult) return
+    setFindingResult(true)
+    setDoneError('')
+    void findSubmittedAttemptId(config.apiSkill, card, card.scope === 'PART' ? partNo : undefined).then((attemptId) => {
+      if (attemptId) navigate(`/practice/${skill}/attempts/${attemptId}/result`)
+      else setDoneError('Không tìm thấy bài làm đã nộp của đề này.')
+    }).catch((reason: unknown) => {
+      setDoneError(errorMessage(reason))
+    }).finally(() => setFindingResult(false))
+  }
+
+  /** "Làm lại" goes through the same choice of interface as a test that was never done. */
+  function redo(card: ReadingTestCard) {
+    setDoneCard(null)
+    setStartError('')
+    setModeCard(card)
   }
 
   /** A Writing task opens its own workspace: the learner picks free writing or the step-by-step guide. */
@@ -194,20 +254,22 @@ function PracticeCatalog({ skill, onOpenTest }: PracticeCatalogPageProps & { ski
     navigate(`/practice/writing/tasks/${card.packageVersionId}/${target.sectionId}?mode=${mode}`)
   }
 
-  /** A Speaking part opens the recording workspace; a full test lists its parts so each leads to the next. */
-  function startSpeaking(card: ReadingTestCard) {
+  /** The parts of a Speaking test in order, and the one that opens first: the chosen part, or the first of a full test. */
+  function speakingTarget(card: ReadingTestCard) {
     const ordered = [...card.parts].sort((a, b) => (a.partNo ?? 0) - (b.partNo ?? 0))
     const target = card.scope === 'PART' ? ordered.find((item) => item.partNo === partNo) ?? ordered[0] : ordered[0]
+    return { ordered, target }
+  }
+
+  /** A Speaking part opens the recording workspace; a full test lists its parts so each leads to the next. */
+  function startSpeaking(card: ReadingTestCard) {
+    const { ordered, target } = speakingTarget(card)
     if (!target) return
     const parts = card.scope === 'PART' ? '' : `?parts=${ordered.map((item) => item.sectionId).join(',')}`
     navigate(`/practice/speaking/tasks/${card.packageVersionId}/${target.sectionId}${parts}`)
   }
 
   function startTest(card: ReadingTestCard, mode: PracticeMode) {
-    if (skill === 'speaking') {
-      startSpeaking(card)
-      return
-    }
     // Reading and Listening run on real attempts; any other skill opens its own workspace.
     if (skill !== 'reading' && skill !== 'listening') {
       onOpenTest(skill, card.packageId, mode)
@@ -288,7 +350,7 @@ function PracticeCatalog({ skill, onOpenTest }: PracticeCatalogPageProps & { ski
 
             {loading && (
               <div className="practice-visual-grid" aria-label="Đang tải đề" aria-busy="true">
-                {[0, 1, 2].map((item) => <div className="reading-card-skeleton" key={item} />)}
+                {Array.from({ length: SKELETON_COUNT }, (_, item) => <PracticeCardSkeleton key={item} />)}
               </div>
             )}
 
@@ -319,13 +381,33 @@ function PracticeCatalog({ skill, onOpenTest }: PracticeCatalogPageProps & { ski
                 <button type="button" disabled={page + 1 >= pageCount} onClick={() => setPage((current) => current + 1)}>Sau</button>
               </nav>
             )}
-
-            {skill === 'reading' && (
-              <p className="reading-history-entry"><Link to="/practice/reading/history">Lịch sử làm bài Reading</Link></p>
-            )}
           </main>
         </div>
       </div>
+
+      {doneCard && (
+        <CompletedTestDialog
+          key={cardKey(doneCard)}
+          title={practiceCards.find((view) => view.id === cardKey(doneCard))?.title ?? doneCard.title}
+          busy={findingResult}
+          error={doneError}
+          onViewResult={() => viewResult(doneCard)}
+          onRedo={() => redo(doneCard)}
+          onClose={() => setDoneCard(null)}
+        />
+      )}
+
+      {readyCard && (
+        <SpeakingReadyModal
+          key={cardKey(readyCard)}
+          title={practiceCards.find((view) => view.id === cardKey(readyCard))?.title ?? readyCard.title}
+          partNo={readyCard.scope === 'PART' ? speakingTarget(readyCard).target?.partNo ?? null : null}
+          questionCount={readyCard.questionCount}
+          timeLimitSeconds={readyCard.timeLimitSeconds}
+          onClose={() => setReadyCard(null)}
+          onConfirm={() => startSpeaking(readyCard)}
+        />
+      )}
 
       {modeCard && skill === 'writing' && (
         <WritingModeModal

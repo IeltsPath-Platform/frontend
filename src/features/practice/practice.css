@@ -904,9 +904,15 @@
   border-color: #cbd5e1;
 }
 
+/* The photo and the part badge that overlaps its lower edge; the badge sits outside the photo's clipping box. */
+.card-media {
+  position: relative;
+  padding-bottom: 1.1rem;
+}
+
 .card-image-box {
   position: relative;
-  height: 185px;
+  aspect-ratio: 2 / 1;
   width: 100%;
   overflow: hidden;
   background: #e2e8f0;
@@ -916,7 +922,41 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.35s ease;
+  opacity: 0;
+  transition: transform 0.35s ease, opacity 0.35s ease;
+}
+
+.card-photo.is-loaded,
+.card-photo-empty { opacity: 1; }
+
+/* While the photo loads, the box shimmers as the skeleton card does. */
+.card-image-box.is-loading {
+  background: linear-gradient(100deg, #e5eaf3 20%, #f5f7fb 40%, #e5eaf3 60%);
+  background-size: 220% 100%;
+  animation: practice-skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+/* The card before its data arrives: same frame as .practice-visual-card, no hover lift. */
+@keyframes practice-skeleton-shimmer {
+  from { background-position: 120% 0; }
+  to { background-position: -120% 0; }
+}
+
+.practice-card-skeleton { cursor: default; box-shadow: 0 4px 18px rgba(0, 0, 0, 0.03); }
+.practice-card-skeleton:hover { transform: none; box-shadow: 0 4px 18px rgba(0, 0, 0, 0.03); border-color: var(--site-card-border); }
+
+.practice-skeleton-block {
+  background: linear-gradient(100deg, #e5eaf3 20%, #f5f7fb 40%, #e5eaf3 60%);
+  background-size: 220% 100%;
+  animation: practice-skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+.practice-skeleton-pill { position: absolute; left: 0; bottom: 0; width: 5.6rem; height: 2.1rem; border-radius: 0 999px 999px 0; }
+.practice-skeleton-line { height: 0.9rem; border-radius: 6px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .practice-skeleton-block,
+  .card-image-box.is-loading { animation: none; }
 }
 
 .card-photo-empty {
@@ -927,63 +967,72 @@
   transform: scale(1.04);
 }
 
-/* Bottom Royal Blue Box */
-.card-blue-box {
-  background: #0f3cb8;
-  color: white;
-  padding: 1.15rem 1.25rem 1.35rem;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
+/* Orange badge laid across the lower edge of the photo, flush with the left side of the card. */
 .card-passage-pill {
-  background: #f43f5e;
-  color: white;
-  font-size: 0.68rem;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 999px;
-  display: inline-block;
-  width: fit-content;
-  margin-bottom: 0.55rem;
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  padding: 0.4rem 1.1rem 0.4rem 1rem;
+  border-radius: 0 999px 999px 0;
+  background: linear-gradient(90deg, #f7931e, #fbb040);
+  box-shadow: 0 3px 8px rgba(247, 147, 30, 0.35);
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 800;
+  line-height: 1.3;
 }
 
+.card-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: 0.5rem 1.1rem 1.1rem;
+  color: #1f2937;
+}
+
+/* The question formats follow the title; the foot of the card is pinned to the bottom, so cards of one row end on the same line. */
 .card-name-title {
-  font-size: 0.975rem;
+  margin: 0 0 0.5rem;
+  color: #1c2437;
+  font-size: 1.1rem;
   font-weight: 800;
   line-height: 1.35;
-  color: white;
-  margin-bottom: 0.65rem;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
-.card-bullets-list {
+/* The question formats as a plain bulleted list. */
+.card-format-list {
   list-style: none;
   padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  margin-top: auto;
+  margin: 0 0 0.9rem;
+  color: #374151;
+  font-size: 0.95rem;
+  line-height: 1.55;
 }
 
-.bullet-point-item {
+.card-format-list li::before { content: '• '; }
+
+/* Size of the test, set apart at the foot of the card. */
+.card-meta {
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  font-size: 0.775rem;
-  color: rgba(255, 255, 255, 0.85);
+  margin: auto 0 0;
+  padding-top: 0.7rem;
+  border-top: 1px solid #e5e7eb;
+  color: #64748b;
+  font-size: 0.8rem;
+  font-weight: 600;
 }
 
-.bullet-point-dot {
-  color: #38bdf8;
-  font-size: 1rem;
-  line-height: 0;
-}
+.card-meta svg { flex: none; color: #f7931e; }
+
+/* A quiet arrow at the end of the foot that moves on hover: the whole card is the button. */
+.card-meta .card-meta-arrow { margin-left: auto; color: #94a3b8; transition: transform 0.2s ease, color 0.2s ease; }
+.practice-visual-card:hover .card-meta-arrow { color: #f7931e; transform: translateX(4px); }
 
 /* ==========================================================================
    7. MODAL: LỰA CHỌN GIAO DIỆN LÀM BÀI (SCREEN 2)
@@ -1157,6 +1206,21 @@
   border-radius: 4px;
 }
 
+/* Follows the screenshot's own ratio so the whole screen, bottom bar included, stays visible. */
+.mode-preview-img-box-photo {
+  height: auto;
+  aspect-ratio: 672 / 314;
+  padding: 0;
+  background: #ffffff;
+}
+
+.mode-preview-img-box-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 .mock-practice-subnav {
   height: 14px;
   background: #e2e8f0;
@@ -1220,6 +1284,41 @@
   transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(255, 107, 0, 0.6);
 }
+
+/* Speaking: the "are you ready?" box that opens before a part. */
+.speaking-ready-dialog { max-width: min(420px, calc(100vw - 2rem)); border-radius: 18px; overflow: hidden; }
+.speaking-ready-dialog .screen2-top-header { padding: 0.85rem 3rem 0.85rem 1.25rem; }
+.speaking-ready-dialog .screen2-test-title { font-size: 1.1rem; }
+.speaking-ready-dialog .screen2-blue-body { padding: 1rem 1.25rem 1.1rem; background: linear-gradient(160deg, #0b3cc1 0%, #0933a8 55%, #072a8a 100%); }
+.speaking-ready-heading { display: flex; align-items: center; gap: 0.55rem; margin-bottom: 0.7rem; font-size: 1.02rem; }
+.speaking-ready-mic { display: grid; place-items: center; width: 1.7rem; height: 1.7rem; border-radius: 50%; background: rgba(255, 255, 255, 0.18); color: #ffffff; }
+.speaking-ready-panel { display: grid; gap: 0.6rem; margin-bottom: 1rem; padding: 0.8rem 0.95rem; border-radius: 12px; background: #ffffff; color: #0f172a; box-shadow: 0 6px 18px rgba(3, 20, 80, 0.25); }
+.speaking-ready-lead { margin: 0; color: #475569; font-size: 0.86rem; line-height: 1.5; }
+.speaking-ready-stats { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0; padding: 0; list-style: none; }
+.speaking-ready-stats li { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.2rem 0.6rem; border-radius: 999px; background: #e0e9ff; color: #1d4ed8; font-size: 0.75rem; font-weight: 700; }
+.speaking-ready-tips { display: grid; gap: 0.35rem; margin: 0; padding: 0.6rem 0 0; border-top: 1px solid #e2e8f0; list-style: none; }
+.speaking-ready-tips li { display: flex; align-items: center; gap: 0.5rem; color: #1e293b; font-size: 0.8rem; line-height: 1.4; }
+.speaking-ready-tip-icon { display: grid; flex: none; place-items: center; width: 1.45rem; height: 1.45rem; border-radius: 50%; background: #eef2ff; color: #1d4ed8; }
+.speaking-ready-actions { flex-direction: column; align-items: center; gap: 0.5rem; }
+.speaking-ready-dialog .screen2-start-cta { padding: 0.6rem 2.2rem; font-size: 0.85rem; letter-spacing: 0.01em; }
+.speaking-ready-later { border: 0; background: transparent; color: rgba(255, 255, 255, 0.8); font-size: 0.8rem; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.speaking-ready-later:hover { color: #ffffff; }
+
+/* A test that was already done: look at the result, or start again. */
+.completed-dialog { max-width: min(400px, calc(100vw - 2rem)); border-radius: 18px; overflow: hidden; }
+.completed-dialog .screen2-top-header { padding: 0.85rem 3rem 0.85rem 1.25rem; }
+.completed-dialog .screen2-test-title { font-size: 1.1rem; }
+.completed-dialog .screen2-blue-body { padding: 1.4rem 1.25rem 1.25rem; text-align: center; background: linear-gradient(160deg, #0b3cc1 0%, #0933a8 55%, #072a8a 100%); }
+.completed-badge { display: grid; place-items: center; width: 3.25rem; height: 3.25rem; margin: 0 auto 0.75rem; border-radius: 50%; background: rgba(255, 255, 255, 0.16); color: #ffffff; box-shadow: 0 0 0 0.4rem rgba(255, 255, 255, 0.08); }
+.completed-heading { margin: 0 0 0.35rem; color: #ffffff; font-size: 1.1rem; font-weight: 800; }
+.completed-dialog .completed-text { margin: 0 0 1.15rem; color: rgba(255, 255, 255, 0.82); font-size: 0.88rem; line-height: 1.5; text-align: center; }
+.completed-error { margin: 0 0 0.9rem; padding: 0.5rem 0.75rem; border-radius: 0.6rem; background: rgba(239, 68, 68, 0.22); color: #fecaca; font-size: 0.82rem; }
+.completed-actions { display: grid; gap: 0.6rem; }
+.completed-actions .screen2-start-cta { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; width: 100%; padding: 0.7rem 1rem; font-size: 0.9rem; }
+.completed-actions .screen2-start-cta:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
+.completed-redo { display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem; width: 100%; padding: 0.6rem 1rem; border: 1.5px solid rgba(255, 255, 255, 0.55); border-radius: 999px; background: transparent; color: #ffffff; font-size: 0.88rem; font-weight: 700; cursor: pointer; transition: background 0.2s ease; }
+.completed-redo:hover:not(:disabled) { background: rgba(255, 255, 255, 0.14); }
+.completed-redo:disabled { opacity: 0.6; cursor: not-allowed; }
 
 /* ==========================================================================
    8. PRACTICE WORKSPACE (SCREEN 3) - LIGHT THEME

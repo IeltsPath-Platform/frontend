@@ -1,0 +1,124 @@
+/* Responsive layout of the practice catalog (Listening, Reading, Writing, Speaking share it).
+   Wide: the filter column on the left, the banner and the cards on the right (see practice.css).
+   Tablet and phone: the filter column becomes a compact panel above the cards, with the skills in one row, the parts and the
+   question types as chips, and a banner and controls that fit the width. */
+
+/* A grid child may shrink below the width of its content, so a long title or a row of chips never widens the page. */
+.practice-light-root .practice-layout-grid > *,
+.practice-light-root .practice-catalog-main > * { min-width: 0; }
+
+/* ---- small laptops and tablets held wide ------------------------------------------------ */
+@media (max-width: 1150px) and (min-width: 961px) {
+  .practice-light-root .practice-layout-grid { grid-template-columns: 210px minmax(0, 1fr); gap: 1.25rem; }
+  .practice-light-root .practice-cosmic-card { padding: 1.9rem 1.75rem; }
+  .practice-light-root .cosmic-title { font-size: 1.5rem; }
+  .practice-light-root .cosmic-saturn-wrapper { display: none; }
+}
+
+/* ---- tablets and phones: one column ---------------------------------------------------- */
+@media (max-width: 960px) {
+  .practice-light-root .practice-main-shell { padding: 1rem clamp(0.9rem, 3vw, 1.5rem) 2rem; }
+  .practice-light-root .practice-layout-grid { gap: 1rem; }
+
+  /* The filter panel */
+  .practice-light-root .practice-white-sidebar { padding: 0.85rem; border-radius: 16px; }
+  .practice-light-root .sidebar-brand-header { display: none; }
+  .practice-light-root .sidebar-skills-block { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.4rem; }
+  .practice-light-root .sidebar-skills-block > .sidebar-section-label { display: none; }
+
+  .practice-light-root .sidebar-skill-link {
+    justify-content: center;
+    padding: 0.55rem 0.35rem;
+    text-align: center;
+  }
+  .practice-light-root .sidebar-skill-link > svg { display: none; }
+  .practice-light-root .sidebar-skill-link .text-sm { font-size: 0.82rem; }
+
+  /* The parts of the chosen skill: a row of chips under the skills */
+  .practice-light-root .sidebar-reading-tree {
+    order: 5;
+    grid-column: 1 / -1;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0.25rem 0 0;
+    padding: 0;
+    border-left: 0;
+  }
+  .practice-light-root .tree-group-header { padding: 0 0.3rem 0 0; }
+  .practice-light-root .tree-radio-options { flex-direction: row; flex-wrap: wrap; gap: 0.4rem; margin-left: 0; }
+
+  .practice-light-root .tree-radio-item,
+  .practice-light-root .tree-full-test {
+    margin-top: 0;
+    padding: 0.35rem 0.85rem;
+    border-radius: 999px;
+    background: #f1f5f9;
+    font-size: 0.8rem;
+  }
+  .practice-light-root .tree-radio-item.active,
+  .practice-light-root .tree-full-test.active { background: #0e44cf; color: #ffffff; font-weight: 700; }
+  .practice-light-root .radio-circle { display: none; }
+
+  /* The question types: chips that wrap, a ticked one is filled */
+  .practice-light-root .sidebar-resources-block { margin-top: 0.8rem; padding-top: 0.7rem; }
+  .practice-light-root .sidebar-resources-header-btn { margin-bottom: 0.5rem; }
+  .practice-light-root .sidebar-resources-header-btn .sidebar-section-label { margin-bottom: 0; }
+  .practice-light-root .resources-checkboxes-list { flex-direction: row; flex-wrap: wrap; gap: 0.4rem; }
+
+  .practice-light-root .checkbox-item {
+    position: relative;
+    padding: 0.3rem 0.75rem;
+    border: 1px solid #dbe4f6;
+    border-radius: 999px;
+    background: #ffffff;
+    font-size: 0.78rem;
+  }
+  .practice-light-root .checkbox-item:has(input:checked) { border-color: #0e44cf; background: #eaf0ff; color: #0e44cf; font-weight: 600; }
+  .practice-light-root .checkbox-item:has(input:focus-visible) { outline: 2px solid #0e44cf; outline-offset: 2px; }
+  .practice-light-root .checkbox-item input[type='checkbox'] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* The banner: no planet, a smaller owl */
+  .practice-light-root .practice-cosmic-card { padding: 1.5rem; border-radius: 22px; margin-bottom: 1.25rem; }
+  .practice-light-root .cosmic-saturn-wrapper { display: none; }
+  .practice-light-root .cosmic-mascot-wrapper { width: 110px; height: 110px; }
+  .practice-light-root .practice-cosmic-card .cosmic-mascot { --mascot-size: 7rem; }
+  .practice-light-root .cosmic-title { font-size: 1.45rem; }
+
+  .practice-light-root .practice-controls-row { margin-bottom: 1.1rem; }
+  .practice-light-root .practice-pill-search { width: min(320px, 100%); }
+}
+
+/* ---- phones ---------------------------------------------------------------------------- */
+@media (max-width: 640px) {
+  .practice-light-root .practice-main-shell { padding-top: 0.75rem; }
+
+  .practice-light-root .practice-cosmic-card { padding: 1.2rem 1rem; border-radius: 18px; }
+  .practice-light-root .cosmic-mascot-wrapper { display: none; }
+  .practice-light-root .cosmic-content { max-width: none; padding: 0; }
+  .practice-light-root .cosmic-title { font-size: 1.2rem; }
+  .practice-light-root .cosmic-subtitle { margin-bottom: 0.9rem; font-size: 0.82rem; }
+  .practice-light-root .cosmic-test-cta-btn { width: 100%; justify-content: center; }
+
+  .practice-light-root .practice-controls-row { flex-direction: column; align-items: stretch; gap: 0.7rem; }
+  .practice-light-root .practice-segmented-tabs { display: flex; width: 100%; }
+  .practice-light-root .tab-pill-btn { flex: 1; padding: 0.55rem 0.5rem; }
+  .practice-light-root .practice-pill-search { width: 100%; }
+
+  .practice-light-root .practice-visual-grid { gap: 1rem; }
+}
+
+/* ---- very small phones ----------------------------------------------------------------- */
+@media (max-width: 380px) {
+  .practice-light-root .practice-main-shell { padding-inline: 0.7rem; }
+  .practice-light-root .sidebar-skills-block { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .practice-light-root .tree-radio-item,
+  .practice-light-root .tree-full-test { padding: 0.3rem 0.7rem; }
+}

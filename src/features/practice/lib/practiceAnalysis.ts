@@ -1,6 +1,7 @@
 /** Rules that turn the numbers of a finished practice test into ratings, priorities and advice. */
 
-export type AccuracyRating = 'excellent' | 'good' | 'average' | 'weak' | 'veryWeak'
+/** `skipped` is a format the learner did not answer at all, which says nothing about how well they handle it. */
+export type AccuracyRating = 'excellent' | 'good' | 'average' | 'weak' | 'veryWeak' | 'skipped'
 
 export const RATING_LABELS: Record<AccuracyRating, string> = {
   excellent: 'Xuất sắc',
@@ -8,13 +9,14 @@ export const RATING_LABELS: Record<AccuracyRating, string> = {
   average: 'Trung bình',
   weak: 'Yếu',
   veryWeak: 'Rất yếu',
+  skipped: 'Chưa làm',
 }
 
 /** Below this share of correct answers a question format counts as a reason for losing points. */
 export const WEAK_BELOW_PERCENT = 50
 
 /** The share of correct answers decides the rating: 90+ excellent, 75+ good, 50+ average, 25+ weak, else very weak. */
-export function rateAccuracy(percent: number): AccuracyRating {
+export function rateAccuracy(percent: number): Exclude<AccuracyRating, 'skipped'> {
   if (percent >= 90) return 'excellent'
   if (percent >= 75) return 'good'
   if (percent >= 50) return 'average'
@@ -33,31 +35,55 @@ export interface FormatStat {
 export interface RatedFormat extends FormatStat {
   percent: number
   rating: AccuracyRating
-  /** 1 or 2 for the formats that cost the most points, otherwise null. */
+  /**
+   * 1 for the formats at the lowest share of correct answers, 2 for the next lowest share, otherwise null. Formats at the
+   * same share have the same priority, so a tie is never broken by a rule the learner cannot see.
+   */
   priority: 1 | 2 | null
 }
 
-/**
- * Rates every format, weakest first. Only formats under the weak line can be a priority, ranked by the number of
- * questions they lost (a long format at 40% hurts more than a short one at 0%).
- */
-export function rateFormats(stats: readonly FormatStat[]): RatedFormat[] {
-  const rated = stats.map((stat) => {
-    const percent = stat.total ? Math.round(stat.correct / stat.total * 100) : 0
-    return { ...stat, percent, rating: rateAccuracy(percent), priority: null as 1 | 2 | null }
-  })
-  const lost = (format: RatedFormat) => format.total - format.correct
-  rated
-    .filter((format) => format.percent < WEAK_BELOW_PERCENT)
-    .sort((a, b) => lost(b) - lost(a) || a.percent - b.percent)
-    .slice(0, 2)
-    .forEach((format, index) => { format.priority = index === 0 ? 1 : 2 })
-  return rated.sort((a, b) => a.percent - b.percent || b.total - a.total)
+/** True when every question of the format was left blank. */
+export function isSkipped(stat: FormatStat): boolean {
+  return stat.total > 0 && stat.blank >= stat.total
 }
 
-/** The formats that explain the lost points: the ones under the weak line, worst first. */
+const questionsLost = (format: FormatStat) => format.total - format.correct
+
+/**
+ * Rates every format. Only formats the learner actually answered and that fall under the weak line can be a priority.
+ * They are grouped by their share of correct answers: the lowest share is priority 1 (every format at it, however many),
+ * the next lowest share is priority 2. The table lists the priorities first, then the other answered formats weakest
+ * first, and the skipped formats last; inside one share the format that lost more questions comes first.
+ */
+export function rateFormats(stats: readonly FormatStat[]): RatedFormat[] {
+  const rated = stats.map((stat): RatedFormat => {
+    const percent = stat.total ? Math.round(stat.correct / stat.total * 100) : 0
+    return { ...stat, percent, rating: isSkipped(stat) ? 'skipped' : rateAccuracy(percent), priority: null }
+  })
+  const weakShares = [...new Set(rated.filter((format) => format.rating !== 'skipped' && format.percent < WEAK_BELOW_PERCENT).map((format) => format.percent))].sort((a, b) => a - b)
+  for (const format of rated) {
+    const tier = weakShares.indexOf(format.percent)
+    if (format.rating !== 'skipped' && tier >= 0 && tier < 2) format.priority = tier === 0 ? 1 : 2
+  }
+  const position = (format: RatedFormat) => format.priority ?? (format.rating === 'skipped' ? 4 : 3)
+  return rated.sort((a, b) => position(a) - position(b) || a.percent - b.percent || questionsLost(b) - questionsLost(a) || b.total - a.total)
+}
+
+/** The formats of one priority level (they share the same share of correct answers), the one that lost most first. */
+export function priorityFormats(rated: readonly RatedFormat[], priority: 1 | 2): RatedFormat[] {
+  return rated.filter((format) => format.priority === priority).sort((a, b) => questionsLost(b) - questionsLost(a) || b.total - a.total)
+}
+
+/** The formats that explain the lost points: answered ones under the weak line, worst first. */
 export function weakFormats(rated: readonly RatedFormat[]): RatedFormat[] {
-  return rated.filter((format) => format.percent < WEAK_BELOW_PERCENT).sort((a, b) => a.percent - b.percent || b.total - a.total)
+  return rated
+    .filter((format) => format.rating !== 'skipped' && format.percent < WEAK_BELOW_PERCENT)
+    .sort((a, b) => a.percent - b.percent || questionsLost(b) - questionsLost(a) || b.total - a.total)
+}
+
+/** The formats the learner did not answer at all, the longest first. */
+export function skippedFormats(rated: readonly RatedFormat[]): RatedFormat[] {
+  return rated.filter((format) => format.rating === 'skipped').sort((a, b) => b.total - a.total)
 }
 
 /** One line of method for each question format; unknown formats get a general tip. */

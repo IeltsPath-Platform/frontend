@@ -29,7 +29,7 @@ export function useGradeFlow({ task, mode, draftKey, essay, seconds, label, bene
   draftKey: string
   essay: string
   seconds: number
-  /** Last part of the popup's context line, such as "Viết tự do". */
+  /** Last part of the popup's context line, such as "Luyện tập". */
   label: string
   benefits: string[]
   /** Checks shown under the figures besides the word count, such as the steps done. */

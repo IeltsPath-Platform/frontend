@@ -1,5 +1,3 @@
-import type { GuideStep, GuideVocabulary } from './writingApi'
-
 /** Same rule as the grader: letters and digits, joined by an apostrophe or a hyphen, count as one word. */
 const WORD = /[\p{L}\p{N}]+(?:['’-][\p{L}\p{N}]+)*/gu
 
@@ -12,11 +10,6 @@ export function formatClock(totalSeconds: number) {
   return `${String(Math.floor(safe / 60)).padStart(2, '0')}:${String(safe % 60).padStart(2, '0')}`
 }
 
-/** Every phrase of the guide, so the dictionary can answer without a server. */
-export function guideGlossary(steps: GuideStep[] | null): GuideVocabulary[] {
-  return (steps ?? []).flatMap((step) => step.vocabulary)
-}
-
 /** The parts a free essay is written in, in order. Task 1 has an overview; Task 2 ends with a conclusion. */
 export function essaySections(task: 'TASK_1' | 'TASK_2' | null) {
   return task === 'TASK_2' ? ['Introduction', 'Body 1', 'Body 2', 'Conclusion'] : ['Introduction', 'Overview', 'Body 1', 'Body 2']
@@ -25,20 +18,6 @@ export function essaySections(task: 'TASK_1' | 'TASK_2' | null) {
 /** The essay the grader receives: one paragraph per non-empty part. */
 export function joinSections(texts: string[]) {
   return texts.map((text) => text.trim()).filter(Boolean).join('\n\n')
-}
-
-/** The essay of the step-by-step mode: the sentences of one part form a paragraph. */
-export function joinSteps(steps: GuideStep[], sentences: string[]) {
-  const paragraphs: string[] = []
-  let currentSection = ''
-  steps.forEach((step, index) => {
-    const sentence = (sentences[index] ?? '').trim()
-    if (!sentence) return
-    if (step.section === currentSection && paragraphs.length) paragraphs[paragraphs.length - 1] += ` ${sentence}`
-    else paragraphs.push(sentence)
-    currentSection = step.section
-  })
-  return paragraphs.join('\n\n')
 }
 
 export type GuideBlock = { kind: 'heading' | 'paragraph' | 'bullet'; text: string }
@@ -142,7 +121,7 @@ export interface WritingResultContext {
   seconds: number
   timeLimitSeconds: number | null
   title: string
-  mode: 'free' | 'guided'
+  mode: 'practice' | 'exam'
   retryPath: string
 }
 

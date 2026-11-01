@@ -1,0 +1,37 @@
+/* The path above a practice screen: "Luyện tập › Reading › Passage 2 › Kết quả". */
+
+.pb-nav { min-width: 0; }
+
+.pb-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.15rem 0.2rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.95rem;
+}
+
+.pb-item,
+.pb-sep { display: inline-flex; align-items: center; }
+
+.pb-sep { color: #94a3b8; }
+
+.pb-link {
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  color: #1d4ed8;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 0.15s ease;
+}
+
+.pb-link:hover { background: #e8efff; }
+.pb-link:focus-visible { outline: 2px solid #1d4ed8; outline-offset: 2px; }
+
+.pb-current {
+  padding: 0.2rem 0.55rem;
+  color: #0f172a;
+  font-weight: 700;
+}

@@ -1,9 +1,56 @@
 /* Video dictation library (P-48). Colours come from the shared classroom tokens in styles/globals.css. */
 
+/* Each level has its colour: --lv on the badge and the title of a group, --lv-soft behind it. */
+[data-level='A1'] { --lv: #15803d; --lv-soft: #dcfce7; }
+[data-level='A2'] { --lv: #0f766e; --lv-soft: #ccfbf1; }
+[data-level='B1'] { --lv: #1d4ed8; --lv-soft: #dbeafe; }
+[data-level='B2'] { --lv: #4338ca; --lv-soft: #e0e7ff; }
+[data-level='C1'] { --lv: #6d28d9; --lv-soft: #ede9fe; }
+[data-level='C2'] { --lv: #be123c; --lv-soft: #ffe4e6; }
+
+/* The page is never plain white: soft colour at the corners and a waveform fading out under the banner. */
 .vd-page {
+  position: relative;
   min-height: 100dvh;
-  background: var(--classroom-canvas);
+  isolation: isolate;
+  background:
+    radial-gradient(900px 420px at 10% -4%, #dbe6ff 0%, rgb(219 230 255 / 0%) 70%),
+    radial-gradient(800px 380px at 94% 2%, #e9defe 0%, rgb(233 222 254 / 0%) 70%),
+    linear-gradient(180deg, #eef3ff 0%, #f5f8ff 560px, #f9faff 100%);
   color: var(--classroom-text);
+}
+
+.vd-page::before {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: -1;
+  height: 560px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='960' height='360' viewBox='0 0 960 360'%3E%3Cg fill='%231d4ed8' fill-opacity='0.075'%3E%3Crect x='8' y='157' width='12' height='46' rx='6'/%3E%3Crect x='48' y='134' width='12' height='92' rx='6'/%3E%3Crect x='88' y='105' width='12' height='150' rx='6'/%3E%3Crect x='128' y='138' width='12' height='84' rx='6'/%3E%3Crect x='168' y='77' width='12' height='206' rx='6'/%3E%3Crect x='208' y='118' width='12' height='124' rx='6'/%3E%3Crect x='248' y='148' width='12' height='64' rx='6'/%3E%3Crect x='288' y='92' width='12' height='176' rx='6'/%3E%3Crect x='328' y='124' width='12' height='112' rx='6'/%3E%3Crect x='368' y='144' width='12' height='72' rx='6'/%3E%3Crect x='408' y='85' width='12' height='190' rx='6'/%3E%3Crect x='448' y='130' width='12' height='100' rx='6'/%3E%3Crect x='488' y='151' width='12' height='58' rx='6'/%3E%3Crect x='528' y='100' width='12' height='160' rx='6'/%3E%3Crect x='568' y='121' width='12' height='118' rx='6'/%3E%3Crect x='608' y='140' width='12' height='80' rx='6'/%3E%3Crect x='648' y='73' width='12' height='214' rx='6'/%3E%3Crect x='688' y='132' width='12' height='96' rx='6'/%3E%3Crect x='728' y='153' width='12' height='54' rx='6'/%3E%3Crect x='768' y='110' width='12' height='140' rx='6'/%3E%3Crect x='808' y='126' width='12' height='108' rx='6'/%3E%3Crect x='848' y='145' width='12' height='70' rx='6'/%3E%3Crect x='888' y='89' width='12' height='182' rx='6'/%3E%3Crect x='928' y='135' width='12' height='90' rx='6'/%3E%3C/g%3E%3C/svg%3E") repeat-x center 40px / 960px 360px;
+  content: '';
+  mask-image: linear-gradient(180deg, #000 0%, rgb(0 0 0 / 0%) 100%);
+  pointer-events: none;
+}
+
+/* The two margins beside the content are not left empty on a wide screen: an illustration stays fixed behind the page. */
+.vd-page::after {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    url('./assets/side-art-left.svg') left 0 top 4.5rem / 340px auto no-repeat,
+    url('./assets/side-art-right.svg') right 0 top 4.5rem / 340px auto no-repeat,
+    radial-gradient(520px 640px at 0% 78%, rgb(125 180 255 / 30%) 0%, rgb(125 180 255 / 0%) 70%),
+    radial-gradient(520px 640px at 100% 62%, rgb(196 170 255 / 32%) 0%, rgb(196 170 255 / 0%) 70%);
+  content: '';
+  pointer-events: none;
+}
+
+@media (max-width: 1100px) {
+  .vd-page::after {
+    background:
+      radial-gradient(420px 520px at 0% 80%, rgb(125 180 255 / 22%) 0%, rgb(125 180 255 / 0%) 70%),
+      radial-gradient(420px 520px at 100% 60%, rgb(196 170 255 / 24%) 0%, rgb(196 170 255 / 0%) 70%);
+  }
 }
 
 .vd-main {
@@ -12,17 +59,50 @@
   padding: 1.5rem 1rem 4rem;
 }
 
+/* ---- banner ------------------------------------------------------------ */
+.vd-hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  overflow: hidden;
+  padding: 1.6rem 1.8rem;
+  border-radius: 1.4rem;
+  background: linear-gradient(120deg, #0b2a8f 0%, #1d4ed8 55%, #3b82f6 100%);
+  box-shadow: 0 18px 40px rgb(29 78 216 / 28%);
+  color: #fff;
+}
+
+.vd-hero::after {
+  position: absolute;
+  top: -40%;
+  right: -6%;
+  width: 22rem;
+  height: 22rem;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(255 255 255 / 20%) 0%, rgb(255 255 255 / 0%) 70%);
+  content: '';
+  pointer-events: none;
+}
+
+.vd-hero__text { position: relative; z-index: 1; min-width: 0; }
+
 .vd-header h1 {
-  margin: 0.25rem 0 0.5rem;
-  font-size: clamp(1.6rem, 4vw, 2.1rem);
+  margin: 0.3rem 0 0.5rem;
+  font-size: clamp(1.5rem, 3.6vw, 2.1rem);
   font-weight: 800;
   line-height: 1.2;
 }
 
 .vd-eyebrow {
+  display: inline-block;
   margin: 0;
-  color: var(--classroom-primary);
-  font-size: 0.75rem;
+  padding: 0.2rem 0.7rem;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 18%);
+  color: #fff;
+  font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -30,7 +110,42 @@
 
 .vd-lead {
   margin: 0;
-  color: var(--classroom-text-muted);
+  color: rgb(255 255 255 / 85%);
+}
+
+.vd-hero__art {
+  position: relative;
+  z-index: 1;
+  display: none;
+  flex: none;
+  align-items: center;
+  gap: 1rem;
+  color: #fff;
+}
+
+.vd-wave {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 4.5rem;
+}
+
+.vd-wave i {
+  display: block;
+  width: 5px;
+  height: var(--h);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 75%);
+  animation: vd-wave 1.6s ease-in-out infinite;
+  animation-delay: var(--d);
+}
+
+@keyframes vd-wave {
+  50% { transform: scaleY(0.45); }
+}
+
+@media (min-width: 720px) {
+  .vd-hero__art { display: flex; }
 }
 
 /* ---- continue watching ------------------------------------------------ */
@@ -39,12 +154,14 @@
   grid-template-columns: minmax(120px, 200px) 1fr;
   gap: 1rem;
   align-items: center;
-  margin-top: 1.5rem;
+  margin-top: 1.25rem;
   padding: 1rem;
-  border: 1px solid var(--classroom-border);
+  border: 1px solid #d5e0fb;
+  border-left: 5px solid var(--classroom-primary);
   border-radius: 1rem;
-  background: var(--classroom-surface);
-  box-shadow: var(--classroom-shadow);
+  background: rgb(255 255 255 / 92%);
+  box-shadow: 0 14px 32px rgb(29 78 216 / 12%);
+  backdrop-filter: blur(6px);
 }
 
 .vd-continue__body {
@@ -71,15 +188,18 @@
   justify-content: center;
   gap: 0.5rem;
   padding: 0 1.5rem;
-  border-radius: 0.75rem;
-  background: var(--classroom-primary);
+  border-radius: 999px;
+  background: linear-gradient(135deg, #1d4ed8, #2563eb);
+  box-shadow: 0 8px 18px rgb(29 78 216 / 30%);
   color: #fff;
   font-weight: 700;
   text-decoration: none;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .vd-continue__cta:hover {
-  background: var(--classroom-primary-strong);
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px rgb(29 78 216 / 38%);
 }
 
 .vd-pill {
@@ -114,18 +234,23 @@
   min-height: 2.25rem;
   min-width: 3.5rem;
   padding: 0 1rem;
-  border: 1px solid var(--classroom-border);
+  border: 1px solid #dbe4f6;
   border-radius: 999px;
-  background: var(--classroom-surface);
+  background: rgb(255 255 255 / 90%);
+  box-shadow: 0 2px 8px rgb(32 55 115 / 6%);
   color: var(--classroom-text);
   font-size: 0.8125rem;
   font-weight: 700;
   cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
 }
 
+.vd-chip:hover { background: #eef3ff; transform: translateY(-1px); }
+
 .vd-chip[aria-pressed='true'] {
-  border-color: var(--classroom-primary);
-  background: var(--classroom-primary);
+  border-color: transparent;
+  background: linear-gradient(135deg, #1d4ed8, #2563eb);
+  box-shadow: 0 6px 14px rgb(29 78 216 / 32%);
   color: #fff;
 }
 
@@ -136,9 +261,10 @@
   width: min(100%, 20rem);
   min-height: 2.5rem;
   padding: 0 0.9rem;
-  border: 1px solid var(--classroom-border);
+  border: 1px solid #dbe4f6;
   border-radius: 999px;
-  background: var(--classroom-surface);
+  background: rgb(255 255 255 / 90%);
+  box-shadow: 0 2px 8px rgb(32 55 115 / 6%);
   color: var(--classroom-text-muted);
 }
 
@@ -166,13 +292,26 @@
 }
 
 .vd-group__title {
-  margin: 0 0 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0 0 0.9rem;
   font-size: 1.15rem;
   font-weight: 800;
 }
 
 .vd-group__level {
-  color: var(--classroom-primary);
+  display: inline-grid;
+  place-items: center;
+  min-width: 2.6rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 0.6rem;
+  background: var(--lv, var(--classroom-primary));
+  box-shadow: 0 5px 12px color-mix(in srgb, var(--lv, #1d4ed8) 35%, transparent);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
 }
 
 .vd-group__count {
@@ -191,16 +330,133 @@
 
 .vd-card {
   overflow: hidden;
-  border: 1px solid var(--classroom-border);
-  border-radius: 0.875rem;
-  background: var(--classroom-surface);
-  transition: box-shadow 0.15s, transform 0.15s;
+  border: 1px solid #e3e9f6;
+  border-radius: 1.25rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f8faff 100%);
+  box-shadow: 0 6px 20px rgb(32 55 115 / 8%), 0 1px 2px rgb(32 55 115 / 6%);
+  transition: box-shadow 0.25s, transform 0.25s, border-color 0.25s;
 }
 
+/* The card lifts and glows in the colour of its level. */
 .vd-card:hover {
-  box-shadow: var(--classroom-shadow);
-  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--lv, #3b82f6) 45%, #ffffff);
+  box-shadow: 0 20px 40px color-mix(in srgb, var(--lv, #1d4ed8) 24%, transparent), 0 2px 4px rgb(32 55 115 / 6%);
+  transform: translateY(-5px);
 }
+
+/* A strip in the colour of the level under the picture. */
+.vd-card[data-level] .vd-card__thumb { border-bottom: 3px solid var(--lv); }
+
+.vd-card__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.85rem;
+}
+
+.vd-card__foot .vd-card__fresh,
+.vd-card__foot .vd-card__progress { margin-top: 0; }
+.vd-card__foot .vd-card__progress { flex: 1; min-width: 0; }
+
+.vd-card__go {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: var(--lv-soft, #eef3ff);
+  color: var(--lv, var(--classroom-primary));
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.vd-card:hover .vd-card__go {
+  background: var(--lv, var(--classroom-primary));
+  color: #fff;
+  transform: translateX(3px);
+}
+
+.vd-card__thumb img { transition: transform 0.4s ease, opacity 0.35s ease; opacity: 0; }
+.vd-card__thumb img.is-loaded { opacity: 1; }
+.vd-card:hover .vd-card__thumb img { transform: scale(1.05); }
+
+/* The level on the corner of the picture, and a play button that appears when the card is pointed at. */
+.vd-card__level {
+  position: absolute;
+  top: 0.55rem;
+  left: 0.55rem;
+  padding: 0.12rem 0.55rem;
+  border-radius: 999px;
+  background: var(--lv, #1d4ed8);
+  box-shadow: 0 4px 10px rgb(15 23 42 / 25%);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.vd-card__play {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: auto;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 92%);
+  box-shadow: 0 8px 22px rgb(15 23 42 / 30%);
+  color: var(--lv, #1d4ed8);
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.vd-card:hover .vd-card__play,
+.vd-card__link:focus-visible .vd-card__play { opacity: 1; transform: scale(1); }
+
+/* A darker foot of the picture makes the length readable on any thumbnail. */
+.vd-card__thumb::after {
+  position: absolute;
+  inset: auto 0 0;
+  height: 40%;
+  background: linear-gradient(180deg, transparent, rgb(15 23 42 / 45%));
+  content: '';
+  pointer-events: none;
+}
+
+.vd-card__duration { z-index: 1; }
+.vd-card__play,
+.vd-card__level { z-index: 1; }
+
+/* While the picture loads (and in the skeleton card) the frame shimmers. */
+.vd-card__thumb.is-loading {
+  background: linear-gradient(100deg, #e5eaf3 20%, #f5f7fb 40%, #e5eaf3 60%);
+  background-size: 220% 100%;
+  animation: vd-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes vd-shimmer {
+  from { background-position: 120% 0; }
+  to { background-position: -120% 0; }
+}
+
+.vd-card--skeleton { content-visibility: visible; pointer-events: none; }
+.vd-card--skeleton:hover { transform: none; box-shadow: 0 4px 16px rgb(32 55 115 / 6%); border-color: #e3e9f6; }
+.vd-card--skeleton .vd-card__thumb::after { display: none; }
+
+.vd-skeleton-line {
+  display: block;
+  height: 0.85rem;
+  margin-top: 0.5rem;
+  border-radius: 6px;
+  background: linear-gradient(100deg, #e5eaf3 20%, #f5f7fb 40%, #e5eaf3 60%);
+  background-size: 220% 100%;
+  animation: vd-shimmer 1.4s ease-in-out infinite;
+}
+
+.vd-loading { margin-top: 2rem; }
 
 .vd-card__link {
   display: block;
@@ -250,11 +506,17 @@
 }
 
 .vd-card__title {
+  display: -webkit-box;
   margin: 0;
-  font-size: 0.9375rem;
-  font-weight: 700;
+  overflow: hidden;
+  color: #0f172a;
+  font-size: 1rem;
+  font-weight: 800;
   line-height: 1.35;
+  letter-spacing: -0.005em;
   overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .vd-card__meta,
@@ -264,13 +526,39 @@
   font-size: 0.75rem;
 }
 
+/* How many sentences, as a small chip. */
+.vd-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: fit-content;
+  margin-top: 0.55rem;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  background: #eef2fa;
+  color: #475569;
+  font-weight: 600;
+}
+
+/* "Chưa làm" is a small tag in the colour of the level, so a fresh video stands out from one in progress. */
+.vd-card__fresh {
+  display: inline-block;
+  margin-top: 0.7rem;
+  padding: 0.12rem 0.6rem;
+  border-radius: 999px;
+  background: var(--lv-soft, #eef3ff);
+  color: var(--lv, var(--classroom-primary));
+  font-weight: 700;
+}
+
 .vd-card__progress {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-top: 0.6rem;
+  margin-top: 0.7rem;
   color: var(--classroom-text-muted);
   font-size: 0.75rem;
+  font-weight: 700;
 }
 
 .vd-card__progress .vd-progress {
@@ -288,7 +576,8 @@
   display: block;
   height: 100%;
   border-radius: 999px;
-  background: var(--classroom-primary);
+  background: linear-gradient(90deg, var(--lv, #2563eb), color-mix(in srgb, var(--lv, #1d4ed8) 70%, #60a5fa));
+  transition: width 0.3s ease;
 }
 
 /* ---- loading / error / empty ------------------------------------------ */
@@ -318,6 +607,10 @@
   .vd-spin { animation: none; }
   .vd-card { transition: none; }
   .vd-card:hover { transform: none; }
+  .vd-wave i,
+  .vd-skeleton-line,
+  .vd-card__thumb.is-loading { animation: none; }
+  .vd-card:hover .vd-card__thumb img { transform: none; }
 }
 
 @media (min-width: 720px) {

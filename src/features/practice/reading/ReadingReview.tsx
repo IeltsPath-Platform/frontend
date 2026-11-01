@@ -1,14 +1,17 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Check, MessageSquareText, X } from 'lucide-react'
+import { Check, Highlighter, MessageSquareText, X } from 'lucide-react'
 import type { TestSection } from '@/features/learning-path/lib/attemptSnapshot'
 import type { ReadingResultItem, ReadingResultView } from '../lib/readingResultView'
 import type { SkillType } from '@/types/practice'
 import { ListeningAudioBar } from '../listening/ListeningAudioBar'
+import { ListeningScript } from '../listening/ListeningScript'
 import '../listening/listening-workspace.css'
 import { PRACTICE_SKILL_CONFIG } from '../lib/practiceSkillConfig'
 import { formatClockTime } from '../lib/practiceAnalysis'
 import { parseExplanation } from '../lib/explanationSteps'
+import { locateEvidence, parseEvidence } from '../lib/evidenceHighlight'
+import type { EvidenceRef } from '../lib/evidenceHighlight'
 import './reading-practice.css'
 import './reading-workspace.css'
 import './reading-review.css'
@@ -25,8 +28,20 @@ const VERDICT_LABEL: Record<Verdict, string> = { correct: 'đúng', wrong: 'sai'
 const sameAnswer = (a: string | null | undefined, b: string | null | undefined) =>
   a != null && b != null && a.trim().toLowerCase() === b.trim().toLowerCase()
 
+/** The sentence of the passage that an explanation points at, and the explanation line it came from. */
+interface ActiveEvidence extends EvidenceRef {
+  itemId: string
+  source: string
+}
+
 /** What the learner answered against the key, then the explanation step by step. */
-function ExplanationPanel({ item, verdict }: { item: ReadingResultItem; verdict: Verdict }) {
+function ExplanationPanel({ item, verdict, activeSource, onEvidence }: {
+  item: ReadingResultItem
+  verdict: Verdict
+  /** The explanation line whose evidence is highlighted in the passage now. */
+  activeSource: string | null
+  onEvidence: (evidence: ActiveEvidence | null) => void
+}) {
   const parsed = parseExplanation(item.explanation)
   return (
     <div className="rv-explanation" role="region" aria-label={`Giải thích câu ${item.number}`}>
@@ -40,9 +55,24 @@ function ExplanationPanel({ item, verdict }: { item: ReadingResultItem; verdict:
           {step.lines.some((line) => line.kind === 'bullet') && (
             <ul>{step.lines.filter((line) => line.kind === 'bullet').map((line) => <li key={line.text}>{line.text}</li>)}</ul>
           )}
-          {step.lines.filter((line) => line.kind !== 'bullet').map((line) => (
-            <p key={line.text} className={line.kind === 'evidence' ? 'rv-evidence' : undefined}>{line.text}</p>
-          ))}
+          {step.lines.filter((line) => line.kind !== 'bullet').map((line) => {
+            const reference = line.kind === 'evidence' ? parseEvidence(line.text) : null
+            if (!reference) return <p key={line.text} className={line.kind === 'evidence' ? 'rv-evidence' : undefined}>{line.text}</p>
+            const active = activeSource === line.text
+            return (
+              <div key={line.text} className="rv-evidence-block">
+                <p className="rv-evidence">{line.text}</p>
+                <button
+                  type="button"
+                  className={`rv-evidence-button${active ? ' is-active' : ''}`}
+                  aria-pressed={active}
+                  onClick={() => onEvidence(active ? null : { ...reference, itemId: item.itemId, source: line.text })}
+                >
+                  <Highlighter size={14} aria-hidden="true" /> {active ? 'Bỏ highlight' : 'Highlight trong bài đọc'}
+                </button>
+              </div>
+            )
+          })}
         </section>
       ))}
       {!parsed.steps.length && <p>{parsed.plain || 'Câu này chưa có phần giải thích.'}</p>}
@@ -51,11 +81,13 @@ function ExplanationPanel({ item, verdict }: { item: ReadingResultItem; verdict:
 }
 
 /** One question as the learner answered it: their choice, the right answer and the explanation. */
-function ReviewQuestion({ item, question, open, onToggle }: {
+function ReviewQuestion({ item, question, open, onToggle, activeSource, onEvidence }: {
   item: ReadingResultItem
   question: NonNullable<TestSection['items'][number]['question']>
   open: boolean
   onToggle: () => void
+  activeSource: string | null
+  onEvidence: (evidence: ActiveEvidence | null) => void
 }) {
   const verdict = verdictOf(item)
   const hasKey = item.correctAnswer !== undefined
@@ -95,7 +127,7 @@ function ReviewQuestion({ item, question, open, onToggle }: {
         </dl>
       )}
 
-      {open && <ExplanationPanel item={item} verdict={verdict} />}
+      {open && <ExplanationPanel item={item} verdict={verdict} activeSource={activeSource} onEvidence={onEvidence} />}
     </div>
   )
 }
@@ -113,9 +145,33 @@ export function ReadingReview({ attemptId, sections, view, skill = 'reading', tr
   const catalogPath = `/practice-tests?skill=${skill}`
   const [activeIndex, setActiveIndex] = useState(0)
   const [openItem, setOpenItem] = useState<string | null>(null)
+  const [evidence, setEvidence] = useState<ActiveEvidence | null>(null)
   const itemById = useMemo(() => new Map(view.items.map((item) => [item.itemId, item])), [view.items])
   const section = sections[activeIndex]
   const resultTo = `/practice/${skill}/attempts/${attemptId}/result`
+
+  // The passage is shown as a list of paragraphs (Reading) or lines of the script (Listening); the evidence marks a stretch of one.
+  const passageParts = useMemo(() => (skill === 'listening'
+    ? (transcripts?.get(section?.id ?? '') ?? '').split('\n').filter(Boolean).map((text) => ({ label: null, text }))
+    : (section?.snapshot?.passage?.paragraphs ?? []).map((paragraph) => ({ label: paragraph.label ?? null, text: paragraph.text }))), [skill, transcripts, section])
+  // The highlight only lives while the explanation it belongs to is open.
+  const activeEvidence = evidence && evidence.itemId === openItem ? evidence : null
+  const spot = useMemo(() => (activeEvidence ? locateEvidence(passageParts, activeEvidence) : null), [activeEvidence, passageParts])
+  const spotKey = spot ? `${spot.index}:${spot.start}:${spot.end}` : ''
+
+  useEffect(() => {
+    if (spotKey) document.querySelector('.rv-evidence-mark')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }, [spotKey])
+
+  /** The text of one paragraph with the evidence stretch (if it is in this paragraph) drawn as a mark. */
+  /** Draws a line with the evidence marked. `offset` characters of the line (a speaker label) are not drawn. */
+  function withEvidence(line: string, index: number, offset = 0) {
+    const text = line.slice(offset)
+    if (!spot || spot.index !== index) return text
+    const start = Math.max(0, spot.start - offset)
+    const end = Math.max(start, spot.end - offset)
+    return <>{text.slice(0, start)}<mark className="rv-evidence-mark">{text.slice(start, end)}</mark>{text.slice(end)}</>
+  }
 
   const navGroups = sections.map((candidate, index) => ({
     label: `${config.partLabel} ${candidate.partNo ?? index + 1}`,
@@ -139,7 +195,17 @@ export function ReadingReview({ attemptId, sections, view, skill = 'reading', tr
   const renderItem = (entry: TestSection['items'][number]) => {
     const item = itemById.get(entry.id)
     if (!item || !entry.question) return null
-    return <ReviewQuestion key={entry.id} item={item} question={entry.question} open={openItem === entry.id} onToggle={() => setOpenItem((current) => (current === entry.id ? null : entry.id))} />
+    return (
+      <ReviewQuestion
+        key={entry.id}
+        item={item}
+        question={entry.question}
+        open={openItem === entry.id}
+        onToggle={() => setOpenItem((current) => (current === entry.id ? null : entry.id))}
+        activeSource={activeEvidence?.itemId === entry.id ? activeEvidence.source : null}
+        onEvidence={setEvidence}
+      />
+    )
   }
 
   return (
@@ -151,14 +217,16 @@ export function ReadingReview({ attemptId, sections, view, skill = 'reading', tr
       </header>
 
       <div className="rw-body rw-body-exam">
-        <section className="rw-passage" aria-label={skill === 'listening' ? 'Bài nghe' : 'Bài đọc'}>
+        <section className={`rw-passage${skill === 'listening' ? ' rv-passage-listening' : ''}`} aria-label={skill === 'listening' ? 'Bài nghe' : 'Bài đọc'}>
           <h1 className="rw-passage-title">{section.snapshot?.title ?? `${config.partLabel} ${section.partNo ?? activeIndex + 1}`}</h1>
-          {skill === 'listening' && section.snapshot?.audio && <ListeningAudioBar key={section.id} src={section.snapshot.audio.mediaUrl} durationHint={section.snapshot.audio.durationSeconds} exam={false} />}
+          {skill === 'listening' && section.snapshot?.audio && <ListeningAudioBar key={section.id} src={section.snapshot.audio.mediaUrl} durationHint={section.snapshot.audio.durationSeconds} />}
           <div className="rw-passage-scroll" aria-label={skill === 'listening' ? 'Transcript' : 'Nội dung bài đọc'}>
             {skill === 'listening'
-              ? (transcripts?.get(section.id) ?? 'Section này chưa có transcript.').split('\n').filter(Boolean).map((line, index) => <p key={index}>{line}</p>)
-              : section.snapshot?.passage?.paragraphs.map((paragraph, index) => (
-                <p key={`${paragraph.label ?? 'P'}-${index}`}>{paragraph.label ? <strong>{paragraph.label}. </strong> : null}{paragraph.text}</p>
+              ? (passageParts.length
+                ? <ListeningScript lines={passageParts.map((part) => part.text)} renderWords={withEvidence} />
+                : <p>Section này chưa có transcript.</p>)
+              : passageParts.map((part, index) => (
+                <p key={`${part.label ?? 'P'}-${index}`}>{part.label ? <strong>{part.label}. </strong> : null}{withEvidence(part.text, index)}</p>
               ))}
           </div>
         </section>
