@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import type { PracticeCard } from '@/types/practice'
+import examInterfacePreview from '@/assets/exam-interface-preview.png'
+import practiceInterfacePreview from '@/assets/practice-interface-preview.png'
 
 interface PracticeModeModalProps {
   card: PracticeCard | null
@@ -49,14 +51,9 @@ export const PracticeModeModal: React.FC<PracticeModeModalProps> = ({
               className={`screen2-mode-card ${selectedMode === 'practice' ? 'selected' : ''}`}
               onClick={() => setSelectedMode('practice')}
             >
-              {/* Preview mockup */}
-              <div className="mode-preview-img-box">
-                <div className="mock-practice-subnav" />
-                <div className="mock-practice-workspace">
-                  <div className="mock-p-tools" />
-                  <div className="mock-p-passage" />
-                  <div className="mock-p-questions" />
-                </div>
+              {/* The practice screen with its tool panel, passage and questions */}
+              <div className="mode-preview-img-box mode-preview-img-box-photo">
+                <img src={practiceInterfacePreview} alt="Giao diện luyện tập có công cụ Highlight, bài đọc và câu hỏi" />
               </div>
               <span className="mode-title block">Giao diện Luyện tập</span>
               <p className="mode-description">
@@ -71,13 +68,9 @@ export const PracticeModeModal: React.FC<PracticeModeModalProps> = ({
               onClick={() => setSelectedMode('exam')}
             >
               <span className="exam-similarity-badge">Giống 100%</span>
-              {/* Preview mockup */}
-              <div className="mode-preview-img-box">
-                <div className="mock-exam-header" />
-                <div className="mock-exam-content">
-                  <div className="mock-col-left" />
-                  <div className="mock-col-right" />
-                </div>
+              {/* The real computer-based test screen, black and white */}
+              <div className="mode-preview-img-box mode-preview-img-box-photo">
+                <img src={examInterfacePreview} alt="Giao diện thi máy IELTS thật" />
               </div>
               <span className="mode-title block">Giao diện Thi thật</span>
               <p className="mode-description">

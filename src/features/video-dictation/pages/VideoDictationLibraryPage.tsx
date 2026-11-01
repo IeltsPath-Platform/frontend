@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
-import { AlertTriangle, Loader2, Play, Search, SearchX, Video } from 'lucide-react'
+import { AlertTriangle, ArrowRight, Captions, Headphones, Play, Search, SearchX, Video } from 'lucide-react'
 import { SiteNavbar } from '@/components/SiteNavbar'
 import { Button } from '@/components/ui/button'
 import { HttpError } from '@/lib/httpClient'
@@ -22,17 +22,37 @@ import '../video-dictation.css'
 
 type LevelFilter = VideoLevel | 'ALL'
 
+/** Heights (in percent) of the bars of the waveform in the banner. */
+const WAVE_BARS = [38, 62, 90, 54, 100, 70, 44, 84, 58, 96, 48, 76, 36, 88, 64, 42]
+/** Skeleton cards while the library loads. */
+const SKELETON_COUNT = 6
+
 function errorMessage(error: unknown) {
   return error instanceof HttpError ? error.message : 'Không tải được thư viện video. Vui lòng thử lại.'
 }
 
-function Thumbnail({ video }: { video: DictationVideoListItem }) {
+function Thumbnail({ video, decorated = false }: { video: DictationVideoListItem; decorated?: boolean }) {
   const duration = formatDuration(video.durationSeconds)
+  // The picture fades in once it has loaded; until then the frame shimmers.
+  const [loaded, setLoaded] = useState(false)
   return (
-    <div className="vd-card__thumb">
+    <div className={`vd-card__thumb${video.thumbnailUrl && !loaded ? ' is-loading' : ''}`}>
       {video.thumbnailUrl
-        ? <img src={video.thumbnailUrl} alt="" loading="lazy" />
+        ? (
+          <img
+            ref={(image) => { if (image?.complete && image.naturalWidth > 0) setLoaded(true) }}
+            className={loaded ? 'is-loaded' : undefined}
+            src={video.thumbnailUrl}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            onLoad={() => setLoaded(true)}
+            onError={() => setLoaded(true)}
+          />
+        )
         : <span className="vd-card__thumb-empty" aria-hidden="true"><Video size={28} /></span>}
+      {decorated && video.level ? <span className="vd-card__level">{video.level}</span> : null}
+      {decorated ? <span className="vd-card__play" aria-hidden="true"><Play size={20} fill="currentColor" /></span> : null}
       {duration ? <span className="vd-card__duration">{duration}</span> : null}
     </div>
   )
@@ -51,16 +71,19 @@ function ProgressBar({ video }: { video: DictationVideoListItem }) {
 function VideoCard({ video }: { video: DictationVideoListItem }) {
   const started = video.passedSegments > 0
   return (
-    <li className="vd-card">
+    <li className="vd-card" data-level={video.level ?? undefined}>
       <Link className="vd-card__link" to={playerPath(video.id)}
         aria-label={`${video.title}, ${video.totalSegments} câu${started ? `, đã qua ${video.passedSegments}` : ''}`}>
-        <Thumbnail video={video} />
+        <Thumbnail video={video} decorated />
         <div className="vd-card__body">
           <h3 className="vd-card__title">{video.title}</h3>
-          <p className="vd-card__meta">{video.totalSegments} câu{video.level ? ` · ${video.level}` : ''}</p>
-          {started
-            ? <div className="vd-card__progress"><ProgressBar video={video} /><span>{video.passedSegments}/{video.totalSegments}</span></div>
-            : <p className="vd-card__fresh">Chưa làm</p>}
+          <p className="vd-card__meta"><Captions aria-hidden="true" size={14} />{video.totalSegments} câu{video.level ? ` · ${video.level}` : ''}</p>
+          <div className="vd-card__foot">
+            {started
+              ? <div className="vd-card__progress"><ProgressBar video={video} /><span>{video.passedSegments}/{video.totalSegments}</span></div>
+              : <p className="vd-card__fresh">Chưa làm</p>}
+            <span className="vd-card__go" aria-hidden="true"><ArrowRight size={16} /></span>
+          </div>
         </div>
       </Link>
     </li>
@@ -119,10 +142,18 @@ export function VideoDictationLibraryPage() {
     <div className="vd-page">
       <SiteNavbar />
       <main className="vd-main">
-        <header className="vd-header">
-          <p className="vd-eyebrow">Nghe chép video</p>
-          <h1>Nghe từng câu, gõ lại thật chính xác</h1>
-          <p className="vd-lead">Video tự dừng sau mỗi câu để bạn gõ lại. Chọn video theo trình độ của bạn.</p>
+        <header className="vd-header vd-hero">
+          <div className="vd-hero__text">
+            <p className="vd-eyebrow">Nghe chép video</p>
+            <h1>Nghe từng câu, gõ lại thật chính xác</h1>
+            <p className="vd-lead">Video tự dừng sau mỗi câu để bạn gõ lại. Chọn video theo trình độ của bạn.</p>
+          </div>
+          <div className="vd-hero__art" aria-hidden="true">
+            <Headphones size={44} />
+            <span className="vd-wave">
+              {WAVE_BARS.map((height, index) => <i key={index} style={{ '--h': `${height}%`, '--d': `${(index % 7) * 0.12}s` } as CSSProperties} />)}
+            </span>
+          </div>
         </header>
 
         {error ? (
@@ -132,9 +163,20 @@ export function VideoDictationLibraryPage() {
             <Button type="button" onClick={retry}>Thử lại</Button>
           </div>
         ) : videos === null ? (
-          <div className="vd-state" role="status" aria-live="polite">
-            <Loader2 aria-hidden="true" className="vd-spin" size={28} />
-            <p>Đang tải thư viện video…</p>
+          <div className="vd-loading" role="status" aria-live="polite">
+            <span className="sr-only">Đang tải thư viện video…</span>
+            <ul className="vd-grid" aria-hidden="true">
+              {Array.from({ length: SKELETON_COUNT }, (_, index) => (
+                <li className="vd-card vd-card--skeleton" key={index}>
+                  <div className="vd-card__thumb is-loading" />
+                  <div className="vd-card__body">
+                    <i className="vd-skeleton-line" style={{ width: '86%' }} />
+                    <i className="vd-skeleton-line" style={{ width: '58%' }} />
+                    <i className="vd-skeleton-line" style={{ width: '30%', marginTop: '0.9rem' }} />
+                  </div>
+                </li>
+              ))}
+            </ul>
           </div>
         ) : videos.length === 0 ? (
           <div className="vd-state" role="status">
@@ -171,7 +213,7 @@ export function VideoDictationLibraryPage() {
               const shown = FOCUS_COUNT + (extra[group.level] ?? 0)
               const left = group.videos.length - shown
               return (
-                <section key={group.level} className="vd-group" aria-labelledby={`vd-group-${group.level}`}>
+                <section key={group.level} className="vd-group" data-level={group.level} aria-labelledby={`vd-group-${group.level}`}>
                   <h2 id={`vd-group-${group.level}`} className="vd-group__title">
                     <span className="vd-group__level">{group.level}</span> {LEVEL_LABEL[group.level]}
                     <span className="vd-group__count"> · {group.videos.length} video</span>

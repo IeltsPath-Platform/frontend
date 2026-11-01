@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft } from 'lucide-react'
+import { useNavigate, useParams } from 'react-router-dom'
 import type { SkillType } from '@/types/practice'
+import { PracticeBreadcrumb } from '../components/PracticeBreadcrumb'
 import { PRACTICE_SKILL_CONFIG } from '../lib/practiceSkillConfig'
 import { SiteNavbar } from '@/components/SiteNavbar'
 import { LoadingState, ApiErrorState } from '@/features/learning-path/components/PageState'
@@ -71,7 +71,14 @@ export function ReadingResultPage({ review = false, skill = 'reading' }: { revie
   const scopeLabel = view.scope === 'PART' ? (view.sections[0]?.title ?? `Một ${config.partLabel.toLowerCase()}`) : `Toàn bộ đề (${view.sections.length} ${config.partLabel.toLowerCase()})`
 
   return <div className="rr-page"><SiteNavbar /><main className="rr-main">
-    <Link className="rr-back" to={catalogPath}><ArrowLeft size={17} aria-hidden="true" /> Danh mục</Link>
+    <PracticeBreadcrumb items={[
+      { label: 'Luyện tập', to: '/practice-tests' },
+      { label: config.label, to: catalogPath },
+      ...(view.scope === 'FULL'
+        ? [{ label: 'Full đề', to: `${catalogPath}&part=full` }]
+        : view.sections[0]?.partNo ? [{ label: `${config.partLabel} ${view.sections[0].partNo}`, to: `${catalogPath}&part=${view.sections[0].partNo}` }] : []),
+      { label: 'Kết quả' },
+    ]} />
     <div className="rr-top">
       <ResultHero view={view} />
       <ResultSummary view={view} reviewTo={`${attemptBase}/${attemptId}/review`} onRetry={() => void retry()} retrying={retrying} catalogTo={catalogPath} />

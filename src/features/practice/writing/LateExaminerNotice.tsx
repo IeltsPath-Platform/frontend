@@ -76,25 +76,28 @@ function LateNotice({ job, examinerName, onChanged }: {
       {kept
         ? <p>Bạn đang tiếp tục chờ {who}. Kết quả sẽ hiện ở trang này khi giáo viên chấm xong.</p>
         : <p>Bạn có thể tiếp tục chờ {who}, hoặc đổi sang một giáo viên khác. Đổi giáo viên không mất thêm lượt chấm.</p>}
-      <div className="wr-actions">
-        {!kept && (
-          <button type="button" className="wr-secondary" onClick={() => { writeKept(job); setKept(true) }}>
-            Tiếp tục chờ {who}
-          </button>
-        )}
-        {job.canChoose
-          ? <button type="button" className="wr-primary" onClick={() => setChoosing(true)}>Yêu cầu đổi giáo viên</button>
-          : (
-            <p className="ww-muted">
-              Bạn đã dùng hết {2 - job.changesLeft} lần đổi giáo viên cho bài này.
-              {job.canCancel && reviewId ? ' Nếu không muốn chờ nữa, bạn có thể hủy yêu cầu và nhận lại lượt chấm.' : ' Hãy tiếp tục chờ.'}
-            </p>
+      {/* Once the learner chose to keep waiting, neither "keep waiting" nor "change teacher" is offered again. */}
+      {(!kept || !job.canChoose || (job.canCancel && reviewId)) && (
+        <div className="wr-actions">
+          {!kept && (
+            <button type="button" className="wr-secondary" onClick={() => { writeKept(job); setKept(true) }}>
+              Tiếp tục chờ {who}
+            </button>
           )}
-        {job.canCancel && reviewId && (
-          <button type="button" className="wr-primary" onClick={() => { setError(''); setCancelling(true) }}>Hủy yêu cầu và nhận lại lượt</button>
-        )}
-      </div>
-      {job.canChoose && <p className="ww-muted">Còn {job.changesLeft} lần đổi cho bài này.</p>}
+          {job.canChoose
+            ? !kept && <button type="button" className="wr-primary" onClick={() => setChoosing(true)}>Yêu cầu đổi giáo viên</button>
+            : (
+              <p className="ww-muted">
+                Bạn đã dùng hết {2 - job.changesLeft} lần đổi giáo viên cho bài này.
+                {job.canCancel && reviewId ? ' Nếu không muốn chờ nữa, bạn có thể hủy yêu cầu và nhận lại lượt chấm.' : ' Hãy tiếp tục chờ.'}
+              </p>
+            )}
+          {job.canCancel && reviewId && (
+            <button type="button" className="wr-primary" onClick={() => { setError(''); setCancelling(true) }}>Hủy yêu cầu và nhận lại lượt</button>
+          )}
+        </div>
+      )}
+      {!kept && job.canChoose && <p className="ww-muted">Còn {job.changesLeft} lần đổi cho bài này.</p>}
       {cancelling && (
         <CancelRequestDialog busy={busy} error={error} onCancel={() => void cancel()} onClose={() => { setCancelling(false); setError('') }} />
       )}

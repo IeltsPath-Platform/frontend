@@ -21,6 +21,26 @@
 
 .rw-root.rw-text-small { --rw-text-size: 0.82rem; }
 .rw-root.rw-text-large { --rw-text-size: 1.12rem; }
+/* Exam layout: the black-and-white look of the computer-delivered test (it has no eye-comfort mode). */
+.rw-root.rw-exam {
+  --rw-canvas: #ffffff;
+  --rw-surface: #ffffff;
+  --rw-ink: #000000;
+  --rw-muted: #4b5563;
+  --rw-line: #9ca3af;
+  --rw-accent: #111111;
+  /* The shared question fields (radio dot, A/B/C keys, answer boxes) take their blue from these. */
+  --primary: #111111;
+  --primary-foreground: #ffffff;
+  --lp-primary: #111111;
+  --lp-primary-strong: #000000;
+  --lp-soft: #e5e7eb;
+  /* The focus ring around a chosen radio is black too. */
+  --color-focus: #111111;
+  /* top bar, part banner, body, footer */
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+}
+
 .rw-root.rw-eye-comfort { --rw-canvas: #f5efe3; --rw-surface: #fbf6ec; --rw-line: #e3d9c4; }
 
 /* A: top bar */
@@ -259,10 +279,117 @@
 
 .rw-confirm-actions { display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 1rem; }
 
+/* Exam layout: flat white paper, a draggable bar between passage and questions, a grey bottom bar. */
+.rw-exam .rw-timer { padding: 0.25rem 1rem; border: 1px solid #111111; border-radius: 4px; background: #ffffff; color: #000000; }
+.rw-exam .rw-exit,
+.rw-exam .rw-settings-button { border: 1px solid #111111; border-radius: 4px; }
+.rw-exam .rw-exit:hover,
+.rw-exam .rw-settings-button:hover { background: #e5e7eb; }
+
+/* Passage, draggable divider, questions: only the Reading exam screen has the divider (the review screen has two columns). */
+.rw-exam .rw-body.rw-body-exam {
+  grid-template-columns: minmax(0, calc((100% - 1.4rem) * var(--rw-split, 50) / 100)) 1.4rem minmax(0, 1fr);
+  gap: 0;
+  padding: 0 0.9rem 0.4rem;
+}
+
+.rw-exam .rw-passage,
+.rw-exam .rw-questions { border: 0; border-radius: 0; }
+.rw-exam .rw-passage-title { font-size: 1.15rem; }
+.rw-exam .rw-passage-scroll { padding: 0.4rem 1.2rem 1.4rem 0.2rem; }
+.rw-exam .rw-passage-scroll mark { background: #fde047; }
+.rw-exam .rw-questions-scroll { padding: 0.2rem 0.6rem 1.4rem 1.2rem; }
+
+.rw-exam .rw-questions .lp-question__num { border: 1.5px solid #111111; border-radius: 4px; background: #ffffff; color: #111111; }
+.rw-exam .rw-questions .lp-options { margin-left: 0; gap: 0.25rem; }
+.rw-exam .rw-questions .lp-option { padding: 0.7rem 0.9rem; border-radius: 0; }
+.rw-exam .rw-questions .lp-option:hover { background: #f3f4f6; }
+/* The chosen answer fills its whole row with light blue and its radio is a blue ring around a blue dot. */
+.rw-exam .rw-questions .lp-option[data-checked='true'] { background: #bcd9f2; }
+.rw-exam .rw-questions [data-slot='radio-group-item'] { width: 1.1rem; height: 1.1rem; }
+.rw-exam .rw-questions [data-slot='radio-group-item'][aria-checked='true'] { border: 2px solid #0a6cf5; background: #ffffff; }
+.rw-exam .rw-questions [data-slot='radio-group-indicator'] > span { background: #0a6cf5; }
+
+.rw-divider {
+  position: relative;
+  display: grid;
+  place-items: center;
+  cursor: col-resize;
+  touch-action: none;
+  user-select: none;
+  outline: none;
+}
+
+.rw-divider::before { content: ''; position: absolute; top: 0; bottom: 0; left: 50%; width: 2px; background: #111111; transform: translateX(-50%); }
+
+.rw-divider-grip {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 1.4rem;
+  height: 1.9rem;
+  border: 1.5px solid #111111;
+  border-radius: 3px;
+  background: #ffffff;
+  color: #111111;
+}
+
+.rw-divider:hover .rw-divider-grip { background: #e5e7eb; }
+.rw-divider:focus-visible .rw-divider-grip { box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #111111; }
+
+.rw-exam .rw-footer { border-top: 1px solid #d1d5db; background: #f3f4f6; }
+.rw-exam .rw-qnav { margin-left: 0; padding: 0.2rem 0.3rem; border: 0; border-radius: 0; background: transparent; }
+.rw-exam .rw-qnav-label { margin-right: 0.6rem; color: #000000; font-size: 0.85rem; font-weight: 700; }
+.rw-exam .rw-qnum { position: relative; min-width: 1.6rem; border: 1.5px solid transparent; border-radius: 3px; color: #000000; font-weight: 500; }
+.rw-exam .rw-qnum:hover { background: #e5e7eb; }
+/* Every number carries a bar above it: grey until the question is answered, then green. */
+/* The parts are spread evenly across the whole bar. */
+.rw-exam .rw-qnav { flex: 1; justify-content: space-between; margin-right: 1.5rem; padding-top: 0.7rem; }
+.rw-exam .rw-qnum.is-answered { border-bottom-color: transparent; }
+.rw-exam .rw-qnum::before { content: ''; position: absolute; top: -0.55rem; left: -1px; right: -1px; height: 4px; background: #d1d5db; }
+.rw-exam .rw-qnum.is-answered::before { background: #16a34a; }
+.rw-exam .rw-qnum.is-current { border-color: #111111; background: #ffffff; color: #000000; }
+/* The finish button is a tick in a grey block that fills the right end of the bar. */
+.rw-exam .rw-footer { min-height: 3.4rem; padding: 0 0 0 0.9rem; }
+.rw-exam .rw-footer-actions { align-self: stretch; gap: 0; }
+.rw-exam .rw-error { margin-right: 0.8rem; }
+.rw-exam .rw-finish { justify-content: center; min-width: 4.6rem; height: 100%; padding: 0 1.4rem; border: 0; border-radius: 0; background: #ececec; color: #000000; }
+.rw-exam .rw-finish:hover:not(:disabled) { background: #dcdcdc; color: #000000; }
+.rw-exam .rw-finish.is-ready,
+.rw-exam .rw-finish.is-ready:hover:not(:disabled) { background: #ececec; color: #000000; }
+
+/* Previous / next question, floating over the bottom-right corner of the questions. */
+.rw-exam .rw-body.rw-body-exam { position: relative; }
+.rw-exam .rw-questions-scroll { padding-bottom: 5.5rem; }
+.rw-exam-arrows { position: absolute; right: 0.9rem; bottom: 0.7rem; display: flex; gap: 0.5rem; }
+.rw-arrow { display: grid; place-items: center; width: 3.4rem; height: 3.4rem; border: 0; border-radius: 4px; color: #ffffff; }
+.rw-arrow-prev { background: #4b4b4b; }
+.rw-arrow-next { background: #000000; }
+.rw-arrow:hover:not(:disabled) { outline: 2px solid #9ca3af; }
+.rw-arrow:disabled { background: #dcdcdc; cursor: not-allowed; }
+
+/* The screen the tick opens: a "Next" bar, an empty page and the parts at the bottom. */
+.rw-finish-bar { padding: 1.1rem 0.9rem 2.6rem; border-bottom: 1px solid #d1d5db; }
+.rw-finish-bar-inner { display: flex; align-items: center; justify-content: space-between; max-width: 62rem; margin: 0 auto; }
+.rw-finish-bar-inner p { margin: 0; font-size: 1.05rem; }
+.rw-finish-next { display: inline-flex; align-items: center; gap: 0.7rem; padding: 0.85rem 1.6rem; border: 0; border-radius: 3px; background: #000000; color: #ffffff; font-size: 1.05rem; font-weight: 600; cursor: pointer; }
+.rw-finish-next:hover { background: #2b2b2b; }
+.rw-body-finish > :not(.rw-exam-arrows) { display: none; }
+.rw-exam .rw-finish.is-finishing,
+.rw-exam .rw-finish.is-finishing:hover:not(:disabled) { background: #2b2b2b; color: #ffffff; }
+
+/* Parts that are not open collapse to "Part 2  0 of 13". */
+.rw-qnav-part { display: inline-flex; align-items: baseline; gap: 0.6rem; margin: 0; padding: 0.2rem 0.4rem; border: 0; border-radius: 3px; background: transparent; color: #000000; }
+.rw-qnav-part:hover { background: #e5e7eb; }
+.rw-qnav-count { color: #4b5563; font-size: 0.85rem; }
+
 /* Narrow screens: the tools become a strip and the two cards stack. */
 @media (max-width: 900px) {
+  .rw-divider { display: none; }
+
   .rw-body,
-  .rw-body.rw-body-exam {
+  .rw-body.rw-body-exam,
+  .rw-exam .rw-body.rw-body-exam {
     grid-template-columns: minmax(0, 1fr);
     grid-auto-rows: minmax(60vh, auto);
     padding: 0 0.6rem 0.6rem;

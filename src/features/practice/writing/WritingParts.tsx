@@ -9,9 +9,11 @@ import type { WritingTask } from './writingApi'
 import { boldRuns, parseGuide } from './writingText'
 
 /** Area A: exit, what the screen is showing (clock or step progress) and the display settings. */
-export function WritingTopBar({ exitTo, children, eyeComfort, onToggleEyeComfort, fontSize, onChangeFontSize }: {
+export function WritingTopBar({ exitTo, children, showEyeComfort = true, eyeComfort, onToggleEyeComfort, fontSize, onChangeFontSize }: {
   exitTo: string
   children?: ReactNode
+  /** The real exam screen has no eye-comfort mode. */
+  showEyeComfort?: boolean
   eyeComfort: boolean
   onToggleEyeComfort: (value: boolean) => void
   fontSize: WorkspaceFontSize
@@ -26,7 +28,7 @@ export function WritingTopBar({ exitTo, children, eyeComfort, onToggleEyeComfort
         <button type="button" className="rw-settings-button" aria-expanded={settingsOpen} onClick={() => setSettingsOpen((open) => !open)}>
           <Settings size={14} aria-hidden="true" /> Cài đặt
         </button>
-        <PracticeSettingsPopover isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} eyeComfort={eyeComfort}
+        <PracticeSettingsPopover isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} eyeComfort={eyeComfort} showEyeComfort={showEyeComfort}
           onToggleEyeComfort={onToggleEyeComfort} fontSize={fontSize} onChangeFontSize={onChangeFontSize} />
       </div>
     </header>
@@ -60,6 +62,7 @@ export function WritingTaskPanel({ task, showGuide }: { task: WritingTask; showG
   const blocks = useMemo(() => parseGuide(task.guide), [task.guide])
   return (
     <section className="ww-card ww-task" aria-label="Đề bài">
+      <header className="ww-card-head"><strong>Đề bài</strong></header>
       <div className="ww-task-scroll">
         <p className="ww-prompt">{task.prompt}</p>
         <WritingChart task={task} />
@@ -82,9 +85,8 @@ export function WritingTaskPanel({ task, showGuide }: { task: WritingTask; showG
 
 const LOOKUP_LIMIT = 50
 
-/** Area D: the dictionary panel. Only the layout is drawn for now; looking a word up is not connected yet. */
+/** Area D: the dictionary panel, one box to look a word up in. Only the layout is drawn for now; looking a word up is not connected yet. */
 export function WritingDictionaryPanel({ children }: { children?: ReactNode }) {
-  const [direction, setDirection] = useState<'vi-en' | 'en-vi'>('vi-en')
   const [query, setQuery] = useState('')
 
   return (
@@ -92,11 +94,7 @@ export function WritingDictionaryPanel({ children }: { children?: ReactNode }) {
       <header className="ww-card-head"><strong>Tra từ vựng</strong></header>
       <div className="ww-dictionary-body">{children}</div>
       <div className="ww-lookup">
-        <div className="ww-lookup-tabs" role="tablist" aria-label="Chiều tra từ">
-          <button type="button" role="tab" aria-selected={direction === 'vi-en'} className={direction === 'vi-en' ? 'is-on' : ''} onClick={() => setDirection('vi-en')}>Tra Việt-Anh</button>
-          <button type="button" role="tab" aria-selected={direction === 'en-vi'} className={direction === 'en-vi' ? 'is-on' : ''} onClick={() => setDirection('en-vi')}>Tra Anh-Việt</button>
-        </div>
-        <input value={query} maxLength={LOOKUP_LIMIT} placeholder={direction === 'vi-en' ? 'Nhập cụm Tiếng Việt cần tra' : 'Nhập từ hoặc cụm Tiếng Anh cần tra'}
+        <input value={query} maxLength={LOOKUP_LIMIT} placeholder="Nhập từ hoặc cụm từ cần tra"
           aria-label="Từ cần tra" onChange={(event) => setQuery(event.target.value)} />
         <div className="ww-lookup-foot">
           <span>{query.length}/{LOOKUP_LIMIT} ký tự</span>

@@ -8,6 +8,8 @@ interface PracticeSettingsPopoverProps {
   onToggleEyeComfort: (val: boolean) => void
   fontSize: 'small' | 'medium' | 'large'
   onChangeFontSize: (size: 'small' | 'medium' | 'large') => void
+  /** The real exam screen has no eye-comfort mode, so the exam layout turns the switch off. */
+  showEyeComfort?: boolean
 }
 
 export const PracticeSettingsPopover: React.FC<PracticeSettingsPopoverProps> = ({
@@ -17,6 +19,7 @@ export const PracticeSettingsPopover: React.FC<PracticeSettingsPopoverProps> = (
   onToggleEyeComfort,
   fontSize,
   onChangeFontSize,
+  showEyeComfort = true,
 }) => {
   const ref = useRef<HTMLDivElement>(null)
 
@@ -41,21 +44,23 @@ export const PracticeSettingsPopover: React.FC<PracticeSettingsPopoverProps> = (
       <div className="popover-arrow-up" />
 
       {/* Chế độ bảo vệ mắt */}
-      <div className="popover-row">
-        <div className="popover-label-group">
-          <Eye size={15} className="text-slate-600" />
-          <span className="popover-text">Chế độ bảo vệ mắt</span>
+      {showEyeComfort && (
+        <div className="popover-row">
+          <div className="popover-label-group">
+            <Eye size={15} className="text-slate-600" />
+            <span className="popover-text">Chế độ bảo vệ mắt</span>
+          </div>
+          <button
+            type="button"
+            className={`popover-switch ${eyeComfort ? 'active' : ''}`}
+            onClick={() => onToggleEyeComfort(!eyeComfort)}
+            role="switch"
+            aria-checked={eyeComfort}
+          >
+            <span className="switch-knob" />
+          </button>
         </div>
-        <button
-          type="button"
-          className={`popover-switch ${eyeComfort ? 'active' : ''}`}
-          onClick={() => onToggleEyeComfort(!eyeComfort)}
-          role="switch"
-          aria-checked={eyeComfort}
-        >
-          <span className="switch-knob" />
-        </button>
-      </div>
+      )}
 
       {/* Kích cỡ chữ: S M L */}
       <div className="popover-row">

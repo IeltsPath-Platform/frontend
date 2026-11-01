@@ -143,4 +143,67 @@
 .rv-step ul { margin: 0; padding-left: 1.1rem; font-size: 0.78rem; line-height: 1.55; }
 .rv-step p { margin: 0.2rem 0; }
 .rv-evidence { padding: 0.35rem 0.6rem; border-left: 3px solid #86d6a6; background: #f0fdf4; }
+
+/* The button under a quoted sentence, and the sentence marked in the passage. */
+.rv-evidence-block { margin: 0.2rem 0 0.4rem; }
+.rv-evidence-block .rv-evidence { margin-bottom: 0.35rem; }
+.rv-evidence-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid #ca8a04;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #854d0e;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.rv-evidence-button:hover { background: #fef9c3; }
+.rv-evidence-button.is-active { background: #fde047; border-color: #ca8a04; color: #422006; }
+
+.rw-passage-scroll mark.rv-evidence-mark { padding: 0.05rem 0.15rem; border-radius: 3px; background: #fde047; box-shadow: 0 0 0 3px rgba(253, 224, 71, 0.45); cursor: default; }
 .rv-step-answer p { color: var(--rv-right); font-weight: 800; }
+
+/* Listening review: title, recording card, then the script as a conversation. The frame has three rows, not two. */
+.rw-passage.rv-passage-listening { grid-template-rows: auto auto minmax(0, 1fr); }
+.rv-passage-listening .rw-passage-title { padding-bottom: 0.8rem; }
+
+.rv-passage-listening .lw-audio {
+  flex-wrap: wrap;
+  gap: 0.5rem 0.7rem;
+  margin: 0 1.2rem 0.4rem;
+  padding: 0.7rem 1rem;
+  border-color: #dbe4f0;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #f8fbff, #eef4ff);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+.rv-passage-listening .lw-audio-play { width: 2.5rem; height: 2.5rem; box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3); }
+.rv-passage-listening .lw-audio-seek { flex: 1 1 8rem; }
+.rv-passage-listening .lw-audio-rate { border-radius: 999px; }
+
+.rv-passage-listening .rw-passage-scroll { padding: 0.6rem 1.2rem 1.4rem; }
+
+.rv-script-line { --tone-bg: #eff6ff; --tone-ink: #1d4ed8; margin: 0 0 0.3rem; }
+.rv-script-line[data-tone="1"] { --tone-bg: #fff7ed; --tone-ink: #c2410c; }
+.rv-script-line[data-tone="2"] { --tone-bg: #ecfdf5; --tone-ink: #047857; }
+.rv-script-line[data-tone="3"] { --tone-bg: #f5f3ff; --tone-ink: #6d28d9; }
+.rv-script-line.has-name { margin-top: 0.9rem; }
+.rv-script-line:first-child { margin-top: 0; }
+
+.rv-script-speaker { display: block; margin: 0 0 0.25rem 0.3rem; color: var(--tone-ink); font-size: 0.74rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
+
+.rw-passage-scroll p.rv-script-words {
+  display: block;
+  max-width: 92%;
+  margin: 0;
+  padding: 0.6rem 0.9rem;
+  border-radius: 4px 14px 14px 14px;
+  background: var(--tone-bg);
+  color: #1e293b;
+  line-height: 1.7;
+}
+/* A line with no speaker label (a note or a talk) reads as plain text. */
+.rv-script-line:not([data-tone]) .rv-script-words { max-width: none; padding-left: 0; background: transparent; }

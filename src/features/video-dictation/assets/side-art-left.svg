@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="1100" viewBox="0 0 360 1100" fill="none">
+  <defs>
+    <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="2" fill="#2563eb" fill-opacity="0.22"/>
+    </pattern>
+    <linearGradient id="soft" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#60a5fa" stop-opacity="0.38"/>
+      <stop offset="1" stop-color="#a78bfa" stop-opacity="0.28"/>
+    </linearGradient>
+  </defs>
+
+  <!-- rings and a soft disc, top left -->
+  <circle cx="30" cy="220" r="190" stroke="#2563eb" stroke-opacity="0.14" stroke-width="2"/>
+  <circle cx="30" cy="220" r="130" stroke="#2563eb" stroke-opacity="0.12" stroke-width="2"/>
+  <circle cx="30" cy="220" r="70" fill="url(#soft)"/>
+
+  <!-- a field of dots -->
+  <rect x="150" y="40" width="176" height="132" fill="url(#dots)"/>
+
+  <!-- play button -->
+  <circle cx="230" cy="420" r="46" fill="#ffffff" fill-opacity="0.72" stroke="#2563eb" stroke-opacity="0.28" stroke-width="2"/>
+  <path d="M220 400 L252 420 L220 440 Z" fill="#2563eb" fill-opacity="0.45"/>
+
+  <!-- caption bubble: the line the learner types back -->
+  <rect x="40" y="540" width="200" height="104" rx="22" fill="#ffffff" fill-opacity="0.76" stroke="#2563eb" stroke-opacity="0.22" stroke-width="2"/>
+  <path d="M84 644 L68 678 L116 644 Z" fill="#ffffff" fill-opacity="0.76"/>
+  <rect x="64" y="568" width="140" height="10" rx="5" fill="#2563eb" fill-opacity="0.28"/>
+  <rect x="64" y="592" width="108" height="10" rx="5" fill="#2563eb" fill-opacity="0.2"/>
+  <rect x="64" y="616" width="84" height="10" rx="5" fill="#7c3aed" fill-opacity="0.24"/>
+
+  <!-- headphones -->
+  <path d="M120 790 a80 80 0 0 1 160 0" stroke="#2563eb" stroke-opacity="0.32" stroke-width="12" stroke-linecap="round"/>
+  <rect x="104" y="780" width="34" height="64" rx="14" fill="#2563eb" fill-opacity="0.3"/>
+  <rect x="262" y="780" width="34" height="64" rx="14" fill="#2563eb" fill-opacity="0.3"/>
+
+  <!-- music notes -->
+  <path d="M90 980 V920 L150 906 V966" stroke="#7c3aed" stroke-opacity="0.36" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <ellipse cx="76" cy="982" rx="18" ry="13" fill="#7c3aed" fill-opacity="0.3"/>
+  <ellipse cx="136" cy="968" rx="18" ry="13" fill="#7c3aed" fill-opacity="0.3"/>
+
+  <!-- rings, bottom right of this strip -->
+  <circle cx="300" cy="1040" r="90" stroke="#2563eb" stroke-opacity="0.12" stroke-width="2"/>
+  <circle cx="300" cy="1040" r="50" fill="url(#soft)"/>
+</svg>

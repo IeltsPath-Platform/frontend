@@ -234,20 +234,21 @@ describe('the result of an essay sent to a teacher', () => {
       expect(screen.queryByRole('region', { name: 'Giáo viên chưa chấm bài' })).not.toBeInTheDocument()
     })
 
-    it('keeps waiting for the same teacher and remembers the choice', async () => {
+    it('keeps waiting for the same teacher, takes both buttons away and remembers the choice', async () => {
       lateServer()
       const first = show()
       fireEvent.click(await screen.findByRole('button', { name: 'Tiếp tục chờ Ms Lan Phương' }))
 
       const notice = screen.getByRole('region', { name: 'Giáo viên chưa chấm bài' })
       expect(notice).toHaveTextContent('Bạn đang tiếp tục chờ Ms Lan Phương')
-      expect(within(notice).queryByRole('button', { name: /Tiếp tục chờ/ })).not.toBeInTheDocument()
-      expect(within(notice).getByRole('button', { name: 'Yêu cầu đổi giáo viên' })).toBeInTheDocument()
+      expect(within(notice).queryByRole('button')).not.toBeInTheDocument()
+      expect(notice).not.toHaveTextContent('lần đổi')
       expect(changes).toHaveLength(0)
 
       first.unmount()
       show()
       expect(await screen.findByText(/Bạn đang tiếp tục chờ/)).toBeInTheDocument()
+      expect(within(screen.getByRole('region', { name: 'Giáo viên chưa chấm bài' })).queryByRole('button')).not.toBeInTheDocument()
     })
 
     it('changes the teacher to another one, never offering the late one, and shows the new teacher', async () => {
