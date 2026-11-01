@@ -19,6 +19,12 @@
   --lp-danger-soft: #fdecea;
   --lp-locked: #7a8291;
   --lp-locked-soft: #eff1f5;
+  /* One hue per skill; used for rings, icons and the active edge, never for body text. */
+  --lp-hue-listening: #0f8b8d;
+  --lp-hue-reading: #123ab5;
+  --lp-hue-writing: #b8325f;
+  --lp-hue-speaking: #9a6b00;
+  --lp-hue-other: #5f6774;
   --lp-radius: 16px;
   --lp-shadow: var(--classroom-shadow, 0 8px 24px rgb(18 36 84 / 7%));
   --lp-shadow-hover: 0 16px 36px rgb(18 58 181 / 13%), 0 2px 6px rgb(18 58 181 / 4%);
@@ -1759,6 +1765,422 @@ button.lp-stop__toggle:hover .lp-stop__chevron {
   .lp-stop__chevron span {
     display: none;
   }
+}
+
+/* Course board: four skills on a rail, the route of the chosen skill beside it */
+.lp-board {
+  display: grid;
+  gap: 1.1rem;
+}
+.lp-board__grid {
+  display: grid;
+  gap: 1.25rem;
+  align-items: start;
+}
+.lp-board__rail {
+  display: grid;
+  gap: .65rem;
+  min-width: 0;
+}
+.lp-skills {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .6rem;
+}
+.lp-skill {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  min-width: 0;
+  min-height: 4.1rem;
+  padding: .65rem .75rem;
+  border: 1px solid var(--lp-line);
+  border-radius: 14px;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  background: var(--lp-surface);
+  cursor: pointer;
+  animation: lp-rise .4s var(--lp-ease) both;
+  animation-delay: calc(var(--i, 0) * 45ms);
+  transition: border-color .18s ease, box-shadow .18s ease, background-color .18s ease;
+}
+.lp-skill:hover {
+  border-color: color-mix(in srgb, var(--hue) 50%, var(--lp-line));
+}
+.lp-skill.is-active {
+  border-color: var(--hue);
+  background: color-mix(in srgb, var(--hue) 6%, var(--lp-surface));
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--hue) 14%, transparent);
+}
+.lp-skill__ring {
+  position: relative;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  color: var(--hue);
+  background: conic-gradient(var(--hue) calc(var(--p, 0) * 1%), color-mix(in srgb, var(--hue) 16%, var(--lp-line)) 0);
+}
+.lp-skill__ring::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  background: var(--lp-surface);
+  transition: background-color .18s ease;
+}
+.lp-skill.is-active .lp-skill__ring::before {
+  background: color-mix(in srgb, var(--hue) 6%, var(--lp-surface));
+}
+.lp-skill__ring > svg {
+  position: relative;
+}
+.lp-skill__tick {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  display: grid;
+  place-items: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  border: 2px solid var(--lp-surface);
+  border-radius: 50%;
+  color: #fff;
+  background: var(--lp-success);
+}
+.lp-skill__text {
+  display: grid;
+  gap: .1rem;
+  min-width: 0;
+}
+.lp-skill__text strong {
+  overflow: hidden;
+  font-family: var(--lp-display);
+  font-size: .95rem;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lp-skill__text span {
+  color: var(--lp-muted);
+  font-size: .8rem;
+  font-variant-numeric: tabular-nums;
+}
+.lp-skill--soon .lp-skill__text strong {
+  color: var(--lp-muted);
+}
+.lp-board__combo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .45rem;
+  min-height: 44px;
+  padding: .5rem .85rem;
+  border: 1.5px dashed color-mix(in srgb, var(--lp-primary) 40%, var(--lp-line));
+  border-radius: 12px;
+  color: var(--lp-primary);
+  font: inherit;
+  font-size: .86rem;
+  font-weight: 700;
+  background: transparent;
+  cursor: pointer;
+  transition: background-color .15s ease, border-color .15s ease;
+}
+.lp-board__combo:hover {
+  border-color: var(--lp-primary);
+  background: var(--lp-soft);
+}
+
+.lp-lane {
+  --hue: var(--lp-primary);
+  display: grid;
+  gap: 1.15rem;
+  min-width: 0;
+  animation: lp-rise .3s var(--lp-ease) both;
+}
+.lp-lane__head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: .6rem .85rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--lp-line);
+}
+.lp-lane__icon {
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 14px;
+  color: var(--hue);
+  background: color-mix(in srgb, var(--hue) 11%, var(--lp-surface));
+}
+.lp-lane__title .lp-eyebrow {
+  margin: 0 0 .1rem;
+  color: var(--lp-muted);
+}
+.lp-root .lp-lane__title h3 {
+  margin: 0;
+  font-family: var(--lp-display);
+  font-size: 1.5rem;
+  line-height: 1.2;
+}
+.lp-lane__meter {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  gap: .75rem;
+  color: var(--lp-muted);
+  font-size: .85rem;
+  font-variant-numeric: tabular-nums;
+}
+.lp-lane__meter .lp-segs {
+  width: min(14rem, 60%);
+}
+.lp-lane__actions {
+  display: flex;
+  flex-wrap: wrap;
+  grid-column: 1 / -1;
+  align-items: center;
+  gap: .6rem;
+}
+.lp-lane__unlock,
+.lp-lane__continue {
+  min-height: 44px;
+}
+.lp-lane__continue {
+  min-width: 0;
+}
+.lp-lane__empty {
+  padding-block: 2rem;
+}
+.lp-board__finish {
+  margin-top: .25rem;
+}
+
+@media (min-width: 640px) {
+  .lp-lane__head {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+  .lp-lane__meter {
+    grid-column: 3;
+    grid-row: 1;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: .35rem;
+  }
+  .lp-lane__meter .lp-segs {
+    width: 9rem;
+  }
+  .lp-lane__actions {
+    grid-column: 2 / -1;
+  }
+}
+@media (min-width: 960px) {
+  .lp-board__grid {
+    grid-template-columns: 17rem minmax(0, 1fr);
+    gap: 2rem;
+  }
+  .lp-board__rail {
+    position: sticky;
+    top: var(--lp-sticky-top);
+  }
+  .lp-skills {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp-skill,
+  .lp-lane {
+    animation: none;
+  }
+}
+
+/* Unlock dialog: a receipt for one skill (or the combo) of a course */
+.lp-unlock {
+  --hue: var(--lp-primary);
+  position: fixed;
+  width: calc(100% - 2rem);
+  max-width: 25rem;
+  gap: 1.15rem;
+  padding: 1.6rem 1.5rem 1.4rem;
+  overflow: hidden;
+  border: 1px solid var(--lp-line);
+  border-radius: 20px;
+  color: var(--lp-ink);
+  font-family: var(--lp-ui);
+  background: var(--lp-surface);
+  box-shadow: 0 24px 60px rgb(18 36 84 / 24%);
+}
+.lp-unlock::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 5px;
+  background: var(--hue);
+}
+.lp-unlock :focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--lp-primary) 65%, transparent);
+  outline-offset: 3px;
+}
+.lp-unlock__head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: .85rem;
+  padding-right: 2rem;
+}
+.lp-unlock__icon {
+  display: grid;
+  place-items: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 16px;
+  color: var(--hue);
+  background: color-mix(in srgb, var(--hue) 12%, var(--lp-surface));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--hue) 22%, transparent);
+}
+.lp-unlock__heading {
+  display: grid;
+  gap: .15rem;
+  min-width: 0;
+}
+.lp-unlock__eyebrow {
+  margin: 0;
+  color: var(--lp-muted);
+  font-size: .74rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.lp-unlock .lp-unlock__title {
+  font-family: var(--lp-display);
+  font-size: 1.4rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+.lp-unlock .lp-unlock__benefit {
+  grid-column: 1 / -1;
+  color: var(--lp-muted);
+  font-size: .92rem;
+  line-height: 1.55;
+}
+.lp-unlock__ledger {
+  display: grid;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--lp-line);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--lp-soft) 45%, var(--lp-surface));
+}
+.lp-unlock__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .7rem 1rem;
+  color: var(--lp-muted);
+  font-size: .9rem;
+}
+.lp-unlock__row + .lp-unlock__row {
+  border-top: 1px solid var(--lp-line);
+}
+.lp-unlock__row dd {
+  margin: 0;
+  color: var(--lp-ink);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.lp-unlock__row--price {
+  padding-block: 1rem;
+  color: var(--lp-ink);
+  font-weight: 700;
+  background: var(--lp-surface);
+}
+.lp-unlock__row--price strong {
+  font-family: var(--lp-display);
+  font-size: 1.7rem;
+  font-weight: 800;
+  line-height: 1;
+}
+.lp-unlock__row--credit dd,
+.lp-unlock__row--after dd {
+  color: var(--lp-success);
+}
+.lp-unlock__row--short {
+  background: var(--lp-danger-soft);
+}
+.lp-unlock__row--short dt,
+.lp-unlock__row--short dd {
+  color: var(--lp-danger);
+  font-weight: 700;
+}
+.lp-unlock__actions {
+  display: grid;
+  gap: .55rem;
+}
+.lp-unlock__buy {
+  width: 100%;
+}
+.lp-unlock__buy:disabled {
+  border-color: var(--lp-line);
+  color: var(--lp-locked);
+  background: var(--lp-locked-soft);
+  box-shadow: none;
+  opacity: 1;
+}
+.lp-unlock__topup {
+  min-height: 44px;
+  border: 1px solid var(--lp-line);
+  border-radius: 11px;
+  color: var(--lp-primary);
+  font: inherit;
+  font-size: .92rem;
+  font-weight: 700;
+  background: var(--lp-surface);
+  cursor: pointer;
+  transition: background-color .15s ease, border-color .15s ease, color .15s ease;
+}
+.lp-unlock__topup:hover {
+  border-color: color-mix(in srgb, var(--lp-primary) 40%, var(--lp-line));
+  background: var(--lp-soft);
+}
+.lp-unlock__topup.is-needed {
+  border-color: transparent;
+  color: #fff;
+  background: var(--lp-primary);
+}
+.lp-unlock__topup.is-needed:hover {
+  background: var(--lp-primary-strong);
+}
+.lp-unlock__note,
+.lp-unlock__message,
+.lp-unlock__state {
+  margin: 0;
+  font-size: .84rem;
+  line-height: 1.5;
+  text-align: center;
+}
+.lp-unlock__note {
+  color: var(--lp-muted);
+}
+.lp-unlock__message {
+  padding: .6rem .8rem;
+  border-radius: 10px;
+  color: var(--lp-accent-ink);
+  background: var(--lp-accent-soft);
+}
+.lp-unlock__state {
+  padding: 1.1rem 1rem;
+  border: 1.5px dashed var(--lp-line);
+  border-radius: 14px;
+  color: var(--lp-muted);
+  font-size: .92rem;
 }
 
 /* Lessons of an expanded topic: stepping stones that climb to the topic test */

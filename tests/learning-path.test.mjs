@@ -76,7 +76,12 @@ describe('Lan demo scenario', () => {
     assert.equal(detail.finalTest.testStatus, 'LOCKED')
     await assert.rejects(api.getLesson('lesson-l2'), { code: 'LESSON_LOCKED', status: 403 })
     await assert.rejects(api.getLessonResources('lesson-l2'), { code: 'LESSON_LOCKED', status: 403 })
-    await assert.rejects(api.getTopicLessons('topic-tfng-skills'), { code: 'TOPIC_LOCKED' })
+    // A topic that is not open yet still lists its lessons, all closed; opening one is refused.
+    const ahead = await api.getTopicLessons('topic-tfng-skills')
+    assert.deepEqual(statusesOf(ahead), ['LOCKED', 'LOCKED'])
+    assert.equal(ahead.finalTest.testStatus, 'LOCKED')
+    assert.match(ahead.lessons[0].lockedReason, /chặng trước/)
+    await assert.rejects(api.getLesson('lesson-tfng-1'), { code: 'TOPIC_LOCKED', status: 403 })
 
     const l1 = await api.getLesson('lesson-l1')
     assert.equal('blocks' in l1, false, 'a lesson has no blocks; its content is read from the resources')
@@ -281,25 +286,37 @@ describe('learning path rendering', () => {
   const resources = (name, props) => render(`/src/features/learning-path/components/resources/${name}.tsx`, name, props)
   const DECK = 'https://docs.google.com/presentation/d/1rky9iPmndXAGDhwcMSI8QM2jN1QaVyelycgAsloB7kM/edit?slide=id.p#slide=id.p'
 
-  test('topic trail links open topics and explains locked ones without a link', async () => {
-    const topics = await createMockLearningApi().listTopics()
-    const html = await render('/src/features/learning-path/pages/TopicListPage.tsx', 'TopicTrail', { topics })
+  test('the skill board links open topics and explains locked ones without a link', async () => {
+    const topics = (await createMockLearningApi().listTopics()).map((topic) => ({ ...topic, skill: 'READING' }))
+    const board = (rows) => render('/src/features/learning-path/components/CourseSkillBoard.tsx', 'CourseSkillBoard', {
+      topics: rows, course: null, onUnlocked: () => {},
+    })
+    const html = await board(topics)
 
-    // Topics have no page of their own: an open one expands in place (collapsed at first), a locked one cannot.
+    // Topics have no page of their own: an open one expands in place, a locked one cannot. The chặng the learner is
+    // on starts expanded; the others start collapsed.
     assert.doesNotMatch(html, /href="\/learn\/topics\//)
+    assert.match(html, /aria-expanded="true"/)
+    assert.match(html, /Thu gọn/)
     assert.match(html, /aria-expanded="false"/)
     assert.match(html, /Xem bài học/)
-    assert.match(html, /aria-disabled="true"/)
+    // A locked chặng opens like the others, so its lessons can be read ahead; the reason it is closed stays in view.
+    assert.match(html, /aria-describedby="topic-tfng-skills-reason"/)
     assert.match(html, /Đạt bài kiểm tra cuối của/)
     assert.match(html, /0<!-- -->\/<!-- -->4<!-- --> bài/)
 
-    const progressHtml = await render('/src/features/learning-path/pages/TopicListPage.tsx', 'TopicTrail', {
-      topics: [
-        { ...topics[0], status: 'PASSED', completedLessons: 4, totalLessons: 4 },
-        { ...topics[1], status: 'IN_PROGRESS', completedLessons: 1, totalLessons: 4 },
-        topics[2],
-      ],
-    })
+    // The four skills are always there; one with no topic yet says so instead of vanishing.
+    for (const skill of ['Listening', 'Reading', 'Writing', 'Speaking']) assert.match(html, new RegExp(`<strong>${skill}</strong>`))
+    assert.match(html, /lp-skill--soon/)
+    assert.match(html, /Sắp ra mắt/)
+
+    const progressHtml = await board([
+      { ...topics[0], status: 'PASSED', completedLessons: 4, totalLessons: 4 },
+      { ...topics[1], status: 'IN_PROGRESS', completedLessons: 1, totalLessons: 4 },
+      topics[2],
+    ])
+    assert.match(progressHtml, /aria-expanded="false"/)
+    assert.match(progressHtml, /Xem bài học/)
     assert.match(progressHtml, /lp-stop--passed[^>]*style="--i:0;--topic-progress:1"/)
     assert.match(progressHtml, /lp-stop--in_progress[^>]*style="--i:1;--topic-progress:0.25"/)
     assert.match(progressHtml, /lp-stop--locked[^>]*style="--i:2;--topic-progress:0"/)

@@ -467,6 +467,7 @@ export function mapTopicLessons(dto: TopicLessonsDto, topic: TopicSummary): Topi
     status: lesson.status,
     estimatedMinutes: lesson.estimatedMinutes ?? null,
     lockedReason: lesson.status !== 'LOCKED' ? null
+      : topic.status === 'LOCKED' ? 'Hoàn thành chặng trước để mở.'
       : lesson.blockingReviewId ? 'Mở sau khi hoàn thành bài ôn.'
         : dto.lessons[index - 1]?.practiceStatus === 'REQUIRED' ? 'Đạt phần Luyện tập của bài trước để mở.'
           : 'Hoàn thành bài trước để mở.',
