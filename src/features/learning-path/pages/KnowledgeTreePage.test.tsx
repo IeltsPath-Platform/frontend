@@ -139,7 +139,7 @@ describe('KnowledgeTreePage', () => {
     expect(point).toHaveAttribute('data-locked', 'true')
     expect(within(point).queryByRole('button', { name: 'Luyện' })).not.toBeInTheDocument()
     fireEvent.click(within(point).getByRole('button', { name: 'Mở khóa' }))
-    expect(await screen.findByRole('dialog', { name: 'Mở khóa Đọc' })).toBeInTheDocument()
+    expect(await screen.findByRole('dialog', { name: 'Mở khóa Reading' })).toBeInTheDocument()
   })
 
   it('keeps an empty course out of the diagram', async () => {

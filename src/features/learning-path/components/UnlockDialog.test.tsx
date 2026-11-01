@@ -39,6 +39,32 @@ describe('UnlockDialog', () => {
     unlock.mockRestore()
   })
 
+  it('shows what is left after buying a skill the balance covers', async () => {
+    render(<UnlockDialog courseId={course.id} target="LISTENING" onClose={vi.fn()} onChanged={vi.fn()} />)
+    expect(await screen.findByText('Mở khóa Listening')).toBeInTheDocument()
+    expect(screen.getByText('100 Points')).toBeInTheDocument()
+    expect(screen.getByText('Sau khi mở').nextSibling).toHaveTextContent('50 Points')
+    expect(screen.queryByText('Còn thiếu')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Mở khóa bằng Points' })).toBeEnabled()
+  })
+
+  it('says how many Points are missing and keeps the purchase closed', async () => {
+    vi.spyOn(learningApi, 'listCourses').mockResolvedValue([{ ...course, skillUnlockPoints: { LISTENING: 200 } }])
+    render(<UnlockDialog courseId={course.id} target="LISTENING" onClose={vi.fn()} onChanged={vi.fn()} />)
+    expect(await screen.findByText('200 Points')).toBeInTheDocument()
+    expect(screen.getByText('Còn thiếu').nextSibling).toHaveTextContent('50 Points')
+    expect(screen.queryByText('Sau khi mở')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Mở khóa bằng Points' })).toBeDisabled()
+  })
+
+  it('shows the combo deduction for skills already bought', async () => {
+    vi.spyOn(learningApi, 'listCourses').mockResolvedValue([{ ...course, comboUnlockPoints: 140 }])
+    render(<UnlockDialog courseId={course.id} target="COMBO" onClose={vi.fn()} onChanged={vi.fn()} />)
+    expect(await screen.findByText('Mở khóa cả 4 kỹ năng')).toBeInTheDocument()
+    expect(screen.getByText('125 Points')).toBeInTheDocument()
+    expect(screen.getByText('Đã trừ kỹ năng bạn đã mở').nextSibling).toHaveTextContent('−15 Points')
+  })
+
   it('reuses the idempotency key after an uncertain response', async () => {
     const unlock = vi.spyOn(learningApi, 'unlockCourse')
       .mockRejectedValueOnce(new ApiError(503, 'SERVER_ERROR', 'Unavailable'))
