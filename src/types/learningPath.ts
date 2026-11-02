@@ -470,6 +470,8 @@ export interface PracticeReviewCreated {
   reviewId: string
   knowledgePointId: string
   stage: ReviewStage
+  /** False for a suggested review from a first counted failure; the next lesson stays open. */
+  blocking: boolean
 }
 
 export interface PracticeSubmissionResult {
@@ -632,7 +634,7 @@ export interface BasketOptionalItem {
   /** 0–1. */
   mastery: number
   dueAt: string | null
-  reason: 'CONSOLIDATE' | 'DUE' | 'WRITING_CRITERION' | 'ERROR_PATTERN'
+  reason: 'CONSOLIDATE' | 'DUE' | 'WRITING_CRITERION' | 'ERROR_PATTERN' | 'PRACTICE'
   /** False when Content has no set the learner has not seen, so the review cannot start. */
   hasUnrevealedSet: boolean
   /** Set when the learner already started an optional review of the point. */

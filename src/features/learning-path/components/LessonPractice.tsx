@@ -19,12 +19,13 @@ import { ExerciseBlock } from './blocks/ExerciseBlock'
 import { PassageBlock } from './blocks/PassageBlock'
 import { PracticeAttemptReview } from './PracticeAttemptReview'
 import { PracticeEssays } from './PracticeEssays'
+import { PracticeReviewNotice } from './PracticeReviewNotice'
 import { HeartsPanel } from './HeartsPanel'
 import { ApiErrorState, LoadingState } from './PageState'
 import { RewardSummary } from './RewardSummary'
 import { newRequestId } from '../lib/requestId'
 import { startStudyPointPractice } from '../lib/studyPointPractice'
-import { reportApiError, setPendingReviews } from '../lib/reviewGate'
+import { reportApiError, reviewRefsFromSubmission, setPendingReviews } from '../lib/reviewGate'
 import { useApiResource } from '../lib/useApiResource'
 import type { ReviewOrigin } from '../lib/routes'
 
@@ -43,13 +44,14 @@ function writingOnly(item: PracticeSetItem): boolean {
 
 /**
  * A submitted set has done its part for the lesson, passed or not: a failed one only waits for the review it created.
- * Once that review is finished, the set is done and is never required again.
+ * A blocking review holds the lesson, a suggested one only invites the learner back. Once the reviews are finished,
+ * the set is done and is never required again.
  */
-function itemMeta(item: PracticeSetItem, waitsForReview: boolean): ItemMeta | undefined {
+function itemMeta(item: PracticeSetItem, review: 'BLOCKING' | 'SUGGESTED' | 'NONE'): ItemMeta | undefined {
   if (item.status !== 'ATTEMPTED') return ITEM_META[item.status]
-  return waitsForReview
-    ? { label: 'Cần làm bài ôn', tone: 'accent', icon: ShieldAlert }
-    : { label: 'Đã xong', tone: 'success', icon: CheckCircle2 }
+  if (review === 'BLOCKING') return { label: 'Cần làm bài ôn', tone: 'accent', icon: ShieldAlert }
+  if (review === 'SUGGESTED') return { label: 'Nên ôn lại', tone: 'accent', icon: CircleDot }
+  return { label: 'Đã xong', tone: 'success', icon: CheckCircle2 }
 }
 
 const PRACTICE_STATUS_TEXT: Record<string, string> = {
@@ -57,6 +59,7 @@ const PRACTICE_STATUS_TEXT: Record<string, string> = {
   PASSED: 'Đã đạt phần luyện tập của bài, bài tiếp theo đã mở. Các bộ còn lại là tùy chọn để luyện thêm.',
   LOCKED: 'Chưa mở',
 }
+const SOFT_PASS_TEXT = 'Bài tiếp theo đã mở. Nên làm các bài ôn gợi ý để củng cố điểm còn yếu.'
 
 /** The Practice of a lesson: the pending reviews it created, then its sets. */
 export function LessonPractice({ lessonId, onChanged, reviewOrigin }: {
@@ -136,12 +139,7 @@ function PracticeView({ catalog, hearts, onHeartsChanged, onReload, reviewOrigin
       // Wrong answers cost hearts, so what is left has changed.
       if ((outcome.gamification?.heartsLost ?? 0) > 0) onHeartsChanged()
       if (outcome.reviewsCreated.length > 0) {
-        setPendingReviews(outcome.reviewsCreated.map((review) => ({
-          reviewId: review.reviewId,
-          lessonId: catalog.lessonId,
-          knowledgePointCode: review.knowledgePointId.slice(0, 8),
-          knowledgePointTitle: 'Bài ôn từ luyện thêm',
-        })))
+        setPendingReviews(reviewRefsFromSubmission(outcome.reviewsCreated, catalog.lessonId))
       }
       return {
         passed: outcome.passed,
@@ -234,16 +232,7 @@ function PracticeView({ catalog, hearts, onHeartsChanged, onReload, reviewOrigin
               onSubmit={submit}
             />
             <RewardSummary gamification={submission?.gamification ?? null} />
-            {submission?.reviewsCreated[0] ? (
-              <div className="lp-done lp-done--review" role="status">
-                <p>Đã tạo bài ôn bắt buộc sau lần luyện này.</p>
-                <Button asChild className="lp-btn lp-btn--accent lp-btn--cta">
-                  <Link to={`/learn/reviews/${submission.reviewsCreated[0].reviewId}`} state={reviewOrigin ? { reviewOrigin } : undefined}>
-                    Làm bài ôn<ArrowRight aria-hidden="true" />
-                  </Link>
-                </Button>
-              </div>
-            ) : null}
+            {submission ? <PracticeReviewNotice created={submission.reviewsCreated} reviewOrigin={reviewOrigin} /> : null}
             {submission?.passed ? (
               <div className="lp-done" role="status">
                 <p>Đã đạt bộ luyện thêm ({percentDisplay}%).</p>
@@ -284,7 +273,9 @@ function PracticeView({ catalog, hearts, onHeartsChanged, onReload, reviewOrigin
           {catalog.items.length > 0 ? <span className="lp-practice-head__count">{catalog.items.length} bộ bài tập</span> : null}
         </div>
         <p className="lp-practice-head__lead">
-          {PRACTICE_STATUS_TEXT[catalog.practiceStatus] ?? catalog.practiceStatus}
+          {catalog.practiceStatus === 'PASSED' && catalog.practicePassReason === 'ATTEMPT_NOT_BLOCKED'
+            ? SOFT_PASS_TEXT
+            : (PRACTICE_STATUS_TEXT[catalog.practiceStatus] ?? catalog.practiceStatus)}
         </p>
       </header>
       {hearts ? <HeartsPanel onChanged={onHeartsChanged} status={hearts} /> : null}
@@ -300,7 +291,9 @@ function PracticeView({ catalog, hearts, onHeartsChanged, onReload, reviewOrigin
         <ul className="lp-practice-list" aria-label="Bài ôn và các bộ luyện thêm">
           {looseReviews.map((review) => <ReviewCard key={review.reviewId} review={review} reviewOrigin={reviewOrigin} />)}
           {catalog.items.map((item) => {
-            const meta = itemMeta(item, reviewsBySet.get(item.packageId)?.some((review) => review.blocking !== false) ?? false)
+            const setReviews = reviewsBySet.get(item.packageId) ?? []
+            const meta = itemMeta(item, setReviews.some((review) => review.blocking !== false) ? 'BLOCKING'
+              : setReviews.length > 0 ? 'SUGGESTED' : 'NONE')
             const StateIcon = meta?.icon
             const withoutLabel = item.title.replace(/^(?:Luyện thêm|Luyện tập)\s+/i, '')
             const title = withoutLabel.startsWith(`${item.code}:`)

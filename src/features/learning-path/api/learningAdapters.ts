@@ -348,7 +348,7 @@ export type PracticeSubmissionResultDto = {
     hint?: string | null
     error?: ErrorHintDto | null
   }>
-  reviewsCreated?: Array<{ reviewId: string; knowledgePointId: string; stage?: string }>
+  reviewsCreated?: Array<{ reviewId: string; knowledgePointId: string; stage?: string; blocking?: boolean }>
   gamification?: GamificationDto | null
 }
 
@@ -795,6 +795,8 @@ export function mapPracticeSubmission(dto: PracticeSubmissionResultDto): import(
       reviewId: review.reviewId,
       knowledgePointId: review.knowledgePointId,
       stage: (review.stage === 'THEORY' ? 'THEORY' : 'PRACTICE') as import('~types/learningPath').ReviewStage,
+      // Payloads from before suggestions existed only ever created blocking reviews.
+      blocking: review.blocking ?? true,
     })),
     gamification: mapGamification(dto.gamification),
   }
