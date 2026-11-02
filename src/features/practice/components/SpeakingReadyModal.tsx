@@ -55,7 +55,6 @@ export function SpeakingReadyModal({ title, partNo, questionCount, timeLimitSeco
           </div>
           <div className="screen2-action-footer speaking-ready-actions">
             <button type="button" className="screen2-start-cta" onClick={onConfirm}>SẴN SÀNG, BẮT ĐẦU</button>
-            <button type="button" className="speaking-ready-later" onClick={onClose}>Để sau</button>
           </div>
         </div>
       </DialogContent>

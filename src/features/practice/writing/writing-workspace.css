@@ -70,6 +70,9 @@
 }
 
 .ww-card-head span { color: var(--rw-muted); font-variant-numeric: tabular-nums; }
+.ww-card-title { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.ww-sample-switch { display: inline-flex; align-items: center; gap: 0.45rem; cursor: pointer; white-space: nowrap; }
+.ww-card-head .ww-sample-switch > span { color: var(--rw-ink); font-weight: 600; font-variant-numeric: normal; }
 .ww-muted { margin: 0; color: var(--rw-muted); font-size: 0.78rem; line-height: 1.45; }
 
 /* B */
@@ -90,13 +93,16 @@
 .ww-guide-bullet { padding-left: 1rem; text-indent: -0.7rem; }
 .ww-guide-bullet::before { content: '• '; }
 
-/* C: one box for the whole essay */
-.ww-practice-field { display: flex; flex: 1; min-height: 0; padding: 0.8rem 1rem; }
-.ww-practice-field textarea {
+/* C: the answer in its parts, each with its label, sharing the height of the panel */
+.ww-practice-parts { display: grid; flex: 1; grid-auto-rows: minmax(7rem, 1fr); gap: 0.7rem; min-height: 0; padding: 0.8rem 1rem; overflow-y: auto; }
+.ww-practice-part { display: flex; flex-direction: column; gap: 0.25rem; min-height: 0; }
+.ww-practice-part label { color: var(--rw-accent); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.02em; }
+.ww-practice-part textarea {
   flex: 1;
   box-sizing: border-box;
   width: 100%;
-  padding: 0.7rem 0.8rem;
+  min-height: 0;
+  padding: 0.6rem 0.8rem;
   border: 1px solid var(--rw-line);
   border-radius: 6px;
   background: #ffffff;
@@ -106,7 +112,10 @@
   line-height: 1.6;
   resize: none;
 }
-.ww-practice-field textarea:focus { outline: 2px solid var(--rw-accent); outline-offset: 0; border-color: var(--rw-accent); }
+/* The model answer: it can be read and scrolled, not written in. */
+.ww-practice-part.is-sample textarea { background: #f8fafc; cursor: default; }
+.ww-practice-part.is-sample textarea:focus { outline-color: var(--rw-line); border-color: var(--rw-line); }
+.ww-practice-part textarea:focus { outline: 2px solid var(--rw-accent); outline-offset: 0; border-color: var(--rw-accent); }
 
 .ww-editor-foot { display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 1rem; border-top: 1px solid var(--rw-line); }
 .ww-editor-foot > :first-child { margin-right: auto; }

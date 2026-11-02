@@ -36,13 +36,14 @@ export function ExamSelectionPopup({ popup, onNote, onOpenNote, onHighlight, onC
   )
 }
 
-/** Notes of the open part, on the right edge: the quoted text, a box to write in, and Delete. The note being written is blue. */
-export function ExamNotesPanel({ notes, partLabel, focusId, onChange, onDelete, onFocused, onClose }: {
+/** Notes of the open part, on the right edge: the quoted text, a box to write in, and Delete (Delete all once there are two). The note being written is blue. */
+export function ExamNotesPanel({ notes, partLabel, focusId, onChange, onDelete, onDeleteAll, onFocused, onClose }: {
   notes: Annotation[]
   partLabel: string
   focusId: string | null
   onChange: (id: string, note: string) => void
   onDelete: (id: string) => void
+  onDeleteAll: () => void
   onFocused: () => void
   onClose: () => void
 }) {
@@ -51,7 +52,10 @@ export function ExamNotesPanel({ notes, partLabel, focusId, onChange, onDelete, 
     <aside className="rw-notes-panel" aria-label="Ghi chú">
       <header className="rw-notes-header">
         <h2>Notes</h2>
-        <button type="button" className="rw-notes-close" aria-label="Đóng ghi chú" onClick={onClose}><X size={18} aria-hidden="true" /></button>
+        <div className="rw-notes-header-actions">
+          {notes.length > 1 && <button type="button" className="rw-notes-delete-all" onClick={onDeleteAll}>Delete all</button>}
+          <button type="button" className="rw-notes-close" aria-label="Đóng ghi chú" onClick={onClose}><X size={18} aria-hidden="true" /></button>
+        </div>
       </header>
       <div className="rw-notes-list">
         {notes.map((note) => (

@@ -143,7 +143,6 @@
 .rw-tool small { font-size: 0.64rem; color: var(--rw-muted); }
 .rw-tool:hover:not(:disabled) { background: #eff6ff; }
 .rw-tool:disabled { border-color: var(--rw-line); color: #94a3b8; cursor: not-allowed; }
-.rw-tool-quiet { border-color: var(--rw-line); color: var(--rw-muted); }
 
 .rw-tools-help {
   margin: 0.2rem 0 0;

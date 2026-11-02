@@ -46,7 +46,6 @@
 }
 
 .rw-practice .rw-tool:hover:not(:disabled) { background: #e6eeff; transform: translateY(-1px); box-shadow: 0 6px 14px rgba(29, 78, 216, 0.18); }
-.rw-practice .rw-tool-quiet { border-color: var(--rw-line); background: #ffffff; color: var(--rw-muted); }
 .rw-practice .rw-tools-help { overflow-wrap: anywhere; padding-top: 0.3rem; border-top: 1px dashed var(--rw-line); }
 
 /* Passage and questions: two cards */
