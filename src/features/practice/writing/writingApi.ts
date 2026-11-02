@@ -17,6 +17,8 @@ export interface WritingTask {
   instructions: string | null
   prompt: string
   guide: string | null
+  /** The model answer, one paragraph per part of the essay, with **phrases worth learning**; absent until one is written. */
+  sampleAnswer?: string | null
   images: Array<{ url: string; altText: string | null }>
 }
 

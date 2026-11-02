@@ -1,7 +1,9 @@
 /* Exam layout: highlights, notes and their popup. The colour behind annotated text is painted by the CSS Custom Highlight API. */
 
-::highlight(rw-exam-highlight) { background-color: #1d44c1; color: #ffffff; }
+::highlight(rw-exam-highlight) { background-color: #fde68a; color: #111111; }
 ::highlight(rw-exam-note) { background-color: #7a2e4d; color: #ffffff; }
+/* Practice layout: the word under the pointer, which a click would look up. */
+::highlight(rw-word-hover) { text-decoration: underline; text-decoration-color: #facc15; text-decoration-thickness: 3px; text-underline-offset: 3px; }
 
 .rw-annot-popup {
   position: fixed;
@@ -81,6 +83,9 @@
 }
 
 .rw-notes-header h2 { margin: 0; font-size: 1.05rem; font-weight: 400; }
+.rw-notes-header-actions { display: flex; align-items: center; gap: 0.6rem; }
+.rw-notes-delete-all { padding: 0; border: 0; background: transparent; color: #0b4a8f; font-size: 0.9rem; text-decoration: underline; cursor: pointer; }
+.rw-notes-delete-all:hover { color: #b91c1c; }
 .rw-notes-close { display: grid; place-items: center; width: 1.8rem; height: 1.8rem; border: 0; background: transparent; color: #111111; cursor: pointer; }
 .rw-notes-close:hover { background: #e5e7eb; }
 

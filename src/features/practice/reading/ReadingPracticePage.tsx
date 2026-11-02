@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { CSSProperties, ReactNode } from 'react'
+import type { CSSProperties, MouseEvent as ReactMouseEvent } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, Check, LoaderCircle } from 'lucide-react'
 import type { AttemptItemResponse } from '~types/learningPath'
@@ -13,8 +13,6 @@ import { ExamFinishBar } from './ExamFinishBar'
 import { useExamAnnotations } from './useExamAnnotations'
 import { useWordLookup } from './useWordLookup'
 import { WordLookupPopover } from './WordLookupPopover'
-import { readPassageSelection, mergeHighlights } from '../lib/passageTools'
-import type { PassageSelection, TextHighlight } from '@/types/practice'
 import { LoadingState, ApiErrorState } from '@/features/learning-path/components/PageState'
 import { useApiResource } from '@/features/learning-path/lib/useApiResource'
 import type { TestSection } from '@/features/learning-path/lib/attemptSnapshot'
@@ -69,15 +67,12 @@ function ReadingRunner({ attemptId, attempt, sections, saved }: {
   const [error, setError] = useState('')
   const [eyeComfort, setEyeComfort] = useState(false)
   const [fontSize, setFontSize] = useState<WorkspaceFontSize>('medium')
-  const [selection, setSelection] = useState<PassageSelection | null>(null)
-  const [hint, setHint] = useState('')
   // Exam layout: the screen the tick opens, before the learner confirms the submission.
   const [finishing, setFinishing] = useState(false)
   // The learner can close the notes panel; adding or reopening a note shows it again.
   const [notesClosed, setNotesClosed] = useState(false)
   // Share of the width the passage takes in the exam layout; the learner drags the divider to change it.
   const [split, setSplit] = useState(50)
-  const [highlightsBySection, setHighlightsBySection] = useState<Record<string, TextHighlight[]>>({})
   const passageRef = useRef<HTMLDivElement>(null)
   const questionsRef = useRef<HTMLDivElement>(null)
   const activeSectionRef = useRef<string | undefined>(sections[0]?.id)
@@ -87,7 +82,8 @@ function ReadingRunner({ attemptId, attempt, sections, saved }: {
   const timed = attempt.mode === 'TIMED'
   const answers = useAttemptAnswers(attemptId, saved, async (id, itemId, answer, revision) => saveAttemptAnswer(id, itemId, answer, revision))
   const section = sections[activeIndex]
-  const annotations = useExamAnnotations({ enabled: timed, sectionId: section?.id, passageRef, questionsRef })
+  // Highlights and notes work the same in both layouts.
+  const annotations = useExamAnnotations({ enabled: true, sectionId: section?.id, passageRef, questionsRef })
   // Practice layout only: clicking a word of the passage looks it up in the vocabulary library.
   const wordLookup = useWordLookup(!timed)
   const allItems = useMemo(() => sections.flatMap((item) => item.items.filter((question) => question.question !== null)), [sections])
@@ -100,8 +96,6 @@ function ReadingRunner({ attemptId, attempt, sections, saved }: {
   })), [sections, numberByItem, timed, activeIndex, finishing])
   const answeredNumbers = useMemo(() => new Set(allItems.filter((item) => Boolean(answers.answers[item.id]?.trim())).map((item) => numberByItem.get(item.id) ?? 0)), [allItems, answers.answers, numberByItem])
   const unanswered = allItems.length - answeredNumbers.size
-  // In the exam layout highlights live in useExamAnnotations, so the passage markup carries none.
-  const activeHighlights = !timed && section ? highlightsBySection[section.id] ?? [] : []
 
   useEffect(() => {
     const firstSection = sections[0]
@@ -155,7 +149,6 @@ function ReadingRunner({ attemptId, attempt, sections, saved }: {
     try { await startAttemptSection(attemptId, sections[index]!.id) } catch { /* Re-entering a section is idempotent; answers remain available. */ }
     setActiveIndex(index)
     activeSectionRef.current = sections[index]!.id
-    setSelection(null)
     wordLookup.close()
   }
 
@@ -170,41 +163,9 @@ function ReadingRunner({ attemptId, attempt, sections, saved }: {
     else reveal()
   }
 
-  function highlightSelection() {
-    if (timed || !section) return
-    // The live browser selection wins; the remembered one covers a selection the browser dropped meanwhile.
-    const target = readPassageSelection(passageRef.current) ?? selection
-    if (!target) { setHint('Bôi đen đoạn trong bài đọc, rồi bấm Highlight.'); return }
-    setHighlightsBySection((current) => ({ ...current, [section.id]: mergeHighlights([...(current[section.id] ?? []), ...target.ranges]) }))
-    setSelection(null)
-    setHint('')
-    window.getSelection()?.removeAllRanges()
-  }
-
-  /** Clicking a highlighted stretch takes it off again (not when the click ends a text selection). */
-  function removeHighlight(range: TextHighlight) {
-    if (!section || !window.getSelection()?.isCollapsed) return
-    setHighlightsBySection((current) => ({
-      ...current,
-      [section.id]: (current[section.id] ?? []).filter((item) => !(item.paragraph === range.paragraph && item.start === range.start && item.end === range.end)),
-    }))
-  }
-
-  useEffect(() => {
-    if (timed) return
-    function onSelectionChange() {
-      const next = readPassageSelection(passageRef.current)
-      if (next) { setSelection(next); setHint(''); return }
-      const live = window.getSelection()
-      // Only a click inside the passage forgets the selection; moving focus to a tool button must keep it.
-      if (live?.isCollapsed && live.anchorNode && passageRef.current?.contains(live.anchorNode)) setSelection(null)
-    }
-    document.addEventListener('selectionchange', onSelectionChange)
-    return () => document.removeEventListener('selectionchange', onSelectionChange)
-  }, [timed])
-
-  const highlightRef = useRef(highlightSelection)
-  useEffect(() => { highlightRef.current = highlightSelection })
+  // Practice layout: the H key highlights the selected text, as the tool rail says.
+  const highlightRef = useRef(annotations.highlight)
+  useEffect(() => { highlightRef.current = annotations.highlight })
   useEffect(() => {
     if (timed) return
     function onKeyDown(event: KeyboardEvent) {
@@ -216,26 +177,18 @@ function ReadingRunner({ attemptId, attempt, sections, saved }: {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [timed])
 
-  function renderPassageText(text: string, label: string) {
-    const ranges = activeHighlights.filter((item) => item.paragraph === label).sort((a, b) => a.start - b.start)
-    const pieces: ReactNode[] = []
-    let cursor = 0
-    for (const range of ranges) {
-      if (range.start < cursor || range.end > text.length) continue
-      pieces.push(text.slice(cursor, range.start))
-      pieces.push(<mark key={`${label}-${range.start}`} title="Bấm để bỏ highlight" onClick={() => removeHighlight(range)}>{text.slice(range.start, range.end)}</mark>)
-      cursor = range.end
-    }
-    pieces.push(text.slice(cursor))
-    return pieces
+  // A click on marked text opens its Clear card, so it does not also look the word up.
+  function onPassageClick(event: ReactMouseEvent<HTMLElement>) {
+    if (annotations.popup?.annotationId) { wordLookup.close(); return }
+    wordLookup.onClick(event)
   }
 
   if (!section || sections.length === 0) return <main className="reading-state reading-empty"><h1>Đề chưa có câu hỏi</h1><Link to={CATALOG_PATH}>Về danh mục Reading</Link></main>
 
   const title = section.snapshot?.title ?? `Passage ${section.partNo ?? activeIndex + 1}`
-  const partLabel = `Part ${section.partNo ?? activeIndex + 1}`
+  const partLabel = `${timed ? 'Part' : 'Passage'} ${section.partNo ?? activeIndex + 1}`
   const sectionNumbers = navGroups[activeIndex]?.numbers ?? []
-  const hasNotes = timed && !notesClosed && annotations.notes.length > 0
+  const hasNotes = !notesClosed && annotations.notes.length > 0
 
   return <div className={`rw-root lp-tokens${timed ? ' rw-exam' : ' rw-practice'}${hasNotes ? ' rw-has-notes' : ''}${eyeComfort ? ' rw-eye-comfort' : ''} rw-text-${fontSize}`}>
     <ReadingTopBar
@@ -259,21 +212,15 @@ function ReadingRunner({ attemptId, attempt, sections, saved }: {
 
     <div className={`rw-body${timed ? ' rw-body-exam' : ''}${finishing ? ' rw-body-finish' : ''}`} style={timed ? ({ '--rw-split': split } as CSSProperties) : undefined}>
       {!timed && (
-        <ReadingToolRail
-          hasSelection={selection !== null}
-          hint={hint}
-          highlightsCount={activeHighlights.length}
-          onHighlight={highlightSelection}
-          onClearHighlights={() => setHighlightsBySection((current) => ({ ...current, [section.id]: [] }))}
-        />
+        <ReadingToolRail onHighlight={annotations.highlight} onNote={() => { setNotesClosed(false); annotations.note() }} />
       )}
 
       <section className="rw-passage" aria-label="Bài đọc">
         <h1 className="rw-passage-title">{title}</h1>
-        <div ref={passageRef} className="rw-passage-scroll" aria-label="Nội dung bài đọc" onClick={wordLookup.onClick} onScroll={() => { if (wordLookup.state) wordLookup.close() }}>
+        <div ref={passageRef} className="rw-passage-scroll" aria-label="Nội dung bài đọc" onClick={onPassageClick} onMouseMove={wordLookup.onMouseMove} onMouseLeave={wordLookup.onMouseLeave} onScroll={() => { if (wordLookup.state) wordLookup.close() }}>
           {section.snapshot?.passage?.paragraphs.map((paragraph, index) => {
             const label = paragraph.label ?? `P${index + 1}`
-            return <p key={`${label}-${index}`}>{paragraph.label ? <strong>{paragraph.label}. </strong> : null}<span data-passage-text={label}>{renderPassageText(paragraph.text, label)}</span></p>
+            return <p key={`${label}-${index}`}>{paragraph.label ? <strong>{paragraph.label}. </strong> : null}<span data-passage-text={label}>{paragraph.text}</span></p>
           })}
         </div>
       </section>
@@ -314,15 +261,13 @@ function ReadingRunner({ attemptId, attempt, sections, saved }: {
     </footer>
 
     {wordLookup.state && <WordLookupPopover state={wordLookup.state} onClose={wordLookup.close} onRetry={wordLookup.retry} />}
-    {timed && (
-      <ExamSelectionPopup
-        popup={annotations.popup}
-        onNote={() => { setNotesClosed(false); annotations.note() }}
-        onOpenNote={() => { setNotesClosed(false); annotations.openNote() }}
-        onHighlight={annotations.highlight}
-        onClear={annotations.clear}
-      />
-    )}
+    <ExamSelectionPopup
+      popup={annotations.popup}
+      onNote={() => { setNotesClosed(false); annotations.note() }}
+      onOpenNote={() => { setNotesClosed(false); annotations.openNote() }}
+      onHighlight={annotations.highlight}
+      onClear={annotations.clear}
+    />
     {hasNotes && (
       <ExamNotesPanel
         notes={annotations.notes}
@@ -330,6 +275,7 @@ function ReadingRunner({ attemptId, attempt, sections, saved }: {
         focusId={annotations.focusNoteId}
         onChange={annotations.setNoteText}
         onDelete={annotations.remove}
+        onDeleteAll={annotations.removeNotes}
         onFocused={annotations.noteFocused}
         onClose={() => setNotesClosed(true)}
       />

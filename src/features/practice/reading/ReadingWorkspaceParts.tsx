@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { PointerEvent as ReactPointerEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeftRight, Clock3, Highlighter, Settings, X } from 'lucide-react'
+import { ArrowLeftRight, Clock3, Highlighter, Quote, Settings, X } from 'lucide-react'
 import { PracticeSettingsPopover } from '../components/PracticeSettingsPopover'
 
 export type WorkspaceFontSize = 'small' | 'medium' | 'large'
@@ -53,24 +53,25 @@ export function ReadingTopBar({ seconds, timed, showClock = true, exitTo, eyeCom
 }
 
 /** Area B: the practice tool. The real exam interface has none. */
-export function ReadingToolRail({ hasSelection, hint, highlightsCount, onHighlight, onClearHighlights }: {
-  hasSelection: boolean
-  hint: string
-  highlightsCount: number
+export function ReadingToolRail({ onHighlight, onNote }: {
   onHighlight: () => void
-  onClearHighlights: () => void
+  onNote: () => void
 }) {
   return (
     <aside className="rw-tools" aria-label="Công cụ hỗ trợ">
       <p className="rw-tools-title">Công cụ</p>
-      {/* mousedown is cancelled so pressing the button never drops the text selection */}
+      {/* mousedown is cancelled so pressing a button never drops the text selection */}
       <button type="button" className="rw-tool" onMouseDown={(event) => event.preventDefault()} onClick={onHighlight} aria-keyshortcuts="H">
         <Highlighter size={16} aria-hidden="true" />
         <span>Highlight</span>
         <small>Phím (H)</small>
       </button>
-      {highlightsCount > 0 && <button type="button" className="rw-tool rw-tool-quiet" onClick={onClearHighlights}>Bỏ Highlight</button>}
-      <p className="rw-tools-help" role="status">{hint || (hasSelection ? 'Bấm Highlight hoặc phím H.' : 'Bôi đen đoạn trong bài đọc rồi bấm Highlight.')}</p>
+      <button type="button" className="rw-tool" onMouseDown={(event) => event.preventDefault()} onClick={onNote}>
+        <Quote size={16} aria-hidden="true" />
+        <span>Note</span>
+      </button>
+      <p className="rw-tools-help">Bôi đen đoạn trong bài rồi bấm Highlight hoặc Note.</p>
+      <p className="rw-tools-help">Bấm vào chữ đã đánh dấu rồi chọn Clear để bỏ.</p>
       <p className="rw-tools-help">Bấm vào một từ để xem nghĩa.</p>
     </aside>
   )

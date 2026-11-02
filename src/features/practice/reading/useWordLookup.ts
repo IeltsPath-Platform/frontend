@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { MouseEvent as ReactMouseEvent } from 'react'
+import { highlightRegistry, paint } from './customHighlight'
 import { lookupWord } from './wordLookupApi'
 import type { WordEntry } from './wordLookupApi'
 
-/** Practice layout: click a word in the passage to see what the vocabulary library says about it. */
+/** Practice layout: point at a word in the passage to see it underlined, click it to see what the vocabulary library says about it. */
+
+const HOVER_NAME = 'rw-word-hover'
 
 export type WordLookupState =
   | { word: string; rect: DOMRect; status: 'loading' }
@@ -17,7 +20,7 @@ interface CaretDocument {
 }
 
 /** The English word under a point of the screen and where it is drawn; null when the point is not on a word. */
-export function wordAtPoint(x: number, y: number): { word: string; rect: DOMRect } | null {
+export function wordAtPoint(x: number, y: number): { word: string; rect: DOMRect; range: Range } | null {
   const doc = document as unknown as CaretDocument
   let node: Node | null = null
   let offset = 0
@@ -43,7 +46,7 @@ export function wordAtPoint(x: number, y: number): { word: string; rect: DOMRect
   const rect = range.getBoundingClientRect()
   // A caret position snaps to the nearest text, so make sure the click really landed on the word.
   if (x < rect.left - 2 || x > rect.right + 2 || y < rect.top - 2 || y > rect.bottom + 2) return null
-  return { word, rect }
+  return { word, rect, range }
 }
 
 export function useWordLookup(enabled: boolean) {
@@ -78,6 +81,24 @@ export function useWordLookup(enabled: boolean) {
     else close()
   }, [enabled, search, close])
 
+  // The word under the pointer is underlined so the learner sees what a click would look up. Highlights and drags are left alone.
+  const frame = useRef(0)
+  const unhover = useCallback(() => {
+    cancelAnimationFrame(frame.current)
+    highlightRegistry()?.delete(HOVER_NAME)
+  }, [])
+  const onMouseMove = useCallback((event: ReactMouseEvent<HTMLElement>) => {
+    if (!enabled || !highlightRegistry()) return
+    const { clientX, clientY, buttons } = event
+    const overMark = Boolean((event.target as Element).closest('mark'))
+    cancelAnimationFrame(frame.current)
+    frame.current = requestAnimationFrame(() => {
+      const hit = buttons === 0 && !overMark ? wordAtPoint(clientX, clientY) : null
+      if (hit) paint(HOVER_NAME, [hit.range])
+      else highlightRegistry()?.delete(HOVER_NAME)
+    })
+  }, [enabled])
+
   const retry = useCallback(() => {
     if (state) search(state.word, state.rect)
   }, [state, search])
@@ -90,6 +111,7 @@ export function useWordLookup(enabled: boolean) {
   }, [state, close])
 
   useEffect(() => () => controller.current?.abort(), [])
+  useEffect(() => unhover, [unhover])
 
-  return { state: enabled ? state : null, onClick, close, retry }
+  return { state: enabled ? state : null, onClick, onMouseMove, onMouseLeave: unhover, close, retry }
 }

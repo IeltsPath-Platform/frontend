@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { SkillType } from '@/types/practice'
+import { SiteLogo } from '@/components/SiteLogo'
 import { PRACTICE_SKILLS, PRACTICE_SKILL_CONFIG } from '../lib/practiceSkillConfig'
 import type { PracticePart } from '../lib/practiceSkillConfig'
 import { practiceFormatLabel } from '../lib/practiceFormatLabels'
@@ -46,13 +47,7 @@ export const PracticeSidebar: React.FC<PracticeSidebarProps> = ({
   return (
     <aside className="practice-white-sidebar">
       <div className="sidebar-brand-header">
-        <div className="sidebar-brand-arch">
-          <span className="arch-shape" />
-        </div>
-        <div>
-          <h2 className="sidebar-brand-title">LUYỆN ĐỀ</h2>
-          <p className="sidebar-brand-sub">The IELTS Space</p>
-        </div>
+        <SiteLogo className="sidebar-brand-logo" />
       </div>
 
       <nav className="sidebar-skills-block" aria-label="Kỹ năng luyện đề">

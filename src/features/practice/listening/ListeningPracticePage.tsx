@@ -310,6 +310,7 @@ function ListeningRunner({ attemptId, attempt, sections, saved }: {
         focusId={annotations.focusNoteId}
         onChange={annotations.setNoteText}
         onDelete={annotations.remove}
+        onDeleteAll={annotations.removeNotes}
         onFocused={annotations.noteFocused}
         onClose={() => setNotesClosed(true)}
       />

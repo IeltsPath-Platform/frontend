@@ -453,44 +453,21 @@
   height: fit-content;
 }
 
+/* The same white logo as the site navigation, on the same blue, so the sidebar and the header read as one brand. */
 .sidebar-brand-header {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #f1f5f9;
-}
-
-.sidebar-brand-arch {
-  width: 36px;
-  height: 36px;
-  border-radius: 50% 50% 40% 40%;
-  border: 3.5px solid #0f3bb8;
-  display: flex;
-  align-items: center;
   justify-content: center;
+  margin-bottom: 1.5rem;
+  padding: 0.9rem 1rem;
+  border-radius: 0.9rem;
+  background: linear-gradient(135deg, var(--site-navy), var(--site-blue));
 }
 
-.arch-shape {
-  width: 14px;
-  height: 14px;
-  background: #0f3bb8;
-  border-radius: 50% 50% 0 0;
-}
-
-.sidebar-brand-title {
-  font-size: 1.15rem;
-  font-weight: 800;
-  color: #0a297b;
-  line-height: 1.1;
-  letter-spacing: -0.01em;
-}
-
-.sidebar-brand-sub {
-  font-size: 0.72rem;
-  color: #64748b;
-  margin-top: 2px;
+.sidebar-brand-logo {
+  display: block;
+  width: auto;
+  height: 2.6rem;
 }
 
 .sidebar-section-label {
@@ -1301,8 +1278,6 @@
 .speaking-ready-tip-icon { display: grid; flex: none; place-items: center; width: 1.45rem; height: 1.45rem; border-radius: 50%; background: #eef2ff; color: #1d4ed8; }
 .speaking-ready-actions { flex-direction: column; align-items: center; gap: 0.5rem; }
 .speaking-ready-dialog .screen2-start-cta { padding: 0.6rem 2.2rem; font-size: 0.85rem; letter-spacing: 0.01em; }
-.speaking-ready-later { border: 0; background: transparent; color: rgba(255, 255, 255, 0.8); font-size: 0.8rem; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
-.speaking-ready-later:hover { color: #ffffff; }
 
 /* A test that was already done: look at the result, or start again. */
 .completed-dialog { max-width: min(400px, calc(100vw - 2rem)); border-radius: 18px; overflow: hidden; }

@@ -35,10 +35,11 @@ describe('SpeakingReadyModal', () => {
     expect(onConfirm).toHaveBeenCalledTimes(1)
   })
 
-  it('lets the learner put it off', async () => {
+  it('can still be closed without starting, but has no "later" button', async () => {
     const { onClose, onConfirm } = renderModal()
+    expect(screen.queryByRole('button', { name: /Để sau/ })).not.toBeInTheDocument()
 
-    await userEvent.click(screen.getByRole('button', { name: /Để sau/ }))
+    await userEvent.keyboard('{Escape}')
 
     expect(onClose).toHaveBeenCalledTimes(1)
     expect(onConfirm).not.toHaveBeenCalled()

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { RefObject } from 'react'
+import { highlightRegistry, paint } from './customHighlight'
 
 /** Exam layout: highlights and notes the learner puts on the passage and on the questions. */
 
@@ -32,20 +33,6 @@ export interface AnnotationPopup {
 const PANES: AnnotationPane[] = ['passage', 'questions']
 const HIGHLIGHT_NAME = 'rw-exam-highlight'
 const NOTE_NAME = 'rw-exam-note'
-
-interface HighlightRegistry { set: (name: string, value: unknown) => void; delete: (name: string) => void }
-
-/** The CSS Custom Highlight API paints colour behind text without touching the markup; null where the browser lacks it. */
-function highlightRegistry(): HighlightRegistry | null {
-  const registry = (globalThis.CSS as unknown as { highlights?: HighlightRegistry } | undefined)?.highlights
-  return registry && typeof (globalThis as { Highlight?: unknown }).Highlight === 'function' ? registry : null
-}
-
-function paint(name: string, ranges: Range[]) {
-  const registry = highlightRegistry()
-  const Highlight = (globalThis as unknown as { Highlight: new (...ranges: Range[]) => unknown }).Highlight
-  if (registry) registry.set(name, new Highlight(...ranges))
-}
 
 function textOffset(container: Node, node: Node, offset: number) {
   const range = document.createRange()
@@ -211,6 +198,8 @@ export function useExamAnnotations({ enabled, sectionId, passageRef, questionsRe
 
   const remove = useCallback((id: string) => update((list) => list.filter((item) => item.id !== id)), [update])
 
+  const removeNotes = useCallback(() => update((list) => list.filter((item) => item.kind !== 'note')), [update])
+
   function clear() {
     if (popup?.annotationId && popup.sectionId === sectionId) remove(popup.annotationId)
     setPopup(null)
@@ -227,6 +216,8 @@ export function useExamAnnotations({ enabled, sectionId, passageRef, questionsRe
     note: () => add('note'),
     clear,
     remove,
+    /** Takes every note of the open part away; highlights stay. */
+    removeNotes,
     setNoteText: (id: string, note: string) => update((list) => list.map((item) => (item.id === id ? { ...item, note } : item))),
     noteFocused: () => setFocusNoteId(null),
     /** Brings the note under the popup to the front of the notes panel. */
