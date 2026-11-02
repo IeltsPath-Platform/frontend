@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { CSSProperties } from 'react'
-import { ArrowRight, Route } from 'lucide-react'
+import { ArrowRight, Layers } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { OwlHero } from '@/components/OwlHero'
 import type { CourseSummary } from '~types/learningPath'
@@ -9,12 +9,10 @@ import { learningApi } from '../api'
 import { NoticeBanner } from '../components/NoticeBanner'
 import { CourseCoverArt } from '../components/CourseCoverArt'
 import { SuggestionStrip } from '../components/guide/SuggestionStrip'
-import { SegmentMeter } from '../components/SegmentMeter'
 import { ApiErrorState, CourseCatalogSkeleton, EmptyState } from '../components/PageState'
+import { COURSE_SKILLS } from '../lib/courseSkills'
 import { timeAgo } from '../lib/relativeTime'
 import { useApiResource } from '../lib/useApiResource'
-import type { CourseUnlockTarget, LearningSkill } from '~types/learningPath'
-import { UnlockDialog } from '../components/UnlockDialog'
 
 type CourseFilter = 'ALL' | 'RECOMMENDED' | 'IN_PROGRESS' | 'PASSED'
 
@@ -105,7 +103,6 @@ export function CourseListPage() {
                 focused={course.id === focusCourse?.id}
                 index={index}
                 lastVisited={course.id === recentCourse?.id}
-                refreshCourses={courses.reload}
                 key={course.id}
               />
             ))}
@@ -142,7 +139,12 @@ function progressText(course: CourseSummary) {
   if (course.passedTopicCount === 0 && course.completedLessons === 0) {
     return course.lastStudiedAt ? 'Đã bắt đầu học' : 'Chưa bắt đầu'
   }
-  return `${course.completedLessons}/${course.totalLessons} bài · ${course.passedTopicCount}/${course.topicCount} chặng`
+  return `${course.completedLessons}/${course.totalLessons} bài`
+}
+
+/** What a course holds, in the words of the course screen: its fixed skills and how many lessons they add up to. */
+function courseSize(course: CourseSummary) {
+  return course.totalLessons > 0 ? `${COURSE_SKILLS.length} kỹ năng · ${course.totalLessons} bài học` : `${COURSE_SKILLS.length} kỹ năng`
 }
 
 function courseCta(course: CourseSummary): string {
@@ -177,7 +179,7 @@ function CourseSpotlight({ course, resuming }: { course: CourseSummary; resuming
         <p className="lp-spotlight__label">{resuming ? 'Đang học dở' : 'Gợi ý từ bài test đầu vào'}</p>
         <h2 id="lp-spotlight-title">{course.title}</h2>
         <p className="lp-spotlight__meta">
-          {course.topicCount} chặng topic · kết thúc bằng bài thi cuối khóa
+          {courseSize(course)} · kết thúc bằng bài thi cuối khóa
         </p>
         {course.description ? <p className="lp-spotlight__description">{course.description}</p> : null}
         {isStarted(course) ? (
@@ -225,28 +227,18 @@ function PlacementSpotlight() {
   )
 }
 
-function CourseTile({ course, focused, index, lastVisited, refreshCourses }: {
+function CourseTile({ course, focused, index, lastVisited }: {
   course: CourseSummary
   focused: boolean
   index: number
   /** The course the learner studied most recently: it says when, from the server's own record. */
   lastVisited: boolean
-  refreshCourses: () => void
 }) {
-  const [unlockTarget, setUnlockTarget] = useState<CourseUnlockTarget | null>(null)
   const chip = lastVisited && course.lastStudiedAt
     ? { label: `Lần cuối vào · ${timeAgo(course.lastStudiedAt)}`, tone: 'primary' as const }
     : courseChip(course)
   const passed = course.testStatus === 'PASSED'
-  const filled = Math.min(
-    course.topicCount,
-    Math.max(
-      course.passedTopicCount,
-      course.totalLessons > 0 ? (course.completedLessons / course.totalLessons) * course.topicCount : course.passedTopicCount,
-    ),
-  )
-  const done = Math.floor(filled)
-  const partial = filled - done
+  const pct = progressPct(course)
 
   return (
     <li
@@ -268,13 +260,13 @@ function CourseTile({ course, focused, index, lastVisited, refreshCourses }: {
           {course.description ? <p className="lp-tile__description">{course.description}</p> : null}
           <ul className="lp-tile__facts" aria-label="Thông tin khóa học">
             <li>
-              <Route aria-hidden="true" size={14} />
-              {course.topicCount} chặng topic
+              <Layers aria-hidden="true" size={14} />
+              {courseSize(course)}
             </li>
           </ul>
 
           <div className="lp-tile__progress">
-            <SegmentMeter done={done} partial={partial} total={course.topicCount} unit="chặng" />
+            <progress className="lp-progress" max={100} value={pct}>{pct}%</progress>
             <span className="lp-tile__count">{progressText(course)}</span>
           </div>
 
@@ -286,13 +278,6 @@ function CourseTile({ course, focused, index, lastVisited, refreshCourses }: {
           </span>
         </div>
       </Link>
-      {(course.premium || course.availableSkills?.length || course.comboPayablePoints != null) ? <div className="lp-tile__body" aria-label="Tùy chọn mở khóa">
-        {course.premium ? <p>Premium: mở quyền truy cập trong thời hạn gói.</p> : null}
-        {course.availableSkills?.filter((skill) => skill !== 'SPEAKING' && course.skillUnlockPoints?.[skill] != null && !course.unlockedSkills?.includes(skill)).map((skill: LearningSkill) => <Button key={skill} variant="outline" onClick={() => setUnlockTarget(skill)} type="button">Mở {({ LISTENING: 'Nghe', READING: 'Đọc', WRITING: 'Viết', SPEAKING: 'Nói' } as const)[skill]} · {course.skillUnlockPoints?.[skill]} Points</Button>)}
-        {course.availableSkills && !course.availableSkills.includes('SPEAKING') ? <p>Nói: sắp ra mắt.</p> : null}
-        {course.comboPayablePoints != null && !course.comboUnlocked ? <Button variant="outline" onClick={() => setUnlockTarget('COMBO')} type="button">Mở gói kết hợp · {course.comboPayablePoints} Points</Button> : null}
-      </div> : null}
-      {unlockTarget ? <UnlockDialog courseId={course.id} target={unlockTarget} onClose={() => setUnlockTarget(null)} onChanged={() => { refreshCourses(); setUnlockTarget(null) }} /> : null}
     </li>
   )
 }

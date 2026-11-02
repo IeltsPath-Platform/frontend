@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import type { ReviewRef } from '~types/learningPath'
+import type { PracticeReviewCreated, ReviewRef } from '~types/learningPath'
 import type { ApiError } from '../api/apiError'
 
 const NO_REVIEWS: ReviewRef[] = []
@@ -16,6 +16,17 @@ const getSnapshot = () => pending
 /** Reviews that block the learning flow, fed by 403 REVIEW_REQUIRED and by lesson/topic responses. */
 export function usePendingReviews() {
   return useSyncExternalStore(subscribe, getSnapshot, () => NO_REVIEWS)
+}
+
+/** The reviews a Practice submission created, as gate entries; the store keeps only the blocking ones. */
+export function reviewRefsFromSubmission(created: PracticeReviewCreated[], lessonId: string): ReviewRef[] {
+  return created.map((review) => ({
+    reviewId: review.reviewId,
+    lessonId,
+    knowledgePointCode: review.knowledgePointId.slice(0, 8),
+    knowledgePointTitle: 'Bài ôn từ luyện thêm',
+    blocking: review.blocking,
+  }))
 }
 
 export function setPendingReviews(reviews: ReviewRef[]) {

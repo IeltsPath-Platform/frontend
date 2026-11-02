@@ -44,7 +44,7 @@ export type BasketOptionalDto = {
   tier: MasteryTier
   mastery: number
   dueAt?: string | null
-  reason: 'CONSOLIDATE' | 'DUE' | 'WRITING_CRITERION' | 'ERROR_PATTERN'
+  reason: 'CONSOLIDATE' | 'DUE' | 'WRITING_CRITERION' | 'ERROR_PATTERN' | 'PRACTICE'
   hasUnrevealedSet: boolean
   reviewId?: string | null
   errorTrap?: ErrorHintDto | null

@@ -59,20 +59,21 @@ export function listTopics(state: MockState): TopicSummary[] {
 
 export function getTopicLessons(state: MockState, topicId: string): TopicLessonsResponse {
   const topic = requireTopic(topicId)
-  if (topicStatus(state, topic) === 'LOCKED') throw new ApiError(403, 'TOPIC_LOCKED', 'Topic này chưa mở.', { topicId })
+  const locked = topicStatus(state, topic) === 'LOCKED'
   const record = state.topicTests[topic.id]
   return {
     topic: topicSummary(state, topic),
+    // A topic the learner has not reached still lists its lessons, all closed, so the course can be read ahead.
     lessons: topicLessons(topic).map((lesson) => ({
       id: lesson.id,
       title: lesson.title,
       sortOrder: lesson.sortOrder,
       estimatedMinutes: lesson.estimatedMinutes,
-      ...lessonStatus(state, lesson),
+      ...(locked ? { status: 'LOCKED' as const, lockedReason: 'Hoàn thành chặng trước để mở.' } : lessonStatus(state, lesson)),
     })),
     finalTest: {
       title: topic.testTitle,
-      testStatus: testStatus(state, topic),
+      testStatus: locked ? 'LOCKED' : testStatus(state, topic),
       questionCount: topic.testQuestionCount,
       lastPercent: record?.lastPercent ?? null,
     },
