@@ -1,0 +1,15 @@
+.where h4 { margin: 0 0 .4rem; color: var(--lp-muted); font-size: .72rem; font-weight: 750; letter-spacing: .04em; text-transform: uppercase; }
+.where p { margin: 0; color: var(--lp-muted); font-size: .8rem; line-height: 1.55; }
+.where p a { color: var(--lp-primary); font-weight: 650; }
+.where ul { display: grid; gap: .4rem; margin: 0; padding: 0; list-style: none; }
+/* Each lesson is one tap target of at least 44px, so it works on a phone. */
+.lesson { display: flex; align-items: flex-start; gap: .6rem; min-block-size: 2.75rem; padding: .5rem .75rem; border: 1px solid var(--lp-line); border-radius: .75rem; background: var(--lp-surface); color: var(--lp-ink); text-decoration: none; transition: border-color 150ms ease-out, background-color 150ms ease-out; }
+.lesson svg { flex: none; margin-block-start: .15rem; color: var(--lp-primary); }
+.lesson span { display: grid; gap: .1rem; min-inline-size: 0; }
+.lesson strong { font-size: .85rem; line-height: 1.35; overflow-wrap: anywhere; }
+.lesson small { color: var(--lp-muted); font-size: .72rem; line-height: 1.4; }
+.lesson:hover { border-color: var(--lp-primary); background: var(--lp-soft); }
+.lesson:focus-visible, .where p a:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  .lesson { transition: none; }
+}

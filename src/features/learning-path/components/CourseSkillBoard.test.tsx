@@ -1,7 +1,7 @@
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@/test/render'
-import type { LessonSummary, TopicSummary } from '~types/learningPath'
+import type { LessonSummary, PracticeTestMilestone, TopicSummary } from '~types/learningPath'
 import { CourseSkillBoard } from './CourseSkillBoard'
 
 const { getTopicLessons } = vi.hoisted(() => ({ getTopicLessons: vi.fn() }))
@@ -29,11 +29,19 @@ const topics = [
   topic('l1', 'LISTENING', 4, { status: 'IN_PROGRESS' }),
 ]
 
-function renderBoard(path = '/learn/courses/c1') {
+function milestone(packageId: string, afterTopicSequence: number): PracticeTestMilestone {
+  return {
+    packageId, packageVersionId: `${packageId}-v`, code: packageId, title: `Đề ${packageId}`, afterTopicSequence,
+    status: 'LOCKED', percent: null,
+  }
+}
+
+function renderBoard(path = '/learn/courses/c1', tests: PracticeTestMilestone[] = []) {
+  const practiceTests = { milestones: tests, startingId: null, start: vi.fn() }
   return render(
     <MemoryRouter initialEntries={[path]}>
       <Routes>
-        <Route path="/learn/courses/:courseId" element={<CourseSkillBoard course={null} onUnlocked={vi.fn()} topics={topics} />} />
+        <Route path="/learn/courses/:courseId" element={<CourseSkillBoard course={null} onUnlocked={vi.fn()} practiceTests={practiceTests} topics={topics} />} />
         <Route path="/learn/lessons/:lessonId" element={<p>Trang bài học</p>} />
       </Routes>
     </MemoryRouter>,
@@ -76,6 +84,29 @@ describe('CourseSkillBoard', () => {
   it('offers to start when the skill has not been touched', () => {
     renderBoard('/learn/courses/c1?skill=LISTENING')
     expect(screen.getByRole('button', { name: /Bắt đầu học/ })).toBeInTheDocument()
+  })
+
+  it('draws a practice test inside the skill of the chặng it opens after, straight after that chặng', () => {
+    // Counted across the course: r1, r2, r3, l1. Test "a" opens after r2, test "b" after l1.
+    renderBoard('/learn/courses/c1?skill=READING', [milestone('a', 2), milestone('b', 4)])
+    const route = screen.getByRole('list', { name: 'Các chặng Reading' })
+    const items = Array.from(route.children).map((item) => item.textContent ?? '')
+    expect(items).toHaveLength(4)
+    expect(items[1]).toContain('Chặng r2')
+    expect(items[2]).toContain('Đề a')
+    expect(items[3]).toContain('Chặng r3')
+    expect(screen.queryByText('Đề b')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /^Listening/ }))
+    const listening = screen.getByRole('list', { name: 'Các chặng Listening' })
+    expect(Array.from(listening.children).map((item) => item.textContent ?? '')[1]).toContain('Đề b')
+  })
+
+  it('keeps a practice test whose chặng is unknown at the end of the route so it is not lost', () => {
+    renderBoard('/learn/courses/c1', [milestone('z', 9)])
+    const end = screen.getByRole('list', { name: 'Về đích' })
+    expect(end).toHaveTextContent('Đề z')
+    expect(end).toHaveTextContent('Mở sau chặng thứ 9 của khóa')
   })
 
   it('stays on the page and opens the chặng when no lesson is open', async () => {

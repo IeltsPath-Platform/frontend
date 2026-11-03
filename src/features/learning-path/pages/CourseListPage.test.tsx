@@ -49,6 +49,32 @@ describe('CourseListPage lesson progress', () => {
     expect(document.querySelector('.lp-tiles')).not.toHaveTextContent('chặng')
   })
 
+  it('labels a free course on its tile', async () => {
+    await renderCourse(course({ free: true }))
+    expect(document.querySelector('.lp-tile__facts')).toHaveTextContent('Miễn phí')
+  })
+
+  it('shows the cover on the tile and the banner behind the highlighted course, falling back to the cover', async () => {
+    await renderCourse(course({
+      recommended: true, completedLessons: 0, lastStudiedAt: null,
+      coverImageUrl: 'https://cdn.example/cover.jpg', bannerImageUrl: 'https://cdn.example/banner.jpg',
+    }))
+    expect(document.querySelector('.lp-tile__art img')).toHaveAttribute('src', 'https://cdn.example/cover.jpg')
+    expect(document.querySelector('.lp-spotlight__art img')).toHaveAttribute('src', 'https://cdn.example/banner.jpg')
+  })
+
+  it('uses the cover behind the highlighted course when there is no banner', async () => {
+    await renderCourse(course({
+      recommended: true, completedLessons: 0, lastStudiedAt: null, coverImageUrl: 'https://cdn.example/cover.jpg',
+    }))
+    expect(document.querySelector('.lp-spotlight__art img')).toHaveAttribute('src', 'https://cdn.example/cover.jpg')
+  })
+
+  it('leaves a paid course unlabelled', async () => {
+    await renderCourse(course({ free: false }))
+    expect(document.querySelector('.lp-tile__facts')).not.toHaveTextContent('Miễn phí')
+  })
+
   it('fills the bar by the share of lessons completed', async () => {
     const bar = await renderCourse(course())
     expect(document.querySelector('.lp-tile__count')).toHaveTextContent('3/15 bài')

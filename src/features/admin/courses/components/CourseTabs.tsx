@@ -20,7 +20,7 @@ export function CourseTabs({ courses, topics, selectedId, onSelect, panelId }: {
     ...courses.map((course) => ({
       id: course.id,
       name: course.name,
-      detail: `Band ${course.bandLevel.toFixed(1)}${course.status === 'ACTIVE' ? '' : ' · Ngừng dùng'}`,
+      detail: `Band ${course.bandLevel.toFixed(1)}${course.free ? ' · Miễn phí' : ''}${course.status === 'ACTIVE' ? '' : ' · Ngừng dùng'}`,
       count: topics.filter((topic) => topic.courseId === course.id).length,
       muted: course.status !== 'ACTIVE',
     })),

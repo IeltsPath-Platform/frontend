@@ -10,6 +10,8 @@ export type ApiErrorCode =
   | 'SKILL_NOT_AVAILABLE'
   | 'TEST_LOCKED'
   | 'TEST_UNAVAILABLE'
+  /** A course's practice-test milestone is not open yet: the chặng it comes after is not done. */
+  | 'PRACTICE_TEST_LOCKED'
   | 'PRACTICE_REQUIRED'
   /** The lesson has exercise blocks: it is completed by passing them, not by the confirmation button. */
   | 'LESSON_HAS_EXERCISES'
@@ -133,6 +135,8 @@ const CODE_MAP: Record<string, ApiErrorCode> = {
   SKILL_NOT_AVAILABLE: 'SKILL_NOT_AVAILABLE',
   TEST_LOCKED: 'TEST_LOCKED',
   TEST_UNAVAILABLE: 'TEST_UNAVAILABLE',
+  PRACTICE_TEST_LOCKED: 'PRACTICE_TEST_LOCKED',
+  PRACTICE_TEST_NOT_FOUND: 'NOT_FOUND',
   PRACTICE_REQUIRED: 'PRACTICE_REQUIRED',
   LESSON_HAS_EXERCISES: 'LESSON_HAS_EXERCISES',
   REVIEW_REQUIRED: 'REVIEW_REQUIRED',

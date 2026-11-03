@@ -5,9 +5,10 @@ export const TOPIC_SKILLS = ['LISTENING', 'READING', 'WRITING', 'SPEAKING'] as c
 export type TopicSkill = typeof TOPIC_SKILLS[number]
 export const courseSchema = z.object({
   id: z.string(), code: z.string(), name: z.string(), bandLevel: z.number().min(0).max(9),
-  coverImageUrl: z.string().nullable(), description: z.string().nullable(),
+  coverImageUrl: z.string().nullable(), bannerImageUrl: z.string().nullable().optional(), description: z.string().nullable(),
   skillUnlockPoints: z.partialRecord(z.enum(TOPIC_SKILLS), z.number().int().positive()).optional(),
   comboUnlockPoints: z.number().int().positive().nullable().optional(),
+  free: z.boolean().optional(),
   status: z.enum(CONTENT_STATUSES), createdAt: z.string(), updatedAt: z.string(),
 })
 export const topicSchema = z.object({
@@ -18,8 +19,8 @@ export const topicSchema = z.object({
   courseId: z.string().nullable(), createdAt: z.string(), updatedAt: z.string(),
 })
 export type Course = z.infer<typeof courseSchema>
-export type CourseCreate = Pick<Course, 'code' | 'name' | 'bandLevel' | 'coverImageUrl' | 'description'>
-export type CourseUpdate = Pick<Course, 'name' | 'bandLevel' | 'status' | 'coverImageUrl' | 'description' | 'skillUnlockPoints' | 'comboUnlockPoints'>
+export type CourseCreate = Pick<Course, 'code' | 'name' | 'bandLevel' | 'coverImageUrl' | 'bannerImageUrl' | 'description' | 'free' | 'skillUnlockPoints' | 'comboUnlockPoints'>
+export type CourseUpdate = Pick<Course, 'name' | 'bandLevel' | 'status' | 'coverImageUrl' | 'bannerImageUrl' | 'description' | 'skillUnlockPoints' | 'comboUnlockPoints' | 'free'>
 export type TopicCreate = Pick<z.infer<typeof topicSchema>, 'code' | 'name' | 'description' | 'parentTopicId' | 'sortOrder' | 'bandMin' | 'bandMax' | 'skill' | 'courseId'>
 export type TopicUpdate = Omit<TopicCreate, 'code'> & { status: Course['status'] }
 export const SKILL_LABEL = { LISTENING: 'Nghe', READING: 'Đọc', WRITING: 'Viết', SPEAKING: 'Nói' }

@@ -1,74 +1,125 @@
 .panel { min-inline-size: 0; }
-.legend { display: flex; flex-wrap: wrap; gap: .65rem 1.2rem; margin: -.25rem 0 0; padding: 0; list-style: none; }
-.legend li { display: inline-flex; align-items: center; gap: .4rem; color: var(--lp-muted); font-size: .75rem; }
-.legend li::before { content: ''; inline-size: .45rem; block-size: .45rem; border-radius: 50%; background: var(--tone); }
-.legend [data-tone="success"] { --tone: var(--lp-success); }
-.legend [data-tone="primary"] { --tone: var(--lp-primary); }
-.legend [data-tone="accent"] { --tone: var(--lp-accent); }
-.legend [data-tone="locked"] { --tone: var(--lp-locked); }
-.viewport { --branch-gap: 1.25rem; --branch-line: color-mix(in srgb, var(--lp-primary) 20%, var(--lp-line)); overflow-x: auto; border: 1px solid var(--lp-line); border-radius: 1.25rem; background: var(--lp-surface); scrollbar-width: thin; scrollbar-color: var(--branch-line) transparent; }
-.viewport:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 4px; }
-.canvas { min-inline-size: max(100%, calc(var(--tree-columns) * 18rem)); padding: 1.75rem 1.25rem 1.25rem; background-image: radial-gradient(var(--lp-line) .75px, transparent .75px); background-size: 18px 18px; }
-.root { display: flex; position: relative; align-items: center; gap: .85rem; inline-size: fit-content; max-inline-size: 32rem; margin: 0 auto 2rem; padding: 1rem 1.25rem; border: 1px solid color-mix(in srgb, var(--lp-primary) 25%, var(--lp-line)); border-radius: 1rem; background: var(--lp-soft); box-shadow: 0 4px 12px color-mix(in srgb, var(--lp-primary) 5%, transparent); }
-.root::after { content: ''; position: absolute; inset-block-start: 100%; inset-inline-start: 50%; block-size: calc(2rem + 1px); border-inline-start: 2px solid var(--branch-line); }
-.rootIcon { display: grid; flex: 0 0 3rem; block-size: 3rem; place-items: center; border-radius: .85rem; background: var(--lp-primary); color: var(--lp-surface); }
-.rootLabel { margin: 0 0 .2rem; color: var(--lp-primary); font-size: .68rem; font-weight: 750; }
+
+.board { padding: 1.1rem; border: 1px solid var(--lp-line); border-radius: 1.25rem; background: var(--lp-surface); background-image: radial-gradient(var(--lp-line) .75px, transparent .75px); background-size: 18px 18px; }
+
+/* The tree: the course is the root, each skill a branch, and inside a branch the points hang off a trunk step by step. */
+.tree { --branch-gap: 1rem; --branch-line: color-mix(in srgb, var(--lp-primary) 24%, var(--lp-line)); display: grid; }
+
+.root { position: relative; display: grid; gap: .85rem; inline-size: 100%; max-inline-size: 46rem; margin: 0 auto 1.1rem; padding: .9rem 1.1rem; border: 1px solid color-mix(in srgb, var(--lp-primary) 22%, var(--lp-line)); border-radius: 1rem; background: linear-gradient(120deg, var(--lp-soft), var(--lp-surface) 80%); box-shadow: 0 4px 12px color-mix(in srgb, var(--lp-primary) 6%, transparent); }
+.rootId { display: flex; align-items: center; gap: .75rem; min-inline-size: 0; }
+.rootIcon { display: grid; flex: 0 0 2.5rem; block-size: 2.5rem; place-items: center; border-radius: .75rem; background: var(--lp-primary); color: var(--lp-surface); }
+.rootLabel { margin: 0 0 .15rem; color: var(--lp-primary); font-size: .68rem; font-weight: 750; letter-spacing: .04em; text-transform: uppercase; }
 .rootName { margin: 0; color: var(--lp-ink); font-family: var(--lp-display); font-size: 1rem; font-weight: 750; overflow-wrap: anywhere; }
-.rootMeta { margin: .3rem 0 0; color: var(--lp-muted); font-size: .7rem; }
-.branches { display: grid; grid-template-columns: repeat(var(--tree-columns), minmax(0, 1fr)); align-items: start; gap: var(--branch-gap); margin: 0; padding: 0; list-style: none; }
-.branch { position: relative; min-inline-size: 0; padding-block-start: 1.5rem; }
-.branch::before { content: ''; position: absolute; inset-block-start: 0; inset-inline-start: calc(var(--branch-gap) / -2); inline-size: calc(100% + var(--branch-gap)); border-block-start: 2px solid var(--branch-line); }
-.branch:first-child::before { inset-inline-start: 50%; inline-size: calc(50% + var(--branch-gap) / 2); }
-.branch:last-child::before { inline-size: calc(50% + var(--branch-gap) / 2); }
-.branch:only-child::before { display: none; }
-.branchHead { display: flex; position: relative; align-items: center; gap: .7rem; min-block-size: 4.5rem; padding: .8rem .9rem; border: 1px solid color-mix(in srgb, var(--lp-primary) 22%, var(--lp-line)); border-radius: .85rem; background: var(--lp-surface); list-style: none; cursor: pointer; transition: background 160ms ease-out; }
-.branchHead::before { content: ''; position: absolute; inset-block-end: 100%; inset-inline-start: 50%; block-size: 1.5rem; border-inline-start: 2px solid var(--branch-line); }
+.rootMeta { margin: .2rem 0 0; color: var(--lp-muted); font-size: .72rem; }
+
+/* How many points sit in each mastery group. */
+.tiers { display: grid; gap: .55rem; align-content: center; min-inline-size: 0; }
+.ribbon { display: flex; gap: 2px; block-size: .5rem; overflow: hidden; border-radius: 999px; background: var(--lp-line); }
+.ribbon > span { flex: var(--n) 1 0; min-inline-size: 4px; background: var(--tone); }
+.legend { display: flex; flex-wrap: wrap; gap: .3rem .95rem; margin: 0; padding: 0; list-style: none; }
+.legend li { display: inline-flex; align-items: center; gap: .4rem; color: var(--lp-muted); font-size: .78rem; }
+.legend li::before { content: ''; inline-size: .5rem; block-size: .5rem; border-radius: 50%; background: var(--tone); }
+.legend b { color: var(--lp-ink); font-variant-numeric: tabular-nums; font-weight: 700; }
+.ribbon > [data-tone='success'], .legend [data-tone='success'] { --tone: var(--lp-success); }
+.ribbon > [data-tone='primary'], .legend [data-tone='primary'] { --tone: var(--lp-primary); }
+.ribbon > [data-tone='accent'], .legend [data-tone='accent'] { --tone: var(--lp-accent); }
+.ribbon > [data-tone='locked'], .legend [data-tone='locked'] { --tone: var(--lp-locked); }
+
+/* Narrow screens: one column, the branches hang off a rail on the left. */
+.branches { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; gap: 1rem; margin: 0 0 0 .55rem; padding: 0 0 0 1rem; border-inline-start: 2px solid var(--branch-line); list-style: none; }
+.branch { position: relative; min-inline-size: 0; }
+.branch::before { content: ''; position: absolute; inset-block-start: 1.7rem; inset-inline-start: -1rem; inline-size: 1rem; border-block-start: 2px solid var(--branch-line); }
+.root::after { content: ''; position: absolute; inset-block-start: 100%; inset-inline-start: .55rem; block-size: 1.1rem; border-inline-start: 2px solid var(--branch-line); }
+
+.skillBranch { overflow: hidden; border: 1px solid var(--lp-line); border-block-start: 3px solid var(--hue); border-radius: 1rem; background: var(--lp-surface); }
+.branchHead { display: flex; align-items: center; gap: .7rem; padding: .75rem .9rem; list-style: none; cursor: pointer; transition: background-color 150ms ease-out; }
 .branchHead::-webkit-details-marker { display: none; }
 .branchHead::marker { content: ''; }
-.branchHead:hover { background: var(--lp-soft); }
-.branchHead:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3px; }
-.skillIcon { display: grid; flex: 0 0 2.35rem; block-size: 2.35rem; place-items: center; border-radius: .65rem; background: var(--lp-soft); color: var(--lp-primary); }
-.branchCopy { margin: 0; display: grid; flex: 1; min-inline-size: 0; gap: .2rem; }
-.branchCopy > span { margin: 0; color: var(--lp-primary-strong); font-family: var(--lp-display); font-size: .95rem; font-weight: 750; }
-.branchCopy > small { color: var(--lp-muted); font-size: .7rem; font-weight: 400; }
+.branchHead:hover { background: color-mix(in srgb, var(--hue) 6%, var(--lp-surface)); }
+.branchHead:focus-visible { outline: 3px solid var(--color-focus); outline-offset: -3px; }
+.skillIcon { display: grid; flex: 0 0 2.25rem; block-size: 2.25rem; place-items: center; border-radius: .65rem; background: color-mix(in srgb, var(--hue) 12%, var(--lp-surface)); color: var(--hue); }
+.branchCopy { display: grid; flex: 1; gap: .1rem; min-inline-size: 0; margin: 0; }
+.branchCopy > span { color: var(--lp-ink); font-family: var(--lp-display); font-size: .95rem; font-weight: 750; }
+.branchCopy > small { color: var(--lp-muted); font-size: .72rem; font-weight: 400; }
 .chevron { flex: 0 0 auto; color: var(--lp-muted); transition: transform 160ms ease-out; }
 .skillBranch[open] > .branchHead .chevron { transform: rotate(180deg); }
-.points { display: flow-root; margin: .9rem 0 0 .9rem; padding: 0 0 0 1.2rem; list-style: none; }
-.point:global(.lp-point) { --point-tone: var(--lp-locked); position: relative; margin-block-start: .8rem; padding: .85rem; border-color: color-mix(in srgb, var(--point-tone) 20%, var(--lp-line)); border-inline-start: 3px solid var(--point-tone); border-radius: .8rem; }
-.point:first-child { margin-block-start: 0; }
-.point[data-tier="PRIORITY"] { --point-tone: var(--lp-accent); }
-.point[data-tier="CONSOLIDATE"] { --point-tone: var(--lp-primary); }
-.point[data-tier="MAINTAIN"] { --point-tone: var(--lp-success); }
-.point[data-locked="true"] { --point-tone: var(--lp-accent); background: color-mix(in srgb, var(--lp-accent) 5%, var(--lp-surface)); }
-.point::before { content: ''; position: absolute; inset-inline-start: calc(-1.2rem - 3px); inset-block-start: calc(-.8rem - 1px); inset-block-end: -.8rem; inline-size: 1.2rem; border-inline-start: 2px solid var(--branch-line); pointer-events: none; }
-.point:first-child::before { inset-block-start: calc(-.9rem - 1px); }
-.point:last-child::before { inset-block-end: auto; block-size: calc(2.6rem + 1px); }
-.point:only-child::before { block-size: calc(2.7rem + 1px); }
-.point::after { content: ''; position: absolute; inset-inline-start: calc(-1.2rem - 3px); inset-block-start: 1.8rem; inline-size: 1.2rem; border-block-start: 2px solid var(--point-tone); pointer-events: none; }
-.point :global(.lp-point__name) { font-size: .9rem; line-height: 1.45; }
-.point :global(.lp-point__head) { flex-wrap: wrap; }
-.point :global(.lp-point__code) { font-size: .65rem; }
-.point :global(.lp-point__head .lp-chip) { font-size: .65rem; }
-.point :global(.lp-point__cando), .point :global(.lp-point__needs), .point :global(.lp-point__actions .lp-hint) { font-size: .75rem; line-height: 1.6; }
-.point :global(.lp-point__meter) { flex-wrap: wrap; font-size: .72rem; }
-.point :global(.lp-point__actions) { align-items: flex-start; }
-.point :global(.lp-point__actions .lp-btn) { min-block-size: 44px; }
-.treeHint { margin: 0; color: var(--lp-muted); font-size: .75rem; line-height: 1.65; }
-@media (max-width: 48rem) {
-  .viewport { overflow: visible; border-radius: 1rem; }
-  .canvas { min-inline-size: 0; padding: 1.1rem .85rem .85rem; }
-  .root { max-inline-size: none; margin-inline: 0; margin-block-end: 1.25rem; padding: .85rem; }
-  .root::after { inset-inline-start: .55rem; block-size: 1.25rem; }
-  .rootIcon { flex-basis: 2.5rem; block-size: 2.5rem; }
-  .rootName { font-size: .9rem; }
-  .branches { grid-template-columns: minmax(0, 1fr); gap: 1rem; padding-inline-start: 1rem; border-inline-start: 2px solid var(--branch-line); margin-inline-start: .55rem; }
-  .branch { padding-block-start: 0; }
-  .branch::before, .branch:first-child::before, .branch:last-child::before { display: block; inset-block-start: 2.2rem; inset-inline-start: calc(-1rem - 2px); inline-size: 1rem; }
-  .branchHead::before { display: none; }
-  .branchHead { padding: .7rem; }
-  .points { padding-inline-start: .9rem; }
-  .point::before, .point::after { inset-inline-start: calc(-.9rem - 3px); inline-size: .9rem; }
+
+/* The trunk of a branch: step 1 at the top, each step below builds on the ones above it. */
+.steps { display: grid; margin: 0; padding: .8rem .75rem .6rem; border-block-start: 1px solid var(--lp-line); list-style: none; }
+.step { position: relative; padding-inline-start: 1.9rem; padding-block-end: .15rem; }
+.step::before { content: ''; position: absolute; inset-block: 0; inset-inline-start: .7rem; inline-size: 2px; background: var(--branch-line); }
+.step:last-child::after { content: ''; position: absolute; inset-block-end: -.2rem; inset-inline-start: calc(.7rem - 2px); inline-size: 6px; block-size: 6px; border-radius: 50%; background: var(--branch-line); }
+.stepHead { position: relative; display: flex; align-items: center; margin: 0 0 .5rem; color: var(--lp-primary-strong); font-size: .72rem; font-weight: 750; letter-spacing: .04em; text-transform: uppercase; }
+.stepNode { position: absolute; inset-inline-start: calc(-1.9rem + 1px); display: grid; inline-size: 1.4rem; block-size: 1.4rem; place-items: center; border: 2px solid var(--lp-primary); border-radius: 50%; background: var(--lp-surface); color: var(--lp-primary); font-size: .72rem; font-variant-numeric: tabular-nums; letter-spacing: 0; }
+.stepPoints { margin: 0; padding: 0; list-style: none; }
+
+/* A knowledge point is a small card hanging off the trunk; `data-group` carries its colour. */
+.point { --tone: var(--lp-locked); position: relative; margin-block-end: .45rem; border: 1px solid color-mix(in srgb, var(--tone) 22%, var(--lp-line)); border-inline-start: 3px solid var(--tone); border-radius: .75rem; background: var(--lp-surface); }
+.point::before { content: ''; position: absolute; inset-block-start: 1.55rem; inset-inline-start: calc(-1.2rem - 2px); inline-size: calc(1.2rem - 1px); border-block-start: 2px solid var(--tone); pointer-events: none; }
+.point[data-group='MAINTAIN'] { --tone: var(--lp-success); }
+.point[data-group='CONSOLIDATE'] { --tone: var(--lp-primary); }
+.point[data-group='PRIORITY'] { --tone: var(--lp-accent); }
+.point[data-locked='true'] { background: color-mix(in srgb, var(--lp-locked-soft) 55%, var(--lp-surface)); }
+.row { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: .7rem; padding: .65rem .7rem .65rem .75rem; border-radius: .7rem; transition: background-color 150ms ease-out; }
+.row:hover { background: color-mix(in srgb, var(--lp-soft) 60%, transparent); }
+.tierMark { display: grid; inline-size: 1.75rem; block-size: 1.75rem; place-items: center; border-radius: 50%; background: color-mix(in srgb, var(--tone) 14%, var(--lp-surface)); color: var(--tone); }
+.point[data-group='MAINTAIN'] .tierMark { background: var(--lp-success); color: var(--lp-surface); }
+.rowMain { display: grid; gap: .25rem; min-inline-size: 0; }
+.name { margin: 0; font-family: var(--lp-display); font-size: .9rem; font-weight: 650; line-height: 1.35; }
+/* The whole row is the target: the button stretches over it, and the practise button sits above. */
+.toggle { padding: 0; border: 0; background: none; color: var(--lp-ink); font: inherit; text-align: start; cursor: pointer; }
+.toggle::after { content: ''; position: absolute; inset: 0; border-radius: .7rem; }
+.toggle:focus-visible { outline: none; }
+.toggle:focus-visible::after { outline: 3px solid var(--color-focus); outline-offset: -3px; }
+.chev { display: inline-block; margin-inline-start: .25rem; vertical-align: -2px; color: var(--lp-muted); transition: transform 160ms ease-out; }
+.toggle[aria-expanded='true'] .chev { transform: rotate(180deg); }
+.needs { display: flex; align-items: flex-start; gap: .3rem; margin: 0; color: var(--lp-primary); font-size: .72rem; font-weight: 600; line-height: 1.4; }
+.needs svg { flex: 0 0 auto; margin-block-start: .15rem; }
+.meta { display: flex; flex-wrap: wrap; align-items: center; gap: .1rem .5rem; margin: 0; color: var(--lp-muted); font-size: .72rem; line-height: 1.4; }
+.code { overflow-wrap: anywhere; }
+.origin { color: var(--lp-primary-strong); font-weight: 700; }
+.cefr { padding: 0 .4rem; border-radius: .4rem; background: var(--lp-soft); color: var(--lp-primary); font-size: .68rem; font-weight: 700; }
+.warn { color: var(--lp-accent-ink); font-weight: 650; }
+.gauge { display: flex; align-items: center; gap: .5rem; }
+.gauge > span { flex: 0 0 2.25rem; color: var(--lp-ink); font-size: .7rem; font-variant-numeric: tabular-nums; font-weight: 650; text-align: end; }
+.gauge meter, .gauge .track { flex: 1; min-inline-size: 0; block-size: .375rem; border: 0; border-radius: 999px; }
+.gauge meter { appearance: none; overflow: hidden; background: var(--lp-line); }
+.gauge meter::-webkit-meter-bar { border-radius: 999px; background: var(--lp-line); }
+.gauge meter::-webkit-meter-optimum-value, .gauge meter::-webkit-meter-suboptimum-value, .gauge meter::-webkit-meter-even-less-good-value { border-radius: 999px; background: var(--tone); }
+.gauge meter::-moz-meter-bar { border-radius: 999px; background: var(--tone); }
+.gauge .track { background: repeating-linear-gradient(90deg, var(--lp-line) 0 6px, transparent 6px 9px); }
+.action { position: relative; z-index: 1; }
+.point .act { min-block-size: 2.5rem; padding-inline: .85rem; gap: .35rem; font-size: .82rem; }
+
+/* What opens under a row: the reasons to practise it. */
+.detail { display: grid; gap: .55rem; padding: .1rem .8rem .85rem 3.25rem; color: var(--lp-muted); font-size: .78rem; line-height: 1.55; }
+.detail[hidden] { display: none; }
+.canDo { margin: 0; color: var(--lp-ink); }
+.facts { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .6rem; margin: 0; }
+.traps { display: grid; gap: .4rem; margin: 0; padding: 0; list-style: none; }
+.traps li { display: flex; flex-wrap: wrap; align-items: center; gap: .2rem .6rem; }
+.trapName { color: var(--lp-ink); }
+.failure { margin: 0; padding: 0 .8rem .8rem 3.25rem; }
+.treeHint { margin: .75rem 0 0; color: var(--lp-muted); font-size: .75rem; line-height: 1.65; }
+
+@media (min-width: 40rem) {
+  .root { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: 1.5rem; }
+}
+
+/* Wide screens: the summary card, then the chart and the panel of the selected point. */
+.summary { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .6rem 1.5rem; padding: .8rem 1rem; border: 1px solid color-mix(in srgb, var(--lp-primary) 18%, var(--lp-line)); border-radius: 1rem; background: linear-gradient(120deg, var(--lp-soft), var(--lp-surface) 80%); }
+.summaryMeta { margin: 0; color: var(--lp-ink); font-family: var(--lp-display); font-size: .95rem; font-weight: 700; }
+.summary .tiers { flex: 1 1 22rem; max-inline-size: 34rem; }
+.charts { display: grid; gap: 1.25rem; }
+
+@media (max-width: 30rem) {
+  .board { padding: .65rem; }
+  .root { padding: .8rem; }
+  .branches { padding-inline-start: .75rem; }
+  .branch::before { inset-inline-start: -.75rem; inline-size: .75rem; }
+  .row { gap: .6rem; padding-inline-end: .55rem; }
+  .detail, .failure { padding-inline-start: 2.95rem; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .branchHead, .chevron { transition: none; }
+  .branchHead, .chevron, .row, .chev { transition: none; }
 }
