@@ -1,15 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, Layers, Network, Target } from 'lucide-react'
+import { ArrowRight, Layers, Target } from 'lucide-react'
 import { notebookApi, type VocabularySetSummary, type VocabularyTopic } from '../api/notebookApi'
-import { MindmapView } from './MindmapView'
 
-type TabKey = 'BAND' | 'TOPIC' | 'MINDMAP'
+type TabKey = 'BAND' | 'TOPIC'
 
 const TABS: { key: TabKey; label: string; icon: typeof Target }[] = [
   { key: 'BAND', label: 'Theo band điểm', icon: Target },
   { key: 'TOPIC', label: 'Theo chủ đề', icon: Layers },
-  { key: 'MINDMAP', label: 'Sơ đồ tư duy', icon: Network },
 ]
 
 /** Soft card tints cycled by position so a grid of sets does not look uniform. */
@@ -43,7 +41,7 @@ export function ExploreSetsTabs() {
       <div className="dict-panel__head">
         <div>
           <h2 id="dict-explore-title">Khám phá bộ từ vựng</h2>
-          <p>Học theo lộ trình band mục tiêu, theo chủ đề IELTS hoặc nhìn cả chủ đề trên sơ đồ tư duy.</p>
+          <p>Học theo lộ trình band mục tiêu hoặc theo chủ đề IELTS.</p>
         </div>
         <div role="tablist" aria-label="Cách khám phá" className="dict-tabs">
           {TABS.map(({ key, label, icon: Icon }) => (
@@ -79,8 +77,6 @@ export function ExploreSetsTabs() {
             <SetGrid sets={topicSets} empty="Chưa có chủ đề từ vựng." loadingText="Đang tải chủ đề…" badge={() => 'Chủ đề'} />
           )
         )}
-
-        {activeTab === 'MINDMAP' && <MindmapView height={540} />}
       </div>
     </section>
   )
