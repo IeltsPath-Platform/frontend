@@ -252,7 +252,17 @@ function CourseTile({ course, focused, index, lastVisited }: {
             <small>Band</small>
             {course.bandLevel.toFixed(1)}
           </span>
-          {chip ? <span className={`lp-chip lp-chip--${chip.tone} lp-tile__chip`}>{chip.label}</span> : null}
+          {chip || course.free ? (
+            <div className="lp-tile__tags">
+              {course.free ? (
+                <span className="lp-tile__free">
+                  <Gift aria-hidden="true" size={14} />
+                  Miễn phí
+                </span>
+              ) : null}
+              {chip ? <span className={`lp-chip lp-chip--${chip.tone}`}>{chip.label}</span> : null}
+            </div>
+          ) : null}
         </div>
 
         <div className="lp-tile__body">
@@ -263,12 +273,6 @@ function CourseTile({ course, focused, index, lastVisited }: {
               <Layers aria-hidden="true" size={14} />
               {courseSize(course)}
             </li>
-            {course.free ? (
-              <li className="lp-tile__fact--free">
-                <Gift aria-hidden="true" size={14} />
-                Miễn phí
-              </li>
-            ) : null}
           </ul>
 
           <div className="lp-tile__progress">

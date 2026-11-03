@@ -1145,25 +1145,23 @@
 .lp-tile__link:hover .lp-art {
   transform: scale(1.06);
 }
+/* Flush with the card's top-left corner: the card's own rounding clips it, only the opposite corner is rounded. */
 .lp-tile__band {
   position: absolute;
-  top: .85rem;
-  left: .85rem;
+  top: 0;
+  left: 0;
   display: inline-flex;
   align-items: baseline;
   gap: .4rem;
-  padding: .32rem .8rem .32rem .7rem;
-  border: 1px solid rgb(255 255 255 / 22%);
-  border-radius: 999px;
+  padding: .45rem .95rem .5rem 1.1rem;
+  border-radius: 0 0 18px 0;
   color: #fff;
   font-family: var(--lp-display);
   font-size: 1.3rem;
   font-weight: 800;
   line-height: 1.1;
   font-variant-numeric: tabular-nums;
-  background: rgb(12 27 77 / 84%);
-  box-shadow: 0 6px 16px rgb(12 27 77 / 30%);
-  backdrop-filter: blur(6px);
+  background: var(--lp-accent);
 }
 .lp-tile__band small {
   font-family: var(--lp-ui);
@@ -1173,12 +1171,32 @@
   text-transform: uppercase;
   opacity: .75;
 }
-.lp-tile__chip {
+/* Top-right column: the free tab is flush with the corner like the band tab, the status chip sits below it. */
+.lp-tile__tags {
   position: absolute;
-  top: .85rem;
-  right: .85rem;
+  top: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+.lp-tile__free {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .5rem 1.1rem .55rem .95rem;
+  border-radius: 0 0 0 18px;
+  color: #fff;
+  font-size: .85rem;
+  font-weight: 800;
+  line-height: 1.1;
+  background: var(--lp-success);
+}
+.lp-tile__tags .lp-chip {
+  margin: .85rem .85rem 0 0;
   box-shadow: 0 4px 12px rgb(12 27 77 / 18%);
 }
+.lp-tile__free + .lp-chip { margin-top: .5rem; }
 .lp-tile__body {
   display: grid;
   grid-template-rows: auto auto 1fr auto;
@@ -1225,13 +1243,6 @@
 }
 .lp-tile__facts svg {
   color: var(--lp-primary);
-}
-.lp-tile__facts .lp-tile__fact--free {
-  color: var(--lp-success);
-  background: var(--lp-success-soft);
-}
-.lp-tile__facts .lp-tile__fact--free svg {
-  color: var(--lp-success);
 }
 .lp-tile__progress {
   display: grid;
