@@ -69,19 +69,28 @@ export function NotebookHero({ summary, loading, dueTotal }: NotebookHeroProps) 
     { key: 'due', icon: Flame, label: 'Cần ôn ngay', value: show(dueNow), tone: dueNow > 0 ? 'orange' : 'slate' },
   ]
 
+  // An empty notebook gets the full welcome with the large owl; once there are words the header stays slim,
+  // with a small owl, so the word list is visible without scrolling.
+  const isEmpty = !loading && (summary?.total ?? 0) === 0
+
   return (
-    <section className="nb-hero" aria-label="Thống kê sổ từ vựng">
+    <section className={`nb-hero${isEmpty ? ' is-empty' : ' is-compact'}`} aria-label="Thống kê sổ từ vựng">
       <div className="nb-hero__copy">
-        <p className="nb-eyebrow"><Sparkles size={14} aria-hidden="true" />SỔ TAY & FLASHCARD</p>
-        <h1>Sổ tay từ vựng của bạn</h1>
-        <p className="nb-hero__lead">
-          Lưu từ từ điển, đặt mức hiểu, tạo bộ thẻ và ôn đúng lúc sắp quên theo lịch lặp lại ngắt quãng.
-          {addedWeek > 0 && <> Tuần này bạn đã thêm <b>+{addedWeek}</b> từ!</>}
-        </p>
+        <div className="nb-hero__heading">
+          <p className="nb-eyebrow"><Sparkles size={14} aria-hidden="true" />SỔ TAY & FLASHCARD</p>
+          <h1>Sổ tay từ vựng của bạn</h1>
+          {isEmpty ? (
+            <p className="nb-hero__lead">
+              Lưu từ từ điển, đặt mức hiểu, tạo bộ thẻ và ôn đúng lúc sắp quên theo lịch lặp lại ngắt quãng.
+            </p>
+          ) : addedWeek > 0 ? (
+            <p className="nb-hero__lead">Tuần này bạn đã thêm <b>+{addedWeek}</b> từ!</p>
+          ) : null}
+        </div>
         <ul className="nb-stats">
           {stats.map(({ key, icon: Icon, label, value, tone }, index) => (
             <li key={key} className={`is-${tone}`} style={{ animationDelay: `${120 + index * 70}ms` }}>
-              <Icon size={18} aria-hidden="true" />
+              <Icon size={16} aria-hidden="true" />
               <strong>{value}</strong>
               <span>{label}</span>
             </li>
@@ -95,6 +104,7 @@ export function NotebookHero({ summary, loading, dueTotal }: NotebookHeroProps) 
           onClick={() => navigate('/flashcards/study')}
           className={`nb-cta${n > 0 ? ' has-pulse' : ''}`}
           aria-label={`Ôn ngay (${n})`}
+          title="Ôn các thẻ đến hạn · phím R"
         >
           {n > 0 ? <Flame size={18} aria-hidden="true" /> : <Sparkles size={18} aria-hidden="true" />}
           Ôn ngay ({n})
@@ -116,7 +126,7 @@ export function NotebookHero({ summary, loading, dueTotal }: NotebookHeroProps) 
         <OwlHero
           pose={n > 0 ? 'idea' : 'cheer'}
           frames={['idea', 'cheer']}
-          size="md"
+          size={isEmpty ? 'md' : 'xs'}
           celebrateKey={!loading && n === 0 && (summary?.total ?? 0) > 0 ? 'all-reviewed' : null}
         />
       </div>

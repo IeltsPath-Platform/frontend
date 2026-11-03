@@ -69,6 +69,7 @@ export function NotebookToolbar({
             type="text"
             className="vocab-search-input"
             placeholder="Tìm trong sổ tay và từ điển: từ tiếng Anh hoặc nghĩa tiếng Việt…"
+            data-page-search=""
             value={text}
             onChange={(e) => changeText(e.target.value)}
             onKeyDown={(e) => {

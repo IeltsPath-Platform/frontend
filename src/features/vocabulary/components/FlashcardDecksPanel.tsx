@@ -122,6 +122,7 @@ export function FlashcardDecksPanel({ onChanged }: FlashcardDecksPanelProps) {
           <Input
             value={query}
             placeholder="Tìm bộ thẻ"
+            data-page-search=""
             onChange={(event) => setQuery(event.target.value)}
           />
         </label>

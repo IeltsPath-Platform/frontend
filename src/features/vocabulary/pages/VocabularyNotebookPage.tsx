@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { BookMarked, BookOpen, Layers, LogIn } from 'lucide-react'
 import {
   notebookApi,
@@ -13,14 +13,22 @@ import { FlashcardCardsPanel } from '../components/FlashcardCardsPanel'
 import { OwlHero } from '@/components/OwlHero'
 import { useAuthSession } from '@/features/auth/authSession'
 import { VocabularyShell } from '../components/VocabularyShell'
+import { useNotebookShortcuts, useSiteHeaderOffset } from '../lib/notebook-shortcuts'
 import '../vocabulary-notebook.css'
 import '../notebook.css'
 import '@/features/flashcards/flashcards.css'
 
 export type NotebookTab = 'words' | 'decks' | 'cards'
 
+const TABS: { key: NotebookTab; label: string; short: string; icon: typeof BookMarked }[] = [
+  { key: 'words', label: 'Từ vựng', short: 'Từ vựng', icon: BookMarked },
+  { key: 'decks', label: 'Bộ thẻ', short: 'Bộ thẻ', icon: Layers },
+  { key: 'cards', label: 'Tất cả thẻ', short: 'Thẻ', icon: BookOpen },
+]
+
 export function VocabularyNotebookPage() {
   const session = useAuthSession()
+  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
 
   const rawTab = searchParams.get('tab')
@@ -41,6 +49,13 @@ export function VocabularyNotebookPage() {
       { replace: true },
     )
   }
+
+  useSiteHeaderOffset()
+  useNotebookShortcuts({
+    onSelectTab: (index) => handleTabChange(TABS[index].key),
+    onReview: () => { if (session.isLoggedIn) navigate('/flashcards/study') },
+    onFocusSearch: () => document.querySelector<HTMLInputElement>('[role="tabpanel"] [data-page-search]')?.focus(),
+  })
 
   // Summary and due cards count
   const [summary, setSummary] = useState<NotebookSummaryResponse | null>(null)
@@ -100,42 +115,32 @@ export function VocabularyNotebookPage() {
         )}
 
         <div role="tablist" aria-label="Phần sổ tay và flashcard" className="nb-main-tabs">
-          <button
-            type="button"
-            role="tab"
-            id="nb-tab-words"
-            aria-controls="nb-panel-words"
-            aria-selected={activeTab === 'words'}
-            className={`nb-main-tab${activeTab === 'words' ? ' is-active' : ''}`}
-            onClick={() => handleTabChange('words')}
-          >
-            <BookMarked size={16} aria-hidden="true" />
-            <span>Từ vựng {session.isLoggedIn && summary?.total !== undefined ? `(${summary.total})` : ''}</span>
-          </button>
-          <button
-            type="button"
-            role="tab"
-            id="nb-tab-decks"
-            aria-controls="nb-panel-decks"
-            aria-selected={activeTab === 'decks'}
-            className={`nb-main-tab${activeTab === 'decks' ? ' is-active' : ''}`}
-            onClick={() => handleTabChange('decks')}
-          >
-            <Layers size={16} aria-hidden="true" />
-            <span>Bộ thẻ {session.isLoggedIn && deckTotal !== null ? `(${deckTotal})` : ''}</span>
-          </button>
-          <button
-            type="button"
-            role="tab"
-            id="nb-tab-cards"
-            aria-controls="nb-panel-cards"
-            aria-selected={activeTab === 'cards'}
-            className={`nb-main-tab${activeTab === 'cards' ? ' is-active' : ''}`}
-            onClick={() => handleTabChange('cards')}
-          >
-            <BookOpen size={16} aria-hidden="true" />
-            <span>Tất cả thẻ {session.isLoggedIn && cardTotal !== null ? `(${cardTotal})` : ''}</span>
-          </button>
+          {TABS.map(({ key, label, short, icon: Icon }, index) => {
+            const count = !session.isLoggedIn ? null
+              : key === 'words' ? summary?.total ?? null
+              : key === 'decks' ? deckTotal
+              : cardTotal
+            const selected = activeTab === key
+            return (
+              <button
+                key={key}
+                type="button"
+                role="tab"
+                id={`nb-tab-${key}`}
+                aria-controls={`nb-panel-${key}`}
+                aria-selected={selected}
+                aria-label={count === null ? label : `${label} (${count})`}
+                title={`${label} · phím ${index + 1}`}
+                className={`nb-main-tab${selected ? ' is-active' : ''}`}
+                onClick={() => handleTabChange(key)}
+              >
+                <Icon size={16} aria-hidden="true" />
+                <span className="nb-main-tab__long" aria-hidden="true">{label}</span>
+                <span className="nb-main-tab__short" aria-hidden="true">{short}</span>
+                {count !== null && <span className="nb-main-tab__count" aria-hidden="true">{count}</span>}
+              </button>
+            )
+          })}
         </div>
 
         {session.isLoggedIn ? (

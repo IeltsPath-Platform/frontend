@@ -130,6 +130,7 @@ export function FlashcardCardsPanel({ onChanged }: FlashcardCardsPanelProps) {
           <Input
             value={query}
             placeholder="Tìm trong thẻ đã tải"
+            data-page-search=""
             onChange={(event) => setQuery(event.target.value)}
           />
         </label>
