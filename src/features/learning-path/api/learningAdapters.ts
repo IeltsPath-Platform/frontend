@@ -42,7 +42,7 @@ export type TopicSummaryDto = {
   totalLessonCount: number
   accessLevel?: 'FREE' | 'PREMIUM'
   skill?: string | null
-  course?: { courseId: string; code: string; name: string; bandLevel: number; coverImageUrl?: string | null; description?: string | null } | null
+  course?: { courseId: string; code: string; name: string; bandLevel: number; coverImageUrl?: string | null; bannerImageUrl?: string | null; description?: string | null } | null
 }
 
 export type CourseSummaryDto = {
@@ -51,6 +51,7 @@ export type CourseSummaryDto = {
   name: string
   bandLevel: number
   coverImageUrl?: string | null
+  bannerImageUrl?: string | null
   description?: string | null
   topicCount: number
   passedTopicCount: number
@@ -66,6 +67,7 @@ export type CourseSummaryDto = {
   comboPayablePoints?: number | null
   availableSkills?: Array<'LISTENING' | 'READING' | 'WRITING' | 'SPEAKING'>
   premium?: boolean
+  free?: boolean
 }
 
 export type CourseUnlockDto = {
@@ -427,6 +429,7 @@ export function mapCourseSummary(dto: CourseSummaryDto): CourseSummary {
     code: dto.code,
     title: dto.name,
     coverImageUrl: dto.coverImageUrl ?? null,
+    bannerImageUrl: dto.bannerImageUrl ?? null,
     description: dto.description ?? null,
     bandLevel: Number(dto.bandLevel),
     topicCount: dto.topicCount,
@@ -443,6 +446,7 @@ export function mapCourseSummary(dto: CourseSummaryDto): CourseSummary {
     comboPayablePoints: dto.comboPayablePoints ?? null,
     availableSkills: dto.availableSkills ?? [],
     premium: dto.premium ?? false,
+    free: dto.free ?? false,
   }
 }
 
@@ -452,7 +456,7 @@ export function mapTopicSummary(dto: TopicSummaryDto): TopicSummary {
     course: dto.course
       ? {
           id: dto.course.courseId, code: dto.course.code, title: dto.course.name, bandLevel: Number(dto.course.bandLevel),
-          coverImageUrl: dto.course.coverImageUrl ?? null, description: dto.course.description ?? null,
+          coverImageUrl: dto.course.coverImageUrl ?? null, bannerImageUrl: dto.course.bannerImageUrl ?? null, description: dto.course.description ?? null,
         }
       : null,
     code: dto.code,

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { CSSProperties } from 'react'
-import { ArrowRight, Layers } from 'lucide-react'
+import { ArrowRight, Gift, Layers } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { OwlHero } from '@/components/OwlHero'
 import type { CourseSummary } from '~types/learningPath'
@@ -168,7 +168,7 @@ function CourseSpotlight({ course, resuming }: { course: CourseSummary; resuming
   return (
     <section className="lp-spotlight lp-spotlight--course" aria-labelledby="lp-spotlight-title">
       <div className="lp-spotlight__art" aria-hidden="true">
-        <CourseCoverArt band={course.bandLevel} coverImageUrl={course.coverImageUrl} wide />
+        <CourseCoverArt band={course.bandLevel} coverImageUrl={course.bannerImageUrl?.trim() || course.coverImageUrl} wide />
       </div>
       <div className="lp-band-ticket" aria-hidden="true">
         <span>Band</span>
@@ -179,7 +179,7 @@ function CourseSpotlight({ course, resuming }: { course: CourseSummary; resuming
         <p className="lp-spotlight__label">{resuming ? 'Đang học dở' : 'Gợi ý từ bài test đầu vào'}</p>
         <h2 id="lp-spotlight-title">{course.title}</h2>
         <p className="lp-spotlight__meta">
-          {courseSize(course)} · kết thúc bằng bài thi cuối khóa
+          {course.free ? 'Miễn phí · ' : ''}{courseSize(course)} · kết thúc bằng bài thi cuối khóa
         </p>
         {course.description ? <p className="lp-spotlight__description">{course.description}</p> : null}
         {isStarted(course) ? (
@@ -263,6 +263,12 @@ function CourseTile({ course, focused, index, lastVisited }: {
               <Layers aria-hidden="true" size={14} />
               {courseSize(course)}
             </li>
+            {course.free ? (
+              <li className="lp-tile__fact--free">
+                <Gift aria-hidden="true" size={14} />
+                Miễn phí
+              </li>
+            ) : null}
           </ul>
 
           <div className="lp-tile__progress">

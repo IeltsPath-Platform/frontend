@@ -13,6 +13,8 @@ export interface CourseRef {
   title: string
   bandLevel: number
   coverImageUrl?: string | null
+  /** The wide image of the course page header; the cover image stands in for it when there is none. */
+  bannerImageUrl?: string | null
   description?: string | null
 }
 
@@ -34,6 +36,8 @@ export interface CourseSummary extends CourseRef {
   availableSkills?: LearningSkill[]
   comboUnlocked?: boolean
   premium?: boolean
+  /** Open to everyone: no lesson of it sits behind a purchase, and it has no unlock prices. */
+  free?: boolean
 }
 
 export type LearningSkill = 'LISTENING' | 'READING' | 'WRITING' | 'SPEAKING'
@@ -679,6 +683,27 @@ export interface TreePoint {
   locked?: boolean
   /** The mistakes the learner has made on this point, with how well they avoid each; only those with evidence. */
   errorTraps?: ErrorTrapPoint[]
+  /** The chặng that owns the point; absent from a server that does not say where a point is taught. */
+  topic?: TreePointTopic | null
+  /** The lessons of the course that teach the point, in the order of their chặng and then of the lesson. */
+  lessons?: TreePointLesson[]
+}
+
+/** A chặng as the tree names it; `position` counts from 1 inside its own skill, the number the course page shows. */
+export interface TreePointTopic {
+  topicId: string
+  name: string
+  position: number
+}
+
+/** A lesson that teaches a point: its number in its chặng, and the chặng it is in. */
+export interface TreePointLesson {
+  lessonId: string
+  title: string
+  position: number
+  topicId: string
+  topicName: string
+  topicPosition: number
 }
 
 /** One mistake the learner can make on a knowledge point, tracked as a point of its own. */

@@ -6,7 +6,6 @@ import { useToast } from '@/components/toast/toastContext'
 import type { CourseSummary } from '~types/learningPath'
 import { learningApi, toApiError } from '../api'
 import { CourseHero } from '../components/CourseHero'
-import { CoursePracticeTests } from '../components/CoursePracticeTests'
 import { CourseSkillBoard } from '../components/CourseSkillBoard'
 import { LearnTrail } from '../components/LearnTrail'
 import { NoticeBanner } from '../components/NoticeBanner'
@@ -14,6 +13,7 @@ import { ApiErrorState, TopicListSkeleton } from '../components/PageState'
 import { reportApiError } from '../lib/reviewGate'
 import { knowledgeTreePath } from '../lib/routes'
 import { useApiResource } from '../lib/useApiResource'
+import { usePracticeTests } from '../lib/usePracticeTests'
 
 /** One course, picked on the course list screen: its four skills and the final test. */
 export function TopicListPage() {
@@ -27,8 +27,7 @@ export function TopicListPage() {
   const error = topicsResource.error ?? coursesResource.error
   const passed = topics?.filter((topic) => topic.status === 'PASSED').length ?? 0
   const total = topics?.length ?? 0
-  // The server counts a practice-test milestone in this order, so the n-th title is the chặng it opens after.
-  const topicTitlesInOrder = (topics ?? []).slice().sort((a, b) => a.sequenceOrder - b.sequenceOrder).map((topic) => topic.title)
+  const practiceTests = usePracticeTests(courseId, topics ?? [])
   const lessonCount = courseSummary?.totalLessons ?? topics?.reduce((sum, topic) => sum + topic.totalLessons, 0) ?? 0
 
   function reload() {
@@ -55,8 +54,6 @@ export function TopicListPage() {
         </p>
       ) : null}
 
-      {total > 0 ? <CoursePracticeTests courseId={courseId} topicTitles={topicTitlesInOrder} /> : null}
-
       {loading ? <TopicListSkeleton /> : null}
       {error ? <ApiErrorState error={error} onRetry={reload} /> : null}
       {topics?.length === 0 ? <p className="lp-empty">Khóa này chưa có chặng nào.</p> : null}
@@ -67,6 +64,7 @@ export function TopicListPage() {
             <CourseFinalTestStop course={courseSummary} onChanged={reload} />
           ) : null}
           onUnlocked={reload}
+          practiceTests={practiceTests}
           topics={topics}
         />
       ) : null}

@@ -1,4 +1,4 @@
-import type { CourseSummary, LearningSkill, TopicSummary } from '~types/learningPath'
+import type { CourseSummary, LearningSkill, PracticeTestMilestone, TopicSummary } from '~types/learningPath'
 
 /** The four skills every course is made of, in the order they are shown. */
 export const COURSE_SKILLS: readonly LearningSkill[] = ['LISTENING', 'READING', 'WRITING', 'SPEAKING']
@@ -61,6 +61,40 @@ export function buildLanes(topics: TopicSummary[]): SkillLane[] {
   const lanes = COURSE_SKILLS.map((skill) => buildLane(skill, topics.filter((topic) => laneKeyOf(topic) === skill)))
   const others = topics.filter((topic) => laneKeyOf(topic) === OTHER_LANE)
   return others.length > 0 ? [...lanes, buildLane(OTHER_LANE, others)] : lanes
+}
+
+/** A milestone counts chặng across the whole course, in `sequenceOrder`, not inside one skill. */
+function inCourseOrder(topics: TopicSummary[]) {
+  return topics.slice().sort((a, b) => a.sequenceOrder - b.sequenceOrder)
+}
+
+/**
+ * Names the chặng a practice test opens after. It never shows a number that could be read as a position inside a
+ * skill, because the board numbers chặng per skill while the milestone counts them across the course.
+ */
+export function afterTopicLabel(topics: TopicSummary[], milestone: PracticeTestMilestone) {
+  const title = inCourseOrder(topics)[milestone.afterTopicSequence - 1]?.title
+  return title ? `chặng “${title}”` : `chặng thứ ${milestone.afterTopicSequence} của khóa`
+}
+
+export interface PracticeTestPlacement {
+  /** Tests to draw right after a chặng, by that chặng's id, in the order the server listed them. */
+  afterTopic: Map<string, PracticeTestMilestone[]>
+  /** Tests whose chặng is not in this course's list. They still show, at the end of the route, so none is lost. */
+  unplaced: PracticeTestMilestone[]
+}
+
+/** Puts each practice test after the chặng it is configured to open after, so it sits in that chặng's own skill. */
+export function placePracticeTests(topics: TopicSummary[], milestones: PracticeTestMilestone[]): PracticeTestPlacement {
+  const ordered = inCourseOrder(topics)
+  const afterTopic = new Map<string, PracticeTestMilestone[]>()
+  const unplaced: PracticeTestMilestone[] = []
+  for (const milestone of milestones) {
+    const anchor = ordered[milestone.afterTopicSequence - 1]
+    if (anchor) afterTopic.set(anchor.id, [...(afterTopic.get(anchor.id) ?? []), milestone])
+    else unplaced.push(milestone)
+  }
+  return { afterTopic, unplaced }
 }
 
 /**

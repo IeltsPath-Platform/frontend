@@ -2,53 +2,77 @@ import { fireEvent, render, screen, waitFor } from '@/test/render'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ApiError, learningApi } from '../api'
-import type { PracticeTestMilestone } from '~types/learningPath'
-import { CoursePracticeTests } from './CoursePracticeTests'
+import { afterTopicLabel } from '../lib/courseSkills'
+import { usePracticeTests } from '../lib/usePracticeTests'
+import type { PracticeTestMilestone, TopicSummary } from '~types/learningPath'
+import { PracticeTestStop } from './PracticeTestStop'
 
 const milestone = (overrides: Partial<PracticeTestMilestone> = {}): PracticeTestMilestone => ({
   packageId: 'pkg-1', packageVersionId: 'ver-1', code: 'PT-1', title: 'Đề luyện giữa khóa', afterTopicSequence: 2,
   status: 'LOCKED', percent: null, ...overrides,
 })
 
-const topicTitles = ['Chặng một', 'Chặng hai', 'Chặng ba']
+const topics = ['Chặng một', 'Chặng hai', 'Chặng ba'].map((title, index): TopicSummary => ({
+  id: `t${index + 1}`, course: null, code: `t${index + 1}`, title, description: '', sequenceOrder: index + 1, status: 'LOCKED',
+  completedLessons: 0, totalLessons: 4, lockedReason: null, skill: 'READING',
+}))
 
 function Where() {
   const location = useLocation()
   return <p data-testid="where">{`${location.pathname}${location.search}`}</p>
 }
 
+/** The page's wiring in small: the hook that loads and starts the tests, and a stop for each one. */
+function Tests() {
+  const tests = usePracticeTests('course-1', topics)
+  return (
+    <ol>
+      {tests.milestones.map((row, index) => (
+        <PracticeTestStop
+          after={afterTopicLabel(topics, row)}
+          index={index}
+          key={row.packageId}
+          milestone={row}
+          onStart={(m) => void tests.start(m)}
+          startingId={tests.startingId}
+        />
+      ))}
+    </ol>
+  )
+}
+
 function renderIt() {
   return render(
     <MemoryRouter>
       <Routes>
-        <Route path="*" element={<><CoursePracticeTests courseId="course-1" topicTitles={topicTitles} /><Where /></>} />
+        <Route path="*" element={<><Tests /><Where /></>} />
       </Routes>
     </MemoryRouter>,
   )
 }
 
-describe('CoursePracticeTests', () => {
+describe('PracticeTestStop', () => {
   afterEach(() => { vi.restoreAllMocks() })
 
-  it('shows nothing when the course has no practice-test milestone', async () => {
+  it('draws nothing when the course has no practice-test milestone', async () => {
     const list = vi.spyOn(learningApi, 'listPracticeTests').mockResolvedValue([])
     renderIt()
     await waitFor(() => expect(list).toHaveBeenCalledWith('course-1'))
-    expect(screen.queryByRole('heading', { name: 'Đề luyện theo mốc' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: /Đề luyện/ })).not.toBeInTheDocument()
   })
 
-  it('shows nothing, without breaking the page, when the list cannot be read', async () => {
+  it('draws nothing, without breaking the page, when the list cannot be read', async () => {
     const list = vi.spyOn(learningApi, 'listPracticeTests').mockRejectedValue(new ApiError(500, 'SERVER_ERROR', 'Lỗi'))
     renderIt()
     await waitFor(() => expect(list).toHaveBeenCalled())
-    expect(screen.queryByRole('heading', { name: 'Đề luyện theo mốc' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: /Đề luyện/ })).not.toBeInTheDocument()
   })
 
   it('names the chặng a locked milestone opens after and offers no way to start it', async () => {
     vi.spyOn(learningApi, 'listPracticeTests').mockResolvedValue([milestone()])
     renderIt()
     expect(await screen.findByText('Mở sau chặng “Chặng hai”')).toBeInTheDocument()
-    expect(screen.getByText('Chưa mở')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Đề luyện giữa khóa' })).toBeInTheDocument()
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 
