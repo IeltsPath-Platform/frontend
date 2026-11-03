@@ -47,7 +47,7 @@ describe('SiteNavbar navigation', () => {
     await user.keyboard('{Enter}')
     expect(trigger).toHaveAttribute('aria-expanded', 'true')
     const sections = screen.getByRole('navigation', { name: 'Khám phá' })
-    for (const label of ['Cộng đồng', 'Trò chơi', 'Nghe chép', 'Từ điển', 'Sổ tay từ vựng', 'Flashcard của tôi']) {
+    for (const label of ['Cộng đồng', 'Trò chơi', 'Nghe chép', 'Từ điển', 'Sổ tay & Flashcard']) {
       expect(within(sections).getByRole('link', { name: label })).toBeInTheDocument()
     }
     await user.keyboard('{Escape}')
@@ -120,7 +120,8 @@ describe('SiteNavbar navigation', () => {
     ['/video-dictation/video-1', 'Nghe chép'],
     ['/community/posts/post-1', 'Cộng đồng'],
     ['/vocabulary/review', 'Từ điển'],
-    ['/flashcards/decks/deck-1', 'Flashcard của tôi'],
+    ['/flashcards/decks/deck-1', 'Sổ tay & Flashcard'],
+    ['/vocabulary/notebook', 'Sổ tay & Flashcard'],
   ])('keeps discovery active on %s', (path, label) => {
     render(<MemoryRouter initialEntries={[path]}><SiteNavbar /></MemoryRouter>)
     expect(screen.getByRole('button', { name: 'Khám phá' })).toHaveClass('active')

@@ -142,7 +142,7 @@ export function DeckEditorPage() {
       <main className="flashcards-shell deck-editor">
         <header className="deck-editor-header">
           <div>
-            <Link to={deckId ? `/flashcards/decks/${deckId}` : '/flashcards'} className="flashcards-back"><ArrowLeft size={16} aria-hidden="true" />{deckId ? 'Về học phần' : 'Tất cả học phần'}</Link>
+            <Link to={deckId ? `/flashcards/decks/${deckId}` : '/vocabulary/notebook?tab=decks'} className="flashcards-back"><ArrowLeft size={16} aria-hidden="true" />{deckId ? 'Về học phần' : 'Tất cả học phần'}</Link>
             <h1>{editing ? 'Chỉnh sửa học phần' : 'Tạo học phần mới'}</h1>
             {showErrors && validation.formError && <p role="alert" className="deck-editor-form-error">{validation.formError}</p>}
           </div>

@@ -151,3 +151,156 @@
 @media (prefers-reduced-motion: reduce) {
   .nb-hero__copy, .nb-stats li, .nb-quick, .nb-pick li, .nb-suggest, .nb-page .vocab-card, .nb-dialog, .nb-dialog-overlay, .nb-dialog__body section, .nb-dialog__bubble, .nb-dialog__audio::after, .nb-cta.has-pulse { animation: none; }
 }
+
+/* 3-Tab Main Navigation */
+.nb-main-tabs {
+  background: #f1f4fa;
+  border-radius: 0.95rem;
+  display: inline-flex;
+  gap: 0.35rem;
+  padding: 0.35rem;
+  margin-bottom: 0.5rem;
+}
+.nb-main-tabs button {
+  align-items: center;
+  border: none;
+  border-radius: 0.75rem;
+  color: #475569;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 0.88rem;
+  font-weight: 700;
+  gap: 0.45rem;
+  padding: 0.55rem 1.15rem;
+  transition: background 180ms ease, color 180ms ease, box-shadow 180ms ease;
+}
+.nb-main-tabs button:hover {
+  color: var(--classroom-primary);
+}
+.nb-main-tabs button[aria-selected="true"] {
+  background: white;
+  box-shadow: 0 0.2rem 0.6rem rgb(32 55 115 / 12%);
+  color: var(--classroom-primary);
+}
+
+/* Dismissible tip banner */
+.nb-hero__tip {
+  align-items: center;
+  animation: nb-rise 420ms ease-out backwards;
+  backdrop-filter: blur(8px);
+  background: rgb(255 255 255 / 16%);
+  border: 1px solid rgb(255 255 255 / 26%);
+  border-radius: 0.85rem;
+  color: white;
+  display: flex;
+  font-size: 0.84rem;
+  gap: 0.6rem;
+  line-height: 1.45;
+  margin-top: 0.4rem;
+  max-inline-size: 42rem;
+  padding: 0.5rem 0.85rem;
+}
+.nb-hero__tip > svg {
+  color: #86efac;
+  flex: 0 0 auto;
+}
+.nb-hero__tip span {
+  flex: 1 1 auto;
+}
+.nb-hero__tip-close {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 0.4rem;
+  color: rgb(255 255 255 / 75%);
+  cursor: pointer;
+  display: flex;
+  flex: 0 0 auto;
+  padding: 0.2rem;
+}
+.nb-hero__tip-close:hover {
+  background: rgb(255 255 255 / 20%);
+  color: white;
+}
+
+/* Practice by level link in words panel */
+.nb-words-practice-bar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.25rem;
+}
+.nb-words-practice-btn {
+  align-items: center;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.75rem;
+  color: #1e293b;
+  display: inline-flex;
+  font-size: 0.84rem;
+  font-weight: 700;
+  gap: 0.4rem;
+  padding: 0.45rem 0.9rem;
+  text-decoration: none;
+  transition: all 180ms ease;
+}
+.nb-words-practice-btn:hover {
+  background: #ffffff;
+  border-color: var(--classroom-primary);
+  color: var(--classroom-primary);
+  box-shadow: 0 2px 8px rgb(18 58 181 / 10%);
+}
+
+/* Source filter in cards panel */
+.fc-source-filter {
+  background: var(--classroom-soft);
+  border-radius: 0.65rem;
+  display: inline-flex;
+  gap: 0.2rem;
+  padding: 0.2rem;
+}
+.fc-source-filter button {
+  border: none;
+  border-radius: 0.5rem;
+  color: var(--classroom-text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.35rem 0.75rem;
+  cursor: pointer;
+  background: transparent;
+  transition: all 160ms ease;
+}
+.fc-source-filter button[aria-pressed="true"] {
+  background: var(--classroom-surface);
+  box-shadow: 0 0.15rem 0.4rem rgb(32 55 115 / 12%);
+  color: var(--classroom-primary);
+}
+
+.fc-card-tile-badges {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-right: auto;
+}
+
+.fc-source-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  background: var(--classroom-soft);
+  color: var(--classroom-text-muted);
+}
+
+.fc-source-badge--dict {
+  background: #eef2ff;
+  color: #3730a3;
+}
+
+.fc-source-badge--manual {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+
