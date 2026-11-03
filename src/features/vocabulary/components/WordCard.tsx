@@ -1,7 +1,7 @@
-import { Volume2, FileText, Clock } from 'lucide-react'
+import { FileText, Clock } from 'lucide-react'
 import type { NotebookEntryResponse } from '../api/notebookApi'
 import { getLevelConfig, formatRelativeDue } from '../lib/understanding'
-import { speak } from '@/features/flashcards/lib/speak'
+import { PronunciationButton } from '@/components/PronunciationButton'
 
 interface WordCardProps {
   entry: NotebookEntryResponse
@@ -30,16 +30,6 @@ function highlightLemma(sentence: string | null | undefined, lemma: string) {
 export function WordCard({ entry, viewMode = 'grid', onClick }: WordCardProps) {
   const levelConfig = getLevelConfig(entry.level)
   const relativeDue = formatRelativeDue(entry.nextReviewAt)
-
-  const handleAudio = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    if (entry.pronunciationAudioReference && entry.pronunciationAudioReference.startsWith('https://')) {
-      const audio = new Audio(entry.pronunciationAudioReference)
-      audio.play().catch(() => speak(entry.lemma))
-    } else {
-      speak(entry.lemma)
-    }
-  }
 
   const isList = viewMode === 'list'
 
@@ -78,22 +68,20 @@ export function WordCard({ entry, viewMode = 'grid', onClick }: WordCardProps) {
               <span className="vocab-card__pos">{entry.partOfSpeech}</span>
             )}
           </div>
-          <button
-            type="button"
+          <PronunciationButton
             className="vocab-audio-btn"
-            onClick={handleAudio}
+            lemma={entry.lemma}
+            src={entry.pronunciationAudioReference}
+            iconSize={18}
             aria-label={`Nghe phát âm từ ${entry.lemma}`}
             style={{
               background: 'none',
               border: 'none',
-              cursor: 'pointer',
               color: 'var(--classroom-primary, #123ab5)',
               padding: '0.25rem',
               borderRadius: '0.4rem',
             }}
-          >
-            <Volume2 size={18} aria-hidden="true" />
-          </button>
+          />
         </div>
 
         {entry.ipa && <p className="vocab-card__ipa-row">{entry.ipa}</p>}

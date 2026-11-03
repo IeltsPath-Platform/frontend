@@ -8,7 +8,6 @@ import {
   Bookmark,
   BookmarkCheck,
   Clock,
-  Volume2,
   Sparkles,
   Trophy,
   RotateCcw,
@@ -28,7 +27,7 @@ import {
   type VocabularyCatalogSense,
 } from '../api/notebookApi'
 import { WeeklyGoalCard } from '../components/WeeklyGoalCard'
-import { speak } from '@/features/flashcards/lib/speak'
+import { PronunciationButton } from '@/components/PronunciationButton'
 import '../vocabulary.css'
 import '../vocabulary-notebook.css'
 
@@ -179,14 +178,6 @@ export function VocabularySetPage() {
       })
     } finally {
       setSavingSenseId(null)
-    }
-  }
-
-  const handleAudio = (lemma: string, audioRef?: string | null) => {
-    if (audioRef && audioRef.startsWith('https://')) {
-      new Audio(audioRef).play().catch(() => speak(lemma))
-    } else {
-      speak(lemma)
     }
   }
 
@@ -599,21 +590,20 @@ export function VocabularySetPage() {
                         }}
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                          <button
-                            type="button"
-                            onClick={() => handleAudio(item.lemma, item.pronunciationAudioReference)}
+                          <PronunciationButton
+                            lemma={item.lemma}
+                            src={item.pronunciationAudioReference}
+                            iconSize={16}
                             style={{
                               background: '#eef3ff',
                               border: 'none',
                               borderRadius: '50%',
                               padding: '0.4rem',
                               color: '#123ab5',
-                              cursor: 'pointer',
+                              display: 'inline-flex',
                             }}
                             aria-label={`Nghe phát âm từ ${item.lemma}`}
-                          >
-                            <Volume2 size={16} />
-                          </button>
+                          />
                           <div>
                             <Link
                               to={`/vocabulary/${item.id}`}
@@ -776,21 +766,20 @@ export function VocabularySetPage() {
                         }}
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                          <button
-                            type="button"
-                            onClick={() => handleAudio(item.lemma, item.pronunciationAudioReference)}
+                          <PronunciationButton
+                            lemma={item.lemma}
+                            src={item.pronunciationAudioReference}
+                            iconSize={16}
                             style={{
                               background: '#eef3ff',
                               border: 'none',
                               borderRadius: '50%',
                               padding: '0.45rem',
                               color: '#123ab5',
-                              cursor: 'pointer',
+                              display: 'inline-flex',
                             }}
                             aria-label={`Phát âm từ ${item.lemma}`}
-                          >
-                            <Volume2 size={16} />
-                          </button>
+                          />
 
                           <div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

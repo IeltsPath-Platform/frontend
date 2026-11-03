@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import { Dialog as DialogPrimitive } from 'radix-ui'
-import { Check, ChevronLeft, ChevronRight, ExternalLink, Sparkles, Trash2, Volume2, X } from 'lucide-react'
-import { speak } from '@/features/flashcards/lib/speak'
+import { Check, ChevronLeft, ChevronRight, ExternalLink, Sparkles, Trash2, X } from 'lucide-react'
+import { PronunciationButton } from '@/components/PronunciationButton'
 import { notebookApi, type NotebookEntryResponse } from '../api/notebookApi'
 import { ALL_LEVELS, UNDERSTANDING_LEVELS, formatRelativeDue, getLevelConfig, type UnderstandingLevel } from '../lib/understanding'
-import { playPronunciation, splitHighlight } from '../lib/dictionary-search'
+import { splitHighlight } from '../lib/dictionary-search'
 
 /** Header gradients per understanding level, matching the level colours used on the cards. */
 const LEVEL_GRADIENT: Record<UnderstandingLevel, string> = {
@@ -124,9 +124,13 @@ function WordDialogBody({ entry, onLevelChange, onDelete, onNoteSaved, onNavigat
           <DialogPrimitive.Title asChild>
             <h2><span className="sr-only">Chi tiết từ </span><span lang="en">{entry.lemma}</span></h2>
           </DialogPrimitive.Title>
-          <button type="button" className="nb-dialog__audio" onClick={() => playPronunciation(entry.lemma, entry.pronunciationAudioReference, speak)} aria-label={`Nghe phát âm từ ${entry.lemma}`}>
-            <Volume2 size={20} aria-hidden="true" />
-          </button>
+          <PronunciationButton
+            className="nb-dialog__audio"
+            lemma={entry.lemma}
+            src={entry.pronunciationAudioReference}
+            iconSize={20}
+            aria-label={`Nghe phát âm từ ${entry.lemma}`}
+          />
         </div>
         <div className="nb-dialog__sub">
           {entry.ipa && <span>{entry.ipa}</span>}

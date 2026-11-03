@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Volume2, CheckCircle, XCircle } from 'lucide-react'
+import { CheckCircle, XCircle } from 'lucide-react'
 import type { QuizQuestion } from '../../lib/quiz'
-import { speak } from '@/features/flashcards/lib/speak'
+import { PronunciationButton } from '@/components/PronunciationButton'
 
 interface MeaningGuessCardProps {
   question: QuizQuestion
@@ -54,14 +54,6 @@ export function MeaningGuessCard({ question, onAnswer }: MeaningGuessCardProps) 
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isAnswered, selectedIndex, choices.length, correctIndex, onAnswer, handleSelect])
 
-  const handleAudio = () => {
-    if (entry.pronunciationAudioReference && entry.pronunciationAudioReference.startsWith('https://')) {
-      new Audio(entry.pronunciationAudioReference).play().catch(() => speak(entry.lemma))
-    } else {
-      speak(entry.lemma)
-    }
-  }
-
   return (
     <div className="vocab-quiz-card" role="region" aria-label="Đoán nghĩa của từ">
       <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
@@ -87,24 +79,22 @@ export function MeaningGuessCard({ question, onAnswer }: MeaningGuessCardProps) 
           </span>
         )}
 
-        <button
-          type="button"
-          onClick={handleAudio}
+        <PronunciationButton
+          lemma={entry.lemma}
+          src={entry.pronunciationAudioReference}
+          iconSize={20}
           aria-label={`Nghe phát âm từ ${entry.lemma}`}
           style={{
             border: 'none',
             background: '#eef3ff',
             color: 'var(--classroom-primary, #123ab5)',
-            cursor: 'pointer',
             padding: '0.4rem',
             borderRadius: '50%',
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
           }}
-        >
-          <Volume2 size={20} />
-        </button>
+        />
       </div>
 
       {/* 4 Choices Grid */}

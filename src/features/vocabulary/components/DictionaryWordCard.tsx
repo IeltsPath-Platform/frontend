@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom'
-import { Bookmark, BookmarkCheck, ChevronRight, Layers, Volume2 } from 'lucide-react'
-import { speak } from '@/features/flashcards/lib/speak'
+import { Bookmark, BookmarkCheck, ChevronRight, Layers } from 'lucide-react'
+import { PronunciationButton } from '@/components/PronunciationButton'
 import type { VocabularyCatalogItem, VocabularyCatalogSense } from '../api/notebookApi'
-import { playPronunciation, senseMeaning, splitHighlight, type DictionaryLang } from '../lib/dictionary-search'
+import { senseMeaning, splitHighlight, type DictionaryLang } from '../lib/dictionary-search'
 
 const MAX_SENSES = 2
 
@@ -42,9 +42,13 @@ export function DictionaryWordCard({ item, keyword, lang, savedSenseIds, savingS
           <h3 lang="en">{lang === 'EN' ? <Marked text={item.lemma} keyword={keyword} /> : item.lemma}</h3>
           {(item.ipa || item.ipaUk) && <p className="dict-card__ipa">{item.ipa || item.ipaUk}</p>}
         </div>
-        <button type="button" className="dict-card__audio" onClick={() => playPronunciation(item.lemma, item.pronunciationAudioReference, speak)} aria-label={`Nghe phát âm từ ${item.lemma}`}>
-          <Volume2 size={17} aria-hidden="true" />
-        </button>
+        <PronunciationButton
+          className="dict-card__audio"
+          lemma={item.lemma}
+          src={item.pronunciationAudioReference}
+          iconSize={17}
+          aria-label={`Nghe phát âm từ ${item.lemma}`}
+        />
       </header>
 
       {tags.length > 0 && <div className="dict-card__tags">{tags.map((tag) => <span key={tag}>{tag}</span>)}</div>}

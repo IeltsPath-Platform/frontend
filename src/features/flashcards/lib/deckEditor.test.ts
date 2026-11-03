@@ -5,7 +5,7 @@ import { emptyRow, planSave, rowFromCard, validateRows } from './deckEditor'
 const card = (id: string, front: string, back: string): Flashcard => ({
   id, front, back, sourceType: 'MANUAL', vocabularySenseId: null, sourceReferenceId: null, highlightedText: null,
   status: 'ACTIVE', createdAt: '', updatedAt: '', leitnerBox: 1, nextReviewAt: null, lastReviewedAt: null, reviewCount: 0,
-  ipa: null, exampleSentence: null, imageKey: null, imageUrl: null,
+  ipa: null, exampleSentence: null, pronunciationAudioReference: null, imageKey: null, imageUrl: null,
 })
 const row = (front: string, back: string) => ({ ...emptyRow(), front, back })
 

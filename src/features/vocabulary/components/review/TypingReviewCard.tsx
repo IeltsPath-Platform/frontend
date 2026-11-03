@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { ArrowRight, CheckCircle2, XCircle, Lightbulb } from 'lucide-react'
 import type { QuizQuestion } from '../../lib/quiz'
 import { isLemmaCorrect } from '../../lib/quiz'
-import { speak } from '@/features/flashcards/lib/speak'
+import { PronunciationButton } from '@/components/PronunciationButton'
+import { playPronunciationAudio } from '@/lib/pronunciation'
 
 interface TypingReviewCardProps {
   question: QuizQuestion
@@ -21,13 +22,9 @@ export function TypingReviewCard({ question, onAnswer, isDictation = false }: Ty
   useEffect(() => {
     inputRef.current?.focus()
     if (isDictation) {
-      if (entry.pronunciationAudioReference && entry.pronunciationAudioReference.startsWith('https://')) {
-        new Audio(entry.pronunciationAudioReference).play().catch(() => speak(entry.lemma))
-      } else {
-        speak(entry.lemma)
-      }
+      playPronunciationAudio(entry.pronunciationAudioReference)
     }
-  }, [isDictation, entry.lemma, entry.pronunciationAudioReference])
+  }, [isDictation, entry.pronunciationAudioReference])
 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault()
@@ -47,14 +44,6 @@ export function TypingReviewCard({ question, onAnswer, isDictation = false }: Ty
     }
   }
 
-  const handleAudio = () => {
-    if (entry.pronunciationAudioReference && entry.pronunciationAudioReference.startsWith('https://')) {
-      new Audio(entry.pronunciationAudioReference).play().catch(() => speak(entry.lemma))
-    } else {
-      speak(entry.lemma)
-    }
-  }
-
   return (
     <div className="vocab-quiz-card" role="region" aria-label={isDictation ? 'Nghe chép từ vựng' : 'Kiểm tra gõ từ'}>
       <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
@@ -64,9 +53,9 @@ export function TypingReviewCard({ question, onAnswer, isDictation = false }: Ty
 
         {isDictation ? (
           <div style={{ margin: '1.5rem 0' }}>
-            <button
-              type="button"
-              onClick={handleAudio}
+            <PronunciationButton
+              lemma={entry.lemma}
+              src={entry.pronunciationAudioReference}
               style={{
                 background: 'var(--classroom-primary, #123ab5)',
                 color: 'white',
@@ -77,13 +66,12 @@ export function TypingReviewCard({ question, onAnswer, isDictation = false }: Ty
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                cursor: 'pointer',
                 boxShadow: '0 4px 15px rgba(18, 58, 181, 0.3)',
               }}
               aria-label="Phát lại phát âm"
             >
               <ArrowRight size={24} style={{ transform: 'rotate(90deg)' }} aria-hidden="true" />
-            </button>
+            </PronunciationButton>
             <p style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.5rem' }}>Bấm nút để nghe lại</p>
           </div>
         ) : (
