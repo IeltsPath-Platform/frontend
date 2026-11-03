@@ -29,6 +29,29 @@ export function swappedGroup(allTopics: readonly TopicOption[], topic: TopicOpti
   return group
 }
 
+/** The skills in the order a learner sees them; a topic without a skill comes last. */
+const SKILL_ORDER = ['LISTENING', 'READING', 'WRITING', 'SPEAKING'] as const
+
+export interface SkillGroup {
+  /** The skill, or a stable key for the topics that name none. */
+  key: string
+  skill: string | null
+  topics: TopicOption[]
+}
+
+/** Splits the top-level topics into one group per skill that has any, in learner order, then the topics without a skill. */
+export function groupTopicsBySkill(topics: readonly TopicOption[]): SkillGroup[] {
+  const bySkill = new Map<string, TopicOption[]>()
+  for (const topic of topics) {
+    const key = topic.skill ?? 'NONE'
+    bySkill.set(key, [...(bySkill.get(key) ?? []), topic])
+  }
+  const known = SKILL_ORDER.filter((skill) => bySkill.has(skill))
+  const others = [...bySkill.keys()].filter((key) => key !== 'NONE' && !(SKILL_ORDER as readonly string[]).includes(key)).sort()
+  return [...known, ...others, ...(bySkill.has('NONE') ? ['NONE'] : [])]
+    .map((key) => ({ key, skill: key === 'NONE' ? null : key, topics: bySkill.get(key)! }))
+}
+
 function bandNumber(value: number) { return value.toFixed(1) }
 
 /** The band range of a topic in words: "Mọi band" when it has no limit, "Từ 5.0", "Đến 6.5" or "5.0 – 6.5". */

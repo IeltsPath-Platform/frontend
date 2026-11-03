@@ -69,7 +69,7 @@ describe('CoursesPage', () => {
     await waitFor(() => expect(media.uploadAdminImage).toHaveBeenCalledWith('/api/content/admin/media/image', file))
     fireEvent.change(within(form).getByLabelText('Mô tả khóa học'), { target: { value: 'Lộ trình nền tảng.' } })
     fireEvent.submit(form)
-    await waitFor(() => expect(api.createCourse).toHaveBeenCalledWith({ code: 'INTENSIVE_70', name: 'Intensive 7.0', bandLevel: 7, coverImageUrl: 'content-image/author-1/cover.png', description: 'Lộ trình nền tảng.' }))
+    await waitFor(() => expect(api.createCourse).toHaveBeenCalledWith({ code: 'INTENSIVE_70', name: 'Intensive 7.0', bandLevel: 7, coverImageUrl: 'content-image/author-1/cover.png', description: 'Lộ trình nền tảng.', free: false, bannerImageUrl: null, skillUnlockPoints: {}, comboUnlockPoints: null }))
   })
   it('updates course status without sending its code', async () => {
     show()
@@ -78,7 +78,7 @@ describe('CoursesPage', () => {
     fireEvent.change(within(form).getByLabelText('Trạng thái khóa học'), { target: { value: 'INACTIVE' } })
     fireEvent.change(within(form).getByLabelText('Mô tả khóa học'), { target: { value: 'Mô tả mới' } })
     fireEvent.submit(form)
-    await waitFor(() => expect(api.updateCourse).toHaveBeenCalledWith('c1', { name: course.name, bandLevel: 5.5, status: 'INACTIVE', coverImageUrl: null, description: 'Mô tả mới', skillUnlockPoints: {}, comboUnlockPoints: null }))
+    await waitFor(() => expect(api.updateCourse).toHaveBeenCalledWith('c1', { name: course.name, bandLevel: 5.5, status: 'INACTIVE', coverImageUrl: null, description: 'Mô tả mới', skillUnlockPoints: {}, comboUnlockPoints: null, free: false, bannerImageUrl: null }))
   })
   it('blocks a reversed band range', async () => {
     show()
@@ -267,6 +267,63 @@ describe('CoursesPage', () => {
     expect(screen.queryByRole('button', { name: /tất cả/ })).not.toBeInTheDocument()
   })
 
+  describe('skill groups', () => {
+    const mixed = [
+      { id: 'r1', code: 'R1', name: 'Đọc một', parentTopicId: null, courseId: 'c1', sortOrder: 1, status: 'ACTIVE', skill: 'READING', bandMin: null, bandMax: null },
+      { id: 'l1', code: 'L1', name: 'Nghe một', parentTopicId: null, courseId: 'c1', sortOrder: 2, status: 'ACTIVE', skill: 'LISTENING', bandMin: null, bandMax: null },
+      { id: 'r2', code: 'R2', name: 'Đọc hai', parentTopicId: null, courseId: 'c1', sortOrder: 3, status: 'INACTIVE', skill: 'READING', bandMin: null, bandMax: null },
+      { id: 'w1', code: 'W1', name: 'Viết một', parentTopicId: null, courseId: 'c1', sortOrder: 4, status: 'ACTIVE', skill: 'WRITING', bandMin: null, bandMax: null },
+    ]
+    beforeEach(() => { lessons.fetchTopics.mockResolvedValue(mixed) })
+
+    it('groups the topics by skill in the order a learner sees them, with a count and how many are stopped', async () => {
+      show()
+      await screen.findByRole('article', { name: 'Đọc một' })
+      const headers = screen.getAllByRole('heading', { level: 3 })
+      expect(headers.map((heading) => heading.textContent)).toEqual([
+        expect.stringContaining('Listening'), expect.stringContaining('Reading'), expect.stringContaining('Writing'),
+      ])
+      expect(screen.getByRole('button', { name: /^Reading/ })).toHaveTextContent('2 chủ đề')
+      expect(screen.getByRole('button', { name: /^Reading/ })).toHaveTextContent('1 ngừng dùng')
+      expect(screen.getByRole('button', { name: /^Listening/ })).not.toHaveTextContent('ngừng dùng')
+    })
+
+    it('folds one skill away without touching the others, and opens it again', async () => {
+      show()
+      const reading = await screen.findByRole('button', { name: /^Reading/ })
+      expect(reading).toHaveAttribute('aria-expanded', 'true')
+      fireEvent.click(reading)
+      expect(reading).toHaveAttribute('aria-expanded', 'false')
+      expect(screen.queryByRole('article', { name: 'Đọc một' })).not.toBeInTheDocument()
+      expect(screen.getByRole('article', { name: 'Nghe một' })).toBeInTheDocument()
+      fireEvent.click(reading)
+      expect(screen.getByRole('article', { name: 'Đọc một' })).toBeInTheDocument()
+    })
+
+    it('folds and opens every skill at once', async () => {
+      show()
+      await screen.findByRole('article', { name: 'Đọc một' })
+      expect(screen.getByRole('button', { name: 'Mở tất cả' })).toBeDisabled()
+      fireEvent.click(screen.getByRole('button', { name: 'Thu gọn tất cả' }))
+      expect(screen.queryByRole('article')).not.toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Thu gọn tất cả' })).toBeDisabled()
+      fireEvent.click(screen.getByRole('button', { name: 'Mở tất cả' }))
+      expect(screen.getAllByRole('article')).toHaveLength(4)
+    })
+
+    it('moves a topic past the next topic of its own skill, not past one of another skill', async () => {
+      show()
+      await pick('Đọc một', 'Đưa xuống')
+      await waitFor(() => expect(api.reorderTopics).toHaveBeenCalledWith(null, ['r2', 'l1', 'r1', 'w1']))
+    })
+
+    it('leaves out the skill chip on a row because its group names the skill', async () => {
+      show()
+      const row = await screen.findByRole('article', { name: 'Đọc một' })
+      expect(row.querySelector('.adm-topic-skill')).toBeNull()
+    })
+  })
+
   it('puts Thêm chủ đề in the course header beside Sửa khóa học, not above the table', async () => {
     show()
     const add = await screen.findByRole('button', { name: 'Thêm chủ đề' })
@@ -309,7 +366,8 @@ describe('CoursesPage', () => {
     expect(screen.getByRole('tabpanel')).toHaveAccessibleName(/Nền tảng 5.5/)
     fireEvent.click(tabs[2]!)
     expect(screen.getByRole('heading', { name: 'Chủ đề chưa gán khóa' })).toBeInTheDocument()
-    expect(screen.getByRole('article', { name: 'Chủ đề lẻ' })).toHaveTextContent('Chưa chọn kỹ năng')
+    expect(screen.getByRole('button', { name: /Chưa chọn kỹ năng/ })).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('article', { name: 'Chủ đề lẻ' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Sửa khóa học' })).not.toBeInTheDocument()
     fireEvent.click(tabs[1]!)
     expect(screen.getByText('Khóa này chưa có chủ đề. Bấm “Thêm chủ đề” ở trên để bắt đầu.')).toBeInTheDocument()
