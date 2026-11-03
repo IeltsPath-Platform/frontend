@@ -16,7 +16,7 @@ import { CommentSection } from '../components/CommentSection'
 import { PostComposerModal, type PostFormValues } from '../components/PostComposerModal'
 import { ReportDialog } from '../components/ReportDialog'
 import { FeedSkeleton } from '../components/FeedSkeleton'
-import { QuickComposerBar } from '../components/QuickComposerBar'
+import { QuickComposerBar, type ComposerIntent } from '../components/QuickComposerBar'
 import { SandTransition } from '../components/SandTransition'
 import {
   COMPOSER_BACKGROUND_KEYS,
@@ -125,7 +125,7 @@ export function CommunityPage() {
   const [error, setError] = useState('')
   const { confirm, confirmDialog } = useConfirmDialog()
   const [composer, setComposer] = useState(false)
-  const [composerMediaIntent, setComposerMediaIntent] = useState<'IMAGE' | 'VIDEO' | null>(null)
+  const [composerMediaIntent, setComposerMediaIntent] = useState<ComposerIntent | null>(null)
   const [editingPost, setEditingPost] = useState<CommunityPost | null>(null)
   const [activeCategory, setActiveCategory] = useState(search.get('category') ?? '')
   const [commentPost, setCommentPost] = useState<string | null>(null)
@@ -1085,8 +1085,9 @@ export function CommunityPage() {
         <PostComposerModal
           key={`${composer ? 'open' : 'closed'}-${composerMediaIntent ?? 'default'}`}
           isOpen={composer}
-          initialMediaType={composerMediaIntent ?? undefined}
-          openMediaOnOpen={Boolean(composerMediaIntent)}
+          initialMediaType={composerMediaIntent === 'IMAGE' || composerMediaIntent === 'VIDEO' ? composerMediaIntent : undefined}
+          openMediaOnOpen={composerMediaIntent === 'IMAGE' || composerMediaIntent === 'VIDEO'}
+          openEmojiOnOpen={composerMediaIntent === 'EMOJI'}
           isEditing={Boolean(editingPost)}
           form={form}
           formValidationError={formValidationError}

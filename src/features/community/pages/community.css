@@ -1197,57 +1197,13 @@
   z-index: 90;
 }
 
-.community-modal {
-  width: min(100%, 600px);
-  max-height: min(92dvh, 780px);
-  overflow: auto;
-  background: #ffffff;
-  border-radius: 1rem;
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
-}
-
-.community-modal > header {
-  position: sticky;
-  top: 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.9rem 1.25rem;
-  background: #ffffff;
-  border-bottom: 1px solid #e8ebf2;
-  z-index: 2;
-}
-
-.community-modal > header h2 {
-  font-size: 1.15rem;
-  font-weight: 750;
-  color: var(--community-text);
-  margin: 0;
-}
-
-.community-modal > header button {
-  min-width: 44px;
-  min-height: 44px;
-  border: 0;
-  background: transparent;
-  font-size: 1.6rem;
-  color: var(--community-muted);
-  cursor: pointer;
-  border-radius: 0.45rem;
-}
-
-.community-modal > header button:hover {
-  background: var(--community-hover-bg);
-  color: var(--community-text);
-}
-
-.community-modal form {
+/* The report popup uses the shared dialog shell; these rules only style its form. */
+.community-report-form {
   display: grid;
   gap: 0.95rem;
-  padding: 1.15rem 1.35rem 1.35rem;
 }
 
-.community-modal label {
+.community-report-form label {
   display: grid;
   gap: 0.4rem;
   font-size: 0.875rem;
@@ -1255,9 +1211,9 @@
   color: var(--community-text);
 }
 
-.community-modal input,
-.community-modal textarea,
-.community-modal select {
+.community-report-form input,
+.community-report-form textarea,
+.community-report-form select {
   box-sizing: border-box;
   width: 100%;
   min-height: 44px;
@@ -1269,22 +1225,22 @@
   color: var(--community-text);
 }
 
-.community-modal input:focus,
-.community-modal textarea:focus,
-.community-modal select:focus {
+.community-report-form input:focus,
+.community-report-form textarea:focus,
+.community-report-form select:focus {
   outline: none;
   border-color: var(--community-primary);
   box-shadow: 0 0 0 3px rgba(25, 70, 179, 0.12);
 }
 
-.community-modal form footer {
+.community-report-form footer {
   display: flex;
   justify-content: flex-end;
   gap: 0.65rem;
   margin-top: 0.5rem;
 }
 
-.community-modal form footer button:not(.community-primary) {
+.community-report-form footer button:not(.community-primary) {
   min-height: 44px;
   border: 1px solid var(--community-border);
   border-radius: 0.65rem;
@@ -1606,11 +1562,6 @@
   .community-modal-backdrop {
     padding: 0.5rem;
     align-items: flex-end;
-  }
-
-  .community-modal {
-    max-height: 94dvh;
-    border-radius: 1rem 1rem 0.5rem 0.5rem;
   }
 }
 
