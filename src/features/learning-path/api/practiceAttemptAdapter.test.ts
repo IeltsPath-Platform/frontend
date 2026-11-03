@@ -1,5 +1,27 @@
 import { describe, expect, it } from 'vitest'
-import { mapPracticeAttemptView, mapPracticeSubmission, type PracticeAttemptViewDto, type PracticeSubmissionResultDto } from './learningAdapters'
+import {
+  mapPracticeAttemptView,
+  mapPracticeSubmission,
+  mapPracticeTestMilestone,
+  type PracticeAttemptViewDto,
+  type PracticeSubmissionResultDto,
+} from './learningAdapters'
+
+describe('mapPracticeTestMilestone', () => {
+  const dto = {
+    packageId: 'pkg-1', packageVersionId: 'ver-1', code: 'PT-1', title: 'Đề luyện', afterTopicSequence: 4,
+    status: 'DONE' as const,
+  }
+
+  it('rounds the percent the server sends and keeps the position of the chặng', () => {
+    expect(mapPracticeTestMilestone({ ...dto, percent: 84.6667 })).toMatchObject({ afterTopicSequence: 4, status: 'DONE', percent: 85 })
+  })
+
+  it('has no percent before the test is done', () => {
+    expect(mapPracticeTestMilestone({ ...dto, status: 'LOCKED' }).percent).toBeNull()
+    expect(mapPracticeTestMilestone({ ...dto, status: 'AVAILABLE', percent: null }).percent).toBeNull()
+  })
+})
 
 const submissionWith = (reviewsCreated: PracticeSubmissionResultDto['reviewsCreated']): PracticeSubmissionResultDto => ({
   attemptId: 'attempt-1', correct: 1, total: 4, percent: 0.25, passed: false, countedAsEvidence: true, results: [],

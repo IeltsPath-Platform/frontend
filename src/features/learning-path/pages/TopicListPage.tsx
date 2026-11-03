@@ -6,6 +6,7 @@ import { useToast } from '@/components/toast/toastContext'
 import type { CourseSummary } from '~types/learningPath'
 import { learningApi, toApiError } from '../api'
 import { CourseHero } from '../components/CourseHero'
+import { CoursePracticeTests } from '../components/CoursePracticeTests'
 import { CourseSkillBoard } from '../components/CourseSkillBoard'
 import { LearnTrail } from '../components/LearnTrail'
 import { NoticeBanner } from '../components/NoticeBanner'
@@ -26,6 +27,8 @@ export function TopicListPage() {
   const error = topicsResource.error ?? coursesResource.error
   const passed = topics?.filter((topic) => topic.status === 'PASSED').length ?? 0
   const total = topics?.length ?? 0
+  // The server counts a practice-test milestone in this order, so the n-th title is the chặng it opens after.
+  const topicTitlesInOrder = (topics ?? []).slice().sort((a, b) => a.sequenceOrder - b.sequenceOrder).map((topic) => topic.title)
   const lessonCount = courseSummary?.totalLessons ?? topics?.reduce((sum, topic) => sum + topic.totalLessons, 0) ?? 0
 
   function reload() {
@@ -51,6 +54,8 @@ export function TopicListPage() {
           </Button>
         </p>
       ) : null}
+
+      {total > 0 ? <CoursePracticeTests courseId={courseId} topicTitles={topicTitlesInOrder} /> : null}
 
       {loading ? <TopicListSkeleton /> : null}
       {error ? <ApiErrorState error={error} onRetry={reload} /> : null}

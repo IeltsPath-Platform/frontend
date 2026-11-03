@@ -23,6 +23,8 @@ export function TopicTestPage() {
   const [searchParams] = useSearchParams()
   const topicId = searchParams.get('topic')
   const courseId = searchParams.get('course')
+  // A practice-test milestone of a course: same test screen, but not the course's final test.
+  const practice = searchParams.get('practice') === '1'
   const resource = useApiResource(`attempt:${attemptId}`, async () => parseAttemptStructure(await learningApi.getAttemptStructure(attemptId)))
 
   if (resource.status === 'loading') return <LoadingState label="Đang tải đề…" />
@@ -33,6 +35,7 @@ export function TopicTestPage() {
       attemptId={attemptId}
       courseId={courseId}
       key={attemptId}
+      practice={practice}
       sections={resource.data}
       topicId={topicId}
     />
@@ -44,11 +47,13 @@ function TestRunner({
   sections,
   topicId,
   courseId,
+  practice,
 }: {
   attemptId: string
   sections: TestSection[]
   topicId: string | null
   courseId: string | null
+  practice: boolean
 }) {
   const navigate = useNavigate()
   const [active, setActive] = useState(0)
@@ -81,7 +86,7 @@ function TestRunner({
   const resultQuery = topicId
     ? `?topic=${topicId}`
     : courseId
-      ? `?course=${courseId}`
+      ? `?course=${courseId}${practice ? '&practice=1' : ''}`
       : ''
 
   function saveAnswer(itemId: string, rawValue: string): Promise<boolean> {
@@ -155,12 +160,12 @@ function TestRunner({
         items={[
           { label: 'Khóa học', to: '/learn' },
           ...(topicId || courseId ? [{ label: courseId ? 'Lộ trình khóa học' : 'Chặng học', to: backPath }] : []),
-          { label: courseId ? 'Thi cuối khóa' : 'Bài kiểm tra chặng' },
+          { label: practice ? 'Đề luyện theo mốc' : courseId ? 'Thi cuối khóa' : 'Bài kiểm tra chặng' },
         ]}
       />
       <header className="lp-test-head">
         <div>
-          <p className="lp-eyebrow">{courseId ? 'Thi cuối khóa' : 'Bài kiểm tra cuối'}</p>
+          <p className="lp-eyebrow">{practice ? 'Đề luyện theo mốc' : courseId ? 'Thi cuối khóa' : 'Bài kiểm tra cuối'}</p>
           <h1 id="lp-test-title">Làm từng phần, câu trả lời được lưu ngay</h1>
         </div>
         <p className="lp-test-head__meta"><InfinityIcon aria-hidden="true" size={18} />Không giới hạn thời gian</p>

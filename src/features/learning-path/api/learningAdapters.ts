@@ -9,6 +9,7 @@ import type {
   LessonDetail,
   LessonExerciseResult,
   LessonStatus,
+  PracticeTestMilestone,
   Question,
   QuestionResult,
   ReviewDetail,
@@ -356,6 +357,16 @@ export type TestAssignmentDto = {
   assignmentId: string
   packageId: string
   packageVersionId: string
+}
+
+export type PracticeTestMilestoneDto = {
+  packageId: string
+  packageVersionId: string
+  code: string
+  title: string
+  afterTopicSequence: number
+  status: 'LOCKED' | 'AVAILABLE' | 'DONE'
+  percent?: number | null
 }
 
 export type LearnerAttemptResultDto = {
@@ -859,6 +870,18 @@ export function mapTestAssignment(
     ...(scope.courseId ? { courseId: scope.courseId } : {}),
     packageVersionId: dto.packageVersionId,
     packageCode: dto.packageId.slice(0, 8),
+  }
+}
+
+export function mapPracticeTestMilestone(dto: PracticeTestMilestoneDto): PracticeTestMilestone {
+  return {
+    packageId: dto.packageId,
+    packageVersionId: dto.packageVersionId,
+    code: dto.code,
+    title: dto.title,
+    afterTopicSequence: dto.afterTopicSequence,
+    status: dto.status,
+    percent: dto.percent == null ? null : Math.round(Number(dto.percent)),
   }
 }
 

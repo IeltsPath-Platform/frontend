@@ -707,6 +707,19 @@ export interface TestAssignment {
   packageCode: string
 }
 
+/** A practice test the course places after one of its chặng; its first result counts toward the course's process score. */
+export interface PracticeTestMilestone {
+  packageId: string
+  packageVersionId: string
+  code: string
+  title: string
+  /** 1-based position of the chặng after which the test opens, in the course's chặng order. */
+  afterTopicSequence: number
+  status: 'LOCKED' | 'AVAILABLE' | 'DONE'
+  /** Percent of the first result, or null before the test is done. */
+  percent: number | null
+}
+
 /** The published placement test a learner without a placement band sits first. */
 export interface PlacementTest {
   packageId: string
@@ -787,7 +800,7 @@ export type AttemptStatus = 'IN_PROGRESS' | 'SUBMITTED' | 'EXPIRED' | 'CANCELLED
 
 export interface StartAttemptRequest {
   packageVersionId: string
-  attemptType: 'TOPIC_TEST' | 'COURSE_TEST' | 'PLACEMENT_TEST'
+  attemptType: 'TOPIC_TEST' | 'COURSE_TEST' | 'PRACTICE_TEST' | 'PLACEMENT_TEST'
   mode: 'STANDARD' | 'PRACTICE'
   channel: 'WEB'
   expiresAt: null
