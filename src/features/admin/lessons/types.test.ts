@@ -20,9 +20,18 @@ describe('lesson schemas', () => {
     expect(lesson.summary).toBe('')
   })
 
+  it('reads the question version id from the authoring read, which names it id', () => {
+    const lesson = lessonEditorSchema.parse({
+      id: 'l1', code: 'L1', title: 'T', status: 'PUBLISHED',
+      blocks: [{ id: 'b1', blockType: 'EXERCISE', sortOrder: 1, questions: [{ id: 'v9', versionNumber: 2, status: 'PUBLISHED', stem: 'Q?' }] }],
+    })
+    expect(lesson.blocks[0].questions[0]).toMatchObject({ questionVersionId: 'v9', versionNumber: 2, stem: 'Q?' })
+  })
+
   it('rejects a lesson or block without an id', () => {
     expect(lessonEditorSchema.safeParse({ code: 'L', title: 'T', status: 'DRAFT' }).success).toBe(false)
     expect(lessonEditorSchema.safeParse({ id: 'l', code: 'L', title: 'T', status: 'DRAFT', blocks: [{ blockType: 'TEXT' }] }).success).toBe(false)
+    expect(lessonEditorSchema.safeParse({ id: 'l', code: 'L', title: 'T', status: 'DRAFT', blocks: [{ id: 'b', blockType: 'EXERCISE', questions: [{ stem: 'Q?' }] }] }).success).toBe(false)
   })
 
   it('normalises a list item and counts its knowledge points', () => {

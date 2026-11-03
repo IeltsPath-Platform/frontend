@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from '@/test/render'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { HttpError } from '@/lib/httpClient'
 import type { LessonEditor } from '../types'
-import { LessonEditorPanel } from './LessonEditorPanel'
+import { LessonEditorModal } from './LessonEditorModal'
 
 const { api, graph, questions, vocab } = vi.hoisted(() => ({
   api: {
@@ -32,11 +32,12 @@ function lesson(overrides: Partial<LessonEditor> = {}): LessonEditor {
   }
 }
 
-function renderPage() {
-  return render(<LessonEditorPanel lessonId="l1" />)
+function renderPage(onClose = vi.fn()) {
+  render(<LessonEditorModal fallbackTitle="Bài đang mở" lessonId="l1" onClose={onClose} topicName="Reading" />)
+  return onClose
 }
 
-describe('LessonEditorPanel', () => {
+describe('LessonEditorModal', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     api.fetchLesson.mockResolvedValue(lesson())
@@ -46,15 +47,59 @@ describe('LessonEditorPanel', () => {
     vocab.getLessonVocabularySenses.mockResolvedValue([])
   })
 
+  it('shows the status beside the title in the header, not in the body, and carries no publish or archive button', async () => {
+    renderPage()
+
+    const popup = await screen.findByRole('dialog', { name: 'Skimming' })
+    const header = popup.querySelector('.adm-modal__header') as HTMLElement
+    expect(within(header).getByText('Nháp')).toBeInTheDocument()
+    expect(within(header).getByText('L1 · Reading')).toBeInTheDocument()
+    expect(popup.querySelector('.adm-modal__body')).not.toHaveTextContent('Nháp')
+    expect(screen.queryByRole('button', { name: /Xuất bản|Lưu trữ/ })).not.toBeInTheDocument()
+  })
+
   it('shows the blocks in order with the lesson status', async () => {
     renderPage()
 
     expect(await screen.findByRole('form', { name: 'Thông tin bài học' })).toBeInTheDocument()
     expect(screen.getByLabelText('Tiêu đề')).toHaveValue('Skimming')
+    expect(screen.queryByLabelText('Tóm tắt')).not.toBeInTheDocument()
     expect(screen.getByText('Nháp')).toBeInTheDocument()
     expect(screen.getByText('Intro text')).toBeInTheDocument()
     expect(screen.getByText('1 câu hỏi')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Xuất bản' })).toBeInTheDocument()
+  })
+
+  it('chooses the knowledge points of the lesson in a picker and saves them from its section', async () => {
+    graph.fetchKnowledgeTree.mockResolvedValue({
+      nodes: [
+        { id: 'kp1', code: 'R55_SCAN', name: 'Scanning', kind: 'STRATEGY', status: 'ACTIVE' },
+        { id: 'kp2', code: 'R55_SKIM', name: 'Skimming', kind: 'STRATEGY', status: 'ACTIVE', cefrLevel: 'B1' },
+      ],
+      edges: [],
+    })
+    api.setLessonKnowledgePoints.mockResolvedValue(undefined)
+    renderPage()
+
+    const section = await screen.findByRole('region', { name: 'Knowledge point của bài' })
+    expect(await within(section).findByRole('table', { name: 'Knowledge point của bài' })).toHaveTextContent('R55_SCAN')
+    fireEvent.click(within(section).getByRole('button', { name: 'Sửa lựa chọn' }))
+
+    const picker = await screen.findByRole('dialog', { name: 'Chọn điểm kiến thức' })
+    expect(within(picker).getByRole('region', { name: 'Cấp B1' })).toHaveTextContent('R55_SKIM')
+    expect(within(picker).getByRole('region', { name: 'Chưa xếp cấp' })).toHaveTextContent('R55_SCAN')
+    fireEvent.click(within(picker).getByRole('checkbox', { name: /R55_SKIM/ }))
+    fireEvent.click(within(picker).getByRole('button', { name: 'Lưu' }))
+
+    fireEvent.click(within(section).getByRole('button', { name: 'Lưu KP' }))
+    await waitFor(() => expect(api.setLessonKnowledgePoints).toHaveBeenCalledWith('l1', ['kp1', 'kp2']))
+  })
+
+  it('removes a knowledge point from the table with its cross', async () => {
+    renderPage()
+    const section = await screen.findByRole('region', { name: 'Knowledge point của bài' })
+    fireEvent.click(await within(section).findByRole('button', { name: 'Bỏ R55_SCAN' }))
+    expect(within(section).getByText('Chưa gắn điểm kiến thức nào.')).toBeInTheDocument()
+    expect(within(section).getByText('0/50')).toBeInTheDocument()
   })
 
   it('moves a block down and reloads the lesson', async () => {
@@ -73,32 +118,20 @@ describe('LessonEditorPanel', () => {
 
     const form = await screen.findByRole('form', { name: /Sửa block/ })
     fireEvent.change(within(form).getByLabelText('Nội dung (Markdown)'), { target: { value: 'New text' } })
-    fireEvent.click(within(form).getByRole('button', { name: 'Lưu block' }))
+    fireEvent.click(within(form).getByRole('button', { name: 'Lưu' }))
 
     await waitFor(() => expect(api.updateBlock).toHaveBeenCalledWith('l1', 'b1', { blockType: 'TEXT', textContent: 'New text', knowledgePointIds: [] }))
   })
 
   it('does not send an empty text block', async () => {
     renderPage()
-    fireEvent.click(await screen.findByRole('button', { name: /Bài giảng \(văn bản\)/ }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Bài giảng (văn bản)' }))
 
     const form = await screen.findByRole('form', { name: /Thêm block/ })
-    fireEvent.click(within(form).getByRole('button', { name: 'Lưu block' }))
+    fireEvent.click(within(form).getByRole('button', { name: 'Lưu' }))
 
     expect(await screen.findByText('Cần nhập nội dung bài giảng.')).toBeInTheDocument()
     expect(api.addBlock).not.toHaveBeenCalled()
-  })
-
-  it('lists why a publish was refused', async () => {
-    api.publishLesson.mockRejectedValue(
-      new HttpError(422, 'Lesson cannot be published', { details: { code: 'LESSON_NOT_PUBLISHABLE', issues: ['LESSON_HAS_NO_ACTIVE_KP'] } }),
-    )
-    renderPage()
-    fireEvent.click(await screen.findByRole('button', { name: 'Xuất bản' }))
-
-    const alert = await screen.findByRole('alert')
-    expect(alert).toHaveTextContent('Chưa xuất bản được bài học.')
-    expect(alert).toHaveTextContent('Bài chưa gắn knowledge point nào đang hoạt động.')
   })
 
   it('locks exercise blocks once the lesson is published but keeps the others editable', async () => {
@@ -109,9 +142,7 @@ describe('LessonEditorPanel', () => {
     expect(screen.getByRole('button', { name: 'Sửa block 1' })).toBeEnabled()
     expect(screen.getByRole('button', { name: 'Sửa block 2' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Xóa block 2' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: /Bài tập/ })).toBeDisabled()
-    expect(screen.queryByRole('button', { name: 'Xuất bản' })).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Lưu trữ' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Bài tập' })).toBeDisabled()
   })
 
   it('shows a load error with a retry', async () => {

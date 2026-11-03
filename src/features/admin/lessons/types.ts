@@ -11,14 +11,19 @@ export type BlockType = (typeof BLOCK_TYPES)[number]
  * `lessonId` / `blockId` spelling the internal learning read uses, and normalise to `id`.
  */
 
-const questionRefSchema = z.object({
-  questionId: z.string().nullish(),
-  questionVersionId: z.string(),
-  versionNumber: z.number().nullish(),
-  status: z.string().nullish(),
-  stem: z.string().nullish(),
-  questionType: z.string().nullish(),
-})
+/** The authoring read names a question version `id`; the learning read spells it `questionVersionId`. */
+const questionRefSchema = z
+  .object({
+    questionId: z.string().nullish(),
+    id: z.string().nullish(),
+    questionVersionId: z.string().nullish(),
+    versionNumber: z.number().nullish(),
+    status: z.string().nullish(),
+    stem: z.string().nullish(),
+    questionType: z.string().nullish(),
+  })
+  .refine((question) => Boolean(question.questionVersionId ?? question.id), { message: 'question version id is missing' })
+  .transform(({ id, questionVersionId, ...question }) => ({ ...question, questionVersionId: (questionVersionId ?? id) as string }))
 
 export const lessonBlockSchema = z
   .object({

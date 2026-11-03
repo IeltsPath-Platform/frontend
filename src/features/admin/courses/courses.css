@@ -118,16 +118,6 @@ button.adm-topic-toggle:hover { background: var(--adm-surface-2); color: var(--a
 
 .adm-topic-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
 .adm-topic-open { min-height: 36px; padding: 0 12px; white-space: nowrap; }
-.adm-row-menu { position: relative; }
-.adm-row-menu__trigger { width: 36px; min-height: 36px; padding: 0; }
-.adm-row-menu__panel { position: absolute; top: calc(100% + 4px); right: 0; z-index: 6; display: grid; min-width: 200px; padding: 4px; background: var(--adm-surface); border: 1px solid var(--adm-border); border-radius: var(--adm-radius); box-shadow: 0 12px 28px rgb(13 43 141 / 18%); animation: adm-menu-in .12s ease both; }
-.adm-row-menu__item { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 12px; background: transparent; border: 0; border-radius: 6px; color: var(--adm-text); font: inherit; text-align: left; cursor: pointer; }
-.adm-row-menu__item:hover:not(:disabled), .adm-row-menu__item:focus-visible { background: var(--adm-surface-2); color: var(--adm-accent-strong); }
-.adm-row-menu__item:disabled { opacity: .45; cursor: not-allowed; }
-.adm-row-menu__item.is-danger { color: var(--adm-danger); }
-.adm-row-menu__item.is-danger:hover:not(:disabled), .adm-row-menu__item.is-danger:focus-visible { background: rgb(196 45 45 / 8%); color: var(--adm-danger); }
-.adm-row-menu__item.has-rule { margin-top: 5px; border-top: 1px solid var(--adm-border); border-top-left-radius: 0; border-top-right-radius: 0; }
-@keyframes adm-menu-in { from { opacity: 0; transform: translateY(-4px); } }
 
 .adm-topic-empty { margin: 0; padding: 28px 16px; border: 1px dashed var(--adm-border); border-radius: var(--adm-radius); color: var(--adm-muted); text-align: center; }
 
@@ -146,12 +136,12 @@ button.adm-topic-toggle:hover { background: var(--adm-surface-2); color: var(--a
 }
 /* Fingers need bigger targets than a pointer does. */
 @media (pointer: coarse) {
-  .adm-topic-open, .adm-row-menu__trigger, .adm-row-menu__item { min-height: 44px; }
-  .adm-row-menu__trigger, .adm-topic-toggle { width: 44px; height: 44px; }
+  .adm-topic-open { min-height: 44px; }
+  .adm-topic-toggle { width: 44px; height: 44px; }
   .adm-course-image__action { min-height: 44px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .adm-course-tab, .adm-topic-node, .adm-topic-toggle svg { transition: none; }
-  .adm-row-menu__panel, .adm-skill-group__panel, .adm-spin { animation: none; }
+  .adm-skill-group__panel, .adm-spin { animation: none; }
   .adm-skill-group__toggle, .adm-skill-group__chevron { transition: none; }
 }

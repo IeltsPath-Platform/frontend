@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from '@/test/render'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { answerConfirm } from '@/test/confirm'
 import { HttpError } from '@/lib/httpClient'
 import type { LessonEditor, TopicOption } from '../types'
 import { TopicLessonsDrawer } from './TopicLessonsDrawer'
@@ -31,6 +32,11 @@ const lesson: LessonEditor = {
   blocks: [{ id: 'b1', blockType: 'TEXT', sortOrder: 1, textContent: 'Intro text', assetId: null, vocabularySenseIds: [], knowledgePointIds: [], questions: [] }],
 }
 
+async function chooseFromRowMenu(row: number, action: string) {
+  fireEvent.click(await screen.findByRole('button', { name: `Hành động của bài ${row}` }))
+  fireEvent.click(await screen.findByRole('menuitem', { name: action }))
+}
+
 function show(onClose = vi.fn()) {
   render(<TopicLessonsDrawer topic={topic} onClose={onClose} />)
   return onClose
@@ -52,7 +58,7 @@ describe('TopicLessonsDrawer', () => {
     const drawer = screen.getByRole('dialog', { name: 'Skimming' })
     expect(drawer).toHaveClass('adm-drawer', 'adm-drawer--xl')
     expect(drawer).toHaveTextContent('R-SKIM · Bài học của chủ đề')
-    expect(await within(drawer).findByRole('button', { name: 'Lesson one' })).toBeInTheDocument()
+    expect(await within(drawer).findByText('Lesson one')).toBeInTheDocument()
     expect(within(drawer).getAllByText('Nháp')).toHaveLength(2)
     expect(api.fetchLessons).toHaveBeenCalledWith('t1', expect.anything())
   })
@@ -68,13 +74,61 @@ describe('TopicLessonsDrawer', () => {
     show()
     expect(await screen.findByRole('alert')).toHaveTextContent('Không tải được bài học')
     fireEvent.click(screen.getByRole('button', { name: 'Thử lại' }))
-    expect(await screen.findByRole('button', { name: 'Lesson one' })).toBeInTheDocument()
+    expect(await screen.findByText('Lesson one')).toBeInTheDocument()
+  })
+
+  it('draws the row menu inside the drawer, which blocks clicks on anything outside it', async () => {
+    show()
+    fireEvent.click(await screen.findByRole('button', { name: 'Hành động của bài 1' }))
+    expect(screen.getByRole('dialog', { name: 'Skimming' })).toContainElement(await screen.findByRole('menu'))
+  })
+
+  it('publishes a draft lesson from its row menu and reloads the list', async () => {
+    api.publishLesson.mockResolvedValue(undefined)
+    show()
+    await chooseFromRowMenu(1, 'Xuất bản Lesson one')
+    await waitFor(() => expect(api.publishLesson).toHaveBeenCalledWith('l1'))
+    await waitFor(() => expect(api.fetchLessons).toHaveBeenCalledTimes(2))
+  })
+
+  it('lists why a publish was refused', async () => {
+    api.publishLesson.mockRejectedValue(
+      new HttpError(422, 'Lesson cannot be published', { details: { code: 'LESSON_NOT_PUBLISHABLE', issues: ['LESSON_HAS_NO_ACTIVE_KP'] } }),
+    )
+    show()
+    await chooseFromRowMenu(1, 'Xuất bản Lesson one')
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('Chưa xuất bản được bài học.')
+    expect(alert).toHaveTextContent('Bài chưa gắn knowledge point nào đang hoạt động.')
+  })
+
+  it('archives a published lesson only after confirmation', async () => {
+    api.fetchLessons.mockResolvedValue([{ ...summary('l1', 'Lesson one', 1), status: 'PUBLISHED' as const }])
+    api.archiveLesson.mockResolvedValue(undefined)
+    show()
+    await chooseFromRowMenu(1, 'Lưu trữ Lesson one')
+    await answerConfirm(false)
+    expect(api.archiveLesson).not.toHaveBeenCalled()
+    await chooseFromRowMenu(1, 'Lưu trữ Lesson one')
+    await answerConfirm(true)
+    await waitFor(() => expect(api.archiveLesson).toHaveBeenCalledWith('l1'))
+    await waitFor(() => expect(api.fetchLessons).toHaveBeenCalledTimes(2))
+  })
+
+  it('offers to publish an archived lesson again and no archive action', async () => {
+    api.fetchLessons.mockResolvedValue([{ ...summary('l1', 'Lesson one', 1), status: 'ARCHIVED' as const }])
+    api.publishLesson.mockResolvedValue(undefined)
+    show()
+    fireEvent.click(await screen.findByRole('button', { name: 'Hành động của bài 1' }))
+    expect(screen.queryByRole('menuitem', { name: /Lưu trữ/ })).not.toBeInTheDocument()
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Xuất bản lại Lesson one' }))
+    await waitFor(() => expect(api.publishLesson).toHaveBeenCalledWith('l1'))
   })
 
   it('moves a lesson down by sending the new order and reloads the list', async () => {
     api.reorderLessons.mockResolvedValue(undefined)
     show()
-    fireEvent.click(await screen.findByRole('button', { name: 'Đưa Lesson one xuống' }))
+    await chooseFromRowMenu(1, 'Đưa Lesson one xuống')
     await waitFor(() => expect(api.reorderLessons).toHaveBeenCalledWith('t1', ['l2', 'l1']))
     await waitFor(() => expect(api.fetchLessons).toHaveBeenCalledTimes(2))
   })
@@ -82,7 +136,7 @@ describe('TopicLessonsDrawer', () => {
   it('shows why a reorder failed', async () => {
     api.reorderLessons.mockRejectedValue(new HttpError(409, 'Thứ tự đã thay đổi'))
     show()
-    fireEvent.click(await screen.findByRole('button', { name: 'Đưa Lesson one xuống' }))
+    await chooseFromRowMenu(1, 'Đưa Lesson one xuống')
     expect(await screen.findByRole('alert')).toHaveTextContent('Thứ tự đã thay đổi')
   })
 
@@ -112,42 +166,37 @@ describe('TopicLessonsDrawer', () => {
     expect(api.createLesson).not.toHaveBeenCalled()
   })
 
-  it('opens a lesson for editing inside the drawer and steps back to the list', async () => {
-    show()
-    fireEvent.click(await screen.findByRole('button', { name: 'Lesson one' }))
+  it('opens a lesson for editing in a popup above the drawer and comes back to the refreshed list', async () => {
+    const onClose = show()
+    await chooseFromRowMenu(1, 'Sửa Lesson one')
 
-    const drawer = screen.getByRole('dialog', { name: 'Lesson one' })
-    expect(await within(drawer).findByRole('form', { name: 'Thông tin bài học' })).toBeInTheDocument()
-    expect(within(drawer).getByText('Intro text')).toBeInTheDocument()
+    const popup = screen.getByRole('dialog', { name: 'Lesson one' })
+    expect(popup).toHaveClass('adm-modal', 'adm-modal--wide', 'adm-modal--stacked')
+    expect(await within(popup).findByRole('form', { name: 'Thông tin bài học' })).toBeInTheDocument()
+    expect(within(popup).getByText('Intro text')).toBeInTheDocument()
     expect(api.fetchLesson).toHaveBeenCalledWith('l1', expect.anything())
 
-    fireEvent.click(screen.getByRole('button', { name: 'Về danh sách bài học' }))
+    fireEvent.click(within(popup).getByRole('button', { name: 'Đóng' }))
     expect(await screen.findByRole('dialog', { name: 'Skimming' })).toBeInTheDocument()
-    expect(await screen.findByRole('button', { name: 'Lesson two' })).toBeInTheDocument()
+    expect(screen.queryByRole('dialog', { name: 'Lesson one' })).not.toBeInTheDocument()
+    expect(await screen.findByText('Lesson two')).toBeInTheDocument()
     await waitFor(() => expect(api.fetchLessons).toHaveBeenCalledTimes(2))
+    expect(onClose).not.toHaveBeenCalled()
   })
 
   it('saves a change made in the lesson editor from the drawer', async () => {
     api.updateLesson.mockResolvedValue(undefined)
     show()
-    fireEvent.click(await screen.findByRole('button', { name: 'Lesson one' }))
+    await chooseFromRowMenu(1, 'Sửa Lesson one')
     const form = await screen.findByRole('form', { name: 'Thông tin bài học' })
     fireEvent.change(within(form).getByLabelText('Tiêu đề'), { target: { value: 'Lesson uno' } })
     fireEvent.click(within(form).getByRole('button', { name: 'Lưu thông tin' }))
-    await waitFor(() => expect(api.updateLesson).toHaveBeenCalledWith('l1', expect.objectContaining({ title: 'Lesson uno' })))
-  })
-
-  it('closes the whole panel from its own close button, even from a lesson', async () => {
-    const onClose = show()
-    fireEvent.click(await screen.findByRole('button', { name: 'Lesson one' }))
-    await screen.findByRole('form', { name: 'Thông tin bài học' })
-    fireEvent.click(screen.getByRole('button', { name: 'Đóng' }))
-    expect(onClose).toHaveBeenCalledTimes(1)
+    await waitFor(() => expect(api.updateLesson).toHaveBeenCalledWith('l1', expect.objectContaining({ title: 'Lesson uno', summary: 'Tóm tắt' })))
   })
 
   it('closes from the back arrow of the list', async () => {
     const onClose = show()
-    await screen.findByRole('button', { name: 'Lesson one' })
+    await screen.findByText('Lesson one')
     fireEvent.click(screen.getByRole('button', { name: 'Đóng' }))
     expect(onClose).toHaveBeenCalledTimes(1)
   })

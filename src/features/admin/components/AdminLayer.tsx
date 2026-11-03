@@ -88,11 +88,13 @@ export function AdminDrawer({ title, description, size = 'md', onClose, onBack, 
 }
 
 /** Centred panel for reading one record. A click outside it, Esc or the close button dismiss it. */
-export function AdminModal({ title, description, size = 'md', stacked = false, onClose, children }: {
+export function AdminModal({ title, description, badge, size = 'md', stacked = false, onClose, children }: {
   title: string
   description?: string
-  /** `lg` is a wide panel of a fixed height whose body lays itself out (a picker with its own scrolling list). */
-  size?: 'md' | 'lg' | 'xl'
+  /** A status chip drawn beside the title. */
+  badge?: ReactNode
+  /** `lg` is a wide panel of a fixed height whose body lays itself out (a picker with its own scrolling list); `wide` is the same width and height with an ordinary scrolling body (a long editor). */
+  size?: 'md' | 'lg' | 'xl' | 'wide'
   /** Opened from inside a drawer or another layer: sits above it and dims it. */
   stacked?: boolean
   onClose: () => void
@@ -103,10 +105,10 @@ export function AdminModal({ title, description, size = 'md', stacked = false, o
     <Dialog.Root open onOpenChange={(open) => { if (!open) close() }}>
       <Layer>
         <Dialog.Overlay className={`adm-layer__overlay${stacked ? ' adm-layer__overlay--stacked' : ''}${closing ? ' is-closing' : ''}`} />
-        <Dialog.Content aria-describedby={undefined} className={`adm-modal${size === 'lg' ? ' adm-modal--lg' : size === 'xl' ? ' adm-modal--lg adm-modal--xl' : ''}${stacked ? ' adm-modal--stacked' : ''}${closing ? ' is-closing' : ''}`} ref={panel}>
+        <Dialog.Content aria-describedby={undefined} className={`adm-modal${size === 'lg' ? ' adm-modal--lg' : size === 'xl' ? ' adm-modal--lg adm-modal--xl' : size === 'wide' ? ' adm-modal--wide' : ''}${stacked ? ' adm-modal--stacked' : ''}${closing ? ' is-closing' : ''}`} ref={panel}>
           <header className="adm-modal__header">
-            <div>
-              <Dialog.Title className="adm-layer__title">{title}</Dialog.Title>
+            <div className="adm-modal__heading">
+              {badge ? <div className="adm-modal__titlerow"><Dialog.Title className="adm-layer__title">{title}</Dialog.Title>{badge}</div> : <Dialog.Title className="adm-layer__title">{title}</Dialog.Title>}
               {description ? <p className="adm-layer__description">{description}</p> : null}
             </div>
             <button aria-label="Đóng" className="adm-modal__close" onClick={close} type="button"><X aria-hidden="true" size={18} /></button>

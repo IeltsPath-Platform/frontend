@@ -1,8 +1,9 @@
 import { useId, useState, type FormEvent } from 'react'
 import { ArrowDown, ArrowUp, ExternalLink, Pencil, Plus, Trash2 } from 'lucide-react'
-import { AdminDrawer } from '../../components/AdminLayer'
+import { AdminModal } from '../../components/AdminLayer'
+import { AdminRowMenu } from '../../components/AdminRowMenu'
 import { useAdminConfirm } from '../../lib/useAdminConfirm'
-import { AdminEmpty, AdminError, AdminLoading } from '../../components/AdminState'
+import { AdminError, AdminLoading } from '../../components/AdminState'
 import { adminErrorMessage } from '../../lib/adminErrors'
 import { useAdminResource } from '../../lib/useAdminResource'
 import { createLessonResource, deleteLessonResource, fetchLessonResources, reorderLessonResources, updateLessonResource } from '../api/lessonApi'
@@ -10,6 +11,7 @@ import { moveId } from '../lib/blockForm'
 import { RESOURCE_REORDER_ENABLED } from '../lib/resource-reorder'
 import type { LessonResource, LessonResourceRequest, LessonResources, LessonResourceType } from '../types'
 import { useAdminError } from '../../lib/useAdminError'
+import '../../course-drafts/course-drafts.css'
 
 function httpsUrl(value: string) {
   try { return new URL(value).protocol === 'https:' } catch { return false }
@@ -19,9 +21,8 @@ function ResourceForm({ item, type, busy, onSave, onCancel }: {
   item?: LessonResource
   type: LessonResourceType
   busy: boolean
-  /** A failed save is shown here, in the drawer, because the page behind it is covered. */
   onSave: (body: Pick<LessonResourceRequest, 'title' | 'url'>) => Promise<boolean>
-  onCancel?: () => void
+  onCancel: () => void
 }) {
   const id = useId()
   const [title, setTitle] = useState(item?.title ?? '')
@@ -34,33 +35,32 @@ function ResourceForm({ item, type, busy, onSave, onCancel }: {
     event.preventDefault()
     setSubmitted(true)
     if (busy || !title.trim() || title.trim().length > 255 || !httpsUrl(url.trim()) || url.trim().length > 2000) return
-    const saved = await onSave({ title: title.trim(), url: url.trim() })
-    if (saved && !item) { setTitle(''); setUrl(''); setSubmitted(false) }
+    await onSave({ title: title.trim(), url: url.trim() })
   }
 
   return (
     <form aria-label={`${item ? 'Sửa' : 'Thêm'} ${label}`} noValidate onSubmit={(event) => void submit(event)}>
       <fieldset className="adm-resource-fields" disabled={busy}>
         <label className="adm-field">
-          <span>Tiêu đề {label}</span>
+          <span>Tiêu đề {label}<span aria-hidden="true" className="adm-required" /></span>
           <input className="adm-input" maxLength={255} required value={title} onChange={(event) => setTitle(event.target.value)} aria-invalid={submitted && !title.trim()} />
           {submitted && !title.trim() ? <small role="alert">Nhập tiêu đề.</small> : null}
         </label>
         <label className="adm-field">
-          <span>URL {label}</span>
+          <span>URL {label}<span aria-hidden="true" className="adm-required" /></span>
           <input className="adm-input" type="url" maxLength={2000} required value={url} onChange={(event) => setUrl(event.target.value)} aria-invalid={invalidUrl} aria-describedby={invalidUrl ? `${id}-url-error` : undefined} />
           {invalidUrl ? <small id={`${id}-url-error`} role="alert">Nhập đường dẫn HTTPS hợp lệ.</small> : null}
         </label>
-        {type === 'SLIDE' ? <p className="adm-muted">Dán link Google Slides dạng …/embed. Bật quyền xem hoặc xuất bản lên web để học viên mở được.</p> : null}
         <div className="adm-form-footer">
-          {onCancel ? <button className="adm-btn" type="button" onClick={onCancel}>Hủy</button> : null}
-          <button className="adm-btn adm-btn--primary" type="submit">{busy ? 'Đang lưu…' : item ? 'Lưu thay đổi' : `Thêm ${label}`}</button>
+          <button className="adm-btn" type="button" onClick={onCancel}>Đóng</button>
+          <button className="adm-btn adm-btn--primary" type="submit">{busy ? 'Đang lưu…' : 'Lưu'}</button>
         </div>
       </fieldset>
     </form>
   )
 }
 
+/** The slides or the documents of a lesson: a titled table whose rows carry their actions in a "…" menu. */
 function ResourceList({ lessonId, type, items, reload, busy, clearError, run }: {
   lessonId: string
   type: LessonResourceType
@@ -87,41 +87,47 @@ function ResourceList({ lessonId, type, items, reload, busy, clearError, run }: 
       }
     })
   }
+  async function remove(item: LessonResource) {
+    if (!(await confirm({
+      title: `Xóa ${label.toLowerCase()}?`,
+      message: `Xóa ${label.toLowerCase()} “${item.title}” khỏi bài học? Học viên sẽ không còn thấy nó.`,
+      confirmLabel: 'Xóa',
+      tone: 'danger',
+    }))) return
+    await run(async () => { await deleteLessonResource(lessonId, item.id); reload() })
+  }
   return (
-    <section className="adm-resource-list" aria-label={label}>
-      <h3>{label} ({items.length})</h3>
-      {items.length === 0 ? <AdminEmpty title={`Chưa có ${label.toLowerCase()}.`}>Thêm đường dẫn bên dưới để học viên xem trong bài học.</AdminEmpty> : null}
-      <ol>
-        {ordered.map((item, index) => (
-          <li key={item.id}>
-            <>
-              <div className="adm-resource-head">
-                <div className="adm-resource-link">
-                  <strong>{item.title}</strong>
-                  {httpsUrl(item.url) ? <a href={item.url} target="_blank" rel="noreferrer">{item.url} <ExternalLink aria-hidden="true" size={14} /></a> : <span className="adm-muted">{item.url} · Sửa thành đường dẫn HTTPS để mở.</span>}
-                </div>
-                <div className="adm-resource-actions">
-                  <button className="adm-btn" type="button" disabled={!RESOURCE_REORDER_ENABLED || busy || index === 0} aria-label={`Đưa ${item.title} lên`} title={RESOURCE_REORDER_ENABLED ? undefined : 'Chờ API đổi thứ tự'} onClick={() => void move(item.id, -1)}><ArrowUp aria-hidden="true" size={16} /></button>
-                  <button className="adm-btn" type="button" disabled={!RESOURCE_REORDER_ENABLED || busy || index === ordered.length - 1} aria-label={`Đưa ${item.title} xuống`} title={RESOURCE_REORDER_ENABLED ? undefined : 'Chờ API đổi thứ tự'} onClick={() => void move(item.id, 1)}><ArrowDown aria-hidden="true" size={16} /></button>
-                  <button className="adm-btn" type="button" disabled={busy} aria-label={`Sửa ${item.title}`} onClick={() => { clearError(); setEditing(item.id) }}><Pencil aria-hidden="true" size={16} /> Sửa</button>
-                  <button className="adm-btn adm-btn--danger" type="button" disabled={busy} aria-label={`Xóa ${item.title}`} onClick={() => void (async () => {
-                    if (!(await confirm({
-                      title: `Xóa ${label.toLowerCase()}?`,
-                      message: `Xóa ${label.toLowerCase()} “${item.title}” khỏi bài học? Học viên sẽ không còn thấy nó.`,
-                      confirmLabel: 'Xóa',
-                      tone: 'danger',
-                    }))) return
-                    await run(async () => { await deleteLessonResource(lessonId, item.id); reload() })
-                  })()}><Trash2 aria-hidden="true" size={16} /> Xóa</button>
-                </div>
-              </div>
-            </>
-          </li>
-        ))}
-      </ol>
-      <button className="adm-btn" type="button" disabled={busy} onClick={() => { clearError(); setAdding(true) }}><Plus aria-hidden="true" size={16} /> Thêm {label.toLowerCase()}</button>
+    <section aria-label={label} className="adm-sec">
+      <div className="adm-sec__head">
+        <h3 className="adm-sec__title">{label}<span className="adm-count">{items.length}</span></h3>
+        <button className="adm-btn adm-btn--small" type="button" disabled={busy} onClick={() => { clearError(); setAdding(true) }}><Plus aria-hidden="true" size={14} />Thêm {label.toLowerCase()}</button>
+      </div>
+      <div className="adm-table-wrap adm-kp-table">
+        <table aria-label={`${label} của bài`} className="adm-table">
+          <thead><tr><th className="adm-stt" scope="col">STT</th><th scope="col">Tiêu đề</th><th scope="col">Đường dẫn</th><th className="adm-col-actions" scope="col">Hành động</th></tr></thead>
+          <tbody>{ordered.length === 0 ? <tr><td className="adm-muted adm-kp-table__empty" colSpan={4}>Chưa có {label.toLowerCase()} nào.</td></tr> : ordered.map((item, index) => (
+            <tr key={item.id}>
+              <td className="adm-stt">{index + 1}</td>
+              <td>{item.title}</td>
+              <td>{httpsUrl(item.url)
+                ? <a className="adm-link-out" href={item.url} rel="noreferrer" target="_blank">{item.url}<ExternalLink aria-hidden="true" size={13} /></a>
+                : <span className="adm-muted">{item.url}</span>}</td>
+              <td className="adm-col-actions">
+                <AdminRowMenu disabled={busy} label={`Hành động của ${label.toLowerCase()} ${index + 1}`} items={[
+                  { key: 'edit', label: `Sửa ${label.toLowerCase()}`, ariaLabel: `Sửa ${item.title}`, icon: <Pencil aria-hidden="true" size={16} />, onSelect: () => { clearError(); setEditing(item.id) } },
+                  ...(RESOURCE_REORDER_ENABLED ? [
+                    { key: 'up', label: 'Đưa lên', ariaLabel: `Đưa ${item.title} lên`, icon: <ArrowUp aria-hidden="true" size={16} />, separatorBefore: true, disabled: index === 0, onSelect: () => void move(item.id, -1) },
+                    { key: 'down', label: 'Đưa xuống', ariaLabel: `Đưa ${item.title} xuống`, icon: <ArrowDown aria-hidden="true" size={16} />, disabled: index === ordered.length - 1, onSelect: () => void move(item.id, 1) },
+                  ] : []),
+                  { key: 'delete', label: `Xóa ${label.toLowerCase()}`, ariaLabel: `Xóa ${item.title}`, icon: <Trash2 aria-hidden="true" size={16} />, tone: 'danger', separatorBefore: true, onSelect: () => void remove(item) },
+                ]} />
+              </td>
+            </tr>
+          ))}</tbody>
+        </table>
+      </div>
       {confirmDialog}
-      {adding ? <AdminDrawer title={`Thêm ${label.toLowerCase()}`} onClose={() => setAdding(false)}>
+      {adding ? <AdminModal title={`Thêm ${label.toLowerCase()}`} onClose={() => setAdding(false)} stacked>
         {(close) => <ResourceForm type={type} busy={busy} onCancel={close} onSave={async (body) => {
           const saved = await run(async () => {
             const sortOrder = items.length ? Math.max(...items.map((item) => item.sortOrder)) + 1 : 0
@@ -131,8 +137,8 @@ function ResourceList({ lessonId, type, items, reload, busy, clearError, run }: 
           if (saved) close()
           return saved
         }} />}
-      </AdminDrawer> : null}
-      {editingItem ? <AdminDrawer title={`Sửa ${label.toLowerCase()}`} description={editingItem.title} onClose={() => setEditing(null)}>
+      </AdminModal> : null}
+      {editingItem ? <AdminModal title={`Sửa ${label.toLowerCase()}`} description={editingItem.title} onClose={() => setEditing(null)} stacked>
         {(close) => <ResourceForm item={editingItem} type={type} busy={busy} onCancel={close} onSave={async (body) => {
           const saved = await run(async () => {
             await updateLessonResource(lessonId, editingItem.id, { ...body, sortOrder: editingItem.sortOrder })
@@ -141,7 +147,7 @@ function ResourceList({ lessonId, type, items, reload, busy, clearError, run }: 
           if (saved) close()
           return saved
         }} />}
-      </AdminDrawer> : null}
+      </AdminModal> : null}
     </section>
   )
 }
@@ -160,16 +166,13 @@ export function LessonResourcesEditor({ lessonId }: { lessonId: string }) {
     try { await action(); return true } catch (reason) { setError(adminErrorMessage(reason)); return false } finally { setBusy(false) }
   }
   return (
-    <section className="adm-card adm-lesson-resources" aria-label="Slide và tài liệu">
-      <h2>Slide và tài liệu</h2>
-      <p className="adm-muted">Các đường dẫn này xuất hiện trong bài học của học viên.</p>
-      {!RESOURCE_REORDER_ENABLED ? <p className="adm-muted">Chờ API đổi thứ tự. Bạn vẫn có thể thêm, sửa và xóa slide, tài liệu.</p> : null}
+    <>
       {resources.status === 'loading' ? <AdminLoading label="Đang tải slide và tài liệu…" /> : null}
       {resources.status === 'error' ? <AdminError message={resources.error ?? 'Không tải được slide và tài liệu.'} onRetry={resources.reload} /> : null}
-      {current ? <div className="adm-resources-grid">
+      {current ? <>
         <ResourceList lessonId={lessonId} type="SLIDE" items={current.slides} reload={resources.reload} busy={busy || resources.status !== 'success'} clearError={() => setError(null)} run={run} />
         <ResourceList lessonId={lessonId} type="DOCUMENT" items={current.documents} reload={resources.reload} busy={busy || resources.status !== 'success'} clearError={() => setError(null)} run={run} />
-      </div> : null}
-    </section>
+      </> : null}
+    </>
   )
 }

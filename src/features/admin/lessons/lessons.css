@@ -1,21 +1,14 @@
 .ls-grow { flex: 1 1 260px; }
-.ls-create, .ls-meta { margin-bottom: 18px; max-width: 860px; }
+.ls-grid { display: grid; grid-template-columns: minmax(0, 1fr) 200px; gap: 0 12px; }
+@media (max-width: 640px) { .ls-grid { grid-template-columns: minmax(0, 1fr); } }
+.ls-foot { justify-content: flex-end; }
 .ls-textarea { min-height: 160px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-.ls-order { display: inline-flex; gap: 4px; }
-.ls-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
-.ls-toolbar p { flex: 1 1 260px; margin: 0; }
-.ls-open { padding: 0; background: none; border: 0; color: var(--adm-accent); font: inherit; font-weight: 600; text-align: left; cursor: pointer; }
-.ls-open:hover { text-decoration: underline; }
+.ls-toolbar { display: flex; justify-content: flex-end; margin-bottom: 14px; }
 .ls-statusbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 14px; }
 .ls-statusbar__actions { margin-left: auto; display: inline-flex; gap: 8px; }
-.ls-blocks { max-width: 860px; margin-top: 8px; }
-.ls-blocks__list { list-style: none; margin: 0 0 14px; padding: 0; display: grid; gap: 10px; }
-.ls-block__head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
-.ls-block__summary { flex: 1 1 200px; min-width: 0; overflow-wrap: anywhere; }
-.ls-block__actions { margin-left: auto; display: inline-flex; gap: 4px; }
-.ls-block__questions { margin: 10px 0 0 18px; padding: 0; color: var(--adm-muted); font-size: .9rem; }
-.ls-add { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.ls-block-form { margin-top: 12px; }
+.adm-bcard__head h4 { flex: 1; min-width: 0; margin: 0; font-size: .95rem; font-weight: 700; }
+.ls-block__summary { margin: 0; overflow-wrap: anywhere; }
+.ls-block__questions { margin: 0 0 0 18px; padding: 0; color: var(--adm-muted); font-size: .9rem; }
 .ls-vocab__list, .ls-vocab__hits, .ls-questions__list { list-style: none; margin: 8px 0; padding: 0; display: grid; gap: 6px; }
 .ls-vocab__list li, .ls-vocab__hits li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 8px; border: 1px solid var(--adm-border); border-radius: 8px; background: var(--adm-bg); }
 .ls-vocab__search { display: flex; gap: 8px; margin: 10px 0; }
@@ -25,19 +18,6 @@
 .ls-questions__list { max-height: 280px; overflow-y: auto; }
 .ls-questions__list li { padding: 6px 8px; border: 1px solid var(--adm-border); border-radius: 8px; background: var(--adm-bg); }
 .ls-questions__stem { margin: 6px 0 0; white-space: pre-wrap; color: var(--adm-muted); font-size: .9rem; }
-.adm-lesson-resources { margin-bottom: 18px; container-type: inline-size; }
-.adm-resources-grid { display: grid; gap: 24px; min-width: 0; }
-.adm-resource-list { min-width: 0; }
-.adm-resource-list h3 { margin: 0 0 12px; font-size: 1rem; }
-.adm-resource-list ol { list-style: none; padding: 0; margin: 0 0 16px; display: grid; gap: 12px; }
-.adm-resource-list li { padding-bottom: 12px; border-bottom: 1px solid var(--adm-border); }
-.adm-resource-head { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
-.adm-resource-link { flex: 1 1 200px; min-width: 0; overflow-wrap: anywhere; display: grid; gap: 6px; }
-.adm-resource-link a { color: var(--adm-accent); }
-.adm-resource-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-.adm-resource-actions .adm-btn { min-height: 44px; }
 .adm-resource-fields { min-width: 0; border: 0; padding: 0; margin: 0; }
 .adm-resource-fields legend { margin-bottom: 12px; font-weight: 600; }
 .adm-resource-fields .adm-input { font-size: 1rem; }
-/* Two columns only when the card itself is wide, which in a drawer is not the same as a wide window. */
-@container (min-width: 900px) { .adm-resources-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
