@@ -1801,3 +1801,31 @@
 @media (max-width: 640px) {
   .community-heading .community-heading-owl { display: none; }
 }
+
+/* A post the learner just published slides into the top of the feed and keeps a soft ring for a moment,
+   so it is clear where it went. */
+.community-post.is-fresh {
+  animation: community-post-enter 250ms ease-out, community-post-glow 1.8s ease-out;
+}
+
+@keyframes community-post-enter {
+  from { opacity: 0; transform: translateY(-12px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes community-post-glow {
+  0%, 40% { box-shadow: 0 0 0 3px rgb(25 70 179 / 28%); }
+  100% { box-shadow: 0 0 0 3px rgb(25 70 179 / 0%); }
+}
+
+/* The main feed buttons answer a press, not only a hover. */
+.community-primary:not(:disabled):active,
+.community-quick-btn:active {
+  transform: scale(0.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .community-post.is-fresh { animation: community-post-glow 1.8s ease-out; }
+  .community-primary:not(:disabled):active,
+  .community-quick-btn:active { transform: none; }
+}

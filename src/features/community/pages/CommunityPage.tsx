@@ -144,6 +144,7 @@ export function CommunityPage() {
   const [profilePeopleCursor, setProfilePeopleCursor] = useState<string | undefined>()
   const [profilePeopleHasNext, setProfilePeopleHasNext] = useState(false)
   const [lightboxImage, setLightboxImage] = useState<string | null>(null)
+  const [freshPostId, setFreshPostId] = useState<string | null>(null)
   const [reportTarget, setReportTarget] = useState<{ type: 'POST' | 'COMMENT'; id: string } | null>(null)
   const [reportReason, setReportReason] = useState('')
   const [reportMessage, setReportMessage] = useState('')
@@ -428,6 +429,7 @@ export function CommunityPage() {
         ? await communityApi.update(editingPost.id, payload)
         : await communityApi.create(payload)
       setPosts((current) => [saved, ...current.filter((item) => item.id !== saved.id)])
+      setFreshPostId(saved.id)
       setComposer(false)
       setComposerMediaIntent(null)
       setEditingPost(null)
@@ -844,6 +846,7 @@ export function CommunityPage() {
               post={post}
               currentUserId={currentUserId}
               isCommentsOpen={commentPost === post.id}
+              isFresh={post.id === freshPostId}
               onToggleComments={openComments}
               onReaction={toggleReaction}
               onToggleBookmark={toggleBookmark}

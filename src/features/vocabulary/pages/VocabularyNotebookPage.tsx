@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { BookMarked, BookOpen, Layers, LogIn } from 'lucide-react'
+import { motion, useReducedMotion } from 'motion/react'
 import {
   notebookApi,
   type NotebookSummaryResponse,
@@ -49,6 +50,16 @@ export function VocabularyNotebookPage() {
       { replace: true },
     )
   }
+
+  // The new panel slides in from the side of the tab that was picked: right for a later tab, left for an earlier one.
+  const tabIndex = TABS.findIndex((tab) => tab.key === activeTab)
+  const [previousTabIndex, setPreviousTabIndex] = useState(tabIndex)
+  const [slideDirection, setSlideDirection] = useState(0)
+  if (tabIndex !== previousTabIndex) {
+    setSlideDirection(Math.sign(tabIndex - previousTabIndex))
+    setPreviousTabIndex(tabIndex)
+  }
+  const reduceMotion = useReducedMotion()
 
   useSiteHeaderOffset()
   useNotebookShortcuts({
@@ -143,31 +154,38 @@ export function VocabularyNotebookPage() {
           })}
         </div>
 
-        {session.isLoggedIn ? (
-          <>
-            {activeTab === 'words' && (
-              <div id="nb-panel-words" role="tabpanel" aria-labelledby="nb-tab-words">
-                <NotebookWordsPanel summary={summary} onChanged={refreshHeroStats} />
-              </div>
-            )}
-            {activeTab === 'decks' && (
-              <div id="nb-panel-decks" role="tabpanel" aria-labelledby="nb-tab-decks">
-                <FlashcardDecksPanel onChanged={refreshHeroStats} />
-              </div>
-            )}
-            {activeTab === 'cards' && (
-              <div id="nb-panel-cards" role="tabpanel" aria-labelledby="nb-tab-cards">
-                <FlashcardCardsPanel onChanged={refreshHeroStats} />
-              </div>
-            )}
-          </>
-        ) : (
-          <>
-            {activeTab === 'words' && <GuestNotebook hydrated={session.hydrated} />}
-            {activeTab === 'decks' && <GuestDecksOrCards tab="decks" hydrated={session.hydrated} />}
-            {activeTab === 'cards' && <GuestDecksOrCards tab="cards" hydrated={session.hydrated} />}
-          </>
-        )}
+        <motion.div
+          key={activeTab}
+          initial={slideDirection === 0 ? false : { opacity: 0, x: reduceMotion ? 0 : slideDirection * 16 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: reduceMotion ? 0.12 : 0.2, ease: 'easeOut' }}
+        >
+          {session.isLoggedIn ? (
+            <>
+              {activeTab === 'words' && (
+                <div id="nb-panel-words" role="tabpanel" aria-labelledby="nb-tab-words">
+                  <NotebookWordsPanel summary={summary} onChanged={refreshHeroStats} />
+                </div>
+              )}
+              {activeTab === 'decks' && (
+                <div id="nb-panel-decks" role="tabpanel" aria-labelledby="nb-tab-decks">
+                  <FlashcardDecksPanel onChanged={refreshHeroStats} />
+                </div>
+              )}
+              {activeTab === 'cards' && (
+                <div id="nb-panel-cards" role="tabpanel" aria-labelledby="nb-tab-cards">
+                  <FlashcardCardsPanel onChanged={refreshHeroStats} />
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              {activeTab === 'words' && <GuestNotebook hydrated={session.hydrated} />}
+              {activeTab === 'decks' && <GuestDecksOrCards tab="decks" hydrated={session.hydrated} />}
+              {activeTab === 'cards' && <GuestDecksOrCards tab="cards" hydrated={session.hydrated} />}
+            </>
+          )}
+        </motion.div>
       </div>
     </VocabularyShell>
   )
