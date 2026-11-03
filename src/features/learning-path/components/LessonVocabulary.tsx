@@ -23,11 +23,6 @@ const PART_OF_SPEECH_LABELS: Record<string, string> = {
   PHRASAL_VERB: 'Cụm động từ',
 }
 
-// Library returns the stored reference as is; only a full https URL can be played from the browser.
-function hasPlayableAudio(reference: string | null): reference is string {
-  return reference !== null && reference.startsWith('https://')
-}
-
 export function LessonVocabulary({ senseIds }: LessonVocabularyProps) {
   if (senseIds.length === 0) {
     return (
@@ -143,14 +138,10 @@ function VocabularyList({ senseIds }: LessonVocabularyProps) {
                   <span>{savedSenseIds.has(sense.senseId) ? 'Đã lưu' : 'Lưu vào sổ'}</span>
                 </button>
               </div>
-              {sense.ipa || hasPlayableAudio(sense.pronunciationAudioReference) ? (
-                <div className="lp-vocabulary__pronunciation">
-                  {hasPlayableAudio(sense.pronunciationAudioReference) ? (
-                    <PronunciationButton lemma={sense.lemma} src={sense.pronunciationAudioReference} />
-                  ) : null}
-                  {sense.ipa ? <p className="lp-vocabulary__ipa">{sense.ipa}</p> : null}
-                </div>
-              ) : null}
+              <div className="lp-vocabulary__pronunciation">
+                <PronunciationButton lemma={sense.lemma} src={sense.pronunciationAudioReference} />
+                {sense.ipa ? <p className="lp-vocabulary__ipa">{sense.ipa}</p> : null}
+              </div>
               {sense.vietnameseMeaning ? <p className="lp-vocabulary__meaning">{sense.vietnameseMeaning}</p> : null}
               {sense.englishDefinition ? <p className="lp-vocabulary__definition" lang="en">{sense.englishDefinition}</p> : null}
               {!sense.vietnameseMeaning && !sense.englishDefinition ? (

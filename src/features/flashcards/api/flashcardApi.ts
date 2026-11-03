@@ -21,6 +21,7 @@ export interface Flashcard {
   lastReviewedAt: string | null
   reviewCount: number
   ipa: string | null
+  pronunciationAudioReference: string | null
   exampleSentence: string | null
   /** Image fields are optional until library-service exposes flashcard images. */
   imageKey?: string | null
@@ -53,6 +54,7 @@ export interface DeckItem {
   imageUrl?: string | null
   exampleSentence?: string | null
   ipa?: string | null
+  pronunciationAudioReference?: string | null
   leitnerBox?: number
 }
 

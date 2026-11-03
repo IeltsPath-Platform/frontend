@@ -1,7 +1,7 @@
-import { BookmarkCheck, BookmarkPlus, Loader2, Volume2 } from 'lucide-react'
-import { speak } from '@/features/flashcards/lib/speak'
+import { BookmarkCheck, BookmarkPlus, Loader2 } from 'lucide-react'
+import { PronunciationButton } from '@/components/PronunciationButton'
 import type { VocabularyCatalogItem, VocabularyCatalogSense } from '../api/notebookApi'
-import { playPronunciation, senseMeaning, splitHighlight, type DictionaryLang } from '../lib/dictionary-search'
+import { senseMeaning, splitHighlight, type DictionaryLang } from '../lib/dictionary-search'
 
 interface DictionaryPickListProps {
   items: readonly VocabularyCatalogItem[]
@@ -29,9 +29,13 @@ export function DictionaryPickList({ items, keyword, lang, savedSenseIds, saving
         const meaning = senseMeaning(sense) || 'Chưa có nghĩa'
         return (
           <li key={sense.id} style={{ animationDelay: `${index * 30}ms` }} className={saved ? 'is-saved' : undefined}>
-            <button type="button" className="nb-pick__audio" onClick={() => playPronunciation(item.lemma, item.pronunciationAudioReference, speak)} aria-label={`Nghe phát âm ${item.lemma}`}>
-              <Volume2 size={15} aria-hidden="true" />
-            </button>
+            <PronunciationButton
+              className="nb-pick__audio"
+              lemma={item.lemma}
+              src={item.pronunciationAudioReference}
+              iconSize={15}
+              aria-label={`Nghe phát âm ${item.lemma}`}
+            />
             <span className="nb-pick__text">
               <b lang="en">{lang === 'EN' ? <Marked text={item.lemma} keyword={keyword} /> : item.lemma}</b>
               {sense.partOfSpeech && <i>{sense.partOfSpeech}</i>}

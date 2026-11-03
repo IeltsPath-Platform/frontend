@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Volume2, ThumbsUp, ThumbsDown } from 'lucide-react'
+import { ThumbsUp, ThumbsDown } from 'lucide-react'
 import type { QuizQuestion } from '../../lib/quiz'
-import { speak } from '@/features/flashcards/lib/speak'
+import { PronunciationButton } from '@/components/PronunciationButton'
 
 interface FlashcardReviewCardProps {
   question: QuizQuestion
@@ -30,15 +30,6 @@ export function FlashcardReviewCard({ question, onAnswer }: FlashcardReviewCardP
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [onAnswer])
-
-  const handleAudio = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    if (entry.pronunciationAudioReference && entry.pronunciationAudioReference.startsWith('https://')) {
-      new Audio(entry.pronunciationAudioReference).play().catch(() => speak(entry.lemma))
-    } else {
-      speak(entry.lemma)
-    }
-  }
 
   return (
     <div className="vocab-quiz-card" style={{ padding: 0 }} role="region" aria-label="Thẻ flashcard ôn tập">
@@ -90,9 +81,10 @@ export function FlashcardReviewCard({ question, onAnswer }: FlashcardReviewCardP
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginTop: '0.5rem' }}>
               {entry.ipa && <span style={{ fontSize: '1.1rem', color: '#64748b' }}>{entry.ipa}</span>}
               {entry.partOfSpeech && <span className="vocab-card__pos">{entry.partOfSpeech}</span>}
-              <button
-                type="button"
-                onClick={handleAudio}
+              <PronunciationButton
+                lemma={entry.lemma}
+                src={entry.pronunciationAudioReference}
+                iconSize={18}
                 aria-label={`Nghe phát âm từ ${entry.lemma}`}
                 style={{
                   background: '#eef3ff',
@@ -100,11 +92,9 @@ export function FlashcardReviewCard({ question, onAnswer }: FlashcardReviewCardP
                   borderRadius: '50%',
                   padding: '0.4rem',
                   color: 'var(--classroom-primary, #123ab5)',
-                  cursor: 'pointer',
+                  display: 'inline-flex',
                 }}
-              >
-                <Volume2 size={18} aria-hidden="true" />
-              </button>
+              />
             </div>
           </div>
 
