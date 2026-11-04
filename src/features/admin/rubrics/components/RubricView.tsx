@@ -2,7 +2,6 @@ import type { Rubric } from '../types'
 
 export function RubricView({ rubric }: { rubric: Rubric }) {
   return <article className="adm-rubric-view" aria-label={`${rubric.code} phiên bản ${rubric.version}`}>
-    <h3>{rubric.code} · Phiên bản {rubric.version}</h3>
     <p className="adm-muted">{rubric.sourceNote}</p>
     {[...rubric.criteria].sort((a, b) => a.sortOrder - b.sortOrder).map((criterion) => <section key={criterion.code}>
       <h4>{criterion.code} · {criterion.name}</h4><p>{criterion.description}</p>

@@ -1,6 +1,6 @@
 import { Activity, FileQuestion, Gauge, LayoutDashboard, Network, Server, Users, type LucideIcon } from 'lucide-react'
 import { hasAnyRole, type StaffRole } from '@/features/auth/staffRoles'
-import { BadgeCheck, Bug, ClipboardList, Library, ListTodo, Mic, PenLine, Scale, Sparkles, UserCheck, UserRound } from 'lucide-react'
+import { BadgeCheck, Bug, ClipboardList, Library, ListTodo, Mic, PenLine, Scale, Sparkles, UserRound } from 'lucide-react'
 import { QUESTION_DRAFTS_ENABLED } from './ai-drafts/draftFlags'
 
 export interface AdminMenuItem {
@@ -42,7 +42,6 @@ export const ADMIN_MENU: readonly AdminMenuItem[] = [
   { path: '/content-author/course-drafts', label: 'Dựng khóa học', icon: Library, roles: ['CONTENT_AUTHOR'], group: 'curriculum' },
   { path: '/content-author/course-import', label: 'Nhập khóa học từ Excel', icon: ClipboardList, roles: ['CONTENT_AUTHOR'], group: 'curriculum' },
   { path: '/content-author/work-items', label: 'Việc cần làm', icon: ListTodo, roles: ['CONTENT_AUTHOR'] },
-  { path: '/content-author/examiner-review', label: 'Đánh giá giám khảo', icon: UserCheck, roles: ['CONTENT_AUTHOR'], group: 'grading' },
   { path: '/content-author/ai-evaluation', label: 'Đánh giá AI chấm Writing', icon: BadgeCheck, roles: ['CONTENT_AUTHOR'], group: 'grading' },
   { path: '/content-author/rubrics', label: 'Rubric chấm Writing', icon: Scale, roles: ['CONTENT_AUTHOR'], group: 'grading' },
   { path: '/content-author/error-types', label: 'Mã lỗi', icon: Bug, roles: ['CONTENT_AUTHOR'], group: 'grading' },

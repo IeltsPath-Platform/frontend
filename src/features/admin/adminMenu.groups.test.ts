@@ -13,7 +13,7 @@ describe('menuEntriesFor', () => {
       { group: 'Chương trình học', items: ['Khóa học & chủ đề', 'Cây tri thức', 'Dựng khóa học', 'Nhập khóa học từ Excel'] },
       { group: 'Câu hỏi & đề', items: ['Ngân hàng câu hỏi', 'Đề & gói câu hỏi', 'Sinh nội dung bằng AI'] },
       'Việc cần làm',
-      { group: 'Chất lượng chấm', items: ['Đánh giá giám khảo', 'Đánh giá AI chấm Writing', 'Rubric chấm Writing', 'Mã lỗi'] },
+      { group: 'Chất lượng chấm', items: ['Đánh giá AI chấm Writing', 'Rubric chấm Writing', 'Mã lỗi'] },
     ])
   })
 
