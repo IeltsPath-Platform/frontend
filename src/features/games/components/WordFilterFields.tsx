@@ -1,17 +1,13 @@
-import {
-  BookOpen,
-  BriefcaseBusiness,
-  CalendarCheck,
-  Check,
-  Earth,
-  GraduationCap,
-  HeartPulse,
-  Laptop,
-  Users,
-  type LucideIcon,
-} from 'lucide-react'
+import { BookOpen, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import './word-filters.css'
+import dailyLife from '../assets/topics/daily-life.webp'
+import education from '../assets/topics/education.webp'
+import environment from '../assets/topics/environment.webp'
+import health from '../assets/topics/health.webp'
+import society from '../assets/topics/society.webp'
+import technology from '../assets/topics/technology.webp'
+import workBusiness from '../assets/topics/work-business.webp'
 import type { WordFilter } from '../types/game'
 import {
   availableWords,
@@ -29,14 +25,15 @@ const LEVEL_NAMES: Record<string, string> = {
   C2: 'Thành thạo',
 }
 
-const TOPIC_ICONS: Record<string, LucideIcon> = {
-  education: GraduationCap,
-  environment: Earth,
-  technology: Laptop,
-  health: HeartPulse,
-  'work-business': BriefcaseBusiness,
-  society: Users,
-  'daily-life': CalendarCheck,
+/** A topic without its own picture, such as one an admin adds later, gets an icon. */
+const TOPIC_IMAGES: Record<string, string> = {
+  education,
+  environment,
+  technology,
+  health,
+  'work-business': workBusiness,
+  society,
+  'daily-life': dailyLife,
 }
 
 function SelectedMark() {
@@ -119,7 +116,7 @@ export function WordFilterFields({
           <div className="game-word-topics">
             {filters.topics.map((topic) => {
               const selected = value.topicId === topic.id
-              const Icon = TOPIC_ICONS[topic.slug] ?? BookOpen
+              const image = TOPIC_IMAGES[topic.slug]
               return (
                 <button
                   key={topic.id}
@@ -136,9 +133,17 @@ export function WordFilterFields({
                   }
                 >
                   {selected && <SelectedMark />}
-                  <span className="game-word-topic-icon" aria-hidden="true">
-                    <Icon />
-                  </span>
+                  {image ? (
+                    <img
+                      className="game-word-topic-image"
+                      src={image}
+                      alt=""
+                    />
+                  ) : (
+                    <span className="game-word-topic-icon" aria-hidden="true">
+                      <BookOpen />
+                    </span>
+                  )}
                   <span>{topic.nameVi ?? topic.name}</span>
                 </button>
               )

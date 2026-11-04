@@ -61,10 +61,6 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
-/* An odd last topic would sit alone in the two-column phone grid. */
-.game-word-topic:last-child:nth-child(odd) {
-  grid-column: 1 / -1;
-}
 @media (min-width: 640px) {
   .game-word-levels {
     grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -175,6 +171,17 @@
   font-weight: 650;
   text-align: center;
 }
+.game-word-topic:has(.game-word-topic-image) {
+  overflow: hidden;
+  min-height: 0;
+  padding: 0 0 10px;
+}
+.game-word-topic-image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 640 / 303;
+  object-fit: cover;
+}
 .game-word-topic-icon {
   display: grid;
   place-items: center;
@@ -209,4 +216,10 @@
 }
 .game-word-filters-error {
   color: var(--destructive);
+}
+/* Picture tiles clip their corners, so the check sits inside. */
+.game-word-topic:has(.game-word-topic-image) .game-word-tile-check {
+  top: 6px;
+  right: 6px;
+  z-index: 1;
 }
