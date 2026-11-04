@@ -7,6 +7,7 @@ import { SiteNavbar } from '@/components/SiteNavbar'
 import { flashcardApi, flashcardErrorMessage, type Flashcard } from '../api/flashcardApi'
 import { FlashcardFace } from '../components/FlashcardFace'
 import { OwlCoach } from '../components/OwlCoach'
+import { StudyHero } from '../components/StudyHero'
 import { getSpacedReviewReaction, type OwlReaction } from '../lib/owl-reactions'
 import '../flashcards.css'
 
@@ -79,12 +80,17 @@ export function FlashcardStudyPage() {
       <SiteNavbar />
       <main className="flashcards-shell flashcards-study">
         <Link to={backTo} className="flashcards-back"><ArrowLeft size={16} aria-hidden="true" />Thoát ôn tập</Link>
+        <StudyHero
+          eyebrow="Ôn ngắt quãng"
+          title="Ôn thẻ đến hạn"
+          progress={card ? { label: 'Tiến độ ôn', value: index, max: queue?.length ?? 0 } : undefined}
+        />
         {error && <p role="alert" className="flashcard-error">{error}</p>}
         {queue === null ? <p className="flashcards-empty">Đang tải thẻ đến hạn…</p>
           : !card ? (
             <section className="flashcards-study-done">
               <OwlHero pose={score.remembered > 0 ? 'party' : 'cheer'} motion="hop" size="md" celebrateKey={score.remembered > 0 ? 'spaced-done' : null} alt="" />
-              <h1>{queue.length === 0 ? 'Không có thẻ đến hạn' : 'Hoàn thành lượt ôn!'}</h1>
+              <h2>{queue.length === 0 ? 'Không có thẻ đến hạn' : 'Hoàn thành lượt ôn!'}</h2>
               {queue.length > 0 && <p>Nhớ {score.remembered} · Chưa nhớ {score.forgot}</p>}
               <div>
                 {queue.length === BATCH && <Button onClick={nextRound}><RotateCw />Ôn tiếp</Button>}
@@ -95,17 +101,13 @@ export function FlashcardStudyPage() {
             <div className="study-layout-with-coach">
               <div className="study-main-col">
                 <section aria-label="Thẻ đang ôn">
-                  <div className="deck-browser-progress flashcards-study-progress">
-                    <span><b>Tiến độ ôn</b> {index}/{queue.length}</span><em>{Math.round((index / queue.length) * 100)}%</em>
-                    <div role="progressbar" aria-label="Tiến độ ôn" aria-valuemin={0} aria-valuemax={queue.length} aria-valuenow={index}><i style={{ inlineSize: `${(index / queue.length) * 100}%` }} /></div>
-                  </div>
                   <FlashcardFace card={card} flipped={flipped} onFlip={() => setFlipped((value) => !value)} />
                   <p className="flashcard-hint flashcards-study-keys">Space: lật thẻ · 1: chưa nhớ · 2: đã nhớ · Hộp hiện tại {card.leitnerBox}/5</p>
                   <div className="flashcards-study-actions">
                     {flipped ? <>
-                      <Button variant="outline" disabled={busy} onClick={() => void answer(false)}><X />Chưa nhớ (1)</Button>
-                      <Button disabled={busy} onClick={() => void answer(true)}><Check />Đã nhớ (2)</Button>
-                    </> : <Button onClick={() => setFlipped(true)}><RotateCw />Lật thẻ</Button>}
+                      <Button variant="outline" className="study-grade is-forgot" disabled={busy} onClick={() => void answer(false)}><X />Chưa nhớ (1)</Button>
+                      <Button className="study-grade is-remembered" disabled={busy} onClick={() => void answer(true)}><Check />Đã nhớ (2)</Button>
+                    </> : <Button className="study-flip" onClick={() => setFlipped(true)}><RotateCw />Lật thẻ</Button>}
                   </div>
                 </section>
               </div>

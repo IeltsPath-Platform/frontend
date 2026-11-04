@@ -41,33 +41,13 @@ export function FillInBlankReviewCard({ question, onAnswer }: FillInBlankReviewC
 
   return (
     <div className="vocab-quiz-card" role="region" aria-label="Điền từ vào câu ví dụ">
-      <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-        <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-          Điền từ thích hợp vào chỗ trống
-        </span>
-
-        <div
-          style={{
-            margin: '1.5rem 0',
-            padding: '1.25rem 1.5rem',
-            background: '#f8fafc',
-            border: '1px solid #e2e8f0',
-            borderRadius: '1rem',
-            fontSize: '1.2rem',
-            lineHeight: 1.6,
-            color: '#1e293b',
-          }}
-          lang="en"
-        >
-          {maskedSentence}
-        </div>
-
-        <p style={{ fontSize: '0.9rem', color: '#64748b', margin: 0 }}>
-          Gợi ý nghĩa: <strong>{entry.vietnameseMeaning || entry.englishDefinition}</strong>
-        </p>
+      <div className="review-head">
+        <span className="review-kicker">Điền từ thích hợp vào chỗ trống</span>
+        <div className="review-sentence" lang="en">{maskedSentence}</div>
+        <p className="review-meaning-hint">Gợi ý nghĩa: <strong>{entry.vietnameseMeaning || entry.englishDefinition}</strong></p>
       </div>
 
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <form onSubmit={handleSubmit} className="review-form">
         <input
           ref={inputRef}
           type="text"
@@ -78,87 +58,28 @@ export function FillInBlankReviewCard({ question, onAnswer }: FillInBlankReviewC
           autoCapitalize="none"
           autoComplete="off"
           spellCheck="false"
-          style={{
-            width: '100%',
-            padding: '1rem 1.25rem',
-            borderRadius: '0.85rem',
-            border: `2px solid ${isSubmitted ? (isCorrect ? '#16a34a' : '#dc2626') : '#cbd5e1'}`,
-            background: isSubmitted ? (isCorrect ? '#f0fdf4' : '#fef2f2') : '#ffffff',
-            fontSize: '1.2rem',
-            fontWeight: 700,
-            color: '#0f172a',
-            outline: 'none',
-            textAlign: 'center',
-          }}
+          className={`review-input${isSubmitted ? (isCorrect ? ' is-correct' : ' is-wrong') : ''}`}
         />
 
         {isSubmitted && !isCorrect && (
-          <div
-            style={{
-              padding: '1rem',
-              borderRadius: '0.75rem',
-              background: '#fef2f2',
-              border: '1px solid #fecaca',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
-          >
-            <div>
-              <p style={{ margin: 0, fontSize: '0.8rem', color: '#b91c1c', fontWeight: 600 }}>
-                Từ chính xác:
-              </p>
-              <p style={{ margin: '0.2rem 0 0', fontSize: '1.2rem', fontWeight: 800, color: '#dc2626' }} lang="en">
-                {entry.lemma}
-              </p>
-            </div>
-            <XCircle size={28} color="#dc2626" aria-hidden="true" />
+          <div className="review-feedback is-wrong">
+            <p><small>Từ chính xác:</small><b lang="en">{entry.lemma}</b></p>
+            <XCircle size={32} color="#dc2626" aria-hidden="true" />
           </div>
         )}
 
         {isSubmitted && isCorrect && (
-          <div
-            style={{
-              padding: '0.75rem',
-              borderRadius: '0.75rem',
-              background: '#f0fdf4',
-              border: '1px solid #bbf7d0',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.5rem',
-              color: '#15803d',
-              fontWeight: 700,
-            }}
-          >
-            <CheckCircle2 size={20} aria-hidden="true" />
+          <div className="review-feedback is-correct">
+            <CheckCircle2 size={24} aria-hidden="true" />
             Tuyệt vời!
           </div>
         )}
 
-        <button
-          type="submit"
-          style={{
-            padding: '0.85rem',
-            borderRadius: '0.75rem',
-            background: isSubmitted ? '#0f172a' : 'var(--classroom-primary, #123ab5)',
-            color: 'white',
-            border: 'none',
-            fontSize: '1rem',
-            fontWeight: 700,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '0.5rem',
-            marginTop: '0.5rem',
-          }}
-        >
+        <button type="submit" className={`review-submit${isSubmitted ? ' is-next' : ''}`}>
           <span>{isSubmitted ? 'Tiếp tục [Enter]' : 'Kiểm tra [Enter]'}</span>
-          <ArrowRight size={18} aria-hidden="true" />
+          <ArrowRight size={22} aria-hidden="true" />
         </button>
       </form>
     </div>
   )
 }
-

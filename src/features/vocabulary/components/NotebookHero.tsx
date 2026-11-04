@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowRight, BookMarked, Flame, GraduationCap, Info, Sparkles, TrendingUp, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { OwlHero } from '@/components/OwlHero'
+import { StudyDecor } from '@/features/flashcards/components/StudyHero'
 import type { NotebookSummaryResponse } from '../api/notebookApi'
 
 interface NotebookHeroProps {
@@ -75,6 +76,7 @@ export function NotebookHero({ summary, loading, dueTotal }: NotebookHeroProps) 
 
   return (
     <section className={`nb-hero${isEmpty ? ' is-empty' : ' is-compact'}`} aria-label="Thống kê sổ từ vựng">
+      <StudyDecor />
       <div className="nb-hero__copy">
         <div className="nb-hero__heading">
           <p className="nb-eyebrow"><Sparkles size={14} aria-hidden="true" />SỔ TAY & FLASHCARD</p>

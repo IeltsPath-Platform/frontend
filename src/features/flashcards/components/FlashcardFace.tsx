@@ -107,13 +107,15 @@ export function FlashcardFace({ card, flipped, onFlip }: FlashcardFaceProps) {
             <>
               <span className="flashcard-face-tag">Ví dụ</span>
               <p className="flashcard-face-example">{card.exampleSentence}</p>
-              <PronunciationButton
-                lemma={card.exampleSentence}
-                src={null}
-                ttsFallbackText={card.sourceType === 'MANUAL' ? card.exampleSentence : undefined}
-                className="flashcard-face-speak"
-                aria-label="Phát âm câu ví dụ"
-              />
+              {card.sourceType === 'MANUAL' && (
+                <PronunciationButton
+                  lemma={card.exampleSentence}
+                  src={null}
+                  ttsFallbackText={card.exampleSentence}
+                  className="flashcard-face-speak"
+                  aria-label="Phát âm câu ví dụ"
+                />
+              )}
             </>
           )}
           <p className="flashcard-face-meaning">

@@ -56,48 +56,19 @@ export function MeaningGuessCard({ question, onAnswer }: MeaningGuessCardProps) 
 
   return (
     <div className="vocab-quiz-card" role="region" aria-label="Đoán nghĩa của từ">
-      <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-        <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-          Chọn nghĩa tiếng Việt chính xác
-        </span>
-
-        <h2 style={{ fontSize: '2.5rem', fontWeight: 800, margin: '0.5rem 0', color: 'var(--classroom-text, #202633)' }} lang="en">
-          {entry.lemma}
-        </h2>
-
-        {entry.partOfSpeech && (
-          <span
-            style={{
-              fontSize: '0.85rem',
-              fontStyle: 'italic',
-              color: '#64748b',
-              display: 'block',
-              marginBottom: '0.5rem',
-            }}
-          >
-            ({entry.partOfSpeech})
-          </span>
-        )}
-
+      <div className="review-head">
+        <span className="review-kicker">Chọn nghĩa tiếng Việt chính xác</span>
+        <h2 className="review-word" lang="en">{entry.lemma}</h2>
+        {entry.partOfSpeech && <span className="review-pos">({entry.partOfSpeech})</span>}
         <PronunciationButton
           lemma={entry.lemma}
           src={entry.pronunciationAudioReference}
-          iconSize={20}
+          iconSize={24}
+          className="review-speak"
           aria-label={`Nghe phát âm từ ${entry.lemma}`}
-          style={{
-            border: 'none',
-            background: '#eef3ff',
-            color: 'var(--classroom-primary, #123ab5)',
-            padding: '0.4rem',
-            borderRadius: '50%',
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
         />
       </div>
 
-      {/* 4 Choices Grid */}
       <div className="vocab-choices-grid" role="radiogroup" aria-label="Các lựa chọn nghĩa">
         {choices.map((choice, idx) => {
           let stateClass = ''
@@ -116,41 +87,19 @@ export function MeaningGuessCard({ question, onAnswer }: MeaningGuessCardProps) 
               aria-checked={selectedIndex === idx}
               role="radio"
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <span
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: '1.6rem',
-                    height: '1.6rem',
-                    borderRadius: '50%',
-                    background: '#f1f5f9',
-                    fontSize: '0.8rem',
-                    fontWeight: 700,
-                    color: '#475569',
-                  }}
-                >
-                  {idx + 1}
-                </span>
+              <span className="vocab-choice-text">
+                <span className="vocab-choice-key">{idx + 1}</span>
                 <span>{choice}</span>
-              </div>
+              </span>
 
-              {isAnswered && idx === correctIndex && (
-                <CheckCircle size={20} style={{ color: '#16a34a', flexShrink: 0 }} />
-              )}
-              {isAnswered && idx === selectedIndex && idx !== correctIndex && (
-                <XCircle size={20} style={{ color: '#dc2626', flexShrink: 0 }} />
-              )}
+              {isAnswered && idx === correctIndex && <CheckCircle size={24} style={{ color: '#16a34a', flexShrink: 0 }} />}
+              {isAnswered && idx === selectedIndex && idx !== correctIndex && <XCircle size={24} style={{ color: '#dc2626', flexShrink: 0 }} />}
             </button>
           )
         })}
       </div>
 
-      {/* Helpful Hint on Keyboard Shortcuts */}
-      <div style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.8rem', color: '#94a3b8' }}>
-        <span>Phím tắt: bấm số <strong>1–{choices.length}</strong> trên bàn phím để chọn đáp án</span>
-      </div>
+      <p className="review-keys">Phím tắt: bấm số <strong>1–{choices.length}</strong> trên bàn phím để chọn đáp án</p>
     </div>
   )
 }

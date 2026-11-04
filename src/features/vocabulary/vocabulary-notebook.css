@@ -515,8 +515,10 @@
    QUIZ & STUDY MODES
    -------------------------------------------------------------------------- */
 .vocab-quiz-layout {
-  max-width: 720px;
-  margin: 1.5rem auto 3rem;
+  display: grid;
+  gap: 1.1rem;
+  max-width: 1000px;
+  margin: 1rem auto 3rem;
   padding: 0 1rem;
 }
 
@@ -536,10 +538,11 @@
 }
 
 .vocab-quiz-card {
+  animation: review-card-in 340ms cubic-bezier(.2, .8, .2, 1);
   background: #ffffff;
   border: 1px solid var(--classroom-border, #e3e7ef);
-  border-radius: 1.5rem;
-  padding: 2.25rem 2rem;
+  border-radius: 1.75rem;
+  padding: clamp(1.25rem, 3vw, 2.25rem) clamp(1.25rem, 4vw, 3rem);
   box-shadow: 0 12px 35px rgba(18, 58, 181, 0.08);
   position: relative;
   overflow: hidden;
@@ -547,8 +550,8 @@
 
 .vocab-choices-grid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+  gap: 0.85rem;
   margin-top: 1.5rem;
 }
 
@@ -556,11 +559,12 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 1.25rem;
-  border-radius: 0.85rem;
+  min-height: 4.75rem;
+  padding: 1rem 1.35rem;
+  border-radius: 1.1rem;
   border: 2px solid var(--classroom-border, #e3e7ef);
   background: #ffffff;
-  font-size: 0.95rem;
+  font-size: 1.2rem;
   font-weight: 600;
   color: var(--classroom-text, #202633);
   cursor: pointer;
@@ -571,7 +575,8 @@
 .vocab-choice-btn:hover:not(:disabled) {
   border-color: var(--classroom-primary, #123ab5);
   background: #f8faff;
-  transform: translateY(-1px);
+  box-shadow: 0 0.6rem 1.2rem rgba(18, 58, 181, 0.12);
+  transform: translateY(-3px);
 }
 
 .vocab-choice-btn.is-correct {

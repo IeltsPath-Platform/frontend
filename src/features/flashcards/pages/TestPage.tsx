@@ -5,6 +5,7 @@ import { prefersReducedMotion } from '@/components/owlPoses'
 import { Button } from '@/components/ui/button'
 import { SiteNavbar } from '@/components/SiteNavbar'
 import { OwlCoach } from '../components/OwlCoach'
+import { StudyHero } from '../components/StudyHero'
 import { useDeckStudyCards } from '../hooks/useDeckStudyCards'
 import { getTestScoreReaction } from '../lib/owl-reactions'
 import { generateTest, gradeQuestion, type AnswerSide, type StudyCard, type TestQuestion, type TestQuestionType } from '../lib/study'
@@ -21,6 +22,7 @@ export function TestPage() {
       <SiteNavbar />
       <main className="flashcards-shell study-mode">
         <Link to={`/flashcards/decks/${deckId}`} className="flashcards-back"><ArrowLeft size={16} aria-hidden="true" />{deck?.name ?? 'Về học phần'}</Link>
+        <StudyHero eyebrow="Bài kiểm tra" title={deck?.name ?? 'Học phần'} subtitle="Thử sức với trắc nghiệm, đúng sai và tự luận trong một lần làm." />
         {error && <p role="alert" className="flashcard-error">{error}</p>}
         {cards === null ? <p className="flashcards-empty">Đang tải thẻ…</p>
           : cards.length < 2 ? <p className="flashcards-empty">Cần ít nhất 2 thẻ để làm bài kiểm tra.</p>
@@ -78,7 +80,7 @@ function TestSession({ cards }: { cards: StudyCard[] }) {
   if (!questions) {
     return (
       <section className="test-setup">
-        <h1>Thiết lập bài kiểm tra</h1>
+        <h2>Thiết lập bài kiểm tra</h2>
         <label className="test-setup-row"><span>Số câu hỏi <small>(tối đa {cards.length})</small></span>
           <input type="number" min={1} max={cards.length} value={count}
             onChange={(event) => setCount(Math.max(1, Math.min(cards.length, Number(event.target.value) || 1)))} />
@@ -112,7 +114,7 @@ function TestSession({ cards }: { cards: StudyCard[] }) {
             <strong>{animatedPercent}%</strong>
           </div>
           <div>
-            <h1>{score === questions.length ? 'Tuyệt vời, đúng hết!' : score / questions.length >= 0.7 ? 'Làm tốt lắm!' : 'Cần ôn thêm một chút'}</h1>
+            <h2>{score === questions.length ? 'Tuyệt vời, đúng hết!' : score / questions.length >= 0.7 ? 'Làm tốt lắm!' : 'Cần ôn thêm một chút'}</h2>
             <p><b className="is-right">{score} đúng</b> · <b className="is-wrong">{questions.length - score} sai</b> trên {questions.length} câu</p>
             <div>
               <Button onClick={start}><RotateCcw />Làm bài mới</Button>

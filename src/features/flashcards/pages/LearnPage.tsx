@@ -5,6 +5,7 @@ import { OwlHero } from '@/components/OwlHero'
 import { Button } from '@/components/ui/button'
 import { SiteNavbar } from '@/components/SiteNavbar'
 import { OwlCoach } from '../components/OwlCoach'
+import { StudyHero } from '../components/StudyHero'
 import { useDeckStudyCards } from '../hooks/useDeckStudyCards'
 import { classifyAnswer } from '../lib/answer-feedback'
 import { CorrectBurst } from '../components/CorrectBurst'
@@ -33,6 +34,7 @@ export function LearnPage() {
       <SiteNavbar />
       <main className="flashcards-shell study-mode">
         <Link to={`/flashcards/decks/${deckId}`} className="flashcards-back"><ArrowLeft size={16} aria-hidden="true" />{deck?.name ?? 'Về học phần'}</Link>
+        <StudyHero eyebrow="Chế độ học" title={deck?.name ?? 'Học phần'} subtitle="Chọn đúng nghĩa trước, rồi gõ lại từ để thuộc hẳn." />
         {error && <p role="alert" className="flashcard-error">{error}</p>}
         {cards === null ? <p className="flashcards-empty">Đang tải thẻ…</p>
           : cards.length < 2 ? <p className="flashcards-empty">Cần ít nhất 2 thẻ để học.</p>
@@ -195,7 +197,7 @@ function LearnSession({ deckId, cards }: { deckId: string; cards: StudyCard[] })
       {!current ? (
         <section className="study-done">
           <OwlHero pose="party" motion="hop" size="md" celebrateKey="study-finished" alt="" />
-          <h1>Bạn đã học xong {total} thẻ!</h1>
+          <h2>Bạn đã học xong {total} thẻ!</h2>
           <p>{getStudyCompleteReaction().text}</p>
           <div>
             <Button onClick={restart}><RotateCcw />Học lại</Button>
