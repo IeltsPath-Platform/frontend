@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { notebookApi } from '@/features/vocabulary/api/notebookApi'
@@ -46,6 +46,43 @@ describe('DictionaryImportDialog', () => {
     expect(flashcardApi.createDeck).toHaveBeenCalledWith(expect.objectContaining({ name: 'Môi trường' }))
     expect(flashcardApi.addToDeck).toHaveBeenCalledWith('deck-new', 'card-s-1')
     expect(flashcardApi.addToDeck).toHaveBeenCalledWith('deck-new', 'card-s-2')
+  })
+
+  it('lets a topic word be dragged into the tray', async () => {
+    render(<DictionaryImportDialog onClose={vi.fn()} onImported={vi.fn()} />)
+    await userEvent.click(await screen.findByRole('button', { name: /Môi trường/ }))
+    const row = (await screen.findByText('habitat')).closest('li')!
+    expect(row).toHaveAttribute('draggable', 'true')
+
+    const store = new Map<string, string>()
+    const dataTransfer = {
+      types: [] as string[], effectAllowed: '', dropEffect: '',
+      setData(type: string, value: string) { store.set(type, value); this.types.push(type) },
+      getData: (type: string) => store.get(type) ?? '',
+    }
+    const tray = screen.getByLabelText('Khay từ sẽ thêm')
+    fireEvent.dragStart(row, { dataTransfer })
+    fireEvent.dragOver(tray, { dataTransfer })
+    fireEvent.drop(tray, { dataTransfer })
+
+    expect(within(tray).getByText('habitat')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Thêm 1 thẻ/ })).toBeInTheDocument()
+  })
+
+  it('narrows a topic by word or unaccented meaning, and select all covers only what is shown', async () => {
+    render(<DictionaryImportDialog onClose={vi.fn()} onImported={vi.fn()} />)
+    await userEvent.click(await screen.findByRole('button', { name: /Môi trường/ }))
+    const search = await screen.findByRole('textbox', { name: 'Tìm từ trong chủ đề' })
+
+    await userEvent.type(search, 'o nhiem')
+    expect(screen.getByText('pollution')).toBeInTheDocument()
+    expect(screen.queryByText('habitat')).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Chọn tất cả 1' }))
+    expect(screen.getByRole('button', { name: /Thêm 1 thẻ/ })).toBeInTheDocument()
+
+    await userEvent.clear(search)
+    await userEvent.type(search, 'zzz')
+    expect(screen.getByText(/Không có từ nào khớp/)).toBeInTheDocument()
   })
 
   it('adds single words found by search to a fixed deck', async () => {

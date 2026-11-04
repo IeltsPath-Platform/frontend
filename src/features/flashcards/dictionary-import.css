@@ -26,6 +26,11 @@
 .dict-import__back { color: var(--classroom-primary); font-size: .78rem; font-weight: 700; }
 .dict-import__all { background: var(--classroom-soft); border-radius: 999px; color: var(--classroom-primary); font-size: .74rem; font-weight: 800; padding: .3rem .7rem; }
 
+.dict-import__filter { display: flex; position: relative; }
+.dict-import__filter input { flex: 1 1 auto; min-inline-size: 0; }
+.dict-import__filter button { align-items: center; color: var(--classroom-text-muted); display: grid; flex: 0 0 auto; place-items: center; }
+.dict-import__filter button:hover { color: #c0362c; }
+
 .dict-import__list { display: grid; gap: .35rem; list-style: none; margin: 0; max-block-size: 20rem; overflow-y: auto; padding: 0 .15rem 0 0; }
 .dict-import__list li { align-items: center; animation: dict-import-rise 300ms ease-out backwards; background: white; border: 1px solid var(--classroom-border); border-radius: .7rem; display: flex; gap: .5rem; padding: .45rem .5rem .45rem .7rem; transition: border-color 160ms ease, background 160ms ease; }
 .dict-import__list li[draggable="true"] { cursor: grab; }

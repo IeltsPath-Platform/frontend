@@ -46,47 +46,29 @@ export function TypingReviewCard({ question, onAnswer, isDictation = false }: Ty
 
   return (
     <div className="vocab-quiz-card" role="region" aria-label={isDictation ? 'Nghe chép từ vựng' : 'Kiểm tra gõ từ'}>
-      <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-        <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-          {isDictation ? 'Nghe và gõ lại từ vựng' : 'Nhìn nghĩa và gõ lại từ tiếng Anh'}
-        </span>
+      <div className="review-head">
+        <span className="review-kicker">{isDictation ? 'Nghe và gõ lại từ vựng' : 'Nhìn nghĩa và gõ lại từ tiếng Anh'}</span>
 
         {isDictation ? (
-          <div style={{ margin: '1.5rem 0' }}>
+          <div className="review-listen">
             <PronunciationButton
               lemma={entry.lemma}
               src={entry.pronunciationAudioReference}
-              style={{
-                background: 'var(--classroom-primary, #123ab5)',
-                color: 'white',
-                border: 'none',
-                borderRadius: '50%',
-                width: '64px',
-                height: '64px',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 4px 15px rgba(18, 58, 181, 0.3)',
-              }}
+              iconSize={38}
+              className="review-speak is-large"
               aria-label="Phát lại phát âm"
-            >
-              <ArrowRight size={24} style={{ transform: 'rotate(90deg)' }} aria-hidden="true" />
-            </PronunciationButton>
-            <p style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.5rem' }}>Bấm nút để nghe lại</p>
+            />
+            <p>Bấm nút để nghe lại</p>
           </div>
         ) : (
-          <h2 style={{ fontSize: '1.65rem', fontWeight: 800, margin: '1rem 0 0.5rem', color: '#0f172a' }}>
-            {entry.vietnameseMeaning || entry.englishDefinition}
-          </h2>
+          <h2 className="review-prompt">{entry.vietnameseMeaning || entry.englishDefinition}</h2>
         )}
 
-        {entry.partOfSpeech && (
-          <span className="vocab-card__pos">{entry.partOfSpeech}</span>
-        )}
+        {entry.partOfSpeech && <span className="vocab-card__pos">{entry.partOfSpeech}</span>}
       </div>
 
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        <div style={{ position: 'relative' }}>
+      <form onSubmit={handleSubmit} className="review-form">
+        <div className="review-input-wrap">
           <input
             ref={inputRef}
             type="text"
@@ -97,114 +79,36 @@ export function TypingReviewCard({ question, onAnswer, isDictation = false }: Ty
             autoCapitalize="none"
             autoComplete="off"
             spellCheck="false"
-            style={{
-              width: '100%',
-              padding: '1rem 1.25rem',
-              borderRadius: '0.85rem',
-              border: `2px solid ${isSubmitted ? (isCorrect ? '#16a34a' : '#dc2626') : '#cbd5e1'}`,
-              background: isSubmitted ? (isCorrect ? '#f0fdf4' : '#fef2f2') : '#ffffff',
-              fontSize: '1.25rem',
-              fontWeight: 700,
-              color: '#0f172a',
-              outline: 'none',
-              textAlign: 'center',
-            }}
+            className={`review-input${isSubmitted ? (isCorrect ? ' is-correct' : ' is-wrong') : ''}`}
           />
 
           {!isSubmitted && !showHint && (
-            <button
-              type="button"
-              onClick={() => setShowHint(true)}
-              style={{
-                position: 'absolute',
-                right: '1rem',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                background: 'none',
-                border: 'none',
-                color: '#f59e0b',
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.2rem',
-                fontSize: '0.75rem',
-                fontWeight: 600,
-              }}
-              aria-label="Xem chữ cái đầu tiên"
-            >
-              <Lightbulb size={16} aria-hidden="true" />
+            <button type="button" className="review-hint" onClick={() => setShowHint(true)} aria-label="Xem chữ cái đầu tiên">
+              <Lightbulb size={18} aria-hidden="true" />
               Gợi ý
             </button>
           )}
         </div>
 
         {isSubmitted && !isCorrect && (
-          <div
-            style={{
-              padding: '1rem',
-              borderRadius: '0.75rem',
-              background: '#fef2f2',
-              border: '1px solid #fecaca',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
-          >
-            <div>
-              <p style={{ margin: 0, fontSize: '0.8rem', color: '#b91c1c', fontWeight: 600 }}>
-                Đáp án chính xác là:
-              </p>
-              <p style={{ margin: '0.2rem 0 0', fontSize: '1.2rem', fontWeight: 800, color: '#dc2626' }} lang="en">
-                {entry.lemma}
-              </p>
-            </div>
-            <XCircle size={28} color="#dc2626" aria-hidden="true" />
+          <div className="review-feedback is-wrong">
+            <p><small>Đáp án chính xác là:</small><b lang="en">{entry.lemma}</b></p>
+            <XCircle size={32} color="#dc2626" aria-hidden="true" />
           </div>
         )}
 
         {isSubmitted && isCorrect && (
-          <div
-            style={{
-              padding: '0.75rem',
-              borderRadius: '0.75rem',
-              background: '#f0fdf4',
-              border: '1px solid #bbf7d0',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.5rem',
-              color: '#15803d',
-              fontWeight: 700,
-            }}
-          >
-            <CheckCircle2 size={20} aria-hidden="true" />
+          <div className="review-feedback is-correct">
+            <CheckCircle2 size={24} aria-hidden="true" />
             Chính xác!
           </div>
         )}
 
-        <button
-          type="submit"
-          style={{
-            padding: '0.85rem',
-            borderRadius: '0.75rem',
-            background: isSubmitted ? '#0f172a' : 'var(--classroom-primary, #123ab5)',
-            color: 'white',
-            border: 'none',
-            fontSize: '1rem',
-            fontWeight: 700,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '0.5rem',
-            marginTop: '0.5rem',
-          }}
-        >
+        <button type="submit" className={`review-submit${isSubmitted ? ' is-next' : ''}`}>
           <span>{isSubmitted ? 'Tiếp tục [Enter]' : 'Kiểm tra [Enter]'}</span>
-          <ArrowRight size={18} aria-hidden="true" />
+          <ArrowRight size={22} aria-hidden="true" />
         </button>
       </form>
     </div>
   )
 }
-
