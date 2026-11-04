@@ -38,7 +38,7 @@ export function wordFilterError(
   const available = availableWords(filters, choice)
   return available >= required
     ? null
-    : `Lựa chọn này chỉ có ${available} từ, cần ${required} từ. Hãy đổi lựa chọn hoặc giảm số từ.`
+    : 'Không đủ từ cho trình độ và chủ đề này. Hãy đổi lựa chọn hoặc giảm số từ.'
 }
 
 /** "B1 · Môi trường"; a topic missing from the list, or a list that has not loaded, gets a generic name. */

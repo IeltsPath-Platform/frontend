@@ -427,10 +427,10 @@ describe('Rocket multiplayer setup', () => {
       availability: [{ cefrLevel: null, topicId: null, words: 8 }],
     })
     setupRocket()
-    expect(await screen.findByText(/chỉ có 8 từ, cần 10 từ/)).toBeInTheDocument()
+    expect(await screen.findByText(/Không đủ từ/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Tạo phòng chơi' })).toBeDisabled()
     fireEvent.change(screen.getByLabelText(/Số câu/), { target: { value: '8' } })
-    expect(screen.queryByText(/chỉ có 8 từ/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Không đủ từ/)).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Tạo phòng chơi' })).toBeEnabled()
   })
 

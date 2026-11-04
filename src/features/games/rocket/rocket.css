@@ -785,21 +785,14 @@
   .rocket-ranking-avatar .rocket-ranking-answered { position: absolute; top: 0; right: 0; }
 }
 
-.rocket-setup .game-word-filters {
-  display: grid;
-  gap: 12px;
-}
-.rocket-setup .game-field {
-  display: grid;
-  gap: 6px;
-  font-size: 0.875rem;
-  font-weight: 600;
-}
+/* The setup card is dark; the tiles keep their light surface, so only the surrounding text changes. */
+.rocket-setup .game-word-group legend,
 .rocket-setup .game-word-filters-note {
+  color: var(--rocket-text);
+}
+.rocket-setup .game-word-group legend span {
   color: var(--rocket-muted);
-  font-size: 0.875rem;
 }
 .rocket-setup .game-word-filters-error {
   color: #ffb4c4;
-  font-size: 0.875rem;
 }
