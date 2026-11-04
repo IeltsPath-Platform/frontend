@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useId, useState, type FormEvent } from 'react'
 import { ArrowDown, ArrowUp, BookA, ChevronDown, FileText, Image as ImageIcon, ListChecks, Pencil, Plus, Trash2 } from 'lucide-react'
 import { AdminModal } from '../../components/AdminLayer'
 import { useAdminConfirm } from '../../lib/useAdminConfirm'
@@ -10,6 +10,7 @@ import {
 import { BlockEditor } from '../components/BlockEditor'
 import { LessonKnowledgeField } from '../components/LessonKnowledgeField'
 import { LessonResourcesEditor } from '../components/LessonResourcesEditor'
+import { VocabularyBlockTable } from './VocabularyBlockTable'
 import { BLOCK_LABEL } from '../lib/blockLabels'
 import { moveId } from '../lib/blockForm'
 import { lessonErrorText } from '../lib/lessonErrors'
@@ -32,15 +33,30 @@ function blockSummary(block: LessonBlock): string {
 
 const BLOCK_ICON = { TEXT: FileText, ASSET: ImageIcon, VOCABULARY: BookA, EXERCISE: ListChecks } as const
 
-function MetaForm({ lesson, onSaved }: { lesson: LessonEditor; onSaved: () => void }) {
+const sameIds = (left: readonly string[], right: readonly string[]) => left.length === right.length && left.every((id, index) => id === right[index])
+
+/**
+ * The lesson's own fields and its knowledge points, saved together with one button. The slides, documents and blocks
+ * below are saved from their own popups, as each one is added or changed.
+ */
+function InfoForm({ lesson, formId, saving, onSavingChange, onSaved }: {
+  lesson: LessonEditor
+  /** The Lưu button sits at the foot of the whole editor, outside this form, and submits it through this id. */
+  formId: string
+  saving: boolean
+  onSavingChange: (saving: boolean) => void
+  onSaved: () => void
+}) {
   const [title, setTitle] = useState(lesson.title)
   const [markdown, setMarkdown] = useState(lesson.summaryMarkdown)
   const [minutes, setMinutes] = useState(lesson.estimatedMinutes?.toString() ?? '')
+  const [knowledgePointIds, setKnowledgePointIds] = useState(lesson.knowledgePointIds)
   const [, setError] = useAdminError()
-  const [saving, setSaving] = useState(false)
 
   async function submit(event: FormEvent) {
     event.preventDefault()
+    // The knowledge picker draws its own popup in a portal, so a submit from inside it reaches this form too.
+    if (event.target !== event.currentTarget || saving) return
     if (!title.trim()) {
       setError('Tiêu đề không được để trống.')
       return
@@ -50,20 +66,31 @@ function MetaForm({ lesson, onSaved }: { lesson: LessonEditor; onSaved: () => vo
       setError('Số phút phải là số nguyên dương.')
       return
     }
-    setSaving(true)
+    onSavingChange(true)
     setError(null)
     try {
       await updateLesson(lesson.id, { title: title.trim(), summary: lesson.summary, summaryMarkdown: markdown, estimatedMinutes: parsed })
-      onSaved()
     } catch (reason) {
       setError(lessonErrorText(reason))
-    } finally {
-      setSaving(false)
+      onSavingChange(false)
+      return
     }
+    if (!sameIds(knowledgePointIds, lesson.knowledgePointIds)) {
+      try {
+        await setLessonKnowledgePoints(lesson.id, knowledgePointIds)
+      } catch (reason) {
+        // The details are already stored; the chosen points stay on screen so the author can press Lưu again.
+        setError(`Đã lưu thông tin bài, chưa lưu được điểm kiến thức. ${lessonErrorText(reason)}`)
+        onSavingChange(false)
+        return
+      }
+    }
+    onSavingChange(false)
+    onSaved()
   }
 
   return (
-    <form aria-label="Thông tin bài học" className="adm-sec" noValidate onSubmit={(event) => void submit(event)}>
+    <form aria-label="Thông tin bài học" className="adm-sec" id={formId} noValidate onSubmit={(event) => void submit(event)}>
       <div className="adm-sec__head"><h3 className="adm-sec__title">Thông tin bài học</h3></div>
       <div className="ls-grid">
         <label className="adm-field">
@@ -76,46 +103,20 @@ function MetaForm({ lesson, onSaved }: { lesson: LessonEditor; onSaved: () => vo
         </label>
       </div>
       <MarkdownField label="Tóm tắt chi tiết (Markdown)" onChange={setMarkdown} textareaClassName="adm-textarea ls-textarea" value={markdown} />
-      <div className="adm-sec__foot ls-foot">
-        <button aria-label="Lưu thông tin" className="adm-btn adm-btn--primary" disabled={saving} type="submit">{saving ? 'Đang lưu…' : 'Lưu'}</button>
-      </div>
+      <section aria-label="Knowledge point của bài">
+        <LessonKnowledgeField onChange={setKnowledgePointIds} title="Knowledge point của bài" value={knowledgePointIds} />
+      </section>
     </form>
-  )
-}
-
-function KnowledgePointsPanel({ lesson, onSaved }: { lesson: LessonEditor; onSaved: () => void }) {
-  const [ids, setIds] = useState(lesson.knowledgePointIds)
-  const [, setError] = useAdminError()
-  const [saving, setSaving] = useState(false)
-
-  async function save() {
-    setSaving(true)
-    setError(null)
-    try {
-      await setLessonKnowledgePoints(lesson.id, ids)
-      onSaved()
-    } catch (reason) {
-      setError(lessonErrorText(reason))
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  return (
-    <section aria-label="Knowledge point của bài" className="adm-sec">
-      <LessonKnowledgeField onChange={setIds} title="Knowledge point của bài" value={ids} />
-      <div className="adm-sec__foot ls-foot">
-        <button aria-label="Lưu KP" className="adm-btn adm-btn--primary" disabled={saving} onClick={() => void save()} type="button">{saving ? 'Đang lưu…' : 'Lưu'}</button>
-      </div>
-    </section>
   )
 }
 
 type Editing = { mode: 'new'; blockType: BlockType } | { mode: 'edit'; block: LessonBlock } | null
 
-/** The editor of one lesson: its details, slides and documents, knowledge points and blocks, saved as each part is saved. */
-export function LessonEditorPanel({ lesson, reload }: { lesson: LessonEditor; reload: () => void }) {
+/** The editor of one lesson: its details with their knowledge points (one Lưu, at the foot), then the slides, documents and blocks, each saved from its own popup. */
+export function LessonEditorPanel({ lesson, reload, onClose }: { lesson: LessonEditor; reload: () => void; onClose: () => void }) {
   const { confirm, confirmDialog } = useAdminConfirm()
+  const infoFormId = useId()
+  const [infoSaving, setInfoSaving] = useState(false)
   const [editing, setEditing] = useState<Editing>(null)
   // Blocks folded to their header, by id; every block starts open.
   const [folded, setFolded] = useState<ReadonlySet<string>>(new Set())
@@ -168,19 +169,20 @@ export function LessonEditorPanel({ lesson, reload }: { lesson: LessonEditor; re
       {confirmDialog}
       {exerciseLocked ? <div className="adm-alert" role="note">{EXERCISE_LOCK_NOTE}</div> : null}
 
-      <MetaForm key={`meta-${lesson.title}-${lesson.summary}-${lesson.estimatedMinutes}`} lesson={lesson} onSaved={reload} />
+      <InfoForm formId={infoFormId} key={`info-${lesson.title}-${lesson.summary}-${lesson.estimatedMinutes}-${lesson.knowledgePointIds.join(',')}`} lesson={lesson} onSaved={reload} onSavingChange={setInfoSaving} saving={infoSaving} />
       <LessonResourcesEditor key={lesson.id} lessonId={lesson.id} />
-      <KnowledgePointsPanel key={`kp-${lesson.knowledgePointIds.join(',')}`} lesson={lesson} onSaved={reload} />
+
+      {lesson.blocks.some((block) => block.blockType === 'VOCABULARY') ? lesson.blocks.map((block, index) => (
+        block.blockType === 'VOCABULARY'
+          ? <VocabularyBlockTable block={block} key={block.id} lessonId={lesson.id} number={index + 1} onChanged={reload} />
+          : null
+      )) : <VocabularyBlockTable lessonId={lesson.id} onChanged={reload} />}
 
       <section aria-label="Các block" className="adm-sec">
         <div className="adm-sec__head">
           <h3 className="adm-sec__title">Các block<span className="adm-count">{lesson.blocks.length}</span></h3>
           <div className="adm-sec__tools">
-            {lesson.blocks.length > 1 ? <>
-              <button className="adm-btn adm-btn--small" onClick={() => setFolded(new Set(lesson.blocks.map((block) => block.id)))} type="button">Thu gọn tất cả</button>
-              <button className="adm-btn adm-btn--small" disabled={folded.size === 0} onClick={() => setFolded(new Set())} type="button">Mở tất cả</button>
-            </> : null}
-            {BLOCK_TYPES.map((type) => (
+            {BLOCK_TYPES.filter((type) => type !== 'VOCABULARY').map((type) => (
               <button
                 className="adm-btn adm-btn--small"
                 disabled={busy || (type === 'EXERCISE' && exerciseLocked)}
@@ -275,6 +277,12 @@ export function LessonEditorPanel({ lesson, reload }: { lesson: LessonEditor; re
           )}
         </AdminModal>
       ) : null}
+
+      {/* The one Lưu of the editor: it stays at the foot of the popup while the long editor scrolls, and saves the lesson information above. */}
+      <div className="adm-form-footer">
+        <button className="adm-btn" onClick={onClose} type="button">Đóng</button>
+        <button aria-label="Lưu thông tin" className="adm-btn adm-btn--primary" disabled={infoSaving} form={infoFormId} type="submit">{infoSaving ? 'Đang lưu…' : 'Lưu'}</button>
+      </div>
     </div>
   )
 }

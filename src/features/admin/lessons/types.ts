@@ -148,7 +148,10 @@ export interface NewLessonRequest extends LessonMetaRequest {
 export const lessonResourceSchema = z.object({
   id: z.string(),
   title: z.string(),
+  /** The link, or for an uploaded file a short-lived signed link that opens it. */
   url: z.string(),
+  /** The storage key of an uploaded file; empty when the resource is a link. */
+  fileKey: z.string().nullish(),
   sortOrder: z.number().int().nonnegative(),
 })
 
@@ -169,4 +172,10 @@ export const lessonResourceOrderSchema = z.object({
   }),
 })
 export type LessonResourceType = z.infer<typeof lessonResourceTypeSchema>
-export type LessonResourceRequest = Pick<LessonResource, 'title' | 'url' | 'sortOrder'>
+/** A link carries `url`; an uploaded document carries the `fileKey` its upload returned. Renaming a file sends neither. */
+export interface LessonResourceRequest {
+  title: string
+  sortOrder: number
+  url?: string
+  fileKey?: string
+}

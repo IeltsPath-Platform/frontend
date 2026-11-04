@@ -34,9 +34,11 @@ export function LessonEditorModal({ lessonId, fallbackTitle, topicName, onClose 
       stacked
       title={current?.title ?? fallbackTitle}
     >
-      {!current && lesson.status === 'loading' ? <AdminLoading label="Đang tải bài học…" /> : null}
-      {lesson.status === 'error' ? <AdminError message={lesson.error ?? 'Không tải được bài học.'} onRetry={lesson.reload} /> : null}
-      {current ? <LessonEditorPanel key={current.id} lesson={current} reload={lesson.reload} /> : null}
+      {(close) => <>
+        {!current && lesson.status === 'loading' ? <AdminLoading label="Đang tải bài học…" /> : null}
+        {lesson.status === 'error' ? <AdminError message={lesson.error ?? 'Không tải được bài học.'} onRetry={lesson.reload} /> : null}
+        {current ? <LessonEditorPanel key={current.id} lesson={current} onClose={close} reload={lesson.reload} /> : null}
+      </>}
     </AdminModal>
   )
 }

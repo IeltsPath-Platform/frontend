@@ -1,15 +1,15 @@
 import { useId, useState, type FormEvent } from 'react'
-import { ArrowDown, ArrowUp, ExternalLink, Pencil, Plus, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, ExternalLink, FileText, Pencil, Plus, Trash2 } from 'lucide-react'
 import { AdminModal } from '../../components/AdminLayer'
 import { AdminRowMenu } from '../../components/AdminRowMenu'
 import { useAdminConfirm } from '../../lib/useAdminConfirm'
 import { AdminError, AdminLoading } from '../../components/AdminState'
-import { adminErrorMessage } from '../../lib/adminErrors'
+import { documentErrorMessage, documentFileProblem, uploadAdminDocument } from '../../media/api/mediaUploadApi'
 import { useAdminResource } from '../../lib/useAdminResource'
 import { createLessonResource, deleteLessonResource, fetchLessonResources, reorderLessonResources, updateLessonResource } from '../api/lessonApi'
 import { moveId } from '../lib/blockForm'
 import { RESOURCE_REORDER_ENABLED } from '../lib/resource-reorder'
-import type { LessonResource, LessonResourceRequest, LessonResources, LessonResourceType } from '../types'
+import type { LessonResource, LessonResources, LessonResourceType } from '../types'
 import { useAdminError } from '../../lib/useAdminError'
 import '../../course-drafts/course-drafts.css'
 
@@ -17,25 +17,55 @@ function httpsUrl(value: string) {
   try { return new URL(value).protocol === 'https:' } catch { return false }
 }
 
+/** What the form hands back: a title with a link, or a title with the PDF to upload, or just a new title for a stored file. */
+interface ResourceDraft {
+  title: string
+  url?: string
+  file?: File
+}
+
+/**
+ * A new document is a PDF the author uploads; a slide is a link, and so is an older document that was saved as one.
+ * A stored file keeps its file, so only its title can change.
+ */
 function ResourceForm({ item, type, busy, onSave, onCancel }: {
   item?: LessonResource
   type: LessonResourceType
   busy: boolean
-  onSave: (body: Pick<LessonResourceRequest, 'title' | 'url'>) => Promise<boolean>
+  onSave: (draft: ResourceDraft) => Promise<boolean>
   onCancel: () => void
 }) {
   const id = useId()
   const [title, setTitle] = useState(item?.title ?? '')
   const [url, setUrl] = useState(item?.url ?? '')
+  const [file, setFile] = useState<File | null>(null)
   const [submitted, setSubmitted] = useState(false)
-  const invalidUrl = (submitted || url.length > 0) && !httpsUrl(url.trim())
   const label = type === 'SLIDE' ? 'slide' : 'tài liệu'
+  const storedFile = Boolean(item?.fileKey)
+  const needsFile = type === 'DOCUMENT' && !item
+  const needsUrl = !needsFile && !storedFile
+  const invalidUrl = needsUrl && (submitted || url.length > 0) && !httpsUrl(url.trim())
+  const fileProblem = needsFile ? (file ? documentFileProblem(file) : submitted ? 'Chọn tệp PDF.' : null) : null
+
+  function pick(chosen: File | null) {
+    setFile(chosen)
+    // A new document is named after its file until the author types a title of their own.
+    if (chosen && !title.trim()) setTitle(chosen.name.replace(/\.pdf$/i, '').slice(0, 255))
+  }
 
   async function submit(event: FormEvent) {
     event.preventDefault()
     setSubmitted(true)
-    if (busy || !title.trim() || title.trim().length > 255 || !httpsUrl(url.trim()) || url.trim().length > 2000) return
-    await onSave({ title: title.trim(), url: url.trim() })
+    if (busy || !title.trim() || title.trim().length > 255) return
+    if (needsFile) {
+      if (!file || documentFileProblem(file)) return
+      await onSave({ title: title.trim(), file })
+    } else if (needsUrl) {
+      if (!httpsUrl(url.trim()) || url.trim().length > 2000) return
+      await onSave({ title: title.trim(), url: url.trim() })
+    } else {
+      await onSave({ title: title.trim() })
+    }
   }
 
   return (
@@ -46,14 +76,26 @@ function ResourceForm({ item, type, busy, onSave, onCancel }: {
           <input className="adm-input" maxLength={255} required value={title} onChange={(event) => setTitle(event.target.value)} aria-invalid={submitted && !title.trim()} />
           {submitted && !title.trim() ? <small role="alert">Nhập tiêu đề.</small> : null}
         </label>
-        <label className="adm-field">
-          <span>URL {label}<span aria-hidden="true" className="adm-required" /></span>
-          <input className="adm-input" type="url" maxLength={2000} required value={url} onChange={(event) => setUrl(event.target.value)} aria-invalid={invalidUrl} aria-describedby={invalidUrl ? `${id}-url-error` : undefined} />
-          {invalidUrl ? <small id={`${id}-url-error`} role="alert">Nhập đường dẫn HTTPS hợp lệ.</small> : null}
-        </label>
+        {needsFile ? (
+          <label className="adm-field">
+            <span>Tệp PDF<span aria-hidden="true" className="adm-required" /></span>
+            <input accept="application/pdf,.pdf" aria-describedby={`${id}-file-hint`} aria-invalid={Boolean(fileProblem)} aria-label="Tệp PDF" className="adm-input" type="file"
+              onChange={(event) => pick(event.target.files?.[0] ?? null)} />
+            <small id={`${id}-file-hint`}>Chỉ nhận PDF, tối đa 20 MB. Học viên chỉ tải được khi đã vào được bài học.</small>
+            {fileProblem ? <small role="alert">{fileProblem}</small> : null}
+          </label>
+        ) : null}
+        {needsUrl ? (
+          <label className="adm-field">
+            <span>URL {label}<span aria-hidden="true" className="adm-required" /></span>
+            <input className="adm-input" type="url" maxLength={2000} required value={url} onChange={(event) => setUrl(event.target.value)} aria-invalid={invalidUrl} aria-describedby={invalidUrl ? `${id}-url-error` : undefined} />
+            {invalidUrl ? <small id={`${id}-url-error`} role="alert">Nhập đường dẫn HTTPS hợp lệ.</small> : null}
+          </label>
+        ) : null}
+        {storedFile ? <p className="adm-muted">Tệp PDF đã tải lên. Muốn đổi tệp, hãy xóa tài liệu này và thêm tài liệu mới.</p> : null}
         <div className="adm-form-footer">
           <button className="adm-btn" type="button" onClick={onCancel}>Đóng</button>
-          <button className="adm-btn adm-btn--primary" type="submit">{busy ? 'Đang lưu…' : 'Lưu'}</button>
+          <button className="adm-btn adm-btn--primary" type="submit">{busy ? (needsFile ? 'Đang tải lên…' : 'Đang lưu…') : 'Lưu'}</button>
         </div>
       </fieldset>
     </form>
@@ -104,14 +146,16 @@ function ResourceList({ lessonId, type, items, reload, busy, clearError, run }: 
       </div>
       <div className="adm-table-wrap adm-kp-table">
         <table aria-label={`${label} của bài`} className="adm-table">
-          <thead><tr><th className="adm-stt" scope="col">STT</th><th scope="col">Tiêu đề</th><th scope="col">Đường dẫn</th><th className="adm-col-actions" scope="col">Hành động</th></tr></thead>
+          <thead><tr><th className="adm-stt" scope="col">STT</th><th scope="col">Tiêu đề</th><th scope="col">{type === 'DOCUMENT' ? 'Tệp / đường dẫn' : 'Đường dẫn'}</th><th className="adm-col-actions" scope="col">Hành động</th></tr></thead>
           <tbody>{ordered.length === 0 ? <tr><td className="adm-muted adm-kp-table__empty" colSpan={4}>Chưa có {label.toLowerCase()} nào.</td></tr> : ordered.map((item, index) => (
             <tr key={item.id}>
               <td className="adm-stt">{index + 1}</td>
               <td>{item.title}</td>
-              <td>{httpsUrl(item.url)
-                ? <a className="adm-link-out" href={item.url} rel="noreferrer" target="_blank">{item.url}<ExternalLink aria-hidden="true" size={13} /></a>
-                : <span className="adm-muted">{item.url}</span>}</td>
+              <td>{item.fileKey
+                ? <a aria-label={`Mở tệp PDF ${item.title}`} className="adm-link-out" href={item.url} rel="noreferrer" target="_blank"><FileText aria-hidden="true" size={14} />Tệp PDF<ExternalLink aria-hidden="true" size={13} /></a>
+                : httpsUrl(item.url)
+                  ? <a className="adm-link-out" href={item.url} rel="noreferrer" target="_blank">{item.url}<ExternalLink aria-hidden="true" size={13} /></a>
+                  : <span className="adm-muted">{item.url}</span>}</td>
               <td className="adm-col-actions">
                 <AdminRowMenu disabled={busy} label={`Hành động của ${label.toLowerCase()} ${index + 1}`} items={[
                   { key: 'edit', label: `Sửa ${label.toLowerCase()}`, ariaLabel: `Sửa ${item.title}`, icon: <Pencil aria-hidden="true" size={16} />, onSelect: () => { clearError(); setEditing(item.id) } },
@@ -128,10 +172,16 @@ function ResourceList({ lessonId, type, items, reload, busy, clearError, run }: 
       </div>
       {confirmDialog}
       {adding ? <AdminModal title={`Thêm ${label.toLowerCase()}`} onClose={() => setAdding(false)} stacked>
-        {(close) => <ResourceForm type={type} busy={busy} onCancel={close} onSave={async (body) => {
+        {(close) => <ResourceForm type={type} busy={busy} onCancel={close} onSave={async ({ title, url, file }) => {
           const saved = await run(async () => {
             const sortOrder = items.length ? Math.max(...items.map((item) => item.sortOrder)) + 1 : 0
-            await createLessonResource(lessonId, { ...body, type, sortOrder })
+            if (file) {
+              // The PDF goes up first; the document row only exists once its file is safely stored.
+              const uploaded = await uploadAdminDocument(file)
+              await createLessonResource(lessonId, { type, title, fileKey: uploaded.mediaReference, sortOrder })
+            } else {
+              await createLessonResource(lessonId, { type, title, url, sortOrder })
+            }
             reload()
           })
           if (saved) close()
@@ -139,9 +189,9 @@ function ResourceList({ lessonId, type, items, reload, busy, clearError, run }: 
         }} />}
       </AdminModal> : null}
       {editingItem ? <AdminModal title={`Sửa ${label.toLowerCase()}`} description={editingItem.title} onClose={() => setEditing(null)} stacked>
-        {(close) => <ResourceForm item={editingItem} type={type} busy={busy} onCancel={close} onSave={async (body) => {
+        {(close) => <ResourceForm item={editingItem} type={type} busy={busy} onCancel={close} onSave={async ({ title, url }) => {
           const saved = await run(async () => {
-            await updateLessonResource(lessonId, editingItem.id, { ...body, sortOrder: editingItem.sortOrder })
+            await updateLessonResource(lessonId, editingItem.id, { title, ...(url ? { url } : {}), sortOrder: editingItem.sortOrder })
             reload()
           })
           if (saved) close()
@@ -163,7 +213,7 @@ export function LessonResourcesEditor({ lessonId }: { lessonId: string }) {
     if (busy) return false
     setBusy(true)
     setError(null)
-    try { await action(); return true } catch (reason) { setError(adminErrorMessage(reason)); return false } finally { setBusy(false) }
+    try { await action(); return true } catch (reason) { setError(documentErrorMessage(reason)); return false } finally { setBusy(false) }
   }
   return (
     <>

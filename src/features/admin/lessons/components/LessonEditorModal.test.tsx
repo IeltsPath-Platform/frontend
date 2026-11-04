@@ -1,13 +1,15 @@
 import { fireEvent, render, screen, waitFor, within } from '@/test/render'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { HttpError } from '@/lib/httpClient'
+import { answerConfirm } from '@/test/confirm'
+import type { VocabularySenseCard } from '@/features/learning-path/api/lessonVocabularyApi'
 import type { LessonEditor } from '../types'
 import { LessonEditorModal } from './LessonEditorModal'
 
 const { api, graph, questions, vocab } = vi.hoisted(() => ({
   api: {
     fetchLesson: vi.fn(), updateLesson: vi.fn(), setLessonKnowledgePoints: vi.fn(), addBlock: vi.fn(), updateBlock: vi.fn(),
-    deleteBlock: vi.fn(), reorderBlocks: vi.fn(), publishLesson: vi.fn(), archiveLesson: vi.fn(), searchVocabulary: vi.fn(),
+    deleteBlock: vi.fn(), reorderBlocks: vi.fn(), publishLesson: vi.fn(), archiveLesson: vi.fn(), searchVocabulary: vi.fn(), suggestVocabulary: vi.fn(),
     fetchLessonResources: vi.fn(), createLessonResource: vi.fn(), updateLessonResource: vi.fn(), deleteLessonResource: vi.fn(),
   },
   graph: { fetchKnowledgeTree: vi.fn() },
@@ -45,6 +47,7 @@ describe('LessonEditorModal', () => {
     graph.fetchKnowledgeTree.mockResolvedValue({ nodes: [{ id: 'kp1', code: 'R55_SCAN', name: 'Scanning', kind: 'STRATEGY', status: 'ACTIVE' }], edges: [] })
     questions.listQuestions.mockResolvedValue({ content: [], page: 0, size: 100, totalElements: 0, totalPages: 0 })
     vocab.getLessonVocabularySenses.mockResolvedValue([])
+    api.suggestVocabulary.mockResolvedValue({ content: [], page: 0, size: 20, hasMore: false })
   })
 
   it('shows the status beside the title in the header, not in the body, and carries no publish or archive button', async () => {
@@ -69,7 +72,7 @@ describe('LessonEditorModal', () => {
     expect(screen.getByText('1 câu hỏi')).toBeInTheDocument()
   })
 
-  it('chooses the knowledge points of the lesson in a picker and saves them from its section', async () => {
+  it('chooses the knowledge points of the lesson in a picker and saves them with the lesson information', async () => {
     graph.fetchKnowledgeTree.mockResolvedValue({
       nodes: [
         { id: 'kp1', code: 'R55_SCAN', name: 'Scanning', kind: 'STRATEGY', status: 'ACTIVE' },
@@ -90,8 +93,12 @@ describe('LessonEditorModal', () => {
     fireEvent.click(within(picker).getByRole('checkbox', { name: /R55_SKIM/ }))
     fireEvent.click(within(picker).getByRole('button', { name: 'Lưu' }))
 
-    fireEvent.click(within(section).getByRole('button', { name: 'Lưu KP' }))
+    // The picker's own Lưu only confirms the choice; nothing is sent until the one Lưu of the form.
+    expect(api.setLessonKnowledgePoints).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Lưu thông tin' }))
     await waitFor(() => expect(api.setLessonKnowledgePoints).toHaveBeenCalledWith('l1', ['kp1', 'kp2']))
+    expect(api.updateLesson).toHaveBeenCalledTimes(1)
+    expect(screen.queryByRole('button', { name: 'Lưu KP' })).not.toBeInTheDocument()
   })
 
   it('removes a knowledge point from the table with its cross', async () => {
@@ -100,6 +107,122 @@ describe('LessonEditorModal', () => {
     fireEvent.click(await within(section).findByRole('button', { name: 'Bỏ R55_SCAN' }))
     expect(within(section).getByText('Chưa gắn điểm kiến thức nào.')).toBeInTheDocument()
     expect(within(section).getByText('0/50')).toBeInTheDocument()
+  })
+
+  describe('vocabulary block as a table', () => {
+    const sense = (senseId: string, lemma: string, partOfSpeech: string, vietnameseMeaning: string): VocabularySenseCard => ({
+      senseId, vocabularyItemId: `w-${senseId}`, lemma, ipa: null, pronunciationAudioReference: null, partOfSpeech,
+      englishDefinition: null, vietnameseMeaning, exampleSentence: null, imageUrl: null,
+    })
+    const senses: Record<string, VocabularySenseCard> = {
+      s1: sense('s1', 'climate', 'noun', 'khí hậu'),
+      s2: sense('s2', 'weather', 'noun', 'thời tiết'),
+      s3: sense('s3', 'humid', 'adjective', 'ẩm ướt'),
+    }
+    function vocabularyLesson(ids: string[]) {
+      return lesson({ blocks: [{ id: 'v1', blockType: 'VOCABULARY', sortOrder: 1, textContent: null, assetId: null, vocabularySenseIds: ids, knowledgePointIds: [], questions: [] }] })
+    }
+
+    beforeEach(() => {
+      vocab.getLessonVocabularySenses.mockImplementation(async (ids: string[]) => ids.map((id) => senses[id]).filter((card): card is VocabularySenseCard => Boolean(card)))
+      api.updateBlock.mockResolvedValue(undefined)
+    })
+
+    it('lists each word of the block as a row with its part of speech and meaning', async () => {
+      api.fetchLesson.mockResolvedValue(vocabularyLesson(['s1', 's2']))
+      renderPage()
+      const section = await screen.findByRole('region', { name: 'Từ vựng của block 1' })
+      const table = await within(section).findByRole('table', { name: 'Từ vựng' })
+      expect(within(table).getAllByRole('row')).toHaveLength(3)
+      expect(within(table).getByText('climate')).toBeInTheDocument()
+      expect(within(table).getByText('thời tiết')).toBeInTheDocument()
+      expect(within(table).getAllByText('noun')).toHaveLength(2)
+    })
+
+    it('removes one word after confirmation and keeps the others', async () => {
+      api.fetchLesson.mockResolvedValue(vocabularyLesson(['s1', 's2']))
+      renderPage()
+      const section = await screen.findByRole('region', { name: 'Từ vựng của block 1' })
+      fireEvent.click(await within(section).findByRole('button', { name: 'Hành động của từ 1' }))
+      fireEvent.click(await screen.findByRole('menuitem', { name: 'Bỏ khỏi block' }))
+      await answerConfirm(true)
+      await waitFor(() => expect(api.updateBlock).toHaveBeenCalledWith('l1', 'v1', { blockType: 'VOCABULARY', vocabularySenseIds: ['s2'] }))
+    })
+
+    it('does not let the last word of a block be removed', async () => {
+      api.fetchLesson.mockResolvedValue(vocabularyLesson(['s1']))
+      renderPage()
+      const section = await screen.findByRole('region', { name: 'Từ vựng của block 1' })
+      fireEvent.click(await within(section).findByRole('button', { name: 'Hành động của từ 1' }))
+      expect(await screen.findByRole('menuitem', { name: 'Bỏ khỏi block' })).toBeDisabled()
+    })
+
+    it('adds a word found in the search, and saves the block only with the popup\'s Lưu', async () => {
+      api.fetchLesson.mockResolvedValue(vocabularyLesson(['s1']))
+      api.suggestVocabulary.mockResolvedValue({ content: [{ id: 'w3', lemma: 'humid', ipa: null, status: 'ACTIVE', senses: [{ id: 's3', partOfSpeech: 'adjective', vietnameseMeaning: 'ẩm ướt', englishDefinition: null, status: 'ACTIVE' }] }], page: 0, size: 20, hasMore: false })
+      renderPage()
+      const section = await screen.findByRole('region', { name: 'Từ vựng của block 1' })
+      fireEvent.click(within(section).getByRole('button', { name: 'Thêm từ vựng' }))
+      const popup = await screen.findByRole('dialog', { name: 'Thêm từ vựng' })
+      fireEvent.change(within(popup).getByLabelText('Tìm từ vựng'), { target: { value: 'humid' } })
+      fireEvent.submit(within(popup).getByLabelText('Tìm từ vựng').closest('form') as HTMLFormElement)
+      fireEvent.click(await within(popup).findByRole('button', { name: 'Thêm' }))
+      expect(api.updateBlock).not.toHaveBeenCalled()
+
+      fireEvent.click(within(popup).getByRole('button', { name: 'Lưu từ vựng' }))
+      await waitFor(() => expect(api.updateBlock).toHaveBeenCalledWith('l1', 'v1', { blockType: 'VOCABULARY', vocabularySenseIds: ['s1', 's3'] }))
+    })
+  })
+
+  it('has a single Lưu, in the button bar at the foot of the popup, next to a Đóng that closes it', async () => {
+    const onClose = renderPage()
+    const popup = await screen.findByRole('dialog', { name: 'Skimming' })
+    await screen.findByRole('form', { name: 'Thông tin bài học' })
+
+    const bar = popup.querySelector('.adm-modal__body > .adm-course-draft-lesson > .adm-form-footer') as HTMLElement
+    expect(bar).not.toBeNull()
+    expect(within(popup).getAllByRole('button', { name: /^Lưu/ })).toHaveLength(1)
+    expect(within(bar).getByRole('button', { name: 'Lưu thông tin' })).toHaveAttribute('form', screen.getByRole('form', { name: 'Thông tin bài học' }).id)
+
+    fireEvent.click(within(bar).getByRole('button', { name: 'Đóng' }))
+    await waitFor(() => expect(onClose).toHaveBeenCalled())
+  })
+
+  it('saves only the lesson information, and reloads, when the knowledge points were not changed', async () => {
+    api.updateLesson.mockResolvedValue(undefined)
+    renderPage()
+    fireEvent.click(await screen.findByRole('button', { name: 'Lưu thông tin' }))
+
+    await waitFor(() => expect(api.updateLesson).toHaveBeenCalledTimes(1))
+    expect(api.setLessonKnowledgePoints).not.toHaveBeenCalled()
+    await waitFor(() => expect(api.fetchLesson).toHaveBeenCalledTimes(2))
+  })
+
+  it('says the information was saved when only the knowledge points fail, and keeps the choice on screen', async () => {
+    api.updateLesson.mockResolvedValue(undefined)
+    api.setLessonKnowledgePoints.mockRejectedValue(new HttpError(503, 'Kho điểm kiến thức tạm thời không dùng được'))
+    renderPage()
+    const section = await screen.findByRole('region', { name: 'Knowledge point của bài' })
+    fireEvent.click(await within(section).findByRole('button', { name: 'Bỏ R55_SCAN' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Lưu thông tin' }))
+
+    expect(await screen.findByText(/Đã lưu thông tin bài, chưa lưu được điểm kiến thức/)).toBeInTheDocument()
+    expect(api.updateLesson).toHaveBeenCalledTimes(1)
+    // No reload: it would put the points the author just removed back.
+    expect(api.fetchLesson).toHaveBeenCalledTimes(1)
+    expect(within(section).getByText('Chưa gắn điểm kiến thức nào.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Lưu thông tin' })).toBeEnabled()
+  })
+
+  it('sends nothing for the knowledge points when the lesson information is refused', async () => {
+    api.updateLesson.mockRejectedValue(new HttpError(409, 'Bài đã đổi'))
+    renderPage()
+    const section = await screen.findByRole('region', { name: 'Knowledge point của bài' })
+    fireEvent.click(await within(section).findByRole('button', { name: 'Bỏ R55_SCAN' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Lưu thông tin' }))
+
+    await waitFor(() => expect(api.updateLesson).toHaveBeenCalledTimes(1))
+    expect(api.setLessonKnowledgePoints).not.toHaveBeenCalled()
   })
 
   it('moves a block down and reloads the lesson', async () => {

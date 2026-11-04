@@ -185,7 +185,10 @@
 .adm-confirm .adm-layer__title { font-size: 1.1rem; }
 .adm-layer__description { margin: 2px 0 0; font-size: .82rem; color: var(--adm-muted); }
 
-.adm-drawer { position: fixed; top: 0; right: 0; bottom: 0; z-index: 71; display: flex; flex-direction: column; width: min(max(760px, 58vw), 100vw); background: var(--adm-surface); color: var(--adm-text); box-shadow: -12px 0 32px rgb(13 43 141 / 20%); animation: adm-drawer-in .24s cubic-bezier(.2, .8, .2, 1) both; }
+/* A drawer or modal that is open must not keep an animation's end state (fill-mode forwards/both on transform, scale or
+   translate): Chrome then treats it as the containing block of position: fixed children, and the row menu drawn inside it
+   lands far from its button. The opening animations only define `from`, so `backwards` is all they need. */
+.adm-drawer { position: fixed; top: 0; right: 0; bottom: 0; z-index: 71; display: flex; flex-direction: column; width: min(max(760px, 58vw), 100vw); background: var(--adm-surface); color: var(--adm-text); box-shadow: -12px 0 32px rgb(13 43 141 / 20%); animation: adm-drawer-in .24s cubic-bezier(.2, .8, .2, 1) backwards; }
 .adm-drawer--lg { width: min(max(1000px, 72vw), 100vw); }
 .adm-drawer--xl { width: min(max(1240px, 86vw), 100vw); }
 .adm-drawer.is-closing { animation: adm-drawer-out .18s ease-in both; }
@@ -204,9 +207,11 @@
 /* The buttons that end a form stay in view at the bottom of the panel while its fields scroll. */
 .adm-form-footer { position: sticky; bottom: 0; z-index: 1; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin: auto -20px 0; padding: 12px 20px; background: var(--adm-surface); border-top: 1px solid var(--adm-border); }
 .adm-drawer__body .adm-form-footer { margin-inline: -14px; padding-inline: 14px; }
-.adm-modal__body .adm-form-footer { margin-top: 18px; }
+/* The popup body keeps 20px of padding under its content; the button bar is pulled down through it, both while it sticks to
+   the bottom edge and when the content ends, so it sits flush against the popup's lower edge with no strip showing beneath. */
+.adm-modal__body .adm-form-footer { bottom: -20px; margin-top: 18px; margin-bottom: -20px; border-radius: 0 0 11px 11px; }
 
-.adm-modal { position: fixed; inset: 0; z-index: 71; display: flex; flex-direction: column; width: min(640px, calc(100vw - 32px)); height: fit-content; max-height: calc(100dvh - 32px); margin: auto; background: var(--adm-surface); color: var(--adm-text); border: 1px solid var(--adm-border); border-radius: 12px; box-shadow: 0 24px 56px rgb(13 43 141 / 28%); animation: adm-modal-in .2s ease both; }
+.adm-modal { position: fixed; inset: 0; z-index: 71; display: flex; flex-direction: column; width: min(640px, calc(100vw - 32px)); height: fit-content; max-height: calc(100dvh - 32px); margin: auto; background: var(--adm-surface); color: var(--adm-text); border: 1px solid var(--adm-border); border-radius: 12px; box-shadow: 0 24px 56px rgb(13 43 141 / 28%); animation: adm-modal-in .2s ease backwards; }
 .adm-modal.is-closing { animation: adm-modal-out .18s ease-in both; }
 .adm-modal--lg { width: min(980px, calc(100vw - 32px)); height: min(720px, calc(100dvh - 32px)); }
 .adm-modal--xl { width: min(1480px, calc(100vw - 32px)); height: min(940px, calc(100dvh - 32px)); }
@@ -280,9 +285,10 @@
 .adm-form-footer > .adm-btn:first-child:not(.adm-btn--primary):not(.adm-btn--noicon):hover:not(:disabled) { background: #a82424; border-color: #a82424; color: #fff; }
 .adm-form-footer > .adm-btn:first-child:not(.adm-btn--primary):not(.adm-btn--noicon):active:not(:disabled) { transform: scale(.97); }
 
-/* Every text button inside a drawer is navy with white text, on every admin page; the red close button of the footer and
-   danger buttons keep their own colour (their selectors are more specific or excluded here), icon-only controls stay light. */
-.adm-drawer .adm-btn:not(.adm-btn--danger):not(.adm-btn--destructive) { background: var(--adm-accent-strong); border-color: var(--adm-accent-strong); color: #fff; }
-.adm-drawer .adm-btn:not(.adm-btn--danger):not(.adm-btn--destructive):hover:not(:disabled) { background: var(--adm-accent); border-color: var(--adm-accent); color: #fff; }
-.adm-drawer .adm-btn:not(.adm-btn--danger):not(.adm-btn--destructive):active:not(:disabled) { transform: scale(.97); }
-.adm-drawer .adm-btn:disabled { opacity: .55; cursor: not-allowed; }
+/* Every text button inside a drawer or a popup (modal) is navy with white text, on every admin page; the red close button of
+   the footer and danger buttons keep their own colour (their selectors are more specific or excluded here), icon-only
+   controls stay light. */
+:is(.adm-drawer, .adm-modal) .adm-btn:not(.adm-btn--danger):not(.adm-btn--destructive) { background: var(--adm-accent-strong); border-color: var(--adm-accent-strong); color: #fff; }
+:is(.adm-drawer, .adm-modal) .adm-btn:not(.adm-btn--danger):not(.adm-btn--destructive):hover:not(:disabled) { background: var(--adm-accent); border-color: var(--adm-accent); color: #fff; }
+:is(.adm-drawer, .adm-modal) .adm-btn:not(.adm-btn--danger):not(.adm-btn--destructive):active:not(:disabled) { transform: scale(.97); }
+:is(.adm-drawer, .adm-modal) .adm-btn:disabled { opacity: .55; cursor: not-allowed; }

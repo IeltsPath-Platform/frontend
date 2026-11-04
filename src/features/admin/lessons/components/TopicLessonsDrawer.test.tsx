@@ -176,7 +176,8 @@ describe('TopicLessonsDrawer', () => {
     expect(within(popup).getByText('Intro text')).toBeInTheDocument()
     expect(api.fetchLesson).toHaveBeenCalledWith('l1', expect.anything())
 
-    fireEvent.click(within(popup).getByRole('button', { name: 'Đóng' }))
+    // The popup has two Đóng buttons: the cross in its header and the one in the button bar at its foot.
+    fireEvent.click(within(popup.querySelector('.adm-modal__header') as HTMLElement).getByRole('button', { name: 'Đóng' }))
     expect(await screen.findByRole('dialog', { name: 'Skimming' })).toBeInTheDocument()
     expect(screen.queryByRole('dialog', { name: 'Lesson one' })).not.toBeInTheDocument()
     expect(await screen.findByText('Lesson two')).toBeInTheDocument()
@@ -190,7 +191,8 @@ describe('TopicLessonsDrawer', () => {
     await chooseFromRowMenu(1, 'Sửa Lesson one')
     const form = await screen.findByRole('form', { name: 'Thông tin bài học' })
     fireEvent.change(within(form).getByLabelText('Tiêu đề'), { target: { value: 'Lesson uno' } })
-    fireEvent.click(within(form).getByRole('button', { name: 'Lưu thông tin' }))
+    // The Lưu of the editor sits at the foot of the popup, outside the information form, and submits it.
+    fireEvent.click(screen.getByRole('button', { name: 'Lưu thông tin' }))
     await waitFor(() => expect(api.updateLesson).toHaveBeenCalledWith('l1', expect.objectContaining({ title: 'Lesson uno', summary: 'Tóm tắt' })))
   })
 

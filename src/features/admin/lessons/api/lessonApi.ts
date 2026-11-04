@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { apiRequest } from '@/lib/httpClient'
+import { apiRequest, HttpError } from '@/lib/httpClient'
 import {
   lessonEditorSchema,
   lessonSummarySchema,
@@ -171,6 +171,43 @@ const vocabularySearchSchema = z.array(
 )
 
 export type VocabularyHit = z.infer<typeof vocabularySearchSchema>[number]
+
+const vocabularySuggestionsSchema = z.object({
+  content: vocabularySearchSchema.max(50),
+  page: z.number().int().nonnegative(),
+  size: z.number().int().min(1).max(50),
+  hasMore: z.boolean(),
+})
+export type VocabularySuggestionsPage = z.infer<typeof vocabularySuggestionsSchema>
+
+export async function suggestVocabulary(query: string, page = 0, signal?: AbortSignal): Promise<VocabularySuggestionsPage> {
+  if (signal?.aborted) throw new DOMException('Yêu cầu đã bị hủy.', 'AbortError')
+  const params = new URLSearchParams({ q: query.trim(), page: String(page), size: '20' })
+  const controller = new AbortController()
+  let timer: ReturnType<typeof setTimeout> | undefined
+  let onAbort: (() => void) | undefined
+  // Cover the complete operation, including shared auth refresh and response body consumption.
+  const deadline = new Promise<never>((_resolve, reject) => {
+    onAbort = () => {
+      reject(new DOMException('Yêu cầu đã bị hủy.', 'AbortError'))
+      controller.abort()
+    }
+    signal?.addEventListener('abort', onAbort, { once: true })
+    timer = setTimeout(() => {
+      reject(new HttpError(408, 'Tìm kiếm quá thời gian. Vui lòng thử lại.'))
+      controller.abort()
+    }, 5000)
+  })
+  try {
+    return vocabularySuggestionsSchema.parse(await Promise.race([
+      apiRequest<unknown>(`/api/content/admin/vocabulary/suggestions?${params}`, { auth: true, signal: controller.signal, timeoutMs: 5000 }),
+      deadline,
+    ]))
+  } finally {
+    clearTimeout(timer)
+    if (onAbort) signal?.removeEventListener('abort', onAbort)
+  }
+}
 
 /** library-service `GET /api/content/vocabulary/by-lemmas`: the active words whose lemma is exactly one of those given. */
 export async function findVocabularyByLemmas(lemmas: readonly string[], signal?: AbortSignal): Promise<VocabularyHit[]> {

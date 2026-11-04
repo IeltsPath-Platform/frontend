@@ -252,7 +252,7 @@ export function LessonView({ lesson, onLessonChanged }: { lesson: LessonDetail; 
       return <LessonSummary markdown={markdown} topicTitle={lesson.topicTitle} />
     }
     if (!resources.data) return null
-    if (tab === 'documents') return <LessonDocuments documents={resources.data.documents} />
+    if (tab === 'documents') return <LessonDocuments documents={resources.data.documents} onRefresh={resources.reload} />
     return <LessonSlides slides={resources.data.slides} />
   }
 
