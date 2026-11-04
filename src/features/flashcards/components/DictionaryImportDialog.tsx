@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { notebookApi, type VocabularyTopic } from '@/features/vocabulary/api/notebookApi'
 import { senseMeaning, useDictionarySearch, type DictionaryLang } from '@/features/vocabulary/lib/dictionary-search'
 import { flashcardApi, flashcardErrorMessage, type FlashcardDeck } from '../api/flashcardApi'
-import { importSensesToDeck, loadTopicSenses, TOPIC_IMPORT_CAP, type PickedSense } from '../lib/dictionary-import'
+import { filterSenses, importSensesToDeck, loadTopicSenses, TOPIC_IMPORT_CAP, type PickedSense } from '../lib/dictionary-import'
 import '../flashcards.css'
 import '../dictionary-import.css'
 
@@ -133,8 +133,14 @@ export function DictionaryImportDialog({ deckId, initialSenses = [], initialTab,
 
           <div
             className={`dict-import__tray${dragOver ? ' is-over' : ''}`}
-            onDragOver={(event) => { if (event.dataTransfer.types.includes(DRAG_TYPE)) { event.preventDefault(); setDragOver(true) } }}
-            onDragLeave={() => setDragOver(false)}
+            onDragOver={(event) => {
+              if (!event.dataTransfer.types.includes(DRAG_TYPE)) return
+              event.preventDefault()
+              event.dataTransfer.dropEffect = 'copy'
+              setDragOver(true)
+            }}
+            // Moving over a word already in the tray also fires dragleave; only leaving the tray itself counts.
+            onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragOver(false) }}
             onDrop={onDrop}
             aria-label="Khay từ sẽ thêm"
           >
@@ -212,6 +218,7 @@ function TopicPicker({ picked, onToggle, onAdd, onRemove, onTopicName }: PickerP
   const [topic, setTopic] = useState<VocabularyTopic | null>(null)
   const [words, setWords] = useState<{ topicId: string; senses: PickedSense[] } | null>(null)
   const [failed, setFailed] = useState(false)
+  const [filter, setFilter] = useState('')
 
   useEffect(() => {
     const controller = new AbortController()
@@ -230,10 +237,12 @@ function TopicPicker({ picked, onToggle, onAdd, onRemove, onTopicName }: PickerP
   }, [topic])
 
   const list = words && topic && words.topicId === topic.id ? words.senses : null
-  const allPicked = Boolean(list?.length) && list!.every((sense) => picked.has(sense.senseId))
+  const shown = useMemo(() => (list ? filterSenses(list, filter) : null), [list, filter])
+  const allPicked = Boolean(shown?.length) && shown!.every((sense) => picked.has(sense.senseId))
 
   function choose(next: VocabularyTopic) {
     setFailed(false)
+    setFilter('')
     setTopic(next)
     onTopicName(next.nameVi || next.name)
   }
@@ -258,17 +267,26 @@ function TopicPicker({ picked, onToggle, onAdd, onRemove, onTopicName }: PickerP
       <div className="dict-import__words-head">
         <button type="button" className="dict-import__back" onClick={() => setTopic(null)}>← Chủ đề</button>
         <strong>{topic.nameVi || topic.name}</strong>
-        {list && list.length > 0 && (
-          <button type="button" className="dict-import__all" onClick={() => (allPicked ? onRemove(list) : onAdd(list))}>
-            {allPicked ? 'Bỏ chọn tất cả' : `Chọn tất cả ${list.length}`}
+        {shown && shown.length > 0 && (
+          <button type="button" className="dict-import__all" onClick={() => (allPicked ? onRemove(shown) : onAdd(shown))}>
+            {allPicked ? 'Bỏ chọn tất cả' : `Chọn tất cả ${shown.length}`}
           </button>
         )}
       </div>
+      {list && list.length > 0 && (
+        <label className="flashcards-search dict-import__filter">
+          <Search size={16} aria-hidden="true" />
+          <input autoFocus value={filter} onChange={(event) => setFilter(event.target.value)}
+            placeholder="Tìm nhanh từ hoặc nghĩa trong chủ đề…" aria-label="Tìm từ trong chủ đề" />
+          {filter && <button type="button" aria-label="Xóa tìm kiếm" onClick={() => setFilter('')}><X size={14} /></button>}
+        </label>
+      )}
       {failed && <p role="alert" className="flashcard-error">Không tải được từ của chủ đề này.</p>}
       {!list && !failed && <p className="flashcard-hint">Đang tải từ vựng…</p>}
       {list?.length === 0 && <p className="flashcard-hint">Chủ đề này chưa có từ.</p>}
       {list && topic.wordCount > TOPIC_IMPORT_CAP && <p className="flashcard-hint">Hiển thị {TOPIC_IMPORT_CAP} từ đầu của chủ đề.</p>}
-      {list && <SenseList senses={list} picked={picked} onToggle={onToggle} />}
+      {shown?.length === 0 && list!.length > 0 && <p className="flashcard-hint">Không có từ nào khớp “{filter.trim()}”.</p>}
+      {shown && shown.length > 0 && <SenseList senses={shown} picked={picked} onToggle={onToggle} />}
     </div>
   )
 }
@@ -301,12 +319,12 @@ function WordPicker({ picked, onToggle }: PickerProps) {
       {search.active && !search.loading && !search.error && senses.length === 0 && (
         <p className="flashcard-hint">Không có từ phù hợp{search.lang === 'EN' ? '. Thử “Việt → Anh” nếu bạn gõ nghĩa tiếng Việt.' : ' (nhập có dấu để tìm nghĩa tiếng Việt).'}</p>
       )}
-      {senses.length > 0 && <SenseList senses={senses} picked={picked} onToggle={onToggle} draggable />}
+      {senses.length > 0 && <SenseList senses={senses} picked={picked} onToggle={onToggle} />}
     </div>
   )
 }
 
-function SenseList({ senses, picked, onToggle, draggable = false }: PickerProps & { senses: PickedSense[]; draggable?: boolean }) {
+function SenseList({ senses, picked, onToggle }: PickerProps & { senses: PickedSense[] }) {
   return (
     <ul className="dict-import__list">
       {senses.map((sense, index) => {
@@ -316,13 +334,13 @@ function SenseList({ senses, picked, onToggle, draggable = false }: PickerProps 
             key={sense.senseId}
             className={isPicked ? 'is-picked' : undefined}
             style={{ animationDelay: `${Math.min(index, 12) * 25}ms` }}
-            draggable={draggable}
-            onDragStart={draggable ? (event) => {
+            draggable
+            onDragStart={(event) => {
               event.dataTransfer.setData(DRAG_TYPE, JSON.stringify(sense))
               event.dataTransfer.effectAllowed = 'copy'
-            } : undefined}
+            }}
           >
-            {draggable && <GripVertical size={14} className="dict-import__grip" aria-hidden="true" />}
+            <GripVertical size={14} className="dict-import__grip" aria-hidden="true" />
             <span><b lang="en">{sense.lemma}</b><small>{sense.meaning}</small></span>
             <button type="button" aria-pressed={isPicked} aria-label={isPicked ? `Bỏ chọn ${sense.lemma}` : `Chọn ${sense.lemma}`} onClick={() => onToggle(sense)}>
               {isPicked ? <Check size={15} /> : <Plus size={15} />}
