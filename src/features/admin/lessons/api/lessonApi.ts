@@ -252,17 +252,26 @@ export interface NewVocabularySense {
 }
 
 /** library-service `POST /api/content/admin/vocabulary`: returns the new word's id. Only CONTENT_AUTHOR may call it. */
-export async function createVocabularyItem(request: NewVocabularyItem): Promise<string> {
-  const item = vocabularyItemSchema.parse(await apiRequest<unknown>(`${ADMIN}/vocabulary`, { method: 'POST', auth: true, body: request }))
-  return item.id
+/** The word saved, with the meanings it already had: a word kept inactive by the library is switched on with them. */
+export interface CreatedVocabularyItem {
+  id: string
+  senseIds: string[]
 }
 
-/** library-service `POST /api/content/admin/vocabulary/{id}/senses`: returns the id of the sense just added. */
-export async function addVocabularySense(itemId: string, request: NewVocabularySense): Promise<string> {
-  const body = { ...request, sortOrder: 0 }
+export async function createVocabularyItem(request: NewVocabularyItem): Promise<CreatedVocabularyItem> {
+  const item = vocabularyItemSchema.parse(await apiRequest<unknown>(`${ADMIN}/vocabulary`, { method: 'POST', auth: true, body: request }))
+  return { id: item.id, senseIds: (item.senses ?? []).map((sense) => sense.id) }
+}
+
+/**
+ * library-service `POST /api/content/admin/vocabulary/{id}/senses`: returns the id of the sense just added. The new sense
+ * goes after the `knownSenseIds` the word already has, and is told apart from them by its id, not its place in the list.
+ */
+export async function addVocabularySense(itemId: string, request: NewVocabularySense, knownSenseIds: readonly string[] = []): Promise<string> {
+  const body = { ...request, sortOrder: knownSenseIds.length }
   const item = vocabularyItemSchema.parse(await apiRequest<unknown>(`${ADMIN}/vocabulary/${itemId}/senses`, { method: 'POST', auth: true, body }))
-  const senses = item.senses ?? []
-  const sense = senses[senses.length - 1]
+  const known = new Set(knownSenseIds)
+  const sense = (item.senses ?? []).find((candidate) => !known.has(candidate.id))
   if (!sense) throw new Error('Máy chủ không trả về nghĩa vừa thêm.')
   return sense.id
 }

@@ -6,7 +6,7 @@ import { useAdminErrorToast } from '../../lib/useAdminError'
 import { PART_OF_SPEECH_LABELS } from '../../course-drafts/lib/courseDraftLabels'
 import { ChoiceChips } from '../../knowledge-graph/components/ChoiceChips'
 import { uploadAdminImage } from '../../media/api/mediaUploadApi'
-import { addVocabularySense, createVocabularyItem, uploadVocabularyPronunciation } from '../api/lessonApi'
+import { addVocabularySense, createVocabularyItem, uploadVocabularyPronunciation, type CreatedVocabularyItem } from '../api/lessonApi'
 
 const POS_OPTIONS = Object.entries(PART_OF_SPEECH_LABELS).map(([value, label]) => ({ value, label }))
 const SENSE_IMAGE_ENDPOINT = '/api/content/admin/vocabulary/sense-images'
@@ -107,10 +107,11 @@ function CreateVocabularyForm({ initialLemma, onCreated, onClose }: {
   const [ukFile, setUkFile] = useState<File | null>(null)
   const [ukUrl, setUkUrl] = useState<string | null>(null)
   const [uploadingImage, setUploadingImage] = useState(0)
-  const [itemId, setItemId] = useState<string | null>(null)
+  /** The saved word and the meanings it had then; set once the word exists, so a retry only adds the meaning. */
+  const [saved, setSaved] = useState<CreatedVocabularyItem | null>(null)
   const [saving, setSaving] = useState(false)
   const fail = useAdminErrorToast()
-  const locked = itemId !== null
+  const locked = saved !== null
 
   async function uploadImage(file: File) {
     setUploadingImage((count) => count + 1)
@@ -146,26 +147,26 @@ function CreateVocabularyForm({ initialLemma, onCreated, onClose }: {
       return
     }
     setSaving(true)
-    let id = itemId
+    let word = saved
     try {
-      if (!id) {
+      if (!word) {
         const audioUs = await storeAudio('us')
         const audioUk = await storeAudio('uk')
         // The IPA goes to the old column lesson cards read and to the US column.
         const ipaValue = ipa.trim() || null
-        id = await createVocabularyItem({ lemma: lemma.trim(), ipa: ipaValue, ipaUs: ipaValue, audioUsReference: audioUs, audioUkReference: audioUk })
-        setItemId(id)
+        word = await createVocabularyItem({ lemma: lemma.trim(), ipa: ipaValue, ipaUs: ipaValue, audioUsReference: audioUs, audioUkReference: audioUk })
+        setSaved(word)
       }
-      const senseId = await addVocabularySense(id, {
+      const senseId = await addVocabularySense(word.id, {
         partOfSpeech,
         englishDefinition: englishDefinition.trim() || null,
         vietnameseMeaning: vietnameseMeaning.trim(),
         exampleSentence: exampleSentence.trim(),
         imageUrl: image,
-      })
+      }, word.senseIds)
       onCreated(senseId, lemma.trim())
     } catch (reason) {
-      fail(id ? `Đã lưu từ “${lemma.trim()}” nhưng chưa hoàn tất: ${adminErrorMessage(reason)}` : creationErrorMessage(reason, lemma.trim()))
+      fail(word ? `Đã lưu từ “${lemma.trim()}” nhưng chưa hoàn tất: ${adminErrorMessage(reason)}` : creationErrorMessage(reason, lemma.trim()))
     } finally {
       setSaving(false)
     }

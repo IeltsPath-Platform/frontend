@@ -153,7 +153,8 @@ describe('VocabularySensePicker search', () => {
   it('offers word creation only when the picker allows it, and creates the missing word with its first meaning', async () => {
     const empty: VocabularySuggestionsPage = { content: [], page: 0, size: 20, hasMore: false }
     api.searchVocabulary.mockResolvedValue(empty)
-    api.createVocabularyItem.mockResolvedValue('item-1')
+    // The word was kept inactive by the library and comes back with a meaning it already had.
+    api.createVocabularyItem.mockResolvedValue({ id: 'item-1', senseIds: ['old-sense'] })
     api.addVocabularySense.mockResolvedValue('new-sense')
     const onChange = vi.fn()
     const { unmount } = render(<VocabularySensePicker onChange={onChange} value={[]} />)
@@ -182,7 +183,7 @@ describe('VocabularySensePicker search', () => {
     })
     expect(api.addVocabularySense).toHaveBeenCalledWith('item-1', {
       partOfSpeech: 'NOUN', englishDefinition: null, vietnameseMeaning: 'tiếng lạ', exampleSentence: 'A zyx appeared.', imageUrl: null,
-    })
+    }, ['old-sense'])
     expect(api.uploadVocabularyPronunciation).toHaveBeenCalledWith('zyx', 'us', expect.any(File))
     expect(api.uploadVocabularyPronunciation.mock.invocationCallOrder[0]).toBeLessThan(api.createVocabularyItem.mock.invocationCallOrder[0])
     expect(api.createVocabularyItem.mock.invocationCallOrder[0]).toBeLessThan(api.addVocabularySense.mock.invocationCallOrder[0])
