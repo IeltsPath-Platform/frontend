@@ -23,8 +23,10 @@ vi.mock('@/features/auth/authSession', () => ({
 const MOCK_DETAIL = {
   id: 'word-123',
   lemma: 'resilience',
-  phoneticUk: '/rɪˈzɪl.jəns/',
-  phoneticUs: '/rɪˈzɪl.jəns/',
+  ipaUk: '/rɪˈzɪl.jəns/',
+  ipaUs: '/rɪˈzɪl.jəns/',
+  audioUkReference: 'https://media.example/uk/resilience.mp3',
+  audioUsReference: 'https://media.example/us/resilience.mp3',
   cefrLevel: 'C1',
   frequencyRank: 2450,
   academicWordList: true,
@@ -125,6 +127,59 @@ describe('WordDetailPage', () => {
     // Switch tab to collocations
     await userEvent.click(screen.getByRole('button', { name: /Collocations/i }))
     expect(screen.getByText('build resilience')).toBeInTheDocument()
+  })
+
+  it('does not play US audio on UK button when only US audio is available', async () => {
+    const playMock = vi.fn().mockResolvedValue(undefined)
+    const pauseMock = vi.fn()
+    const audioInstances: Array<{ src: string; play: typeof playMock; pause: typeof pauseMock }> = []
+    vi.stubGlobal('Audio', class MockAudio {
+      src: string
+      play = playMock
+      pause = pauseMock
+      constructor(src: string) {
+        this.src = src
+        audioInstances.push(this)
+      }
+    })
+
+    vi.mocked(notebookApi.getVocabularyItem).mockResolvedValue({
+      ...MOCK_DETAIL,
+      ipaUk: '/rɪˈzɪl.jəns/',
+      audioUkReference: null,
+      ipaUs: '/rɪˈzɪl.jəns/',
+      audioUsReference: 'https://media.example/us/resilience.mp3',
+      pronunciationAudioReference: 'https://media.example/us/resilience.mp3',
+    })
+
+    render(
+      <MemoryRouter initialEntries={['/vocabulary/word-123']}>
+        <Routes>
+          <Route path="/vocabulary/:id" element={<WordDetailPage />} />
+        </Routes>
+      </MemoryRouter>
+    )
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { level: 1, name: 'resilience' })).toBeInTheDocument()
+    })
+
+    // UK button is disabled and has title "Chưa có audio"
+    const ukButton = screen.getByRole('button', { name: /Nghe phát âm Anh-Anh \(chưa có audio\)/i })
+    expect(ukButton).toBeDisabled()
+    expect(ukButton).toHaveAttribute('title', 'Chưa có audio')
+
+    // Clicking UK button does not play anything and does not construct Audio with US URL
+    await userEvent.click(ukButton)
+    expect(playMock).not.toHaveBeenCalled()
+    expect(audioInstances.some((a) => a.src.includes('us/resilience.mp3'))).toBe(false)
+
+    // US button is available and plays US audio
+    const usButton = screen.getByRole('button', { name: 'Nghe phát âm Anh-Mỹ' })
+    expect(usButton).not.toBeDisabled()
+    await userEvent.click(usButton)
+    expect(playMock).toHaveBeenCalled()
+    expect(audioInstances[0]?.src).toBe('https://media.example/us/resilience.mp3')
   })
 })
 

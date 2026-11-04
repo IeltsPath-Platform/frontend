@@ -29,12 +29,14 @@ function TestWrapper({
   defaultValues,
   onSubmit = vi.fn(),
   onClose = vi.fn(),
+  openEmojiOnOpen = false,
 }: {
   isOpen?: boolean
   isEditing?: boolean
   defaultValues?: Partial<PostFormValues>
   onSubmit?: (e: React.FormEvent) => void
   onClose?: () => void
+  openEmojiOnOpen?: boolean
 }) {
   const form = useForm<PostFormValues>({
     defaultValues: {
@@ -59,6 +61,7 @@ function TestWrapper({
       userName="Alice"
       onSubmit={onSubmit}
       onClose={onClose}
+      openEmojiOnOpen={openEmojiOnOpen}
     />
   )
 }
@@ -139,6 +142,21 @@ describe('PostComposerModal', () => {
     fireEvent.keyDown(document, { key: 'Escape' })
     await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument())
     expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('opens with the emoji picker showing when asked to', () => {
+    render(<TestWrapper openEmojiOnOpen />)
+    expect(screen.getByRole('dialog', { name: 'Chọn biểu tượng cảm xúc' })).toBeInTheDocument()
+  })
+
+  it('closes the emoji picker on Escape and keeps the composer open', () => {
+    const onClose = vi.fn()
+    render(<TestWrapper openEmojiOnOpen onClose={onClose} />)
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(screen.queryByRole('dialog', { name: 'Chọn biểu tượng cảm xúc' })).not.toBeInTheDocument()
+    expect(onClose).not.toHaveBeenCalled()
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(onClose).toHaveBeenCalledTimes(1)
   })
 
   it('selects background swatch and switches to gradient theme', () => {

@@ -48,11 +48,11 @@ export interface VocabularyItemDetail {
   id: string
   lemma: string
   ipa?: string | null
-  phoneticUk?: string | null
-  phoneticUs?: string | null
+  ipaUk?: string | null
+  ipaUs?: string | null
   pronunciationAudioReference?: string | null
-  audioUk?: string | null
-  audioUs?: string | null
+  audioUkReference?: string | null
+  audioUsReference?: string | null
   frequencyRank?: number | null
   cefrLevel?: string | null
   academicWordList?: boolean | null

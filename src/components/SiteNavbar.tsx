@@ -23,6 +23,9 @@ function findActiveItem(items: readonly NavItem[], pathname: string) {
     .sort((a, b) => b.to.length - a.to.length)[0]
     ?? items.find((item) => item.children?.some((child) => {
       const path = child.to.split('?')[0]
+      if (child.to === '/vocabulary/notebook' && (pathname === '/flashcards' || pathname.startsWith('/flashcards/'))) {
+        return true
+      }
       return path === pathname || pathname.startsWith(`${path}/`)
     }))
 }
@@ -32,6 +35,9 @@ function findActiveChild(children: readonly NavChild[], pathname: string, search
   const current = new URLSearchParams(search)
   return children.filter((child) => {
     const [path, query = ''] = child.to.split('?')
+    if (child.to === '/vocabulary/notebook' && (pathname === '/flashcards' || pathname.startsWith('/flashcards/'))) {
+      return true
+    }
     if (path !== pathname && !pathname.startsWith(`${path}/`)) return false
     return [...new URLSearchParams(query)].every(([key, value]) => current.get(key) === value)
   }).sort((a, b) => b.to.split('?')[0].length - a.to.split('?')[0].length)[0]
@@ -67,8 +73,7 @@ const discovery: NavItem = {
     { to: '/games', label: 'Trò chơi' },
     { to: '/video-dictation', label: 'Nghe chép' },
     { to: '/vocabulary', label: 'Từ điển' },
-    { to: '/vocabulary/notebook', label: 'Sổ tay từ vựng' },
-    { to: '/flashcards', label: 'Flashcard của tôi' },
+    { to: '/vocabulary/notebook', label: 'Sổ tay & Flashcard' },
   ],
 }
 

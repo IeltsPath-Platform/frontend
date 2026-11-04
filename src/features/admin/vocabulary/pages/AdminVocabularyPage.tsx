@@ -114,10 +114,10 @@ export function AdminVocabularyPage() {
       .then((detail) => {
         setSelectedItemDetail(detail)
         itemForm.reset({
-          ipaUk: detail.phoneticUk || detail.ipa || '',
-          ipaUs: detail.phoneticUs || detail.ipa || '',
-          audioUkReference: detail.audioUk || detail.pronunciationAudioReference || '',
-          audioUsReference: detail.audioUs || '',
+          ipaUk: detail.ipaUk || '',
+          ipaUs: detail.ipaUs || '',
+          audioUkReference: detail.audioUkReference || '',
+          audioUsReference: detail.audioUsReference || '',
           frequencyRank: detail.frequencyRank ?? null,
           academicWordList: detail.academicWordList ?? false,
           wordFamily: detail.wordFamily || '',
@@ -632,10 +632,11 @@ export function AdminVocabularyPage() {
                   {/* Item Metadata Form */}
                   <form onSubmit={itemForm.handleSubmit(handleSaveItem)} style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.85rem' }}>
                     <div>
-                      <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#475569', marginBottom: '0.25rem' }}>
+                      <label htmlFor="item-ipa-uk" style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#475569', marginBottom: '0.25rem' }}>
                         Phiên âm UK (IPA)
                       </label>
                       <input
+                        id="item-ipa-uk"
                         type="text"
                         {...itemForm.register('ipaUk')}
                         style={{ width: '100%', padding: '0.4rem 0.65rem', borderRadius: '0.4rem', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
@@ -643,10 +644,11 @@ export function AdminVocabularyPage() {
                     </div>
 
                     <div>
-                      <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#475569', marginBottom: '0.25rem' }}>
+                      <label htmlFor="item-ipa-us" style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#475569', marginBottom: '0.25rem' }}>
                         Phiên âm US (IPA)
                       </label>
                       <input
+                        id="item-ipa-us"
                         type="text"
                         {...itemForm.register('ipaUs')}
                         style={{ width: '100%', padding: '0.4rem 0.65rem', borderRadius: '0.4rem', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
@@ -654,10 +656,11 @@ export function AdminVocabularyPage() {
                     </div>
 
                     <div>
-                      <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#475569', marginBottom: '0.25rem' }}>
+                      <label htmlFor="item-audio-uk" style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#475569', marginBottom: '0.25rem' }}>
                         Audio UK URL
                       </label>
                       <input
+                        id="item-audio-uk"
                         type="text"
                         {...itemForm.register('audioUkReference')}
                         style={{ width: '100%', padding: '0.4rem 0.65rem', borderRadius: '0.4rem', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
@@ -665,10 +668,11 @@ export function AdminVocabularyPage() {
                     </div>
 
                     <div>
-                      <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#475569', marginBottom: '0.25rem' }}>
+                      <label htmlFor="item-audio-us" style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#475569', marginBottom: '0.25rem' }}>
                         Audio US URL
                       </label>
                       <input
+                        id="item-audio-us"
                         type="text"
                         {...itemForm.register('audioUsReference')}
                         style={{ width: '100%', padding: '0.4rem 0.65rem', borderRadius: '0.4rem', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}

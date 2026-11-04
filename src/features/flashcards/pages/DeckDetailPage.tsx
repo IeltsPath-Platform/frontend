@@ -51,7 +51,7 @@ export function DeckDetailPage() {
     <div className="flashcards-page">
       <SiteNavbar />
       <main className="flashcards-shell">
-        <Link to="/flashcards" className="flashcards-back"><ArrowLeft size={16} aria-hidden="true" />Tất cả học phần</Link>
+        <Link to="/vocabulary/notebook?tab=decks" className="flashcards-back"><ArrowLeft size={16} aria-hidden="true" />Tất cả học phần</Link>
         {error && <p role="alert" className="flashcard-error">{error}</p>}
         {deck && (
           <header className="deck-hub-header">
@@ -107,7 +107,7 @@ export function DeckDetailPage() {
       {modal?.kind === 'delete-deck' && deck && <ConfirmDialog title={`Xóa học phần “${deck.name}”?`}
         description="Chỉ xóa học phần. Các thẻ bên trong vẫn còn trong “Tất cả thẻ”." confirmLabel="Xóa học phần"
         onClose={() => setModal(null)} onConfirm={async () => {
-          await flashcardApi.deleteDeck(deck.id); toast({ title: 'Đã xóa học phần.', tone: 'success' }); navigate('/flashcards')
+          await flashcardApi.deleteDeck(deck.id); toast({ title: 'Đã xóa học phần.', tone: 'success' }); navigate('/vocabulary/notebook?tab=decks')
         }} />}
       {modal?.kind === 'remove' && deck && <ConfirmDialog title={`Gỡ “${modal.item.front}” khỏi học phần?`}
         description="Thẻ vẫn còn trong “Tất cả thẻ” và các học phần khác." confirmLabel="Gỡ khỏi học phần"

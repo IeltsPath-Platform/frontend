@@ -313,15 +313,17 @@ function WordDetailContent() {
 
                 {/* Phonetics & Audio Buttons */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', marginTop: '0.75rem' }}>
-                  {item.phoneticUk ? (
+                  {(item.ipaUk || item.audioUkReference) ? (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                       <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#dc2626', background: '#fef2f2', padding: '0.1rem 0.35rem', borderRadius: '0.3rem' }}>
                         UK
                       </span>
-                      <span style={{ fontFamily: 'monospace', color: '#334155', fontSize: '0.95rem' }}>{item.phoneticUk}</span>
+                      {item.ipaUk ? (
+                        <span style={{ fontFamily: 'monospace', color: '#334155', fontSize: '0.95rem' }}>{item.ipaUk}</span>
+                      ) : null}
                       <PronunciationButton
                         lemma={`${item.lemma} (UK)`}
-                        src={item.audioUk || item.pronunciationAudioReference}
+                        src={item.audioUkReference}
                         aria-label="Nghe phát âm Anh-Anh"
                         style={{ border: 'none', background: 'none', color: '#1e40af', padding: '0.25rem', display: 'flex' }}
                         iconSize={18}
@@ -329,23 +331,29 @@ function WordDetailContent() {
                     </div>
                   ) : null}
 
-                  {item.phoneticUs ? (
+                  {(item.ipaUs || item.audioUsReference) ? (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                       <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#2563eb', background: '#eff6ff', padding: '0.1rem 0.35rem', borderRadius: '0.3rem' }}>
                         US
                       </span>
-                      <span style={{ fontFamily: 'monospace', color: '#334155', fontSize: '0.95rem' }}>{item.phoneticUs}</span>
+                      {item.ipaUs ? (
+                        <span style={{ fontFamily: 'monospace', color: '#334155', fontSize: '0.95rem' }}>{item.ipaUs}</span>
+                      ) : null}
                       <PronunciationButton
                         lemma={`${item.lemma} (US)`}
-                        src={item.audioUs || item.pronunciationAudioReference}
+                        src={item.audioUsReference}
                         aria-label="Nghe phát âm Anh-Mỹ"
                         style={{ border: 'none', background: 'none', color: '#1e40af', padding: '0.25rem', display: 'flex' }}
                         iconSize={18}
                       />
                     </div>
-                  ) : item.ipa ? (
+                  ) : null}
+
+                  {!item.ipaUk && !item.audioUkReference && !item.ipaUs && !item.audioUsReference && (item.ipa || item.pronunciationAudioReference) ? (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                      <span style={{ fontFamily: 'monospace', color: '#334155', fontSize: '0.95rem' }}>{item.ipa}</span>
+                      {item.ipa ? (
+                        <span style={{ fontFamily: 'monospace', color: '#334155', fontSize: '0.95rem' }}>{item.ipa}</span>
+                      ) : null}
                       <PronunciationButton
                         lemma={item.lemma}
                         src={item.pronunciationAudioReference}

@@ -73,7 +73,7 @@ export function FlashcardStudyPage() {
     return () => window.removeEventListener('keydown', onKey)
   })
 
-  const backTo = deckId ? `/flashcards/decks/${deckId}` : '/flashcards'
+  const backTo = deckId ? `/flashcards/decks/${deckId}` : '/vocabulary/notebook?tab=decks'
   return (
     <div className="flashcards-page">
       <SiteNavbar />
