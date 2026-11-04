@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
+import { useAuthSession } from '@/features/auth/authSession'
+import { hasAnyRole } from '@/features/auth/staffRoles'
 import { getLessonVocabularySenses } from '@/features/learning-path/api/lessonVocabularyApi'
 import { AdminModal } from '../../components/AdminLayer'
 import { AdminRowMenu } from '../../components/AdminRowMenu'
@@ -24,6 +26,8 @@ function AddSensesForm({ initial, busy, onSave, onClose }: {
 }) {
   const [draft, setDraft] = useState<string[]>([...initial])
   const fail = useAdminErrorToast()
+  const { roles } = useAuthSession()
+  const canCreate = hasAnyRole(roles, ['CONTENT_AUTHOR'])
 
   async function save() {
     if (draft.length === 0) {
@@ -40,7 +44,7 @@ function AddSensesForm({ initial, busy, onSave, onClose }: {
 
   return (
     <div className="ls-vocab-form">
-      <VocabularySensePicker onChange={setDraft} value={draft} />
+      <VocabularySensePicker canCreate={canCreate} onChange={setDraft} value={draft} />
       <div className="adm-form-footer">
         <button className="adm-btn" onClick={onClose} type="button">Đóng</button>
         <button aria-label="Lưu từ vựng" className="adm-btn adm-btn--primary" disabled={busy} onClick={() => void save()} type="button">

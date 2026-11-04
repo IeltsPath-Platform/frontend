@@ -224,3 +224,80 @@ export async function searchVocabulary(query: string, signal?: AbortSignal): Pro
     await apiRequest<unknown>(`/api/content/vocabulary/search?${params}`, { auth: true, signal }),
   )
 }
+
+const vocabularyItemSchema = z.object({
+  id: z.string(),
+  senses: z.array(z.object({ id: z.string() })).nullish(),
+})
+
+/**
+ * A word for the library, without its senses yet. The US/UK pronunciation is stored with the word in the same request.
+ * `ipa` is the IPA the lesson cards read; `ipaUs` is the US IPA the vocabulary pages read.
+ */
+export interface NewVocabularyItem {
+  lemma: string
+  ipa: string | null
+  ipaUs: string | null
+  audioUsReference: string | null
+  audioUkReference: string | null
+}
+
+/** One meaning of a word. The backend requires the part of speech, the Vietnamese meaning and an example sentence. */
+export interface NewVocabularySense {
+  partOfSpeech: string
+  englishDefinition: string | null
+  vietnameseMeaning: string
+  exampleSentence: string
+  imageUrl: string | null
+}
+
+/** library-service `POST /api/content/admin/vocabulary`: returns the new word's id. Only CONTENT_AUTHOR may call it. */
+export async function createVocabularyItem(request: NewVocabularyItem): Promise<string> {
+  const item = vocabularyItemSchema.parse(await apiRequest<unknown>(`${ADMIN}/vocabulary`, { method: 'POST', auth: true, body: request }))
+  return item.id
+}
+
+/** library-service `POST /api/content/admin/vocabulary/{id}/senses`: returns the id of the sense just added. */
+export async function addVocabularySense(itemId: string, request: NewVocabularySense): Promise<string> {
+  const body = { ...request, sortOrder: 0 }
+  const item = vocabularyItemSchema.parse(await apiRequest<unknown>(`${ADMIN}/vocabulary/${itemId}/senses`, { method: 'POST', auth: true, body }))
+  const senses = item.senses ?? []
+  const sense = senses[senses.length - 1]
+  if (!sense) throw new Error('Máy chủ không trả về nghĩa vừa thêm.')
+  return sense.id
+}
+
+const pronunciationUploadSchema = z.object({
+  mediaReference: z.string().min(1),
+  mediaUrl: z.string().url().nullable(),
+  contentType: z.string(),
+  sizeBytes: z.number().int().positive(),
+})
+
+/**
+ * library-service `POST /api/content/admin/vocabulary/pronunciation`: stores the US or UK audio of a word that does not
+ * exist yet, under its lemma, and returns the public URL. The server refuses the file when the word already exists.
+ */
+export async function uploadVocabularyPronunciation(lemma: string, accent: 'us' | 'uk', file: File): Promise<string> {
+  const body = new FormData()
+  body.append('file', file)
+  body.append('lemma', lemma)
+  body.append('accent', accent)
+  const stored = pronunciationUploadSchema.parse(await apiRequest<unknown>(`${ADMIN}/vocabulary/pronunciation`, { method: 'POST', auth: true, body }))
+  if (!stored.mediaUrl) throw new Error('Máy chủ không trả về đường dẫn âm thanh.')
+  return stored.mediaUrl
+}
+
+const assetSchema = z.object({
+  id: z.string(),
+  assetType: z.enum(['PASSAGE', 'AUDIO', 'IMAGE', 'VIDEO']),
+  textContent: z.string().nullish(),
+  mediaUrl: z.string().nullish(),
+  durationSeconds: z.number().nullish(),
+})
+export type ContentAsset = z.infer<typeof assetSchema>
+
+/** content-service `GET /api/content/assets/{id}`: what an asset block holds, with a URL to see or hear it. */
+export async function fetchAsset(assetId: string, signal?: AbortSignal): Promise<ContentAsset> {
+  return assetSchema.parse(await apiRequest<unknown>(`/api/content/assets/${assetId}`, { auth: true, signal }))
+}

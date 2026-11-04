@@ -1,8 +1,11 @@
 import { useState, type FormEvent } from 'react'
+import { useAuthSession } from '@/features/auth/authSession'
+import { hasAnyRole } from '@/features/auth/staffRoles'
 import { buildBlockRequest, initialBlockState, type BlockFormState } from '../lib/blockForm'
 import { BLOCK_LABEL } from '../lib/blockLabels'
 import { lessonErrorText } from '../lib/lessonErrors'
 import type { BlockRequest, BlockType, LessonBlock } from '../types'
+import { MarkdownField } from '../../components/MarkdownField'
 import { LessonKnowledgeField } from './LessonKnowledgeField'
 import { QuestionChooser } from './QuestionChooser'
 import { VocabularySensePicker } from './VocabularySensePicker'
@@ -18,6 +21,8 @@ export interface BlockEditorProps {
 
 export function BlockEditor({ blockType, block, onSave, onCancel }: BlockEditorProps) {
   const [state, setState] = useState<BlockFormState>(() => initialBlockState(blockType, block))
+  const { roles } = useAuthSession()
+  const canCreateWords = hasAnyRole(roles, ['CONTENT_AUTHOR'])
   const [, setServerError] = useAdminError()
   const fail = useAdminErrorToast()
   const [saving, setSaving] = useState(false)
@@ -46,10 +51,7 @@ export function BlockEditor({ blockType, block, onSave, onCancel }: BlockEditorP
 
       {blockType === 'TEXT' ? (
         <>
-          <label className="adm-field">
-            <span>Nội dung (Markdown)</span>
-            <textarea className="adm-textarea ls-textarea" onChange={(event) => patch({ textContent: event.target.value })} value={state.textContent} />
-          </label>
+          <MarkdownField label="Nội dung (Markdown)" onChange={(textContent) => patch({ textContent })} textareaClassName="adm-textarea ls-textarea" value={state.textContent} />
           <LessonKnowledgeField onChange={(knowledgePointIds) => patch({ knowledgePointIds })} title="Knowledge point mà block này dạy" value={state.knowledgePointIds} />
         </>
       ) : null}
@@ -62,7 +64,7 @@ export function BlockEditor({ blockType, block, onSave, onCancel }: BlockEditorP
       ) : null}
 
       {blockType === 'VOCABULARY' ? (
-        <VocabularySensePicker onChange={(senseIds) => patch({ senseIds })} value={state.senseIds} />
+        <VocabularySensePicker canCreate={canCreateWords} onChange={(senseIds) => patch({ senseIds })} value={state.senseIds} />
       ) : null}
 
       {blockType === 'EXERCISE' ? (

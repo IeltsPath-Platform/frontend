@@ -6,8 +6,16 @@ import { VocabularySensePicker } from './VocabularySensePicker'
 const api = vi.hoisted(() => ({
   searchVocabulary: vi.fn<(query: string, page: number, signal?: AbortSignal) => Promise<VocabularySuggestionsPage>>(),
   getLessonVocabularySenses: vi.fn(),
+  createVocabularyItem: vi.fn(),
+  addVocabularySense: vi.fn(),
+  uploadVocabularyPronunciation: vi.fn(),
 }))
-vi.mock('../api/lessonApi', () => ({ suggestVocabulary: api.searchVocabulary }))
+vi.mock('../api/lessonApi', () => ({
+  suggestVocabulary: api.searchVocabulary,
+  createVocabularyItem: api.createVocabularyItem,
+  addVocabularySense: api.addVocabularySense,
+  uploadVocabularyPronunciation: api.uploadVocabularyPronunciation,
+}))
 vi.mock('@/features/learning-path/api/lessonVocabularyApi', () => ({ getLessonVocabularySenses: api.getLessonVocabularySenses }))
 
 const word = (lemma: string): VocabularyHit => ({
@@ -140,6 +148,62 @@ describe('VocabularySensePicker search', () => {
     expect(screen.getByText('weather')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Đã chọn' })).toBeDisabled()
     expect(screen.queryByRole('button', { name: 'Tải thêm' })).not.toBeInTheDocument()
+  })
+
+  it('offers word creation only when the picker allows it, and creates the missing word with its first meaning', async () => {
+    const empty: VocabularySuggestionsPage = { content: [], page: 0, size: 20, hasMore: false }
+    api.searchVocabulary.mockResolvedValue(empty)
+    api.createVocabularyItem.mockResolvedValue('item-1')
+    api.addVocabularySense.mockResolvedValue('new-sense')
+    const onChange = vi.fn()
+    const { unmount } = render(<VocabularySensePicker onChange={onChange} value={[]} />)
+    fireEvent.change(screen.getByLabelText('Tìm từ vựng'), { target: { value: 'zyx' } })
+    await advance(300)
+    expect(screen.queryByRole('button', { name: /Tạo “zyx” mới/ })).not.toBeInTheDocument()
+    unmount()
+
+    render(<VocabularySensePicker canCreate onChange={onChange} value={[]} />)
+    fireEvent.change(screen.getByLabelText('Tìm từ vựng'), { target: { value: 'zyx' } })
+    await advance(300)
+    fireEvent.click(screen.getByRole('button', { name: /Tạo “zyx” mới/ }))
+    expect(screen.getByLabelText('Từ')).toHaveValue('zyx')
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Danh từ' }))
+    fireEvent.change(screen.getByLabelText(/Nghĩa tiếng Việt/), { target: { value: 'tiếng lạ' } })
+    fireEvent.change(screen.getByLabelText(/Câu ví dụ/), { target: { value: 'A zyx appeared.' } })
+    api.uploadVocabularyPronunciation.mockResolvedValue('https://cdn.test/us.mp3')
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Phát âm US'), { target: { files: [new File(['abc'], 'us.mp3', { type: 'audio/mpeg' })] } })
+    })
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Lưu từ vựng mới' })) })
+
+    expect(api.createVocabularyItem).toHaveBeenCalledWith({
+      lemma: 'zyx', ipa: null, ipaUs: null, audioUsReference: 'https://cdn.test/us.mp3', audioUkReference: null,
+    })
+    expect(api.addVocabularySense).toHaveBeenCalledWith('item-1', {
+      partOfSpeech: 'NOUN', englishDefinition: null, vietnameseMeaning: 'tiếng lạ', exampleSentence: 'A zyx appeared.', imageUrl: null,
+    })
+    expect(api.uploadVocabularyPronunciation).toHaveBeenCalledWith('zyx', 'us', expect.any(File))
+    expect(api.uploadVocabularyPronunciation.mock.invocationCallOrder[0]).toBeLessThan(api.createVocabularyItem.mock.invocationCallOrder[0])
+    expect(api.createVocabularyItem.mock.invocationCallOrder[0]).toBeLessThan(api.addVocabularySense.mock.invocationCallOrder[0])
+    expect(onChange).toHaveBeenCalledWith(['new-sense'])
+    expect(screen.queryByRole('button', { name: 'Lưu từ vựng mới' })).not.toBeInTheDocument()
+  })
+
+  it('tells the author in Vietnamese when the word already exists in the library', async () => {
+    api.searchVocabulary.mockResolvedValue({ content: [], page: 0, size: 20, hasMore: false })
+    api.createVocabularyItem.mockRejectedValue(new Error("VocabularyItem with code 'zyx' already exists"))
+    render(<VocabularySensePicker canCreate onChange={vi.fn()} value={[]} />)
+    fireEvent.change(screen.getByLabelText('Tìm từ vựng'), { target: { value: 'zyx' } })
+    await advance(300)
+    fireEvent.click(screen.getByRole('button', { name: /Tạo “zyx” mới/ }))
+    fireEvent.click(screen.getByRole('radio', { name: 'Danh từ' }))
+    fireEvent.change(screen.getByLabelText(/Nghĩa tiếng Việt/), { target: { value: 'tiếng lạ' } })
+    fireEvent.change(screen.getByLabelText(/Câu ví dụ/), { target: { value: 'A zyx appeared.' } })
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Lưu từ vựng mới' })) })
+
+    expect(screen.getByText('Từ “zyx” đã có trong thư viện.')).toBeInTheDocument()
+    expect(api.addVocabularySense).not.toHaveBeenCalled()
   })
 
   it('cancels a pending next page when the query changes', async () => {

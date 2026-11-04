@@ -192,6 +192,12 @@
 .adm-drawer--lg { width: min(max(1000px, 72vw), 100vw); }
 .adm-drawer--xl { width: min(max(1240px, 86vw), 100vw); }
 .adm-drawer.is-closing { animation: adm-drawer-out .18s ease-in both; }
+/* A drawer opened from a popup (stacked modal at 81) must sit above it. */
+.adm-layer__overlay--drawer-stacked { z-index: 90; }
+.adm-drawer--stacked { z-index: 91; }
+/* A popup opened from inside a stacked drawer, such as a Markdown preview, sits above that drawer. */
+.adm-layer__overlay--top { z-index: 100; }
+.adm-modal--top { z-index: 101; }
 .adm-drawer__header { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-bottom: 1px solid var(--adm-border); }
 .adm-drawer__heading { flex: 1; min-width: 0; }
 .adm-drawer__heading .adm-layer__title { overflow-wrap: anywhere; }

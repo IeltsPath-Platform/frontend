@@ -1,17 +1,20 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
-import { Search, X } from 'lucide-react'
+import { Plus, Search, X } from 'lucide-react'
 import { getLessonVocabularySenses } from '@/features/learning-path/api/lessonVocabularyApi'
 import { AdminError, AdminLoading } from '../../components/AdminState'
 import { useAdminResource } from '../../lib/useAdminResource'
 import { adminErrorMessage } from '../../lib/adminErrors'
 import { suggestVocabulary, type VocabularyHit } from '../api/lessonApi'
+import { CreateVocabularyDrawer } from './CreateVocabularyDrawer'
 
 const SEARCH_DELAY_MS = 300
 
-function VocabularySearchResults({ query, value, onAdd }: {
+function VocabularySearchResults({ query, value, onAdd, onCreate }: {
   query: string
   value: string[]
   onAdd: (id: string) => void
+  /** Set for authors: offers to create the searched word when the library has no match. */
+  onCreate?: () => void
 }) {
   const first = useAdminResource(`vocabulary-suggestions|${query}`, (signal) => suggestVocabulary(query, 0, signal))
   const [more, setMore] = useState({ content: [] as VocabularyHit[], page: 0, hasMore: null as boolean | null, busy: false, error: null as string | null })
@@ -42,7 +45,11 @@ function VocabularySearchResults({ query, value, onAdd }: {
     <div aria-busy={first.status === 'loading' || more.busy}>
       {first.status === 'loading' ? <AdminLoading label="Đang tìm từ vựng…" /> : null}
       {first.status === 'error' ? <AdminError message={first.error ?? 'Không tìm được từ vựng.'} onRetry={first.reload} /> : null}
-      {first.status === 'success' && matches.length === 0 ? <p className="adm-muted" role="status">Không tìm thấy từ nào.</p> : null}
+      {first.status === 'success' && matches.length === 0 ? (
+        <p className="adm-muted" role="status">
+          Không tìm thấy từ nào.{onCreate ? <> <button className="adm-btn adm-btn--small" onClick={onCreate} type="button"><Plus aria-hidden="true" size={14} /> Tạo “{query}” mới</button></> : null}
+        </p>
+      ) : null}
       <ul className="ls-vocab__hits">
         {matches.map(({ lemma, sense }) => (
           <li key={sense.id}>
@@ -63,11 +70,20 @@ function VocabularySearchResults({ query, value, onAdd }: {
   )
 }
 
-/** Picks senses from the vocabulary library, with separate scrolling areas for chosen words and search results. */
-export function VocabularySensePicker({ value, onChange }: { value: string[]; onChange: (next: string[]) => void }) {
+/**
+ * Picks senses from the vocabulary library, with separate scrolling areas for chosen words and search results.
+ * `canCreate` (content authors) adds a way to create a word the library does not have.
+ */
+export function VocabularySensePicker({ value, onChange, canCreate = false }: {
+  value: string[]
+  onChange: (next: string[]) => void
+  canCreate?: boolean
+}) {
   const [text, setText] = useState('')
   const [query, setQuery] = useState('')
   const [revision, setRevision] = useState(0)
+  /** The word the create drawer opens with, or null while it is closed. */
+  const [creating, setCreating] = useState<string | null>(null)
   const resultsId = useId()
 
   const chosen = useAdminResource(`block-senses|${value.join(',')}`, (signal) => getLessonVocabularySenses(value, signal))
@@ -89,8 +105,40 @@ export function VocabularySensePicker({ value, onChange }: { value: string[]; on
 
   const add = (id: string) => onChange(value.includes(id) ? value : [...value, id])
 
+  /** After a word is created it is chosen at once, and the search shows it so the author sees the new row. */
+  function created(senseId: string, lemma: string) {
+    add(senseId)
+    setText(lemma)
+    setQuery(lemma)
+    setRevision((current) => current + 1)
+    setCreating(null)
+  }
+
   return (
     <div className="ls-vocab">
+      <div className="ls-vocab__find">
+        <form className="ls-vocab__search" onSubmit={search}>
+          <input aria-controls={resultsId} aria-label="Tìm từ vựng" className="adm-input" maxLength={100} onChange={(event) => {
+            const next = event.target.value
+            setText(next)
+            if (next.trim().length < 2) setQuery('')
+          }} placeholder="Tìm từ (ví dụ: climate)" value={text} />
+          <button className="adm-btn" disabled={!text.trim()} type="submit"><Search aria-hidden="true" size={14} /> Tìm</button>
+          {canCreate ? <button className="adm-btn" onClick={() => setCreating(text.trim())} type="button"><Plus aria-hidden="true" size={14} /> Tạo từ mới</button> : null}
+        </form>
+        <div aria-label="Kết quả tìm từ vựng" className="ls-vocab__results" id={resultsId} role="region" tabIndex={0}>
+          {currentQuery ? (
+            <VocabularySearchResults
+              key={`${query}|${revision}`}
+              onAdd={add}
+              onCreate={canCreate ? () => setCreating(query) : undefined}
+              query={query}
+              value={value}
+            />
+          ) : null}
+        </div>
+      </div>
+
       <div className="ls-vocab__selection">
         <h4>Nghĩa đã chọn ({value.length})</h4>
         {value.length === 0 ? <p className="adm-muted">Chưa chọn nghĩa nào.</p> : null}
@@ -102,7 +150,7 @@ export function VocabularySensePicker({ value, onChange }: { value: string[]; on
               <li key={id}>
                 <span>
                   <strong>{card?.lemma ?? 'Nghĩa không còn khả dụng'}</strong>{' '}
-                  <span className="adm-muted">{card?.vietnameseMeaning ?? id.slice(0, 8)}</span>
+                  <span className="adm-muted">{card?.partOfSpeech ? `${card.partOfSpeech} · ` : ''}{card?.vietnameseMeaning ?? id.slice(0, 8)}</span>
                 </span>
                 <button aria-label={`Bỏ ${card?.lemma ?? id}`} className="adm-btn adm-btn--small" onClick={() => onChange(value.filter((item) => item !== id))} type="button">
                   <X aria-hidden="true" size={14} />
@@ -112,18 +160,7 @@ export function VocabularySensePicker({ value, onChange }: { value: string[]; on
           })}
         </ul>
       </div>
-
-      <form className="ls-vocab__search" onSubmit={search}>
-        <input aria-controls={resultsId} aria-label="Tìm từ vựng" className="adm-input" maxLength={100} onChange={(event) => {
-          const next = event.target.value
-          setText(next)
-          if (next.trim().length < 2) setQuery('')
-        }} placeholder="Tìm từ (ví dụ: climate)" value={text} />
-        <button className="adm-btn" disabled={!text.trim()} type="submit"><Search aria-hidden="true" size={14} /> Tìm</button>
-      </form>
-      <div aria-label="Kết quả tìm từ vựng" className="ls-vocab__results" id={resultsId} role="region" tabIndex={0}>
-        {currentQuery ? <VocabularySearchResults key={`${query}|${revision}`} onAdd={add} query={query} value={value} /> : null}
-      </div>
+      {creating !== null ? <CreateVocabularyDrawer initialLemma={creating} onClose={() => setCreating(null)} onCreated={created} /> : null}
     </div>
   )
 }

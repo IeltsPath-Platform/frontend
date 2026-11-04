@@ -1,12 +1,14 @@
 import { useId, useState, type FormEvent } from 'react'
-import { ArrowDown, ArrowUp, BookA, ChevronDown, FileText, Image as ImageIcon, ListChecks, Pencil, Plus, Trash2 } from 'lucide-react'
-import { AdminModal } from '../../components/AdminLayer'
+import { ArrowDown, ArrowUp, BookA, ChevronDown, Eye, FileText, Image as ImageIcon, ListChecks, Pencil, Plus, Trash2 } from 'lucide-react'
+import { AdminDrawer } from '../../components/AdminLayer'
 import { useAdminConfirm } from '../../lib/useAdminConfirm'
 import { MarkdownField } from '../../components/MarkdownField'
 import { STATUS_LABEL } from '../../questions/lib/labels'
 import {
   addBlock, deleteBlock, reorderBlocks, setLessonKnowledgePoints, updateBlock, updateLesson,
 } from '../api/lessonApi'
+import { AssetBlockPreview } from '../components/AssetBlockPreview'
+import { BlockQuestionDetail } from '../components/BlockQuestionDetail'
 import { BlockEditor } from '../components/BlockEditor'
 import { LessonKnowledgeField } from '../components/LessonKnowledgeField'
 import { LessonResourcesEditor } from '../components/LessonResourcesEditor'
@@ -118,6 +120,7 @@ export function LessonEditorPanel({ lesson, reload, onClose }: { lesson: LessonE
   const infoFormId = useId()
   const [infoSaving, setInfoSaving] = useState(false)
   const [editing, setEditing] = useState<Editing>(null)
+  const [viewingQuestion, setViewingQuestion] = useState<{ questionId: string; questionVersionId: string } | null>(null)
   // Blocks folded to their header, by id; every block starts open.
   const [folded, setFolded] = useState<ReadonlySet<string>>(new Set())
   const fail = useAdminErrorToast()
@@ -182,7 +185,8 @@ export function LessonEditorPanel({ lesson, reload, onClose }: { lesson: LessonE
         <div className="adm-sec__head">
           <h3 className="adm-sec__title">Các block<span className="adm-count">{lesson.blocks.length}</span></h3>
           <div className="adm-sec__tools">
-            {BLOCK_TYPES.filter((type) => type !== 'VOCABULARY').map((type) => (
+            {/* Asset blocks are no longer created here: they pointed at a pasted asset id. Existing ones still show and can be removed. */}
+            {BLOCK_TYPES.filter((type) => type !== 'VOCABULARY' && type !== 'ASSET').map((type) => (
               <button
                 className="adm-btn adm-btn--small"
                 disabled={busy || (type === 'EXERCISE' && exerciseLocked)}
@@ -219,9 +223,9 @@ export function LessonEditorPanel({ lesson, reload, onClose }: { lesson: LessonE
                   <button
                     aria-label={`Sửa block ${index + 1}`}
                     className="adm-icon-btn"
-                    disabled={busy || !canTouch(block)}
+                    disabled={busy || !canTouch(block) || block.blockType === 'ASSET'}
                     onClick={() => setEditing({ mode: 'edit', block })}
-                    title={canTouch(block) ? undefined : 'Bài đã xuất bản: không đổi được câu hỏi của block bài tập.'}
+                    title={block.blockType === 'ASSET' ? 'Tài nguyên không có gì để sửa: xem nội dung ngay trong block.' : canTouch(block) ? undefined : 'Bài đã xuất bản: không đổi được câu hỏi của block bài tập.'}
                     type="button"
                   >
                     <Pencil aria-hidden="true" size={16} />
@@ -240,13 +244,28 @@ export function LessonEditorPanel({ lesson, reload, onClose }: { lesson: LessonE
               </header>
               {open ? (
                 <>
-                  <p className="ls-block__summary">{blockSummary(block)}</p>
+                  {block.blockType === 'ASSET'
+                    ? <AssetBlockPreview assetId={block.assetId} />
+                    : <p className="ls-block__summary">{blockSummary(block)}</p>}
+                  {block.blockType === 'EXERCISE' && exerciseLocked
+                    ? <p className="ls-block__locked">Bài đã xuất bản nên không sửa hay xóa được block bài tập (học viên đã có tiến độ theo block).</p>
+                    : null}
                   {block.blockType === 'EXERCISE' && block.questions.length > 0 ? (
                     <ul className="ls-block__questions">
                       {block.questions.map((question) => (
                         <li key={question.questionVersionId}>
                           {question.stem ?? `Phiên bản ${question.questionVersionId.slice(0, 8)}`}{' '}
                           {question.status && question.status !== 'PUBLISHED' ? <span className="adm-badge adm-badge--warn">{STATUS_LABEL[question.status] ?? question.status}</span> : null}
+                          {question.questionId ? (
+                            <button
+                              aria-label={`Xem chi tiết câu hỏi: ${question.stem ?? question.questionVersionId.slice(0, 8)}`}
+                              className="adm-icon-btn"
+                              onClick={() => setViewingQuestion({ questionId: question.questionId as string, questionVersionId: question.questionVersionId })}
+                              type="button"
+                            >
+                              <Eye aria-hidden="true" size={16} />
+                            </button>
+                          ) : null}
                         </li>
                       ))}
                     </ul>
@@ -258,11 +277,13 @@ export function LessonEditorPanel({ lesson, reload, onClose }: { lesson: LessonE
         })}
       </section>
 
+      {viewingQuestion ? <BlockQuestionDetail {...viewingQuestion} onClose={() => setViewingQuestion(null)} /> : null}
+
       {editing ? (
-        <AdminModal
+        <AdminDrawer
           description={lesson.title}
           onClose={() => setEditing(null)}
-          size="wide"
+          size="lg"
           stacked
           title={editing.mode === 'edit' ? `Sửa block: ${BLOCK_LABEL[editing.block.blockType]}` : `Thêm block: ${BLOCK_LABEL[editing.blockType]}`}
         >
@@ -275,7 +296,7 @@ export function LessonEditorPanel({ lesson, reload, onClose }: { lesson: LessonE
               onSave={async (body) => { await saveBlock(body); close() }}
             />
           )}
-        </AdminModal>
+        </AdminDrawer>
       ) : null}
 
       {/* The one Lưu of the editor: it stays at the foot of the popup while the long editor scrolls, and saves the lesson information above. */}

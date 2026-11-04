@@ -27,12 +27,24 @@
 .ls-vocab__results:focus-visible { outline: 2px solid var(--adm-accent); outline-offset: 2px; }
 .ls-vocab__hits { margin: 0; align-content: start; }
 .ls-vocab__more { display: flex; margin: 12px auto 0; }
-.adm-modal--lg:has(> .adm-modal__body > .ls-vocab-form) { width: min(760px, calc(100vw - 64px)); height: min(560px, calc(100dvh - 96px)); }
+.ls-vocab__find { display: flex; flex-direction: column; min-height: 0; }
+.ls-vocab__find > .ls-vocab__search { margin-top: 0; }
+.ls-vocab > .ls-vocab__selection { margin-top: 12px; }
+/* In the popup the picker is two columns: search and results on the left, the chosen words on the right, each filling the full height. */
+.adm-modal--lg:has(> .adm-modal__body > .ls-vocab-form) { width: min(920px, calc(100vw - 64px)); height: min(640px, calc(100dvh - 96px)); }
 .ls-vocab-form { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; padding: 16px 20px 0; }
-.ls-vocab-form .ls-vocab__selection { height: min(112px, 18dvh); }
-.ls-vocab-form > .ls-vocab, .ls-vocab-form .ls-vocab__results { flex: 1; }
+.ls-vocab-form > .ls-vocab { flex: 1; display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 0 20px; }
+.ls-vocab-form .ls-vocab__find, .ls-vocab-form .ls-vocab__results { flex: 1; }
 .ls-vocab-form .ls-vocab__results { max-height: none; }
+.ls-vocab-form .ls-vocab__selection { height: auto; margin-top: 0; padding-left: 20px; border-left: 1px solid var(--adm-border); }
+.ls-vocab-form .ls-vocab__list { flex: 1; margin: 0; }
+@media (max-width: 720px) {
+  .ls-vocab-form > .ls-vocab { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) minmax(0, 170px); gap: 12px 0; }
+  .ls-vocab-form .ls-vocab__selection { padding: 12px 0 0; border-left: 0; border-top: 1px solid var(--adm-border); }
+}
 .adm-modal__body .ls-vocab-form > .adm-form-footer { position: static; flex: none; margin: 12px -20px 0; border-radius: 0; }
+/* Wraps the fields of the create-word drawer; a plain fieldset has no border, padding or margin. */
+.ls-create-vocab { min-width: 0; margin: 0; padding: 0; border: 0; }
 .ls-questions ol { margin: 8px 0; padding-left: 20px; display: grid; gap: 6px; }
 .ls-questions ol .adm-btn { margin-left: 8px; }
 .ls-questions__list { max-height: 280px; overflow-y: auto; }
@@ -41,3 +53,12 @@
 .adm-resource-fields { min-width: 0; border: 0; padding: 0; margin: 0; }
 .adm-resource-fields legend { margin-bottom: 12px; font-weight: 600; }
 .adm-resource-fields .adm-input { font-size: 1rem; }
+.ls-create-vocab__upload .adm-filters { margin: 0; }
+.ls-create-vocab__stored { display: flex; align-items: center; gap: 10px; margin: 0 0 12px; }
+.ls-create-vocab__stored img { max-height: 96px; max-width: 100%; border: 1px solid var(--adm-border); border-radius: 8px; }
+.ls-create-vocab__stored audio { flex: 1; min-width: 0; }
+.ls-asset { display: grid; gap: 8px; justify-items: start; }
+.ls-asset audio { width: 100%; }
+.ls-asset__image { max-width: 100%; max-height: 260px; border: 1px solid var(--adm-border); border-radius: 8px; }
+.ls-asset__text { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.ls-block__locked { margin: 0; color: var(--adm-muted); font-size: .9rem; }
