@@ -97,9 +97,34 @@ export const humanReviewSchema = z.object({
   errorCodes: z.array(z.string()).nullish(),
   feedback: z.string().nullish(),
   annotations: z.array(annotationSchema).nullish(),
+  // Read one by one by readStudyPoints, so a point that does not match is left out instead of failing the whole review.
+  studyPoints: z.array(z.unknown()).nullish(),
 })
 export type HumanReview = z.infer<typeof humanReviewSchema>
 export type ReviewAnnotation = z.infer<typeof annotationSchema>
+
+/** What the learner should study after the examiner's grade: a marked error or a weak criterion, applied to mastery. */
+const examinerStudyPointSchema = z.object({
+  kind: z.enum(['ERROR_CODE', 'CRITERION']),
+  errorCode: z.string().nullish(),
+  count: z.number().int().nullish(),
+  criterionCode: z.string().nullish(),
+  band: z.number().nullish(),
+  knowledgePointId: z.guid().nullish(),
+  code: z.string().nullish(),
+  name: z.string().nullish(),
+  practiceKnowledgePointId: z.guid().nullish(),
+  reviewItemId: z.guid().nullish(),
+})
+export type ExaminerStudyPoint = z.infer<typeof examinerStudyPointSchema>
+
+/** The readable study points of a review; any other entry is dropped. */
+export function readStudyPoints(raw: readonly unknown[] | null | undefined): ExaminerStudyPoint[] {
+  return (raw ?? []).flatMap((item) => {
+    const parsed = examinerStudyPointSchema.safeParse(item)
+    return parsed.success ? [parsed.data] : []
+  })
+}
 
 export async function getHumanReview(submissionId: string, signal?: AbortSignal) {
   return humanReviewSchema.parse(await apiRequest<unknown>(`/api/learning/writing-submissions/${z.guid().parse(submissionId)}/human-review`, { auth: true, signal }))

@@ -308,4 +308,34 @@ describe('the result of an essay sent to a teacher', () => {
     expect(await screen.findByLabelText('Band Score')).toHaveTextContent('6.5')
     expect(screen.queryByRole('region', { name: 'Giáo viên chấm bài' })).not.toBeInTheDocument()
   })
+
+  it('lists what to study after the grade: the review made for a marked error, and practice on a weak criterion', async () => {
+    const reviewItemId = '60000000-0000-4000-8000-000000000001'
+    const point = '70000000-0000-4000-8000-000000000001'
+    server(() => json({
+      ...done,
+      studyPoints: [
+        { kind: 'ERROR_CODE', errorCode: 'LINKER_MISUSE', count: 2, knowledgePointId: point, code: 'DEMO_WRITING_LINKING', name: 'Từ nối và mạch lạc', reviewItemId },
+        { kind: 'CRITERION', criterionCode: 'CC', band: 5, knowledgePointId: point, practiceKnowledgePointId: point, name: 'Mạch lạc và liên kết' },
+        { kind: 'CRITERION', criterionCode: 'GRA', band: 5, knowledgePointId: 'not-a-guid' },
+      ],
+    }))
+    show()
+
+    const study = await screen.findByRole('region', { name: 'Cần ôn' })
+    expect(within(study).getByText('Từ nối và mạch lạc')).toBeInTheDocument()
+    expect(within(study).getByText('Lỗi giáo viên đánh dấu ×2')).toBeInTheDocument()
+    expect(within(study).getByRole('link', { name: 'Ôn ngay' })).toHaveAttribute('href', `/learn/reviews/${reviewItemId}`)
+    expect(within(study).getByText('Mạch lạc và liên kết')).toBeInTheDocument()
+    expect(within(study).getByRole('button', { name: 'Luyện tập Mạch lạc và liên kết' })).toBeInTheDocument()
+    expect(within(study).getAllByRole('listitem')).toHaveLength(2)
+  })
+
+  it('shows no study block when the review produced no points', async () => {
+    server(() => json({ ...done, studyPoints: [] }))
+    show()
+
+    expect(await screen.findByLabelText('Band Score')).toHaveTextContent('6.5')
+    expect(screen.queryByRole('region', { name: 'Cần ôn' })).not.toBeInTheDocument()
+  })
 })

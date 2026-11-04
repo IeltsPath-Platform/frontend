@@ -4,12 +4,13 @@ import { X } from 'lucide-react'
 import { SiteNavbar } from '@/components/SiteNavbar'
 import { ApiErrorState, LoadingState } from '@/features/learning-path/components/PageState'
 import { useApiResource } from '@/features/learning-path/lib/useApiResource'
-import { getExaminer, getHumanReview } from './examinerApi'
+import { getExaminer, getHumanReview, readStudyPoints } from './examinerApi'
 import { errorTypesByCode, getApprovedErrorTypes } from './examinerReviewsApi'
 import type { LearnerErrorType } from './examinerReviewsApi'
 import type { HumanReview } from './examinerApi'
 import { TeacherCard } from './ExaminerList'
 import { findJobOfReview } from './gradingJobApi'
+import { ExaminerStudyPoints } from './ExaminerStudyPoints'
 import { LateExaminerNotice } from './LateExaminerNotice'
 import { criterionName, markByOffsets, shownMarks } from './reviewMarks'
 import type { WritingSubmission } from './writingApi'
@@ -168,6 +169,7 @@ function Done({ review, essay, types }: { review: HumanReview; essay: string; ty
           </div>
         )}
       </section>
+      <ExaminerStudyPoints points={readStudyPoints(review.studyPoints)} />
     </div>
   )
 }
