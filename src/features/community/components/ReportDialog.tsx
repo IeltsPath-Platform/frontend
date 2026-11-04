@@ -1,4 +1,5 @@
 import type { FormEvent } from 'react'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
 export interface ReportDialogProps {
   target: { type: 'POST' | 'COMMENT'; id: string } | null
@@ -17,33 +18,15 @@ export function ReportDialog({
   onSubmit,
   onClose,
 }: ReportDialogProps) {
-  if (!target) return null
-
   return (
-    <div
-      className="community-modal-backdrop"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) {
-          onClose()
-        }
-      }}
-    >
-      <section
-        className="community-modal community-report-dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="report-title"
-      >
-        <header>
-          <h2 id="report-title">
-            Báo cáo {target.type === 'POST' ? 'bài viết' : 'bình luận'}
-          </h2>
-          <button type="button" aria-label="Đóng" onClick={onClose}>
-            ×
-          </button>
-        </header>
+    <Dialog open={Boolean(target)} onOpenChange={(open) => { if (!open) onClose() }}>
+      <DialogContent className="community-report-dialog">
+        <DialogHeader>
+          <DialogTitle>Báo cáo {target?.type === 'COMMENT' ? 'bình luận' : 'bài viết'}</DialogTitle>
+          <DialogDescription>Mỗi người chỉ báo cáo một nội dung một lần.</DialogDescription>
+        </DialogHeader>
 
-        <form onSubmit={onSubmit}>
+        <form onSubmit={onSubmit} className="community-report-form">
           <label htmlFor="report-reason">Lý do báo cáo</label>
           <textarea
             id="report-reason"
@@ -54,9 +37,7 @@ export function ReportDialog({
             rows={4}
             placeholder="Mô tả lý do bạn báo cáo nội dung này (ví dụ: spam, ngôn ngữ không phù hợp...)"
           />
-          <p className="community-report-char-count">
-            {reason.trim().length}/1000 · Mỗi người chỉ báo cáo nội dung này một lần.
-          </p>
+          <p className="community-report-char-count">{reason.trim().length}/1000</p>
 
           {message && <p role="status" className="community-report-status-msg">{message}</p>}
 
@@ -69,7 +50,7 @@ export function ReportDialog({
             </button>
           </footer>
         </form>
-      </section>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }

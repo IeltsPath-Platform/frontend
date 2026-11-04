@@ -35,6 +35,8 @@ export interface PostCardProps {
   onFollowAuthor: (authorId: string, currentFollowing: boolean) => void
   onOpenReport: (target: { type: 'POST' | 'COMMENT'; id: string }) => void
   onImageClick: (url: string) => void
+  /** The post the learner just published or saved; it slides in and is briefly highlighted. */
+  isFresh?: boolean
   children?: ReactNode
 }
 
@@ -50,6 +52,7 @@ export function PostCard({
   onFollowAuthor,
   onOpenReport,
   onImageClick,
+  isFresh = false,
   children,
 }: PostCardProps) {
   const isOwner = post.authorId === currentUserId
@@ -71,7 +74,7 @@ export function PostCard({
   const isBackgroundPost = Boolean(bgConfig && post.imageUrls.length === 0 && !post.videoUrl)
 
   return (
-    <article className="community-post" key={post.id}>
+    <article className={`community-post${isFresh ? ' is-fresh' : ''}`} key={post.id}>
       {/* Post Author Header */}
       <header className="community-post-author">
         <div className="community-avatar" aria-hidden="true">

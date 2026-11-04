@@ -35,6 +35,8 @@ export interface PostComposerModalProps {
   onClose: () => void
   initialMediaType?: 'IMAGE' | 'VIDEO'
   openMediaOnOpen?: boolean
+  /** Opens with the emoji picker showing, for the "Cảm xúc" shortcut on the feed. */
+  openEmojiOnOpen?: boolean
 }
 
 export function PostComposerModal({
@@ -48,6 +50,7 @@ export function PostComposerModal({
   onClose,
   initialMediaType,
   openMediaOnOpen = false,
+  openEmojiOnOpen = false,
 }: PostComposerModalProps) {
   const {
     register,
@@ -64,7 +67,7 @@ export function PostComposerModal({
   const backgroundValue = watch('background') ?? null
 
   const [showMediaPanel, setShowMediaPanel] = useState(openMediaOnOpen)
-  const [showEmojiPopover, setShowEmojiPopover] = useState(false)
+  const [showEmojiPopover, setShowEmojiPopover] = useState(openEmojiOnOpen)
   const [showTitleInput, setShowTitleInput] = useState(false)
   const [warningMessage, setWarningMessage] = useState('')
   const [uploadsInProgress, setUploadsInProgress] = useState(false)
@@ -133,6 +136,9 @@ export function PostComposerModal({
   // through a ref keeps typing (which changes isDirty) from re-running it and stealing focus.
   const safeCloseRef = useRef(handleSafeClose)
   useEffect(() => { safeCloseRef.current = handleSafeClose }, [handleSafeClose])
+  // Escape belongs to the emoji picker while it is open; the composer closes on the next Escape.
+  const emojiOpenRef = useRef(showEmojiPopover)
+  useEffect(() => { emojiOpenRef.current = showEmojiPopover }, [showEmojiPopover])
 
   // Focus restoration & Escape handling
   useEffect(() => {
@@ -142,6 +148,7 @@ export function PostComposerModal({
     const timer = window.setTimeout(() => textareaRef.current?.focus(), 50)
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && emojiOpenRef.current) return
       if (e.key === 'Escape') {
         e.preventDefault()
         safeCloseRef.current()
