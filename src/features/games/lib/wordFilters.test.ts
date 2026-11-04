@@ -32,7 +32,7 @@ describe('word filters', () => {
   it('reports a choice with too few words, and nothing before the counts load', () => {
     const choice = { cefrLevel: 'B1', topicId: 't1' }
     expect(wordFilterError(filters, choice, 22)).toBeNull()
-    expect(wordFilterError(filters, choice, 23)).toContain('chỉ có 22 từ, cần 23 từ')
+    expect(wordFilterError(filters, choice, 23)).toContain('Không đủ từ')
     expect(wordFilterError(null, choice, 23)).toBeNull()
   })
 
