@@ -3,6 +3,7 @@ import { ApiErrorState, LoadingState } from '@/features/learning-path/components
 import { useApiResource } from '@/features/learning-path/lib/useApiResource'
 import { SpeakingPage } from '../pages/SpeakingPage'
 import { getSpeakingTask } from './speakingApi'
+import { clearSession } from './speakingSession'
 import '@/features/learning-path/learning-path.css'
 import '../reading/reading-practice.css'
 
@@ -27,6 +28,20 @@ export function SpeakingWorkspacePage() {
   const nextPartPath = parts.includes(sectionId) && next
     ? `/practice/speaking/tasks/${packageVersionId}/${next}?parts=${parts.join(',')}`
     : null
+  // The review lists every part of the test; a single part is a test of one.
+  const reviewParts = parts.includes(sectionId) ? parts : [sectionId]
+  const reviewPath = `/practice/speaking/review/${packageVersionId}?parts=${reviewParts.join(',')}`
+  const question = Number(params.get('q'))
 
-  return <SpeakingPage key={task.sectionId} task={task} nextPartPath={nextPartPath} onExit={() => navigate(CATALOG_PATH)} />
+  return (
+    <SpeakingPage
+      key={task.sectionId}
+      task={task}
+      nextPartPath={nextPartPath}
+      initialIndex={Number.isInteger(question) && question > 0 ? question : 0}
+      timed={!params.has('q')}
+      onFinish={() => navigate(reviewPath)}
+      onExit={() => { clearSession(packageVersionId); navigate(CATALOG_PATH) }}
+    />
+  )
 }

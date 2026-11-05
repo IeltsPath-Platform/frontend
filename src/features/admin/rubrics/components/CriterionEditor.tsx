@@ -1,10 +1,11 @@
-import { RUBRIC_BANDS, type RubricCriterion } from '../types'
+import { RUBRIC_BANDS, RUBRIC_CRITERIA, type RubricCriterion, type WritingTask } from '../types'
 
-export function CriterionEditor({ criterion, index, onChange }: { criterion: RubricCriterion; index: number; onChange: (next: RubricCriterion) => void }) {
+export function CriterionEditor({ criterion, index, task, onChange }: { criterion: RubricCriterion; index: number; task: WritingTask; onChange: (next: RubricCriterion) => void }) {
   const label = index + 1
+  const codes = task === 'SPEAKING' ? RUBRIC_CRITERIA.filter((code) => ['FC', 'LR', 'GRA', 'PR'].includes(code)) : RUBRIC_CRITERIA.filter((code) => ['TA', 'TR', 'CC', 'LR', 'GRA'].includes(code))
   return <fieldset className="adm-card adm-rubric-criterion">
     <legend>Tiêu chí {label}</legend>
-    <label className="adm-field"><span>Mã tiêu chí {label}</span><select className="adm-select" value={criterion.code} onChange={(event) => onChange({ ...criterion, code: event.target.value as RubricCriterion['code'] })}>{['TA', 'TR', 'CC', 'LR', 'GRA'].map((code) => <option key={code} value={code}>{code}</option>)}</select></label>
+    <label className="adm-field"><span>Mã tiêu chí {label}</span><select className="adm-select" value={criterion.code} onChange={(event) => onChange({ ...criterion, code: event.target.value as RubricCriterion['code'] })}>{codes.map((code) => <option key={code} value={code}>{code}</option>)}</select></label>
     <label className="adm-field"><span>Tên tiêu chí {label}</span><input className="adm-input" maxLength={120} required value={criterion.name} onChange={(event) => onChange({ ...criterion, name: event.target.value })} /></label>
     <label className="adm-field"><span>Mô tả tiêu chí {label}</span><textarea className="adm-textarea" maxLength={20000} required value={criterion.description} onChange={(event) => onChange({ ...criterion, description: event.target.value })} /></label>
     {criterion.bandDescriptors.map((item, bandIndex) => <div className="adm-rubric-band" key={bandIndex}>

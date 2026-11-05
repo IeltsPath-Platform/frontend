@@ -110,12 +110,12 @@ function TaskRubrics({ task }: { task: WritingTask }) {
 
 export function RubricsPage() {
   const [params, setParams] = useSearchParams()
-  const task: WritingTask = params.get('task') === 'TASK_2' ? 'TASK_2' : 'TASK_1'
-  return <AdminPage plain title="Rubric chấm Writing">
-    <nav aria-label="Chọn Writing Task" className="rb-seg">
-      {(['TASK_1', 'TASK_2'] as const).map((value) => (
+  const task: WritingTask = params.get('task') === 'SPEAKING' ? 'SPEAKING' : params.get('task') === 'TASK_2' ? 'TASK_2' : 'TASK_1'
+  return <AdminPage plain title="Rubric chấm bài">
+    <nav aria-label="Chọn kỹ năng" className="rb-seg">
+      {(['TASK_1', 'TASK_2', 'SPEAKING'] as const).map((value) => (
         <button aria-pressed={task === value} className={task === value ? 'is-active' : undefined} key={value} onClick={() => setParams((current) => { const next = new URLSearchParams(current); next.set('task', value); return next })} type="button">
-          Task {value === 'TASK_1' ? '1' : '2'}
+          {value === 'SPEAKING' ? 'Speaking' : `Writing Task ${value === 'TASK_1' ? '1' : '2'}`}
         </button>
       ))}
     </nav>
