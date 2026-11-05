@@ -114,21 +114,43 @@ export interface GradeFigures {
   checks: Array<{ text: string; ok: boolean }>
 }
 
+/** Wording that differs between skills; the defaults are the Writing ones. */
+export interface GradeDialogCopy {
+  description?: string
+  /** The button that closes the dialog without grading. */
+  backLabel?: string
+  /** The line under the buttons. */
+  note?: string
+  /** The grade button while the work is running. */
+  busyLabel?: string
+}
+
+/** A consent the learner must tick before the grade button opens. */
+export interface GradeConsent {
+  label: string
+  checked: boolean
+  onChange: (checked: boolean) => void
+}
+
 /** "Spend points to let the AI grade": the cost, the balance after, and what the learner gets. */
-export function GradeConfirmDialog({ figures, busy, error, canGrade, onGrade, onClose }: {
+export function GradeConfirmDialog({ figures, busy, error, canGrade, onGrade, onClose, copy, consent, progress }: {
   figures: GradeFigures
   busy: boolean
   error: string
   canGrade: boolean
   onGrade: () => void
   onClose: () => void
+  copy?: GradeDialogCopy
+  consent?: GradeConsent
+  /** What the work has done so far while {@code busy}, such as "Đang tải lên 2/4". */
+  progress?: string
 }) {
   const { cost, balance } = figures
   return (
     <Dialog open onOpenChange={(open) => { if (!open && !busy) onClose() }}>
       <DialogContent className="ww-dialog">
         <DialogTitle className="ww-dialog-title"><Sparkles size={20} aria-hidden="true" /> Chấm bài bằng AI</DialogTitle>
-        <DialogDescription>AI chấm theo 4 tiêu chí IELTS Writing và trả về Band, lỗi cần sửa và gợi ý cải thiện.</DialogDescription>
+        <DialogDescription>{copy?.description ?? 'AI chấm theo 4 tiêu chí IELTS Writing và trả về Band, lỗi cần sửa và gợi ý cải thiện.'}</DialogDescription>
         <p className="ww-dialog-context">{figures.context}</p>
         <div className="ww-figures">
           <div><span>Chi phí chấm</span><strong className="is-strong">−{cost} point</strong></div>
@@ -142,30 +164,40 @@ export function GradeConfirmDialog({ figures, busy, error, canGrade, onGrade, on
         <p className="ww-checks">{figures.checks.map((check, index) => (
           <span key={check.text} className={check.ok ? 'is-ok' : 'is-warn'}>{index > 0 ? ' · ' : ''}{check.text} {check.ok ? '✓' : '!'}</span>
         ))}</p>
+        {consent && (
+          <label className="ww-consent">
+            <input type="checkbox" checked={consent.checked} disabled={busy} onChange={(event) => consent.onChange(event.target.checked)} />
+            <span>{consent.label}</span>
+          </label>
+        )}
         {error && <p className="ww-error" role="alert">{error}</p>}
+        {busy && progress && <p className="ww-muted" role="status">{progress}</p>}
         <div className="ww-dialog-actions">
-          <button type="button" className="ww-secondary" disabled={busy} onClick={onClose}>Quay lại chỉnh sửa</button>
-          <button type="button" className="ww-primary" disabled={busy || !canGrade} onClick={onGrade}>{busy ? 'Đang chấm bài…' : `Chấm bài · ${cost} point`}</button>
+          <button type="button" className="ww-secondary" disabled={busy} onClick={onClose}>{copy?.backLabel ?? 'Quay lại chỉnh sửa'}</button>
+          <button type="button" className="ww-primary" disabled={busy || !canGrade || (consent !== undefined && !consent.checked)} onClick={onGrade}>
+            {busy ? (copy?.busyLabel ?? 'Đang chấm bài…') : `Chấm bài · ${cost} point`}
+          </button>
         </div>
-        <p className="ww-dialog-note">Bài sẽ được khóa sau khi chấm. Nếu AI gặp lỗi, point sẽ được hoàn lại.</p>
+        <p className="ww-dialog-note">{copy?.note ?? 'Bài sẽ được khóa sau khi chấm. Nếu AI gặp lỗi, point sẽ được hoàn lại.'}</p>
       </DialogContent>
     </Dialog>
   )
 }
 
 /** The balance is under the cost: say by how much and offer to add points with an activation key. */
-export function NotEnoughPointsDialog({ cost, balance, onActivate, onClose }: {
+export function NotEnoughPointsDialog({ cost, balance, onActivate, onClose, copy }: {
   cost: number
   balance: number | null
   onActivate: () => void
   onClose: () => void
+  copy?: Pick<GradeDialogCopy, 'backLabel'> & { kept?: string }
 }) {
   const have = balance ?? 0
   return (
     <Dialog open onOpenChange={(open) => { if (!open) onClose() }}>
       <DialogContent className="ww-dialog">
         <DialogTitle className="ww-dialog-title"><TriangleAlert size={20} aria-hidden="true" /> Bạn chưa đủ point để chấm bài</DialogTitle>
-        <DialogDescription>Chấm bài bằng AI cần {cost} point. Hãy nạp thêm point để tiếp tục — bài viết của bạn vẫn được giữ nguyên.</DialogDescription>
+        <DialogDescription>Chấm bài bằng AI cần {cost} point. Hãy nạp thêm point để tiếp tục — {copy?.kept ?? 'bài viết của bạn vẫn được giữ nguyên'}.</DialogDescription>
         <div className="ww-figures ww-figures-short">
           <div><span>Chi phí chấm</span><strong>{cost} point</strong></div>
           <div><span>Số dư hiện tại</span><strong>{have} point</strong></div>
@@ -176,7 +208,7 @@ export function NotEnoughPointsDialog({ cost, balance, onActivate, onClose }: {
           <p className="ww-muted">Nhập mã Activation Key được cấp để cộng point vào tài khoản.</p>
         </div>
         <div className="ww-dialog-actions">
-          <button type="button" className="ww-secondary" onClick={onClose}>Quay lại chỉnh sửa</button>
+          <button type="button" className="ww-secondary" onClick={onClose}>{copy?.backLabel ?? 'Quay lại chỉnh sửa'}</button>
           <button type="button" className="ww-primary" onClick={onActivate}><KeyRound size={15} aria-hidden="true" /> Nạp Key</button>
         </div>
       </DialogContent>

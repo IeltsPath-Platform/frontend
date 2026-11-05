@@ -57,9 +57,9 @@ function TaskRubrics({ task }: { task: WritingTask }) {
 
 export function RubricsPage() {
   const [params, setParams] = useSearchParams()
-  const task: WritingTask = params.get('task') === 'TASK_2' ? 'TASK_2' : 'TASK_1'
-  return <AdminPage title="Rubric chấm Writing" subtitle="Xem tiêu chí đang áp dụng, soạn bản nháp và xác nhận trước khi kích hoạt để chấm bài Writing.">
-    <nav className="adm-rubric-tabs" aria-label="Chọn Writing Task">{(['TASK_1', 'TASK_2'] as const).map((value) => <button className={`adm-btn${value === task ? ' adm-btn--primary' : ''}`} type="button" key={value} aria-pressed={task === value} onClick={() => setParams((current) => { const next = new URLSearchParams(current); next.set('task', value); return next })}>Task {value === 'TASK_1' ? '1' : '2'}</button>)}</nav>
+  const task: WritingTask = params.get('task') === 'SPEAKING' ? 'SPEAKING' : params.get('task') === 'TASK_2' ? 'TASK_2' : 'TASK_1'
+  return <AdminPage title="Rubric chấm bài" subtitle="Xem rubric đang áp dụng, sửa bản nháp và xác nhận trước khi kích hoạt.">
+    <nav className="adm-rubric-tabs" aria-label="Chọn kỹ năng">{(['TASK_1', 'TASK_2', 'SPEAKING'] as const).map((value) => <button className={`adm-btn${value === task ? ' adm-btn--primary' : ''}`} type="button" key={value} aria-pressed={task === value} onClick={() => setParams((current) => { const next = new URLSearchParams(current); next.set('task', value); return next })}>{value === 'SPEAKING' ? 'Speaking' : `Writing Task ${value === 'TASK_1' ? '1' : '2'}`}</button>)}</nav>
     <TaskRubrics task={task} key={task} />
   </AdminPage>
 }

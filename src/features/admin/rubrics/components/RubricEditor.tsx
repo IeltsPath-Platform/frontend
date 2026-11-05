@@ -48,7 +48,7 @@ export function RubricEditor({ initial, persisted, onSaved, onActivated, onCance
     if (problem) { setError(problem); return }
     if (!(await confirm({
       title: 'Kích hoạt rubric này?',
-      message: `Rubric này sẽ được dùng để chấm mọi bài Writing Task ${draft.task === 'TASK_1' ? '1' : '2'} từ bây giờ. Bản đang dùng sẽ ngừng áp dụng. Bạn có muốn kích hoạt ${draft.code} phiên bản ${draft.version}?`,
+          message: `Rubric này sẽ được dùng để chấm mọi bài ${draft.task === 'SPEAKING' ? 'Speaking' : `Writing Task ${draft.task === 'TASK_1' ? '1' : '2'}`} từ bây giờ. Bản đang dùng sẽ ngừng áp dụng. Bạn có muốn kích hoạt ${draft.code} phiên bản ${draft.version}?`,
       confirmLabel: 'Kích hoạt',
     }))) return
     setBusy(true)
@@ -57,19 +57,20 @@ export function RubricEditor({ initial, persisted, onSaved, onActivated, onCance
   }
   return <form className="adm-rubric-editor" aria-label="Soạn rubric" noValidate onSubmit={(event) => void save(event)}>
     {confirmDialog}
-    <p className="adm-muted">Kích hoạt cần đúng {draft.task === 'TASK_1' ? 'TA' : 'TR'}, CC, LR, GRA; mỗi tiêu chí có đủ band 4,0–9,0 theo bước 0,5. Lưu bản nháp trước khi kích hoạt.</p>
+    <p className="adm-muted">{draft.task === 'SPEAKING' ? 'Kích hoạt cần FC, LR, GRA và PR; mỗi tiêu chí có đủ band 0,0–9,0 theo bước 0,5.' : `Kích hoạt cần đúng ${draft.task === 'TASK_1' ? 'TA' : 'TR'}, CC, LR, GRA; mỗi tiêu chí có đủ band 4,0–9,0 theo bước 0,5.`} Lưu bản nháp trước khi kích hoạt.</p>
     {notice ? <p role="status">{notice}</p> : null}
     <fieldset className="adm-rubric-fields" disabled={busy}>
       <label className="adm-field"><span>Nguồn rubric</span><textarea className="adm-textarea" required maxLength={10000} value={draft.sourceNote} onChange={(event) => change({ ...draft, sourceNote: event.target.value })} /></label>
+      {draft.task === 'SPEAKING' ? <label className="adm-field"><span>System prompt (tối đa 4.000 ký tự)</span><textarea className="adm-textarea" maxLength={4000} value={draft.systemPrompt ?? ''} onChange={(event) => change({ ...draft, systemPrompt: event.target.value })} /></label> : null}
       {draft.criteria.map((criterion, index) => <div key={index}>
-        <CriterionEditor criterion={criterion} index={index} onChange={(next) => change({ ...draft, criteria: draft.criteria.map((item, position) => position === index ? next : item) })} />
+        <CriterionEditor criterion={criterion} index={index} task={draft.task} onChange={(next) => change({ ...draft, criteria: draft.criteria.map((item, position) => position === index ? next : item) })} />
         <div className="adm-rubric-actions">
           <button className="adm-btn" aria-label={`Đưa tiêu chí ${index + 1} lên`} disabled={index === 0} type="button" onClick={() => move(index, -1)}><ArrowUp aria-hidden="true" size={16} /></button>
           <button className="adm-btn" aria-label={`Đưa tiêu chí ${index + 1} xuống`} disabled={index === draft.criteria.length - 1} type="button" onClick={() => move(index, 1)}><ArrowDown aria-hidden="true" size={16} /></button>
           <button className="adm-btn adm-btn--danger" type="button" onClick={() => change({ ...draft, criteria: draft.criteria.filter((_, position) => position !== index).map((item, position) => ({ ...item, sortOrder: position + 1 })) })}>Xóa tiêu chí {index + 1}</button>
         </div>
       </div>)}
-      <button className="adm-btn" type="button" onClick={() => change({ ...draft, criteria: [...draft.criteria, { code: draft.task === 'TASK_1' ? 'TA' : 'TR', name: '', description: '', sortOrder: draft.criteria.length + 1, bandDescriptors: [{ band: 4, descriptor: '' }] }] })}>Thêm tiêu chí</button>
+      <button className="adm-btn" type="button" onClick={() => change({ ...draft, criteria: [...draft.criteria, { code: draft.task === 'SPEAKING' ? 'FC' : draft.task === 'TASK_1' ? 'TA' : 'TR', name: '', description: '', sortOrder: draft.criteria.length + 1, bandDescriptors: [{ band: draft.task === 'SPEAKING' ? 0 : 4, descriptor: '' }] }] })}>Thêm tiêu chí</button>
       <h3>Bài mẫu</h3>
       {draft.examples.map((example, index) => <fieldset className="adm-card adm-rubric-example" key={index}>
         <legend>Bài mẫu {index + 1}</legend>

@@ -32,7 +32,7 @@ describe('RubricsPage', () => {
     expect(await screen.findByText('IELTS_WRITING_T2 · Phiên bản 1 · Đang dùng')).toBeInTheDocument()
     expect(screen.getByText('Bài mẫu học thuật')).toBeInTheDocument()
     expect(api.fetchActiveRubrics).toHaveBeenCalledWith('TASK_2', expect.any(AbortSignal))
-    fireEvent.click(screen.getByRole('button', { name: 'Task 1' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Writing Task 1' }))
     await waitFor(() => expect(api.fetchDraftRubrics).toHaveBeenCalledWith('TASK_1', expect.any(AbortSignal)))
   })
   it('posts a new draft then puts subsequent edits under the same code and version', async () => {
@@ -112,7 +112,7 @@ describe('RubricsPage', () => {
     const taskOne = { ...active, code: 'IELTS_WRITING_T1', task: 'TASK_1' as const }
     api.fetchActiveRubrics.mockResolvedValue([taskOne])
     api.fetchRubricVersions.mockResolvedValue([{ code: taskOne.code, task: taskOne.task, version: 4, status: 'ACTIVE' }])
-    fireEvent.click(screen.getByRole('button', { name: 'Task 1' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Writing Task 1' }))
     expect(await screen.findByText('Bản tiếp theo: 5 (theo toàn bộ lịch sử phiên bản).')).toBeInTheDocument()
     expect(api.fetchRubricVersions).toHaveBeenLastCalledWith(taskOne.code, expect.any(AbortSignal))
     expect(oldSignal.aborted).toBe(true)

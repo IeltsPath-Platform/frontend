@@ -13,6 +13,7 @@ export interface TeacherOption {
 export interface AiOption {
   enabled: boolean
   cost: number
+  reason?: string | null
   /** null when the balance could not be read (the grader then decides). */
   balance: number | null
   shortBy: number
