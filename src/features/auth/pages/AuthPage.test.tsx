@@ -57,7 +57,7 @@ describe('AuthPage community redirect', () => {
 
   it.each([
     ['ADMIN', '/admin'],
-    ['CONTENT_AUTHOR', '/content-author'],
+    ['CONTENT_AUTHOR', '/content-author/content'],
   ])('sends %s to its workspace even when login started in Community', async (role, destination) => {
     loginWithPasswordMock.mockResolvedValue({ roles: [{ name: role }] })
     render(

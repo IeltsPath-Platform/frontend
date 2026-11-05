@@ -27,7 +27,7 @@ export function MarkdownField({ label, value, onChange, maxLength, disabled = fa
       <button className="adm-btn adm-btn--small" onClick={() => setPreviewing(true)} type="button"><Eye aria-hidden="true" size={14} />Xem trước</button>
     </div>
     <textarea className={textareaClassName} disabled={disabled} id={id} maxLength={maxLength} onChange={(event) => onChange(event.target.value)} value={value} />
-    {previewing ? <AdminModal description="Như người học sẽ thấy trên trang bài học" onClose={() => setPreviewing(false)} stacked title="Xem trước tóm tắt">
+    {previewing ? <AdminModal description="Như người học sẽ thấy trên trang bài học" onClose={() => setPreviewing(false)} stacked top title="Xem trước tóm tắt">
       {() => <div className="adm-mdfield__preview lp-tokens">{preview ? preview(value) : <LessonSummary markdown={value} />}</div>}
     </AdminModal> : null}
   </div>

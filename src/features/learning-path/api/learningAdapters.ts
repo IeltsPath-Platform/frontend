@@ -120,6 +120,8 @@ export type LessonBlockDto = {
   blockType: string
   blockKind?: string
   sortOrder: number
+  /** The Markdown of a `TEXT` block. */
+  textContent?: string | null
   asset?: {
     assetType: string
     textContent?: string | null
@@ -522,6 +524,9 @@ export function mapLessonBlocks(blocks: LessonBlockDto[] | undefined): LessonBlo
         type: 'VOCABULARY',
         vocabularySenseIds: block.vocabularySenseIds ?? [],
       })
+    } else if (block.blockType === 'TEXT') {
+      // Lecture text; an empty one has nothing to show.
+      if (block.textContent?.trim()) mapped.push({ id: block.blockId, sortOrder: block.sortOrder, type: 'TEXT', text: block.textContent })
     } else if (block.blockType === 'ASSET' && block.asset?.assetType === 'PASSAGE') {
       mapped.push({
         id: block.blockId,

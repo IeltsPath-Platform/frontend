@@ -1,3 +1,4 @@
+import { PencilLine } from 'lucide-react'
 import { AdminError, AdminLoading } from '../../components/AdminState'
 import { useAdminResource } from '../../lib/useAdminResource'
 import { fetchRubricVersions } from '../api/rubricApi'
@@ -10,12 +11,12 @@ export function RubricVersionDraftAction({ rubric, disabled, onCreate }: {
 }) {
   const history = useAdminResource(`rubric-versions|${rubric.code}`, (signal) => fetchRubricVersions(rubric.code, signal))
   const version = history.status === 'success' && history.data !== null ? nextRubricVersion(history.data) : null
-  return <>
+  return <div className="rb-draft-action">
     {history.status === 'loading' ? <AdminLoading label="Đang tải lịch sử phiên bản rubric…" /> : null}
     {history.status === 'error' ? <AdminError message={`Không tải được lịch sử phiên bản. ${history.error}`} onRetry={history.reload} /> : null}
     {version !== null ? <p className="adm-muted">Bản tiếp theo: {version} (theo toàn bộ lịch sử phiên bản).</p> : null}
-    <button className="adm-btn" type="button" disabled={version === null || disabled} onClick={() => {
+    <button className="adm-btn adm-btn--primary" type="button" disabled={version === null || disabled} onClick={() => {
       if (version !== null && !disabled) onCreate({ ...rubricRequest(rubric), version })
-    }}>Tạo bản nháp từ bản đang dùng</button>
-  </>
+    }}><PencilLine aria-hidden="true" size={16} />Tạo bản nháp từ bản đang dùng</button>
+  </div>
 }
