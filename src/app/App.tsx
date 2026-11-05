@@ -90,7 +90,7 @@ function AppContent() {
   const { isLoggedIn, roles } = useAuthSession()
   // The admin area has its own frame, so the learner footer stays out of it.
   const { pathname } = useLocation()
-  const inAdminArea = ['/admin', '/content-author', '/point-management'].some((base) => pathname === base || pathname.startsWith(`${base}/`))
+  const inAdminArea = ['/admin', '/content-author', '/examiner', '/point-management'].some((base) => pathname === base || pathname.startsWith(`${base}/`))
 
   return (
     <>
@@ -101,6 +101,7 @@ function AppContent() {
       <Route path="/games/rocket/:matchId" element={<RocketRoute />} />
       <Route path="/admin/*" element={<RequireAuth><AdminRoutes /></RequireAuth>} />
       <Route path="/content-author/*" element={<RequireAuth><AdminRoutes area="content-author" /></RequireAuth>} />
+      <Route path="/examiner/*" element={<RequireAuth><AdminRoutes area="examiner" /></RequireAuth>} />
       <Route path="/point-management/*" element={<PointManagementRoutes />} />
       <Route path="/games" element={<RequireAuth><GameLayout /></RequireAuth>}>
         <Route index element={<GameCatalogPage />} />

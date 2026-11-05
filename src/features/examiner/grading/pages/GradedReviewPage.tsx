@@ -12,7 +12,7 @@ import { SplitPane } from '../components/SplitPane'
 import { timeOfDay } from '../lib/gradingLabels'
 import '../examiner-grading.css'
 
-const QUEUE = '/admin/grading/writing'
+const QUEUE = '/examiner/grading/writing'
 
 const criterionName = (key: string) => CRITERIA.find((item) => item.key === key)?.label ?? key
 

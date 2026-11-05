@@ -2,6 +2,13 @@ import type { Profile, ProfileInput, Summary } from '../types'
 
 export const BAND_OPTIONS = Array.from({ length: 19 }, (_, index) => index / 2)
 
+/** The examiner's queue, and the tab of it that lists the finished jobs. */
+export const QUEUE_PATH = '/examiner/grading/writing'
+export const DONE_PATH = `${QUEUE_PATH}?tab=done`
+
+/** How many of the newest finished jobs the result charts are drawn from (the server's page limit). */
+export const RESULT_SAMPLE = 100
+
 /** "Đã nhận 7/10 bài hôm nay"; without a known limit, just the count. */
 export function intakeText(summary: Pick<Summary, 'receivedToday' | 'dailyLimit'>) {
   return summary.dailyLimit

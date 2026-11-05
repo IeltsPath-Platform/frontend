@@ -35,7 +35,7 @@ describe('menuEntriesFor', () => {
     ])
     expect(menuEntriesFor(['EXAMINER']).every((entry) => entry.kind === 'link')).toBe(true)
     const graph = menuEntriesFor(['EXAMINER'])[3]
-    expect(graph.kind === 'link' && graph.item.path).toBe('/admin/knowledge-graph')
+    expect(graph.kind === 'link' && graph.item.path).toBe('/examiner/knowledge-graph')
   })
 
   it('shows learners nothing', () => {

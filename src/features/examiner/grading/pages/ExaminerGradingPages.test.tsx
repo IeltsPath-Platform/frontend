@@ -49,13 +49,13 @@ function workspaceServer({ draft = null, essayBody = essay(), claim = () => json
   })
 }
 function Location() { const { pathname } = useLocation(); return <output data-testid="location">{pathname}</output> }
-function show(path = '/admin/grading/writing', state?: unknown) {
+function show(path = '/examiner/grading/writing', state?: unknown) {
   const [pathname, search] = path.split('?')
   return render(<MemoryRouter initialEntries={[{ pathname, search: search ? `?${search}` : '', state }]}><Routes>
-    <Route path="/admin/grading/writing" element={<WritingQueuePage />} />
-    <Route path="/admin/grading/writing/:jobId" element={<WritingGradingPage />} />
-    <Route path="/admin/grading/writing/:jobId/review" element={<GradedReviewPage />} />
-    <Route path="/admin/grading/speaking" element={<SpeakingGradingPage />} />
+    <Route path="/examiner/grading/writing" element={<WritingQueuePage />} />
+    <Route path="/examiner/grading/writing/:jobId" element={<WritingGradingPage />} />
+    <Route path="/examiner/grading/writing/:jobId/review" element={<GradedReviewPage />} />
+    <Route path="/examiner/grading/speaking" element={<SpeakingGradingPage />} />
   </Routes><Location /></MemoryRouter>)
 }
 const setup = () => { calls.length = 0; fetchMock.mockReset(); vi.stubGlobal('fetch', fetchMock); setAccessToken('test-access-token'); window.localStorage.clear() }
@@ -106,10 +106,10 @@ describe('WritingQueuePage', () => {
     expect(rows[0]).toHaveTextContent('Bài học')
     expect(rows[0]).toHaveTextContent('Quá hạn')
     expect(rows[1]).toHaveTextContent('Đang chấm · có nháp')
-    expect(within(rows[1]).getByRole('link', { name: 'Tiếp tục chấm' })).toHaveAttribute('href', `/admin/grading/writing/${thirdJob}`)
+    expect(within(rows[1]).getByRole('link', { name: 'Tiếp tục chấm' })).toHaveAttribute('href', `/examiner/grading/writing/${thirdJob}`)
     expect(rows[2]).toHaveTextContent('Luyện tập')
     expect(rows[2]).toHaveTextContent('Còn 2 ngày')
-    expect(within(rows[2]).getByRole('link', { name: 'Chấm bài' })).toHaveAttribute('href', `/admin/grading/writing/${jobId}`)
+    expect(within(rows[2]).getByRole('link', { name: 'Chấm bài' })).toHaveAttribute('href', `/examiner/grading/writing/${jobId}`)
     expect(screen.getByText(/bạn không thấy tên học viên/)).toBeInTheDocument()
     expect(screen.queryByText(/Học viên:/)).not.toBeInTheDocument()
   })
@@ -128,13 +128,13 @@ describe('WritingQueuePage', () => {
 
   it('opens on the tab the dashboard linked to', async () => {
     queueServer({ queued: [entry()], processing: [entry({ id: thirdJob, status: 'PROCESSING', hasDraft: true, waitSeconds: 10000 })] })
-    const first = show('/admin/grading/writing?tab=processing')
+    const first = show('/examiner/grading/writing?tab=processing')
     await screen.findByRole('table')
     expect(screen.getByRole('button', { name: /^Đang chấm/ })).toHaveAttribute('aria-pressed', 'true')
     expect(rowsOfTable()).toHaveLength(1)
     first.unmount()
 
-    show('/admin/grading/writing?tab=queued')
+    show('/examiner/grading/writing?tab=queued')
     await screen.findByRole('table')
     expect(screen.getByRole('button', { name: /^Chờ chấm/ })).toHaveAttribute('aria-pressed', 'true')
   })
@@ -147,7 +147,7 @@ describe('WritingQueuePage', () => {
     expect(rows).toHaveLength(2)
     expect(rows[0]).toHaveTextContent('7.0')
     expect(rows[0]).toHaveTextContent('Đã chấm')
-    expect(within(rows[0]).getByRole('link', { name: 'Xem lại' })).toHaveAttribute('href', `/admin/grading/writing/${thirdJob}/review`)
+    expect(within(rows[0]).getByRole('link', { name: 'Xem lại' })).toHaveAttribute('href', `/examiner/grading/writing/${thirdJob}/review`)
     expect(rows[1]).toHaveTextContent('Bài học')
     expect(screen.queryByLabelText('Hạn chấm')).not.toBeInTheDocument()
 
@@ -157,7 +157,7 @@ describe('WritingQueuePage', () => {
 
   it('opens on the finished jobs when asked to, and says so when there are none', async () => {
     queueServer({ finished: [] })
-    show('/admin/grading/writing?tab=done')
+    show('/examiner/grading/writing?tab=done')
 
     expect(await screen.findByText('Bạn chưa chấm bài Writing nào')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Đã chấm (0)' })).toHaveAttribute('aria-pressed', 'true')
@@ -198,7 +198,7 @@ describe('WritingQueuePage', () => {
         entry({ waitSeconds: 3600 }),
       ],
     })
-    show(`/admin/grading/writing?tab=${tab}`)
+    show(`/examiner/grading/writing?tab=${tab}`)
 
     await screen.findByRole('table')
     expect(screen.getByRole('button', { name: button })).toHaveAttribute('aria-pressed', 'true')
@@ -284,7 +284,7 @@ describe('WritingQueuePage', () => {
 
   it('confirms a finished grading when it comes back from the workspace', async () => {
     queueServer()
-    show('/admin/grading/writing', { completed: true })
+    show('/examiner/grading/writing', { completed: true })
 
     expect(await screen.findByText(/Đã hoàn tất chấm bài/)).toBeInTheDocument()
   })
@@ -293,7 +293,7 @@ describe('WritingQueuePage', () => {
 describe('GradedReviewPage', () => {
   beforeEach(setup)
   afterEach(teardown)
-  const open = () => show(`/admin/grading/writing/${jobId}/review`)
+  const open = () => show(`/examiner/grading/writing/${jobId}/review`)
 
   it('shows what the examiner gave, the marked errors and the essay, read-only and without any learner identity', async () => {
     backend(({ path }) => (path === `/api/assessments/examiners/me/completed/${jobId}` ? json(gradedReview()) : json({}, 404)))
@@ -310,7 +310,7 @@ describe('GradedReviewPage', () => {
     expect(errors).toHaveTextContent('have rose')
     expect(errors).toHaveTextContent('have risen')
     expect(errors).toHaveTextContent('VERB_FORM')
-    expect(screen.getByRole('link', { name: /Về danh sách đã chấm/ })).toHaveAttribute('href', '/admin/grading/writing?tab=done')
+    expect(screen.getByRole('link', { name: /Về danh sách đã chấm/ })).toHaveAttribute('href', '/examiner/grading/writing?tab=done')
     expect(screen.queryByRole('button', { name: /Hoàn tất|Lưu nháp/ })).not.toBeInTheDocument()
     expect(screen.queryByText(/Học viên:/)).not.toBeInTheDocument()
     expect(calls.every((call) => call.method === 'GET')).toBe(true)
@@ -342,7 +342,7 @@ describe('GradedReviewPage', () => {
 
 describe('SpeakingGradingPage', () => {
   it('says Speaking grading is not open yet', () => {
-    show('/admin/grading/speaking')
+    show('/examiner/grading/speaking')
     expect(screen.getByRole('heading', { name: 'Chấm Speaking' })).toBeInTheDocument()
     expect(screen.getByText('Chấm Speaking chưa mở')).toBeInTheDocument()
   })
@@ -352,7 +352,7 @@ describe('WritingGradingPage', () => {
   beforeEach(setup)
   afterEach(teardown)
 
-  const open = async () => { show(`/admin/grading/writing/${jobId}`); await screen.findByText(/dramatically/) }
+  const open = async () => { show(`/examiner/grading/writing/${jobId}`); await screen.findByText(/dramatically/) }
   const band = (label: string, value: string) => fireEvent.change(screen.getByLabelText(`Band ${label}`), { target: { value } })
   const comment = (label: string, value: string) => fireEvent.change(screen.getByLabelText(`Nhận xét ${label}`), { target: { value } })
   const CRITERIA_LABELS = ['Task Response / Achievement', 'Coherence and Cohesion', 'Lexical Resource', 'Grammatical Range and Accuracy']
@@ -574,7 +574,7 @@ describe('WritingGradingPage', () => {
     expect(calls.some((call) => call.path.endsWith('/human-review') && call.method === 'POST')).toBe(false)
     fireEvent.click(within(screen.getByRole('group', { name: 'Xác nhận hoàn tất' })).getByRole('button', { name: 'Xác nhận hoàn tất' }))
 
-    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/admin/grading/writing'))
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/examiner/grading/writing'))
     expect(await screen.findByText(/Đã hoàn tất chấm bài/)).toBeInTheDocument()
     const post = calls.find((call) => call.method === 'POST' && call.path.endsWith('/human-review'))!
     expect(post.path).toBe(`/api/assessments/grading-jobs/${jobId}/human-review`)
@@ -615,12 +615,12 @@ describe('WritingGradingPage', () => {
     expect(screen.getByLabelText('Nhận xét chung')).toHaveValue('Bài khá, cần chia động từ.')
     expect(screen.getByText(/Lỗi đã ghi nhận \(1\)/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Hoàn tất chấm' })).toBeEnabled()
-    expect(screen.getByTestId('location')).toHaveTextContent(`/admin/grading/writing/${jobId}`)
+    expect(screen.getByTestId('location')).toHaveTextContent(`/examiner/grading/writing/${jobId}`)
   })
 
   it('stops with the reason when the job cannot be taken, and does not read the essay', async () => {
     workspaceServer({ claim: () => json({ message: 'Bài này đã có giám khảo khác' }, 409) })
-    show(`/admin/grading/writing/${jobId}`)
+    show(`/examiner/grading/writing/${jobId}`)
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Bài này đã có giám khảo khác')
     expect(calls.some((call) => call.path.endsWith('/essay'))).toBe(false)
@@ -628,7 +628,7 @@ describe('WritingGradingPage', () => {
 
   it('explains that work belonging to an exam attempt cannot be graded here, and shows no form', async () => {
     workspaceServer({ essayBody: essay({ attemptId: otherJob, attemptItemId: otherJob, source: 'MOCK' }) })
-    show(`/admin/grading/writing/${jobId}`)
+    show(`/examiner/grading/writing/${jobId}`)
 
     expect(await screen.findByRole('alert')).toHaveTextContent('chưa chấm được trên màn hình này')
     expect(screen.queryByRole('button', { name: 'Hoàn tất chấm' })).not.toBeInTheDocument()
@@ -636,7 +636,7 @@ describe('WritingGradingPage', () => {
 
   it('rejects an id that is not a UUID without calling the API', () => {
     workspaceServer()
-    show('/admin/grading/writing/not-a-uuid')
+    show('/examiner/grading/writing/not-a-uuid')
 
     expect(screen.getByRole('alert')).toHaveTextContent('ID bài chấm không hợp lệ.')
     expect(calls).toHaveLength(0)

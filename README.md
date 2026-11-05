@@ -84,7 +84,9 @@ Cần triển khai Library cùng migration V36 trước frontend này; contract 
 
 Navbar dùng mục **Khám phá** để gom Cộng đồng, Trò chơi, Nghe chép, Kho từ vựng và Flashcard của tôi. Di chuột vào mục này để hiện thanh điều hướng con với hiệu ứng như các mục khác; trên điện thoại, bấm để mở các mục con trong menu. Bàn phím vẫn hỗ trợ Enter và Escape. Navbar không còn mục Quản trị, Kết quả học viên hoặc Bài mẫu 8đ.
 
-Sau đăng nhập, khi mở `/` hoặc quay lại trang dành cho khách với phiên đã khôi phục, tài khoản `ADMIN` vào `/admin`, `CONTENT_AUTHOR` vào `/content-author`; nếu có cả hai vai trò thì ưu tiên `ADMIN`. Người học giữ đích đến trước đăng nhập hoặc `/overview`. Các trang nội dung dùng `/content-author/content`, `/content-author/knowledge-graph`, `/content-author/lessons` và `/content-author/questions`; URL `/admin` cũ của các trang này chuyển tiếp có kiểm tra quyền. Examiner vẫn dùng `/admin/knowledge-graph`.
+Sau đăng nhập, khi mở `/` hoặc quay lại trang dành cho khách với phiên đã khôi phục, tài khoản `ADMIN` vào `/admin` (tổng quan hệ thống), `CONTENT_AUTHOR` vào `/content-author`, `EXAMINER` vào `/examiner`; nếu có nhiều vai trò thì ưu tiên theo thứ tự này. Người học giữ đích đến trước đăng nhập hoặc `/overview`. Hai trang gốc `/content-author` và `/examiner` hiển thị ngay dashboard tương ứng; menu chỉ chứa trang của khu đang mở, kể cả khi tài khoản có nhiều vai trò.
+
+Các trang nội dung dùng `/content-author/courses`, `/content-author/knowledge-graph` và `/content-author/questions`. Examiner dùng `/examiner/grading/writing`, `/examiner/grading/speaking`, `/examiner/profile` và `/examiner/knowledge-graph`. Các URL cũ `/admin/examiner/**`, `/admin/grading/**`, `/admin/knowledge-graph` và `/content-author/content` chuyển tiếp có kiểm tra quyền, giữ query và fragment; cây tri thức cũ chuyển sang khu đúng với vai trò.
 
 ### Backend cần chạy
 

@@ -4,7 +4,7 @@ import { UNSUPPORTED_NOTE, canGradeHere, isInProgress } from '../lib/gradingLabe
 import type { GradingEntry } from '../types'
 import '../examiner-grading.css'
 
-const QUEUE = '/admin/grading/writing'
+const QUEUE = '/examiner/grading/writing'
 
 /** The button that opens a job to grade, always shown on its row: "Chấm bài", or "Tiếp tục chấm" once it was started. */
 export function GradeAction({ entry }: { entry: Pick<GradingEntry, 'id' | 'status' | 'attemptId' | 'hasDraft'> }) {

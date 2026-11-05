@@ -10,7 +10,7 @@ describe('adminMenu', () => {
 
   it('shows content authors their content screens', () => {
     expect(menuFor(['CONTENT_AUTHOR']).map((item) => item.path)).toEqual([
-      '/content-author/content', '/content-author/courses', '/content-author/knowledge-graph', '/content-author/questions', '/content-author/packages', '/content-author/course-drafts', '/content-author/course-import',
+      '/content-author', '/content-author/courses', '/content-author/knowledge-graph', '/content-author/questions', '/content-author/packages', '/content-author/course-drafts', '/content-author/course-import',
       '/content-author/work-items', '/content-author/ai-evaluation',
       '/content-author/rubrics', '/content-author/error-types', '/content-author/ai-drafts',
     ])
@@ -18,20 +18,20 @@ describe('adminMenu', () => {
 
   it('shows an examiner their dashboard, the grading screens and the knowledge graph', () => {
     expect(menuFor(['EXAMINER']).map((item) => item.path)).toEqual([
-      '/admin/examiner', '/admin/grading/writing', '/admin/grading/speaking', '/admin/knowledge-graph',
+      '/examiner', '/examiner/grading/writing', '/examiner/grading/speaking', '/examiner/knowledge-graph',
     ])
   })
 
   it('keeps the examiner screens to examiners', () => {
-    for (const path of ['/admin/examiner', '/admin/examiner/profile', '/admin/grading/writing', '/admin/grading/speaking']) {
+    for (const path of ['/examiner', '/examiner/profile', '/examiner/grading/writing', '/examiner/grading/speaking']) {
       expect(rolesFor(path)).toEqual(['EXAMINER'])
       for (const role of ['ADMIN', 'CONTENT_AUTHOR', 'CUSTOMER']) expect(menuFor([role]).some((item) => item.path === path)).toBe(false)
     }
   })
 
   it('keeps the profile screen out of the sidebar but open to examiners', () => {
-    expect(menuFor(['EXAMINER']).some((item) => item.path === '/admin/examiner/profile')).toBe(false)
-    expect(rolesFor('/admin/examiner/profile')).toEqual(['EXAMINER'])
+    expect(menuFor(['EXAMINER']).some((item) => item.path === '/examiner/profile')).toBe(false)
+    expect(rolesFor('/examiner/profile')).toEqual(['EXAMINER'])
   })
 
   it('shows learners nothing', () => {
@@ -62,6 +62,20 @@ describe('adminMenu', () => {
     expect(rolesFor('/content-author/users')).toEqual([])
     expect(rolesFor('/admin/users')).toEqual(['ADMIN'])
     expect(rolesFor('/admin/unknown')).toEqual([])
+    expect(rolesFor('/examiner/knowledge-graph')).toEqual(['EXAMINER'])
+    expect(rolesFor('/content-author/knowledge-graph')).toEqual(['CONTENT_AUTHOR'])
+    expect(rolesFor('/admin/knowledge-graph')).toEqual(['CONTENT_AUTHOR', 'EXAMINER'])
+    expect(rolesFor('/admin/examiner/profile')).toEqual(['EXAMINER'])
+    expect(rolesFor('/admin/grading/writing')).toEqual(['EXAMINER'])
+  })
+
+  it('limits each workspace menu to its own pages for staff with multiple roles', () => {
+    const roles = ['ADMIN', 'CONTENT_AUTHOR', 'EXAMINER']
+    for (const area of ['admin', 'content-author', 'examiner'] as const) {
+      const items = menuFor(roles, area)
+      expect(items.length).toBeGreaterThan(0)
+      expect(items.every((item) => item.path === `/${area}` || item.path.startsWith(`/${area}/`))).toBe(true)
+    }
   })
 
   it('shows question generation only to content authors', () => {

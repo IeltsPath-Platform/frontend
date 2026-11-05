@@ -23,7 +23,7 @@ import { BLIND_NOTE, UNSUPPORTED_NOTE, checklist, emptyComments, emptyScores, ov
 import { completionSchema, draftPayloadSchema, type Annotation, type Draft, type GradingEssay } from '../types'
 import '../examiner-grading.css'
 
-const QUEUE = '/admin/grading/writing'
+const QUEUE = '/examiner/grading/writing'
 /** The error kinds that apply to an essay; reading and listening strategies do not. */
 const WRITING_CATEGORIES: readonly string[] = ['GRAMMAR', 'VOCABULARY', 'COHERENCE', 'TASK', 'SPELLING_NUMBER']
 

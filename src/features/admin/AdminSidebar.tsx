@@ -25,7 +25,7 @@ function flyoutPosition(trigger: HTMLElement): CSSProperties {
 function SidebarLink({ item }: { item: AdminMenuItem }) {
   const { path, label, icon: Icon } = item
   return (
-    <NavLink className={({ isActive }) => `adm-nav${isActive ? ' is-active' : ''}`} to={path}>
+    <NavLink className={({ isActive }) => `adm-nav${isActive ? ' is-active' : ''}`} end={path === '/examiner' || path === '/content-author'} to={path}>
       <Icon aria-hidden="true" size={20} />
       <span>{label}</span>
     </NavLink>
