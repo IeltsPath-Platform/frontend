@@ -1,13 +1,13 @@
 import { useId, useState, type CSSProperties, type ReactNode } from 'react'
 import { ArrowDown, ArrowUp, Ban, BookOpen, BookOpenText, ChevronRight, CircleDashed, Headphones, Mic, Pencil, PenLine, RotateCcw } from 'lucide-react'
 import { AdminDrawer } from '../../components/AdminLayer'
+import { AdminRowMenu } from '../../components/AdminRowMenu'
 import { useAdminConfirm } from '../../lib/useAdminConfirm'
 import { TopicLessonsDrawer } from '../../lessons/components/TopicLessonsDrawer'
 import type { TopicOption } from '../../lessons/types'
 import { reorderTopics, updateTopic } from '../api/courseApi'
 import { SKILL_LABEL, type Course } from '../types'
 import { TopicForm } from './TopicForm'
-import { TopicRowMenu } from './TopicRowMenu'
 import { bandText, groupTopicsBySkill, swappedGroup, topicError, topicUpdate, type SkillGroup } from '../lib/topicHelpers'
 
 const SKILL_ICON = { LISTENING: Headphones, READING: BookOpenText, WRITING: PenLine, SPEAKING: Mic } as const
@@ -113,13 +113,13 @@ export function TopicTree({ topics, allTopics, courses, courseId, onSaved, onErr
           </div>
           <div className="adm-topic-actions">
             <button className="adm-btn adm-topic-open" disabled={locked} onClick={() => setLessonsOf(topic)} type="button"><BookOpen aria-hidden="true" size={16} /> Mở bài học</button>
-            <TopicRowMenu label={topic.name} disabled={locked} items={[
+            <AdminRowMenu label={`Thao tác với ${topic.name}`} disabled={locked} items={[
               { key: 'edit', label: 'Sửa chủ đề', icon: <Pencil aria-hidden="true" size={16} />, onSelect: () => setEditing({ topic }) },
-              { key: 'up', label: 'Đưa lên', icon: <ArrowUp aria-hidden="true" size={16} />, separated: true, disabled: index === 0, onSelect: () => void move(topic, peers[index - 1]!) },
+              { key: 'up', label: 'Đưa lên', icon: <ArrowUp aria-hidden="true" size={16} />, separatorBefore: true, disabled: index === 0, onSelect: () => void move(topic, peers[index - 1]!) },
               { key: 'down', label: 'Đưa xuống', icon: <ArrowDown aria-hidden="true" size={16} />, disabled: index === peers.length - 1, onSelect: () => void move(topic, peers[index + 1]!) },
               active
-                ? { key: 'stop', label: 'Ngừng dùng', icon: <Ban aria-hidden="true" size={16} />, separated: true, danger: true, onSelect: () => void setStatus(topic, 'INACTIVE') }
-                : { key: 'resume', label: 'Dùng lại', icon: <RotateCcw aria-hidden="true" size={16} />, separated: true, onSelect: () => void setStatus(topic, 'ACTIVE') },
+                ? { key: 'stop', label: 'Ngừng dùng', icon: <Ban aria-hidden="true" size={16} />, separatorBefore: true, tone: 'danger', onSelect: () => void setStatus(topic, 'INACTIVE') }
+                : { key: 'resume', label: 'Dùng lại', icon: <RotateCcw aria-hidden="true" size={16} />, separatorBefore: true, onSelect: () => void setStatus(topic, 'ACTIVE') },
             ]} />
           </div>
         </article>

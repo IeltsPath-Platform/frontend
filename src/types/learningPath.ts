@@ -198,6 +198,12 @@ export interface VocabularyBlockData extends RawBlock {
   vocabularySenseIds: string[]
 }
 
+/** Lecture text in Markdown, read on the lesson's "Lý thuyết" tab. */
+export interface TextBlockData extends RawBlock {
+  type: 'TEXT'
+  text: string
+}
+
 export interface WritingCriterion {
   code: string
   band: number
@@ -230,8 +236,8 @@ export interface WritingSubmissionResult {
 }
 
 /** A lesson and its status. Its summary, slides and documents are read separately (see `types/lesson.ts`). */
-/** The lesson content: passages, audio, vocabulary and auto-graded exercises. */
-export type LessonBlock = PassageBlockData | AudioBlockData | VocabularyBlockData | ExerciseBlockData
+/** The lesson content: lecture text, passages, audio, vocabulary and auto-graded exercises. */
+export type LessonBlock = PassageBlockData | AudioBlockData | VocabularyBlockData | ExerciseBlockData | TextBlockData
 
 export interface LessonDetail {
   id: string

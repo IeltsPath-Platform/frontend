@@ -73,6 +73,13 @@ Trang cây kiến thức của khóa học hiển thị theo cấu trúc khóa h
 
 Community `/community` yêu cầu đăng nhập, hỗ trợ feed cursor 10 bài/lượt, tìm kiếm toàn văn tiêu đề/nội dung, lọc chủ đề, tạo bài, reaction, lưu bài, bình luận và phản hồi, theo dõi hồ sơ, cùng bảng bài đã lưu. Ảnh/video hiện nhận URL HTTPS được Community backend cho phép; chưa có luồng upload. Chuông thông báo dùng REST để đồng bộ unread và STOMP qua `/ws/notifications`; khi mất kết nối, danh sách REST vẫn là dữ liệu chuẩn.
 
+### Soạn bài học
+
+Popup chọn từ vựng trong trình soạn bài gọi `/api/content/admin/vocabulary/suggestions`, tự tìm sau 300 ms từ hai ký tự;
+một ký tự vẫn tìm chính xác bằng nút Tìm/Enter. Mỗi lượt lấy 20 từ, nút Tải thêm giữ các nghĩa đã chọn và kết quả trước đó.
+Cần triển khai Library cùng migration V36 trước frontend này; contract ở
+[`backend/docs/contracts/vocabulary-author-suggestions-v1.md`](../backend/docs/contracts/vocabulary-author-suggestions-v1.md).
+
 ### Điều hướng và không gian làm việc
 
 Navbar dùng mục **Khám phá** để gom Cộng đồng, Trò chơi, Nghe chép, Kho từ vựng và Flashcard của tôi. Di chuột vào mục này để hiện thanh điều hướng con với hiệu ứng như các mục khác; trên điện thoại, bấm để mở các mục con trong menu. Bàn phím vẫn hỗ trợ Enter và Escape. Navbar không còn mục Quản trị, Kết quả học viên hoặc Bài mẫu 8đ.

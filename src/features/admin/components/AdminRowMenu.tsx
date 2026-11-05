@@ -21,19 +21,23 @@ const MENU_GAP = 6
 const EDGE_GAP = 8
 
 /**
- * The "..." button at the end of a table row and the menu of actions it opens. The menu is drawn on the page, outside
- * the table, so a table that scrolls or clips its cells never cuts it off.
+ * The "..." button at the end of a table row and the menu of actions it opens. The menu is drawn outside the table, so
+ * a table that scrolls or clips its cells never cuts it off. A row inside a drawer or modal keeps its menu inside that
+ * layer: the layer blocks clicks on everything outside it, which would leave the menu showing but dead.
  */
-export function AdminRowMenu({ label, items, className }: { label: string; items: readonly RowMenuItem[]; className?: string }) {
+export function AdminRowMenu({ label, items, className, disabled }: { label: string; items: readonly RowMenuItem[]; className?: string; disabled?: boolean }) {
   const trigger = useRef<HTMLButtonElement>(null)
   const menu = useRef<HTMLDivElement>(null)
-  // `anchorTop` is the top edge of the button, where the menu opens upward from when it has no room below.
-  const [spot, setSpot] = useState<{ top: number; right: number; anchorTop: number } | null>(null)
+  // `anchorTop` is the top edge of the button, where the menu opens upward from when it has no room below. `host` is
+  // where the menu is drawn: inside the drawer or modal that holds the row, or on the page body when there is none.
+  const [spot, setSpot] = useState<{ top: number; right: number; anchorTop: number; host: HTMLElement } | null>(null)
 
   function close(returnFocus = false) {
     setSpot(null)
     if (returnFocus) trigger.current?.focus()
   }
+  // Locking the row (a save, a reload) closes a menu left open, so it does not come back when the row unlocks.
+  if (disabled && spot) setSpot(null)
 
   useEffect(() => {
     if (!spot) return
@@ -67,7 +71,12 @@ export function AdminRowMenu({ label, items, className }: { label: string; items
   function toggle() {
     if (spot) { close(); return }
     const box = trigger.current?.getBoundingClientRect()
-    setSpot({ top: (box?.bottom ?? 0) + MENU_GAP, right: window.innerWidth - (box?.right ?? 0), anchorTop: box?.top ?? 0 })
+    setSpot({
+      top: (box?.bottom ?? 0) + MENU_GAP,
+      right: window.innerWidth - (box?.right ?? 0),
+      anchorTop: box?.top ?? 0,
+      host: trigger.current?.closest<HTMLElement>('[role="dialog"]') ?? document.body,
+    })
   }
 
   function onKeyDown(event: React.KeyboardEvent) {
@@ -80,7 +89,7 @@ export function AdminRowMenu({ label, items, className }: { label: string; items
   }
 
   return <>
-    <button aria-expanded={!!spot} aria-haspopup="menu" aria-label={label} className="adm-icon-btn adm-rowmenu__trigger" onClick={toggle} ref={trigger} type="button">
+    <button aria-expanded={!!spot} aria-haspopup="menu" aria-label={label} className="adm-icon-btn adm-rowmenu__trigger" disabled={disabled} onClick={toggle} ref={trigger} type="button">
       <MoreHorizontal aria-hidden="true" size={18} />
     </button>
     {spot ? createPortal(
@@ -89,6 +98,6 @@ export function AdminRowMenu({ label, items, className }: { label: string; items
           {items.map((item) => <button aria-label={item.ariaLabel} className={`adm-rowmenu__item${item.tone === 'danger' ? ' is-danger' : ''}${item.separatorBefore ? ' adm-rowmenu__item--divided' : ''}`} disabled={item.disabled} key={item.key}
             onClick={() => { close(); item.onSelect() }} role="menuitem" type="button">{item.icon}{item.label}{item.hint ? <span className="adm-rowmenu__hint">{item.hint}</span> : null}</button>)}
         </div>
-      </div>, document.body) : null}
+      </div>, spot.host) : null}
   </>
 }

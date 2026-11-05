@@ -9,7 +9,8 @@ export function hasAnyRole(roles: readonly string[] | undefined, allowed: readon
 /** Staff enter their workspace even when sign-in started on a learner page. */
 export function signInDestination(roles: readonly string[] | undefined, from?: string): string {
   if (hasAnyRole(roles, ['ADMIN'])) return '/admin'
-  if (hasAnyRole(roles, ['CONTENT_AUTHOR'])) return '/content-author'
+  // Straight to the overview page: the workspace root only forwards there, and sign-in already navigates twice in a row.
+  if (hasAnyRole(roles, ['CONTENT_AUTHOR'])) return '/content-author/content'
   if (hasAnyRole(roles, ['EXAMINER'])) return '/admin'
   return from || '/overview'
 }

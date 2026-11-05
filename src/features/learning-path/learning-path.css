@@ -1145,25 +1145,23 @@
 .lp-tile__link:hover .lp-art {
   transform: scale(1.06);
 }
+/* Flush with the card's top-left corner: the card's own rounding clips it, only the opposite corner is rounded. */
 .lp-tile__band {
   position: absolute;
-  top: .85rem;
-  left: .85rem;
+  top: 0;
+  left: 0;
   display: inline-flex;
   align-items: baseline;
   gap: .4rem;
-  padding: .32rem .8rem .32rem .7rem;
-  border: 1px solid rgb(255 255 255 / 22%);
-  border-radius: 999px;
+  padding: .45rem .95rem .5rem 1.1rem;
+  border-radius: 0 0 18px 0;
   color: #fff;
   font-family: var(--lp-display);
   font-size: 1.3rem;
   font-weight: 800;
   line-height: 1.1;
   font-variant-numeric: tabular-nums;
-  background: rgb(12 27 77 / 84%);
-  box-shadow: 0 6px 16px rgb(12 27 77 / 30%);
-  backdrop-filter: blur(6px);
+  background: var(--lp-accent);
 }
 .lp-tile__band small {
   font-family: var(--lp-ui);
@@ -1173,11 +1171,79 @@
   text-transform: uppercase;
   opacity: .75;
 }
-.lp-tile__chip {
+/* Top-right column: the free tab is flush with the corner like the band tab, the status chip sits below it.
+   The column never grows past the room the band tab leaves (7.5rem), so a long chip shortens instead of sliding under it. */
+.lp-tile__tags {
   position: absolute;
-  top: .85rem;
-  right: .85rem;
+  top: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: .5rem;
+  max-width: calc(100% - 7.5rem);
+}
+.lp-tile__free {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  overflow: hidden;
+  padding: .55rem 1.15rem .6rem 1rem;
+  border-radius: 0 0 0 18px;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.1;
+  background: var(--lp-success);
+}
+.lp-tile__tags .lp-chip {
+  max-width: calc(100% - .85rem);
+  margin-right: .85rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
   box-shadow: 0 4px 12px rgb(12 27 77 / 18%);
+}
+/* Alone in the column the chip drops below the corner; after the free tab the column gap spaces it. */
+.lp-tile__tags .lp-chip:first-child { margin-top: .85rem; }
+/* "Suggested for you": a gold tab flush with the picture's bottom-left corner, mirroring the band tab on the opposite corner. */
+.lp-tile__suggest {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  overflow: hidden;
+  padding: .55rem 1.15rem .55rem 1rem;
+  border-radius: 0 18px 0 0;
+  color: #4a2a00;
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.1;
+  white-space: nowrap;
+  background: linear-gradient(135deg, #ffe08a 0%, #ffbf3c 100%);
+}
+.lp-tile__free::after,
+.lp-tile__suggest::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 35%, rgb(255 255 255 / 70%) 50%, transparent 65%);
+  transform: translateX(-120%);
+  animation: lp-chip-sheen 4.5s ease-in-out 1.2s infinite;
+}
+@keyframes lp-chip-sheen {
+  0%, 55% { transform: translateX(-120%); }
+  100% { transform: translateX(120%); }
+}
+/* The two corner tabs shimmer in turn, not together. */
+.lp-tile__free::after { animation-delay: 3.4s; }
+@media (prefers-reduced-motion: reduce) {
+  .lp-tile__free::after,
+  .lp-tile__suggest::after { animation: none; }
 }
 .lp-tile__body {
   display: grid;
@@ -1225,13 +1291,6 @@
 }
 .lp-tile__facts svg {
   color: var(--lp-primary);
-}
-.lp-tile__facts .lp-tile__fact--free {
-  color: var(--lp-success);
-  background: var(--lp-success-soft);
-}
-.lp-tile__facts .lp-tile__fact--free svg {
-  color: var(--lp-success);
 }
 .lp-tile__progress {
   display: grid;

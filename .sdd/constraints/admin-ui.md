@@ -21,6 +21,7 @@ Token nằm ở [`src/features/admin/admin.css`](../../src/features/admin/admin.
 
 - Font Inter; chữ trong ô nhập ≥ 16px. Tiêu đề lớp phủ (`.adm-layer__title`) 1.35rem đậm 800, nhãn ô nhập trong drawer 1rem đậm 700, chữ phụ `.adm-muted`.
 - Chuyển động ngắn (0.12–0.24s), luôn có nhánh `prefers-reduced-motion`. Không hiệu ứng trang trí.
+- Drawer và hộp thoại đang mở **MUST NOT giữ trạng thái cuối của animation** (`animation-fill-mode: forwards` hoặc `both` trên `transform`/`scale`/`translate`): Chrome coi nó là khung chứa của phần tử `position: fixed` bên trong, nên `AdminRowMenu` (vẽ ngay trong hộp) hiện lệch xa nút "…". Animation mở chỉ khai báo `from` thì dùng `backwards`; chỉ animation đóng (`is-closing`) mới cần `both`.
 - Icon chỉ dùng `lucide-react`. Nút chỉ-icon luôn có `aria-label`.
 
 ## 2. Bố cục và lớp phủ
@@ -42,7 +43,7 @@ Token nằm ở [`src/features/admin/admin.css`](../../src/features/admin/admin.
 
 ## 4. Nút và thanh nút
 
-- Mọi nút chữ trong drawer: **nền navy, chữ trắng** (đã có luật `.adm-drawer .adm-btn`). Nút nguy hiểm giữ đỏ.
+- Mọi nút chữ trong **drawer (sidebar phải) và hộp thoại/popup (`AdminModal`)**: **nền navy, chữ trắng**, kể cả nút nhỏ như "Thêm …", "Sửa lựa chọn" (luật `:is(.adm-drawer, .adm-modal) .adm-btn` trong `admin.css`; không tự viết màu riêng cho từng nút). Nút nguy hiểm và nút "Đóng" cuối form giữ đỏ; nút chỉ-icon giữ kiểu nhạt.
 - Thanh nút cuối form (`.adm-form-footer`): **canh giữa**, nút đầu "Đóng" **đỏ** kèm ✕, nút chính "Lưu" navy kèm biểu tượng đĩa. Biểu tượng vẽ bằng CSS; nút không phải đóng/lưu (ví dụ "Sửa") thêm `adm-btn--noicon`.
 - Dùng từ **"Lưu"** và **"Đóng"**, không dùng "Xong" (trừ nghĩa hoàn thành công việc). Không ghi "(tùy chọn)" ở nhãn; trường bắt buộc có dấu `*` đỏ (`<span className="adm-required" aria-hidden="true" />`, vẽ bằng CSS để không lẫn vào tên truy cập).
 - Nút chính đứng một mình giữa form khi là hành động duy nhất (ví dụ sinh bản nháp).

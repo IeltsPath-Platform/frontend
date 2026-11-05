@@ -18,6 +18,20 @@ describe('CourseKnowledgeDialog', () => {
     expect(screen.getByText('Can do 2')).toBeInTheDocument()
   })
 
+  it('lists a point without a level in its own group, after the levels, so it can still be chosen', () => {
+    const mixed = [node('1', 'B1'), node('9', null)]
+    function Mixed() {
+      const [picked, setPicked] = useState<string[]>([])
+      return <CourseKnowledgeDialog description="tất cả" limit={5} offered={mixed} onChange={setPicked} onClose={() => undefined} picked={picked} />
+    }
+    render(<Mixed />)
+    const groups = screen.getAllByRole('region').map((group) => group.getAttribute('aria-label'))
+    expect(groups).toEqual(['Cấp B1', 'Chưa xếp cấp'])
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Chọn tất cả chưa xếp cấp' }))
+    expect(screen.getByRole('checkbox', { name: /KP_9/ })).toBeChecked()
+    expect(screen.getByRole('button', { name: 'Thu gọn chưa xếp cấp' })).toBeInTheDocument()
+  })
+
   it('stops offering more points once the limit is reached, and frees them when one is unpicked', () => {
     render(<Harness limit={2} />)
     fireEvent.click(screen.getByRole('checkbox', { name: /KP_1/ }))

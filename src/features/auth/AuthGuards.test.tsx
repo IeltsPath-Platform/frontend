@@ -42,7 +42,7 @@ describe('RequireRole', () => {
 describe('GuestOnly', () => {
   it.each([
     ['ADMIN', '/admin'],
-    ['CONTENT_AUTHOR', '/content-author'],
+    ['CONTENT_AUTHOR', '/content-author/content'],
     ['CUSTOMER', '/community'],
   ])('sends a restored %s session to the appropriate destination', (role, destination) => {
     auth.mockReturnValue({ isLoggedIn: true, roles: [role] })

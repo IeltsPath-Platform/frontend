@@ -19,7 +19,7 @@ function show() { return render(<MemoryRouter><CoursesPage /></MemoryRouter>) }
 /** Opens the actions menu of one topic row and picks an action from it. */
 async function pick(topic: string, action: string) {
   fireEvent.click(await screen.findByRole('button', { name: `Thao tác với ${topic}` }))
-  fireEvent.click(screen.getByRole('button', { name: action }))
+  fireEvent.click(screen.getByRole('menuitem', { name: action }))
 }
 describe('CoursesPage', () => {
   beforeEach(() => {
@@ -51,7 +51,7 @@ describe('CoursesPage', () => {
     fireEvent.click(within(parent).getByRole('button', { name: 'Mở bài học' }))
     const drawer = screen.getByRole('dialog', { name: 'Viết học thuật' })
     expect(drawer).toHaveClass('adm-drawer--xl')
-    expect(await within(drawer).findByRole('button', { name: 'Viết mở bài' })).toBeInTheDocument()
+    expect(await within(drawer).findByText('Viết mở bài')).toBeInTheDocument()
     expect(lessons.fetchLessons).toHaveBeenCalledWith('t1', expect.anything())
     fireEvent.click(within(drawer).getByRole('button', { name: 'Đóng' }))
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
@@ -113,7 +113,7 @@ describe('CoursesPage', () => {
   it('has no action to add a child topic in a row menu', async () => {
     show()
     fireEvent.click(await screen.findByRole('button', { name: 'Thao tác với Viết học thuật' }))
-    expect(screen.getByRole('button', { name: 'Sửa chủ đề' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Sửa chủ đề' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /chủ đề con/ })).not.toBeInTheDocument()
   })
 
@@ -149,7 +149,7 @@ describe('CoursesPage', () => {
     lessons.fetchTopics.mockResolvedValue(stored)
     show()
     fireEvent.click(await screen.findByRole('button', { name: 'Thao tác với Diễn đạt lại' }))
-    const up = screen.getByRole('button', { name: 'Đưa lên' })
+    const up = screen.getByRole('menuitem', { name: 'Đưa lên' })
     expect(up).toBeEnabled()
     expect(screen.queryByText(/thứ tự trùng/)).not.toBeInTheDocument()
     fireEvent.click(up)
@@ -191,7 +191,7 @@ describe('CoursesPage', () => {
     expect(lessons.fetchTopics).toHaveBeenCalledTimes(1)
     fireEvent.click(within(form).getByRole('button', { name: 'Hủy' }))
     fireEvent.click(screen.getByRole('button', { name: 'Thao tác với Diễn đạt lại' }))
-    expect(screen.getByRole('button', { name: 'Đưa xuống' })).toBeDisabled()
+    expect(screen.getByRole('menuitem', { name: 'Đưa xuống' })).toBeDisabled()
     expect(api.updateTopic).toHaveBeenCalledTimes(1)
   })
 
@@ -230,10 +230,11 @@ describe('CoursesPage', () => {
     show()
     const root = await screen.findByRole('article', { name: 'Viết học thuật' })
     fireEvent.click(within(root).getByRole('button', { name: 'Thao tác với Viết học thuật' }))
-    expect(within(root).getByRole('button', { name: 'Đưa xuống' })).toBeDisabled()
+    expect(screen.getByRole('menuitem', { name: 'Đưa xuống' })).toBeDisabled()
+    fireEvent.pointerDown(document.body)
     const child = screen.getByRole('article', { name: 'Diễn đạt lại' })
     fireEvent.click(within(child).getByRole('button', { name: 'Thao tác với Diễn đạt lại' }))
-    expect(within(child).getByRole('button', { name: 'Đưa lên' })).toBeDisabled()
+    expect(screen.getByRole('menuitem', { name: 'Đưa lên' })).toBeDisabled()
     expect(api.updateTopic).not.toHaveBeenCalled()
   })
 
@@ -338,10 +339,10 @@ describe('CoursesPage', () => {
     const trigger = await screen.findByRole('button', { name: 'Thao tác với Viết học thuật' })
     fireEvent.click(trigger)
     expect(trigger).toHaveAttribute('aria-expanded', 'true')
-    expect(screen.getByRole('group', { name: 'Thao tác với Viết học thuật' })).toBeInTheDocument()
-    fireEvent.keyDown(screen.getByRole('button', { name: 'Sửa chủ đề' }), { key: 'Escape' })
+    expect(screen.getByRole('menu', { name: 'Thao tác với Viết học thuật' })).toBeInTheDocument()
+    fireEvent.keyDown(screen.getByRole('menuitem', { name: 'Sửa chủ đề' }), { key: 'Escape' })
     expect(trigger).toHaveAttribute('aria-expanded', 'false')
-    expect(screen.queryByRole('group', { name: 'Thao tác với Viết học thuật' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('menu', { name: 'Thao tác với Viết học thuật' })).not.toBeInTheDocument()
     expect(trigger).toHaveFocus()
   })
 
@@ -416,13 +417,13 @@ describe('CoursesPage', () => {
     lessons.fetchTopics.mockResolvedValue([topics[0], { ...topics[1]!, status: 'INACTIVE' }, topics[2]])
     show()
     fireEvent.click(await screen.findByRole('button', { name: 'Thao tác với Diễn đạt lại' }))
-    expect(screen.queryByRole('button', { name: 'Ngừng dùng' })).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Dùng lại' })).not.toHaveClass('is-danger')
-    fireEvent.click(screen.getByRole('button', { name: 'Dùng lại' }))
+    expect(screen.queryByRole('menuitem', { name: 'Ngừng dùng' })).not.toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Dùng lại' })).not.toHaveClass('is-danger')
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Dùng lại' }))
     await waitFor(() => expect(api.updateTopic).toHaveBeenCalledExactlyOnceWith('t2', expect.objectContaining({ status: 'ACTIVE', name: 'Diễn đạt lại' })))
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
     fireEvent.click(await screen.findByRole('button', { name: 'Thao tác với Liên kết câu' }))
-    const stop = screen.getByRole('button', { name: 'Ngừng dùng' })
+    const stop = screen.getByRole('menuitem', { name: 'Ngừng dùng' })
     expect(stop).toHaveClass('is-danger')
     expect(stop.querySelector('svg')).not.toBeNull()
   })

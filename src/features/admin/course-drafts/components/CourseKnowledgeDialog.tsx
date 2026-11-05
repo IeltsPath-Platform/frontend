@@ -3,6 +3,13 @@ import { ChevronDown, Search } from 'lucide-react'
 import { AdminModal } from '../../components/AdminLayer'
 import { CEFR_LEVELS, type CefrLevel, type TreeNode } from '../../knowledge-graph/types'
 
+/** A point with no CEFR level is listed in a group of its own, after the levels, so it can still be chosen. */
+type LevelKey = CefrLevel | 'NONE'
+const keyOf = (node: TreeNode): LevelKey => node.cefrLevel ?? 'NONE'
+/** "Cấp B1", or "Chưa xếp cấp" for the group without a level. */
+const groupTitle = (key: LevelKey) => (key === 'NONE' ? 'Chưa xếp cấp' : `Cấp ${key}`)
+const groupWords = (key: LevelKey) => (key === 'NONE' ? 'chưa xếp cấp' : `cấp ${key}`)
+
 /**
  * The big picker for the knowledge points of a course request: every point on offer at a glance, searchable, grouped by
  * level, ticked in place. `offered` is already narrowed to the band and skills and ordered highest level first.
@@ -12,16 +19,16 @@ export function CourseKnowledgeDialog({ offered, picked, limit, description, onC
   onChange: (next: string[]) => void; onClose: () => void
 }) {
   const [text, setText] = useState('')
-  const [level, setLevel] = useState<CefrLevel | 'ALL'>('ALL')
-  const [folded, setFolded] = useState<readonly CefrLevel[]>([])
-  const levels = CEFR_LEVELS.filter((item) => offered.some((node) => node.cefrLevel === item)).reverse()
+  const [level, setLevel] = useState<LevelKey | 'ALL'>('ALL')
+  const [folded, setFolded] = useState<readonly LevelKey[]>([])
+  const levels: LevelKey[] = [...CEFR_LEVELS.filter((item) => offered.some((node) => node.cefrLevel === item)).reverse(), ...(offered.some((node) => !node.cefrLevel) ? (['NONE'] as const) : [])]
   const needle = text.trim().toLowerCase()
-  const shown = offered.filter((node) => (level === 'ALL' || node.cefrLevel === level)
+  const shown = offered.filter((node) => (level === 'ALL' || keyOf(node) === level)
     && (!needle || node.code.toLowerCase().includes(needle) || node.name.toLowerCase().includes(needle)))
-  const groups = levels.map((item) => ({ level: item, nodes: shown.filter((node) => node.cefrLevel === item) })).filter((group) => group.nodes.length)
+  const groups = levels.map((item) => ({ level: item, nodes: shown.filter((node) => keyOf(node) === item) })).filter((group) => group.nodes.length)
   const atLimit = picked.length >= limit
 
-  function fold(item: CefrLevel) {
+  function fold(item: LevelKey) {
     setFolded((current) => (current.includes(item) ? current.filter((entry) => entry !== item) : [...current, item]))
   }
 
@@ -52,7 +59,7 @@ export function CourseKnowledgeDialog({ offered, picked, limit, description, onC
         <div aria-label="Lọc theo cấp độ" className="adm-kp-levels" role="group">
           <button aria-pressed={level === 'ALL'} className="adm-kp-level" onClick={() => setLevel('ALL')} type="button">Tất cả <span>{offered.length}</span></button>
           {levels.map((item) => <button aria-pressed={level === item} className="adm-kp-level" key={item} onClick={() => setLevel(item)} type="button">
-            {item} <span>{offered.filter((node) => node.cefrLevel === item).length}</span>
+            {item === 'NONE' ? 'Chưa xếp cấp' : item} <span>{offered.filter((node) => keyOf(node) === item).length}</span>
           </button>)}
         </div>
       </div>
@@ -61,12 +68,12 @@ export function CourseKnowledgeDialog({ offered, picked, limit, description, onC
           const pickedHere = group.nodes.filter((node) => picked.includes(node.id)).length
           const all = pickedHere === group.nodes.length
           const closed = folded.includes(group.level)
-          return <section aria-label={`Cấp ${group.level}`} className={`adm-kp-group${closed ? ' is-folded' : ''}`} key={group.level}>
+          return <section aria-label={groupTitle(group.level)} className={`adm-kp-group${closed ? ' is-folded' : ''}`} key={group.level}>
           <div className="adm-kp-group__head">
-            <input aria-label={`Chọn tất cả cấp ${group.level}`} checked={all} disabled={!all && atLimit}
+            <input aria-label={`Chọn tất cả ${groupWords(group.level)}`} checked={all} disabled={!all && atLimit}
               onChange={() => toggleGroup(group.nodes)} ref={(box) => { if (box) box.indeterminate = pickedHere > 0 && !all }} type="checkbox" />
-            <h3>{group.level}<span>{pickedHere > 0 ? `${pickedHere}/${group.nodes.length} điểm đã chọn` : `${group.nodes.length} điểm`}</span></h3>
-            <button aria-controls={`kp-level-${group.level}`} aria-expanded={!closed} aria-label={`${closed ? 'Mở' : 'Thu gọn'} cấp ${group.level}`} className="adm-kp-group__fold" onClick={() => fold(group.level)} type="button">
+            <h3>{group.level === 'NONE' ? 'Chưa xếp cấp' : group.level}<span>{pickedHere > 0 ? `${pickedHere}/${group.nodes.length} điểm đã chọn` : `${group.nodes.length} điểm`}</span></h3>
+            <button aria-controls={`kp-level-${group.level}`} aria-expanded={!closed} aria-label={`${closed ? 'Mở' : 'Thu gọn'} ${groupWords(group.level)}`} className="adm-kp-group__fold" onClick={() => fold(group.level)} type="button">
               <ChevronDown aria-hidden="true" size={18} />
             </button>
           </div>
