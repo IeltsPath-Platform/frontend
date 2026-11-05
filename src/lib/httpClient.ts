@@ -65,6 +65,7 @@ export function onSessionExpired(listener: (() => void) | null) {
 }
 
 async function send(path: string, options: RequestOptions, bearer?: string | null, accept = 'application/json'): Promise<Response> {
+  if (options.signal?.aborted) throw new DOMException('Yêu cầu đã bị hủy.', 'AbortError')
   const headers: Record<string, string> = { Accept: accept }
   const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData
   if (options.body !== undefined && !isFormData) headers['Content-Type'] = 'application/json'

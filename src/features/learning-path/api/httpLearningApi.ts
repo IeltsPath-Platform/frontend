@@ -16,6 +16,7 @@ import {
   mapReviewDetail,
   mapReviewRef,
   mapReviewSubmission,
+  mapPracticeTestMilestone,
   mapTestAssignment,
   mapTheoryCheck,
   mapTopicLessons,
@@ -36,6 +37,7 @@ import {
   type ReviewDetailDto,
   type ReviewRefDto,
   type ReviewSubmissionResultDto,
+  type PracticeTestMilestoneDto,
   type TestAssignmentDto,
   type TheoryCheckResultDto,
   type TopicLessonsDto,
@@ -74,6 +76,7 @@ import type {
   SaveItemResponseRequest,
   StartAttemptRequest,
   StreakStatus,
+  PracticeTestMilestone,
   TestAssignment,
   TopicLessonsResponse,
   TopicSummary,
@@ -418,6 +421,19 @@ export function createHttpLearningApi(): LearningApi {
 
     async createCourseTestAssignment(courseId: string): Promise<TestAssignment> {
       const dto = await learningRequest<TestAssignmentDto>(`/courses/${courseId}/test-assignments`, {
+        method: 'POST',
+        body: {},
+      })
+      return mapTestAssignment(dto, { courseId })
+    },
+
+    async listPracticeTests(courseId: string): Promise<PracticeTestMilestone[]> {
+      const dtos = await learningRequest<PracticeTestMilestoneDto[]>(`/courses/${courseId}/practice-tests`)
+      return dtos.map(mapPracticeTestMilestone)
+    },
+
+    async createPracticeTestAssignment(courseId: string, packageId: string): Promise<TestAssignment> {
+      const dto = await learningRequest<TestAssignmentDto>(`/courses/${courseId}/practice-tests/${packageId}/assignments`, {
         method: 'POST',
         body: {},
       })

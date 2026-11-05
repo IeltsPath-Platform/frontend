@@ -26,6 +26,11 @@ export function freePracticePath(attemptId: string) {
   return `/learn/practice/${attemptId}`
 }
 
+/** One lesson. */
+export function lessonPagePath(lessonId: string) {
+  return `/learn/lessons/${lessonId}`
+}
+
 /** The page of one topic: its lessons and its test. */
 export function topicPagePath(topicId: string) {
   return `/learn/topics/${topicId}`

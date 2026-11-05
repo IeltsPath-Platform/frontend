@@ -104,15 +104,6 @@ export function senseMeaning(sense: { vietnameseMeaning: string | null; englishD
   return sense.vietnameseMeaning || sense.englishDefinition || ''
 }
 
-/** Plays the recorded pronunciation when it is a full URL, otherwise falls back to speech synthesis. */
-export function playPronunciation(lemma: string, audioRef: string | null | undefined, speak: (text: string) => void) {
-  if (audioRef && audioRef.startsWith('https://')) {
-    new Audio(audioRef).play().catch(() => speak(lemma))
-  } else {
-    speak(lemma)
-  }
-}
-
 /** Splits `text` around case-insensitive matches of `keyword` so the page can mark them; no match gives one part. */
 export function splitHighlight(text: string, keyword: string): { text: string; match: boolean }[] {
   const needle = keyword.trim().toLowerCase()

@@ -24,7 +24,7 @@ Mở URL Vite in ra (mặc định `http://localhost:5173`).
 | --- | --- | --- |
 | `VITE_API_BASE_URL` | `http://localhost:8080` | Gateway BE |
 | `VITE_USE_MOCK_LEARNING` | `false` khi có base URL | `true` = mock learning; `false` = HTTP `/api/learning/**` |
-| `VITE_USE_MOCK_ROCKET` | `true` | Game Tên lửa (`/games/rocket`) chạy mock trong trình duyệt (10 từ mẫu, không cần đăng nhập); `false` = HTTP `/api/games/rocket/**` khi game-service có API |
+| `VITE_USE_MOCK_ROCKET` | `false` | `false` = Game Tên lửa (`/games/rocket`) gọi HTTP `/api/games/rocket/**`, cần đăng nhập; `true` = chạy mock trong trình duyệt (10 từ mẫu, chỉ chơi đơn, không cần đăng nhập) |
 
 Không commit file `.env` (đã có trong `.gitignore`). Dùng `.env.example` làm mẫu.
 
@@ -72,6 +72,13 @@ Trang cây kiến thức của khóa học hiển thị theo cấu trúc khóa h
 ### Community
 
 Community `/community` yêu cầu đăng nhập, hỗ trợ feed cursor 10 bài/lượt, tìm kiếm toàn văn tiêu đề/nội dung, lọc chủ đề, tạo bài, reaction, lưu bài, bình luận và phản hồi, theo dõi hồ sơ, cùng bảng bài đã lưu. Ảnh/video hiện nhận URL HTTPS được Community backend cho phép; chưa có luồng upload. Chuông thông báo dùng REST để đồng bộ unread và STOMP qua `/ws/notifications`; khi mất kết nối, danh sách REST vẫn là dữ liệu chuẩn.
+
+### Soạn bài học
+
+Popup chọn từ vựng trong trình soạn bài gọi `/api/content/admin/vocabulary/suggestions`, tự tìm sau 300 ms từ hai ký tự;
+một ký tự vẫn tìm chính xác bằng nút Tìm/Enter. Mỗi lượt lấy 20 từ, nút Tải thêm giữ các nghĩa đã chọn và kết quả trước đó.
+Cần triển khai Library cùng migration V36 trước frontend này; contract ở
+[`backend/docs/contracts/vocabulary-author-suggestions-v1.md`](../backend/docs/contracts/vocabulary-author-suggestions-v1.md).
 
 ### Điều hướng và không gian làm việc
 

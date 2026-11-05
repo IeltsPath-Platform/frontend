@@ -1145,25 +1145,23 @@
 .lp-tile__link:hover .lp-art {
   transform: scale(1.06);
 }
+/* Flush with the card's top-left corner: the card's own rounding clips it, only the opposite corner is rounded. */
 .lp-tile__band {
   position: absolute;
-  top: .85rem;
-  left: .85rem;
+  top: 0;
+  left: 0;
   display: inline-flex;
   align-items: baseline;
   gap: .4rem;
-  padding: .32rem .8rem .32rem .7rem;
-  border: 1px solid rgb(255 255 255 / 22%);
-  border-radius: 999px;
+  padding: .45rem .95rem .5rem 1.1rem;
+  border-radius: 0 0 18px 0;
   color: #fff;
   font-family: var(--lp-display);
   font-size: 1.3rem;
   font-weight: 800;
   line-height: 1.1;
   font-variant-numeric: tabular-nums;
-  background: rgb(12 27 77 / 84%);
-  box-shadow: 0 6px 16px rgb(12 27 77 / 30%);
-  backdrop-filter: blur(6px);
+  background: var(--lp-accent);
 }
 .lp-tile__band small {
   font-family: var(--lp-ui);
@@ -1173,11 +1171,79 @@
   text-transform: uppercase;
   opacity: .75;
 }
-.lp-tile__chip {
+/* Top-right column: the free tab is flush with the corner like the band tab, the status chip sits below it.
+   The column never grows past the room the band tab leaves (7.5rem), so a long chip shortens instead of sliding under it. */
+.lp-tile__tags {
   position: absolute;
-  top: .85rem;
-  right: .85rem;
+  top: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: .5rem;
+  max-width: calc(100% - 7.5rem);
+}
+.lp-tile__free {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  overflow: hidden;
+  padding: .55rem 1.15rem .6rem 1rem;
+  border-radius: 0 0 0 18px;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.1;
+  background: var(--lp-success);
+}
+.lp-tile__tags .lp-chip {
+  max-width: calc(100% - .85rem);
+  margin-right: .85rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
   box-shadow: 0 4px 12px rgb(12 27 77 / 18%);
+}
+/* Alone in the column the chip drops below the corner; after the free tab the column gap spaces it. */
+.lp-tile__tags .lp-chip:first-child { margin-top: .85rem; }
+/* "Suggested for you": a gold tab flush with the picture's bottom-left corner, mirroring the band tab on the opposite corner. */
+.lp-tile__suggest {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  overflow: hidden;
+  padding: .55rem 1.15rem .55rem 1rem;
+  border-radius: 0 18px 0 0;
+  color: #4a2a00;
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.1;
+  white-space: nowrap;
+  background: linear-gradient(135deg, #ffe08a 0%, #ffbf3c 100%);
+}
+.lp-tile__free::after,
+.lp-tile__suggest::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 35%, rgb(255 255 255 / 70%) 50%, transparent 65%);
+  transform: translateX(-120%);
+  animation: lp-chip-sheen 4.5s ease-in-out 1.2s infinite;
+}
+@keyframes lp-chip-sheen {
+  0%, 55% { transform: translateX(-120%); }
+  100% { transform: translateX(120%); }
+}
+/* The two corner tabs shimmer in turn, not together. */
+.lp-tile__free::after { animation-delay: 3.4s; }
+@media (prefers-reduced-motion: reduce) {
+  .lp-tile__free::after,
+  .lp-tile__suggest::after { animation: none; }
 }
 .lp-tile__body {
   display: grid;
@@ -1593,6 +1659,7 @@
 }
 .lp-stop.is-next .lp-stop__node,
 .lp-step.is-next .lp-step__node,
+.lp-stop--available .lp-stop__node,
 .lp-finish--available .lp-stop__node {
   border-color: var(--lp-accent);
   color: #2b1300;
@@ -4288,6 +4355,63 @@ a.lp-step__row:hover {
   margin: 0 0 var(--lp-gap, 16px);
 }
 
+/* Practice test on the course route: a checkpoint drawn right after the chặng it opens after. The node, rail and state
+   colours come from .lp-stop; this card is lighter than a chặng card and is not a toggle, so it has no hover lift. */
+.lp-checkpoint {
+  display: grid;
+  gap: .75rem;
+  min-width: 0;
+  padding: .85rem 1.15rem;
+  border: 1px solid var(--lp-line);
+  border-radius: 14px;
+  background: var(--lp-surface);
+}
+.lp-checkpoint--available {
+  border-color: color-mix(in srgb, var(--lp-accent) 55%, var(--lp-line));
+  background: color-mix(in srgb, var(--lp-accent-soft) 45%, var(--lp-surface));
+  box-shadow: 0 6px 20px rgb(255 118 36 / 10%);
+}
+.lp-checkpoint--passed {
+  border-color: color-mix(in srgb, var(--lp-success) 35%, var(--lp-line));
+  background: color-mix(in srgb, var(--lp-success-soft) 50%, var(--lp-surface));
+}
+.lp-checkpoint--locked {
+  border-style: dashed;
+  background: color-mix(in srgb, var(--lp-surface) 55%, var(--lp-canvas));
+}
+.lp-checkpoint__text {
+  display: grid;
+  gap: .25rem;
+  min-width: 0;
+}
+.lp-root .lp-checkpoint__title {
+  margin: 0;
+  font-size: .98rem;
+  line-height: 1.35;
+}
+.lp-root .lp-checkpoint--locked .lp-checkpoint__title {
+  color: var(--lp-muted);
+}
+.lp-checkpoint__meta {
+  margin: 0;
+  color: var(--lp-muted);
+  font-size: .85rem;
+  line-height: 1.5;
+}
+.lp-checkpoint__action {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .5rem;
+}
+@media (min-width: 560px) {
+  .lp-checkpoint {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 1rem;
+  }
+}
+
 .lp-tree {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -4301,95 +4425,6 @@ a.lp-step__row:hover {
   .lp-tree {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-}
-
-.lp-point {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 14px;
-  background: var(--lp-surface);
-  border: 1px solid var(--lp-line);
-  border-radius: 12px;
-}
-
-.lp-point__head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.lp-point__name {
-  margin: 0;
-  font-size: 1rem;
-  line-height: 1.3;
-  color: var(--lp-ink);
-}
-
-.lp-point__code {
-  margin: 2px 0 0;
-  font-size: 0.75rem;
-  color: var(--lp-muted);
-  overflow-wrap: anywhere;
-}
-
-.lp-point__cando,
-.lp-point__needs {
-  margin: 0;
-  font-size: 0.875rem;
-  color: var(--lp-muted);
-}
-
-.lp-point__traps {
-  display: grid;
-  gap: .35rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  font-size: .85rem;
-  color: var(--lp-muted);
-}
-.lp-point__traps li {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: .25rem .6rem;
-}
-.lp-point__trap-name {
-  color: var(--lp-ink);
-}
-
-.lp-point__meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 12px;
-  font-size: 0.8125rem;
-  color: var(--lp-muted);
-}
-
-.lp-point__meter {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.lp-point__meter meter {
-  width: 88px;
-  height: 8px;
-}
-
-.lp-point__actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 12px;
-  margin-top: auto;
-}
-
-.lp-point__actions .lp-hint {
-  margin: 0;
 }
 
 /* ---- Progress page: level, streak, quests, badges, league ---- */
@@ -4577,8 +4612,7 @@ a.lp-step__row:hover {
 
 /* Bars: a light track and the primary colour for the filled part, instead of the browser default. */
 .lp-progress-section progress,
-.lp-tree progress,
-.lp-point meter {
+.lp-tree progress {
   appearance: none;
   border: 0;
   border-radius: 999px;
@@ -4587,16 +4621,12 @@ a.lp-step__row:hover {
   accent-color: var(--lp-primary);
 }
 
-.lp-progress-section progress::-webkit-progress-bar,
-.lp-point meter::-webkit-meter-bar {
+.lp-progress-section progress::-webkit-progress-bar {
   background: var(--lp-line);
   border-radius: 999px;
 }
 
-.lp-progress-section progress::-webkit-progress-value,
-.lp-point meter::-webkit-meter-optimum-value,
-.lp-point meter::-webkit-meter-suboptimum-value,
-.lp-point meter::-webkit-meter-even-less-good-value {
+.lp-progress-section progress::-webkit-progress-value {
   background: var(--lp-primary);
   border-radius: 999px;
 }

@@ -1,10 +1,10 @@
 import { useRef, useState } from 'react'
-import { Check, ChevronLeft, ChevronRight, Pencil, RotateCcw, Volume2, X } from 'lucide-react'
+import { Check, ChevronLeft, ChevronRight, Pencil, RotateCcw, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { flashcardApi, flashcardErrorMessage, isMastered, type DeckItem } from '../api/flashcardApi'
 import { OwlCoach } from './OwlCoach'
 import { getBrowserMarkReaction, type OwlReaction } from '../lib/owl-reactions'
-import { speak } from '../lib/speak'
+import { PronunciationButton } from '@/components/PronunciationButton'
 import { FlashcardFace } from './FlashcardFace'
 
 type Filter = 'all' | 'learning' | 'mastered'
@@ -111,7 +111,14 @@ export function DeckBrowser({ items, onEdit, onRemove }: DeckBrowserProps) {
               <button type="button" className="deck-browser-row" onClick={() => { setFilter('all'); go(row) }}>
                 <strong>{item.front}</strong><span>{item.back}</span>
               </button>
-              <Button variant="ghost" size="icon-sm" aria-label={`Phát âm ${item.front}`} onClick={() => speak(item.front)}><Volume2 /></Button>
+              <PronunciationButton
+                lemma={item.front}
+                src={item.pronunciationAudioReference}
+                ttsFallbackText={item.sourceType === 'MANUAL' ? item.front : undefined}
+                variant="ghost"
+                size="icon-sm"
+                aria-label={`Phát âm ${item.front}`}
+              />
               <Button variant="ghost" size="icon-sm" aria-label={`Sửa ${item.front}`} onClick={() => onEdit(item)}><Pencil /></Button>
               <Button variant="ghost" size="icon-sm" aria-label={`Gỡ ${item.front} khỏi bộ`} onClick={() => onRemove(item)}><X /></Button>
             </li>

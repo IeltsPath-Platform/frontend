@@ -9,6 +9,7 @@ import type {
   LessonDetail,
   LessonExerciseResult,
   LessonStatus,
+  PracticeTestMilestone,
   Question,
   QuestionResult,
   ReviewDetail,
@@ -41,7 +42,7 @@ export type TopicSummaryDto = {
   totalLessonCount: number
   accessLevel?: 'FREE' | 'PREMIUM'
   skill?: string | null
-  course?: { courseId: string; code: string; name: string; bandLevel: number; coverImageUrl?: string | null; description?: string | null } | null
+  course?: { courseId: string; code: string; name: string; bandLevel: number; coverImageUrl?: string | null; bannerImageUrl?: string | null; description?: string | null } | null
 }
 
 export type CourseSummaryDto = {
@@ -50,6 +51,7 @@ export type CourseSummaryDto = {
   name: string
   bandLevel: number
   coverImageUrl?: string | null
+  bannerImageUrl?: string | null
   description?: string | null
   topicCount: number
   passedTopicCount: number
@@ -65,6 +67,7 @@ export type CourseSummaryDto = {
   comboPayablePoints?: number | null
   availableSkills?: Array<'LISTENING' | 'READING' | 'WRITING' | 'SPEAKING'>
   premium?: boolean
+  free?: boolean
 }
 
 export type CourseUnlockDto = {
@@ -117,6 +120,8 @@ export type LessonBlockDto = {
   blockType: string
   blockKind?: string
   sortOrder: number
+  /** The Markdown of a `TEXT` block. */
+  textContent?: string | null
   asset?: {
     assetType: string
     textContent?: string | null
@@ -358,6 +363,16 @@ export type TestAssignmentDto = {
   packageVersionId: string
 }
 
+export type PracticeTestMilestoneDto = {
+  packageId: string
+  packageVersionId: string
+  code: string
+  title: string
+  afterTopicSequence: number
+  status: 'LOCKED' | 'AVAILABLE' | 'DONE'
+  percent?: number | null
+}
+
 export type LearnerAttemptResultDto = {
   id: string
   attemptId: string
@@ -416,6 +431,7 @@ export function mapCourseSummary(dto: CourseSummaryDto): CourseSummary {
     code: dto.code,
     title: dto.name,
     coverImageUrl: dto.coverImageUrl ?? null,
+    bannerImageUrl: dto.bannerImageUrl ?? null,
     description: dto.description ?? null,
     bandLevel: Number(dto.bandLevel),
     topicCount: dto.topicCount,
@@ -432,6 +448,7 @@ export function mapCourseSummary(dto: CourseSummaryDto): CourseSummary {
     comboPayablePoints: dto.comboPayablePoints ?? null,
     availableSkills: dto.availableSkills ?? [],
     premium: dto.premium ?? false,
+    free: dto.free ?? false,
   }
 }
 
@@ -441,7 +458,7 @@ export function mapTopicSummary(dto: TopicSummaryDto): TopicSummary {
     course: dto.course
       ? {
           id: dto.course.courseId, code: dto.course.code, title: dto.course.name, bandLevel: Number(dto.course.bandLevel),
-          coverImageUrl: dto.course.coverImageUrl ?? null, description: dto.course.description ?? null,
+          coverImageUrl: dto.course.coverImageUrl ?? null, bannerImageUrl: dto.course.bannerImageUrl ?? null, description: dto.course.description ?? null,
         }
       : null,
     code: dto.code,
@@ -507,6 +524,9 @@ export function mapLessonBlocks(blocks: LessonBlockDto[] | undefined): LessonBlo
         type: 'VOCABULARY',
         vocabularySenseIds: block.vocabularySenseIds ?? [],
       })
+    } else if (block.blockType === 'TEXT') {
+      // Lecture text; an empty one has nothing to show.
+      if (block.textContent?.trim()) mapped.push({ id: block.blockId, sortOrder: block.sortOrder, type: 'TEXT', text: block.textContent })
     } else if (block.blockType === 'ASSET' && block.asset?.assetType === 'PASSAGE') {
       mapped.push({
         id: block.blockId,
@@ -859,6 +879,18 @@ export function mapTestAssignment(
     ...(scope.courseId ? { courseId: scope.courseId } : {}),
     packageVersionId: dto.packageVersionId,
     packageCode: dto.packageId.slice(0, 8),
+  }
+}
+
+export function mapPracticeTestMilestone(dto: PracticeTestMilestoneDto): PracticeTestMilestone {
+  return {
+    packageId: dto.packageId,
+    packageVersionId: dto.packageVersionId,
+    code: dto.code,
+    title: dto.title,
+    afterTopicSequence: dto.afterTopicSequence,
+    status: dto.status,
+    percent: dto.percent == null ? null : Math.round(Number(dto.percent)),
   }
 }
 

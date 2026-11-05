@@ -30,7 +30,6 @@ import { DeckEditorPage } from '@/features/flashcards/pages/DeckEditorPage'
 import { LearnPage } from '@/features/flashcards/pages/LearnPage'
 import { TestPage } from '@/features/flashcards/pages/TestPage'
 import { FlashcardStudyPage } from '@/features/flashcards/pages/FlashcardStudyPage'
-import { FlashcardsPage } from '@/features/flashcards/pages/FlashcardsPage'
 import { VocabularyPage } from '@/features/vocabulary/pages/VocabularyPage'
 import { WordDetailPage } from '@/features/vocabulary/pages/WordDetailPage'
 import { VocabularySetPage } from '@/features/vocabulary/pages/VocabularySetPage'
@@ -189,7 +188,7 @@ function AppContent() {
       <Route path="/vocabulary/notebook/review" element={<RequireAuth><NotebookReviewPage /></RequireAuth>} />
       <Route path="/vocabulary/review" element={<Navigate replace to="/vocabulary/notebook/review" />} />
       <Route path="/submission-history" element={<RequireAuth><ExaminerReviewsPage /></RequireAuth>} />
-      <Route path="/flashcards" element={<RequireAuth><FlashcardsPage /></RequireAuth>} />
+      <Route path="/flashcards" element={<Navigate replace to="/vocabulary/notebook?tab=decks" />} />
       <Route path="/flashcards/decks/new" element={<RequireAuth><DeckEditorPage /></RequireAuth>} />
       <Route path="/flashcards/decks/:deckId" element={<RequireAuth><DeckDetailPage /></RequireAuth>} />
       <Route path="/flashcards/decks/:deckId/edit" element={<RequireAuth><DeckEditorPage /></RequireAuth>} />

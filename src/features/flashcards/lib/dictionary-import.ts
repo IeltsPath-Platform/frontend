@@ -33,6 +33,15 @@ export async function loadTopicSenses(topicId: string, signal?: AbortSignal): Pr
   return picked.slice(0, TOPIC_IMPORT_CAP)
 }
 
+const searchable = (text: string) => text.normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/đ/gi, 'd').toLowerCase()
+
+/** Narrows a topic's words by lemma or meaning; accents are optional, so "moi truong" finds "môi trường". */
+export function filterSenses(senses: readonly PickedSense[], query: string): PickedSense[] {
+  const needle = searchable(query.trim())
+  if (!needle) return [...senses]
+  return senses.filter((sense) => searchable(`${sense.lemma} ${sense.meaning}`).includes(needle))
+}
+
 export interface ImportOutcome {
   added: number
   failed: PickedSense[]

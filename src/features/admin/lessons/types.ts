@@ -11,14 +11,19 @@ export type BlockType = (typeof BLOCK_TYPES)[number]
  * `lessonId` / `blockId` spelling the internal learning read uses, and normalise to `id`.
  */
 
-const questionRefSchema = z.object({
-  questionId: z.string().nullish(),
-  questionVersionId: z.string(),
-  versionNumber: z.number().nullish(),
-  status: z.string().nullish(),
-  stem: z.string().nullish(),
-  questionType: z.string().nullish(),
-})
+/** The authoring read names a question version `id`; the learning read spells it `questionVersionId`. */
+const questionRefSchema = z
+  .object({
+    questionId: z.string().nullish(),
+    id: z.string().nullish(),
+    questionVersionId: z.string().nullish(),
+    versionNumber: z.number().nullish(),
+    status: z.string().nullish(),
+    stem: z.string().nullish(),
+    questionType: z.string().nullish(),
+  })
+  .refine((question) => Boolean(question.questionVersionId ?? question.id), { message: 'question version id is missing' })
+  .transform(({ id, questionVersionId, ...question }) => ({ ...question, questionVersionId: (questionVersionId ?? id) as string }))
 
 export const lessonBlockSchema = z
   .object({
@@ -143,7 +148,10 @@ export interface NewLessonRequest extends LessonMetaRequest {
 export const lessonResourceSchema = z.object({
   id: z.string(),
   title: z.string(),
+  /** The link, or for an uploaded file a short-lived signed link that opens it. */
   url: z.string(),
+  /** The storage key of an uploaded file; empty when the resource is a link. */
+  fileKey: z.string().nullish(),
   sortOrder: z.number().int().nonnegative(),
 })
 
@@ -164,4 +172,10 @@ export const lessonResourceOrderSchema = z.object({
   }),
 })
 export type LessonResourceType = z.infer<typeof lessonResourceTypeSchema>
-export type LessonResourceRequest = Pick<LessonResource, 'title' | 'url' | 'sortOrder'>
+/** A link carries `url`; an uploaded document carries the `fileKey` its upload returned. Renaming a file sends neither. */
+export interface LessonResourceRequest {
+  title: string
+  sortOrder: number
+  url?: string
+  fileKey?: string
+}

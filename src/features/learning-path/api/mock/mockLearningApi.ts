@@ -130,6 +130,11 @@ export function createMockLearningApi({ storage = null, latencyMs = 0, now = () 
     }),
     createTestAssignment: (topicId) => respond((s) => tests.createTestAssignment(s, topicId)),
     createCourseTestAssignment: (courseId) => respond((s) => tests.createCourseTestAssignment(s, courseId)),
+    // The mock course has no practice-test milestones.
+    listPracticeTests: () => respond(() => []),
+    createPracticeTestAssignment: (courseId) => respond(() => {
+      throw new ApiError(404, 'NOT_FOUND', 'Mock learning không có đề luyện theo mốc.', { courseId })
+    }),
     createAttempt: (request) => respond((s) => tests.createAttempt(s, request, timestamp())),
     getAttemptStructure: (attemptId) => respond((s) => tests.getAttemptStructure(s, attemptId)),
     saveItemResponse: (attemptId, itemId, request) => respond((s) => tests.saveItemResponse(s, attemptId, itemId, request, timestamp())),

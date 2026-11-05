@@ -1,16 +1,18 @@
-import { useMemo, useState, type CSSProperties, type ReactNode } from 'react'
+import { Fragment, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowRight, Check, KeyRound, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/components/toast/toastContext'
 import type { CourseSummary, CourseUnlockTarget, TopicSummary } from '~types/learningPath'
 import {
+  afterTopicLabel,
   buildLanes,
   canUnlockCombo,
   canUnlockSkill,
   initialLaneKey,
   lockText,
   OTHER_LANE,
+  placePracticeTests,
   type LaneKey,
   type LaneState,
   type SkillLane,
@@ -19,6 +21,8 @@ import { learningApi, toApiError } from '../api'
 import { skillLabel } from '../lib/courseMeta'
 import { reportApiError } from '../lib/reviewGate'
 import { SKILL_ICON, skillHue } from '../lib/skillVisuals'
+import type { PracticeTests } from '../lib/usePracticeTests'
+import { PracticeTestStop } from './PracticeTestStop'
 import { SegmentMeter } from './SegmentMeter'
 import { TopicStop } from './TopicStop'
 import { UnlockDialog } from './UnlockDialog'
@@ -47,20 +51,34 @@ function lanePercent(lane: SkillLane) {
 
 /**
  * The course as four skills. The rail picks a skill; the route beside it lists that skill's chặng, numbered inside the
- * skill, because progression is sequential only within one skill. `finish` is drawn under both as the end of the course.
+ * skill, because progression is sequential only within one skill. Each practice test is drawn on the route right after
+ * the chặng it opens after, so it lands in that chặng's skill. `finish` is drawn under both as the end of the course.
  */
 export function CourseSkillBoard({
   topics,
   course,
+  practiceTests = null,
   finish = null,
   onUnlocked,
 }: {
   topics: TopicSummary[]
   course: CourseSummary | null
+  practiceTests?: PracticeTests | null
   finish?: ReactNode
   onUnlocked: () => void
 }) {
   const lanes = useMemo(() => buildLanes(topics), [topics])
+  const placement = useMemo(() => placePracticeTests(topics, practiceTests?.milestones ?? []), [topics, practiceTests?.milestones])
+  const renderTest = (milestone: PracticeTests['milestones'][number], index: number) => (
+    <PracticeTestStop
+      after={afterTopicLabel(topics, milestone)}
+      index={index}
+      key={milestone.packageId}
+      milestone={milestone}
+      onStart={(row) => void practiceTests?.start(row)}
+      startingId={practiceTests?.startingId ?? null}
+    />
+  )
   const [searchParams, setSearchParams] = useSearchParams()
   // A chặng named in `?topic=` (coming back from one of its lessons or tests) starts open. Without one, the chặng the
   // learner is on in the first skill shown starts open, so its lessons are in view; the rest start collapsed.
@@ -156,16 +174,18 @@ export function CourseSkillBoard({
                 const prev = active.topics[index - 1]
                 const repeatsReason = topic.status === 'LOCKED' && prev?.status === 'LOCKED' && lockText(prev) === lockText(topic)
                 return (
-                  <TopicStop
-                    index={index}
-                    isNext={topic.id === active.nextTopicId}
-                    key={topic.id}
-                    number={index + 1}
-                    onToggle={() => toggleTopic(topic.id)}
-                    open={openIds.has(topic.id)}
-                    quietReason={repeatsReason}
-                    topic={topic}
-                  />
+                  <Fragment key={topic.id}>
+                    <TopicStop
+                      index={index}
+                      isNext={topic.id === active.nextTopicId}
+                      number={index + 1}
+                      onToggle={() => toggleTopic(topic.id)}
+                      open={openIds.has(topic.id)}
+                      quietReason={repeatsReason}
+                      topic={topic}
+                    />
+                    {placement.afterTopic.get(topic.id)?.map((milestone) => renderTest(milestone, index + 1))}
+                  </Fragment>
                 )
               })}
             </ol>
@@ -173,7 +193,12 @@ export function CourseSkillBoard({
         </section>
       </div>
 
-      {finish ? <ol className="lp-route lp-board__finish" aria-label="Về đích">{finish}</ol> : null}
+      {finish || placement.unplaced.length > 0 ? (
+        <ol className="lp-route lp-board__finish" aria-label="Về đích">
+          {placement.unplaced.map((milestone, index) => renderTest(milestone, index))}
+          {finish}
+        </ol>
+      ) : null}
 
       {unlockTarget && course ? (
         <UnlockDialog

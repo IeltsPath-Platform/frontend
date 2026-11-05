@@ -2,6 +2,8 @@ import { VocabularyShell } from '../components/VocabularyShell'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { X, RefreshCw, AlertCircle, Flame } from 'lucide-react'
+import { CorrectBurst } from '@/features/flashcards/components/CorrectBurst'
+import { StudyHero } from '@/features/flashcards/components/StudyHero'
 import {
   notebookApi,
   type NotebookEntryResponse,
@@ -276,92 +278,45 @@ function NotebookReviewContent() {
   }
 
   const currentQ = questions[currentIndex]
-  const progressPercent = Math.round(((currentIndex + 1) / questions.length) * 100)
 
   return (
     <div className="vocab-quiz-layout">
-      {/* Top Header: Exit CTA, Progress Bar, Combo */}
-      <div style={{ marginBottom: '1.5rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-          <button
-            type="button"
-            onClick={() => setIsSkipDialogOpen(true)}
-            aria-label="Thoát phiên ôn"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              border: 'none',
-              background: 'none',
-              color: '#64748b',
-              fontWeight: 600,
-              fontSize: '0.9rem',
-              cursor: 'pointer',
-              padding: '0.25rem 0.5rem',
-            }}
-          >
-            <X size={18} /> Thoát
-          </button>
+      <StudyHero
+        eyebrow="Ôn tập từ vựng"
+        title="Phiên ôn của bạn"
+        progress={{ label: 'Câu', value: currentIndex + 1, max: questions.length }}
+        owlPose={combo >= 3 ? 'party' : 'confident'}
+        badge={combo >= 2 ? <span key={combo} className="study-streak"><Flame size={16} aria-hidden="true" />Combo x{combo}</span> : undefined}
+        action={<button type="button" onClick={() => setIsSkipDialogOpen(true)} aria-label="Thoát phiên ôn"><X size={18} aria-hidden="true" />Thoát</button>}
+      />
 
-          {/* Question Counter */}
-          <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#334155' }}>
-            {currentIndex + 1} / {questions.length}
-          </span>
+      <div className="review-stage">
+        {correctCount > 0 && <CorrectBurst key={correctCount} streak={combo} />}
+        {/* Mode Dispatcher */}
+        {String(currentQ.mode).toUpperCase() === 'FLASHCARD' && (
+          <FlashcardReviewCard key={currentQ.id} question={currentQ} onAnswer={handleAnswer} />
+        )}
 
-          {/* Streak Combo Badge */}
-          {combo >= 2 ? (
-            <div
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.25rem',
-                fontSize: '0.8rem',
-                fontWeight: 800,
-                color: '#ea580c',
-                background: '#fff7ed',
-                border: '1px solid #fed7aa',
-                padding: '0.2rem 0.6rem',
-                borderRadius: '999px',
-                animation: 'pulse 1s infinite ease-in-out',
-              }}
-            >
-              <Flame size={14} /> Combo x{combo}
-            </div>
-          ) : (
-            <div style={{ width: '60px' }} />
-          )}
-        </div>
+        {(String(currentQ.mode).toUpperCase() === 'MEANING' || String(currentQ.mode).toUpperCase() === 'MEANING_GUESS') && (
+          <MeaningGuessCard key={currentQ.id} question={currentQ} onAnswer={handleAnswer} />
+        )}
 
-        {/* Progress Bar */}
-        <div className="vocab-quiz-progress">
-          <div className="vocab-quiz-progress__bar" style={{ width: `${progressPercent}%` }} />
-        </div>
+        {String(currentQ.mode).toUpperCase() === 'TYPING' && (
+          <TypingReviewCard key={currentQ.id} question={currentQ} onAnswer={handleAnswer} isDictation={false} />
+        )}
+
+        {String(currentQ.mode).toUpperCase() === 'DICTATION' && (
+          <TypingReviewCard key={currentQ.id} question={currentQ} onAnswer={handleAnswer} isDictation={true} />
+        )}
+
+        {(String(currentQ.mode).toUpperCase() === 'FILL-IN-BLANK' || String(currentQ.mode).toUpperCase() === 'FILL_IN_BLANK') && (
+          <FillInBlankReviewCard key={currentQ.id} question={currentQ} onAnswer={handleAnswer} />
+        )}
+
+        {(String(currentQ.mode).toUpperCase() === 'SENTENCE' || String(currentQ.mode).toUpperCase() === 'SENTENCE_WRITING') && (
+          <SentenceWritingCard key={currentQ.id} question={currentQ} onAnswer={handleAnswer} />
+        )}
       </div>
-
-      {/* Mode Dispatcher */}
-      {String(currentQ.mode).toUpperCase() === 'FLASHCARD' && (
-        <FlashcardReviewCard key={currentQ.id} question={currentQ} onAnswer={handleAnswer} />
-      )}
-
-      {(String(currentQ.mode).toUpperCase() === 'MEANING' || String(currentQ.mode).toUpperCase() === 'MEANING_GUESS') && (
-        <MeaningGuessCard key={currentQ.id} question={currentQ} onAnswer={handleAnswer} />
-      )}
-
-      {String(currentQ.mode).toUpperCase() === 'TYPING' && (
-        <TypingReviewCard key={currentQ.id} question={currentQ} onAnswer={handleAnswer} isDictation={false} />
-      )}
-
-      {String(currentQ.mode).toUpperCase() === 'DICTATION' && (
-        <TypingReviewCard key={currentQ.id} question={currentQ} onAnswer={handleAnswer} isDictation={true} />
-      )}
-
-      {(String(currentQ.mode).toUpperCase() === 'FILL-IN-BLANK' || String(currentQ.mode).toUpperCase() === 'FILL_IN_BLANK') && (
-        <FillInBlankReviewCard key={currentQ.id} question={currentQ} onAnswer={handleAnswer} />
-      )}
-
-      {(String(currentQ.mode).toUpperCase() === 'SENTENCE' || String(currentQ.mode).toUpperCase() === 'SENTENCE_WRITING') && (
-        <SentenceWritingCard key={currentQ.id} question={currentQ} onAnswer={handleAnswer} />
-      )}
 
       {/* Skip / Abandon Modal */}
       <SkipConfirmDialog

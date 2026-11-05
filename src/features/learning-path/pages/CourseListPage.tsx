@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { CSSProperties } from 'react'
-import { ArrowRight, Layers } from 'lucide-react'
+import { ArrowRight, Gift, Layers } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { OwlHero } from '@/components/OwlHero'
 import type { CourseSummary } from '~types/learningPath'
@@ -154,11 +154,11 @@ function courseCta(course: CourseSummary): string {
   return 'Bắt đầu học'
 }
 
-function courseChip(course: CourseSummary): { label: string; tone: 'success' | 'primary' | 'accent' } | null {
+function courseChip(course: CourseSummary): { label: string; tone: 'success' | 'primary' | 'accent' | 'suggest' } | null {
   if (course.testStatus === 'PASSED') return { label: 'Đã hoàn thành', tone: 'success' }
   if (course.testStatus === 'AVAILABLE') return { label: 'Sẵn sàng thi cuối', tone: 'accent' }
   if (isInProgress(course)) return { label: 'Đang học', tone: 'primary' }
-  if (course.recommended) return { label: 'Gợi ý cho bạn', tone: 'accent' }
+  if (course.recommended) return { label: 'Gợi ý cho bạn', tone: 'suggest' }
   return null
 }
 
@@ -168,7 +168,7 @@ function CourseSpotlight({ course, resuming }: { course: CourseSummary; resuming
   return (
     <section className="lp-spotlight lp-spotlight--course" aria-labelledby="lp-spotlight-title">
       <div className="lp-spotlight__art" aria-hidden="true">
-        <CourseCoverArt band={course.bandLevel} coverImageUrl={course.coverImageUrl} wide />
+        <CourseCoverArt band={course.bandLevel} coverImageUrl={course.bannerImageUrl?.trim() || course.coverImageUrl} wide />
       </div>
       <div className="lp-band-ticket" aria-hidden="true">
         <span>Band</span>
@@ -179,7 +179,7 @@ function CourseSpotlight({ course, resuming }: { course: CourseSummary; resuming
         <p className="lp-spotlight__label">{resuming ? 'Đang học dở' : 'Gợi ý từ bài test đầu vào'}</p>
         <h2 id="lp-spotlight-title">{course.title}</h2>
         <p className="lp-spotlight__meta">
-          {courseSize(course)} · kết thúc bằng bài thi cuối khóa
+          {course.free ? 'Miễn phí · ' : ''}{courseSize(course)} · kết thúc bằng bài thi cuối khóa
         </p>
         {course.description ? <p className="lp-spotlight__description">{course.description}</p> : null}
         {isStarted(course) ? (
@@ -237,6 +237,9 @@ function CourseTile({ course, focused, index, lastVisited }: {
   const chip = lastVisited && course.lastStudiedAt
     ? { label: `Lần cuối vào · ${timeAgo(course.lastStudiedAt)}`, tone: 'primary' as const }
     : courseChip(course)
+  // The suggestion is a tab on the picture's bottom-left corner; every other status stays in the top-right column.
+  const suggested = chip?.tone === 'suggest' ? chip : null
+  const statusChip = suggested ? null : chip
   const passed = course.testStatus === 'PASSED'
   const pct = progressPct(course)
 
@@ -252,7 +255,20 @@ function CourseTile({ course, focused, index, lastVisited }: {
             <small>Band</small>
             {course.bandLevel.toFixed(1)}
           </span>
-          {chip ? <span className={`lp-chip lp-chip--${chip.tone} lp-tile__chip`}>{chip.label}</span> : null}
+          {statusChip || course.free ? (
+            <div className="lp-tile__tags">
+              {course.free ? (
+                <span className="lp-tile__free">
+                  <Gift aria-hidden="true" size={16} />
+                  Miễn phí
+                </span>
+              ) : null}
+              {statusChip ? <span className={`lp-chip lp-chip--${statusChip.tone}`}>{statusChip.label}</span> : null}
+            </div>
+          ) : null}
+          {suggested ? (
+            <span className="lp-tile__suggest">{suggested.label}</span>
+          ) : null}
         </div>
 
         <div className="lp-tile__body">

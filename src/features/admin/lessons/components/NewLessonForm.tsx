@@ -6,7 +6,6 @@ import { useAdminError } from '../../lib/useAdminError'
 export function NewLessonForm({ topicId, onCreated, onCancel }: { topicId: string; onCreated: () => void; onCancel: () => void }) {
   const [code, setCode] = useState('')
   const [title, setTitle] = useState('')
-  const [summary, setSummary] = useState('')
   const [, setError] = useAdminError()
   const [saving, setSaving] = useState(false)
 
@@ -19,7 +18,7 @@ export function NewLessonForm({ topicId, onCreated, onCancel }: { topicId: strin
     setSaving(true)
     setError(null)
     try {
-      await createLesson(topicId, { code: code.trim(), title: title.trim(), summary: summary.trim(), summaryMarkdown: '', estimatedMinutes: null })
+      await createLesson(topicId, { code: code.trim(), title: title.trim(), summary: '', summaryMarkdown: '', estimatedMinutes: null })
       onCreated()
     } catch (reason) {
       setError(lessonErrorText(reason))
@@ -39,10 +38,6 @@ export function NewLessonForm({ topicId, onCreated, onCancel }: { topicId: strin
           <input className="adm-input" onChange={(event) => setTitle(event.target.value)} value={title} />
         </label>
       </div>
-      <label className="adm-field">
-        <span>Tóm tắt</span>
-        <input className="adm-input" onChange={(event) => setSummary(event.target.value)} value={summary} />
-      </label>
       <div className="adm-form-footer">
         <button className="adm-btn" disabled={saving} onClick={onCancel} type="button">Hủy</button>
         <button className="adm-btn adm-btn--primary" disabled={saving} type="submit">{saving ? 'Đang tạo…' : 'Tạo bài học nháp'}</button>

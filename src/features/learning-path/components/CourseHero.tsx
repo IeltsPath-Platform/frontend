@@ -23,7 +23,7 @@ export function CourseHero({ course, lessonCount, done }: CourseHeroProps) {
   return (
     <LearnHero
       band={course?.bandLevel ?? null}
-      coverImageUrl={course?.coverImageUrl}
+      coverImageUrl={course?.bannerImageUrl?.trim() || course?.coverImageUrl}
       done={done ? 'Bạn đã qua tất cả các chặng.' : null}
       eyebrow={course ? `Band ${course.bandLevel.toFixed(1)} · Lộ trình khóa học` : 'Lộ trình khóa học'}
       facts={facts}

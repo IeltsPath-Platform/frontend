@@ -1,8 +1,11 @@
 import { Image, Video, Smile } from 'lucide-react'
 
+/** What the composer should have open when it appears: a media tab, or the emoji picker. */
+export type ComposerIntent = 'IMAGE' | 'VIDEO' | 'EMOJI'
+
 export interface QuickComposerBarProps {
   userName: string
-  onOpenComposer: (mediaType?: 'IMAGE' | 'VIDEO') => void
+  onOpenComposer: (intent?: ComposerIntent) => void
 }
 
 export function QuickComposerBar({
@@ -37,7 +40,7 @@ export function QuickComposerBar({
           aria-label="Đăng ảnh"
         >
           <Image size={18} className="community-quick-icon-green" />
-          <span>Ảnh/video</span>
+          <span>Ảnh</span>
         </button>
 
         <button
@@ -53,8 +56,8 @@ export function QuickComposerBar({
         <button
           type="button"
           className="community-quick-btn community-quick-btn-emoji"
-          onClick={() => onOpenComposer()}
-          aria-label="Cảm xúc"
+          onClick={() => onOpenComposer('EMOJI')}
+          aria-label="Thêm cảm xúc"
         >
           <Smile size={18} className="community-quick-icon-yellow" />
           <span>Cảm xúc</span>

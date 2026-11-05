@@ -6,12 +6,14 @@ export interface VersionCardProps {
   version: QuestionVersion
   current: boolean
   busy?: boolean
+  /** Opens the options, answer and explanation at once, for a card that is only read. */
+  defaultOpen?: boolean
   /** Without the handlers the card only shows the version, as in the detail dialog. */
   onPublish?: (version: QuestionVersion) => void
   onArchive?: (version: QuestionVersion) => void
 }
 
-export function VersionCard({ version, current, busy = false, onPublish, onArchive }: VersionCardProps) {
+export function VersionCard({ version, current, busy = false, defaultOpen = false, onPublish, onArchive }: VersionCardProps) {
   const links = version.knowledgePoints ?? []
   return (
     <article aria-label={`Phiên bản ${version.versionNumber}`} className="adm-card qb-version">
@@ -36,7 +38,7 @@ export function VersionCard({ version, current, busy = false, onPublish, onArchi
         </span>
       </header>
       <p className="qb-version__stem">{version.stem}</p>
-      <details>
+      <details open={defaultOpen}>
         <summary>Chi tiết</summary>
         {version.options && version.options.length > 0 ? (
           <ol className="qb-version__options">

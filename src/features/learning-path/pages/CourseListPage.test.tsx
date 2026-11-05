@@ -49,6 +49,42 @@ describe('CourseListPage lesson progress', () => {
     expect(document.querySelector('.lp-tiles')).not.toHaveTextContent('chặng')
   })
 
+  it('labels a free course on the picture of its tile', async () => {
+    await renderCourse(course({ free: true }))
+    expect(document.querySelector('.lp-tile__art')).toHaveTextContent('Miễn phí')
+    expect(document.querySelector('.lp-tile__facts')).not.toHaveTextContent('Miễn phí')
+  })
+
+  it('puts the status chip under the free tab instead of over it', async () => {
+    await renderCourse(course({ free: true, completedLessons: 3 }))
+    const [free, chip] = Array.from(document.querySelectorAll('.lp-tile__tags > *'))
+    expect(free).toHaveClass('lp-tile__free')
+    expect(free).toHaveTextContent('Miễn phí')
+    expect(chip).toHaveClass('lp-chip')
+    expect(chip).toHaveTextContent('Lần cuối vào')
+  })
+
+  it('shows the cover on the tile and the banner behind the highlighted course, falling back to the cover', async () => {
+    await renderCourse(course({
+      recommended: true, completedLessons: 0, lastStudiedAt: null,
+      coverImageUrl: 'https://cdn.example/cover.jpg', bannerImageUrl: 'https://cdn.example/banner.jpg',
+    }))
+    expect(document.querySelector('.lp-tile__art img')).toHaveAttribute('src', 'https://cdn.example/cover.jpg')
+    expect(document.querySelector('.lp-spotlight__art img')).toHaveAttribute('src', 'https://cdn.example/banner.jpg')
+  })
+
+  it('uses the cover behind the highlighted course when there is no banner', async () => {
+    await renderCourse(course({
+      recommended: true, completedLessons: 0, lastStudiedAt: null, coverImageUrl: 'https://cdn.example/cover.jpg',
+    }))
+    expect(document.querySelector('.lp-spotlight__art img')).toHaveAttribute('src', 'https://cdn.example/cover.jpg')
+  })
+
+  it('leaves a paid course unlabelled', async () => {
+    await renderCourse(course({ free: false }))
+    expect(document.querySelector('.lp-tile')).not.toHaveTextContent('Miễn phí')
+  })
+
   it('fills the bar by the share of lessons completed', async () => {
     const bar = await renderCourse(course())
     expect(document.querySelector('.lp-tile__count')).toHaveTextContent('3/15 bài')

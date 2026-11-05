@@ -85,7 +85,7 @@
   cursor: pointer;
   inline-size: 100%;
   margin-inline: auto;
-  max-inline-size: 44rem;
+  max-inline-size: 56rem;
   outline-offset: 4px;
   perspective: 1200px;
   position: relative;
@@ -111,14 +111,14 @@
   background: linear-gradient(180deg, #1240d6 0%, #3467f6 100%);
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
-  border-radius: 1.1rem;
+  border-radius: 1.5rem;
   box-shadow: 0 1.1rem 2.2rem rgb(18 58 181 / 28%);
   color: white;
   display: flex;
   flex-direction: column;
   grid-area: card;
-  min-block-size: clamp(17rem, 34vw, 21rem);
-  padding: 1.25rem 1.75rem;
+  min-block-size: clamp(18rem, 42vh, 26rem);
+  padding: 1.25rem 2.25rem;
   transition: background 200ms ease, box-shadow 300ms ease;
 }
 
@@ -128,16 +128,16 @@
   box-shadow: 0 1.4rem 2.8rem rgb(18 58 181 / 34%);
 }
 
-.flashcard-face-pill { background: rgb(255 255 255 / 18%); border-radius: 999px; display: inline-block; font-size: .62rem; font-weight: 700; letter-spacing: .03em; padding: .3rem .75rem; text-transform: uppercase; }
+.flashcard-face-pill { align-self: flex-start; background: rgb(255 255 255 / 18%); border-radius: 999px; display: inline-block; font-size: .8rem; font-weight: 700; letter-spacing: .03em; padding: .3rem .75rem; text-transform: uppercase; }
 .flashcard-face-front-body { align-items: center; display: flex; flex: 1; gap: 1.25rem; justify-content: space-between; min-block-size: 0; }
-.flashcard-face-front-body > div { display: grid; gap: 1rem; justify-items: start; min-inline-size: 0; }
-.flashcard-face h2 { font-size: clamp(1.5rem, 3.2vw, 2.15rem); font-weight: 800; letter-spacing: -.02em; line-height: 1.15; overflow-wrap: anywhere; }
+.flashcard-face-front-body > div { display: grid; gap: .6rem; justify-items: start; min-inline-size: 0; }
+.flashcard-face h2 { font-size: clamp(2.2rem, 5.2vw, 3.6rem); font-weight: 800; letter-spacing: -.02em; line-height: 1.15; overflow-wrap: anywhere; }
 .flashcard-face-front-body img { aspect-ratio: 1; border: 2px solid white; border-radius: .7rem; flex: 0 0 auto; inline-size: clamp(7rem, 18vw, 10rem); object-fit: cover; }
-.flashcard-face-speak { align-items: center; background: rgb(255 255 255 / 28%); block-size: 2.4rem; border-radius: 50%; display: inline-grid; inline-size: 2.4rem; justify-items: center; transition: background 160ms ease; }
+.flashcard-face-speak { align-items: center; background: rgb(255 255 255 / 28%); block-size: 3.25rem; border-radius: 50%; display: inline-grid; inline-size: 3.25rem; justify-items: center; transition: background 160ms ease; }
 .flashcard-face-speak:hover { background: rgb(255 255 255 / 42%); }
-.flashcard-face-speak svg { block-size: 1.1rem; inline-size: 1.1rem; }
-.flashcard-face-ipa { font-size: 1.15rem; }
-.flashcard-face-hint { color: rgb(255 255 255 / 60%); font-size: .62rem; font-weight: 700; letter-spacing: .05em; text-align: center; text-transform: uppercase; }
+.flashcard-face-speak svg { block-size: 1.55rem; inline-size: 1.55rem; }
+.flashcard-face-ipa { font-size: 1.55rem; }
+.flashcard-face-hint { color: rgb(255 255 255 / 72%); font-size: .82rem; font-weight: 700; letter-spacing: .05em; text-align: center; text-transform: uppercase; }
 
 .flashcard-face-back {
   align-items: center;
@@ -147,15 +147,15 @@
 }
 
 .flashcard-face-back .flashcard-face-pill { align-self: flex-start; }
-.flashcard-face-tag { background: rgb(255 255 255 / 22%); border-radius: 999px; font-size: .6rem; padding: .15rem .5rem; }
-.flashcard-face-example { font-size: .9rem; max-inline-size: 34rem; }
-.flashcard-face-meaning { align-items: center; display: flex; font-size: 1.05rem; font-weight: 700; gap: .75rem; margin-top: auto; overflow-wrap: anywhere; }
+.flashcard-face-tag { align-self: flex-start; background: rgb(255 255 255 / 22%); border-radius: 999px; font-size: .78rem; padding: .2rem .65rem; }
+.flashcard-face-example { font-size: 1.25rem; line-height: 1.5; max-inline-size: 46rem; }
+.flashcard-face-meaning { align-items: center; display: flex; font-size: clamp(1.4rem, 3vw, 1.9rem); font-weight: 700; gap: .75rem; margin-top: auto; overflow-wrap: anywhere; }
 .flashcard-face-meaning svg { flex: 0 0 auto; opacity: .85; }
 
 /* 3D reflection sheen during rotation */
 .flashcard-face-shine {
   background: linear-gradient(115deg, transparent 20%, rgba(255, 255, 255, 0.25) 45%, rgba(255, 255, 255, 0.4) 50%, rgba(255, 255, 255, 0.25) 55%, transparent 80%);
-  border-radius: 1.1rem;
+  border-radius: 1.5rem;
   grid-area: card;
   opacity: 0;
   pointer-events: none;
@@ -218,12 +218,12 @@
 .deck-browser-row strong { font-weight: 600; overflow-wrap: anywhere; }
 .deck-browser-row span { color: var(--classroom-text-muted); font-size: .85rem; overflow-wrap: anywhere; }
 
-.flashcards-study { max-inline-size: 48rem; }
-.flashcards-study-keys { text-align: center; }
-.flashcards-study-actions { display: flex; gap: .6rem; justify-content: center; margin-top: 1rem; }
-.flashcards-study-done { background: var(--classroom-surface); border-radius: 1rem; display: grid; gap: .75rem; justify-items: center; padding: 2rem; text-align: center; }
-.flashcards-study-done h1 { color: #243a7f; font-size: 1.5rem; font-weight: 800; }
-.flashcards-study-done div { display: flex; gap: .5rem; }
+.flashcards-study { max-inline-size: 76rem; }
+.flashcards-study-keys { font-size: 1rem; margin-block-start: .75rem; text-align: center; }
+.flashcards-study-actions { display: flex; gap: .85rem; justify-content: center; margin-top: 1rem; }
+.flashcards-study-done { animation: study-question-enter 320ms ease; background: var(--classroom-surface); border-radius: 1.5rem; display: grid; font-size: 1.15rem; gap: 1rem; justify-items: center; padding: 3rem 2rem; text-align: center; }
+.flashcards-study-done h2 { color: #243a7f; font-size: clamp(1.8rem, 4vw, 2.5rem); font-weight: 800; }
+.flashcards-study-done > div:last-child { display: flex; flex-wrap: wrap; gap: .6rem; justify-content: center; }
 
 @media (max-width: 56rem) {
   .study-layout-with-coach {
@@ -235,7 +235,7 @@
   .flashcards-hero { align-items: start; flex-direction: column; }
   .flashcards-deck-header { grid-template-columns: minmax(0, 1fr); }
   .flashcards-deck-header-actions { justify-content: flex-start; }
-  .flashcard-face-front, .flashcard-face-back { min-block-size: 18rem; padding: 1rem 1.1rem; }
+  .flashcard-face-front, .flashcard-face-back { min-block-size: 20rem; padding: 1rem 1.1rem; }
   .flashcard-face-front-body { align-items: flex-start; flex-direction: column-reverse; padding-block: .75rem; }
   .flashcard-face-front-body img { inline-size: 100%; max-block-size: 9rem; aspect-ratio: auto; }
   .deck-browser-row { grid-template-columns: minmax(0, 1fr); gap: .15rem; }

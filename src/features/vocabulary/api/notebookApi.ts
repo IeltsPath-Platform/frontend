@@ -48,11 +48,11 @@ export interface VocabularyItemDetail {
   id: string
   lemma: string
   ipa?: string | null
-  phoneticUk?: string | null
-  phoneticUs?: string | null
+  ipaUk?: string | null
+  ipaUs?: string | null
   pronunciationAudioReference?: string | null
-  audioUk?: string | null
-  audioUs?: string | null
+  audioUkReference?: string | null
+  audioUsReference?: string | null
   frequencyRank?: number | null
   cefrLevel?: string | null
   academicWordList?: boolean | null
@@ -108,28 +108,6 @@ export interface VocabularySetsPage {
   page: number
   size: number
   total: number
-}
-
-export type MindmapNodeType = 'TOPIC' | 'WORD' | 'COLLOCATION' | 'SYNONYM'
-
-/** Shape of library-service `VocabularyMindmapResult.Node`; `itemId` is set on word nodes only. */
-export interface MindmapNode {
-  id: string
-  type: MindmapNodeType
-  label: string
-  itemId: string | null
-}
-
-/** Shape of library-service `VocabularyMindmapResult.Edge`: topic → word, word → collocation/synonym. */
-export interface MindmapEdge {
-  from: string
-  to: string
-  kind: 'TOPIC_WORD' | 'COLLOCATION' | 'SYNONYM'
-}
-
-export interface MindmapResponse {
-  nodes: MindmapNode[]
-  edges: MindmapEdge[]
 }
 
 export interface WeeklyGoalDay {
@@ -411,22 +389,6 @@ export const notebookApi = {
     const qs = searchParams.toString()
     return apiRequest<VocabularyCatalogPage>(
       `${ROOT_CONTENT_VOCABULARY}/sets/${id}/words${qs ? `?${qs}` : ''}`,
-      { auth: false, signal }
-    )
-  },
-
-  /** Public mindmap tree */
-  getMindmap: (
-    params: { topicId?: string; itemId?: string },
-    signal?: AbortSignal
-  ) => {
-    const searchParams = new URLSearchParams()
-    if (params.topicId) searchParams.set('topicId', params.topicId)
-    if (params.itemId) searchParams.set('itemId', params.itemId)
-
-    const qs = searchParams.toString()
-    return apiRequest<MindmapResponse>(
-      `${ROOT_CONTENT_VOCABULARY}/mindmap${qs ? `?${qs}` : ''}`,
       { auth: false, signal }
     )
   },

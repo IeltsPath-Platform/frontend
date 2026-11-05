@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Trophy, RotateCcw, ArrowRight, XCircle } from 'lucide-react'
+import { RotateCcw, ArrowRight, XCircle } from 'lucide-react'
+import { OwlHero } from '@/components/OwlHero'
 import type { NotebookEntryResponse } from '../../api/notebookApi'
 
 interface ReviewSummaryViewProps {
@@ -36,44 +37,30 @@ export function ReviewSummaryView({
 
   return (
     <div className="vocab-quiz-layout">
-      <div className="vocab-quiz-card" style={{ textAlign: 'center', padding: '3rem 2rem' }}>
-        <div
-          style={{
-            width: '80px',
-            height: '80px',
-            borderRadius: '50%',
-            background: percentage >= 70 ? '#f0fdf4' : '#fffbeb',
-            color: percentage >= 70 ? '#16a34a' : '#d97706',
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto 1.5rem',
-          }}
-        >
-          <Trophy size={40} aria-hidden="true" />
-        </div>
+      <div className="vocab-quiz-card review-summary" style={{ textAlign: 'center', padding: '3rem 2rem' }}>
+        <OwlHero pose={percentage >= 70 ? 'party' : 'cheer'} motion="hop" size="md" celebrateKey="review-finished" alt="" />
 
-        <h2 style={{ fontSize: '2rem', fontWeight: 800, margin: '0 0 0.5rem', color: '#0f172a' }}>
+        <h2 style={{ fontSize: 'clamp(2rem, 4.5vw, 2.75rem)', fontWeight: 800, margin: '0 0 0.5rem', color: '#0f172a' }}>
           Hoàn thành phiên ôn tập!
         </h2>
-        <p style={{ color: '#64748b', fontSize: '1rem', margin: '0 0 2rem' }}>
+        <p style={{ color: '#64748b', fontSize: '1.15rem', margin: '0 0 2rem' }}>
           Bạn đã hoàn thành {totalQuestions} lượt ôn từ vựng.
         </p>
 
         <div style={{ display: 'flex', justifyContent: 'center', gap: '3rem', margin: '2rem 0' }}>
           <div>
-            <div style={{ fontSize: '3rem', fontWeight: 800, color: 'var(--classroom-primary, #123ab5)', lineHeight: 1 }}>
+            <div style={{ fontSize: '3.75rem', fontWeight: 800, color: 'var(--classroom-primary, #123ab5)', lineHeight: 1 }}>
               {displayPercent}%
             </div>
-            <div style={{ fontSize: '0.85rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 700, marginTop: '0.5rem' }}>
+            <div style={{ fontSize: '1rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 700, marginTop: '0.5rem' }}>
               Tỉ lệ chính xác
             </div>
           </div>
           <div>
-            <div style={{ fontSize: '3rem', fontWeight: 800, color: '#16a34a', lineHeight: 1 }}>
+            <div style={{ fontSize: '3.75rem', fontWeight: 800, color: '#16a34a', lineHeight: 1 }}>
               {correctCount}/{totalQuestions}
             </div>
-            <div style={{ fontSize: '0.85rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 700, marginTop: '0.5rem' }}>
+            <div style={{ fontSize: '1rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 700, marginTop: '0.5rem' }}>
               Từ ghi nhớ tốt
             </div>
           </div>
@@ -122,7 +109,7 @@ export function ReviewSummaryView({
                 padding: '0.85rem 1.5rem',
                 borderRadius: '0.75rem',
                 fontWeight: 700,
-                fontSize: '0.95rem',
+                fontSize: '1.1rem',
                 cursor: 'pointer',
               }}
             >
@@ -142,7 +129,7 @@ export function ReviewSummaryView({
               padding: '0.85rem 1.75rem',
               borderRadius: '0.75rem',
               fontWeight: 700,
-              fontSize: '0.95rem',
+              fontSize: '1.1rem',
               textDecoration: 'none',
             }}
           >

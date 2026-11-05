@@ -19,6 +19,14 @@ describe('lesson blocks', () => {
     expect(blocks.filter((block) => block.type === 'EXERCISE').map((block) => block.title)).toEqual(['Bài tập 1', 'Bài tập 2'])
   })
 
+  it('keeps the Markdown of a lecture text block and leaves out one with no text', () => {
+    const blocks = mapLessonBlocks([
+      { blockId: 'empty', blockType: 'TEXT', sortOrder: 2, textContent: '  ' },
+      { blockId: 'lecture', blockType: 'TEXT', sortOrder: 1, textContent: '## Mẹo\n\nĐọc động từ chính.' },
+    ])
+    expect(blocks).toEqual([{ id: 'lecture', sortOrder: 1, type: 'TEXT', text: '## Mẹo\n\nĐọc động từ chính.' }])
+  })
+
   it('keeps passages, audio and auto-graded exercises in order and leaves the rest out', () => {
     const blocks = mapLessonBlocks([
       {

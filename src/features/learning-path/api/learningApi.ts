@@ -38,6 +38,7 @@ import type {
   StartAttemptRequest,
   StreakStatus,
   Suggestion,
+  PracticeTestMilestone,
   TestAssignment,
   TheoryCheckRequest,
   TheoryCheckResult,
@@ -138,6 +139,10 @@ export interface LearningApi {
   createTestAssignment(topicId: string): Promise<TestAssignment>
   /** Course final test when `GET /courses` reports `testStatus = AVAILABLE`. */
   createCourseTestAssignment(courseId: string): Promise<TestAssignment>
+  /** The practice tests the course places after its chặng, with the learner's status for each. */
+  listPracticeTests(courseId: string): Promise<PracticeTestMilestone[]>
+  /** A practice test whose status is `AVAILABLE` or `DONE`; a retake keeps the first result for the score. */
+  createPracticeTestAssignment(courseId: string, packageId: string): Promise<TestAssignment>
   createAttempt(request: StartAttemptRequest): Promise<AssessmentAttempt>
   getAttemptStructure(attemptId: string): Promise<AttemptStructure>
   saveItemResponse(attemptId: string, itemId: string, request: SaveItemResponseRequest): Promise<AttemptItemResponse>

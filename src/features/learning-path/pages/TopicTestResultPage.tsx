@@ -13,9 +13,13 @@ export function TopicTestResultPage() {
   const [searchParams] = useSearchParams()
   const topicId = searchParams.get('topic') ?? ''
   const courseId = searchParams.get('course') ?? ''
+  const practice = searchParams.get('practice') === '1'
   const resource = useApiResource(`result:${attemptId}`, async () => {
     const result = await learningApi.getAttemptResult(attemptId)
     const withTopic = topicId && !result.topicId ? { ...result, topicId } : result
+
+    // A practice-test milestone changes no status, so there is nothing to wait for.
+    if (practice && courseId) return { ...withTopic, nextTopicId: null, courseId, coursePassed: false, practice: true }
 
     if (courseId && withTopic.passed) {
       let courses = await learningApi.listCourses()
@@ -63,9 +67,11 @@ export function TopicTestResultPage() {
 type ResultViewModel = AttemptResult & {
   courseId?: string | null
   coursePassed?: boolean
+  practice?: boolean
 }
 
 function ResultView({ result }: { result: ResultViewModel }) {
+  if (result.practice) return <PracticeResultView result={result} />
   const isCourse = Boolean(result.courseId)
   const retryPath = result.topicId
     ? topicPagePath(result.topicId)
@@ -126,6 +132,38 @@ function ResultView({ result }: { result: ResultViewModel }) {
                 </Link>
               </Button>
             )}
+          </div>
+        </div>
+      </header>
+
+      <section aria-labelledby="lp-result-items">
+        <h2 className="lp-section-title" id="lp-result-items">Từng câu</h2>
+        <ol className="lp-result-items">
+          {[...result.items].sort((a, b) => a.number - b.number).map((item) => <ResultItem item={item} key={item.itemId} />)}
+        </ol>
+      </section>
+    </article>
+  )
+}
+
+/** The result of a course's practice-test milestone: a score for the process part, with no pass mark. */
+function PracticeResultView({ result }: { result: ResultViewModel }) {
+  const coursePath = result.courseId ? `/learn/courses/${result.courseId}` : '/learn'
+  return (
+    <article className="lp-page lp-result-page" aria-labelledby="lp-result-title">
+      <header className="lp-score is-passed">
+        <div className="lp-score__dial" aria-hidden="true" style={{ '--pct': result.percent } as CSSProperties}>
+          <span>{result.percent}%</span>
+        </div>
+        <div className="lp-score__body">
+          <p className="lp-eyebrow">Kết quả · mã đề {result.packageCode}</p>
+          <h1 id="lp-result-title">Đã hoàn thành đề luyện theo mốc</h1>
+          <p className="lp-score__line"><strong>{result.score}/{result.maxScore}</strong> câu đúng · {result.percent}%</p>
+          <p>Điểm của lần làm đầu tiên được tính vào điểm quá trình của khóa.</p>
+          <div className="lp-score__actions">
+            <Button asChild className="lp-btn lp-btn--accent">
+              <Link to={coursePath}><Trophy aria-hidden="true" />Về khóa học<ArrowRight aria-hidden="true" /></Link>
+            </Button>
           </div>
         </div>
       </header>

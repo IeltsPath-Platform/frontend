@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
-import { RefreshCw, Volume2 } from 'lucide-react'
+import { RefreshCw } from 'lucide-react'
 import { prefersReducedMotion } from '@/components/owlPoses'
-import { speak } from '../lib/speak'
+import { PronunciationButton } from '@/components/PronunciationButton'
+import type { FlashcardSourceType } from '../api/flashcardApi'
 
 export interface FlashcardFaceData {
   front: string
@@ -9,6 +10,8 @@ export interface FlashcardFaceData {
   imageUrl?: string | null
   ipa?: string | null
   exampleSentence?: string | null
+  pronunciationAudioReference?: string | null
+  sourceType?: FlashcardSourceType
 }
 
 interface FlashcardFaceProps {
@@ -52,20 +55,6 @@ export function FlashcardFace({ card, flipped, onFlip }: FlashcardFaceProps) {
     root.style.setProperty('--lean-y', '0deg')
   }
 
-  const speakButton = (text: string, label: string) => (
-    <button
-      type="button"
-      className="flashcard-face-speak"
-      aria-label={label}
-      onClick={(event) => {
-        event.stopPropagation()
-        speak(text)
-      }}
-    >
-      <Volume2 aria-hidden="true" />
-    </button>
-  )
-
   return (
     <div
       key={`flashcard-${slideKey}`}
@@ -96,7 +85,13 @@ export function FlashcardFace({ card, flipped, onFlip }: FlashcardFaceProps) {
           <div className="flashcard-face-front-body">
             <div>
               <h2>{card.front}</h2>
-              {speakButton(card.front, `Phát âm ${card.front}`)}
+              <PronunciationButton
+                lemma={card.front}
+                src={card.pronunciationAudioReference}
+                ttsFallbackText={card.sourceType === 'MANUAL' ? card.front : undefined}
+                className="flashcard-face-speak"
+                aria-label={`Phát âm ${card.front}`}
+              />
               {card.ipa && <p className="flashcard-face-ipa">/{card.ipa}/</p>}
             </div>
             {card.imageUrl && <img src={card.imageUrl} alt="" />}
@@ -112,7 +107,15 @@ export function FlashcardFace({ card, flipped, onFlip }: FlashcardFaceProps) {
             <>
               <span className="flashcard-face-tag">Ví dụ</span>
               <p className="flashcard-face-example">{card.exampleSentence}</p>
-              {speakButton(card.exampleSentence, 'Phát âm câu ví dụ')}
+              {card.sourceType === 'MANUAL' && (
+                <PronunciationButton
+                  lemma={card.exampleSentence}
+                  src={null}
+                  ttsFallbackText={card.exampleSentence}
+                  className="flashcard-face-speak"
+                  aria-label="Phát âm câu ví dụ"
+                />
+              )}
             </>
           )}
           <p className="flashcard-face-meaning">

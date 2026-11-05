@@ -1,0 +1,225 @@
+.game-word-filters {
+  --word-a1: oklch(0.62 0.15 250);
+  --word-a2: oklch(0.6 0.13 215);
+  --word-b1: oklch(0.56 0.17 275);
+  --word-b2: oklch(0.52 0.2 290);
+  --word-c1: oklch(0.68 0.17 55);
+  --word-c2: oklch(0.6 0.2 25);
+  --word-education: oklch(0.55 0.16 260);
+  --word-environment: oklch(0.6 0.15 150);
+  --word-technology: oklch(0.55 0.16 240);
+  --word-health: oklch(0.6 0.2 20);
+  --word-work-business: oklch(0.65 0.15 60);
+  --word-society: oklch(0.55 0.17 300);
+  --word-daily-life: oklch(0.62 0.13 200);
+  display: grid;
+  gap: 18px;
+}
+.game-word-group {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+  display: grid;
+  gap: 10px;
+}
+.game-word-group legend {
+  margin-bottom: 10px;
+  font-size: 0.92rem;
+  font-weight: 650;
+}
+.game-word-group legend span {
+  font-weight: 500;
+  color: var(--muted-foreground);
+}
+.game-word-difficulty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  font-style: italic;
+}
+.game-word-difficulty span:first-child {
+  color: var(--word-a1);
+}
+.game-word-difficulty span:last-child {
+  color: var(--word-c1);
+}
+.game-word-difficulty i {
+  flex: 1;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--word-a1), var(--word-b2), var(--word-c1));
+}
+.game-word-levels {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.game-word-topics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+@media (min-width: 640px) {
+  .game-word-levels {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+  .game-word-topics {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
+  .game-word-topic {
+    grid-column: span 3;
+  }
+  .game-word-topic:nth-child(-n + 3) {
+    grid-column: span 4;
+  }
+}
+.game-word-tile {
+  --tone: var(--primary);
+  position: relative;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  border: 1.5px solid color-mix(in srgb, var(--tone) 22%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--tone) 8%, var(--card));
+  color: var(--card-foreground);
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+.game-word-tile:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--tone) 55%, transparent);
+}
+.game-word-tile:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--tone) 45%, transparent);
+  outline-offset: 2px;
+}
+.game-word-tile[aria-pressed='true'] {
+  border: 2px solid var(--tone);
+  background: color-mix(in srgb, var(--tone) 14%, var(--card));
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--tone) 25%, transparent);
+}
+.game-word-tile:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+.game-word-tile-check {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--tone);
+  color: var(--card);
+  box-shadow: 0 0 0 2px var(--card);
+}
+.game-word-tile-check svg {
+  width: 14px;
+  height: 14px;
+  stroke-width: 3;
+}
+.game-word-level {
+  gap: 4px;
+  min-height: 84px;
+  padding: 10px 4px;
+}
+.game-word-level strong {
+  font-size: 1.05rem;
+  color: var(--tone);
+}
+.game-word-level small {
+  font-size: 0.72rem;
+  color: var(--muted-foreground);
+  text-align: center;
+}
+.game-word-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 14px;
+}
+.game-word-bars i {
+  width: 4px;
+  border-radius: 1px;
+  background: color-mix(in srgb, var(--tone) 22%, transparent);
+}
+.game-word-bars i:nth-child(1) { height: 4px; }
+.game-word-bars i:nth-child(2) { height: 6px; }
+.game-word-bars i:nth-child(3) { height: 8px; }
+.game-word-bars i:nth-child(4) { height: 10px; }
+.game-word-bars i:nth-child(5) { height: 12px; }
+.game-word-bars i:nth-child(6) { height: 14px; }
+.game-word-bars i[data-on='true'] {
+  background: var(--tone);
+}
+.game-word-level[data-level='A1'] { --tone: var(--word-a1); }
+.game-word-level[data-level='A2'] { --tone: var(--word-a2); }
+.game-word-level[data-level='B1'] { --tone: var(--word-b1); }
+.game-word-level[data-level='B2'] { --tone: var(--word-b2); }
+.game-word-level[data-level='C1'] { --tone: var(--word-c1); }
+.game-word-level[data-level='C2'] { --tone: var(--word-c2); }
+.game-word-topic {
+  gap: 8px;
+  min-height: 104px;
+  padding: 14px 8px 12px;
+  font-size: 0.88rem;
+  font-weight: 650;
+  text-align: center;
+}
+.game-word-topic:has(.game-word-topic-image) {
+  overflow: hidden;
+  min-height: 0;
+  padding: 0 0 10px;
+}
+.game-word-topic-image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 640 / 303;
+  object-fit: cover;
+}
+.game-word-topic-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--tone) 70%, white), var(--tone));
+  color: white;
+  box-shadow: 0 6px 14px color-mix(in srgb, var(--tone) 30%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 45%, transparent);
+}
+.game-word-topic-icon svg {
+  width: 26px;
+  height: 26px;
+}
+.game-word-topic[data-topic='education'] { --tone: var(--word-education); }
+.game-word-topic[data-topic='environment'] { --tone: var(--word-environment); }
+.game-word-topic[data-topic='technology'] { --tone: var(--word-technology); }
+.game-word-topic[data-topic='health'] { --tone: var(--word-health); }
+.game-word-topic[data-topic='work-business'] { --tone: var(--word-work-business); }
+.game-word-topic[data-topic='society'] { --tone: var(--word-society); }
+.game-word-topic[data-topic='daily-life'] { --tone: var(--word-daily-life); }
+.game-word-filters-note,
+.game-word-filters-error {
+  font-size: 0.875rem;
+}
+.game-word-filters-note {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  color: var(--muted-foreground);
+}
+.game-word-filters-error {
+  color: var(--destructive);
+}
+/* Picture tiles clip their corners, so the check sits inside. */
+.game-word-topic:has(.game-word-topic-image) .game-word-tile-check {
+  top: 6px;
+  right: 6px;
+  z-index: 1;
+}

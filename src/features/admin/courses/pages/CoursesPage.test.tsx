@@ -19,7 +19,7 @@ function show() { return render(<MemoryRouter><CoursesPage /></MemoryRouter>) }
 /** Opens the actions menu of one topic row and picks an action from it. */
 async function pick(topic: string, action: string) {
   fireEvent.click(await screen.findByRole('button', { name: `Thao tác với ${topic}` }))
-  fireEvent.click(screen.getByRole('button', { name: action }))
+  fireEvent.click(screen.getByRole('menuitem', { name: action }))
 }
 describe('CoursesPage', () => {
   beforeEach(() => {
@@ -51,7 +51,7 @@ describe('CoursesPage', () => {
     fireEvent.click(within(parent).getByRole('button', { name: 'Mở bài học' }))
     const drawer = screen.getByRole('dialog', { name: 'Viết học thuật' })
     expect(drawer).toHaveClass('adm-drawer--xl')
-    expect(await within(drawer).findByRole('button', { name: 'Viết mở bài' })).toBeInTheDocument()
+    expect(await within(drawer).findByText('Viết mở bài')).toBeInTheDocument()
     expect(lessons.fetchLessons).toHaveBeenCalledWith('t1', expect.anything())
     fireEvent.click(within(drawer).getByRole('button', { name: 'Đóng' }))
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
@@ -69,7 +69,7 @@ describe('CoursesPage', () => {
     await waitFor(() => expect(media.uploadAdminImage).toHaveBeenCalledWith('/api/content/admin/media/image', file))
     fireEvent.change(within(form).getByLabelText('Mô tả khóa học'), { target: { value: 'Lộ trình nền tảng.' } })
     fireEvent.submit(form)
-    await waitFor(() => expect(api.createCourse).toHaveBeenCalledWith({ code: 'INTENSIVE_70', name: 'Intensive 7.0', bandLevel: 7, coverImageUrl: 'content-image/author-1/cover.png', description: 'Lộ trình nền tảng.' }))
+    await waitFor(() => expect(api.createCourse).toHaveBeenCalledWith({ code: 'INTENSIVE_70', name: 'Intensive 7.0', bandLevel: 7, coverImageUrl: 'content-image/author-1/cover.png', description: 'Lộ trình nền tảng.', free: false, bannerImageUrl: null, skillUnlockPoints: {}, comboUnlockPoints: null }))
   })
   it('updates course status without sending its code', async () => {
     show()
@@ -78,7 +78,7 @@ describe('CoursesPage', () => {
     fireEvent.change(within(form).getByLabelText('Trạng thái khóa học'), { target: { value: 'INACTIVE' } })
     fireEvent.change(within(form).getByLabelText('Mô tả khóa học'), { target: { value: 'Mô tả mới' } })
     fireEvent.submit(form)
-    await waitFor(() => expect(api.updateCourse).toHaveBeenCalledWith('c1', { name: course.name, bandLevel: 5.5, status: 'INACTIVE', coverImageUrl: null, description: 'Mô tả mới', skillUnlockPoints: {}, comboUnlockPoints: null }))
+    await waitFor(() => expect(api.updateCourse).toHaveBeenCalledWith('c1', { name: course.name, bandLevel: 5.5, status: 'INACTIVE', coverImageUrl: null, description: 'Mô tả mới', skillUnlockPoints: {}, comboUnlockPoints: null, free: false, bannerImageUrl: null }))
   })
   it('blocks a reversed band range', async () => {
     show()
@@ -113,7 +113,7 @@ describe('CoursesPage', () => {
   it('has no action to add a child topic in a row menu', async () => {
     show()
     fireEvent.click(await screen.findByRole('button', { name: 'Thao tác với Viết học thuật' }))
-    expect(screen.getByRole('button', { name: 'Sửa chủ đề' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Sửa chủ đề' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /chủ đề con/ })).not.toBeInTheDocument()
   })
 
@@ -149,7 +149,7 @@ describe('CoursesPage', () => {
     lessons.fetchTopics.mockResolvedValue(stored)
     show()
     fireEvent.click(await screen.findByRole('button', { name: 'Thao tác với Diễn đạt lại' }))
-    const up = screen.getByRole('button', { name: 'Đưa lên' })
+    const up = screen.getByRole('menuitem', { name: 'Đưa lên' })
     expect(up).toBeEnabled()
     expect(screen.queryByText(/thứ tự trùng/)).not.toBeInTheDocument()
     fireEvent.click(up)
@@ -191,7 +191,7 @@ describe('CoursesPage', () => {
     expect(lessons.fetchTopics).toHaveBeenCalledTimes(1)
     fireEvent.click(within(form).getByRole('button', { name: 'Hủy' }))
     fireEvent.click(screen.getByRole('button', { name: 'Thao tác với Diễn đạt lại' }))
-    expect(screen.getByRole('button', { name: 'Đưa xuống' })).toBeDisabled()
+    expect(screen.getByRole('menuitem', { name: 'Đưa xuống' })).toBeDisabled()
     expect(api.updateTopic).toHaveBeenCalledTimes(1)
   })
 
@@ -230,10 +230,11 @@ describe('CoursesPage', () => {
     show()
     const root = await screen.findByRole('article', { name: 'Viết học thuật' })
     fireEvent.click(within(root).getByRole('button', { name: 'Thao tác với Viết học thuật' }))
-    expect(within(root).getByRole('button', { name: 'Đưa xuống' })).toBeDisabled()
+    expect(screen.getByRole('menuitem', { name: 'Đưa xuống' })).toBeDisabled()
+    fireEvent.pointerDown(document.body)
     const child = screen.getByRole('article', { name: 'Diễn đạt lại' })
     fireEvent.click(within(child).getByRole('button', { name: 'Thao tác với Diễn đạt lại' }))
-    expect(within(child).getByRole('button', { name: 'Đưa lên' })).toBeDisabled()
+    expect(screen.getByRole('menuitem', { name: 'Đưa lên' })).toBeDisabled()
     expect(api.updateTopic).not.toHaveBeenCalled()
   })
 
@@ -267,6 +268,63 @@ describe('CoursesPage', () => {
     expect(screen.queryByRole('button', { name: /tất cả/ })).not.toBeInTheDocument()
   })
 
+  describe('skill groups', () => {
+    const mixed = [
+      { id: 'r1', code: 'R1', name: 'Đọc một', parentTopicId: null, courseId: 'c1', sortOrder: 1, status: 'ACTIVE', skill: 'READING', bandMin: null, bandMax: null },
+      { id: 'l1', code: 'L1', name: 'Nghe một', parentTopicId: null, courseId: 'c1', sortOrder: 2, status: 'ACTIVE', skill: 'LISTENING', bandMin: null, bandMax: null },
+      { id: 'r2', code: 'R2', name: 'Đọc hai', parentTopicId: null, courseId: 'c1', sortOrder: 3, status: 'INACTIVE', skill: 'READING', bandMin: null, bandMax: null },
+      { id: 'w1', code: 'W1', name: 'Viết một', parentTopicId: null, courseId: 'c1', sortOrder: 4, status: 'ACTIVE', skill: 'WRITING', bandMin: null, bandMax: null },
+    ]
+    beforeEach(() => { lessons.fetchTopics.mockResolvedValue(mixed) })
+
+    it('groups the topics by skill in the order a learner sees them, with a count and how many are stopped', async () => {
+      show()
+      await screen.findByRole('article', { name: 'Đọc một' })
+      const headers = screen.getAllByRole('heading', { level: 3 })
+      expect(headers.map((heading) => heading.textContent)).toEqual([
+        expect.stringContaining('Listening'), expect.stringContaining('Reading'), expect.stringContaining('Writing'),
+      ])
+      expect(screen.getByRole('button', { name: /^Reading/ })).toHaveTextContent('2 chủ đề')
+      expect(screen.getByRole('button', { name: /^Reading/ })).toHaveTextContent('1 ngừng dùng')
+      expect(screen.getByRole('button', { name: /^Listening/ })).not.toHaveTextContent('ngừng dùng')
+    })
+
+    it('folds one skill away without touching the others, and opens it again', async () => {
+      show()
+      const reading = await screen.findByRole('button', { name: /^Reading/ })
+      expect(reading).toHaveAttribute('aria-expanded', 'true')
+      fireEvent.click(reading)
+      expect(reading).toHaveAttribute('aria-expanded', 'false')
+      expect(screen.queryByRole('article', { name: 'Đọc một' })).not.toBeInTheDocument()
+      expect(screen.getByRole('article', { name: 'Nghe một' })).toBeInTheDocument()
+      fireEvent.click(reading)
+      expect(screen.getByRole('article', { name: 'Đọc một' })).toBeInTheDocument()
+    })
+
+    it('folds and opens every skill at once', async () => {
+      show()
+      await screen.findByRole('article', { name: 'Đọc một' })
+      expect(screen.getByRole('button', { name: 'Mở tất cả' })).toBeDisabled()
+      fireEvent.click(screen.getByRole('button', { name: 'Thu gọn tất cả' }))
+      expect(screen.queryByRole('article')).not.toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Thu gọn tất cả' })).toBeDisabled()
+      fireEvent.click(screen.getByRole('button', { name: 'Mở tất cả' }))
+      expect(screen.getAllByRole('article')).toHaveLength(4)
+    })
+
+    it('moves a topic past the next topic of its own skill, not past one of another skill', async () => {
+      show()
+      await pick('Đọc một', 'Đưa xuống')
+      await waitFor(() => expect(api.reorderTopics).toHaveBeenCalledWith(null, ['r2', 'l1', 'r1', 'w1']))
+    })
+
+    it('leaves out the skill chip on a row because its group names the skill', async () => {
+      show()
+      const row = await screen.findByRole('article', { name: 'Đọc một' })
+      expect(row.querySelector('.adm-topic-skill')).toBeNull()
+    })
+  })
+
   it('puts Thêm chủ đề in the course header beside Sửa khóa học, not above the table', async () => {
     show()
     const add = await screen.findByRole('button', { name: 'Thêm chủ đề' })
@@ -281,10 +339,10 @@ describe('CoursesPage', () => {
     const trigger = await screen.findByRole('button', { name: 'Thao tác với Viết học thuật' })
     fireEvent.click(trigger)
     expect(trigger).toHaveAttribute('aria-expanded', 'true')
-    expect(screen.getByRole('group', { name: 'Thao tác với Viết học thuật' })).toBeInTheDocument()
-    fireEvent.keyDown(screen.getByRole('button', { name: 'Sửa chủ đề' }), { key: 'Escape' })
+    expect(screen.getByRole('menu', { name: 'Thao tác với Viết học thuật' })).toBeInTheDocument()
+    fireEvent.keyDown(screen.getByRole('menuitem', { name: 'Sửa chủ đề' }), { key: 'Escape' })
     expect(trigger).toHaveAttribute('aria-expanded', 'false')
-    expect(screen.queryByRole('group', { name: 'Thao tác với Viết học thuật' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('menu', { name: 'Thao tác với Viết học thuật' })).not.toBeInTheDocument()
     expect(trigger).toHaveFocus()
   })
 
@@ -309,7 +367,8 @@ describe('CoursesPage', () => {
     expect(screen.getByRole('tabpanel')).toHaveAccessibleName(/Nền tảng 5.5/)
     fireEvent.click(tabs[2]!)
     expect(screen.getByRole('heading', { name: 'Chủ đề chưa gán khóa' })).toBeInTheDocument()
-    expect(screen.getByRole('article', { name: 'Chủ đề lẻ' })).toHaveTextContent('Chưa chọn kỹ năng')
+    expect(screen.getByRole('button', { name: /Chưa chọn kỹ năng/ })).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('article', { name: 'Chủ đề lẻ' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Sửa khóa học' })).not.toBeInTheDocument()
     fireEvent.click(tabs[1]!)
     expect(screen.getByText('Khóa này chưa có chủ đề. Bấm “Thêm chủ đề” ở trên để bắt đầu.')).toBeInTheDocument()
@@ -358,13 +417,13 @@ describe('CoursesPage', () => {
     lessons.fetchTopics.mockResolvedValue([topics[0], { ...topics[1]!, status: 'INACTIVE' }, topics[2]])
     show()
     fireEvent.click(await screen.findByRole('button', { name: 'Thao tác với Diễn đạt lại' }))
-    expect(screen.queryByRole('button', { name: 'Ngừng dùng' })).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Dùng lại' })).not.toHaveClass('is-danger')
-    fireEvent.click(screen.getByRole('button', { name: 'Dùng lại' }))
+    expect(screen.queryByRole('menuitem', { name: 'Ngừng dùng' })).not.toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Dùng lại' })).not.toHaveClass('is-danger')
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Dùng lại' }))
     await waitFor(() => expect(api.updateTopic).toHaveBeenCalledExactlyOnceWith('t2', expect.objectContaining({ status: 'ACTIVE', name: 'Diễn đạt lại' })))
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
     fireEvent.click(await screen.findByRole('button', { name: 'Thao tác với Liên kết câu' }))
-    const stop = screen.getByRole('button', { name: 'Ngừng dùng' })
+    const stop = screen.getByRole('menuitem', { name: 'Ngừng dùng' })
     expect(stop).toHaveClass('is-danger')
     expect(stop.querySelector('svg')).not.toBeNull()
   })

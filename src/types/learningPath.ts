@@ -13,6 +13,8 @@ export interface CourseRef {
   title: string
   bandLevel: number
   coverImageUrl?: string | null
+  /** The wide image of the course page header; the cover image stands in for it when there is none. */
+  bannerImageUrl?: string | null
   description?: string | null
 }
 
@@ -34,6 +36,8 @@ export interface CourseSummary extends CourseRef {
   availableSkills?: LearningSkill[]
   comboUnlocked?: boolean
   premium?: boolean
+  /** Open to everyone: no lesson of it sits behind a purchase, and it has no unlock prices. */
+  free?: boolean
 }
 
 export type LearningSkill = 'LISTENING' | 'READING' | 'WRITING' | 'SPEAKING'
@@ -194,6 +198,12 @@ export interface VocabularyBlockData extends RawBlock {
   vocabularySenseIds: string[]
 }
 
+/** Lecture text in Markdown, read on the lesson's "Lý thuyết" tab. */
+export interface TextBlockData extends RawBlock {
+  type: 'TEXT'
+  text: string
+}
+
 export interface WritingCriterion {
   code: string
   band: number
@@ -226,8 +236,8 @@ export interface WritingSubmissionResult {
 }
 
 /** A lesson and its status. Its summary, slides and documents are read separately (see `types/lesson.ts`). */
-/** The lesson content: passages, audio, vocabulary and auto-graded exercises. */
-export type LessonBlock = PassageBlockData | AudioBlockData | VocabularyBlockData | ExerciseBlockData
+/** The lesson content: lecture text, passages, audio, vocabulary and auto-graded exercises. */
+export type LessonBlock = PassageBlockData | AudioBlockData | VocabularyBlockData | ExerciseBlockData | TextBlockData
 
 export interface LessonDetail {
   id: string
@@ -679,6 +689,27 @@ export interface TreePoint {
   locked?: boolean
   /** The mistakes the learner has made on this point, with how well they avoid each; only those with evidence. */
   errorTraps?: ErrorTrapPoint[]
+  /** The chặng that owns the point; absent from a server that does not say where a point is taught. */
+  topic?: TreePointTopic | null
+  /** The lessons of the course that teach the point, in the order of their chặng and then of the lesson. */
+  lessons?: TreePointLesson[]
+}
+
+/** A chặng as the tree names it; `position` counts from 1 inside its own skill, the number the course page shows. */
+export interface TreePointTopic {
+  topicId: string
+  name: string
+  position: number
+}
+
+/** A lesson that teaches a point: its number in its chặng, and the chặng it is in. */
+export interface TreePointLesson {
+  lessonId: string
+  title: string
+  position: number
+  topicId: string
+  topicName: string
+  topicPosition: number
 }
 
 /** One mistake the learner can make on a knowledge point, tracked as a point of its own. */
@@ -705,6 +736,19 @@ export interface TestAssignment {
   courseId?: string
   packageVersionId: string
   packageCode: string
+}
+
+/** A practice test the course places after one of its chặng; its first result counts toward the course's process score. */
+export interface PracticeTestMilestone {
+  packageId: string
+  packageVersionId: string
+  code: string
+  title: string
+  /** 1-based position of the chặng after which the test opens, in the course's chặng order. */
+  afterTopicSequence: number
+  status: 'LOCKED' | 'AVAILABLE' | 'DONE'
+  /** Percent of the first result, or null before the test is done. */
+  percent: number | null
 }
 
 /** The published placement test a learner without a placement band sits first. */
@@ -787,7 +831,7 @@ export type AttemptStatus = 'IN_PROGRESS' | 'SUBMITTED' | 'EXPIRED' | 'CANCELLED
 
 export interface StartAttemptRequest {
   packageVersionId: string
-  attemptType: 'TOPIC_TEST' | 'COURSE_TEST' | 'PLACEMENT_TEST'
+  attemptType: 'TOPIC_TEST' | 'COURSE_TEST' | 'PRACTICE_TEST' | 'PLACEMENT_TEST'
   mode: 'STANDARD' | 'PRACTICE'
   channel: 'WEB'
   expiresAt: null

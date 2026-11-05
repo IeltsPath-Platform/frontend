@@ -13,7 +13,6 @@ vi.mock('../api/notebookApi', () => ({
     saveNotebookEntry: vi.fn(),
     getSets: vi.fn().mockResolvedValue({ items: [], page: 0, size: 20, total: 0 }),
     getTopics: vi.fn().mockResolvedValue([]),
-    getMindmap: vi.fn().mockResolvedValue({ nodes: [], edges: [] }),
     getNotebookSummary: vi.fn().mockResolvedValue(null),
     getLearningReport: vi.fn().mockResolvedValue(null),
     getTopicsProgress: vi.fn().mockResolvedValue(null),

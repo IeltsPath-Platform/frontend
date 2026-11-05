@@ -48,7 +48,7 @@ export function CoursesPage() {
             <h2>{course?.name ?? 'Chủ đề chưa gán khóa'}</h2>
             <p className="adm-muted">
               {course
-                ? <><code>{course.code}</code> · Band {course.bandLevel.toFixed(1)} · <span className={`adm-badge ${course.status === 'ACTIVE' ? 'adm-badge--ok' : 'adm-badge--muted'}`}>{course.status === 'ACTIVE' ? 'Đang dùng' : 'Ngừng dùng'}</span> · {rows.length} chủ đề</>
+                ? <><code>{course.code}</code> · Band {course.bandLevel.toFixed(1)} · <span className={`adm-badge ${course.status === 'ACTIVE' ? 'adm-badge--ok' : 'adm-badge--muted'}`}>{course.status === 'ACTIVE' ? 'Đang dùng' : 'Ngừng dùng'}</span>{course.free ? <> · <span className="adm-badge adm-badge--ok">Miễn phí</span></> : null} · {rows.length} chủ đề</>
                 : 'Các chủ đề này chưa thuộc khóa nào. Sửa chủ đề để gán vào một khóa.'}
             </p>
           </div>

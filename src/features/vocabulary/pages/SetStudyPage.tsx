@@ -2,6 +2,8 @@ import { VocabularyShell } from '../components/VocabularyShell'
 import { useEffect, useRef, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { X, RefreshCw, AlertCircle, Sparkles } from 'lucide-react'
+import { CorrectBurst } from '@/features/flashcards/components/CorrectBurst'
+import { StudyHero } from '@/features/flashcards/components/StudyHero'
 import {
   notebookApi,
   type NotebookEntryResponse,
@@ -165,7 +167,7 @@ function SetStudyContent() {
 
   if (isLoading) {
     return (
-      <div className="review-page">
+      <div className="vocab-quiz-layout">
         <div style={{ textAlign: 'center', color: '#64748b', padding: '4rem 1rem' }}>
           <RefreshCw size={36} className="animate-spin" style={{ color: '#2563eb', margin: '0 auto 1rem' }} />
           <p style={{ fontWeight: 600 }}>Đang khởi tạo lộ trình học bộ từ…</p>
@@ -176,7 +178,7 @@ function SetStudyContent() {
 
   if (error || questions.length === 0) {
     return (
-      <div className="review-page">
+      <div className="vocab-quiz-layout">
         <div
           style={{
             maxWidth: '460px',
@@ -214,7 +216,7 @@ function SetStudyContent() {
 
   if (isFinished) {
     return (
-      <div className="review-page">
+      <div className="vocab-quiz-layout">
         <ReviewSummaryView
           totalQuestions={questions.length}
           correctCount={correctCount}
@@ -226,65 +228,40 @@ function SetStudyContent() {
   }
 
   const currentQ = questions[currentIndex]
-  const progressPercent = Math.round(((currentIndex + 1) / questions.length) * 100)
   const modeUpper = String(currentQ.mode).toUpperCase()
 
   return (
-    <div className="review-page">
-      {/* Top Header */}
-      <header className="review-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <button
-            type="button"
-            onClick={() => setIsSkipDialogOpen(true)}
-            className="review-header__close-btn"
-            aria-label="Thoát phiên học"
-          >
-            <X size={20} />
-          </button>
-          <div>
-            <h1 style={{ fontSize: '0.95rem', fontWeight: 800, margin: 0, color: '#0f172a' }}>
-              {setDetail?.title || 'Học bộ từ'}
-            </h1>
-            <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
-              Câu {currentIndex + 1} / {questions.length}
-            </span>
-          </div>
-        </div>
+    <div className="vocab-quiz-layout">
+      <StudyHero
+        eyebrow="Học bộ từ"
+        title={setDetail?.title || 'Học bộ từ'}
+        progress={{ label: 'Câu', value: currentIndex + 1, max: questions.length }}
+        owlPose={combo >= 3 ? 'party' : 'confident'}
+        badge={combo >= 2 ? <span key={combo} className="study-streak"><Sparkles size={16} aria-hidden="true" />Chuỗi {combo} đúng!</span> : undefined}
+        action={<button type="button" onClick={() => setIsSkipDialogOpen(true)} aria-label="Thoát phiên học"><X size={18} aria-hidden="true" />Thoát</button>}
+      />
 
-        {combo >= 2 && (
-          <div className="review-combo-badge animate-bounce">
-            <Sparkles size={14} /> Chuỗi {combo} đúng!
-          </div>
-        )}
-      </header>
-
-      {/* Progress Bar */}
-      <div className="review-progress-track">
-        <div className="review-progress-fill" style={{ width: `${progressPercent}%` }} />
-      </div>
-
-      {/* Question Card Container */}
-      <main className="review-main-area">
+      <div className="review-stage">
+        {correctCount > 0 && <CorrectBurst key={correctCount} streak={combo} />}
         {modeUpper === 'FLASHCARD' && (
-          <FlashcardReviewCard question={currentQ} onAnswer={handleAnswer} />
+          <FlashcardReviewCard key={currentQ.id} question={currentQ} onAnswer={handleAnswer} />
         )}
         {(modeUpper === 'MEANING' || modeUpper === 'MEANING_GUESS' || modeUpper === 'MEANING-GUESS') && (
-          <MeaningGuessCard question={currentQ} onAnswer={handleAnswer} />
+          <MeaningGuessCard key={currentQ.id} question={currentQ} onAnswer={handleAnswer} />
         )}
         {modeUpper === 'TYPING' && (
-          <TypingReviewCard question={currentQ} onAnswer={handleAnswer} isDictation={false} />
+          <TypingReviewCard key={currentQ.id} question={currentQ} onAnswer={handleAnswer} isDictation={false} />
         )}
         {modeUpper === 'DICTATION' && (
-          <TypingReviewCard question={currentQ} onAnswer={handleAnswer} isDictation={true} />
+          <TypingReviewCard key={currentQ.id} question={currentQ} onAnswer={handleAnswer} isDictation={true} />
         )}
         {(modeUpper === 'FILL-IN-BLANK' || modeUpper === 'FILL_IN_BLANK' || modeUpper === 'FILL-BLANK') && (
-          <FillInBlankReviewCard question={currentQ} onAnswer={handleAnswer} />
+          <FillInBlankReviewCard key={currentQ.id} question={currentQ} onAnswer={handleAnswer} />
         )}
         {(modeUpper === 'SENTENCE' || modeUpper === 'SENTENCE_WRITING' || modeUpper === 'SENTENCE-WRITING') && (
-          <SentenceWritingCard question={currentQ} onAnswer={handleAnswer} />
+          <SentenceWritingCard key={currentQ.id} question={currentQ} onAnswer={handleAnswer} />
         )}
-      </main>
+      </div>
 
       {/* Skip Confirmation Dialog */}
       <SkipConfirmDialog

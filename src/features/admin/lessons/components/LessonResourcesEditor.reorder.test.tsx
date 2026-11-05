@@ -17,6 +17,11 @@ const documents = [
 const snapshot = { lessonId, summaryMarkdown: null, slides, documents }
 const fetchMock = vi.fn<typeof fetch>()
 
+/** Opens the "…" menu of one row; `row` counts from 1 inside the table of `kind`. */
+function openMenu(kind: 'slide' | 'tài liệu', row: number) {
+  fireEvent.click(screen.getByRole('button', { name: `Hành động của ${kind} ${row}` }))
+}
+
 function json(body: unknown) {
   return new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } })
 }
@@ -35,14 +40,19 @@ describe('Lesson resource ordering when enabled', () => {
   })
 
   it.each([
-    { type: 'SLIDE', button: 'Đưa Slide đầu xuống', ids: [slides[0]!.id, slides[1]!.id] },
-    { type: 'DOCUMENT', button: 'Đưa Bài đọc sau lên', ids: [documents[1]!.id, documents[0]!.id] },
-  ])('uses one whole-list PUT for $type then reloads server order', async ({ type, button, ids }) => {
+    { type: 'SLIDE', kind: 'slide' as const, row: 1, button: 'Đưa Slide đầu xuống', ids: [slides[0]!.id, slides[1]!.id] },
+    { type: 'DOCUMENT', kind: 'tài liệu' as const, row: 2, button: 'Đưa Bài đọc sau lên', ids: [documents[1]!.id, documents[0]!.id] },
+  ])('uses one whole-list PUT for $type then reloads server order', async ({ type, kind, row, button, ids }) => {
     render(<LessonResourcesEditor lessonId={lessonId} />)
-    const move = await screen.findByRole('button', { name: button })
-    expect(screen.queryByText(/Chờ API đổi thứ tự\./)).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Đưa Slide đầu lên' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Đưa Slide sau xuống' })).toBeDisabled()
+    await screen.findByRole('button', { name: `Hành động của ${kind} ${row}` })
+    openMenu('slide', 1)
+    expect(screen.getByRole('menuitem', { name: 'Đưa Slide đầu lên' })).toBeDisabled()
+    fireEvent.pointerDown(document.body)
+    openMenu('slide', 2)
+    expect(screen.getByRole('menuitem', { name: 'Đưa Slide sau xuống' })).toBeDisabled()
+    fireEvent.pointerDown(document.body)
+    openMenu(kind, row)
+    const move = screen.getByRole('menuitem', { name: button })
     fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 }))
     fetchMock.mockResolvedValueOnce(json({
       ...snapshot,
@@ -61,28 +71,30 @@ describe('Lesson resource ordering when enabled', () => {
 
   it('locks both resource lists during the write and reload', async () => {
     render(<LessonResourcesEditor lessonId={lessonId} />)
-    await screen.findByRole('button', { name: 'Đưa Slide đầu xuống' })
+    await screen.findByRole('button', { name: 'Hành động của slide 1' })
     let finishWrite!: (response: Response) => void
     let finishReload!: (response: Response) => void
     fetchMock.mockReturnValueOnce(new Promise((resolve) => { finishWrite = resolve }))
     fetchMock.mockReturnValueOnce(new Promise((resolve) => { finishReload = resolve }))
-    fireEvent.click(screen.getByRole('button', { name: 'Đưa Slide đầu xuống' }))
-    expect(screen.getByRole('button', { name: 'Đưa Bài đọc sau lên' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Sửa Slide sau' })).toBeDisabled()
+    openMenu('slide', 1)
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Đưa Slide đầu xuống' }))
+    expect(screen.getByRole('button', { name: 'Hành động của tài liệu 2' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Hành động của slide 2' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Thêm slide' })).toBeDisabled()
-    fireEvent.click(screen.getByRole('button', { name: 'Đưa Slide sau lên' }))
     expect(fetchMock).toHaveBeenCalledTimes(2)
     await act(async () => finishWrite(new Response(null, { status: 204 })))
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
-    expect(screen.getByRole('button', { name: 'Đưa Slide đầu xuống' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Hành động của slide 1' })).toBeDisabled()
     await act(async () => finishReload(json(snapshot)))
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Đưa Slide đầu xuống' })).toBeEnabled())
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Hành động của slide 1' })).toBeEnabled())
     expect(screen.getByRole('button', { name: 'Thêm slide' })).toBeEnabled()
   })
 
   it('shows a failed reorder and reloads the current list', async () => {
     render(<LessonResourcesEditor lessonId={lessonId} />)
-    const move = await screen.findByRole('button', { name: 'Đưa Slide đầu xuống' })
+    await screen.findByRole('button', { name: 'Hành động của slide 1' })
+    openMenu('slide', 1)
+    const move = screen.getByRole('menuitem', { name: 'Đưa Slide đầu xuống' })
     fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ message: 'Danh sách tài nguyên đã thay đổi.' }), { status: 400 }))
     fetchMock.mockResolvedValueOnce(json(snapshot))
     fireEvent.click(move)

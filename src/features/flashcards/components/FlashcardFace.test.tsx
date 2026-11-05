@@ -52,4 +52,23 @@ describe('FlashcardFace', () => {
 
     expect(screen.getByRole('button', { name: /Mặt sau: sự đa dạng sinh học/ })).toBeInTheDocument()
   })
+
+  it('does not flip the card when clicking the pronunciation button', async () => {
+    const onFlip = vi.fn()
+    const user = userEvent.setup()
+    render(
+      <FlashcardFace
+        card={{
+          ...card,
+          sourceType: 'MANUAL',
+        }}
+        flipped={false}
+        onFlip={onFlip}
+      />
+    )
+
+    const speakBtn = screen.getByRole('button', { name: 'Phát âm biodiversity' })
+    await user.click(speakBtn)
+    expect(onFlip).not.toHaveBeenCalled()
+  })
 })

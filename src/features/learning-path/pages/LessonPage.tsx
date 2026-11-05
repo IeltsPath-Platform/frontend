@@ -39,13 +39,13 @@ interface TabEntry {
   tab: LessonTab
   label: string
   icon: LucideIcon
-  /** How many items the tab holds, or null when that is not a count. */
-  count: (resources: LessonResourcesResponse) => number | null
+  /** How many items the tab holds, or null when that is not a count. `theoryCount` is the lecture text blocks of the lesson. */
+  count: (resources: LessonResourcesResponse, theoryCount: number) => number | null
 }
 
 const TABS: readonly TabEntry[] = [
   { tab: 'slides', label: 'Slide bài giảng', icon: MonitorPlay, count: (r) => r.slides.length },
-  { tab: 'summary', label: 'Lesson Summary', icon: BookOpenText, count: (r) => (r.summaryMarkdown?.trim() ? 1 : 0) },
+  { tab: 'summary', label: 'Lesson Summary', icon: BookOpenText, count: (r, theoryCount) => theoryCount + (r.summaryMarkdown?.trim() ? 1 : 0) },
   { tab: 'documents', label: 'Tài liệu bài khoá', icon: FolderOpen, count: (r) => r.documents.length },
 ]
 
@@ -159,6 +159,8 @@ export function LessonView({ lesson, onLessonChanged }: { lesson: LessonDetail; 
   // A lesson with exercises is completed by passing them; the "Hoàn thành bài" confirmation is only for the others.
   const vocabularySenseIds = [...new Set((lesson.blocks ?? []).flatMap((block) =>
     block.type === 'VOCABULARY' ? block.vocabularySenseIds : []))]
+  // The lecture text of the lesson, in lesson order. It opens the Lesson Summary tab, ahead of the summary's own sections.
+  const theoryTexts = (lesson.blocks ?? []).flatMap((block) => (block.type === 'TEXT' ? [block.text] : []))
   const exerciseCount = (lesson.blocks ?? []).filter((block) => block.type === 'EXERCISE').length
   const hasExercises = exerciseCount > 0
   const exercisesPath = `${path}?view=exercises`
@@ -239,13 +241,18 @@ export function LessonView({ lesson, onLessonChanged }: { lesson: LessonDetail; 
     if (tab === 'practice') {
       return <LessonPractice lessonId={lesson.id} onChanged={practiceChanged} reviewOrigin={reviewOrigin} />
     }
-    if (resources.status === 'loading') return <LoadingState label="Đang tải…" />
-    if (resources.status === 'error' && resources.error) {
+    // The lecture text comes with the lesson, so it shows even while the resources load or when they cannot be loaded.
+    const hasTheory = theoryTexts.length > 0
+    if (resources.status === 'loading' && !(tab === 'summary' && hasTheory)) return <LoadingState label="Đang tải…" />
+    if (resources.status === 'error' && resources.error && !(tab === 'summary' && hasTheory)) {
       return <ApiErrorState error={resources.error} onRetry={resources.reload} />
     }
+    if (tab === 'summary') {
+      const markdown = [...theoryTexts, resources.data?.summaryMarkdown?.trim() ?? ''].filter(Boolean).join('\n\n')
+      return <LessonSummary markdown={markdown} topicTitle={lesson.topicTitle} />
+    }
     if (!resources.data) return null
-    if (tab === 'summary') return <LessonSummary markdown={resources.data.summaryMarkdown} topicTitle={lesson.topicTitle} />
-    if (tab === 'documents') return <LessonDocuments documents={resources.data.documents} />
+    if (tab === 'documents') return <LessonDocuments documents={resources.data.documents} onRefresh={resources.reload} />
     return <LessonSlides slides={resources.data.slides} />
   }
 
@@ -286,7 +293,7 @@ export function LessonView({ lesson, onLessonChanged }: { lesson: LessonDetail; 
           <nav className="lp-res-nav" aria-label="Nội dung bài học">
             <p className="lp-res-nav__label">Nội dung bài học</p>
             {TABS.map(({ tab: target, label, icon: Icon, count }) => {
-              const total = resources.data ? count(resources.data) : null
+              const total = resources.data ? count(resources.data, theoryTexts.length) : null
               return (
                 <Link
                   key={target}

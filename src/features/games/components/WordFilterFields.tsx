@@ -1,11 +1,13 @@
+import { BookOpen, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import './word-filters.css'
+import dailyLife from '../assets/topics/daily-life.webp'
+import education from '../assets/topics/education.webp'
+import environment from '../assets/topics/environment.webp'
+import health from '../assets/topics/health.webp'
+import society from '../assets/topics/society.webp'
+import technology from '../assets/topics/technology.webp'
+import workBusiness from '../assets/topics/work-business.webp'
 import type { WordFilter } from '../types/game'
 import {
   availableWords,
@@ -14,64 +16,38 @@ import {
   type WordFiltersState,
 } from '../lib/wordFilters'
 
-const ALL = 'ALL'
-const itemClass =
-  'min-h-11 cursor-pointer rounded-lg px-3 text-base focus:bg-primary/10 focus:text-primary data-[state=checked]:bg-primary/10 data-[state=checked]:font-semibold data-[state=checked]:text-primary'
+const LEVEL_NAMES: Record<string, string> = {
+  A1: 'Cơ bản',
+  A2: 'Sơ cấp',
+  B1: 'Trung cấp',
+  B2: 'Trung cao cấp',
+  C1: 'Cao cấp',
+  C2: 'Thành thạo',
+}
 
-type Option = { value: string; label: string; words: number | null }
+/** A topic without its own picture, such as one an admin adds later, gets an icon. */
+const TOPIC_IMAGES: Record<string, string> = {
+  education,
+  environment,
+  technology,
+  health,
+  'work-business': workBusiness,
+  society,
+  'daily-life': dailyLife,
+}
 
-function FilterSelect({
-  id,
-  label,
-  value,
-  options,
-  required,
-  disabled,
-  onChange,
-}: {
-  id: string
-  label: string
-  value: string
-  options: Option[]
-  required: number
-  disabled: boolean
-  onChange: (value: string) => void
-}) {
+function SelectedMark() {
   return (
-    <div className="game-field">
-      <label htmlFor={id}>{label}</label>
-      <Select value={value} onValueChange={onChange} disabled={disabled}>
-        <SelectTrigger
-          id={id}
-          className="min-h-12 w-full rounded-xl bg-background px-4 text-base text-foreground"
-        >
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent
-          position="popper"
-          side="bottom"
-          align="start"
-          sideOffset={6}
-          className="z-[90] w-[var(--radix-select-trigger-width)] rounded-xl border border-border bg-popover p-1.5 shadow-lg"
-        >
-          {options.map((option) => (
-            <SelectItem
-              key={option.value}
-              value={option.value}
-              disabled={option.words !== null && option.words < required}
-              className={itemClass}
-            >
-              {option.label}
-              {option.words !== null && ` · ${option.words} từ`}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
+    <span className="game-word-tile-check" aria-hidden="true">
+      <Check />
+    </span>
   )
 }
 
-/** Level and topic for a room's words. Options with too few words are dimmed, counted against the other field. */
+/**
+ * Level and topic tiles for a room's words. Nothing chosen means any; choosing a tile again clears it.
+ * Tiles that leave too few words, counted against the other choice, are disabled.
+ */
 export function WordFilterFields({
   value,
   onChange,
@@ -86,76 +62,116 @@ export function WordFilterFields({
   disabled?: boolean
 }) {
   const { filters } = state
-  const count = (choice: WordFilter) =>
-    filters ? availableWords(filters, choice) : null
+  const tooFew = (choice: WordFilter) =>
+    filters !== null && availableWords(filters, choice) < required
   const error = wordFilterError(filters, value, required)
   return (
     <div className="game-word-filters">
-      <FilterSelect
-        id="game-word-level"
-        label="Trình độ"
-        value={value.cefrLevel ?? ALL}
-        required={required}
-        disabled={disabled || !filters}
-        onChange={(next) =>
-          onChange({ ...value, cefrLevel: next === ALL ? null : next })
-        }
-        options={[
-          {
-            value: ALL,
-            label: 'Tất cả',
-            words: count({ ...value, cefrLevel: null }),
-          },
-          ...CEFR_LEVELS.map((level) => ({
-            value: level,
-            label: level,
-            words: count({ ...value, cefrLevel: level }),
-          })),
-        ]}
-      />
-      <FilterSelect
-        id="game-word-topic"
-        label="Chủ đề"
-        value={value.topicId ?? ALL}
-        required={required}
-        disabled={disabled || !filters}
-        onChange={(next) =>
-          onChange({ ...value, topicId: next === ALL ? null : next })
-        }
-        options={[
-          {
-            value: ALL,
-            label: 'Tất cả',
-            words: count({ ...value, topicId: null }),
-          },
-          ...(filters?.topics ?? []).map((topic) => ({
-            value: topic.id,
-            label: topic.nameVi ?? topic.name,
-            words: count({ ...value, topicId: topic.id }),
-          })),
-        ]}
-      />
-      {state.loading && (
-        <p className="game-word-filters-note" role="status">
-          Đang tải trình độ và chủ đề…
-        </p>
-      )}
-      {state.failed && (
-        <div className="game-word-filters-note" role="alert">
-          <p>
-            Chưa tải được trình độ và chủ đề. Bạn vẫn có thể tiếp tục với lựa
-            chọn hiện tại.
-          </p>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={state.retry}
-          >
-            Thử lại
-          </Button>
+      <fieldset className="game-word-group">
+        <legend>
+          Trình độ <span>· Không chọn là tất cả</span>
+        </legend>
+        <div className="game-word-difficulty" aria-hidden="true">
+          <span>Dễ hơn</span>
+          <i />
+          <span>Khó hơn</span>
         </div>
-      )}
+        <div className="game-word-levels">
+          {CEFR_LEVELS.map((level, index) => {
+            const selected = value.cefrLevel === level
+            return (
+              <button
+                key={level}
+                type="button"
+                className="game-word-tile game-word-level"
+                data-level={level}
+                aria-pressed={selected}
+                aria-label={`${level} ${LEVEL_NAMES[level]}`}
+                disabled={
+                  disabled ||
+                  (!selected && tooFew({ ...value, cefrLevel: level }))
+                }
+                onClick={() =>
+                  onChange({ ...value, cefrLevel: selected ? null : level })
+                }
+              >
+                {selected && <SelectedMark />}
+                <strong>{level}</strong>
+                <span className="game-word-bars" aria-hidden="true">
+                  {CEFR_LEVELS.map((bar, barIndex) => (
+                    <i key={bar} data-on={barIndex <= index} />
+                  ))}
+                </span>
+                <small>{LEVEL_NAMES[level]}</small>
+              </button>
+            )
+          })}
+        </div>
+      </fieldset>
+      <fieldset className="game-word-group">
+        <legend>
+          Chủ đề <span>· Không chọn là tất cả</span>
+        </legend>
+        {filters && (
+          <div className="game-word-topics">
+            {filters.topics.map((topic) => {
+              const selected = value.topicId === topic.id
+              const image = TOPIC_IMAGES[topic.slug]
+              return (
+                <button
+                  key={topic.id}
+                  type="button"
+                  className="game-word-tile game-word-topic"
+                  data-topic={topic.slug}
+                  aria-pressed={selected}
+                  disabled={
+                    disabled ||
+                    (!selected && tooFew({ ...value, topicId: topic.id }))
+                  }
+                  onClick={() =>
+                    onChange({ ...value, topicId: selected ? null : topic.id })
+                  }
+                >
+                  {selected && <SelectedMark />}
+                  {image ? (
+                    <img
+                      className="game-word-topic-image"
+                      src={image}
+                      alt=""
+                    />
+                  ) : (
+                    <span className="game-word-topic-icon" aria-hidden="true">
+                      <BookOpen />
+                    </span>
+                  )}
+                  <span>{topic.nameVi ?? topic.name}</span>
+                </button>
+              )
+            })}
+          </div>
+        )}
+        {state.loading && (
+          <p className="game-word-filters-note" role="status">
+            Đang tải chủ đề…
+          </p>
+        )}
+        {state.failed && (
+          <div className="game-word-filters-note" role="alert">
+            <p>
+              Chưa tải được chủ đề. Bạn vẫn có thể tiếp tục với lựa chọn hiện
+              tại.
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={state.retry}
+            >
+              Thử lại
+            </Button>
+          </div>
+        )}
+      </fieldset>
       {error && (
         <p className="game-word-filters-error" role="alert">
           {error}

@@ -13,6 +13,7 @@ import { ApiErrorState, TopicListSkeleton } from '../components/PageState'
 import { reportApiError } from '../lib/reviewGate'
 import { knowledgeTreePath } from '../lib/routes'
 import { useApiResource } from '../lib/useApiResource'
+import { usePracticeTests } from '../lib/usePracticeTests'
 
 /** One course, picked on the course list screen: its four skills and the final test. */
 export function TopicListPage() {
@@ -26,6 +27,7 @@ export function TopicListPage() {
   const error = topicsResource.error ?? coursesResource.error
   const passed = topics?.filter((topic) => topic.status === 'PASSED').length ?? 0
   const total = topics?.length ?? 0
+  const practiceTests = usePracticeTests(courseId, topics ?? [])
   const lessonCount = courseSummary?.totalLessons ?? topics?.reduce((sum, topic) => sum + topic.totalLessons, 0) ?? 0
 
   function reload() {
@@ -62,6 +64,7 @@ export function TopicListPage() {
             <CourseFinalTestStop course={courseSummary} onChanged={reload} />
           ) : null}
           onUnlocked={reload}
+          practiceTests={practiceTests}
           topics={topics}
         />
       ) : null}

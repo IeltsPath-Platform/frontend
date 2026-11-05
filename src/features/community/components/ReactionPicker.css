@@ -446,3 +446,27 @@
   }
 }
 
+
+/* Touch screens cannot hover, so each reaction shows its name under the icon while the picker is open. */
+@media (hover: none) {
+  .reaction-item-btn {
+    width: 52px;
+    height: auto;
+    min-height: 44px;
+    padding: 0.2rem 0;
+    border-radius: 0.75rem;
+  }
+
+  .reaction-item-label {
+    position: static;
+    margin-top: 0.2rem;
+    padding: 0;
+    background: none;
+    color: #334155;
+    font-size: 0.65rem;
+    font-weight: 700;
+    opacity: 1;
+    transform: none;
+    white-space: nowrap;
+  }
+}

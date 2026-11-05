@@ -214,9 +214,23 @@
   position: relative;
   min-height: 120px;
   border-radius: 0.75rem;
-  transition: background 0.3s ease, min-height 0.2s ease, padding 0.2s ease;
+  transition: background 0.3s ease, min-height 0.2s ease, padding 0.2s ease, box-shadow 0.15s ease;
   display: flex;
   flex-direction: column;
+}
+
+/* The body field has no border of its own, so keyboard focus is drawn as a soft ring around the rounded area
+   instead of the site-wide square outline on the bare textarea. */
+.composer-textarea:focus-visible {
+  outline: none;
+}
+
+.composer-textarea-container:has(.composer-textarea:focus-visible) {
+  box-shadow: 0 0 0 2px #c7d6ff;
+}
+
+.composer-textarea-container.has-background:has(.composer-textarea:focus-visible) {
+  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.15), 0 0 0 2px #c7d6ff;
 }
 
 .composer-textarea-container.has-background {
@@ -515,21 +529,26 @@
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  background: #e2e8f0;
-  border: none;
-  border-radius: 0.375rem;
-  padding: 0.3rem 0.6rem;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0.3rem 0.7rem;
   font-size: 0.82rem;
   font-weight: 600;
-  color: #475569;
+  color: #64748b;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
-.composer-media-tab.is-active {
-  background: #ffffff;
+.composer-media-tab:hover {
   color: var(--community-primary, #1946b3);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* The chosen tab is the only one with a fill, so it reads as selected at a glance. */
+.composer-media-tab[aria-selected='true'] {
+  background: #e8efff;
+  border-color: #c7d6ff;
+  color: var(--community-primary, #1946b3);
 }
 
 .composer-media-close {

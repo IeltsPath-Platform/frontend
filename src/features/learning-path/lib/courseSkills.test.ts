@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import type { CourseSummary, TopicSummary } from '~types/learningPath'
-import { buildLanes, canUnlockCombo, canUnlockSkill, initialLaneKey } from './courseSkills'
+import type { CourseSummary, PracticeTestMilestone, TopicSummary } from '~types/learningPath'
+import { afterTopicLabel, buildLanes, canUnlockCombo, canUnlockSkill, initialLaneKey, placePracticeTests } from './courseSkills'
 
 function topic(id: string, skill: string | null, sequenceOrder: number, over: Partial<TopicSummary> = {}): TopicSummary {
   return {
@@ -83,5 +83,37 @@ describe('unlock options', () => {
     expect(canUnlockCombo({ ...priced, comboUnlocked: true })).toBe(false)
     expect(canUnlockCombo({ ...priced, premium: true })).toBe(false)
     expect(canUnlockCombo(course())).toBe(false)
+  })
+})
+
+describe('practice test placement', () => {
+  const milestone = (packageId: string, afterTopicSequence: number): PracticeTestMilestone => ({
+    packageId, packageVersionId: `${packageId}-v`, code: packageId, title: packageId, afterTopicSequence,
+    status: 'LOCKED', percent: null,
+  })
+  // Counted across the course by sequence order: l1, r1, l2, w1.
+  const topics = [topic('w1', 'WRITING', 4), topic('l1', 'LISTENING', 1), topic('l2', 'LISTENING', 3), topic('r1', 'READING', 2)]
+
+  it('puts a test after the chặng it opens after, whichever skill that chặng belongs to', () => {
+    const { afterTopic, unplaced } = placePracticeTests(topics, [milestone('a', 3), milestone('b', 2)])
+    expect(afterTopic.get('l2')?.map((row) => row.packageId)).toEqual(['a'])
+    expect(afterTopic.get('r1')?.map((row) => row.packageId)).toEqual(['b'])
+    expect(unplaced).toEqual([])
+  })
+
+  it('keeps the server order when several tests open after the same chặng', () => {
+    const { afterTopic } = placePracticeTests(topics, [milestone('a', 1), milestone('b', 1)])
+    expect(afterTopic.get('l1')?.map((row) => row.packageId)).toEqual(['a', 'b'])
+  })
+
+  it('keeps a test whose chặng is not in the course instead of dropping it', () => {
+    const { afterTopic, unplaced } = placePracticeTests(topics, [milestone('a', 9), milestone('b', 0)])
+    expect(afterTopic.size).toBe(0)
+    expect(unplaced.map((row) => row.packageId)).toEqual(['a', 'b'])
+  })
+
+  it('names the chặng in course order, never as a position inside a skill', () => {
+    expect(afterTopicLabel(topics, milestone('a', 3))).toBe('chặng “l2”')
+    expect(afterTopicLabel(topics, milestone('a', 9))).toBe('chặng thứ 9 của khóa')
   })
 })

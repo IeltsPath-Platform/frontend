@@ -2,7 +2,6 @@ import { VocabularyShell } from '../components/VocabularyShell'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import {
-  Volume2,
   Bookmark,
   BookmarkCheck,
   ArrowLeft,
@@ -24,7 +23,7 @@ import {
   type UnderstandingLevel,
 } from '../lib/understanding'
 import { useAuthSession } from '@/features/auth/authSession'
-import { speak } from '@/features/flashcards/lib/speak'
+import { PronunciationButton } from '@/components/PronunciationButton'
 import '../vocabulary-notebook.css'
 
 type TabKey = 'definitions' | 'collocations' | 'thesaurus' | 'commonMistakes' | 'examples'
@@ -108,22 +107,6 @@ function WordDetailContent() {
       controller.abort()
     }
   }, [id, isLoggedIn])
-
-  // Play audio UK / US with fallback
-  const handlePlayAudio = (type: 'uk' | 'us' | 'default') => {
-    if (!item) return
-    let audioUrl: string | null | undefined = null
-    if (type === 'uk') audioUrl = item.audioUk || item.pronunciationAudioReference
-    else if (type === 'us') audioUrl = item.audioUs || item.pronunciationAudioReference
-    else audioUrl = item.pronunciationAudioReference
-
-    if (audioUrl && audioUrl.startsWith('https://')) {
-      const audio = new Audio(audioUrl)
-      audio.play().catch(() => speak(item.lemma))
-    } else {
-      speak(item.lemma)
-    }
-  }
 
   // Handle Save / Bookmark toggle
   const handleSaveToggle = async () => {
@@ -330,49 +313,54 @@ function WordDetailContent() {
 
                 {/* Phonetics & Audio Buttons */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', marginTop: '0.75rem' }}>
-                  {item.phoneticUk ? (
+                  {(item.ipaUk || item.audioUkReference) ? (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                       <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#dc2626', background: '#fef2f2', padding: '0.1rem 0.35rem', borderRadius: '0.3rem' }}>
                         UK
                       </span>
-                      <span style={{ fontFamily: 'monospace', color: '#334155', fontSize: '0.95rem' }}>{item.phoneticUk}</span>
-                      <button
-                        type="button"
-                        onClick={() => handlePlayAudio('uk')}
+                      {item.ipaUk ? (
+                        <span style={{ fontFamily: 'monospace', color: '#334155', fontSize: '0.95rem' }}>{item.ipaUk}</span>
+                      ) : null}
+                      <PronunciationButton
+                        lemma={`${item.lemma} (UK)`}
+                        src={item.audioUkReference}
                         aria-label="Nghe phát âm Anh-Anh"
-                        style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#1e40af', padding: '0.25rem', display: 'flex' }}
-                      >
-                        <Volume2 size={18} />
-                      </button>
+                        style={{ border: 'none', background: 'none', color: '#1e40af', padding: '0.25rem', display: 'flex' }}
+                        iconSize={18}
+                      />
                     </div>
                   ) : null}
 
-                  {item.phoneticUs ? (
+                  {(item.ipaUs || item.audioUsReference) ? (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                       <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#2563eb', background: '#eff6ff', padding: '0.1rem 0.35rem', borderRadius: '0.3rem' }}>
                         US
                       </span>
-                      <span style={{ fontFamily: 'monospace', color: '#334155', fontSize: '0.95rem' }}>{item.phoneticUs}</span>
-                      <button
-                        type="button"
-                        onClick={() => handlePlayAudio('us')}
+                      {item.ipaUs ? (
+                        <span style={{ fontFamily: 'monospace', color: '#334155', fontSize: '0.95rem' }}>{item.ipaUs}</span>
+                      ) : null}
+                      <PronunciationButton
+                        lemma={`${item.lemma} (US)`}
+                        src={item.audioUsReference}
                         aria-label="Nghe phát âm Anh-Mỹ"
-                        style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#1e40af', padding: '0.25rem', display: 'flex' }}
-                      >
-                        <Volume2 size={18} />
-                      </button>
+                        style={{ border: 'none', background: 'none', color: '#1e40af', padding: '0.25rem', display: 'flex' }}
+                        iconSize={18}
+                      />
                     </div>
-                  ) : item.ipa ? (
+                  ) : null}
+
+                  {!item.ipaUk && !item.audioUkReference && !item.ipaUs && !item.audioUsReference && (item.ipa || item.pronunciationAudioReference) ? (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                      <span style={{ fontFamily: 'monospace', color: '#334155', fontSize: '0.95rem' }}>{item.ipa}</span>
-                      <button
-                        type="button"
-                        onClick={() => handlePlayAudio('default')}
+                      {item.ipa ? (
+                        <span style={{ fontFamily: 'monospace', color: '#334155', fontSize: '0.95rem' }}>{item.ipa}</span>
+                      ) : null}
+                      <PronunciationButton
+                        lemma={item.lemma}
+                        src={item.pronunciationAudioReference}
                         aria-label="Nghe phát âm"
-                        style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#1e40af', padding: '0.25rem', display: 'flex' }}
-                      >
-                        <Volume2 size={18} />
-                      </button>
+                        style={{ border: 'none', background: 'none', color: '#1e40af', padding: '0.25rem', display: 'flex' }}
+                        iconSize={18}
+                      />
                     </div>
                   ) : null}
                 </div>
@@ -723,16 +711,13 @@ function WordDetailContent() {
                             "{ex.sentence}"
                           </p>
                           {ex.audio && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const a = new Audio(ex.audio)
-                                a.play().catch(() => speak(ex.sentence))
-                              }}
-                              style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#1e40af' }}
-                            >
-                              <Volume2 size={16} />
-                            </button>
+                            <PronunciationButton
+                              lemma={ex.sentence}
+                              src={ex.audio}
+                              aria-label={`Nghe câu ví dụ: ${ex.sentence}`}
+                              style={{ border: 'none', background: 'none', color: '#1e40af' }}
+                              iconSize={16}
+                            />
                           )}
                         </div>
                         {ex.translation && (
