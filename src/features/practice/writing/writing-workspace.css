@@ -165,3 +165,6 @@
   .ww-body-practice { gap: 0.8rem; }
   .ww-body-practice .rw-divider { display: none; }
 }
+
+.ww-consent { display: flex; align-items: flex-start; gap: 0.5rem; font-size: 0.82rem; line-height: 1.45; cursor: pointer; }
+.ww-consent input { margin-top: 0.2rem; flex: none; }

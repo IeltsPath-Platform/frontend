@@ -17,11 +17,10 @@ export function parseCueCard(prompt: string): CueCard {
   return { topic: topic.trim(), points }
 }
 
-/** "120" becomes "2 minutes", "30" becomes "30 seconds". */
-export function speakingLimit(seconds: number): string {
-  if (seconds >= 60 && seconds % 60 === 0) {
-    const minutes = seconds / 60
-    return `${minutes} minute${minutes === 1 ? '' : 's'}`
-  }
-  return `${seconds} seconds`
+/** What the examiner says: the question, and for a cue card the points to cover ("... You should say: a, b, c."). */
+export function spokenPrompt(prompt: string): string {
+  const cue = parseCueCard(prompt)
+  if (cue.points.length === 0) return cue.topic
+  const topic = /[.?!]$/.test(cue.topic) ? cue.topic : `${cue.topic}.`
+  return `${topic} You should say: ${cue.points.join(', ')}.`
 }

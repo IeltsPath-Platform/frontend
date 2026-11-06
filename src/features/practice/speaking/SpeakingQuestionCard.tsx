@@ -1,19 +1,24 @@
 import { Link } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, Clock3, Info } from 'lucide-react'
+import { Check, ChevronLeft, ChevronRight, Info, Square, Volume2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { parseCueCard, speakingLimit } from './speakingCue'
+import type { SpokenPrompt } from '../hooks/useSpokenPrompt'
+import { parseCueCard } from './speakingCue'
 import type { SpeakingQuestion, SpeakingTask } from './speakingApi'
 
 /** The question the learner answers now: which part and question it is, the prompt with its hints, and the way to move on. */
-export function SpeakingQuestionCard({ task, question, index, total, nextPartPath, onPrevious, onNext }: {
+export function SpeakingQuestionCard({ task, question, index, total, voice, nextPartPath, onPrevious, onNext, onFinish }: {
   task: SpeakingTask
   question: SpeakingQuestion
   index: number
   total: number
+  /** The examiner's voice reading the question aloud. */
+  voice: SpokenPrompt
   /** Where the next part of a full test starts; null on the last part or when only one part was chosen. */
   nextPartPath: string | null
   onPrevious: () => void
   onNext: () => void
+  /** Ends the test from its last question, when there is no next part. */
+  onFinish: () => void
 }) {
   const cue = parseCueCard(question.prompt)
   const isLast = index >= total - 1
@@ -23,7 +28,6 @@ export function SpeakingQuestionCard({ task, question, index, total, nextPartPat
       <div className="sq-head">
         <div className="sq-head-left">
           <span className="sq-badge">{`Part ${task.partNo ?? ''}`.trim()}</span>
-          {question.durationSeconds ? <span className="sq-limit"><Clock3 aria-hidden="true" size={14} />{`You should speak for up to ${speakingLimit(question.durationSeconds)}.`}</span> : null}
         </div>
         {total > 1 && <span className="sq-count">{`Question ${index + 1} / ${total}`}</span>}
       </div>
@@ -43,25 +47,32 @@ export function SpeakingQuestionCard({ task, question, index, total, nextPartPat
             <ul className="sq-points">{cue.points.map((point) => <li key={point}>{point}</li>)}</ul>
           </>
         )}
+        {voice.supported && (
+          <div className="sq-voice">
+            <Button type="button" variant="outline" size="sm" className="sq-voice-play" onClick={voice.speaking ? voice.stop : voice.replay}>
+              {voice.speaking ? <Square aria-hidden="true" fill="currentColor" /> : <Volume2 aria-hidden="true" />}
+              {voice.speaking ? 'Dừng đọc' : 'Nghe câu hỏi'}
+            </Button>
+            <button type="button" role="switch" aria-checked={voice.autoRead} className="sq-voice-auto" onClick={() => voice.setAutoRead(!voice.autoRead)}>
+              <span aria-hidden="true" className="sq-voice-track"><i /></span>Tự đọc câu hỏi
+            </button>
+            {voice.blocked && <p role="status" className="sq-voice-note">Trình duyệt đang chặn âm thanh tự phát. Bấm “Nghe câu hỏi” để nghe.</p>}
+          </div>
+        )}
         {task.instructions && <p className="sq-hint"><Info aria-hidden="true" size={16} /><span>{task.instructions}</span></p>}
       </div>
 
-      {total > 1 && (
-        <nav className="sq-nav" aria-label="Câu hỏi">
-          <Button type="button" variant="outline" disabled={index === 0} onClick={onPrevious}><ChevronLeft aria-hidden="true" />Câu trước</Button>
-          {isLast && nextPartPath ? (
-            <Link className="sq-next-part" to={nextPartPath}>Sang phần tiếp theo<ChevronRight aria-hidden="true" size={16} /></Link>
-          ) : (
-            <Button type="button" className="sq-next" disabled={isLast} onClick={onNext}>Câu sau<ChevronRight aria-hidden="true" /></Button>
-          )}
-        </nav>
-      )}
-      {total <= 1 && nextPartPath && (
-        <nav className="sq-nav" aria-label="Phần tiếp theo">
-          <span />
+      {/* The last question of the last part ends the test: "Hoàn thành" opens the review before anything is sent. */}
+      <nav className="sq-nav" aria-label={total > 1 ? 'Câu hỏi' : 'Kết thúc'}>
+        {total > 1 ? <Button type="button" variant="outline" disabled={index === 0} onClick={onPrevious}><ChevronLeft aria-hidden="true" />Câu trước</Button> : <span />}
+        {!isLast ? (
+          <Button type="button" className="sq-next" onClick={onNext}>Câu sau<ChevronRight aria-hidden="true" /></Button>
+        ) : nextPartPath ? (
           <Link className="sq-next-part" to={nextPartPath}>Sang phần tiếp theo<ChevronRight aria-hidden="true" size={16} /></Link>
-        </nav>
-      )}
+        ) : (
+          <Button type="button" className="sq-finish" onClick={onFinish}><Check aria-hidden="true" />Hoàn thành</Button>
+        )}
+      </nav>
     </section>
   )
 }

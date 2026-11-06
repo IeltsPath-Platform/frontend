@@ -1,0 +1,48 @@
+/* The waiting screen of a Speaking result: a plain card with a four-stage tracker. Flat, no glow. */
+
+.sw { --sw-accent: #123ab5; --sw-soft: #eef3ff; display: grid; justify-items: center; gap: 0.9rem; max-width: 44rem; margin: 1.5rem auto; padding: 2rem 1.5rem 1.4rem; border: 1px solid #e3e7ef; border-radius: 12px; background: #ffffff; text-align: center; }
+.sw--retry { --sw-accent: #d95f0e; --sw-soft: #fff0e6; }
+.sw { width: min(44rem, 100%); box-sizing: border-box; }
+/* The result page left-aligns its text; this card is centred on purpose. */
+.sres-main .sw,
+.sres-main .sw h2,
+.sres-main .sw p { text-align: center; }
+.sres-main .sw .sw__foot { text-align: left; }
+.sw h2 { margin: 0; font-size: 1.4rem; font-weight: 700; }
+.sw__hint { max-width: 30rem; margin: 0; color: #5b6475; font-size: 0.95rem; line-height: 1.55; }
+
+/* A waveform that moves while the work goes on. */
+.sw__wave { display: flex; align-items: center; justify-content: center; gap: 0.3rem; height: 3rem; }
+.sw__wave i { display: block; width: 0.35rem; height: 100%; border-radius: 999px; background: var(--sw-accent); transform: scaleY(0.25); animation: sw-wave 1.1s ease-in-out infinite; }
+
+.sw__steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.4rem; width: 100%; margin: 0.4rem 0 0; padding: 0; list-style: none; }
+.sw__step { position: relative; display: grid; justify-items: center; gap: 0.4rem; color: #8a93a4; font-size: 0.82rem; font-weight: 600; }
+.sw__step::before { content: ""; position: absolute; inset-block-start: 1.1rem; inset-inline: calc(-50% + 1.4rem) calc(50% + 1.4rem); height: 2px; background: #e3e7ef; }
+.sw__step:first-child::before { display: none; }
+.sw__step--done::before,
+.sw__step--now::before { background: var(--sw-accent); }
+.sw__dot { position: relative; display: grid; place-items: center; width: 2.2rem; height: 2.2rem; border: 2px solid #e3e7ef; border-radius: 50%; background: #ffffff; font-size: 0.85rem; font-weight: 600; }
+.sw__step--done { color: #15803d; }
+.sw__step--done .sw__dot { border-color: #3fa564; background: #3fa564; color: #ffffff; }
+.sw__step--now { color: var(--sw-accent); }
+.sw__step--now .sw__dot { border-color: var(--sw-accent); background: var(--sw-soft); color: var(--sw-accent); }
+.sw__label { line-height: 1.25; }
+
+.sw__meter { width: 100%; height: 0.4rem; border-radius: 999px; background: #e8ecf3; overflow: hidden; }
+.sw__meter u { display: block; height: 100%; border-radius: 999px; background: var(--sw-accent); text-decoration: none; transition: width 0.6s ease-out; }
+
+.sw__foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.3rem 1rem; width: 100%; margin: 0; color: #5b6475; font-size: 0.8rem; }
+.sw__foot span:first-child { font-weight: 600; font-variant-numeric: tabular-nums; }
+
+@media (max-width: 560px) {
+  .sw { padding: 1.4rem 1rem 1.1rem; }
+  .sw__label { font-size: 0.72rem; }
+  .sw__foot { justify-content: center; text-align: center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sw__wave i { animation: none; transform: scaleY(0.6); }
+  .sw__meter u { transition: none; }
+}
+
+@keyframes sw-wave { 0%, 100% { transform: scaleY(0.25); } 50% { transform: scaleY(1); } }

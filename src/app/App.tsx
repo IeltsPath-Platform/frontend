@@ -18,6 +18,8 @@ import { WritingWorkspacePage } from '@/features/practice/writing/WritingWorkspa
 import { WritingResultPage } from '@/features/practice/writing/WritingResultPage'
 import { ExaminerReviewsPage } from '@/features/practice/writing/ExaminerReviewsPage'
 import { GradingJobPage } from '@/features/practice/writing/GradingJobPage'
+import { SpeakingReviewPage } from '@/features/practice/speaking/SpeakingReviewPage'
+import { SpeakingSubmissionResultPage } from '@/features/practice/speaking/SpeakingSubmissionResultPage'
 import { SpeakingWorkspacePage } from '@/features/practice/speaking/SpeakingWorkspacePage'
 import { ReadingPracticePage } from '@/features/practice/reading/ReadingPracticePage'
 import { ReadingResultPage } from '@/features/practice/reading/ReadingResultPage'
@@ -173,6 +175,8 @@ function AppContent() {
         element={<RequireAuth><Navigate replace to="/practice-tests?skill=reading" /></RequireAuth>}
       />
       <Route path="/practice/speaking/tasks/:packageVersionId/:sectionId" element={<RequireAuth><SpeakingWorkspacePage /></RequireAuth>} />
+      <Route path="/practice/speaking/review/:packageVersionId" element={<RequireAuth><SpeakingReviewPage /></RequireAuth>} />
+      <Route path="/practice/speaking/submissions/:submissionId/result" element={<RequireAuth><SpeakingSubmissionResultPage /></RequireAuth>} />
       <Route path="/practice/speaking/:cueId" element={<Navigate replace to="/practice-tests?skill=speaking" />} />
       <Route path="/video-dictation" element={<RequireAuth><VideoDictationLibraryPage /></RequireAuth>} />
       <Route path="/video-dictation/:videoId" element={<RequireAuth><VideoDictationPlayerPage /></RequireAuth>} />
