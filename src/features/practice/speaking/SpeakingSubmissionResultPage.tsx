@@ -147,10 +147,6 @@ function Metrics({ view }: { view: SpeakingResultView }) {
       <ul>{view.weakWords.map((entry, index) => <li key={index}>{entry.word}</li>)}</ul></div>}
   </section>
 }
-function Alert({ title, children }: { title: string; children?: React.ReactNode }) {
-  return <p className="sres-alert" role="alert"><AlertTriangle size={16} aria-hidden="true" /><b>{title}</b>{children}</p>
-}
-
 /** AI marks are practice figures: said once, clearly, with the way to a teacher's marking. */
 function ReferenceNote({ lowQuality, onOpenPlans }: { lowQuality: boolean; onOpenPlans: () => void }) {
   return <aside className="sres-reference" role="note">
@@ -166,7 +162,13 @@ function ReferenceNote({ lowQuality, onOpenPlans }: { lowQuality: boolean; onOpe
 function Result({ view, onOpenPlans }: { view: SpeakingResultView; onOpenPlans: () => void }) {
   return <>
     <ReferenceNote lowQuality={view.transcriptWarning !== ''} onOpenPlans={onOpenPlans} />
-    {view.bandLimits.map((message, index) => <Alert key={index} title="Band đã được giới hạn.">{message}</Alert>)}
+    {view.bandLimits.length > 0 && <div className="sres-alert" role="alert">
+      <AlertTriangle size={16} aria-hidden="true" />
+      <div>
+        <b>Band bị giới hạn vì:</b>
+        <ul>{view.bandLimits.map((message, index) => <li key={index}>{message.replace(/ nên band bị giới hạn\.?$/, '').replace(/\.$/, '')}</li>)}</ul>
+      </div>
+    </div>}
     <div className="sres-dash">
       <BandCard view={view} />
       <CriteriaCard view={view} />
@@ -200,6 +202,20 @@ function Result({ view, onOpenPlans }: { view: SpeakingResultView; onOpenPlans: 
     </>}
   </>
 }
+/** The graded result with the plans and key dialogs it opens; the page and a lesson both show it. */
+export function SpeakingResultDetail({ view }: { view: SpeakingResultView }) {
+  const wallet = useWritingWallet()
+  const [plansOpen, setPlansOpen] = useState(false)
+  const [keyProduct, setKeyProduct] = useState<ActivationProduct | null>(null)
+  return <>
+    <Result view={view} onOpenPlans={() => setPlansOpen(true)} />
+    <PremiumPlansDialog open={plansOpen} onClose={() => setPlansOpen(false)}
+      onChoose={(product) => { setPlansOpen(false); setKeyProduct(product) }} />
+    <KeyActivationDialog product={keyProduct} isLoggedIn={wallet.isLoggedIn} client={wallet.client}
+      onClose={() => setKeyProduct(null)} onActivated={wallet.onActivated} returnFocus={() => undefined} />
+  </>
+}
+
 /** The page of a submission opened by its own address. */
 export function SpeakingSubmissionResultPage() {
   const { submissionId = '' } = useParams()
@@ -215,9 +231,6 @@ export function SpeakingResultScreen({ submissionId }: { submissionId: string })
   const status = submission?.status
   const view = status === 'GRADED' && submission?.result ? parseSpeakingResult(submission.result) : null
   const working = status !== undefined && WORKING.has(status)
-  const wallet = useWritingWallet()
-  const [plansOpen, setPlansOpen] = useState(false)
-  const [keyProduct, setKeyProduct] = useState<ActivationProduct | null>(null)
 
   return <div className="sres-page">
     <header className="sres-top">
@@ -237,12 +250,8 @@ export function SpeakingResultScreen({ submissionId }: { submissionId: string })
         <p>Bài này chưa được gửi đủ bản ghi nên đã dừng. Bạn có thể ghi âm và gửi lại.</p></Notice>}
       {error && <Notice tone="stop" icon={<AlertTriangle size={20} />} title="Có lỗi xảy ra"><p>{error}</p>
         <button type="button" onClick={retry}>Tải lại</button></Notice>}
-      {view && <Result view={view} onOpenPlans={() => setPlansOpen(true)} />}
+      {view && <SpeakingResultDetail view={view} />}
       <Link className="sres-back" to={CATALOG_PATH}>← Về danh mục Speaking</Link>
-      <PremiumPlansDialog open={plansOpen} onClose={() => setPlansOpen(false)}
-        onChoose={(product) => { setPlansOpen(false); setKeyProduct(product) }} />
-      <KeyActivationDialog product={keyProduct} isLoggedIn={wallet.isLoggedIn} client={wallet.client}
-        onClose={() => setKeyProduct(null)} onActivated={wallet.onActivated} returnFocus={() => undefined} />
     </main>
   </div>
 }

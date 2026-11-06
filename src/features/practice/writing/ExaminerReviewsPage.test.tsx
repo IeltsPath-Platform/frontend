@@ -34,8 +34,10 @@ function server({ pages, jobs = [] as unknown[], jobsFail = false }: { pages: un
   })
 }
 
-/** The rows of the table, without its header row. */
-const bodyRows = () => within(screen.getByRole('table')).getAllByRole('row').slice(1)
+const LIST_NAME = 'Bài đã gửi giáo viên'
+const listed = () => screen.findByRole('region', { name: LIST_NAME })
+/** The lines of the list, one per essay. */
+const bodyRows = () => within(screen.getByRole('region', { name: LIST_NAME })).getAllByRole('listitem')
 
 const show = () => render(<MemoryRouter initialEntries={['/writing-reviews']}><Routes>
   <Route path="/writing-reviews" element={<ExaminerReviewsPage />} />
@@ -51,7 +53,7 @@ describe('the list a "your essay was graded" notice opens', () => {
     server({ pages: [[item(1), item(2)]], jobs: [job(1), done(2, 6.5)] })
     show()
 
-    await screen.findByRole('table')
+    await listed()
     const rows = bodyRows()
     expect(rows).toHaveLength(2)
     expect(rows[0]).toHaveTextContent('Prompt number 2')
@@ -63,12 +65,15 @@ describe('the list a "your essay was graded" notice opens', () => {
     expect(within(rows[1]).getByRole('link', { name: 'Xem bài' })).toHaveAttribute('href', `/practice/writing/submissions/${id(1)}/result`)
   })
 
-  it('gives the whole picture in four figures: sent, graded, waiting and the average band', async () => {
-    server({ pages: [[item(1), item(2), item(3)]], jobs: [done(1, 6), done(2, 7), job(3)] })
+  it('leads to the home page with the house icon alone, without a back button or a catalogue step', async () => {
+    server({ pages: [[item(1)]], jobs: [job(1)] })
     show()
 
-    const figures = within(await screen.findByRole('list', { name: 'Tổng hợp' })).getAllByRole('listitem')
-    expect(figures.map((figure) => figure.textContent)).toEqual(['Bài đã gửi3', 'Đã chấm2', 'Đang chờ chấm1', 'Band trung bình6.5'])
+    await listed()
+    expect(screen.getByRole('link', { name: 'Trang chủ' })).toHaveAttribute('href', '/')
+    expect(screen.queryByRole('link', { name: /Quay lại/ })).not.toBeInTheDocument()
+    expect(screen.queryByText('Luyện tập Writing')).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'Bài giáo viên đã chấm' })).toBeInTheDocument()
   })
 
   it('opens an essay on the screen with the comments and the marked errors', async () => {
@@ -83,7 +88,7 @@ describe('the list a "your essay was graded" notice opens', () => {
   it('filters by graded and waiting, with the counts on the buttons', async () => {
     server({ pages: [[item(1), item(2), item(3)]], jobs: [done(1, 6), job(2), job(3, { state: 'OVERDUE' })] })
     show()
-    await screen.findByRole('table')
+    await listed()
 
     expect(screen.getByRole('button', { name: /^Tất cả\s*3$/ })).toHaveAttribute('aria-pressed', 'true')
     fireEvent.click(screen.getByRole('button', { name: /^Đã chấm\s*1$/ }))
@@ -96,7 +101,7 @@ describe('the list a "your essay was graded" notice opens', () => {
   it('loads older essays on request and adds them under the ones already shown', async () => {
     server({ pages: [[item(1)], [item(2)]], jobs: [done(1, 6), done(2, 7)] })
     show()
-    await screen.findByRole('table')
+    await listed()
 
     fireEvent.click(screen.getByRole('button', { name: /Xem thêm/ }))
 
@@ -111,7 +116,7 @@ describe('the list a "your essay was graded" notice opens', () => {
     show()
 
     expect(await screen.findByText('Bạn chưa gửi bài nào cho giáo viên')).toBeInTheDocument()
-    expect(screen.queryByRole('table')).not.toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: LIST_NAME })).not.toBeInTheDocument()
   })
 
   it('still lists the essays, as waiting, when the state of the jobs cannot be read', async () => {

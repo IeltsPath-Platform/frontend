@@ -1,5 +1,5 @@
 import {
-  completeSpeakingSubmission, createSpeakingSubmission, uploadSpeakingRecording,
+  completeSpeakingSubmission, createLessonSpeakingSubmission, createSpeakingSubmission, uploadSpeakingRecording,
 } from './speakingPracticeApi'
 import type { SpeakingSubmission } from './speakingPracticeApi'
 import type { SavedRecording } from './speakingSession'
@@ -50,8 +50,11 @@ export function maxSecondsFor(maxBytes: number): number {
  */
 export async function sendSpeakingSubmission(input: {
   requestId: string
-  packageVersionId: string
-  partSectionIds: string[]
+  /** A practice test of the catalog; leave out for the answer of a lesson's practice attempt (`attemptId`). */
+  packageVersionId?: string
+  partSectionIds?: string[]
+  /** The lesson's practice attempt the answer belongs to; its grade then counts toward mastery. */
+  attemptId?: string
   recordings: RecordingToSend[]
   maxRecordingBytes: number
   onProgress?: (progress: SendProgress) => void
@@ -63,9 +66,12 @@ export async function sendSpeakingSubmission(input: {
     }
   }
 
-  let submission = await createSpeakingSubmission({
-    requestId: input.requestId, packageVersionId: input.packageVersionId, partSectionIds: input.partSectionIds, consent: true,
-  })
+  let submission = input.attemptId
+    ? await createLessonSpeakingSubmission(input.attemptId, { requestId: input.requestId, consent: true })
+    : await createSpeakingSubmission({
+      requestId: input.requestId, packageVersionId: input.packageVersionId ?? '', partSectionIds: input.partSectionIds ?? [],
+      consent: true,
+    })
   const pending = submission.recordings.filter((recording) => !recording.uploaded)
   const total = submission.recordings.length
   let done = total - pending.length

@@ -35,13 +35,13 @@ export const PracticeModeModal: React.FC<PracticeModeModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open && !busy) onClose() }}>
-      <DialogContent className="practice-screen2-dialog practice-mode-dialog">
-        {/* Top White Header with Blue Title & Close */}
+      <DialogContent className="practice-screen2-dialog practice-mode-dialog practice-mode-selection-dialog">
+        {/* Blue header with white title and close control. */}
         <div className="screen2-top-header">
           <DialogTitle className="screen2-test-title">{card.title}</DialogTitle>
         </div>
 
-        {/* Deep Royal Blue Body */}
+        {/* White content area with light blue selection highlights. */}
         <div className="screen2-blue-body">
           <DialogDescription className="screen2-section-heading">Chọn giao diện làm bài</DialogDescription>
 

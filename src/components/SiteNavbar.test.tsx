@@ -65,6 +65,15 @@ describe('SiteNavbar navigation', () => {
     expect(screen.queryByRole('link', { name: 'Bài giáo viên chấm' })).not.toBeInTheDocument()
   })
 
+  it('lights "Lịch sử nộp bài" for a page that says it belongs there, whatever its own address', () => {
+    render(<MemoryRouter initialEntries={['/practice/writing/submissions/abc/result']}><SiteNavbar activePath="/submission-history" /></MemoryRouter>)
+    const main = screen.getByRole('navigation', { name: 'Điều hướng chính' })
+    expect(within(main).getByRole('link', { name: 'Trang chủ' })).toHaveClass('active')
+    expect(within(main).getByRole('link', { name: 'Luyện tập 4 kỹ năng' })).not.toHaveClass('active')
+    const history = within(screen.getByRole('navigation', { name: 'Trang chủ' })).getByRole('link', { name: 'Lịch sử nộp bài' })
+    expect(history).toHaveAttribute('aria-current', 'page')
+  })
+
   it('lists the review basket with the main links for a signed-in learner, lit on its own page only', () => {
     render(<MemoryRouter initialEntries={['/learn/review-basket']}><SiteNavbar /></MemoryRouter>)
     const main = screen.getByRole('navigation', { name: 'Điều hướng chính' })

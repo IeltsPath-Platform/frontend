@@ -453,177 +453,125 @@
   height: fit-content;
 }
 
-/* The same white logo as the site navigation, on the same blue, so the sidebar and the header read as one brand. */
-.sidebar-brand-header {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 1.5rem;
-  padding: 0.9rem 1rem;
-  border-radius: 0.9rem;
-  background: linear-gradient(135deg, var(--site-navy), var(--site-blue));
-}
-
-.sidebar-brand-logo {
-  display: block;
-  width: auto;
-  height: 2.6rem;
-}
-
 .sidebar-section-label {
-  font-size: 0.75rem;
+  margin: 0 0 0.75rem;
+  color: var(--site-blue);
+  font-size: 0.7rem;
   font-weight: 800;
-  color: #0f3bb8;
-  letter-spacing: 0.06em;
-  margin-bottom: 0.75rem;
-  display: block;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
-.skill-btn-primary {
+.sidebar-skill-list { display: grid; gap: 0.35rem; margin: 0; padding: 0; list-style: none; }
+.sidebar-skill-item { display: grid; min-width: 0; }
+
+.sidebar-skill-link {
+  display: grid;
+  grid-template-columns: 1.125rem minmax(0, 1fr) 1rem;
+  align-items: center;
+  gap: 0.7rem;
   width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.65rem 0.9rem;
-  border-radius: 10px;
-  background: #0e44cf;
-  color: white;
-  border: none;
-  font-size: 0.88rem;
-  cursor: pointer;
-  box-shadow: 0 4px 12px rgba(14, 68, 207, 0.25);
-  transition: all 0.15s ease;
-}
-
-.skill-btn-primary:hover {
-  background: #0c3bb8;
-}
-
-.sidebar-reading-tree {
-  margin-left: 0.85rem;
-  margin-top: 0.65rem;
-  padding-left: 0.85rem;
-  border-left: 1.5px solid #cbd5e1;
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-.tree-group-header {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  padding: 0.25rem 0;
-}
-
-.bullet-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #0e44cf;
-}
-
-.tree-radio-options {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  margin-left: 0.75rem;
-}
-
-.tree-radio-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.82rem;
-  color: #64748b;
-  cursor: pointer;
-  padding: 0.2rem 0;
-  transition: color 0.15s ease;
-}
-
-.tree-radio-item:hover,
-.tree-radio-item.active {
-  color: #0e44cf;
-  font-weight: 600;
-}
-
-.radio-circle {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  border: 1.5px solid #cbd5e1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.tree-radio-item.active .radio-circle {
-  border-color: #0e44cf;
-}
-
-.radio-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #0e44cf;
-}
-
-.tree-full-test {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.82rem;
-  color: #64748b;
-  cursor: pointer;
-  margin-top: 0.2rem;
-}
-
-.tree-full-test:hover,
-.tree-full-test.active {
-  color: #0e44cf;
-  font-weight: 600;
-}
-
-.tree-full-test.active .radio-circle {
-  border-color: #0e44cf;
-}
-
-.sidebar-other-skills {
-  margin-top: 0.65rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
-.skill-btn-normal {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.6rem 0.85rem;
+  min-height: 44px;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid transparent;
   border-radius: 10px;
   background: transparent;
-  color: #334155;
-  border: none;
-  font-size: 0.88rem;
-  font-weight: 500;
+  color: var(--site-text-dark);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-align: left;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color 160ms ease, color 160ms ease;
 }
 
-.skill-btn-normal:hover {
-  background: #f1f5f9;
-  color: #0f172a;
+.sidebar-skill-link:hover {
+  background: var(--classroom-soft);
+  color: var(--site-blue);
+}
+
+.sidebar-skill-link.active {
+  background: var(--site-blue);
+  color: var(--classroom-surface);
+}
+
+.sidebar-skill-link.active:hover { background: var(--site-blue-hover); }
+.sidebar-skill-link:focus-visible { outline: 2px solid var(--site-blue); outline-offset: 2px; }
+.sidebar-skill-indicator { justify-self: end; }
+
+/* The chevron turns over as the parts of the skill drop down. */
+.sidebar-skill-chevron { transition: transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.sidebar-skill-item.is-open .sidebar-skill-chevron { transform: rotate(180deg); }
+
+/* The parts of a skill unfold downwards: the row grows from 0 to its height, and the content fades in while it does. */
+.sidebar-skill-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows 260ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 200ms ease;
+}
+
+.sidebar-skill-item.is-open .sidebar-skill-panel { grid-template-rows: 1fr; opacity: 1; }
+
+/* A folded panel is hidden from the tab order and from screen readers once the fold has finished. */
+.sidebar-skill-panel__inner {
+  min-height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  transition: visibility 0s linear 260ms;
+}
+
+.sidebar-skill-item.is-open .sidebar-skill-panel__inner { visibility: visible; transition-delay: 0s; }
+
+.sidebar-part-options {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0.35rem 0 0.25rem 1.1rem;
+  padding: 0.15rem 0.2rem 0.15rem 0.6rem;
+  border-left: 2px solid var(--classroom-border);
+}
+
+.sidebar-part-option {
+  display: grid;
+  grid-template-columns: 1rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.65rem;
+  min-height: 44px;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--site-text-dark);
+  font-size: 0.825rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+
+.sidebar-part-option:hover { background: var(--classroom-soft); }
+.sidebar-part-option:has(input:checked) {
+  border-color: color-mix(in srgb, var(--site-blue) 24%, var(--classroom-surface));
+  background: var(--classroom-soft);
+  color: var(--site-blue);
+  font-weight: 700;
+}
+
+.sidebar-part-option input[type='radio'] {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  accent-color: var(--site-blue);
+  cursor: pointer;
 }
 
 .sidebar-resources-block {
-  margin-top: 1.5rem;
-  padding-top: 1.25rem;
-  border-top: 1px solid #f1f5f9;
+  margin-top: 1rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--classroom-border);
 }
 
 .sidebar-resources-header-btn {
   width: 100%;
+  min-height: 44px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -631,29 +579,50 @@
   border: none;
   cursor: pointer;
   padding: 0;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.35rem;
+  color: var(--site-blue);
 }
 
+.sidebar-resources-header-btn .sidebar-section-label { margin: 0; }
+.sidebar-filter-chevron { flex: none; transition: transform 160ms ease; }
+.sidebar-filter-chevron.is-open { transform: rotate(180deg); }
+
 .resources-checkboxes-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
+  display: grid;
+  gap: 0.25rem;
 }
 
 .checkbox-item {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  align-items: start;
+  gap: 0.65rem;
+  min-height: 44px;
+  padding: 0.55rem 0.6rem;
+  border: 1px solid transparent;
+  border-radius: 8px;
   font-size: 0.825rem;
-  color: #334155;
+  line-height: 1.5;
+  color: var(--site-text-dark);
   cursor: pointer;
 }
 
+.checkbox-item:hover { background: var(--classroom-soft); }
+.checkbox-item:has(input:checked) { background: var(--classroom-soft); color: var(--site-blue); }
+.sidebar-part-option:has(input:focus-visible),
+.checkbox-item:has(input:focus-visible) { outline: 2px solid var(--site-blue); outline-offset: 2px; }
+
 .checkbox-item input[type='checkbox'] {
-  accent-color: #0e44cf;
-  width: 15px;
-  height: 15px;
+  flex: none;
+  accent-color: var(--site-blue);
+  width: 1rem;
+  height: 1rem;
+  margin: 0.15rem 0 0;
   cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-skill-link, .sidebar-part-option, .sidebar-filter-chevron, .sidebar-skill-chevron, .sidebar-skill-panel,
+  .sidebar-skill-panel__inner { transition: none; }
 }
 
 .pro-badge-pill {
@@ -664,113 +633,6 @@
   padding: 1px 5px;
   border-radius: 4px;
   margin-left: 0.3rem;
-}
-
-/* ==========================================================================
-   4. COSMIC HERO BANNER (SCREEN 1)
-   ========================================================================== */
-.practice-cosmic-card {
-  position: relative;
-  background: linear-gradient(105deg, #092c94 0%, #1043cf 55%, #0b34a6 100%);
-  border-radius: 26px;
-  padding: 2.25rem 2.5rem;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  overflow: hidden;
-  box-shadow: 0 12px 35px rgba(16, 67, 207, 0.28);
-  margin-bottom: 1.75rem;
-}
-
-.cosmic-mascot-wrapper {
-  position: relative;
-  z-index: 2;
-  width: 145px;
-  height: 145px;
-  flex-shrink: 0;
-  animation: mascotHover 4s ease-in-out infinite;
-}
-
-@keyframes mascotHover {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-6px);
-  }
-}
-
-.cosmic-content {
-  position: relative;
-  z-index: 2;
-  max-width: 520px;
-  padding: 0 1rem;
-}
-
-.cosmic-title {
-  font-size: 1.75rem;
-  font-weight: 800;
-  line-height: 1.25;
-  margin-bottom: 0.45rem;
-  color: white;
-  letter-spacing: -0.01em;
-}
-
-.cosmic-subtitle {
-  font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.85);
-  margin-bottom: 1.25rem;
-  line-height: 1.5;
-}
-
-.cosmic-test-cta-btn {
-  background: var(--site-orange-gradient);
-  color: white;
-  border: none;
-  font-size: 0.9rem;
-  font-weight: 800;
-  padding: 0.65rem 1.6rem;
-  border-radius: 999px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  box-shadow: 0 4px 18px rgba(255, 113, 0, 0.45);
-  transition: all 0.2s ease;
-}
-
-.cosmic-test-cta-btn:hover {
-  transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 6px 22px rgba(255, 113, 0, 0.6);
-}
-
-.cosmic-saturn-wrapper {
-  position: relative;
-  z-index: 2;
-  width: 140px;
-  height: 110px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.saturn-planet-sphere {
-  width: 70px;
-  height: 70px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, #93c5fd 0%, #3b82f6 50%, #1e3a8a 100%);
-  box-shadow: 0 0 25px rgba(147, 197, 253, 0.5);
-}
-
-.saturn-planet-rings {
-  position: absolute;
-  width: 125px;
-  height: 32px;
-  border-radius: 50%;
-  border: 3.5px solid rgba(224, 238, 255, 0.85);
-  transform: rotate(-22deg);
-  pointer-events: none;
 }
 
 /* ==========================================================================
@@ -881,10 +743,8 @@
   border-color: #cbd5e1;
 }
 
-/* The photo and the part badge that overlaps its lower edge; the badge sits outside the photo's clipping box. */
 .card-media {
   position: relative;
-  padding-bottom: 1.1rem;
 }
 
 .card-image-box {
@@ -896,6 +756,7 @@
 }
 
 .card-photo {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -928,7 +789,7 @@
   animation: practice-skeleton-shimmer 1.4s ease-in-out infinite;
 }
 
-.practice-skeleton-pill { position: absolute; left: 0; bottom: 0; width: 5.6rem; height: 2.1rem; border-radius: 0 999px 999px 0; }
+.practice-skeleton-pill { position: absolute; top: 0; right: 0; width: 5.6rem; height: 1.9rem; border-radius: 0 0 0 14px; }
 .practice-skeleton-line { height: 0.9rem; border-radius: 6px; }
 
 @media (prefers-reduced-motion: reduce) {
@@ -944,26 +805,29 @@
   transform: scale(1.04);
 }
 
-/* Orange badge laid across the lower edge of the photo, flush with the left side of the card. */
+/* The part badge hangs from the top-right corner of the photo; the rounded corner of the card clips its outer corner. */
 .card-passage-pill {
   position: absolute;
-  left: 0;
-  bottom: 0;
-  padding: 0.4rem 1.1rem 0.4rem 1rem;
-  border-radius: 0 999px 999px 0;
-  background: linear-gradient(90deg, #f7931e, #fbb040);
-  box-shadow: 0 3px 8px rgba(247, 147, 30, 0.35);
-  color: #ffffff;
-  font-size: 0.95rem;
-  font-weight: 800;
+  top: 0;
+  right: 0;
+  max-width: 70%;
+  overflow: hidden;
+  padding: 0.45rem 0.9rem 0.5rem 1rem;
+  border-radius: 0 0 0 14px;
+  background: var(--site-blue);
+  color: var(--classroom-surface);
+  font-size: 0.75rem;
+  font-weight: 700;
   line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .card-body {
   display: flex;
   flex: 1;
   flex-direction: column;
-  padding: 0.5rem 1.1rem 1.1rem;
+  padding: 1rem;
   color: #1f2937;
 }
 
@@ -1093,40 +957,49 @@
 
 .screen2-mode-card {
   position: relative;
-  background: #ffffff;
+  background: var(--classroom-surface);
   border-radius: 16px;
   padding: 1.25rem;
-  color: #1e293b;
+  color: var(--site-navy);
   cursor: pointer;
   transition: all 0.2s ease;
-  border: 3px solid transparent;
+  border: 3px solid color-mix(in srgb, var(--site-blue) 18%, var(--classroom-surface));
   text-align: left;
 }
 
 .practice-mode-dialog { padding: 0; gap: 0; max-width: min(820px, calc(100vw - 2rem)); animation: none; }
 .practice-mode-dialog .screen2-top-header { padding-right: 3.5rem; }
+.practice-mode-selection-dialog { overflow-y: auto; }
+.practice-mode-selection-dialog .screen2-top-header { background: var(--site-blue); border-bottom-color: var(--site-blue); }
+.practice-mode-selection-dialog .screen2-test-title { color: var(--classroom-surface); }
+.practice-mode-selection-dialog .screen2-blue-body { background: var(--classroom-surface); color: var(--site-navy); }
+.practice-mode-selection-dialog .screen2-section-heading { color: var(--site-navy); }
+.practice-mode-selection-dialog > [data-slot="button"] { color: var(--classroom-surface); }
+.practice-mode-selection-dialog > [data-slot="button"]:hover { background: color-mix(in srgb, var(--classroom-surface) 15%, transparent); color: var(--classroom-surface); }
+.practice-mode-selection-dialog button:focus-visible { outline: 3px solid var(--site-blue); outline-offset: 3px; }
+.practice-mode-selection-dialog > [data-slot="button"]:focus-visible { outline-color: var(--classroom-surface); box-shadow: none; }
 
-.screen2-mode-card:hover {
+.screen2-mode-card:hover:not(:disabled) {
+  border-color: var(--site-blue);
   transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--site-navy) 12%, transparent);
 }
 
-/* The chosen mode is filled with a solid colour: the whole block changes, not just its border. */
+/* A light blue fill and blue border mark the selected mode. */
 .screen2-mode-card.selected {
-  background: #059669;
-  border-color: #059669;
-  color: #ffffff;
-  box-shadow: 0 8px 22px rgba(5, 150, 105, 0.45);
+  background: var(--classroom-soft);
+  border-color: var(--site-blue);
+  color: var(--site-navy-dark);
 }
 .screen2-mode-card.selected .mode-title {
-  color: #ffffff;
+  color: var(--site-navy-dark);
 }
 .screen2-mode-card.selected .mode-description {
-  color: rgba(255, 255, 255, 0.92);
+  color: var(--site-navy-dark);
 }
 .screen2-mode-card.selected .exam-similarity-badge {
-  background: #ffffff;
-  color: #047857;
+  background: var(--classroom-surface);
+  color: var(--site-blue);
 }
 .screen2-mode-card:disabled {
   opacity: 0.55;
@@ -1139,8 +1012,8 @@
   position: absolute;
   top: 1rem;
   right: 1rem;
-  background: #1d4ed8;
-  color: white;
+  background: var(--site-blue);
+  color: var(--classroom-surface);
   font-size: 0.68rem;
   font-weight: 800;
   padding: 2px 7px;
@@ -1229,13 +1102,13 @@
 .mode-title {
   font-size: 1.05rem;
   font-weight: 800;
-  color: #0f172a;
+  color: var(--site-navy);
   margin-bottom: 0.4rem;
 }
 
 .mode-description {
   font-size: 0.775rem;
-  color: #475569;
+  color: var(--site-navy);
   line-height: 1.45;
 }
 
@@ -1261,6 +1134,10 @@
   transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(255, 107, 0, 0.6);
 }
+
+.practice-mode-selection-dialog .screen2-start-cta { background: var(--site-blue); color: var(--classroom-surface); box-shadow: 0 4px 12px color-mix(in srgb, var(--site-blue) 12%, transparent); }
+.practice-mode-selection-dialog .screen2-start-cta:hover:not(:disabled) { background: var(--site-blue-hover); }
+.practice-mode-selection-dialog .screen2-start-cta:disabled { opacity: 0.55; cursor: wait; transform: none; box-shadow: none; }
 
 /* Speaking: the "are you ready?" box that opens before a part. */
 .speaking-ready-dialog { max-width: min(420px, calc(100vw - 2rem)); border-radius: 18px; overflow: hidden; }
@@ -1733,7 +1610,3 @@
   color: #94a3b8;
 }
 
-/* The dinosaur mascot sized to the banner height */
-.practice-cosmic-card .cosmic-mascot {
-  --mascot-size: 10rem;
-}

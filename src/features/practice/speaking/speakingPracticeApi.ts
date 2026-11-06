@@ -46,6 +46,16 @@ export function createSpeakingSubmission(input: { requestId: string; packageVers
   return apiRequest<SpeakingSubmission>(`${BASE}/submissions`, { method: 'POST', auth: true, body: input })
 }
 
+/**
+ * Opens the recorded answer of a lesson's practice attempt. Same checks as above, and the submission keeps the lesson and
+ * the attempt: its grade reaches mastery when the attempt is submitted. 409 when the attempt already has a graded answer.
+ */
+export function createLessonSpeakingSubmission(attemptId: string, input: { requestId: string; consent: boolean }) {
+  return apiRequest<SpeakingSubmission>(`/api/learning/practice-attempts/${attemptId}/speaking-submissions`, {
+    method: 'POST', auth: true, body: input,
+  })
+}
+
 export function uploadSpeakingRecording(submissionId: string, questionVersionId: string, wav: Blob, durationMs: number) {
   const form = new FormData()
   form.append('file', wav, 'answer.wav')

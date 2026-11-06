@@ -56,8 +56,21 @@ describe('the result of an essay sent to a teacher', () => {
     expect(within(waiting).queryByRole('button')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Kiểm tra lại/ })).not.toBeInTheDocument()
     expect(within(waiting).queryByRole('link', { name: 'Về danh mục Writing' })).not.toBeInTheDocument()
-    // The X leaves for the learner's list of essays sent to teachers, not the Writing catalogue.
-    expect(screen.getByRole('link', { name: 'Về danh sách bài giáo viên chấm' })).toHaveAttribute('href', '/writing-reviews')
+    // The trail leaves for the home page and for the learner's list of essays sent to teachers, with no back button.
+    expect(screen.getByRole('link', { name: 'Lịch sử nộp bài' })).toHaveAttribute('href', '/submission-history')
+    expect(screen.getByRole('link', { name: 'Trang chủ' })).toHaveAttribute('href', '/')
+    expect(screen.queryByRole('link', { name: /Quay lại/ })).not.toBeInTheDocument()
+  })
+
+  it('tells where the essay stands in three steps: sent, being graded, review ready', async () => {
+    server(() => json(pending))
+    show()
+
+    const steps = within(await screen.findByRole('region', { name: 'Đang chờ giáo viên chấm' })).getAllByRole('listitem')
+    expect(steps.map((step) => step.querySelector('strong')?.textContent)).toEqual(['Đã gửi bài', 'Giáo viên đang chấm', 'Có kết quả'])
+    expect(steps[1]).toHaveAttribute('aria-current', 'step')
+    expect(screen.getByRole('region', { name: 'Bài viết' })).toBeInTheDocument()
+    expect(screen.getByText(`${ESSAY.split(/\s+/).length} từ`)).toBeInTheDocument()
   })
 
   it('says the request was cancelled and the credit is back, keeps the essay, and does not keep asking the server', async () => {
@@ -112,7 +125,7 @@ describe('the result of an essay sent to a teacher', () => {
     expect(fixes).toHaveTextContent('Dạng của động từ')
     expect(fixes).toHaveTextContent('Cách sửa: Chia động từ theo thì và chủ ngữ.')
     expect(within(screen.getByRole('region', { name: 'Kết quả chấm bài' })).getByLabelText('Loại lỗi giáo viên ghi nhận')).toHaveTextContent('Dạng của động từ')
-    expect(screen.getByRole('link', { name: 'Xem tất cả bài giáo viên đã chấm' })).toHaveAttribute('href', '/writing-reviews')
+    expect(screen.getByRole('link', { name: 'Lịch sử nộp bài' })).toHaveAttribute('href', '/submission-history')
   })
 
   it('falls back to the code when the error types cannot be read, with no glossary', async () => {

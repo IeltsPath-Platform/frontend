@@ -154,3 +154,5 @@ Wordly hiển thị từ không tồn tại bằng popup giữa bảng tự ẩn
 ### P-43 practice
 
 `/practice-tests?skill=reading` uses the content catalog and assessment attempt APIs through the Gateway. Reading requires authenticated backend services and does not use `VITE_USE_MOCK_LEARNING`; saved responses, submissions, results, and Reading history are loaded from backend APIs. Listening and Writing keep their existing mock practice screens because the backend does not currently publish standalone P-43 practice content for those skills. Writing's Points balance and activation key dialog use the access-service APIs; essay grading remains unavailable for this standalone screen.
+
+The catalog menu groups skill navigation, part/full-test selection, and question-format filters. Part badges sit inside the cover images, aligned with the card titles. The placement banner is currently a static shortcut to `/learn/placement`; its visibility does not depend on placement completion.

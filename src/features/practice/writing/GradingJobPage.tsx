@@ -68,7 +68,7 @@ export function GradingJobPage() {
 
   return (
     <div className="wr-page">
-      <SiteNavbar />
+      <SiteNavbar activePath="/submission-history" />
       <main className="wr-main">
         <h1 className="wr-h2">{TITLES[job?.state ?? 'WAITING'] ?? TITLES.WAITING}</h1>
         {found.status === 'loading' && <LoadingState label="Đang tải bài chấm…" />}

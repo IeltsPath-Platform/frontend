@@ -14,7 +14,7 @@ export function WritingModeModal({ title, onClose, onConfirm }: {
 
   return (
     <Dialog open onOpenChange={(open) => { if (!open) onClose() }}>
-      <DialogContent className="practice-screen2-dialog practice-mode-dialog">
+      <DialogContent className="practice-screen2-dialog practice-mode-dialog practice-mode-selection-dialog">
         <div className="screen2-top-header">
           <DialogTitle className="screen2-test-title">{title}</DialogTitle>
         </div>

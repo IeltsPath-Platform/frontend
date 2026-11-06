@@ -1,25 +1,29 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { X } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { Ban, Check, Hourglass } from 'lucide-react'
 import { SiteNavbar } from '@/components/SiteNavbar'
+import { LearnTrail } from '@/features/learning-path/components/LearnTrail'
 import { ApiErrorState, LoadingState } from '@/features/learning-path/components/PageState'
 import { useApiResource } from '@/features/learning-path/lib/useApiResource'
 import { getExaminer, getHumanReview, readStudyPoints } from './examinerApi'
 import { errorTypesByCode, getApprovedErrorTypes } from './examinerReviewsApi'
 import type { LearnerErrorType } from './examinerReviewsApi'
 import type { HumanReview } from './examinerApi'
+import { dateTimeText } from './examinerReviewsView'
 import { TeacherCard } from './ExaminerList'
 import { findJobOfReview } from './gradingJobApi'
+import type { MyGradingJob } from './gradingJobApi'
 import { ExaminerStudyPoints } from './ExaminerStudyPoints'
 import { LateExaminerNotice } from './LateExaminerNotice'
 import { criterionName, markByOffsets, shownMarks } from './reviewMarks'
 import type { WritingSubmission } from './writingApi'
 import { loadResultContext } from './writingText'
+import '@/features/learning-path/learning-path.css'
 import '../reading/reading-workspace.css'
 import './writing-result.css'
 import './writing-examiner.css'
 
-const REVIEWS_PATH = '/writing-reviews'
+/** The menu item a graded essay belongs to, and the page the trail leads back to. */
+const HISTORY_PATH = '/submission-history'
 /** Time between checks while the teacher has not finished. */
 const POLL_MS = 60_000
 
@@ -173,42 +177,60 @@ function Done({ review, essay, types }: { review: HumanReview; essay: string; ty
     </div>
   )
 }
-/** The essay on its own, while the teacher has not graded it. */
+/** The essay on its own, while the teacher has not graded it, with its length beside the heading. */
 function EssayPlain({ essay }: { essay: string }) {
   const segments = useMemo(() => markByOffsets(essay, []), [essay])
+  const words = essay.trim() ? essay.trim().split(/\s+/).length : 0
   return (
-    <>
-      <h2 className="wr-h2">Bài viết của bạn</h2>
+    <div className="we-essay-block">
+      <div className="we-essay-head">
+        <h2>Bài viết của bạn</h2>
+        {words > 0 ? <span>{words} từ</span> : null}
+      </div>
       <EssayText segments={segments} />
-    </>
+    </div>
   )
 }
 
-/** The page checks again by itself every minute, and the X in the top bar leaves it, so there are no buttons here. */
-function Waiting({ essay }: { essay: string }) {
+/** One step of the way from sending the essay to reading the review. */
+function Step({ state, icon, title, note }: { state: 'done' | 'current' | 'next'; icon?: ReactNode; title: string; note?: string }) {
   return (
-    <div className="we-waiting">
-      <section className="wr-card" aria-label="Đang chờ giáo viên chấm">
-        <header><h2>Đang chờ giáo viên chấm</h2></header>
-        <p className="we-pill">Chưa có kết quả</p>
-        <p>Bài của bạn đã được gửi. Giáo viên có tối đa 48 giờ để chấm; kết quả sẽ hiện ở trang này khi giáo viên chấm xong. Bạn có thể đóng trang và quay lại sau.</p>
-      </section>
-      <EssayPlain essay={essay} />
-    </div>
+    <li aria-current={state === 'current' ? 'step' : undefined} className={`we-step is-${state}`}>
+      <span aria-hidden="true" className="we-step__dot">{icon}</span>
+      <div>
+        <strong>{title}</strong>
+        {note ? <small>{note}</small> : null}
+      </div>
+    </li>
+  )
+}
+
+/**
+ * Where the essay stands: sent, being graded (with the deadline when the job is known), review ready. The page checks again by
+ * itself every minute, so there are no buttons here.
+ */
+function Waiting({ job }: { job: MyGradingJob | null }) {
+  const overdue = job?.state === 'OVERDUE'
+  const deadline = dateTimeText(job?.deadline)
+  const graderNote = overdue ? 'Đã quá hạn 48 giờ' : deadline ? `Hạn chấm: ${deadline}` : 'Tối đa 48 giờ'
+  return (
+    <section className="we-status" aria-label="Đang chờ giáo viên chấm">
+      <ol className="we-steps">
+        <Step icon={<Check size={14} strokeWidth={3} />} note={dateTimeText(job?.requestedAt)} state="done" title="Đã gửi bài" />
+        <Step icon={<Hourglass size={13} />} note={graderNote} state="current" title="Giáo viên đang chấm" />
+        <Step note="Hiện ngay tại trang này" state="next" title="Có kết quả" />
+      </ol>
+    </section>
   )
 }
 
 /** The learner gave up a late request: nobody grades the essay, and the credit is back. */
-function Cancelled({ essay }: { essay: string }) {
+function Cancelled() {
   return (
-    <div className="we-waiting">
-      <section className="wr-card" aria-label="Đã hủy yêu cầu chấm bài">
-        <header><h2>Đã hủy yêu cầu chấm bài</h2></header>
-        <p className="we-pill">Không còn chấm</p>
-        <p>Bạn đã hủy yêu cầu này, giáo viên sẽ không chấm bài nữa. Lượt giáo viên chấm của bạn đã được hoàn lại, bạn có thể viết lại hoặc gửi bài này cho một giáo viên khác.</p>
-      </section>
-      <EssayPlain essay={essay} />
-    </div>
+    <section className="we-status" aria-label="Đã hủy yêu cầu chấm bài">
+      <p className="we-status__title"><Ban aria-hidden="true" size={16} />Đã hủy yêu cầu chấm bài</p>
+      <p className="we-status__text">Giáo viên sẽ không chấm bài này nữa. Lượt giáo viên chấm của bạn đã được hoàn lại, bạn có thể viết lại hoặc gửi bài này cho một giáo viên khác.</p>
+    </section>
   )
 }
 
@@ -241,18 +263,32 @@ export function ExaminerResult({ submission, submissionId }: { submission: Writi
   if (review.status === 'error' && review.error) return <ApiErrorState error={review.error} onRetry={reload} />
   const data = review.data
   if (!data) return null
+  const title = context?.title ?? 'Bài Writing'
+  const teacher = data.examinerId ? <TeacherCard examiner={profile.data} /> : null
   return (
-    <div className={`wr-page`}>
-      <SiteNavbar />
-      <header className="wr-top"><Link className="rw-exit" to={REVIEWS_PATH} aria-label="Về danh sách bài giáo viên chấm"><X size={16} aria-hidden="true" /></Link></header>
-      <main className={`wr-main`}>
-        <div className="we-headline">
-          <h1 className="wr-h2">{context?.title ?? 'Bài Writing'}: giáo viên chấm</h1>
-          {done && <Link className="we-all-reviews" to={REVIEWS_PATH}>Xem tất cả bài giáo viên đã chấm</Link>}
-        </div>
-        {data.examinerId && <TeacherCard examiner={profile.data} />}
+    <div className="wr-page we-page lp-root">
+      <SiteNavbar activePath={HISTORY_PATH} />
+      <main className="wr-main we-detail">
+        <LearnTrail
+          items={[{ label: 'Trang chủ', to: '/', home: true }, { label: 'Lịch sử nộp bài', to: HISTORY_PATH }, { label: title }]}
+          showBack={false}
+        />
+        <h1 className="we-title">{title}</h1>
         {!done && !cancelled && job.data && <LateExaminerNotice job={job.data} examinerName={profile.data?.displayName} onChanged={refresh} />}
-        {done ? <Done review={data} essay={essay} types={types} /> : cancelled ? <Cancelled essay={essay} /> : <Waiting essay={essay} />}
+        {done ? (
+          <>
+            {teacher}
+            <Done review={data} essay={essay} types={types} />
+          </>
+        ) : (
+          <div className="we-pending-layout">
+            <EssayPlain essay={essay} />
+            <aside className="we-aside">
+              {teacher}
+              {cancelled ? <Cancelled /> : <Waiting job={job.data} />}
+            </aside>
+          </div>
+        )}
       </main>
     </div>
   )
