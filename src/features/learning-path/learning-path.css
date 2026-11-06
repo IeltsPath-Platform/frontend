@@ -177,6 +177,13 @@
   color: var(--lp-primary);
   background: var(--lp-soft);
 }
+.lp-trail__item a.lp-trail__home {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+}
 .lp-trail__item.is-current span {
   padding: .35rem .3rem;
   color: var(--lp-ink);
@@ -4635,3 +4642,17 @@ a.lp-step__row:hover {
   background: var(--lp-primary);
   border-radius: 999px;
 }
+
+/* The recorded answer of a lesson's practice set: no frame of its own, the recorder is the only card inside the page. */
+.lp-rec { display: grid; gap: 1.1rem; }
+.lp-rec__eyebrow { display: flex; align-items: center; gap: .4rem; margin: 0; }
+.lp-rec__item { display: grid; gap: .6rem; }
+.lp-rec__prompt { margin: 0; font-size: clamp(1.1rem, 1.8vw, 1.35rem); font-weight: 700; line-height: 1.45; letter-spacing: -.01em; text-wrap: pretty; }
+.lp-rec__meta { display: inline-flex; align-items: center; gap: .35rem; justify-self: start; margin: 0; padding: .2rem .65rem; border-radius: 999px; background: var(--lp-soft, #f1f5f9); color: var(--lp-muted, #64748b); font-size: .8rem; font-weight: 600; }
+.lp-rec__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.lp-rec__result { display: grid; gap: 12px; }
+.lp-rec__band { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0; font-size: 1rem; }
+.lp-rec__link { color: inherit; text-decoration: underline; background: none; border: 0; padding: 0; cursor: pointer; font: inherit; }
+/* The Speaking result shown inside the lesson: the page chrome of the result screen is dropped, its cards stay. */
+.sres-page.sres-embedded { min-height: 0; background: transparent; }
+.sres-page.sres-embedded .sres-main { max-width: none; padding: 0; }

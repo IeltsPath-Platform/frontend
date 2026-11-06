@@ -57,6 +57,12 @@ function renderChartEssay(essayToRender: PracticeEssay = chartEssay) {
   render(<PracticeEssays attemptId="attempt-1" essays={[essayToRender]} finished={false} onExit={vi.fn()} onFinish={vi.fn()} />)
 }
 
+/** "Nộp để chấm" asks who grades the essay; these tests pick the AI. */
+async function sendToAi() {
+  await userEvent.click(screen.getByRole('button', { name: 'Nộp để chấm' }))
+  await userEvent.click(await screen.findByRole('button', { name: /Chấm bằng AI/ }))
+}
+
 describe('PracticeEssays', () => {
   beforeEach(() => {
     submitPracticeEssay.mockReset()
@@ -76,7 +82,7 @@ describe('PracticeEssays', () => {
     const onPractise = vi.fn().mockResolvedValue(undefined)
     renderEssays(undefined, onPractise)
     fireEvent.change(screen.getByRole('textbox', { name: 'Introduction' }), { target: { value: 'This essay has enough words now.' } })
-    await userEvent.click(screen.getByRole('button', { name: 'Nộp để chấm' }))
+    await sendToAi()
 
     const section = await screen.findByRole('region', { name: 'Kiến thức cần học' })
     expect(section.closest('aside')).toHaveAttribute('aria-label', 'Từ điển và kết quả chấm')
@@ -96,7 +102,7 @@ describe('PracticeEssays', () => {
     }] })
     renderEssays()
     fireEvent.change(screen.getByRole('textbox', { name: 'Introduction' }), { target: { value: 'This essay has enough words now.' } })
-    await userEvent.click(screen.getByRole('button', { name: 'Nộp để chấm' }))
+    await sendToAi()
 
     const list = await screen.findByRole('list', { name: 'Kiến thức con của Coherence & Cohesion' })
     expect(within(list).getByText('Đạt')).toBeInTheDocument()
@@ -112,7 +118,7 @@ describe('PracticeEssays', () => {
     submitPracticeEssay.mockResolvedValue(grade)
     renderEssays()
     fireEvent.change(screen.getByRole('textbox', { name: 'Introduction' }), { target: { value: 'This essay has enough words now.' } })
-    await userEvent.click(screen.getByRole('button', { name: 'Nộp để chấm' }))
+    await sendToAi()
     await screen.findByText(grade.summary!)
     expect(screen.queryByRole('list', { name: /Kiến thức con của/ })).not.toBeInTheDocument()
   })
@@ -121,7 +127,7 @@ describe('PracticeEssays', () => {
     submitPracticeEssay.mockResolvedValue(grade)
     renderEssays()
     fireEvent.change(screen.getByRole('textbox', { name: 'Introduction' }), { target: { value: 'This essay has enough words now.' } })
-    await userEvent.click(screen.getByRole('button', { name: 'Nộp để chấm' }))
+    await sendToAi()
     expect(await screen.findByText(grade.summary!)).toBeVisible()
     expect(screen.queryByRole('heading', { name: 'Kiến thức cần học' })).not.toBeInTheDocument()
   })
@@ -312,7 +318,7 @@ describe('PracticeEssays', () => {
     await userEvent.type(screen.getByRole('textbox', { name: 'Introduction' }), 'Free tuition helps many students study')
     expect(screen.getByRole('button', { name: 'Hoàn thành bộ luyện tập' })).toBeDisabled()
 
-    await userEvent.click(screen.getByRole('button', { name: 'Nộp để chấm' }))
+    await sendToAi()
 
     expect(submitPracticeEssay).toHaveBeenCalledWith('attempt-1', 'essay-1', expect.objectContaining({
       essayText: 'Free tuition helps many students study',
@@ -343,7 +349,7 @@ describe('PracticeEssays', () => {
     const field = screen.getByRole('textbox', { name: 'Introduction' })
     const card = field.closest('section')
 
-    await userEvent.click(screen.getByRole('button', { name: 'Nộp để chấm' }))
+    await sendToAi()
     await screen.findByText('Đạt')
 
     // The essay stays in the same card and field; the result opens beside it.
@@ -364,7 +370,7 @@ describe('PracticeEssays', () => {
     submitPracticeEssay.mockRejectedValue(new ApiError(503, 'GRADING_UNAVAILABLE', 'Grading is unavailable'))
     renderEssays()
     await userEvent.type(screen.getByRole('textbox', { name: 'Introduction' }), 'Free tuition helps many students study')
-    await userEvent.click(screen.getByRole('button', { name: 'Nộp để chấm' }))
+    await sendToAi()
 
     expect(await screen.findByRole('alert')).toHaveTextContent('chưa bị trừ điểm')
     expect(screen.getByRole('textbox', { name: 'Introduction' })).toHaveValue('Free tuition helps many students study')
@@ -376,9 +382,9 @@ describe('PracticeEssays', () => {
     submitPracticeEssay.mockRejectedValueOnce(new ApiError(503, 'GRADING_UNAVAILABLE', 'x')).mockResolvedValue(grade)
     renderEssays()
     await userEvent.type(screen.getByRole('textbox', { name: 'Introduction' }), 'Free tuition helps many students study')
-    await userEvent.click(screen.getByRole('button', { name: 'Nộp để chấm' }))
+    await sendToAi()
     await screen.findByRole('alert')
-    await userEvent.click(screen.getByRole('button', { name: 'Nộp để chấm' }))
+    await sendToAi()
     await screen.findByText('Đạt')
 
     const ids = submitPracticeEssay.mock.calls.map((call) => call[2].requestId)

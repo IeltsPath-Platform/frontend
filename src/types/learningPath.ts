@@ -292,6 +292,8 @@ export interface ReviewDetail {
   resumeLessonId: string | null
   /** False for an optional review; absent means required. */
   blocking?: boolean
+  /** What raised the review, e.g. WRITING_CRITERION, SPEAKING_CRITERION, ERROR_PATTERN; null when none is recorded. */
+  triggerKind?: string | null
   /** The mistake this review's set was picked to fix; absent when the learner has no repeated mistake on the point. */
   errorTrap?: ErrorHint
 }
@@ -398,6 +400,19 @@ export interface PracticeEssay {
   latest: { id: string; status: string; overallBand: number | null; passed: boolean | null } | null
 }
 
+/**
+ * An item of a Practice set answered by speaking. `latest` is the newest recorded answer of this attempt: its band and
+ * verdict show only once it is GRADED. The set is handed in once the answer is graded.
+ */
+export interface PracticeRecorded {
+  id: string
+  number: number
+  prompt: string
+  durationSeconds: number | null
+  passBand: number | null
+  latest: { id: string; status: string; overallBand: number | null; passed: boolean | null } | null
+}
+
 export interface PracticeAttemptView {
   attemptId: string
   packageId: string
@@ -407,6 +422,8 @@ export interface PracticeAttemptView {
   questions: Question[]
   /** Essays graded one by one by `submitPracticeEssay`; the set is handed in once each of them is graded. */
   essays: PracticeEssay[]
+  /** Items answered by a recording, graded by AI one by one; absent for a set without any. */
+  recorded?: PracticeRecorded[]
 }
 
 /** One criterion of a graded essay: TA (Task 1) or TR (Task 2), CC, LR and GRA, each with a band. */
@@ -644,7 +661,7 @@ export interface BasketOptionalItem {
   /** 0–1. */
   mastery: number
   dueAt: string | null
-  reason: 'CONSOLIDATE' | 'DUE' | 'WRITING_CRITERION' | 'ERROR_PATTERN' | 'PRACTICE'
+  reason: 'CONSOLIDATE' | 'DUE' | 'WRITING_CRITERION' | 'SPEAKING_CRITERION' | 'ERROR_PATTERN' | 'PRACTICE'
   /** False when Content has no set the learner has not seen, so the review cannot start. */
   hasUnrevealedSet: boolean
   /** Set when the learner already started an optional review of the point. */

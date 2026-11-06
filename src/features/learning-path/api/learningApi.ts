@@ -92,6 +92,14 @@ export interface LearningApi {
    * essay). The same `requestId` is graded and charged once.
    */
   submitPracticeEssay(attemptId: string, questionVersionId: string, request: PracticeEssayRequest): Promise<EssayGrade>
+  /**
+   * Sends one essay of a Practice set to the examiner the learner chose, instead of the AI (one Premium grading credit, no
+   * points). Resolves with the essay, status `AWAITING_EXAMINER`; the examiner's grade later counts toward mastery. Rejects
+   * with `HUMAN_GRADING_CREDIT_REQUIRED` (402), `EXAMINER_UNAVAILABLE`, `EXAMINER_REVIEW_PENDING` or `ESSAY_ALREADY_GRADED`.
+   * The same `requestId` continues the same essay.
+   */
+  submitPracticeEssayToExaminer(attemptId: string, questionVersionId: string,
+    request: PracticeEssayRequest & { examinerId: string }): Promise<{ submissionId: string; status: string }>
   /** The learner's knowledge tree for one course. Rejects with `COURSE_NOT_OPEN` or `COURSE_NOT_JOINED`. */
   getLearnerTree(courseId: string): Promise<LearnerTree>
   /**

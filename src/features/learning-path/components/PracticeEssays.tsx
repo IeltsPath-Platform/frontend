@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
-import { CheckCircle2, CircleAlert, ExternalLink, Loader2, X } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { CheckCircle2, CircleAlert, ExternalLink, Hourglass, Loader2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { boldRuns, countWords, essaySections, joinSections } from '@/features/practice/writing/writingText'
@@ -16,6 +17,7 @@ import { LoadingState } from './PageState'
 
 import { CRITERION_NAME, JUDGMENT_LABEL } from './essayCriteria'
 import { EssayStudyPoints } from './EssayStudyPoints'
+import { usePracticeEssayGradeChoice } from './usePracticeEssayGradeChoice'
 
 const TASK_LABEL: Record<string, string> = { TASK_1: 'Task 1', TASK_2: 'Task 2' }
 
@@ -39,6 +41,14 @@ const bandText = (band: number | null) => (band === null ? '–' : band.toFixed(
 function gradedBefore(essay: PracticeEssay) {
   return essay.latest?.status === 'GRADED'
 }
+
+/** An essay of the set that was sent to a teacher on an earlier visit and waits for their grade. */
+function sentBefore(essay: PracticeEssay) {
+  return essay.latest?.status === 'AWAITING_EXAMINER'
+}
+
+/** The page of an essay sent to a teacher: who grades it, and the review once it is done. */
+const examinerResultPath = (submissionId: string) => `/practice/writing/submissions/${submissionId}/result`
 
 /** Keep all submitted paragraphs, including any extra paragraphs in the final section. */
 function submittedParts(text: string, sectionCount: number): string[] {
@@ -69,6 +79,8 @@ interface PracticeEssaysProps {
  */
 export function PracticeEssays({ attemptId, essays, onFinish, finished, onExit, done, onPractise }: PracticeEssaysProps) {
   const [grades, setGrades] = useState<Record<string, EssayGrade>>({})
+  // Essays sent to a teacher in this visit, by question: their grade comes back later, straight into mastery.
+  const [sent, setSent] = useState<Record<string, string>>({})
   const [current, setCurrent] = useState(0)
   const [finishing, setFinishing] = useState(false)
   const [finishError, setFinishError] = useState<string | null>(null)
@@ -88,6 +100,8 @@ export function PracticeEssays({ attemptId, essays, onFinish, finished, onExit, 
 
   const allGraded = essays.every((essay) => grades[essay.id]?.status === 'GRADED' || gradedBefore(essay))
   const gradedCount = essays.filter((essay) => grades[essay.id]?.status === 'GRADED' || gradedBefore(essay)).length
+  // A set with an essay at a teacher's is not handed in here: the teacher's grade is what counts for that essay.
+  const withTeacher = essays.some((essay) => sent[essay.id] || sentBefore(essay))
 
   async function finish() {
     setFinishing(true)
@@ -117,7 +131,14 @@ export function PracticeEssays({ attemptId, essays, onFinish, finished, onExit, 
           </div>
         ) : null}
         <div className="lp-essay-ws__finish">
-          {finished ? done : (
+          {finished ? done : withTeacher ? (
+            <>
+              <p>Đã gửi giáo viên chấm. Kết quả được ghi vào tiến độ khi giáo viên chấm xong.</p>
+              <Button asChild className="lp-btn">
+                <Link to="/writing-reviews">Xem bài giáo viên chấm</Link>
+              </Button>
+            </>
+          ) : (
             <>
               <p>
                 {allGraded
@@ -150,6 +171,8 @@ export function PracticeEssays({ attemptId, essays, onFinish, finished, onExit, 
             locked={finished}
             onGrade={(grade) => setGrades((previous) => ({ ...previous, [essay.id]: grade }))}
             onPractise={onPractise}
+            onSent={(submissionId) => setSent((previous) => ({ ...previous, [essay.id]: submissionId }))}
+            sentId={sent[essay.id] ?? null}
             total={essays.length}
           />
         ))}
@@ -159,7 +182,7 @@ export function PracticeEssays({ attemptId, essays, onFinish, finished, onExit, 
   )
 }
 
-function EssayEditor({ active, attemptId, essay, grade, index, locked, onGrade, onPractise, total }: {
+function EssayEditor({ active, attemptId, essay, grade, index, locked, onGrade, onPractise, onSent, sentId, total }: {
   /** Only the essay in view is shown; the others keep what was written while they are out of view. */
   active: boolean
   attemptId: string
@@ -169,6 +192,9 @@ function EssayEditor({ active, attemptId, essay, grade, index, locked, onGrade, 
   locked: boolean
   onGrade: (grade: EssayGrade) => void
   onPractise?: (point: EssayStudyPoint) => Promise<void>
+  /** The essay went to a teacher in this visit. */
+  onSent: (submissionId: string) => void
+  sentId: string | null
   total: number
 }) {
   const sections = essaySections(essay.task)
@@ -184,11 +210,14 @@ function EssayEditor({ active, attemptId, essay, grade, index, locked, onGrade, 
   const [railChoice, setRailChoice] = useState<'lookup' | 'result' | null>(null)
   const railRef = useRef<HTMLElement>(null)
   const freshlyGraded = useRef(false)
-  const submissionId = !grade && gradedBefore(essay) ? essay.latest?.id : undefined
+  // An essay with a teacher: sent in this visit, or on an earlier one (then read back like a graded essay).
+  const waitingId = sentId ?? (!grade && sentBefore(essay) ? essay.latest?.id ?? null : null)
+  const waiting = waitingId !== null
+  const submissionId = !grade && !sentId && (gradedBefore(essay) || sentBefore(essay)) ? essay.latest?.id : undefined
   const saved = useApiResource(`practice-essay:${attemptId}:${essay.id}:${submissionId ?? ''}`, async () =>
     submissionId ? learningApi.getWritingSubmission(submissionId) : null)
-  const restored = saved.data?.status === 'GRADED' ? saved.data : null
-  const displayedGrade = grade ?? (restored ? mapEssayGrade(restored) : null)
+  const restored = saved.data?.status === 'GRADED' || saved.data?.status === 'AWAITING_EXAMINER' ? saved.data : null
+  const displayedGrade = grade ?? (restored?.status === 'GRADED' ? mapEssayGrade(restored) : null)
   const restoring = Boolean(submissionId)
   const visibleParagraphs = restoring ? submittedParts(restored?.essayText ?? '', sections.length) : paragraphs
   const missingText = restored !== null && !(restored.essayText ?? '').trim()
@@ -199,7 +228,7 @@ function EssayEditor({ active, attemptId, essay, grade, index, locked, onGrade, 
   const graded = displayedGrade?.status === 'GRADED'
   // The sample comes with the essay; the graded submission carries it too, for a server that sends it only then.
   const sample = (essay.sampleAnswer ?? displayedGrade?.sampleAnswer ?? '').trim() || null
-  const sampleDisabled = graded || gradedBefore(essay) || locked
+  const sampleDisabled = graded || gradedBefore(essay) || locked || waiting
   const showSample = !sampleDisabled && sampleOn && sample !== null
   const sampleParagraphs = (sample ?? '').split(/\n\s*\n/).map((paragraph) => paragraph.trim()).filter(Boolean)
   const sampleParts = sampleParagraphs.length === sections.length ? sampleParagraphs : [sample ?? '']
@@ -216,8 +245,18 @@ function EssayEditor({ active, attemptId, essay, grade, index, locked, onGrade, 
     }
   }, [graded])
 
+  const choice = usePracticeEssayGradeChoice({
+    attemptId,
+    questionVersionId: essay.id,
+    essayText: text,
+    words,
+    context: `${title} · Luyện tập bài học`,
+    onAi: () => void submit(),
+    onSent,
+  })
+
   async function submit() {
-    if (inFlight.current || graded || restoring || locked || text.trim() === '') return
+    if (inFlight.current || graded || restoring || locked || waiting || text.trim() === '') return
     inFlight.current = true
     setSubmitting(true)
     setError(null)
@@ -247,7 +286,7 @@ function EssayEditor({ active, attemptId, essay, grade, index, locked, onGrade, 
       <section className="lp-ws-card lp-essay-ws__write" aria-label="Khu vực viết bài">
         <header className="lp-ws-card__head lp-essay-editor__head">
           <div className="lp-essay-ws__title">
-            <strong>{graded ? 'Bài viết đã nộp' : 'Viết bài'}</strong>
+            <strong>{graded || waiting ? 'Bài viết đã nộp' : 'Viết bài'}</strong>
             {sample && !sampleDisabled ? (
               <label className="lp-essay-switch">
                 <Switch aria-label="Bài mẫu" checked={showSample} disabled={sampleDisabled} onCheckedChange={setSampleOn} />
@@ -278,7 +317,7 @@ function EssayEditor({ active, attemptId, essay, grade, index, locked, onGrade, 
                     onChange={(event) => setParagraphs((previous) => previous.map((paragraph, paragraphIndex) =>
                       paragraphIndex === partIndex ? event.target.value : paragraph))}
                     placeholder={`Viết phần ${section} của bạn ở đây…`}
-                    readOnly={showSample || graded || locked}
+                    readOnly={showSample || graded || locked || waiting}
                     spellCheck
                     value={showSample
                       ? boldRuns(sampleParts[partIndex] ?? '').map((run) => run.text).join('')
@@ -289,9 +328,18 @@ function EssayEditor({ active, attemptId, essay, grade, index, locked, onGrade, 
             </div>
           )}
         </div>
-        {restoring || (locked && !graded) ? null : (
+        {(restoring && !waiting) || (locked && !graded && !waiting) ? null : (
           <footer className="lp-ws-card__foot">
-            {graded ? (
+            {waitingId !== null ? (
+              <>
+                <p className="lp-essay__count lp-essay__count--done">
+                  <Hourglass aria-hidden="true" size={16} /> Đã gửi giáo viên chấm
+                </p>
+                <Button asChild className="lp-btn">
+                  <Link to={examinerResultPath(waitingId)}>Xem bài đã gửi</Link>
+                </Button>
+              </>
+            ) : graded ? (
               <p className="lp-essay__count lp-essay__count--done">
                 <CheckCircle2 aria-hidden="true" size={16} /> Đã nộp và chấm xong
               </p>
@@ -302,8 +350,8 @@ function EssayEditor({ active, attemptId, essay, grade, index, locked, onGrade, 
                 </p>
                 <Button
                   className="lp-btn lp-btn--accent"
-                  disabled={showSample || submitting || text.trim() === ''}
-                  onClick={() => void submit()}
+                  disabled={showSample || submitting || choice.checking || text.trim() === ''}
+                  onClick={choice.open}
                   type="button"
                 >
                   {submitting ? <Loader2 aria-hidden="true" className="lp-spin" /> : null}
@@ -347,6 +395,7 @@ function EssayEditor({ active, attemptId, essay, grade, index, locked, onGrade, 
           ) : null}
         </div>
       </aside>
+      {choice.dialogs}
     </article>
   )
 }
