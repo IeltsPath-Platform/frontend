@@ -60,7 +60,7 @@ function AccountMenu() {
       {open ? (
         <div className="adm-menu" role="menu">
           {isExaminer ? (
-            <Link className="adm-menu__item" onClick={() => setOpen(false)} role="menuitem" to="/admin/examiner/profile">
+            <Link className="adm-menu__item" onClick={() => setOpen(false)} role="menuitem" to="/examiner/profile">
               <UserRound aria-hidden="true" size={16} />
               Sửa hồ sơ
             </Link>
@@ -81,15 +81,19 @@ function AccountMenu() {
 
 export function AdminTopbar() {
   const { query, setQuery } = useAdminSearch()
-  const isAuthorArea = useLocation().pathname.startsWith('/content-author')
+  const { pathname } = useLocation()
+  const isAuthorArea = pathname === '/content-author' || pathname.startsWith('/content-author/')
+  const isExaminerArea = pathname === '/examiner' || pathname.startsWith('/examiner/')
+  const home = isAuthorArea ? '/content-author' : isExaminerArea ? '/examiner' : '/admin'
+  const homeLabel = isAuthorArea ? 'Trang chủ biên soạn nội dung' : isExaminerArea ? 'Trang chủ giám khảo' : 'Trang chủ quản trị'
   // An examiner is reminded here when a job will be late soon.
   const isExaminer = hasAnyRole(useAuthSession().roles, ['EXAMINER'])
   return (
     <header className="adm-topbar">
-      <Link aria-label={isAuthorArea ? 'Trang chủ biên soạn nội dung' : 'Trang chủ quản trị'} className="adm-brand" to={isAuthorArea ? '/content-author' : '/admin'}>
+      <Link aria-label={homeLabel} className="adm-brand" to={home}>
         <img alt="The English Space" className="adm-brand__logo" height={74} src={brandLogo} width={175} />
         <span aria-hidden="true" className="adm-brand__divider" />
-        <span className="adm-brand__label">{isAuthorArea ? 'BIÊN SOẠN' : 'QUẢN TRỊ'}</span>
+        <span className="adm-brand__label">{isAuthorArea ? 'BIÊN SOẠN' : isExaminerArea ? 'CHẤM BÀI' : 'QUẢN TRỊ'}</span>
       </Link>
       <label className="adm-search">
         <Search aria-hidden="true" size={16} />

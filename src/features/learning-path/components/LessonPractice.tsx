@@ -19,6 +19,7 @@ import { ExerciseBlock } from './blocks/ExerciseBlock'
 import { PassageBlock } from './blocks/PassageBlock'
 import { PracticeAttemptReview } from './PracticeAttemptReview'
 import { PracticeEssays } from './PracticeEssays'
+import { PracticeSpeaking } from './PracticeSpeaking'
 import { PracticeReviewNotice } from './PracticeReviewNotice'
 import { HeartsPanel } from './HeartsPanel'
 import { ApiErrorState, LoadingState } from './PageState'
@@ -167,7 +168,32 @@ function PracticeView({ catalog, hearts, onHeartsChanged, onReload, reviewOrigin
     const hasEssays = active.attempt.essays.length > 0
     // A set of essays only has no questions to answer: it is handed in once every essay is graded.
     const essayOnly = hasEssays && active.attempt.questions.length === 0
+    const recordedItems = active.attempt.recorded ?? []
+    const hasRecorded = recordedItems.length > 0
+    // A set of recorded answers only has nothing to choose: it is handed in once the answer is graded.
+    const recordedOnly = hasRecorded && !hasEssays && active.attempt.questions.length === 0
     const backToList = () => { setActive(null); setSubmission(null); onReload() }
+    const speaking = hasRecorded ? (
+      <PracticeSpeaking
+        attemptId={active.attempt.attemptId}
+        done={submission ? (
+          <>
+            <p role="status">
+              {submission.passed
+                ? 'Bài nói đạt. Bộ luyện tập đã được ghi nhận.'
+                : 'Bài nói chưa đạt, nhưng bộ này vẫn được tính là đã làm.'}
+            </p>
+            <Button className="lp-btn lp-btn--accent" onClick={backToList} type="button">
+              Về danh sách luyện tập
+            </Button>
+          </>
+        ) : null}
+        finished={Boolean(submission)}
+                onFinish={async () => { await submit([]) }}
+        recorded={recordedItems}
+        title={active.item.title}
+      />
+    ) : null
     const essays = hasEssays ? (
       <PracticeEssays
         attemptId={active.attempt.attemptId}
@@ -191,8 +217,15 @@ function PracticeView({ catalog, hearts, onHeartsChanged, onReload, reviewOrigin
       />
     ) : null
     return (
-      <section className="lp-practice" aria-labelledby="lp-practice-attempt-title">
+      <section className="lp-practice" aria-label={recordedOnly ? active.item.title : undefined}
+        aria-labelledby={recordedOnly ? undefined : 'lp-practice-attempt-title'}>
         <StudyActivityTracker sourceType="PRACTICE" sourceId={active.attempt.attemptId} enabled={!submission} />
+        {recordedOnly ? (
+          // The lesson's own title is already on the page, and the prompt is the heading of the answer.
+          active.item.revealed ? <p className="lp-hint lp-hint--warn" role="status">
+              <AlertTriangle aria-hidden="true" size={16} /> Bộ này đã lộ đáp án trước đó nên lần nộp này không được tính.
+            </p> : null
+        ) : (
         <header className="lp-lesson-head lp-practice-attempt-head">
           <p className="lp-eyebrow">Luyện thêm · {active.item.code}</p>
           <h2 id="lp-practice-attempt-title">{active.item.title}</h2>
@@ -202,9 +235,11 @@ function PracticeView({ catalog, hearts, onHeartsChanged, onReload, reviewOrigin
             </p>
           ) : null}
         </header>
-        {essayOnly ? (
+        )}
+        {essayOnly || recordedOnly ? (
           <>
             {essays}
+            {speaking}
             <RewardSummary gamification={submission?.gamification ?? null} />
           </>
         ) : (
@@ -218,6 +253,7 @@ function PracticeView({ catalog, hearts, onHeartsChanged, onReload, reviewOrigin
           <div className="lp-split__work">
             {hearts?.hearts === 0 ? <HeartsPanel onChanged={onHeartsChanged} status={hearts} /> : null}
             {essays}
+            {speaking}
             <ExerciseBlock
               allowResubmit={false}
               block={toExerciseBlock(active)}

@@ -25,7 +25,7 @@ describe('NotificationBell pop-up', () => {
 
     const toast = screen.getByTestId('notification-toast')
     expect(toast).toHaveTextContent('Có bài mới chờ bạn chấm')
-    expect(screen.getByRole('link', { name: /Có bài mới chờ bạn chấm/ })).toHaveAttribute('href', '/admin/grading/writing')
+    expect(screen.getByRole('link', { name: /Có bài mới chờ bạn chấm/ })).toHaveAttribute('href', '/examiner/grading/writing')
   })
 
   it('shows nothing when no notification just arrived', () => {

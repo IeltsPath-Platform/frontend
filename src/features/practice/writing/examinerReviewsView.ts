@@ -40,13 +40,6 @@ export const countReviews = (rows: readonly ReviewRow[]) => ({
   WAITING: rows.filter(isWaiting).length,
 })
 
-/** The mean of the bands the teacher gave, to the nearest half band as IELTS rounds; null while nothing is graded. */
-export function averageBand(rows: readonly ReviewRow[]): number | null {
-  const bands = rows.flatMap((row) => (row.band === null ? [] : [row.band]))
-  if (bands.length === 0) return null
-  return Math.round((bands.reduce((sum, band) => sum + band, 0) / bands.length) * 2) / 2
-}
-
 const SOURCE_TEXT: Record<string, string> = {
   FREE_WRITING: 'Luyện viết tự do',
   PRACTICE_ITEM: 'Luyện tập',
@@ -60,4 +53,12 @@ export const taskText = (task: string | null | undefined) => (task === 'TASK_1' 
 export function dateText(iso: string | null | undefined) {
   const date = iso ? new Date(iso) : null
   return date && !Number.isNaN(date.getTime()) ? date.toLocaleDateString('vi-VN') : ''
+}
+
+/** Date and time to the minute, e.g. "21:30, 6/11/2026"; empty when there is no valid moment. */
+export function dateTimeText(iso: string | null | undefined) {
+  const date = iso ? new Date(iso) : null
+  if (!date || Number.isNaN(date.getTime())) return ''
+  const time = date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })
+  return `${time}, ${date.toLocaleDateString('vi-VN')}`
 }

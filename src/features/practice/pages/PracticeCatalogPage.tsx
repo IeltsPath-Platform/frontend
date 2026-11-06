@@ -5,7 +5,6 @@ import { HttpError } from '@/lib/httpClient'
 import type { PracticeCard, PracticeMode, SkillType } from '@/types/practice'
 import { PracticeNavbar } from '../components/PracticeNavbar'
 import { PracticeSidebar } from '../components/PracticeSidebar'
-import { PracticeCosmicBanner } from '../components/PracticeCosmicBanner'
 import { PracticeTestCard } from '../components/PracticeTestCard'
 import { PracticeCardSkeleton } from '../components/PracticeCardSkeleton'
 import { preloadImages } from '../lib/preloadImages'
@@ -302,8 +301,6 @@ function PracticeCatalog({ skill, onOpenTest }: PracticeCatalogPageProps & { ski
           />
 
           <main className="practice-catalog-main">
-            <PracticeCosmicBanner onStartTest={() => navigate('/learn/placement')} />
-
             <div className="practice-controls-row">
               <div className="practice-segmented-tabs" role="tablist" aria-label="Trạng thái bài luyện">
                 <button

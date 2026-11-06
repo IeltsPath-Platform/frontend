@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { averageBand, countReviews, dateText, joinReviews, sourceText, taskText, viewReviews } from './examinerReviewsView'
+import { countReviews, dateText, dateTimeText, joinReviews, sourceText, taskText, viewReviews } from './examinerReviewsView'
 import type { ExaminerReviewItem } from './examinerReviewsApi'
 import type { MyGradingJob } from './gradingJobApi'
 
@@ -50,15 +50,6 @@ describe('the learner list of essays sent to a teacher', () => {
     expect(viewReviews(rows, 'ALL').map((row) => row.submissionId)).toEqual([id(2), id(1), id(3)])
     expect(viewReviews(rows, 'WAITING')).toEqual([])
     expect(countReviews(rows)).toEqual({ ALL: 3, DONE: 2, WAITING: 0 })
-    expect(averageBand(rows)).toBe(7)
-  })
-
-  it('averages the teacher bands to the nearest half band, and has no average while nothing is graded', () => {
-    const rows = joinReviews(items, jobs)
-
-    expect(averageBand(rows)).toBe(7)
-    expect(averageBand(joinReviews(items, [job(1, { state: 'COMPLETED', band: 6, completedAt: '2026-10-21T01:00:00Z' }), job(2, { state: 'COMPLETED', band: 6.5, completedAt: '2026-10-21T01:00:00Z' })]))).toBe(6.5)
-    expect(averageBand(joinReviews(items, []))).toBeNull()
   })
 
   it('names the task and the source in the learner words', () => {
@@ -68,5 +59,11 @@ describe('the learner list of essays sent to a teacher', () => {
     expect(sourceText('LESSON_BLOCK')).toBe('Bài học')
     expect(sourceText(undefined)).toBe('Bài viết')
     expect(dateText('not a date')).toBe('')
+  })
+
+  it('writes a moment as time then date, and nothing for a moment that is missing or invalid', () => {
+    expect(dateTimeText('2026-11-05T15:30:00')).toBe('15:30, 5/11/2026')
+    expect(dateTimeText(null)).toBe('')
+    expect(dateTimeText('not a date')).toBe('')
   })
 })

@@ -119,6 +119,9 @@ export function createMockLearningApi({ storage = null, latencyMs = 0, now = () 
     submitPracticeEssay: async () => {
       throw new ApiError(404, 'NOT_FOUND', 'Mock learning không có bài viết luyện thêm.')
     },
+    submitPracticeEssayToExaminer: async () => {
+      throw new ApiError(404, 'NOT_FOUND', 'Mock learning không có bài viết luyện thêm.')
+    },
     getReview: (reviewId) => respond((s) => lessons.getReview(s, reviewId)),
     submitReview: (reviewId, request) => idempotent(request.requestId, (s) => lessons.submitReview(s, reviewId, request)),
     submitTheoryCheck: async (reviewId) => ({

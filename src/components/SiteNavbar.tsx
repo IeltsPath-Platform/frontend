@@ -104,12 +104,19 @@ export interface SiteNavbarProps {
   /** Optional visual override for embeds and component previews. App routes use the backend auth session. */
   isLoggedIn?: boolean
   userName?: string
+  /**
+   * The route this page belongs to in the menu, when its own address says nothing about it: the page of a graded essay lives
+   * under "Lịch sử nộp bài", so it lights that item instead of none.
+   */
+  activePath?: string
 }
 
-export function SiteNavbar({ isLoggedIn, userName }: SiteNavbarProps) {
+export function SiteNavbar({ isLoggedIn, userName, activePath }: SiteNavbarProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [loggingOut, setLoggingOut] = useState(false)
-  const { pathname, search } = useLocation()
+  const location = useLocation()
+  const pathname = activePath ?? location.pathname
+  const search = activePath ? '' : location.search
   const loginMatch = useMatch('/login')
   const registerMatch = useMatch('/register')
   const navigate = useNavigate()

@@ -36,6 +36,7 @@ function renderAt(url: string) {
     <MemoryRouter initialEntries={[url]}>
       <Routes>
         <Route element={<AdminRoutes />} path="/admin/*" />
+        <Route element={<AdminRoutes area="examiner" />} path="/examiner/*" />
         <Route element={<AdminRoutes area="content-author" />} path="/content-author/*" />
       </Routes>
       <LocationProbe />
@@ -49,6 +50,62 @@ function session(roles: string[]) {
 
 describe('AdminRoutes', () => {
   beforeEach(() => vi.clearAllMocks())
+
+  it('opens the examiner dashboard directly at the examiner workspace root', () => {
+    auth.mockReturnValue(session(['EXAMINER']))
+    renderAt('/examiner')
+    expect(screen.getByRole('heading', { name: 'Tổng quan chấm bài' })).toBeInTheDocument()
+    expect(screen.getByTestId('location')).toHaveTextContent(/^\/examiner$/)
+    expect(screen.getByRole('link', { name: 'Trang chủ giám khảo' })).toHaveAttribute('href', '/examiner')
+    expect(screen.getByText('CHẤM BÀI')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Tổng quan chấm bài' })).toHaveAttribute('aria-current', 'page')
+  })
+
+  it.each([
+    ['/admin/examiner?period=week#summary', '/examiner?period=week#summary', 'Tổng quan chấm bài'],
+    ['/admin/examiner/profile?from=dashboard#bio', '/examiner/profile?from=dashboard#bio', 'Hồ sơ của tôi'],
+    ['/admin/grading/speaking?tab=queued#queue', '/examiner/grading/speaking?tab=queued#queue', 'Chấm Speaking'],
+    ['/admin/knowledge-graph?course=one#tree', '/examiner/knowledge-graph?course=one#tree', 'Cây tri thức'],
+  ])('forwards the examiner legacy URL %s to its matching workspace page', (legacy, canonical, heading) => {
+    auth.mockReturnValue(session(['EXAMINER']))
+    renderAt(legacy)
+    expect(screen.getByTestId('location').textContent).toBe(canonical)
+    expect(screen.getByRole('heading', { name: heading })).toBeInTheDocument()
+  })
+
+  it.each([
+    '/admin/content?filter=drafts#overview', '/content-author/content?filter=drafts#overview',
+    '/admin/content/?filter=drafts#overview', '/content-author/content/?filter=drafts#overview',
+  ])('forwards the author overview URL %s without losing its query or fragment', (legacy) => {
+    auth.mockReturnValue(session(['CONTENT_AUTHOR']))
+    renderAt(legacy)
+    expect(screen.getByTestId('location').textContent).toBe('/content-author?filter=drafts#overview')
+    expect(screen.getByRole('heading', { name: 'Tổng quan nội dung' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Tổng quan nội dung' })).toHaveAttribute('aria-current', 'page')
+  })
+
+  it.each([
+    ['EXAMINER', '/examiner/not-a-page', '/examiner', 'Tổng quan chấm bài'],
+    ['CONTENT_AUTHOR', '/content-author/not-a-page', '/content-author', 'Tổng quan nội dung'],
+  ])('returns %s to a visible dashboard for an unknown workspace route', (role, path, home, heading) => {
+    auth.mockReturnValue(session([role]))
+    renderAt(path)
+    expect(screen.getByTestId('location').textContent).toBe(home)
+    expect(screen.getByRole('heading', { name: heading })).toBeInTheDocument()
+  })
+
+  it.each([
+    ['/examiner', 'Tổng quan chấm bài', 'Tổng quan nội dung', 'Người dùng'],
+    ['/content-author', 'Tổng quan nội dung', 'Tổng quan chấm bài', 'Người dùng'],
+    ['/admin/system', 'Người dùng', 'Tổng quan chấm bài', 'Tổng quan nội dung'],
+  ])('keeps a staff member with multiple roles in the current workspace menu at %s', (path, included, excluded, otherExcluded) => {
+    auth.mockReturnValue(session(['ADMIN', 'CONTENT_AUTHOR', 'EXAMINER']))
+    renderAt(path)
+    const menu = screen.getByRole('navigation', { name: 'Menu quản trị' })
+    expect(menu).toHaveTextContent(included)
+    expect(menu).not.toHaveTextContent(excluded)
+    expect(menu).not.toHaveTextContent(otherExcluded)
+  })
 
   it('redirects administrators to the system overview and shows only system links', () => {
     auth.mockReturnValue(session(['ADMIN']))
@@ -77,7 +134,7 @@ describe('AdminRoutes', () => {
     expect(menu).not.toHaveTextContent('Người dùng')
     expect(screen.getByRole('heading', { name: 'Tổng quan nội dung' })).toBeInTheDocument()
     expect(screen.getByRole('searchbox')).toBeInTheDocument()
-    expect(screen.getByTestId('location')).toHaveTextContent('/content-author/content')
+    expect(screen.getByTestId('location')).toHaveTextContent('/content-author')
     expect(screen.getByRole('link', { name: 'Trang chủ biên soạn nội dung' })).toHaveAttribute('href', '/content-author')
     expect(screen.getByText('BIÊN SOẠN')).toBeInTheDocument()
   })
@@ -89,8 +146,8 @@ describe('AdminRoutes', () => {
     const menu = screen.getByRole('navigation', { name: 'Menu quản trị' })
     expect(menu).toHaveTextContent('Tổng quan chấm bài')
     // The grading links are in the menu itself, not behind a group that opens on hover.
-    expect(within(menu).getByRole('link', { name: 'Chấm Writing' })).toHaveAttribute('href', '/admin/grading/writing')
-    expect(within(menu).getByRole('link', { name: 'Chấm Speaking' })).toHaveAttribute('href', '/admin/grading/speaking')
+    expect(within(menu).getByRole('link', { name: 'Chấm Writing' })).toHaveAttribute('href', '/examiner/grading/writing')
+    expect(within(menu).getByRole('link', { name: 'Chấm Speaking' })).toHaveAttribute('href', '/examiner/grading/speaking')
     expect(menu).toHaveTextContent('Chấm Writing')
     expect(menu).toHaveTextContent('Chấm Speaking')
     expect(menu).not.toHaveTextContent('Hồ sơ của tôi')
@@ -98,7 +155,7 @@ describe('AdminRoutes', () => {
     expect(menu).not.toHaveTextContent('Bài học')
     expect(menu).not.toHaveTextContent('Người dùng')
     expect(screen.getByRole('heading', { name: 'Tổng quan chấm bài' })).toBeInTheDocument()
-    expect(screen.getByTestId('location')).toHaveTextContent('/admin/examiner')
+    expect(screen.getByTestId('location')).toHaveTextContent('/examiner')
   })
 
   it('gives examiners the notification bell, where they are reminded of jobs that will be late, and nobody else', () => {
@@ -119,7 +176,7 @@ describe('AdminRoutes', () => {
     auth.mockReturnValue(session(['EXAMINER']))
     const examiner = renderAt('/admin')
     fireEvent.click(document.querySelector('.adm-account__button') as HTMLElement)
-    expect(screen.getByRole('menuitem', { name: 'Sửa hồ sơ' })).toHaveAttribute('href', '/admin/examiner/profile')
+    expect(screen.getByRole('menuitem', { name: 'Sửa hồ sơ' })).toHaveAttribute('href', '/examiner/profile')
     examiner.unmount()
 
     auth.mockReturnValue(session(['ADMIN']))
@@ -130,13 +187,13 @@ describe('AdminRoutes', () => {
 
   it('opens the examiner profile screen for examiners only', () => {
     auth.mockReturnValue(session(['EXAMINER']))
-    renderAt('/admin/examiner/profile')
+    renderAt('/examiner/profile')
     expect(screen.getByRole('heading', { name: 'Hồ sơ của tôi' })).toBeInTheDocument()
   })
 
   it.each(['ADMIN', 'CONTENT_AUTHOR', 'CUSTOMER'])('does not grant %s access to the examiner dashboard or profile', (role) => {
     auth.mockReturnValue(session([role]))
-    for (const url of ['/admin/examiner', '/admin/examiner/profile']) {
+    for (const url of ['/examiner', '/examiner/profile']) {
       const view = renderAt(url)
       expect(screen.queryByRole('heading', { name: /Tổng quan chấm bài|Hồ sơ của tôi/ })).not.toBeInTheDocument()
       view.unmount()
@@ -145,16 +202,18 @@ describe('AdminRoutes', () => {
 
   it('lets an examiner choose between Writing and Speaking from the menu', () => {
     auth.mockReturnValue(session(['EXAMINER']))
-    renderAt('/admin/grading/speaking')
+    renderAt('/examiner/grading/speaking')
 
     expect(screen.getByRole('heading', { name: 'Chấm Speaking' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Chấm Writing' })).toHaveAttribute('href', '/admin/grading/writing')
-    expect(screen.getByRole('link', { name: 'Chấm Speaking' })).toHaveAttribute('href', '/admin/grading/speaking')
+    expect(screen.getByRole('link', { name: 'Chấm Writing' })).toHaveAttribute('href', '/examiner/grading/writing')
+    expect(screen.getByRole('link', { name: 'Chấm Speaking' })).toHaveAttribute('href', '/examiner/grading/speaking')
+    expect(screen.getByRole('link', { name: 'Chấm Speaking' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('link', { name: 'Tổng quan chấm bài' })).not.toHaveAttribute('aria-current')
   })
 
   it.each(['ADMIN', 'CONTENT_AUTHOR', 'CUSTOMER'])('does not grant %s access to the grading screens', (role) => {
     auth.mockReturnValue(session([role]))
-    renderAt('/admin/grading/writing')
+    renderAt('/examiner/grading/writing')
 
     expect(screen.queryByRole('heading', { name: 'Danh sách bài chờ chấm Writing' })).not.toBeInTheDocument()
   })
@@ -187,6 +246,7 @@ describe('AdminRoutes', () => {
     renderAt('/content-author')
     expect(screen.getByRole('heading', { name: 'Tổng quan nội dung' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Khóa học & chủ đề' })).toHaveAttribute('href', '/content-author/courses')
+    expect(screen.getByTestId('location').textContent).toBe('/content-author')
   })
 
   it('opens question generation for an author and lists it in the menu', () => {
@@ -209,7 +269,7 @@ describe('AdminRoutes', () => {
     renderAt('/admin/ai-drafts')
     expect(screen.getByRole('heading', { name: 'Tổng quan nội dung' })).toBeInTheDocument()
     expect(screen.queryByText('Tính năng đang chờ triển khai')).not.toBeInTheDocument()
-    expect(screen.getByTestId('location')).toHaveTextContent('/content-author/content')
+    expect(screen.getByTestId('location')).toHaveTextContent('/content-author')
   })
 
   it('opens the package workspace for a content author', () => {

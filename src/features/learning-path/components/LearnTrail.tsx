@@ -1,21 +1,23 @@
 import { Fragment } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, ChevronRight } from 'lucide-react'
+import { ArrowLeft, ChevronRight, House } from 'lucide-react'
 
 export interface TrailItem {
   label: string
   /** Omit on the last item: it is the page the learner is on. */
   to?: string
+  /** Shown as a house icon, with the label kept for screen readers and the tooltip: the way back to the home page. */
+  home?: boolean
   /** Runs when the learner follows the link, for a step that changes the page without leaving it. */
   onClick?: () => void
 }
 
-/** Back button plus the pages the learner passed through, ending at the current page. */
-export function LearnTrail({ items }: { items: TrailItem[] }) {
+/** Back button plus the pages the learner passed through, ending at the current page. `showBack={false}` leaves the button out. */
+export function LearnTrail({ items, showBack = true }: { items: TrailItem[]; showBack?: boolean }) {
   if (items.length < 2) return null
 
   const parents = items.slice(0, -1)
-  const back = [...parents].reverse().find((item) => item.to)
+  const back = showBack ? [...parents].reverse().find((item) => item.to) : undefined
   const last = items.length - 1
 
   return (
@@ -31,6 +33,10 @@ export function LearnTrail({ items }: { items: TrailItem[] }) {
             <li className={index === last ? 'lp-trail__item is-current' : 'lp-trail__item'}>
               {index === last || !item.to ? (
                 <span aria-current={index === last ? 'page' : undefined} title={item.label}>{item.label}</span>
+              ) : item.home ? (
+                <Link aria-label={item.label} className="lp-trail__home" onClick={item.onClick} title={item.label} to={item.to}>
+                  <House aria-hidden="true" size={16} />
+                </Link>
               ) : (
                 <Link onClick={item.onClick} title={item.label} to={item.to}>{item.label}</Link>
               )}

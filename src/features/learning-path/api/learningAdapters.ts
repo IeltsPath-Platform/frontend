@@ -196,6 +196,7 @@ export type ReviewDetailDto = {
   knowledgePointId?: string
   skill?: string
   blocking?: boolean
+  triggerKind?: string | null
   errorTrap?: ErrorHintDto | null
 }
 
@@ -284,7 +285,16 @@ export type PracticeAttemptViewDto = {
   audio?: { mediaUrl: string; durationSeconds?: number | null; transcript?: string | null } | null
   questions: QuestionDto[]
   /** Essays live in the sections, next to the passage they belong to; there is no top-level list. */
-  sections?: Array<{ essays?: PracticeEssayDto[] }>
+  sections?: Array<{ essays?: PracticeEssayDto[]; recorded?: PracticeRecordedDto[] }>
+}
+
+export type PracticeRecordedDto = {
+  questionVersionId: string
+  sortOrder: number
+  stem: string
+  durationSeconds?: number | null
+  passBand?: number | null
+  latestSubmission?: { id: string; status: string; overallBand?: number | null; passed?: boolean | null } | null
 }
 
 export type PracticeEssayDto = {
@@ -686,6 +696,7 @@ export function mapReviewDetail(dto: ReviewDetailDto, topicId: string): ReviewDe
     theoryReason: dto.theoryReason ?? null,
     resumeLessonId: dto.lessonId,
     ...(dto.blocking === undefined ? {} : { blocking: dto.blocking }),
+    ...(dto.triggerKind === undefined ? {} : { triggerKind: dto.triggerKind }),
     ...(errorTrap ? { errorTrap } : {}),
   }
 }
@@ -709,6 +720,24 @@ export function mapLessonPracticeSets(dto: LessonPracticeSetsDto): import('~type
       revealed: item.revealed,
       skills: item.skills,
     })),
+  }
+}
+
+function mapPracticeRecorded(dto: PracticeRecordedDto): import('~types/learningPath').PracticeRecorded {
+  return {
+    id: dto.questionVersionId,
+    number: dto.sortOrder,
+    prompt: dto.stem,
+    durationSeconds: dto.durationSeconds ?? null,
+    passBand: dto.passBand ?? null,
+    latest: dto.latestSubmission
+      ? {
+          id: dto.latestSubmission.id,
+          status: dto.latestSubmission.status,
+          overallBand: dto.latestSubmission.overallBand ?? null,
+          passed: dto.latestSubmission.passed ?? null,
+        }
+      : null,
   }
 }
 
@@ -799,6 +828,9 @@ export function mapPracticeAttemptView(dto: PracticeAttemptViewDto): import('~ty
     essays: (dto.sections ?? [])
       .flatMap((section) => [...(section.essays ?? [])].sort((a, b) => a.sortOrder - b.sortOrder))
       .map(mapPracticeEssay),
+    recorded: (dto.sections ?? [])
+      .flatMap((section) => [...(section.recorded ?? [])].sort((a, b) => a.sortOrder - b.sortOrder))
+      .map(mapPracticeRecorded),
   }
 }
 

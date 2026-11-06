@@ -52,7 +52,7 @@ function speakingOptions(access: GradingAccess, cost: number, enabled: boolean):
   return {
     teacher: { enabled: false, credits: null, reason: TEACHER_SOON },
     ai: enabled ? options.ai : { ...options.ai, enabled: false, shortBy: 0,
-      reason: 'Chấm Speaking bằng AI đang tạm tắt trong khi rubric được giám khảo duyệt.' },
+      reason: 'Chấm Speaking bằng AI hiện chưa được bật. Vui lòng thử lại sau.' },
   }
 }
 
@@ -74,14 +74,19 @@ function failureMessage(cause: unknown): string {
  * checks the points), each answer is converted to WAV and stored, and the submission is completed. A failed send can be
  * repeated: it keeps the same request id, so the server continues the same submission.
  */
-export function useSpeakingGradeFlow({ context, packageVersionId, partSectionIds, recordings, seconds }: {
+export function useSpeakingGradeFlow({ context, packageVersionId, partSectionIds, recordings, seconds, attemptId, onSent }: {
   /** First line of the popups, such as the test and the parts. */
   context: string
-  packageVersionId: string
-  partSectionIds: string[]
+  /** The practice test being answered; leave out for the answer of a lesson's practice set (`attemptId`). */
+  packageVersionId?: string
+  partSectionIds?: string[]
   /** The answers to send, one per question. */
   recordings: RecordingToSend[]
   seconds: number
+  /** The lesson's practice attempt the answer belongs to: its grade then counts toward mastery. */
+  attemptId?: string
+  /** With it, the page follows the submission itself: the "sent" popup is skipped and this gets the submission id. */
+  onSent?: (submissionId: string) => void
 }): { start: () => void; checking: boolean; dialogs: ReactNode; viewingId: string | null } {
   const navigate = useNavigate()
   const [popup, setPopup] = useState<Popup>(null)
@@ -124,6 +129,7 @@ export function useSpeakingGradeFlow({ context, packageVersionId, partSectionIds
       requestId: requestId.current,
       packageVersionId,
       partSectionIds,
+      attemptId,
       recordings,
       maxRecordingBytes: terms?.maxRecordingBytes ?? FALLBACK_MAX_RECORDING_BYTES,
       onProgress: setProgress,
@@ -131,8 +137,8 @@ export function useSpeakingGradeFlow({ context, packageVersionId, partSectionIds
       requestId.current = null
       setSubmissionId(submission.id)
       setSentCount(count)
-      clearSession(packageVersionId)
-      setPopup('sent')
+      if (packageVersionId) clearSession(packageVersionId)
+      if (onSent) { setPopup(null); onSent(submission.id) } else setPopup('sent')
     }).catch((cause: unknown) => {
       if (cause instanceof HttpError && cause.status === 402) {
         // The balance changed since it was read: show the figure the server judged by.

@@ -123,7 +123,7 @@ function ProfileForm({ profile, onSaved }: { profile: Profile; onSaved: (saved: 
       {message ? <p className={message.tone === 'ok' ? 'adm-alert' : 'adm-alert adm-alert--error'} role={message.tone === 'ok' ? 'status' : 'alert'}>{message.text}</p> : null}
       <div className="ex-form__actions">
         <button className="adm-btn adm-btn--primary" disabled={saving} type="submit">{saving ? 'Đang lưu…' : 'Lưu hồ sơ'}</button>
-        <Link className="adm-btn" to="/admin/examiner">Về tổng quan</Link>
+        <Link className="adm-btn" to="/examiner">Về tổng quan</Link>
       </div>
     </form>
   )

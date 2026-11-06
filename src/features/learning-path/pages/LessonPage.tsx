@@ -164,8 +164,11 @@ export function LessonView({ lesson, onLessonChanged }: { lesson: LessonDetail; 
   const exerciseCount = (lesson.blocks ?? []).filter((block) => block.type === 'EXERCISE').length
   const hasExercises = exerciseCount > 0
   const exercisesPath = `${path}?view=exercises`
+  // The Practice opens once the lesson is completed, so a locked Practice is no reason to hold back "Hoàn thành bài":
+  // without that button a lesson with Practice sets and no exercises could never be completed, nor its Practice opened.
+  const practiceIsOpen = requiresPractice === true && self?.practiceStatus !== 'LOCKED'
   const state: LessonState = activeReview ? 'review' : done ? 'done'
-    : hasExercises ? 'exercises' : requiresPractice ? 'practice' : 'reading'
+    : hasExercises ? 'exercises' : practiceIsOpen ? 'practice' : 'reading'
   const copy = stateCopy(state, activeReview, hasNext)
   // Practice and review actions are available in the lesson's Practice section, and a completed lesson needs no card:
   // the card only carries the "Hoàn thành bài" action of a lesson being read. Exercises are reached from the side menu.

@@ -12,7 +12,7 @@ describe('describeNotification', () => {
 
   it('reminds the examiner that a job will be late soon and leads to the queue, without naming the learner', () => {
     const view = describeNotification({ ...base, eventType: 'assessment.grading-due-soon.v1', gradingJobId: job })
-    expect(view.to).toBe('/admin/grading/writing')
+    expect(view.to).toBe('/examiner/grading/writing')
     expect(view.text).toContain('sắp quá hạn')
   })
 
@@ -23,7 +23,7 @@ describe('describeNotification', () => {
 
   it('tells the examiner a learner chose them and leads to the queue, without naming the learner', () => {
     expect(describeNotification({ ...base, eventType: 'assessment.grading-requested.v1', gradingJobId: job }))
-      .toEqual({ text: 'Có bài mới chờ bạn chấm (hạn 48 giờ)', to: '/admin/grading/writing' })
+      .toEqual({ text: 'Có bài mới chờ bạn chấm (hạn 48 giờ)', to: '/examiner/grading/writing' })
   })
 
   it('keeps the community notifications as they were', () => {

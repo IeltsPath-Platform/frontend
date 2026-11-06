@@ -94,8 +94,8 @@
 .sr-card.is-recording .sr-state { background: color-mix(in srgb, var(--site-orange) 14%, var(--workspace-surface)); color: var(--site-orange); }
 .sr-card.is-recording .sr-state::before { animation: sr-blink 1s ease-in-out infinite; }
 
-.sr-card .audio-visualizer { inline-size: 100%; block-size: 4.5rem; padding: .6rem .9rem; border-radius: .9rem; background: linear-gradient(160deg, #0b2a7a, #123ea8); }
-.sr-card .audio-visualizer span { background: rgb(255 255 255 / 55%); }
+.sr-card .audio-visualizer { inline-size: 100%; block-size: 4.5rem; padding: .6rem clamp(1rem, 5%, 2.25rem); justify-content: space-between; border-radius: .9rem; background: linear-gradient(160deg, #0b2a7a, #123ea8); }
+.sr-card .audio-visualizer span { inline-size: clamp(5px, .7vw, 7px); background: rgb(255 255 255 / 55%); }
 .sr-card .audio-visualizer.is-active span { background: var(--site-orange); }
 
 .sr-timer { display: grid; justify-items: center; gap: .2rem; }

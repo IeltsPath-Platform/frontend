@@ -7,13 +7,13 @@ describe('signInDestination', () => {
   })
 
   it('sends content authors to their workspace', () => {
-    expect(signInDestination(['CONTENT_AUTHOR'], '/overview')).toBe('/content-author/content')
+    expect(signInDestination(['CONTENT_AUTHOR'], '/overview')).toBe('/content-author')
   })
 
-  it('sends examiners to their dashboard through the admin area, even when sign-in started on a learner page', () => {
-    expect(signInDestination(['EXAMINER'])).toBe('/admin')
-    expect(signInDestination(['EXAMINER'], '/community')).toBe('/admin')
-    expect(signInDestination(['CONTENT_AUTHOR', 'EXAMINER'])).toBe('/content-author/content')
+  it('sends examiners directly to their workspace, even when sign-in started on a learner page', () => {
+    expect(signInDestination(['EXAMINER'])).toBe('/examiner')
+    expect(signInDestination(['EXAMINER'], '/community')).toBe('/examiner')
+    expect(signInDestination(['CONTENT_AUTHOR', 'EXAMINER'])).toBe('/content-author')
   })
 
   it('preserves learner destinations and the default overview', () => {

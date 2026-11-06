@@ -1,18 +1,42 @@
 /* Choosing who grades (teacher or AI), choosing the teacher, and reading the teacher's review. Tokens come from the reading workspace. */
 /* The dialogs get the workspace colours from .ww-dialog (writing-workspace.css). */
-.we-method { max-width: 40rem; }
-.we-method-cards { display: grid; gap: 0.8rem; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); }
-/* The status line takes the spare height, so both cards end in a button of the same size on the same line. */
-.we-method-card { display: grid; grid-template-rows: auto auto 1fr auto; gap: 0.5rem; padding: 0.9rem 1rem; border: 1px solid var(--rw-accent); border-radius: 12px; background: #eff6ff; }
-.we-method-card.is-off { border-color: var(--rw-line); background: #f8fafc; }
-.we-method-card h3 { display: flex; align-items: center; gap: 0.4rem; margin: 0; font-size: 1rem; }
-.we-method-card p { margin: 0; font-size: 0.84rem; line-height: 1.45; }
-.we-method-status { font-weight: 700; color: var(--rw-accent); }
-.we-method-card.is-off .we-method-status { color: #b45309; }
-.we-method-card .ww-primary, .we-method-card .ww-secondary { justify-self: stretch; padding: 0.7rem 1rem; font-size: 0.9rem; font-weight: 700; }
-/* A button that is open must read as a button: solid accent with a shadow, the top-up one included. */
-.we-method-card .ww-primary:not(:disabled) { box-shadow: 0 3px 10px rgb(29 78 216 / 28%); }
-.we-method-card .ww-primary { gap: 0.5rem; }
+/* Laid out like the choice between a real and a practice test: a blue header, two cards side by side, the one pointed at highlighted.
+   The colours fall back to the same blues when the practice stylesheet is not loaded. */
+.ww-dialog.we-method { --gm-blue: var(--site-blue, #0e44cf); --gm-blue-hover: var(--site-blue-hover, #1653e8); --gm-navy: var(--site-navy, #082878); --gm-soft: var(--classroom-soft, #eaf1ff); padding: 0; gap: 0; max-width: min(820px, calc(100vw - 2rem)); overflow-y: auto; }
+.we-method-top { display: grid; gap: 0.3rem; padding: 1.25rem 3.5rem 1.2rem 1.75rem; background: var(--gm-blue); color: #ffffff; }
+.we-method .ww-dialog-title { font-size: 1.35rem; font-weight: 800; letter-spacing: -0.01em; color: #ffffff; }
+.we-method .ww-dialog-context { color: rgb(255 255 255 / 82%); font-size: 0.85rem; font-weight: 600; overflow-wrap: anywhere; }
+.ww-dialog.we-method > [data-slot="button"] { color: #ffffff; }
+.ww-dialog.we-method > [data-slot="button"]:hover { background: rgb(255 255 255 / 16%); color: #ffffff; }
+.ww-dialog.we-method > [data-slot="button"]:focus-visible { outline: 2px solid #ffffff; box-shadow: none; }
+.we-method-body { display: grid; gap: 1.25rem; padding: 1.5rem 1.75rem 1.75rem; background: #ffffff; color: var(--gm-navy); }
+.we-method [data-slot="dialog-description"] { margin: 0; color: #475569; font-size: 0.92rem; line-height: 1.5; }
+.we-method-cards { display: grid; gap: 1.1rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 620px) { .we-method-cards { grid-template-columns: 1fr; } .we-method-top { padding-left: 1.25rem; } .we-method-body { padding: 1.25rem; } }
+/* The text takes the spare height, so both cards end in a button of the same size on the same line. */
+.we-method-card { position: relative; display: flex; flex-direction: column; gap: 0.85rem; padding: 1.25rem; border: 3px solid color-mix(in srgb, var(--gm-blue) 18%, #ffffff); border-radius: 16px; background: #ffffff; color: var(--gm-navy); transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease; animation: we-method-in 0.24s ease-out both; }
+.we-method-card:nth-child(2) { animation-delay: 0.06s; }
+.we-method-card:not(.is-off):hover { transform: translateY(-2px); box-shadow: 0 8px 22px color-mix(in srgb, var(--gm-navy) 14%, transparent); }
+/* The highlighted way: light blue fill and a solid blue border, as the selected mode of a test. */
+.we-method-card.selected { border-color: var(--gm-blue); background: var(--gm-soft); }
+.we-method-card.is-off { border-color: #e2e8f0; background: #f8fafc; }
+.we-method-head { display: flex; align-items: center; gap: 0.75rem; }
+.we-method-icon { display: grid; place-items: center; flex: none; width: 2.6rem; height: 2.6rem; border-radius: 12px; background: var(--gm-soft); color: var(--gm-blue); transition: background-color 0.2s ease, color 0.2s ease; }
+.we-method-card.selected .we-method-icon { background: var(--gm-blue); color: #ffffff; }
+.we-method-card.is-off .we-method-icon { background: #e2e8f0; color: #64748b; }
+.we-method-card h3 { margin: 0; font-size: 1.08rem; font-weight: 800; color: var(--gm-navy); }
+.we-method-card p { margin: 0; }
+.we-method-desc { flex: 1; color: #334155; font-size: 0.875rem; line-height: 1.6; }
+.we-method-status { display: flex; align-items: flex-start; gap: 0.5rem; padding: 0.6rem 0.75rem; border: 1px solid #dbeafe; border-radius: 10px; background: #ffffff; color: var(--gm-navy); font-size: 0.82rem; font-weight: 600; line-height: 1.45; }
+.we-method-status svg { flex: none; margin-top: 0.12rem; }
+.we-method-status.is-warn { border-color: #fde68a; background: #fffbeb; color: #92400e; }
+.we-method-card .ww-primary { display: inline-flex; flex-direction: row; flex-wrap: nowrap; align-items: center; justify-content: center; gap: 0.5rem; width: 100%; min-height: 2.9rem; padding: 0.65rem 1rem; border: 2px solid var(--gm-blue); border-radius: 999px; background: #ffffff; color: var(--gm-blue); font-size: 0.9rem; font-weight: 800; transition: background-color 0.2s ease, color 0.2s ease; }
+.we-method-card.selected .ww-primary:not(:disabled) { background: var(--gm-blue); color: #ffffff; box-shadow: 0 4px 12px color-mix(in srgb, var(--gm-blue) 28%, transparent); }
+.we-method-card .ww-primary:hover:not(:disabled) { background: var(--gm-blue-hover); border-color: var(--gm-blue-hover); color: #ffffff; }
+.we-method-card .ww-primary:disabled { border-color: #e2e8f0; background: #f1f5f9; color: #64748b; box-shadow: none; }
+.we-method-card .ww-primary:focus-visible { outline: 3px solid var(--gm-blue); outline-offset: 3px; }
+@keyframes we-method-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .we-method-card { animation: none; transition: none; } .we-method-card:not(.is-off):hover { transform: none; } }
 
 .we-pick { max-width: 38rem; }
 /* Many examiners: the list scrolls inside the dialog, so the buttons under it stay in view. */
@@ -48,7 +72,6 @@
 .we-late { display: grid; gap: 0.6rem; padding: 1rem; border: 1px solid #f59e0b; border-radius: 12px; background: #fffbeb; }
 .we-late h2 { margin: 0; font-size: 1.05rem; color: #92400e; }
 .we-late p { margin: 0; }
-.we-pill { justify-self: start; padding: 0.15rem 0.7rem; border-radius: 999px; background: #fef3c7; color: #92400e; font-size: 0.8rem; font-weight: 700; }
 
 /* What the learner reads once the teacher has graded: the meaning and fix of each kind of error. */
 .we-fixhint { margin: 0.15rem 0 0; font-size: 0.84rem; color: var(--wr-muted); }
@@ -58,94 +81,117 @@
 .we-glossary dl > div { padding: 0.6rem 0.8rem; border-left: 3px solid #f59e0b; background: #fffbeb; border-radius: 0 8px 8px 0; }
 .we-glossary dt { font-weight: 800; }
 .we-glossary dd { margin: 0.15rem 0 0; font-size: 0.9rem; line-height: 1.5; }
-.we-all-reviews { justify-self: start; font-size: 0.9rem; font-weight: 700; color: var(--wr-accent); }
 
-/* The list of essays sent to a teacher: figures first, then one table whose columns line the essays up. */
-.we-main { max-width: 68rem; gap: 1.1rem; }
-.we-head h1 { margin: 0 0 0.25rem; font-size: 1.75rem; line-height: 1.2; }
-.we-head p { margin: 0; max-width: 46rem; font-size: 1rem; line-height: 1.55; color: var(--wr-muted); }
-.we-reviews { display: grid; gap: 1.1rem; }
+/* The list of essays sent to a teacher: one line per essay that starts with its band. */
+.wr-page.wl-page { background: #ffffff; }
+.wl-main { max-width: 64rem; gap: 1.25rem; padding-top: 1.25rem; }
+.wl-page .lp-trail { margin: 0; }
+.wl-page .wl-title { margin: 0; font-size: 1.75rem; }
+.wl-list { display: grid; gap: 1rem; min-width: 0; }
 
-.we-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.8rem; margin: 0; padding: 0; list-style: none; }
-.we-stat { display: grid; gap: 0.2rem; padding: 0.9rem 1.1rem; border: 1px solid var(--wr-line); border-radius: 14px; background: #ffffff; border-top: 4px solid #94a3b8; }
-.we-stat span { font-size: 0.85rem; color: var(--wr-muted); }
-.we-stat strong { font-size: 1.9rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
-.we-stat--ok { border-top-color: #16a34a; }
-.we-stat--ok strong { color: #15803d; }
-.we-stat--wait { border-top-color: #f59e0b; }
-.we-stat--wait strong { color: #b45309; }
-.we-stat--band { border-top-color: var(--wr-accent); }
-.we-stat--band strong { color: var(--wr-accent); }
 
-.we-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.6rem 1rem; }
-.we-filters { display: flex; flex-wrap: wrap; gap: 0.4rem; }
-.we-filter { display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.4rem 0.9rem; border: 1px solid var(--wr-line); border-radius: 999px; background: #ffffff; font: inherit; font-size: 0.92rem; cursor: pointer; }
-.we-filter span { padding: 0 0.45rem; border-radius: 999px; background: #e2e8f0; font-size: 0.8rem; font-weight: 700; font-variant-numeric: tabular-nums; }
-.we-filter[aria-pressed="true"] { border-color: var(--wr-accent); background: var(--wr-accent); color: #ffffff; font-weight: 700; }
-.we-filter[aria-pressed="true"] span { background: rgb(255 255 255 / 25%); }
-.we-filter:focus-visible { outline: 3px solid #93c5fd; outline-offset: 2px; }
-.we-note { display: inline-flex; align-items: center; gap: 0.35rem; margin: 0; font-size: 0.85rem; color: var(--wr-muted); }
-.we-empty { display: flex; align-items: center; gap: 0.5rem; margin: 0; padding: 1.2rem; border: 1px dashed var(--wr-line); border-radius: 12px; background: #ffffff; color: var(--wr-muted); }
+.wl-tabs { display: flex; flex-wrap: wrap; gap: 0 1.6rem; border-bottom: 1px solid var(--wr-line); }
+.wl-tab { position: relative; min-height: 44px; padding: 0 0.1rem; border: 0; background: transparent; font: inherit; font-size: 0.95rem; color: var(--wr-muted); cursor: pointer; }
+.wl-tab span { margin-left: 0.2rem; font-size: 0.8rem; font-variant-numeric: tabular-nums; }
+.wl-tab:hover { color: var(--wr-ink); }
+.wl-tab[aria-pressed="true"] { color: var(--wr-ink); font-weight: 700; }
+.wl-tab[aria-pressed="true"]::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--wr-accent); }
+.wl-tab:focus-visible { outline: 3px solid #93c5fd; outline-offset: -3px; border-radius: 4px; }
 
-.we-table-wrap { overflow-x: auto; border: 1px solid var(--wr-line); border-radius: 14px; background: #ffffff; }
-.we-table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
-.we-table thead th { padding: 0.75rem 1rem; border-bottom: 1px solid var(--wr-line); background: #f8fafc; text-align: left; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--wr-muted); white-space: nowrap; }
-.we-table tbody td { padding: 0.9rem 1rem; border-bottom: 1px solid #eef2f6; vertical-align: middle; }
-.we-table tbody tr:last-child td { border-bottom: 0; }
-.we-table tbody tr:hover { background: #f8fafc; }
-.we-table tbody tr.is-done td:first-child { box-shadow: inset 4px 0 0 #16a34a; }
-.we-table tbody tr:not(.is-done) td:first-child { box-shadow: inset 4px 0 0 #f59e0b; }
-.we-table td small { display: block; margin-top: 0.15rem; color: var(--wr-muted); font-size: 0.78rem; }
-.we-cell-essay { min-width: 18rem; max-width: 30rem; }
-.we-chip { padding: 0.08rem 0.6rem; border-radius: 999px; background: #dbeafe; color: var(--wr-accent); font-size: 0.78rem; font-weight: 700; }
-.we-source { margin-left: 0.5rem; font-size: 0.82rem; color: var(--wr-muted); }
-.we-prompt { display: -webkit-box; margin: 0.4rem 0 0; overflow: hidden; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.45; font-weight: 600; overflow-wrap: anywhere; }
-.we-table td:nth-child(2), .we-table td:nth-child(3) { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.wl-note { margin: 0; font-size: 0.85rem; color: var(--wr-muted); }
+.wl-empty { margin: 0; padding: 2rem 0; text-align: center; color: var(--wr-muted); }
 
-.we-badge { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.25rem 0.7rem; border-radius: 999px; font-size: 0.82rem; font-weight: 700; white-space: nowrap; }
-.we-badge--done { background: #dcfce7; color: #15803d; }
-.we-badge--wait { background: #fef3c7; color: #b45309; }
-.we-badge--late { background: #fee2e2; color: #b91c1c; }
-.we-badge--cancelled { background: #e2e8f0; color: #475569; }
+.wl-rows { margin: 0; padding: 0; list-style: none; border: 1px solid var(--wr-line); border-radius: 16px; background: #ffffff; overflow: hidden; }
+.wl-row { position: relative; display: grid; grid-template-columns: 4rem minmax(0, 1fr) auto; align-items: center; gap: 1.1rem; padding: 1rem 1.2rem; transition: background-color 0.15s ease; }
+.wl-row + .wl-row { border-top: 1px solid #e8ecf1; }
+.wl-row:hover { background: #f8fafc; }
+.wl-row:focus-within { background: #f1f5f9; }
 
-.we-cell-band { text-align: center; }
-.we-band-pill { display: inline-block; min-width: 3.2rem; padding: 0.2rem 0.6rem; border-radius: 10px; background: var(--wr-accent); color: #ffffff; font-size: 1.25rem; font-variant-numeric: tabular-nums; }
-.we-cell-action { text-align: right; white-space: nowrap; }
-.we-open { display: inline-block; padding: 0.5rem 1rem; border: 1px solid var(--wr-line); border-radius: 10px; background: #ffffff; color: var(--wr-ink); font-size: 0.9rem; font-weight: 700; text-decoration: none; }
-.we-open:hover { border-color: var(--wr-accent); color: var(--wr-accent); }
-.we-open--done { border-color: var(--wr-accent); background: var(--wr-accent); color: #ffffff; }
-.we-open--done:hover { background: #1e40af; color: #ffffff; }
-.we-open:focus-visible { outline: 3px solid #93c5fd; outline-offset: 2px; }
-.we-more { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.8rem; }
-.we-more__btn { padding: 0.55rem 1.4rem; border: 1px solid var(--wr-line); border-radius: 999px; background: #ffffff; font: inherit; font-weight: 700; cursor: pointer; }
-.we-more__btn:hover:not(:disabled) { border-color: var(--wr-accent); color: var(--wr-accent); }
-.we-more__btn:disabled { opacity: 0.6; cursor: progress; }
-.we-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.wl-mark { display: grid; place-items: center; align-content: center; width: 4rem; height: 4rem; border-radius: 14px; background: #f1f5f9; color: #64748b; }
+.wl-mark small { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+.wl-mark strong { font-size: 1.5rem; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.wl-row--done .wl-mark { background: #eaf1ff; color: var(--wr-accent); }
+.wl-row--late .wl-mark { background: #fef2f2; color: #b91c1c; }
+.wl-row--wait .wl-mark { background: #fff7ed; color: #b45309; }
 
-/* A narrow screen turns each table row into a card: the figures first, the label in front of each value. */
-@media (max-width: 760px) {
-  .we-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .we-table-wrap { overflow: visible; border: 0; background: transparent; }
-  .we-table, .we-table tbody, .we-table tr, .we-table td { display: block; }
-  .we-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-  .we-table tbody { display: grid; gap: 0.7rem; }
-  .we-table tbody tr { border: 1px solid var(--wr-line); border-radius: 14px; background: #ffffff; overflow: hidden; }
-  .we-table tbody td { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.55rem 1rem; border-bottom: 1px solid #eef2f6; text-align: right; }
-  .we-table tbody td[data-label]::before { content: attr(data-label); font-size: 0.78rem; font-weight: 700; text-transform: uppercase; color: var(--wr-muted); text-align: left; }
-  .we-table tbody td.we-cell-essay { display: block; max-width: none; min-width: 0; text-align: left; }
-  .we-table tbody td.we-cell-essay::before { display: none; }
-  .we-table tbody td.we-cell-action { display: block; text-align: stretch; border-bottom: 0; }
-  .we-table tbody td.we-cell-action .we-open { display: block; text-align: center; }
-  .we-table tbody tr.is-done td:first-child, .we-table tbody tr:not(.is-done) td:first-child { box-shadow: none; }
-  .we-table tbody tr.is-done { border-left: 5px solid #16a34a; }
-  .we-table tbody tr:not(.is-done) { border-left: 5px solid #f59e0b; }
+.wl-body { display: grid; gap: 0.2rem; min-width: 0; }
+.wl-body p { margin: 0; }
+.wl-meta { font-size: 0.8rem; font-weight: 700; letter-spacing: 0.02em; color: var(--wr-muted); }
+.wl-prompt { display: -webkit-box; overflow: hidden; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-weight: 600; line-height: 1.45; overflow-wrap: anywhere; }
+.wl-facts { display: flex; flex-wrap: wrap; gap: 0 0.9rem; font-size: 0.85rem; color: var(--wr-muted); font-variant-numeric: tabular-nums; }
+.wl-facts span + span::before { content: "·"; margin-right: 0.9rem; }
+
+.wl-side { display: grid; justify-items: end; gap: 0.35rem; }
+.wl-status { font-size: 0.82rem; font-weight: 700; white-space: nowrap; color: var(--wr-muted); }
+.wl-row--done .wl-status { color: #15803d; }
+.wl-row--wait .wl-status { color: #b45309; }
+.wl-row--late .wl-status { color: #b91c1c; }
+.wl-open { display: inline-flex; align-items: center; gap: 0.15rem; font-size: 0.92rem; font-weight: 700; color: var(--wr-accent); text-decoration: none; white-space: nowrap; }
+.wl-open::after { content: ""; position: absolute; inset: 0; }
+.wl-open:hover { text-decoration: underline; }
+.wl-open:focus-visible { outline: 3px solid #93c5fd; outline-offset: -3px; border-radius: 16px; }
+
+.wl-more { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.8rem; }
+.wl-more__btn { min-height: 44px; padding: 0 1.4rem; border: 1px solid var(--wr-line); border-radius: 999px; background: #ffffff; font: inherit; font-weight: 700; cursor: pointer; }
+.wl-more__btn:hover:not(:disabled) { border-color: var(--wr-accent); color: var(--wr-accent); }
+.wl-more__btn:disabled { opacity: 0.6; cursor: progress; }
+
+@media (max-width: 560px) {
+  .wl-row { grid-template-columns: 3.4rem minmax(0, 1fr); gap: 0.4rem 0.9rem; padding: 0.9rem 1rem; }
+  .wl-mark { width: 3.4rem; height: 3.4rem; }
+  .wl-side { grid-column: 2; display: flex; align-items: center; justify-content: space-between; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wl-row { transition: none; }
+}
+
+/* The detail of an essay sent to a teacher: a white page with the home trail, the essay on the left and, while the teacher has
+   not graded it, who grades it and how far it has come on the right. */
+.wr-page.we-page { background: #ffffff; }
+.we-page .we-detail { max-width: 72rem; gap: 1.1rem; padding-top: 1.25rem; }
+.we-page .lp-trail { margin: 0; }
+.we-page .we-title { margin: 0; font-size: 1.6rem; }
+.we-page .we-pane__head { background: #ffffff; }
+
+.we-pending-layout { display: grid; grid-template-columns: minmax(0, 1fr) 19rem; gap: 2rem; align-items: start; }
+.we-essay-block { display: grid; gap: 0.75rem; min-width: 0; }
+.we-essay-head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
+.we-essay-head h2 { margin: 0; font-size: 1.05rem; }
+.we-essay-head span { font-size: 0.85rem; color: var(--wr-muted); font-variant-numeric: tabular-nums; }
+.we-page .we-essay-block .wr-essay { padding: 1.5rem 1.75rem; border-radius: 16px; font-size: 1.02rem; line-height: 1.85; }
+
+.we-aside { order: 2; position: sticky; top: var(--lp-sticky-top, 8rem); display: grid; gap: 1.1rem; padding: 1.25rem; border: 1px solid #e8ecf1; border-radius: 16px; background: #f8fafc; }
+.we-aside .we-teacher { padding: 0; border: 0; border-radius: 0; background: transparent; }
+.we-aside .we-avatar { width: 2.9rem; height: 2.9rem; }
+.we-aside .we-teacher strong { font-size: 1.02rem; }
+
+.we-status { display: grid; gap: 0.6rem; padding-top: 1.1rem; border-top: 1px solid var(--wr-line); }
+.we-aside > .we-status:first-child { padding-top: 0; border-top: 0; }
+.we-status__title { display: flex; align-items: center; gap: 0.45rem; margin: 0; font-weight: 700; color: #475569; }
+.we-status__text { margin: 0; font-size: 0.9rem; line-height: 1.6; color: var(--wr-muted); }
+
+.we-steps { display: grid; margin: 0; padding: 0; list-style: none; }
+.we-step { position: relative; display: grid; grid-template-columns: 1.6rem minmax(0, 1fr); gap: 0.75rem; padding-bottom: 1.2rem; }
+.we-step:last-child { padding-bottom: 0; }
+.we-step:not(:last-child)::before { content: ""; position: absolute; left: 0.8rem; top: 1.75rem; bottom: 0.2rem; width: 2px; margin-left: -1px; background: #d9dee5; }
+.we-step.is-done:not(:last-child)::before { background: var(--wr-accent); }
+.we-step__dot { display: grid; place-items: center; width: 1.6rem; height: 1.6rem; border: 2px solid #cbd5e1; border-radius: 50%; background: #ffffff; color: #94a3b8; }
+.we-step.is-done .we-step__dot { border-color: var(--wr-accent); background: var(--wr-accent); color: #ffffff; }
+.we-step.is-current .we-step__dot { border-color: #f59e0b; background: #fffbeb; color: #b45309; }
+.we-step strong { display: block; font-size: 0.95rem; line-height: 1.6rem; }
+.we-step small { display: block; font-size: 0.82rem; color: var(--wr-muted); font-variant-numeric: tabular-nums; }
+.we-step.is-next strong { color: var(--wr-muted); font-weight: 600; }
+.we-step.is-current small { color: #b45309; }
+
+@media (max-width: 860px) {
+  .we-pending-layout { grid-template-columns: minmax(0, 1fr); gap: 1.25rem; }
+  .we-aside { order: 0; position: static; }
 }
 
 /* The teacher's review. First screen: a strip of figures, then the essay beside the errors to fix, each pane scrolling on its own.
    Below it, the teacher's comments in full. */
 .we-main--wide { max-width: 100rem; }
-.we-headline { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.2rem 1rem; }
-.we-headline h1 { margin: 0; font-size: 1.4rem; }
 .we-review { display: grid; gap: 0.8rem; }
 
 .we-scorebar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem 1rem; padding: 0.55rem 0.8rem; border: 1px solid var(--wr-line); border-radius: 14px; background: #ffffff; }

@@ -101,6 +101,8 @@ describe('PracticeEssays sample answer switch', () => {
 
     await userEvent.type(screen.getByRole('textbox', { name: 'Introduction' }), 'Free tuition helps students')
     await userEvent.click(screen.getByRole('button', { name: 'Nộp để chấm' }))
+    // "Nộp để chấm" asks who grades the essay; this test picks the AI.
+    await userEvent.click(await screen.findByRole('button', { name: /Chấm bằng AI/ }))
 
     expect(await screen.findByText('A clear report.')).toBeInTheDocument()
     expect(screen.queryByRole('switch', { name: 'Bài mẫu' })).not.toBeInTheDocument()

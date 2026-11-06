@@ -9,7 +9,7 @@ export const GRADING_COMPLETED = 'assessment.grading-completed.v1'
 export const EXAMINER_REVIEWS_PATH = '/writing-reviews'
 
 /** The queue an examiner opens to give a job priority. */
-const EXAMINER_QUEUE = '/admin/grading/writing'
+const EXAMINER_QUEUE = '/examiner/grading/writing'
 
 const COMMUNITY_TEXT: Record<string, string> = {
   'community.user-followed.v1': 'Một học viên đã theo dõi bạn',

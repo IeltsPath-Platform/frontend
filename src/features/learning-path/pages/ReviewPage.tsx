@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { LearnTrail, type TrailItem } from '../components/LearnTrail'
 import { courseTopicPath, topicPagePath, type ReviewNavigationState, type ReviewOrigin } from '../lib/routes'
 import { lessonPracticePath } from '../lib/lessonPractice'
+import { reviewReasonText } from '../lib/reviewReason'
 import type {
   AnswerInput,
   ExerciseBlockData,
@@ -188,6 +189,8 @@ function ReviewView({ review, onAdvance, onReload, reviewOrigin }: {
           <p>Số bộ chưa đạt: {review.failedSets}/{review.maxFailedSets}.</p>
         ) : null}
       </header>
+
+      {status === 'PENDING' && reviewReasonText(review) ? <p className="lp-review-reason">{reviewReasonText(review)}</p> : null}
 
       {status === 'PENDING' && review.errorTrap ? <ErrorHintNote hint={review.errorTrap} variant="review" /> : null}
 

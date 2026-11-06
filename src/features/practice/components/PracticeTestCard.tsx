@@ -34,7 +34,7 @@ export const PracticeTestCard: React.FC<PracticeTestCardProps> = ({
         }
       }}
     >
-      {/* The photo of the topic, with the part badge laid over its lower edge */}
+      {/* The part badge hangs from the top-right corner of the photo. */}
       <div className="card-media">
         <div className={`card-image-box${card.imageUrl && !photoLoaded ? ' is-loading' : ''}`}>
           {card.imageUrl ? (

@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { menuEntriesFor } from './adminMenu'
 import { AdminSidebar } from './AdminSidebar'
 
-function renderSidebar(path = '/content-author/content') {
+function renderSidebar(path = '/content-author') {
   return render(
     <MemoryRouter initialEntries={[path]}>
       <AdminSidebar entries={menuEntriesFor(['CONTENT_AUTHOR'])} />
@@ -18,7 +18,7 @@ const flyout = (name: string) => screen.getByRole('list', { name })
 describe('AdminSidebar groups', () => {
   it('shows one button per group and keeps single screens as links', () => {
     renderSidebar()
-    expect(screen.getByRole('link', { name: 'Tổng quan nội dung' })).toHaveAttribute('href', '/content-author/content')
+    expect(screen.getByRole('link', { name: 'Tổng quan nội dung' })).toHaveAttribute('href', '/content-author')
     expect(screen.getByRole('link', { name: 'Việc cần làm' })).toHaveAttribute('href', '/content-author/work-items')
     for (const label of ['Chương trình học', 'Câu hỏi & đề', 'Chất lượng chấm']) {
       expect(screen.getByRole('button', { name: label })).toHaveAttribute('aria-expanded', 'false')
@@ -95,7 +95,7 @@ describe('AdminSidebar groups', () => {
 
   it('closes the sub-menu after a screen is chosen', async () => {
     const user = userEvent.setup()
-    renderSidebar('/content-author/content')
+    renderSidebar('/content-author')
     const button = screen.getByRole('button', { name: 'Chương trình học' })
 
     await user.hover(button)

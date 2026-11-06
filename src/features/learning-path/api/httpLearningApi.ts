@@ -292,6 +292,14 @@ export function createHttpLearningApi(): LearningApi {
       return mapEssayGrade(dto)
     },
 
+    async submitPracticeEssayToExaminer(attemptId, questionVersionId, request) {
+      const dto = await learningRequest<{ submissionId: string; status: string }>(
+        `/practice-attempts/${attemptId}/essays/${questionVersionId}/examiner-submissions`,
+        { method: 'POST', body: { requestId: request.requestId, essayText: request.essayText, examinerId: request.examinerId } },
+      )
+      return { submissionId: dto.submissionId, status: dto.status }
+    },
+
     async getLearnerTree(courseId: string) {
       return learningRequest<LearnerTree>(`/tree?courseId=${encodeURIComponent(courseId)}`)
     },
