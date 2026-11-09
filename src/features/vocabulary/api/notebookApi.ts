@@ -424,6 +424,7 @@ export const notebookApi = {
       q?: string
       level?: UnderstandingLevel[]
       due?: boolean
+      learned?: boolean
       sort?: NotebookSort
       topicId?: string
       setId?: string
@@ -438,6 +439,7 @@ export const notebookApi = {
       for (const lvl of params.level) searchParams.append('level', lvl)
     }
     if (params.due !== undefined) searchParams.set('due', String(params.due))
+    if (params.learned !== undefined) searchParams.set('learned', String(params.learned))
     if (params.sort) searchParams.set('sort', params.sort)
     if (params.topicId) searchParams.set('topicId', params.topicId)
     if (params.setId) searchParams.set('setId', params.setId)

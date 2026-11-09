@@ -4,7 +4,6 @@ import { AlertCircle, RefreshCw } from 'lucide-react'
 import { useProfile } from './hooks/useProfile'
 import { ProfileHeader } from './components/ProfileHeader'
 import { PersonalInfoSection } from './components/PersonalInfoSection'
-import { LearningGoalsSection } from './components/LearningGoalsSection'
 import { PrivacySection } from './components/PrivacySection'
 import { SecuritySection } from './components/SecuritySection'
 import { DangerZoneSection } from './components/DangerZoneSection'
@@ -19,7 +18,6 @@ const ProfileTabContent: React.FC = () => {
     user,
     profile,
     activeGoal,
-    goals,
     oauthIdentities,
     streak,
     loading,
@@ -31,8 +29,6 @@ const ProfileTabContent: React.FC = () => {
     deleteAvatar,
     updateVisibility,
     changePassword,
-    createGoal,
-    updateGoalStatus,
     unlinkOAuth,
   } = useProfile()
 
@@ -115,18 +111,7 @@ const ProfileTabContent: React.FC = () => {
         />
       </motion.div>
 
-      {/* 3. Learning Goals */}
-      <motion.div variants={itemVariants}>
-        <LearningGoalsSection
-          activeGoal={activeGoal}
-          goals={goals}
-          onCreateGoal={createGoal}
-          onUpdateStatus={updateGoalStatus}
-          onShowToast={handleShowToast}
-        />
-      </motion.div>
-
-      {/* 4. Privacy */}
+      {/* Privacy */}
       <motion.div variants={itemVariants}>
         <PrivacySection
           profile={profile}

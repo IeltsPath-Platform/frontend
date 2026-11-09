@@ -1,4 +1,5 @@
 import React from 'react'
+import { CircleAlert } from 'lucide-react'
 
 interface OverviewBlockStatusProps {
   loading: boolean
@@ -10,10 +11,11 @@ interface OverviewBlockStatusProps {
 export const OverviewBlockStatus: React.FC<OverviewBlockStatusProps> = ({ loading, error, onRetry }) => {
   if (error) {
     return (
-      <p className="overview-block-status overview-block-error" role="alert">
-        {error}{' '}
+      <div className="overview-block-status overview-block-error" role="alert">
+        <CircleAlert size={18} aria-hidden="true" />
+        <span>Chưa thể tải dữ liệu. Vui lòng thử lại.</span>
         <button type="button" className="overview-block-retry" onClick={onRetry}>Thử lại</button>
-      </p>
+      </div>
     )
   }
   if (loading) return <p className="overview-block-status" role="status">Đang tải dữ liệu…</p>

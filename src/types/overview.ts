@@ -1,12 +1,11 @@
 export type OverviewSidebarTab =
   | 'overview'
   | 'detailed-stats'
+  | 'achievements'
   | 'favorites'
-  | 'history'
   | 'orders'
   | 'support'
   | 'profile'
-  | 'ranking'
 
 export interface LearningOrbitSkill {
   name: 'Listening' | 'Reading' | 'Writing' | 'Speaking'

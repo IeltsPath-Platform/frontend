@@ -3,6 +3,12 @@ import { apiRequest, HttpError } from '@/lib/httpClient'
 export type Skill = 'LISTENING' | 'READING' | 'WRITING' | 'SPEAKING'
 export type BandSkill = Skill | 'OVERALL'
 export type SeriesKind = 'PLACEMENT' | 'MOCK' | 'OFFICIAL_PRACTICE'
+export interface BandAvailabilityOption {
+  seriesKind: SeriesKind
+  skill: BandSkill
+  latestSubmittedAt: string
+}
+export interface BandAvailability { options: BandAvailabilityOption[] }
 export interface StudyDay {
   date: string
   timezone: string
@@ -80,11 +86,19 @@ export interface LearnerReportSkill {
   kpCount: number
   band: number | null
 }
+/** One knowledge point of the report; `band` is the band level of the course the point belongs to. */
+export interface ReportKnowledgePoint {
+  skill: string | null
+  band: number | null
+  score: { mastery: number; tier: string; evidenceCount: number }
+}
 /** The parts of GET /api/learning/report the overview uses. */
 export interface LearnerReportSummary {
+  knowledgePoints?: ReportKnowledgePoint[]
   skills: LearnerReportSkill[]
   estimatedBand: { value: number | null; estimated: boolean } | null
   target: { targetBand: number | null; gap: number | null; examDate: string | null } | null
+  placementBand?: number | null
 }
 /** The parts of GET /api/learning-support/flashcards/notebook/summary the overview uses. */
 export interface NotebookSummary {
@@ -92,6 +106,9 @@ export interface NotebookSummary {
   dueNow: number
   learnedCount: number
   masteredCount: number
+  newCount?: number
+  inProgressCount?: number
+  dueReviewCount?: number
   byLevel: Record<'UNKNOWN' | 'FAMILIAR' | 'LEARNING' | 'MASTERED', number>
 }
 /** One finished practice attempt of GET /api/assessments/practice/history; `percent` is 0-100. */
@@ -110,6 +127,30 @@ export interface StreakSummary {
   currentDays: number
   longestDays: number
   activeToday: boolean
+  freezeAvailable?: boolean
+  /** Points the next freeze costs, as GET /api/learning/me/streak returns it. */
+  nextFreezeCost?: number
+  /** yyyy-mm-dd dates of the latest run of days a freeze covered, oldest first. */
+  frozenDays?: string[]
+}
+export interface LearningOverviewStatistics {
+  generatedAt: string
+  dataFrom: string | null
+  totalStudySeconds: number
+  completedLessons: number
+}
+export interface OverviewTestResult {
+  attemptId: string
+  resultId: string
+  resultVersion: number
+  seriesKind: SeriesKind
+  submittedAt: string
+  overallBand: number
+  skills: { skill: Skill; band: number }[]
+  gradingSource: string
+  measurementQuality: string
+  scoringVersion: string | null
+  pendingRegrade: boolean
 }
 function query(values: Record<string, string | number | undefined>) {
   const params = new URLSearchParams()
@@ -117,15 +158,14 @@ function query(values: Record<string, string | number | undefined>) {
   return params.toString()
 }
 export const overviewApi = {
+  learningOverview: (signal: AbortSignal) => apiRequest<LearningOverviewStatistics>('/api/learning/statistics/overview', { signal, auth: true }),
   report: (signal: AbortSignal) => apiRequest<LearnerReportSummary>('/api/learning/report', { signal, auth: true }),
-  notebook: (signal: AbortSignal) =>
-    apiRequest<NotebookSummary>(`/api/learning-support/flashcards/notebook/summary?${query({ timezone: Intl.DateTimeFormat().resolvedOptions().timeZone })}`, { signal, auth: true }),
   streak: (signal: AbortSignal) => apiRequest<StreakSummary>('/api/learning/me/streak', { signal, auth: true }),
   time: (from: string, to: string, courseId: string, signal: AbortSignal) =>
     apiRequest<StudyTimeStatistics>(`/api/users/me/statistics/study-time?${query({ from, to, grain: 'DAY', courseId })}`, { signal, auth: true }),
-  progress: async (page: number, courseId: string, signal: AbortSignal) => {
+  progress: async (page: number, courseId: string, signal: AbortSignal, size = 4) => {
     try {
-      return await apiRequest<ProgressStatistics>(`/api/learning/statistics/progress?${query({ page, size: 4, courseId })}`, { signal, auth: true })
+      return await apiRequest<ProgressStatistics>(`/api/learning/statistics/progress?${query({ page, size, courseId })}`, { signal, auth: true })
     } catch (error) {
       if (error instanceof HttpError && error.status === 503 && error.code === 'PROGRESS_UNAVAILABLE') {
         throw new HttpError(error.status,
@@ -135,6 +175,25 @@ export const overviewApi = {
       throw error
     }
   },
+  /** The progress endpoint supports 20 courses/page and at most 100 started courses. */
+  allProgress: async (signal: AbortSignal): Promise<ProgressStatistics> => {
+    const first = await overviewApi.progress(0, '', signal, 20)
+    const courses = [...first.courses]
+    let last = first
+    for (let page = 1; last.hasNext && page < 5; page++) {
+      last = await overviewApi.progress(page, '', signal, 20)
+      if (last.totalCourses !== first.totalCourses || last.curriculumRevision !== first.curriculumRevision) {
+        throw new Error('Danh sách khóa học vừa thay đổi. Vui lòng tải lại.')
+      }
+      courses.push(...last.courses)
+    }
+    if (last.hasNext || courses.length !== first.totalCourses || new Set(courses.map((course) => course.courseId)).size !== courses.length) {
+      throw new Error('Chưa tải đủ danh sách khóa học. Vui lòng thử lại.')
+    }
+    return { ...first, courses, size: courses.length, hasNext: false }
+  },
+  bandAvailability: (from: string, to: string, signal: AbortSignal) =>
+    apiRequest<BandAvailability>(`/api/assessments/me/statistics/bands/availability?${query({ from, to, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone })}`, { signal, auth: true }),
   bands: (from: string, to: string, skill: BandSkill, seriesKind: SeriesKind, cursor: string, signal: AbortSignal) =>
     apiRequest<BandStatistics>(`/api/assessments/me/statistics/bands?${query({ from, to, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, skill, seriesKind, cursor, limit: 100 })}`, { signal, auth: true }),
   /** The 50 most recent finished attempts (the server's page limit) and how many there are in all. */

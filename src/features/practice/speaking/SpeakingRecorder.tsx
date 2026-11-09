@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { LoaderCircle, Mic, Play, Square } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { AudioVisualizer } from '../components/AudioVisualizer'
@@ -22,6 +22,7 @@ export function SpeakingRecorder({ saved, onSaved, onStart, locked = false }: {
   /** The part's time is over: a recording in progress is stopped and no new one can start. */
   locked?: boolean
 }) {
+  const [recordingId] = useState(() => crypto.randomUUID())
   const recorder = useAudioRecorder({ saved, onSaved })
   const isRecording = recorder.status === 'recording'
   const isBusy = recorder.status === 'requesting' || recorder.status === 'processing'
@@ -31,6 +32,11 @@ export function SpeakingRecorder({ saved, onSaved, onStart, locked = false }: {
   useEffect(() => {
     if (locked && isRecording) void stopRecording()
   }, [locked, isRecording, stopRecording])
+
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('study-recording', { detail: { id: recordingId, active: isRecording } }))
+    return () => { window.dispatchEvent(new CustomEvent('study-recording', { detail: { id: recordingId, active: false } })) }
+  }, [recordingId, isRecording])
 
   const heading = isRecording ? 'Microphone is live' : recorder.status === 'recorded' ? 'Your recording is ready' : 'Ready when you are'
   const state = isRecording ? 'Đang ghi' : isBusy ? 'Đang xử lý' : recorder.status === 'recorded' ? 'Đã ghi xong' : 'Sẵn sàng'

@@ -1,16 +1,20 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
 import { UserTierDropdown } from './UserTierDropdown'
+
+function Overview() {
+  const { search } = useLocation()
+  return <p>{search === '?tab=achievements' ? 'Trang thành tích' : 'Trang tổng quan'}</p>
+}
 
 function renderDropdown(props: Partial<React.ComponentProps<typeof UserTierDropdown>> = {}) {
   return render(
     <MemoryRouter initialEntries={['/home']}>
       <Routes>
         <Route path="/home" element={<UserTierDropdown userName="Nguyễn Văn An" {...props} />} />
-        <Route path="/learn/progress" element={<p>Trang thành tích</p>} />
-        <Route path="/overview" element={<p>Trang tổng quan</p>} />
+        <Route path="/overview" element={<Overview />} />
       </Routes>
     </MemoryRouter>,
   )
@@ -20,7 +24,7 @@ describe('UserTierDropdown', () => {
   it('puts the profile first, then the achievements, and no longer offers the demo plan switch', () => {
     renderDropdown()
     const links = screen.getAllByRole('link')
-    expect(links.map((link) => link.getAttribute('href'))).toEqual(['/overview?tab=profile', '/learn/progress'])
+    expect(links.map((link) => link.getAttribute('href'))).toEqual(['/overview?tab=profile', '/overview?tab=achievements'])
     expect(links[0]).toHaveTextContent('Hồ sơ của tôi')
     expect(screen.queryByRole('button', { name: /Chuyển sang/ })).not.toBeInTheDocument()
     expect(screen.queryByText(/Chỉ mô phỏng/)).not.toBeInTheDocument()

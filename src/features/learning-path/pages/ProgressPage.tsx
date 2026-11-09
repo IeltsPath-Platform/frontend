@@ -1,6 +1,5 @@
 import { learningApi } from '../api'
 import { HeartsPanel } from '../components/HeartsPanel'
-import { LearnTrail } from '../components/LearnTrail'
 import { BadgeGrid } from '../components/progress/BadgeGrid'
 import { LeaguePanel } from '../components/progress/LeaguePanel'
 import { LevelSummary } from '../components/progress/LevelSummary'
@@ -20,7 +19,6 @@ export function ProgressPage() {
 
   return (
     <div className="lp-page lp-progress-page">
-      <LearnTrail items={[{ label: 'Khóa học', to: '/learn' }, { label: 'Thành tích' }]} />
       <header className="lp-lesson-head">
         <p className="lp-eyebrow">Thành tích của bạn</p>
         <h1>Tiến độ học</h1>

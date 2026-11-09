@@ -55,7 +55,6 @@ import { FreePracticePage } from '@/features/learning-path/pages/FreePracticePag
 import { KnowledgeTreePage } from '@/features/learning-path/pages/KnowledgeTreePage'
 import { LessonPage } from '@/features/learning-path/pages/LessonPage'
 import { PlacementPage } from '@/features/learning-path/pages/PlacementPage'
-import { ProgressPage } from '@/features/learning-path/pages/ProgressPage'
 import { ReviewBasketPage } from '@/features/learning-path/pages/ReviewBasketPage'
 import { ReviewPage } from '@/features/learning-path/pages/ReviewPage'
 import { TopicPage } from '@/features/learning-path/pages/TopicPage'
@@ -123,7 +122,7 @@ function AppContent() {
       <Route path="/learn" element={<RequireAuth><LearnLayout /></RequireAuth>}>
         <Route index element={<CourseListPage />} />
         <Route path="placement" element={<PlacementPage />} />
-        <Route path="progress" element={<ProgressPage />} />
+        <Route path="progress" element={<Navigate replace to="/overview?tab=achievements" />} />
         <Route path="review-basket" element={<ReviewBasketPage />} />
         <Route path="courses/:courseId" element={<TopicListPage />} />
         <Route path="courses/:courseId/tree" element={<KnowledgeTreePage />} />

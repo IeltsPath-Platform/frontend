@@ -146,7 +146,7 @@ export function UserTierDropdown({
             </span>
             <ChevronRight className={styles.menuArrow} aria-hidden="true" size={16} />
           </Link>
-          <Link to="/learn/progress" className={styles.menuLink} onClick={closeMenu}>
+          <Link to="/overview?tab=achievements" className={styles.menuLink} onClick={closeMenu}>
             <span className={styles.menuIcon} aria-hidden="true"><Trophy size={17} /></span>
             <span className={styles.menuCopy}>
               <strong>Thành tích của tôi</strong>

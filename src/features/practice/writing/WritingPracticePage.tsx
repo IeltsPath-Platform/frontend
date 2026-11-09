@@ -8,6 +8,8 @@ import { WritingDictionaryPanel, WritingTaskPanel, WritingTopBar } from './Writi
 import type { WritingTask } from './writingApi'
 import { boldRuns, countWords, essaySections, formatClock, joinSections, loadDraft, saveDraft } from './writingText'
 import { useGradeFlow } from './useGradeFlow'
+import { StudyActivityTracker } from '@/features/study-time/StudyActivityTracker'
+import { usePracticeSession } from '@/features/study-time/usePracticeSession'
 
 const CATALOG_PATH = '/practice-tests?skill=writing'
 
@@ -34,6 +36,7 @@ function sampleParts(sample: string, count: number) {
  * Finishing checks the points and offers the AI grade.
  */
 export function WritingPracticePage({ task }: { task: WritingTask }) {
+  const practiceSessionId = usePracticeSession('WRITING', true)
   const draftKey = `${task.sectionId}:practice`
   const sections = essaySections(task.task)
   const [texts, setTexts] = useState(() => restoreParts(loadDraft(draftKey)?.texts, sections.length))
@@ -89,6 +92,7 @@ export function WritingPracticePage({ task }: { task: WritingTask }) {
 
   return (
     <div className={`rw-root lp-tokens ww-root${eyeComfort ? ' rw-eye-comfort' : ''} rw-text-${fontSize}`}>
+      {practiceSessionId && <StudyActivityTracker sourceType="WRITING" sourceId={practiceSessionId} enabled />}
       <WritingTopBar exitTo={CATALOG_PATH} eyeComfort={eyeComfort} onToggleEyeComfort={setEyeComfort} fontSize={fontSize} onChangeFontSize={setFontSize}>
         <p className="rw-timer" role="timer" aria-label="Thời gian đã viết">
           <Clock3 size={14} aria-hidden="true" />

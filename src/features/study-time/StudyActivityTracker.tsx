@@ -3,9 +3,9 @@ import { Button } from '@/components/ui/button'
 import { useAuthSession } from '@/features/auth/authSession'
 import { API_BASE_URL, USE_MOCK_LEARNING } from '@/lib/env'
 import { apiRequest, getAccessToken, HttpError } from '@/lib/httpClient'
-import { ActiveIntervals, SESSION_IN_USE_RETRY_DELAYS_MS, type ActiveInterval } from './activeIntervals'
+import { ActiveIntervals, DEFAULT_IDLE_MS, LONG_FORM_IDLE_MS, SESSION_IN_USE_RETRY_DELAYS_MS, type ActiveInterval } from './activeIntervals'
 
-type SourceType = 'LESSON' | 'PRACTICE' | 'REVIEW' | 'ASSESSMENT' | 'VOCABULARY_REVIEW'
+type SourceType = 'LESSON' | 'PRACTICE' | 'REVIEW' | 'ASSESSMENT' | 'WRITING' | 'SPEAKING' | 'VOCABULARY'
 interface Session { sessionId: string; epoch: number; serverStartedAt: string; serverNow: string; nextSequence: number }
 interface Payload { epoch: number; sequence: number; intervals: ActiveInterval[] }
 type State = { message: string; retry: boolean }
@@ -18,7 +18,7 @@ export function StudyActivityTracker({ sourceType, sourceId, enabled = true }: {
   const { isLoggedIn, email } = useAuthSession()
   const [state, setState] = useState<State>(STARTING)
   const [attempt, setAttempt] = useState(0)
-  const active = enabled && isLoggedIn && (sourceType === 'VOCABULARY_REVIEW' || !USE_MOCK_LEARNING)
+  const active = enabled && isLoggedIn && !USE_MOCK_LEARNING
   useEffect(() => {
     if (!active) return
     let disposed = false
@@ -128,7 +128,7 @@ export function StudyActivityTracker({ sourceType, sourceId, enabled = true }: {
           baseOffset = Math.max(0, Date.parse(created.serverNow) - Date.parse(created.serverStartedAt))
           anchor = performance.now()
           lastSuccess = anchor
-          collector = new ActiveIntervals(Math.floor(baseOffset))
+          collector = new ActiveIntervals(Math.floor(baseOffset), sourceType === 'ASSESSMENT' || sourceType === 'LESSON' || sourceType === 'WRITING' ? LONG_FORM_IDLE_MS : DEFAULT_IDLE_MS)
           if (disposed || ending || document.visibilityState !== 'visible') { await close(); return }
           report(RECORDING)
           return

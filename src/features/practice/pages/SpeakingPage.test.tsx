@@ -250,7 +250,7 @@ describe('SpeakingPage', () => {
   describe('minimum answer time', () => {
     it('keeps Stop closed for the first seconds and says how long to wait', () => {
       recorder.status = 'recording'
-      recorder.elapsedSeconds = 2
+      recorder.elapsedSeconds = 0
       renderPage()
 
       expect(screen.getByRole('status')).toHaveTextContent('Vui lòng đợi 3 giây để hoàn thành')

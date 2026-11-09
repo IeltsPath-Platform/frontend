@@ -1,44 +1,12 @@
-import { useRef, useState } from 'react'
 import { Flame, Loader2, Snowflake } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { StreakStatus } from '~types/learningPath'
-import { learningApi, toApiError, userMessage } from '../../api'
-import { newRequestId } from '../../lib/requestId'
+import { useBuyStreakFreeze } from '../../lib/useBuyStreakFreeze'
 
 /** The streak, and a way to buy a freeze that keeps it through one missed day. */
 export function StreakPanel({ streak, onChanged }: { streak: StreakStatus; onChanged: () => void }) {
-  const [buying, setBuying] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  // One id per purchase: a retry after a dropped connection reuses it, so Access charges the points once.
-  const requestId = useRef<string | null>(null)
+  const { buy: buyFreeze, buying, error } = useBuyStreakFreeze(onChanged)
   const lost = streak.currentDays === 0 && streak.lostStreakDays > 0
-
-  async function buyFreeze() {
-    if (buying) return
-    setBuying(true)
-    setError(null)
-    requestId.current ??= newRequestId()
-    try {
-      await learningApi.buyStreakFreeze(requestId.current)
-      requestId.current = null
-      onChanged()
-    } catch (reason) {
-      const apiError = toApiError(reason)
-      if (apiError.code === 'FREEZE_ALREADY_OWNED') {
-        // Owned already, possibly from an earlier try whose answer was lost: show the current state.
-        requestId.current = null
-        onChanged()
-      } else if (apiError.code === 'ACCESS_UNAVAILABLE' || apiError.code === 'SERVER_ERROR') {
-        // Nothing was charged for this id as far as we know, so keep it for the retry.
-        setError(userMessage(apiError))
-      } else {
-        requestId.current = null
-        setError(userMessage(apiError))
-      }
-    } finally {
-      setBuying(false)
-    }
-  }
 
   return (
     <div className="lp-streak">
