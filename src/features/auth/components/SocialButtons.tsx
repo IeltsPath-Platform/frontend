@@ -5,11 +5,14 @@ import type { SocialProvider } from '../api/types'
 export type { SocialProvider }
 
 interface SocialButtonsProps {
+  mode?: 'sign-in' | 'sign-up'
   onSelect: (provider: SocialProvider) => void
   disabled?: boolean
 }
 
-export function SocialButtons({ onSelect, disabled = false }: SocialButtonsProps) {
+export function SocialButtons({ mode = 'sign-in', onSelect, disabled = false }: SocialButtonsProps) {
+  const actionVerb = mode === 'sign-up' ? 'Đăng ký' : 'Đăng nhập'
+
   return (
     <div className="auth-social-buttons" aria-label="Đăng nhập qua mạng xã hội">
       <Button
@@ -17,11 +20,11 @@ export function SocialButtons({ onSelect, disabled = false }: SocialButtonsProps
         variant="outline"
         className="auth-social-button"
         disabled={disabled}
-        title={disabled ? 'Đăng nhập Google chưa được hỗ trợ' : undefined}
+        title={disabled ? `${actionVerb} với Google chưa được hỗ trợ` : undefined}
         onClick={() => onSelect('Google')}
       >
-        <img src={googleLogo} alt="" aria-hidden="true" width={20} height={20} className="size-5 shrink-0 object-contain" />
-        {disabled ? 'Google (chưa hỗ trợ)' : 'Continue with Google'}
+        <img src={googleLogo} alt="" aria-hidden="true" width={18} height={18} className="size-[18px] shrink-0 object-contain" />
+        <span key={`google-${mode}`} className="auth-social-label-morph">{`${actionVerb} với Google`}</span>
       </Button>
     </div>
   )
