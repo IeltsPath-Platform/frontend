@@ -119,6 +119,8 @@ const ProfileTabContent: React.FC = () => {
       <motion.div variants={itemVariants}>
         <SecuritySection
           oauthIdentities={oauthIdentities}
+          email={user?.email ?? ''}
+          hasPassword={user?.hasPassword ?? true}
           onChangePassword={changePassword}
           onUnlinkOAuth={unlinkOAuth}
           onShowToast={handleShowToast}

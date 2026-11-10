@@ -22,6 +22,13 @@ export function ResetPasswordPage() {
   const { toast } = useToast()
   const tokenFromUrl = (searchParams.get('token') ?? '').trim()
 
+  useEffect(() => {
+    if (!tokenFromUrl) return
+    const url = new URL(window.location.href)
+    url.searchParams.delete('token')
+    window.history.replaceState(window.history.state, '', url)
+  }, [tokenFromUrl])
+
   // Field validation stays under the form; the submit result is announced as a toast.
   const [validationMessage, setValidationMessage] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -67,17 +74,18 @@ export function ResetPasswordPage() {
   return (
     <AuthShell
       ambientTitle="Đặt lại mật khẩu an toàn."
-      ambientBody="Dán mã từ email/log BE (demo), hoặc mở link có ?token=."
+      ambientBody="Mở liên kết trong email đặt lại mật khẩu để tiếp tục."
     >
       <section className="auth-form-panel" aria-labelledby="reset-form-title">
         <header className="auth-form-heading">
           <p>IELTS SPACE</p>
           <h1 id="reset-form-title">Đặt lại mật khẩu</h1>
-          <span>Nhập mã xác nhận và mật khẩu mới.</span>
+          <span>{tokenFromUrl ? 'Tạo mật khẩu mới cho tài khoản của bạn.' : 'Nhập mã xác nhận và mật khẩu mới.'}</span>
         </header>
         <form className="auth-form" onSubmit={handleSubmit}>
           <div className="auth-fields">
-            <InputField
+            {tokenFromUrl && <input type="hidden" name="token" value={tokenFromUrl} />}
+            {!tokenFromUrl && <InputField
               id="reset-token"
               name="token"
               label="Mã đặt lại"
@@ -85,9 +93,8 @@ export function ResetPasswordPage() {
               autoComplete="one-time-code"
               required
               defaultValue={tokenFromUrl}
-              placeholder="Dán mã từ log/Swagger hoặc email"
-              hint="Demo: BE ghi mã vào log khi gọi forgot-password."
-            />
+              placeholder="Dán mã từ email"
+            />}
             <InputField
               id="reset-new-password"
               name="newPassword"

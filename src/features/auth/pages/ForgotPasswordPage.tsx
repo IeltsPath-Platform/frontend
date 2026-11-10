@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { HttpError } from '@/lib/httpClient'
@@ -11,6 +11,13 @@ export function ForgotPasswordPage() {
   const { toast } = useToast()
   const [submitting, setSubmitting] = useState(false)
   const [sent, setSent] = useState(false)
+  const [cooldownSeconds, setCooldownSeconds] = useState(0)
+
+  useEffect(() => {
+    if (!cooldownSeconds) return
+    const timer = window.setTimeout(() => setCooldownSeconds((seconds) => Math.max(0, seconds - 1)), 1000)
+    return () => window.clearTimeout(timer)
+  }, [cooldownSeconds])
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -22,10 +29,11 @@ export function ForgotPasswordPage() {
     try {
       const result = await authApi.forgotPassword(email.trim())
       setSent(true)
+      setCooldownSeconds(60)
       toast({
         title: 'Đã gửi yêu cầu',
         description: result.message
-          || 'Nếu email tồn tại, mã đặt lại đã được tạo. (Môi trường demo: lấy mã từ log/Swagger BE.)',
+          || 'Nếu email tồn tại, chúng tôi sẽ gửi hướng dẫn đặt lại mật khẩu.',
         tone: 'success',
       })
     } catch (error) {
@@ -41,13 +49,13 @@ export function ForgotPasswordPage() {
   return (
     <AuthShell
       ambientTitle="Quên mật khẩu? Khôi phục nhanh."
-      ambientBody="Nhập email đã đăng ký. Mã đặt lại sẽ được xử lý phía máy chủ (demo: xem log BE)."
+      ambientBody="Nhập email đã đăng ký. Nếu email tồn tại, chúng tôi sẽ gửi hướng dẫn đặt lại mật khẩu."
     >
       <section className="auth-form-panel" aria-labelledby="forgot-form-title">
         <header className="auth-form-heading">
           <p>IELTS SPACE</p>
           <h1 id="forgot-form-title">Quên mật khẩu</h1>
-          <span>Chúng tôi sẽ xử lý mã đặt lại cho email của bạn.</span>
+          <span>Nếu email tồn tại, hướng dẫn đặt lại sẽ được gửi tới hộp thư của bạn.</span>
         </header>
         <form className="auth-form" onSubmit={handleSubmit}>
           <div className="auth-fields">
@@ -64,8 +72,8 @@ export function ForgotPasswordPage() {
               disabled={submitting}
             />
           </div>
-          <Button type="submit" className="auth-submit-button" disabled={submitting}>
-            {submitting ? 'Đang gửi…' : sent ? 'Gửi lại mã' : 'Gửi mã đặt lại'}
+          <Button type="submit" className="auth-submit-button" disabled={submitting || cooldownSeconds > 0}>
+            {submitting ? 'Đang gửi…' : cooldownSeconds > 0 ? `Gửi lại sau ${cooldownSeconds}s` : sent ? 'Gửi lại email' : 'Gửi email đặt lại'}
           </Button>
         </form>
         <p className="auth-mode-toggle">
