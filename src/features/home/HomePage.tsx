@@ -3,6 +3,7 @@ import { Gem, KeyRound } from 'lucide-react'
 import { SiteNavbar } from '@/components/SiteNavbar'
 import { useAuthSession } from '@/features/auth/authSession'
 import { HomeHeroSection } from './components/HomeHeroSection'
+import { ConsultationSection } from './components/ConsultationSection'
 import { HomeIntroductionSection } from './components/HomeIntroductionSection'
 import { LearningOrbitSection } from './components/LearningOrbitSection'
 import { PricingCards } from './components/PricingCards'
@@ -98,6 +99,7 @@ export function HomePage({ accessClient }: HomePageProps) {
             />
           </div>
         </section>
+        <ConsultationSection />
       </main>
       <KeyActivationDialog
         key={activationProduct?.code ?? 'closed'}

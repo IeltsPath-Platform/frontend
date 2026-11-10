@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { apiRequest } from '@/lib/httpClient'
+import { resolveSupabaseAvatarUrl } from '@/features/home/examinerPublicApi'
 import type { WritingSubmission } from './writingApi'
 
 const certificateSchema = z.object({
@@ -13,7 +14,7 @@ const certificateSchema = z.object({
 export const examinerSchema = z.object({
   id: z.guid(),
   displayName: z.string(),
-  avatarUrl: z.string().nullish(),
+  avatarUrl: z.string().nullish().transform((val) => (val ? resolveSupabaseAvatarUrl(val, val) : val)),
   bio: z.string().nullish(),
   ieltsBand: z.number().nullish(),
   certificates: z.array(certificateSchema),
