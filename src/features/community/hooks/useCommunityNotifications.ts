@@ -80,6 +80,16 @@ export function useCommunityNotifications(enabled: boolean) {
   }, [enabled, refresh])
   const markRead = async (id: string) => { await communityApi.markRead(id); await refresh() }
   const markAll = async () => { await communityApi.markAll(); await refresh() }
+  const removeOne = async (id: string) => {
+    await communityApi.deleteNotification(id)
+    setItems((current) => current.filter((item) => item.id !== id))
+    await refresh()
+  }
+  const removeRead = async () => {
+    await communityApi.deleteReadNotifications()
+    setItems((current) => current.filter((item) => !item.readAt))
+    await refresh()
+  }
   const dismissFresh = useCallback(() => setFresh(null), [])
-  return { items, unread, error, announcement, fresh, dismissFresh, refresh, markRead, markAll, hasMore, loadingMore, loadMore }
+  return { items, unread, error, announcement, fresh, dismissFresh, refresh, markRead, markAll, removeOne, removeRead, hasMore, loadingMore, loadMore }
 }

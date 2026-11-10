@@ -64,7 +64,12 @@
 .community-notice-readall:hover { background: #dfe9ff; }
 
 .community-notice-panel ul { margin: 0; padding: .4rem 0; list-style: none; }
-.community-notice-panel li { margin: 0; padding: 0; border-bottom: 1px solid #f1f5f9; }
+.community-notice-panel li { position: relative; margin: 0; padding: 0; border-bottom: 1px solid #f1f5f9; }
+.community-notice-delete {
+  position: absolute; top: .5rem; right: .5rem; display: grid; place-items: center; width: 1.6rem; height: 1.6rem;
+  border: 0; border-radius: 6px; background: transparent; color: #64748b; cursor: pointer;
+}
+.community-notice-delete:hover { background: #fee2e2; color: #b91c1c; }
 .community-notice-panel li:last-child { border-bottom: 0; }
 .community-notice-panel li a {
   display: flex; flex-direction: column; gap: .2rem; padding: .7rem 1rem 1rem 1.6rem; position: relative;

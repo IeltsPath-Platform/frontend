@@ -19,6 +19,7 @@ const COMMUNITY_TEXT: Record<string, string> = {
   'community.post-reacted.v1': 'Bài viết của bạn nhận được cảm xúc',
   'community.comment-mentioned.v1': 'Bạn được nhắc trong một bình luận',
   'community.comment-replied.v1': 'Có phản hồi mới trong cuộc trò chuyện',
+  'community.comment-created.v1': 'Có bình luận mới trên bài viết',
 }
 
 /**

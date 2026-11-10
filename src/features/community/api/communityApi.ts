@@ -109,6 +109,8 @@ export const communityApi = {
   unread: async () => z.object({ count: z.number() }).parse(await apiRequest('/api/notifications/unread-count', { auth: true })),
   markRead: (id: string) => apiRequest<void>(`/api/notifications/${id}/read`, { method: 'PUT', auth: true }),
   markAll: () => apiRequest('/api/notifications/read-all', { method: 'PUT', auth: true }),
+  deleteNotification: (id: string) => apiRequest<void>(`/api/notifications/${id}`, { method: 'DELETE', auth: true }),
+  deleteReadNotifications: async () => z.object({ count: z.number() }).parse(await apiRequest('/api/notifications/read', { method: 'DELETE', auth: true })),
 }
 
 export type Comment = { id: string; authorId: string; parentCommentId: string | null; body: string; replyCount: number; author?: { displayName: string } }
