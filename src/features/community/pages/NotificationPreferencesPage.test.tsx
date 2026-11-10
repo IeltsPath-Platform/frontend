@@ -53,13 +53,15 @@ describe('NotificationPreferencesPage', () => {
     api.notificationPreferences.mockResolvedValue([
       ...defaults,
       { eventType: 'assessment.grading-requested.v1', enabled: true },
+      { eventType: 'assessment.grading-due-soon.v1', enabled: true },
+      { eventType: 'access.subscription-granted.v1', enabled: true },
     ])
     render(<MemoryRouter initialEntries={['/notifications/preferences']}><Routes>
       <Route path="/notifications/preferences" element={<NotificationPreferencesPage />} />
     </Routes></MemoryRouter>)
 
     expect(await screen.findByRole('heading', { name: 'Giám khảo' })).toBeInTheDocument()
-    expect(screen.getAllByRole('switch')).toHaveLength(7)
+    expect(screen.getAllByRole('switch')).toHaveLength(9)
     expect(screen.getAllByRole('switch', { name: /email học tập/i })).toHaveLength(1)
   })
 })

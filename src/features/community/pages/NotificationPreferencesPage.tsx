@@ -13,12 +13,19 @@ const labels: Record<string, { title: string; description: string; icon: LucideI
   'community.comment-mentioned.v1': { title: 'Được nhắc trong bình luận', description: 'Khi có người nhắc bạn trong một bình luận.', icon: AtSign, tone: 'amber' },
   'community.post-reacted.v1': { title: 'Cảm xúc bài viết', description: 'Khi có người bày tỏ cảm xúc với bài viết của bạn.', icon: Heart, tone: 'rose' },
   'community.user-followed.v1': { title: 'Lượt theo dõi mới', description: 'Khi có người bắt đầu theo dõi bạn.', icon: UserPlus, tone: 'green' },
+  'assessment.grading-requested.v1': { title: 'Bài viết cần chấm', description: 'Khi học viên chọn bạn chấm bài.', icon: Bell, tone: 'amber' },
+  'assessment.grading-due-soon.v1': { title: 'Sắp đến hạn chấm', description: 'Nhắc khi bài được giao sắp đến hạn.', icon: Bell, tone: 'amber' },
+  'assessment.grading-overdue.v1': { title: 'Bài chấm quá hạn', description: 'Khi bài viết bạn chọn chấm bị quá hạn.', icon: Bell, tone: 'rose' },
+  'assessment.grading-completed.v1': { title: 'Đã có kết quả chấm', description: 'Khi bài viết của bạn được chấm xong.', icon: Bell, tone: 'green' },
+  'access.subscription-granted.v1': { title: 'Đã kích hoạt Premium', description: 'Khi quyền Premium được cấp cho tài khoản.', icon: Bell, tone: 'violet' },
+  'access.subscription-expiry-notice.v1': { title: 'Premium sắp hết hạn', description: 'Nhắc khi quyền Premium sắp hết hạn hoặc đã hết hạn.', icon: Bell, tone: 'amber' },
+  'assessment.result-ready.v1': { title: 'Đã có kết quả bài thi', description: 'Khi kết quả bài thi đã sẵn sàng.', icon: Bell, tone: 'green' },
 }
 
 const roleGroups = [
   { id: 'learner', title: 'Học viên', eventTypes: new Set([
     'community.post-commented.v1', 'community.comment-replied.v1', 'community.comment-mentioned.v1',
-    'community.post-reacted.v1', 'community.user-followed.v1', 'access.subscription-expiry-notice.v1',
+    'community.post-reacted.v1', 'community.user-followed.v1', 'access.subscription-granted.v1', 'access.subscription-expiry-notice.v1',
     'assessment.result-ready.v1', 'assessment.grading-completed.v1', 'assessment.grading-overdue.v1',
   ]) },
   { id: 'examiner', title: 'Giám khảo', eventTypes: new Set([
