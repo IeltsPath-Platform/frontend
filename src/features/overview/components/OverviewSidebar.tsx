@@ -2,9 +2,8 @@ import React from 'react'
 import {
   LayoutDashboard,
   BarChart2,
-  Clock,
+  Trophy,
   User,
-  Award,
 } from 'lucide-react'
 import type { OverviewSidebarTab } from '@/types/overview'
 
@@ -43,12 +42,12 @@ export const OverviewSidebar: React.FC<OverviewSidebarProps> = ({
 
         <button
           type="button"
-          className={`sidebar-item-btn ${activeTab === 'history' ? 'active' : ''}`}
-          onClick={() => onSelectTab('history')}
-          aria-current={activeTab === 'history' ? 'page' : undefined}
+          className={`sidebar-item-btn ${activeTab === 'achievements' ? 'active' : ''}`}
+          onClick={() => onSelectTab('achievements')}
+          aria-current={activeTab === 'achievements' ? 'page' : undefined}
         >
-          <Clock size={18} />
-          <span>Lịch sử ôn luyện</span>
+          <Trophy size={18} />
+          <span>Thành tích của tôi</span>
         </button>
 
         <button
@@ -61,15 +60,6 @@ export const OverviewSidebar: React.FC<OverviewSidebarProps> = ({
           <span>Hồ sơ của tôi</span>
         </button>
 
-        <button
-          type="button"
-          className={`sidebar-item-btn ${activeTab === 'ranking' ? 'active' : ''}`}
-          onClick={() => onSelectTab('ranking')}
-          aria-current={activeTab === 'ranking' ? 'page' : undefined}
-        >
-          <Award size={18} />
-          <span>Xếp hạng</span>
-        </button>
       </nav>
 
     </aside>

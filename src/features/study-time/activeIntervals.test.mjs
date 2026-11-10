@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { ActiveIntervals, SESSION_IN_USE_RETRY_DELAYS_MS } from './activeIntervals.ts'
+import { ActiveIntervals, LONG_FORM_IDLE_MS, SESSION_IN_USE_RETRY_DELAYS_MS } from './activeIntervals.ts'
 
 test('session-in-use retries are short and bounded before offering takeover', () => {
   assert.deepEqual(SESSION_IN_USE_RETRY_DELAYS_MS, [250, 750])
@@ -13,6 +13,11 @@ test('idle is clipped at two minutes and real input resumes collection', () => {
   active.activity(125000)
   active.sample(126000, true, false)
   assert.deepEqual(active.take(), [{ startOffsetMs: 125000, endOffsetMs: 126000 }])
+})
+test('long-form screens keep counting until five minutes without input', () => {
+  const active = new ActiveIntervals(0, LONG_FORM_IDLE_MS)
+  for (let time = 1000; time <= 305000; time += 1000) active.sample(time, true, false)
+  assert.deepEqual(active.take(), [{ startOffsetMs: 0, endOffsetMs: 300000 }])
 })
 test('hidden tabs and suspended browser intervals are not backfilled', () => {
   const active = new ActiveIntervals(0)

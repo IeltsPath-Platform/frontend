@@ -1,79 +1,78 @@
-import { useState } from 'react'
+import { useId } from 'react'
+import { ArrowRight } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { overviewApi, type BandSkill, type SeriesKind } from '../api/overviewApi'
-import { useStatisticsResource } from '../hooks/useStatisticsResource'
+import { notebookApi } from '@/features/vocabulary/api/notebookApi'
+import { overviewApi, type ProgressStatistics } from '../api/overviewApi'
+import { useStatisticsResource, type StatisticsResource } from '../hooks/useStatisticsResource'
+import { useChartView } from '../hooks/useChartView'
 import { StatisticsCard } from './StatisticsCard'
-import { BandHistoryChart, SkillCompletionChart, StudyTimeChart } from './StatisticsCharts'
-import { percentLabel, skillLabels } from '../statisticsFormat'
+import { SkillCompletionChart } from './StatisticsCharts'
+import { BandHistoryPanel } from './BandHistoryPanel'
+import { DetailedStatisticsHero } from './DetailedStatisticsHero'
+import { DetailedVocabularyMap } from './DetailedVocabularyMap'
 import '../statistics.css'
-
-function dayString(date: Date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-}
-function currentRange(period: string) {
-  const start = new Date()
-  const end = new Date(start)
-  if (period === 'month') { start.setDate(1); end.setMonth(end.getMonth() + 1, 0) }
-  else { start.setDate(start.getDate() - (start.getDay() + 6) % 7); end.setTime(start.getTime()); end.setDate(end.getDate() + 6) }
-  return { from: dayString(start), to: dayString(end) }
-}
-const NOTEBOOK_LEVELS = { UNKNOWN: 'Chưa hiểu', FAMILIAR: 'Quen mặt', LEARNING: 'Đang học', MASTERED: 'Đã thuộc' } as const
+import '../detailed-statistics.css'
 
 export function OverviewDetailedStats() {
   const [params, setParams] = useSearchParams()
-  const period = params.get('period') === 'month' ? 'month' : 'week'
-  const courseId = params.get('course') ?? ''
-  const requestedSkill = params.get('skill') ?? 'OVERALL'
-  const skill: BandSkill = Object.hasOwn(skillLabels, requestedSkill) ? requestedSkill as BandSkill : 'OVERALL'
-  const requestedSeries = params.get('series')
-  const series: SeriesKind = requestedSeries === 'MOCK' || requestedSeries === 'OFFICIAL_PRACTICE' ? requestedSeries : 'PLACEMENT'
-  const { from, to } = currentRange(period)
-  const [coursePage, setCoursePage] = useState(0)
-  const [cursorState, setCursorState] = useState({ key: '', stack: [''] })
-  const bandKey = `${from}:${to}:${series}:${skill}`
-  const cursors = cursorState.key === bandKey ? cursorState.stack : ['']
-  const cursor = cursors.at(-1) ?? ''
-  const page = courseId ? 0 : coursePage
-  const time = useStatisticsResource(`time:${from}:${to}:${courseId}`, (signal) => overviewApi.time(from, to, courseId, signal))
-  const progress = useStatisticsResource(`progress:${page}:${courseId}`, (signal) => overviewApi.progress(page, courseId, signal))
-  const bands = useStatisticsResource(`bands:${bandKey}:${cursor}`, (signal) => overviewApi.bands(from, to, skill, series, cursor, signal))
-  const vocabulary = useStatisticsResource('notebook', overviewApi.notebook)
+  const courseId = params.get('courseId') ?? ''
+  const courseFilterId = useId()
+  const allProgress = useStatisticsResource('detailed-progress-courses', (signal) => overviewApi.allProgress(signal))
+  const courseProgress = useStatisticsResource(`detailed-progress:${courseId}`, (signal) => courseId ? overviewApi.progress(0, courseId, signal) : Promise.resolve(null))
+  const selectedProgress = courseId ? courseProgress : allProgress
+  const progress: StatisticsResource<ProgressStatistics> = {
+    data: selectedProgress.data,
+    error: selectedProgress.error,
+    loading: selectedProgress.loading,
+    reload: selectedProgress.reload,
+  }
+  const courses = allProgress.data?.courses ?? []
+  const selectedCourse = courses.find((course) => course.courseId === courseId)
+  const { view: progressView, updating: updatingProgress } = useChartView(courseId, progress.data, progress.loading && !progress.error)
+  const displayedCourseId = progressView?.key ?? courseId
+  const displayedCourse = courses.find((course) => course.courseId === displayedCourseId)
+  const vocabulary = useStatisticsResource('detailed-vocabulary-map', (signal) => notebookApi.getVocabularyMap(undefined, signal))
+  // The learner's band and target are optional context for the band chart and the vocabulary levels; a missing or failed report only hides them.
+  const report = useStatisticsResource('detailed-report', (signal) => overviewApi.report(signal))
+  const targetBand = report.data?.target?.targetBand ?? null
+  const learnerBand = report.data?.estimatedBand?.value ?? report.data?.placementBand ?? null
   function filter(name: string, value: string) {
     setParams((previous) => {
       const next = new URLSearchParams(previous)
       next.set('tab', 'detailed-stats')
       if (value) next.set(name, value); else next.delete(name)
       return next
-    })
+    }, { preventScrollReset: true })
   }
-  return <div className="statistics-dashboard">
-    <header className="statistics-heading"><div><h1>Dữ liệu chi tiết</h1><p>Theo dõi hoạt động và kết quả học của bạn.</p></div><div className="statistics-controls" aria-label="Bộ lọc thời gian">
-      <Button variant={period === 'week' ? 'default' : 'outline'} onClick={() => filter('period', 'week')}>Tuần này</Button><Button variant={period === 'month' ? 'default' : 'outline'} onClick={() => filter('period', 'month')}>Tháng này</Button>
-    </div></header>
-    <p className="statistics-muted">{from} — {to}. Tiến độ bài học và từ vựng là số liệu hiện tại; bộ lọc thời gian áp dụng cho thời gian học và lịch sử band.</p>
-    {courseId && <div className="statistics-controls"><p>Khóa: {progress.data?.courses[0]?.name ?? 'đã chọn'} (thời gian học và tiến độ).</p><Button variant="outline" onClick={() => filter('course', '')}>Tất cả khóa đã bắt đầu</Button></div>}
-    <StatisticsCard title="Biểu đồ thời gian học" resource={time}>{(data) => <><StudyTimeChart days={data.days} /><p className="statistics-muted">Chỉ ghi nhận lúc học có hoạt động trên tab hiển thị. Ngày thống kê theo múi giờ được ghi tại thời điểm học.{courseId ? ' Mục tiêu chung không áp dụng riêng cho khóa.' : ''}</p></>}</StatisticsCard>
-    <div className="statistics-two-columns">
-      <StatisticsCard title="Tiến độ 4 kỹ năng" resource={progress}>{(data) => <><p className="statistics-muted">Bài học hoàn thành / nội dung hiện đang xuất bản của {courseId ? 'khóa đã chọn' : 'các khóa đã bắt đầu'}. Bài nhiều kỹ năng được tính cho từng kỹ năng.</p><SkillCompletionChart skills={data.skills} />{data.totalCourses === 0 && <Button asChild><Link to="/learn">Bắt đầu học</Link></Button>}</>}</StatisticsCard>
-      <StatisticsCard title="Lịch sử band" resource={bands} controls={<div className="statistics-controls">
-        <Select value={series} onValueChange={(value) => filter('series', value)}><SelectTrigger aria-label="Loại bài thi"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="PLACEMENT">Đầu vào</SelectItem><SelectItem value="MOCK">Thi thử</SelectItem><SelectItem value="OFFICIAL_PRACTICE">Luyện thi chính thức</SelectItem></SelectContent></Select>
-        <Select value={skill} onValueChange={(value) => filter('skill', value)}><SelectTrigger aria-label="Kỹ năng band"><SelectValue /></SelectTrigger><SelectContent>{Object.entries(skillLabels).map(([key, label]) => <SelectItem key={key} value={key}>{label}</SelectItem>)}</SelectContent></Select>
-      </div>}>{(data) => <>
-        {data.points.length ? <><BandHistoryChart points={data.points} /><p>Đầu kỳ: <strong>{data.baseline?.toFixed(1) ?? '—'}</strong> · Gần nhất: <strong>{data.latest?.toFixed(1) ?? '—'}</strong> · Thay đổi: {data.delta === null ? '—' : `${data.delta > 0 ? '+' : ''}${data.delta.toFixed(1)}`}</p></> : <p>Chưa có kết quả đủ điều kiện trong khoảng thời gian này. Overall cần cả 4 kỹ năng được đo trong cùng một lần thi.</p>}
-        <p className="statistics-muted">Chỉ kết quả đã đo; loại trừ band mặc định và dữ liệu cũ không rõ nguồn. Chấm lại cập nhật điểm của lần thi gốc.</p>
-        <div className="statistics-controls"><Button variant="outline" disabled={cursors.length === 1} onClick={() => setCursorState({ key: bandKey, stack: cursors.slice(0, -1) })}>Trang trước</Button><Button variant="outline" disabled={!data.nextCursor} onClick={() => { if (data.nextCursor) setCursorState({ key: bandKey, stack: [...cursors, data.nextCursor] }) }}>Trang tiếp</Button></div>
-      </>}</StatisticsCard>
-    </div>
-    <StatisticsCard title="Từ vựng cần ôn" resource={vocabulary}>{(data) => <>
-      <p><strong className="statistics-number">{percentLabel(data.total ? (data.masteredCount / data.total) * 100 : null)}</strong> đã thuộc · {data.learnedCount}/{data.total} từ đã học · {data.dueNow} đến hạn ôn</p>
-      <ul className="statistics-buckets">{(Object.keys(NOTEBOOK_LEVELS) as (keyof typeof NOTEBOOK_LEVELS)[]).map((level) => <li key={level}><strong>{data.byLevel[level] ?? 0}</strong><span>{NOTEBOOK_LEVELS[level]}</span></li>)}</ul>
-      <p className="statistics-muted">Mỗi nghĩa từ chỉ tính một lần. Mức hiểu dựa trên tự đánh giá sau khi lật đáp án.</p><Button asChild><Link to={data.dueNow ? '/vocabulary/notebook/review' : '/vocabulary/notebook'}>{data.total ? (data.dueNow ? 'Ôn ngay' : 'Mở sổ tay từ vựng') : 'Thêm từ để bắt đầu'}</Link></Button>
-    </>}</StatisticsCard>
-    <StatisticsCard title="Các khóa học của tôi" resource={progress}>{(data) => <>
-      {data.courses.length === 0 ? <p>Chưa bắt đầu khóa học nào. <Link to="/learn">Khám phá khóa học</Link></p> : <div className="statistics-course-grid">{data.courses.map((course) => <article className="statistics-course" key={course.courseId}><h3>{course.name}</h3><p>{course.completedLessons}/{course.totalLessons} bài · {percentLabel(course.percent)}</p>{course.percent !== null && <progress max={100} value={course.percent} aria-label={`Tiến độ ${course.name}`} />}<p className="statistics-muted">Học gần nhất: {course.lastStudiedAt ? new Date(course.lastStudiedAt).toLocaleString('vi-VN') : 'Chưa có lịch sử thời gian'}</p><div className="statistics-controls"><Button asChild><Link to={`/learn/courses/${course.resumeTarget.courseId}`}>Tiếp tục học</Link></Button><Button variant="outline" onClick={() => filter('course', course.courseId)}>Xem số liệu</Button></div></article>)}</div>}
-      {!courseId && <div className="statistics-controls statistics-pagination"><Button variant="outline" disabled={page === 0} onClick={() => setCoursePage(page - 1)}>Trước</Button><span>Trang {page + 1} · {data.totalCourses} khóa</span><Button variant="outline" disabled={!data.hasNext} onClick={() => setCoursePage(page + 1)}>Tiếp</Button></div>}
-    </>}</StatisticsCard>
+  return <div className="statistics-dashboard detailed-statistics">
+    <DetailedStatisticsHero />
+    <StatisticsCard title="Tiến Độ 4 Kỹ Năng" subtitle={displayedCourseId ? `Tỷ lệ hoàn thành bài học của ${displayedCourse?.name ?? 'khóa học đã chọn'}` : 'Tỷ lệ hoàn thành bài học của các khóa đã bắt đầu'} resource={{ ...progress, data: progressView?.data ?? null }} className="detailed-skill-card" controls={
+        <div className="detailed-course-filter">
+          <label htmlFor={courseFilterId}>Khóa học</label>
+          <Select value={courseId || 'all'} onValueChange={(value) => filter('courseId', value === 'all' ? '' : value)}>
+            <SelectTrigger id={courseFilterId}><SelectValue /></SelectTrigger>
+            <SelectContent position="popper" collisionPadding={12} className="max-w-[calc(100vw-24px)] [&_[data-slot=select-item]]:min-h-11 [&_[data-slot=select-item]]:whitespace-normal [&_[data-slot=select-item]]:break-words">
+              <SelectItem value="all">Tất cả khóa đã bắt đầu</SelectItem>
+              {courseId && !selectedCourse && <SelectItem value={courseId}>Khóa học đã chọn</SelectItem>}
+              {courses.map((course) => <SelectItem key={course.courseId} value={course.courseId}>{course.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          {allProgress.loading && <p role="status">Đang tải danh sách khóa học…</p>}
+          {courseId && allProgress.error && <div role="alert"><p>Không tải được danh sách khóa học: {allProgress.error}</p><Button variant="outline" onClick={allProgress.reload}>Tải lại danh sách</Button></div>}
+        </div>
+      }>
+        {(data) => <div className="overview-chart-content">
+          {updatingProgress && <p role="status" className="overview-chart-updating">Đang cập nhật biểu đồ…</p>}
+          <div className={`overview-chart-snapshot${updatingProgress ? ' is-updating' : ''}`} inert={updatingProgress}>
+            <SkillCompletionChart key={progressView?.key} skills={data.skills} />
+            {data.totalCourses === 0 && <Button asChild variant="outline"><Link to="/learn">Khám phá khóa học <ArrowRight size={16} /></Link></Button>}
+          </div>
+        </div>}
+    </StatisticsCard>
+    <BandHistoryPanel targetBand={targetBand} />
+    <StatisticsCard title="Bản đồ từ vựng của bạn" subtitle="Tiến độ theo cấp độ, tính trên kho từ của IELTS Space" resource={vocabulary} className="detailed-vocabulary">{(data) => <DetailedVocabularyMap data={data} learnerBand={learnerBand} targetBand={targetBand} />}</StatisticsCard>
+
   </div>
 }

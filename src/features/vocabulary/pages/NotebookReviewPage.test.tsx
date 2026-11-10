@@ -83,5 +83,43 @@ describe('NotebookReviewPage', () => {
       expect(screen.getByRole('heading', { level: 2, name: /Hoàn thành phiên ôn tập!/i })).toBeInTheDocument()
     })
   })
+
+  it('loads only previously learned due notebook entries from the overview action', async () => {
+    vi.mocked(notebookApi.getNotebookEntries).mockResolvedValue({
+      items: [{
+        flashcardId: 'fc-1', vocabularySenseId: 's1', vocabularyItemId: 'v1', lemma: 'lucid',
+        ipa: null, pronunciationAudioReference: null, partOfSpeech: null,
+        vietnameseMeaning: 'rõ ràng', englishDefinition: null, exampleSentence: 'A lucid explanation.',
+        imageUrl: null, level: 'UNKNOWN', leitnerBox: 1, reviewCount: 2,
+        lastReviewedAt: '2026-11-01T00:00:00Z', nextReviewAt: '2026-11-07T00:00:00Z',
+        createdAt: '2026-11-01T00:00:00Z', note: null,
+      }],
+      total: 1, page: 0, size: 50,
+    })
+    render(
+      <MemoryRouter initialEntries={['/vocabulary/notebook/review?review=due&mode=flashcard']}>
+        <Routes><Route path="/vocabulary/notebook/review" element={<NotebookReviewPage />} /></Routes>
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByText('lucid')).toBeInTheDocument()
+    expect(notebookApi.getNotebookEntries).toHaveBeenCalledWith(
+      { due: true, learned: true, sort: 'DUE', size: 50 }, expect.any(AbortSignal),
+    )
+    expect(notebookApi.getDueFlashcards).not.toHaveBeenCalled()
+  })
+
+  it('keeps an empty scheduled-review queue empty instead of falling back to recent cards', async () => {
+    vi.mocked(notebookApi.getNotebookEntries).mockResolvedValue({ items: [], total: 0, page: 0, size: 50 })
+    render(
+      <MemoryRouter initialEntries={['/vocabulary/notebook/review?review=due']}>
+        <Routes><Route path="/vocabulary/notebook/review" element={<NotebookReviewPage />} /></Routes>
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByText(/không còn từ vựng nào cần ôn gấp/i)).toBeInTheDocument()
+    expect(notebookApi.getNotebookEntries).toHaveBeenCalledTimes(1)
+    expect(notebookApi.getDueFlashcards).not.toHaveBeenCalled()
+  })
 })
 

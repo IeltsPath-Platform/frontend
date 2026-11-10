@@ -14,6 +14,7 @@ import { useExamAnnotations } from './useExamAnnotations'
 import { useWordLookup } from './useWordLookup'
 import { WordLookupPopover } from './WordLookupPopover'
 import { LoadingState, ApiErrorState } from '@/features/learning-path/components/PageState'
+import { StudyActivityTracker } from '@/features/study-time/StudyActivityTracker'
 import { useApiResource } from '@/features/learning-path/lib/useApiResource'
 import type { TestSection } from '@/features/learning-path/lib/attemptSnapshot'
 import { useAttemptAnswers } from '@/features/learning-path/lib/useAttemptAnswers'
@@ -44,7 +45,10 @@ export function ReadingPracticePage() {
   if (!resource.data) return null
   if (resource.data.attempt.status === 'SUBMITTED') return <NavigateResult attemptId={attemptId} navigate={navigate} />
   if (resource.data.attempt.status && resource.data.attempt.status !== 'IN_PROGRESS') return <Navigate replace to={CATALOG_PATH} />
-  return <ReadingRunner key={attemptId} attemptId={attemptId} attempt={resource.data.attempt} sections={resource.data.sections} saved={resource.data.saved} />
+  return <>
+    <StudyActivityTracker sourceType="ASSESSMENT" sourceId={attemptId} />
+    <ReadingRunner key={attemptId} attemptId={attemptId} attempt={resource.data.attempt} sections={resource.data.sections} saved={resource.data.saved} />
+  </>
 }
 
 function NavigateResult({ attemptId, navigate }: { attemptId: string; navigate: ReturnType<typeof useNavigate> }) {

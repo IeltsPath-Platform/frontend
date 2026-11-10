@@ -4,6 +4,7 @@ import { PracticeNavbar } from '@/features/practice/components/PracticeNavbar'
 import { OverviewSidebar } from '../components/OverviewSidebar'
 import { OverviewHome } from '../components/OverviewHome'
 import { OverviewDetailedStats } from '../components/OverviewDetailedStats'
+import { OverviewAchievements } from '../components/OverviewAchievements'
 import { ProfileTab } from '@/features/profile/ProfileTab'
 import type { OverviewSidebarTab } from '@/types/overview'
 import '../overview.css'
@@ -11,7 +12,7 @@ import '../overview.css'
 export const OverviewPage: React.FC = () => {
   const [params, setParams] = useSearchParams()
   const tab = params.get('tab')
-  const tabs: OverviewSidebarTab[] = ['overview', 'detailed-stats', 'favorites', 'history', 'orders', 'support', 'profile', 'ranking']
+  const tabs: OverviewSidebarTab[] = ['overview', 'detailed-stats', 'achievements', 'favorites', 'orders', 'support', 'profile']
   const activeSidebarTab = tabs.includes(tab as OverviewSidebarTab) ? tab as OverviewSidebarTab : 'overview'
   const setActiveSidebarTab = (value: OverviewSidebarTab) => setParams((previous) => {
     const next = new URLSearchParams(previous)
@@ -20,7 +21,7 @@ export const OverviewPage: React.FC = () => {
   })
 
   return (
-    <div className="overview-page-root">
+    <div className={`overview-page-root${activeSidebarTab === 'overview' || activeSidebarTab === 'detailed-stats' || activeSidebarTab === 'achievements' ? ' overview-dashboard-page' : ''}`}>
       {/* 1. Unified Royal Navy Header */}
       <PracticeNavbar activeTab="overview" />
 
@@ -41,12 +42,15 @@ export const OverviewPage: React.FC = () => {
               <OverviewDetailedStats />
             )}
 
+            {activeSidebarTab === 'achievements' && <OverviewAchievements />}
+
             {activeSidebarTab === 'profile' && (
               <ProfileTab />
             )}
 
             {activeSidebarTab !== 'overview' &&
               activeSidebarTab !== 'detailed-stats' &&
+              activeSidebarTab !== 'achievements' &&
               activeSidebarTab !== 'profile' && (
                 <div className="overview-placeholder-card">
                   <h3 className="font-bold text-lg text-slate-800 mb-2">

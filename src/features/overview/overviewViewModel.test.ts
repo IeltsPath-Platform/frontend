@@ -5,6 +5,7 @@ import {
   calendarKey,
   calendarStatuses,
   currentCourse,
+  heroCourses,
   formatDuration,
   isoDate,
   orbitSkills,
@@ -124,6 +125,13 @@ describe('currentCourse', () => {
       { lastStudiedAt: '2026-10-27T10:00:00Z', name: 'Latest', percent: 55.5 },
     ]))
     expect(course).toMatchObject({ id: 'c1', name: 'Latest', percent: 55.5, completedLessons: 3, totalLessons: 10 })
+  })
+
+  it('sorts all choices without mutating the response and preserves unknown percentages', () => {
+    const source = progress([{ lastStudiedAt: '2026-10-20T10:00:00Z', percent: null }, { lastStudiedAt: '2026-10-27T10:00:00Z' }])
+    expect(heroCourses(source).map((item) => item.id)).toEqual(['c1', 'c0'])
+    expect(heroCourses(source)[1].percent).toBeNull()
+    expect(source.courses[0].courseId).toBe('c0')
   })
 })
 

@@ -12,14 +12,12 @@ import {
   type NotebookSummaryResponse,
   type TopicsProgressResponse,
   type VocabularyCatalogSense,
-  type VocabularyMapResponse,
   type VocabularyTopic,
   type WeeklyGoalResponse,
 } from '../api/notebookApi'
 import { CurrentLevelCard } from '../components/CurrentLevelCard'
 import { CurrentTopicCard } from '../components/CurrentTopicCard'
 import { WeeklyGoalCard } from '../components/WeeklyGoalCard'
-import { VocabularyMapCard } from '../components/VocabularyMapCard'
 import { ExploreSetsTabs } from '../components/ExploreSetsTabs'
 import { DictionaryWordCard } from '../components/DictionaryWordCard'
 import { VocabularyShell } from '../components/VocabularyShell'
@@ -89,7 +87,6 @@ export function VocabularyPage() {
   const [summary, setSummary] = useState<NotebookSummaryResponse | null>(null)
   const [learningReport, setLearningReport] = useState<LearningReportResponse | null>(null)
   const [topicsProgress, setTopicsProgress] = useState<TopicsProgressResponse | null>(null)
-  const [mapData, setMapData] = useState<VocabularyMapResponse | null>(null)
   const [weeklyGoal, setWeeklyGoal] = useState<WeeklyGoalResponse | null>(null)
 
   useEffect(() => {
@@ -137,7 +134,6 @@ export function VocabularyPage() {
     notebookApi.getNotebookSummary('Asia/Ho_Chi_Minh', controller.signal).then(setSummary, quiet)
     notebookApi.getLearningReport(controller.signal).then(setLearningReport, quiet)
     notebookApi.getTopicsProgress(undefined, controller.signal).then(setTopicsProgress, quiet)
-    notebookApi.getVocabularyMap(undefined, controller.signal).then(setMapData, quiet)
     notebookApi.getWeeklyGoal('Asia/Ho_Chi_Minh', controller.signal).then(setWeeklyGoal, quiet)
     return () => controller.abort()
   }, [session.isLoggedIn])
@@ -386,7 +382,6 @@ export function VocabularyPage() {
                 <WeeklyGoalCard initialGoal={weeklyGoal} onGoalUpdated={setWeeklyGoal} />
               </div>
             </div>
-            <VocabularyMapCard mapData={mapData} />
           </div>
         ) : (
           <div className="dict-guest">

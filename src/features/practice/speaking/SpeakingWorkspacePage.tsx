@@ -1,9 +1,12 @@
+import { Fragment } from 'react'
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ApiErrorState, LoadingState } from '@/features/learning-path/components/PageState'
 import { useApiResource } from '@/features/learning-path/lib/useApiResource'
 import { SpeakingPage } from '../pages/SpeakingPage'
 import { getSpeakingTask } from './speakingApi'
 import { clearSession } from './speakingSession'
+import { StudyActivityTracker } from '@/features/study-time/StudyActivityTracker'
+import { usePracticeSession } from '@/features/study-time/usePracticeSession'
 import '@/features/learning-path/learning-path.css'
 import '../reading/reading-practice.css'
 
@@ -16,6 +19,7 @@ export function SpeakingWorkspacePage() {
   const [params] = useSearchParams()
   const navigate = useNavigate()
   const resource = useApiResource(`speaking-task:${packageVersionId}:${sectionId}`, () => getSpeakingTask(packageVersionId, sectionId))
+  const practiceSessionId = usePracticeSession('SPEAKING', resource.status === 'success' && !!resource.data)
 
   if (!packageVersionId || !sectionId) return <Navigate replace to={CATALOG_PATH} />
   if (resource.status === 'loading') return <LoadingState label="Đang tải đề Speaking…" />
@@ -34,6 +38,8 @@ export function SpeakingWorkspacePage() {
   const question = Number(params.get('q'))
 
   return (
+    <Fragment>
+    {practiceSessionId && <StudyActivityTracker sourceType="SPEAKING" sourceId={practiceSessionId} enabled />}
     <SpeakingPage
       key={task.sectionId}
       task={task}
@@ -43,5 +49,6 @@ export function SpeakingWorkspacePage() {
       onFinish={() => navigate(reviewPath)}
       onExit={() => { clearSession(packageVersionId); navigate(CATALOG_PATH) }}
     />
+    </Fragment>
   )
 }

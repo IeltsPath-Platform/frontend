@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import { useForm, Controller, useWatch } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
-import { Edit3, Check, Loader2, RotateCcw, AlertCircle, User, Phone, Globe, BookOpen } from 'lucide-react'
+import { Edit3, Check, Loader2, RotateCcw, AlertCircle, User, Phone, Globe } from 'lucide-react'
 import { motion, AnimatePresence } from 'motion/react'
 import type { LearnerProfile, UserResponse } from '../api/profileApi'
 import type { SavePersonalInfoInput, SavePersonalInfoResult } from '../hooks/useProfile'
@@ -28,7 +28,6 @@ const personalInfoSchema = z.object({
     .string()
     .max(1000, 'Tiểu sử không được vượt quá 1000 ký tự'),
   timezone: z.string().max(50, 'Múi giờ không hợp lệ'),
-  selfReportedBand: z.number().min(0).max(9),
 })
 
 type PersonalInfoFormData = z.infer<typeof personalInfoSchema>
@@ -82,7 +81,6 @@ export const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
     phoneNumber: user?.phoneNumber || '',
     bio: profile?.bio || '',
     timezone: profile?.timezone || 'Asia/Ho_Chi_Minh',
-    selfReportedBand: profile?.selfReportedBand != null ? Number(profile.selfReportedBand) : 0,
   }), [profile, user])
 
   const {
@@ -116,7 +114,6 @@ export const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
   }, [isEditing, isDirty])
 
   const watchedBio = useWatch({ control, name: 'bio', defaultValue: '' }) ?? ''
-  const watchedBand = useWatch({ control, name: 'selfReportedBand', defaultValue: 0 }) ?? 0
 
   const handleFormSubmit = async (data: PersonalInfoFormData) => {
     setIsSaving(true)
@@ -129,7 +126,6 @@ export const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
         displayName: data.displayName,
         bio: data.bio,
         timezone: data.timezone,
-        selfReportedBand: data.selfReportedBand > 0 ? data.selfReportedBand : null,
       })
 
       if (result.userUpdated && result.profileUpdated) {
@@ -225,13 +221,6 @@ export const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
             <div className="profile-info-item">
               <span className="profile-info-label">Múi giờ</span>
               <strong className="profile-info-value">{profile?.timezone || 'Asia/Ho_Chi_Minh'}</strong>
-            </div>
-
-            <div className="profile-info-item">
-              <span className="profile-info-label">Band điểm tự khai</span>
-              <strong className="profile-info-value">
-                {profile?.selfReportedBand != null ? `IELTS ${Number(profile.selfReportedBand).toFixed(1)}` : 'Chưa đặt'}
-              </strong>
             </div>
 
             <div className="profile-info-item full-width">
@@ -349,50 +338,6 @@ export const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
                       </option>
                     ))}
                   </select>
-                </div>
-              </div>
-
-              {/* Self-reported Band Slider */}
-              <div className="profile-field-group full-width">
-                <div className="profile-band-slider-header">
-                  <label htmlFor="field-selfReportedBand" className="profile-field-label">
-                    <BookOpen size={16} aria-hidden="true" className="inline mr-1" />
-                    Band điểm tự khai: <strong>{watchedBand > 0 ? `IELTS ${Number(watchedBand).toFixed(1)}` : 'Chưa đặt (0.0)'}</strong>
-                  </label>
-                  <span className="profile-slider-hint">Kéo slider để chọn band từ 0.0 đến 9.0</span>
-                </div>
-                <div className="profile-slider-wrapper">
-                  <Controller
-                    name="selfReportedBand"
-                    control={control}
-                    render={({ field }) => (
-                      <div className="profile-slider-track-box">
-                        <input
-                          id="field-selfReportedBand"
-                          type="range"
-                          min={0}
-                          max={9}
-                          step={0.5}
-                          value={field.value}
-                          onChange={(e) => field.onChange(Number(e.target.value))}
-                          className="profile-range-slider"
-                          disabled={isSaving}
-                          aria-valuemin={0}
-                          aria-valuemax={9}
-                          aria-valuenow={field.value}
-                          aria-valuetext={`Band điểm tự khai ${field.value}`}
-                        />
-                        <div className="profile-slider-scale">
-                          <span>0</span>
-                          <span>3.0</span>
-                          <span>5.0</span>
-                          <span>6.5</span>
-                          <span>7.5</span>
-                          <span>9.0</span>
-                        </div>
-                      </div>
-                    )}
-                  />
                 </div>
               </div>
 

@@ -4,14 +4,15 @@ import { Button } from '@/components/ui/button'
 import type { ApiResource } from '../../lib/useApiResource'
 
 /** One block of the progress page. It loads on its own, so a failure here leaves the other blocks usable. */
-export function ProgressSection<T>({ title, resource, children }: {
+export function ProgressSection<T>({ title, resource, children, className = '' }: {
   title: string
   resource: ApiResource<T>
   children: (data: T) => ReactNode
+  className?: string
 }) {
   const titleId = useId()
   return (
-    <section aria-labelledby={titleId} className="lp-progress-section">
+    <section aria-labelledby={titleId} className={`lp-progress-section ${className}`} aria-busy={resource.status === 'loading'}>
       <h2 id={titleId}>{title}</h2>
       {resource.status === 'loading' ? (
         <p className="lp-hint" role="status"><Loader2 aria-hidden="true" className="lp-spin" size={16} /> Đang tải…</p>

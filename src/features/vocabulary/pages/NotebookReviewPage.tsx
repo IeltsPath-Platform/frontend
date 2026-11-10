@@ -1,4 +1,6 @@
 import { VocabularyShell } from '../components/VocabularyShell'
+import { StudyActivityTracker } from '@/features/study-time/StudyActivityTracker'
+import { usePracticeSession } from '@/features/study-time/usePracticeSession'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { X, RefreshCw, AlertCircle, Flame } from 'lucide-react'
@@ -31,6 +33,7 @@ function NotebookReviewContent() {
   const levelParam = searchParams.get('level') as UnderstandingLevel | null
   const modeParam = (searchParams.get('mode') as QuizMode) || 'mixed'
   const senseIdParam = searchParams.get('senseId')
+  const dueReviewsOnly = searchParams.get('review') === 'due'
 
   // Review session state
   const [sessionId] = useState(() =>
@@ -47,6 +50,8 @@ function NotebookReviewContent() {
   const [combo, setCombo] = useState(0)
   const [wrongEntries, setWrongEntries] = useState<NotebookEntryResponse[]>([])
   const [isFinished, setIsFinished] = useState(false)
+  const trackingEnabled = !isLoading && !error && questions.length > 0 && !isFinished
+  const practiceSessionId = usePracticeSession('VOCABULARY', trackingEnabled)
 
   // Skip modal
   const [isSkipDialogOpen, setIsSkipDialogOpen] = useState(false)
@@ -72,7 +77,10 @@ function NotebookReviewContent() {
       try {
         let rawEntries: NotebookEntryResponse[] = []
 
-        if (levelParam) {
+        if (dueReviewsOnly) {
+          const res = await notebookApi.getNotebookEntries({ due: true, learned: true, sort: 'DUE', size: 50 }, controller.signal)
+          rawEntries = res.items
+        } else if (levelParam) {
           const res = await notebookApi.getNotebookEntries({ level: [levelParam], size: 50 }, controller.signal)
           rawEntries = res.items
         } else {
@@ -139,7 +147,7 @@ function NotebookReviewContent() {
       ignore = true
       controller.abort()
     }
-  }, [levelParam, modeParam, senseIdParam, reloadKey])
+  }, [levelParam, modeParam, senseIdParam, dueReviewsOnly, reloadKey])
 
   // Answer handler
   const handleAnswer = async (correct: boolean) => {
@@ -281,6 +289,7 @@ function NotebookReviewContent() {
 
   return (
     <div className="vocab-quiz-layout">
+      {practiceSessionId && <StudyActivityTracker sourceType="VOCABULARY" sourceId={practiceSessionId} enabled={trackingEnabled} />}
       <StudyHero
         eyebrow="Ôn tập từ vựng"
         title="Phiên ôn của bạn"

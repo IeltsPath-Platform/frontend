@@ -91,7 +91,8 @@ export interface VocabularySetSummary {
   description: string | null
   kind: 'BAND' | 'TOPIC'
   cefrLevel: string | null
-  bandRange: string | null
+  /** `{min, max}` from the API; use `formatBandRange` to display it. */
+  bandRange: string | { min: number; max: number } | null
   coverKey: string | null
   coverUrl: string | null
   wordCount: number
@@ -424,6 +425,7 @@ export const notebookApi = {
       q?: string
       level?: UnderstandingLevel[]
       due?: boolean
+      learned?: boolean
       sort?: NotebookSort
       topicId?: string
       setId?: string
@@ -438,6 +440,7 @@ export const notebookApi = {
       for (const lvl of params.level) searchParams.append('level', lvl)
     }
     if (params.due !== undefined) searchParams.set('due', String(params.due))
+    if (params.learned !== undefined) searchParams.set('learned', String(params.learned))
     if (params.sort) searchParams.set('sort', params.sort)
     if (params.topicId) searchParams.set('topicId', params.topicId)
     if (params.setId) searchParams.set('setId', params.setId)

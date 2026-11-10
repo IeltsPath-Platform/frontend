@@ -180,31 +180,20 @@ describe('ProfileTab', () => {
     })
   })
 
-  it('confirms and deletes avatar when user clicks delete in Danger Zone', async () => {
-    profileApiMock.deleteAvatar.mockResolvedValue({
-      ...mockProfile,
-      avatarReference: null,
-    })
+  it('toggles profile visibility with the privacy switch', async () => {
+    profileApiMock.updateProfile.mockResolvedValue({ ...mockProfile, visibility: 'PRIVATE' })
 
     renderWithToast(<ProfileTab />)
 
-    await waitFor(() => {
-      expect(screen.getByText('Vùng quản lý nâng cao')).toBeInTheDocument()
-    })
+    const toggle = await screen.findByRole('switch', { name: 'Công khai hồ sơ' })
+    expect(toggle).toHaveAttribute('aria-checked', 'true')
+    expect(screen.queryByText('Vùng quản lý nâng cao')).not.toBeInTheDocument()
+    expect(screen.queryByText('Chuỗi học tập')).not.toBeInTheDocument()
 
-    // Click delete avatar button in Danger Zone
-    const deleteBtn = screen.getByRole('button', { name: 'Xóa ảnh đại diện' })
-    fireEvent.click(deleteBtn)
-
-    // Confirm modal opens
-    expect(screen.getByText(/Xác nhận xóa ảnh đại diện\?/i)).toBeInTheDocument()
-
-    // Click confirm in modal
-    const confirmBtn = screen.getByRole('button', { name: 'Xác nhận xóa' })
-    fireEvent.click(confirmBtn)
+    fireEvent.click(toggle)
 
     await waitFor(() => {
-      expect(profileApiMock.deleteAvatar).toHaveBeenCalled()
+      expect(profileApiMock.updateProfile).toHaveBeenCalledWith(expect.objectContaining({ visibility: 'PRIVATE' }))
     })
   })
 

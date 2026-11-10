@@ -87,12 +87,19 @@ export function calendarKey(date: string) {
   return `${year}-${month}-${day}`
 }
 
+/** A day counts as a study day from this much recorded time; a visit of a few seconds is not study. Matches the server. */
+export const STUDY_DAY_MIN_SECONDS = 60
+
+export function isStudyDay(seconds: number | null | undefined): boolean {
+  return (seconds ?? 0) >= STUDY_DAY_MIN_SECONDS
+}
+
 /** Days with no tracking are left out, so the calendar shows them as "no data" rather than "missed". */
 export function calendarStatuses(days: StudyDay[]): Record<string, CalendarStatus> {
   const statuses: Record<string, CalendarStatus> = {}
   for (const day of days) {
     if (day.status === 'NOT_TRACKED') continue
-    if ((day.actualSeconds ?? 0) > 0) statuses[calendarKey(day.date)] = 'completed'
+    if (isStudyDay(day.actualSeconds)) statuses[calendarKey(day.date)] = 'completed'
     else if (day.status === 'FUTURE') statuses[calendarKey(day.date)] = 'upcoming'
     else statuses[calendarKey(day.date)] = 'missed'
   }
@@ -102,26 +109,33 @@ export function calendarStatuses(days: StudyDay[]): Record<string, CalendarStatu
 export interface HeroCourse {
   id: string
   name: string
-  percent: number
+  /** Band level of the course, which the report uses to tell the course's knowledge points apart. */
+  bandLevel: number | null
+  percent: number | null
   completedLessons: number
   totalLessons: number
   startedAt: string | null
 }
 
-/** The course studied most recently. */
-export function currentCourse(progress: ProgressStatistics | null): HeroCourse | null {
+/** Most recently studied first, falling back to the start date for untracked courses. */
+export function heroCourses(progress: ProgressStatistics | null): HeroCourse[] {
   const courses = progress?.courses ?? []
-  if (courses.length === 0) return null
-  const byRecent = (a: CourseCompletion, b: CourseCompletion) => (b.lastStudiedAt ?? '').localeCompare(a.lastStudiedAt ?? '')
-  const course = [...courses].sort(byRecent)[0]
-  return {
+  const byRecent = (a: CourseCompletion, b: CourseCompletion) =>
+    (b.lastStudiedAt ?? b.startedAt ?? '').localeCompare(a.lastStudiedAt ?? a.startedAt ?? '') || a.courseId.localeCompare(b.courseId)
+  return [...courses].sort(byRecent).map((course) => ({
     id: course.courseId,
     name: course.name,
-    percent: course.percent ?? 0,
+    bandLevel: course.bandLevel,
+    percent: course.percent,
     completedLessons: course.completedLessons,
     totalLessons: course.totalLessons,
     startedAt: course.startedAt,
-  }
+  }))
+}
+
+/** The course studied most recently. */
+export function currentCourse(progress: ProgressStatistics | null): HeroCourse | null {
+  return heroCourses(progress)[0] ?? null
 }
 
 export interface BandSummary {
@@ -140,6 +154,48 @@ export function bandSummary(report: LearnerReportSummary | null, selfReportedBan
     target: report?.target?.targetBand ?? null,
     examDate: report?.target?.examDate ?? null,
   }
+}
+
+export interface VocabularyProgress {
+  /** Share of the notebook's words the learner has started, 0-100. */
+  percent: number
+  learned: number
+  notLearned: number
+}
+
+/** Null when the notebook is empty or its summary has not loaded. */
+export function vocabularyProgress(notebook: Pick<NotebookSummary, 'total' | 'learnedCount'> | null): VocabularyProgress | null {
+  if (!notebook || notebook.total <= 0) return null
+  return {
+    percent: Math.round((notebook.learnedCount / notebook.total) * 100),
+    learned: notebook.learnedCount,
+    notLearned: Math.max(0, notebook.total - notebook.learnedCount),
+  }
+}
+
+export const BAND_SKILLS = ['LISTENING', 'READING', 'WRITING', 'SPEAKING'] as const
+
+export interface SkillBandRow {
+  skill: (typeof BAND_SKILLS)[number]
+  band: number | null
+  /** Mastery of the skill, 0-100; 0 when the skill has no judged points. */
+  percent: number
+}
+
+export function skillBandRows(report: LearnerReportSummary | null): SkillBandRow[] {
+  return BAND_SKILLS.map((skill) => {
+    const row = report?.skills.find((item) => item.skill === skill)
+    return { skill, band: row?.band ?? null, percent: row?.mastery == null ? 0 : Math.round(row.mastery * 100) }
+  })
+}
+
+/**
+ * Where the current band comes from. An estimate is named as one; without it the band is the learner's own
+ * self-report, since the report only ever supplies an estimate or nothing.
+ */
+export function bandSourceLabel(band: BandSummary): string | null {
+  if (band.current === null) return null
+  return band.currentIsEstimate ? 'Ước tính từ quá trình học' : 'Tự khai trong hồ sơ'
 }
 
 const ORBIT_COLORS: Record<string, LearningOrbitSkill['badgeType']> = {

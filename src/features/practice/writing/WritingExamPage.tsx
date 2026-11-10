@@ -7,6 +7,8 @@ import { WritingChart, WritingTopBar } from './WritingParts'
 import type { WritingTask } from './writingApi'
 import { countWords, formatClock, loadDraft, saveDraft } from './writingText'
 import { useGradeFlow } from './useGradeFlow'
+import { StudyActivityTracker } from '@/features/study-time/StudyActivityTracker'
+import { usePracticeSession } from '@/features/study-time/usePracticeSession'
 import '../reading/reading-exam-annotations.css'
 
 const CATALOG_PATH = '/practice-tests?skill=writing'
@@ -24,6 +26,7 @@ function spendHint(task: WritingTask) {
  * task and there is no guide or dictionary. When the time is up the essay is locked and sent to be graded.
  */
 export function WritingExamPage({ task }: { task: WritingTask }) {
+  const practiceSessionId = usePracticeSession('WRITING', true)
   const draftKey = `${task.sectionId}:exam`
   const limit = task.timeLimitSeconds
   const [text, setText] = useState(() => loadDraft(draftKey)?.texts[0] ?? '')
@@ -68,6 +71,7 @@ export function WritingExamPage({ task }: { task: WritingTask }) {
 
   return (
     <div className={`rw-root rw-exam lp-tokens ww-exam rw-text-${fontSize}`}>
+      {practiceSessionId && <StudyActivityTracker sourceType="WRITING" sourceId={practiceSessionId} enabled={!timeUp} />}
       <WritingTopBar exitTo={CATALOG_PATH} showEyeComfort={false} eyeComfort={false} onToggleEyeComfort={() => undefined}
         fontSize={fontSize} onChangeFontSize={setFontSize}>
         <p className="rw-timer" role="timer" aria-label="Thời gian còn lại">

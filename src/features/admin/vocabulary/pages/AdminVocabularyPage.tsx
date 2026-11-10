@@ -27,6 +27,7 @@ import {
   type AdminTopicPayload,
   type AdminSetPayload,
 } from '@/features/vocabulary/api/notebookApi'
+import { formatBandRange } from '@/features/vocabulary/lib/band-range'
 import {
   adminItemSchema,
   adminSenseSchema,
@@ -991,7 +992,7 @@ export function AdminVocabularyPage() {
                           {s.kind}
                         </span>
                       </td>
-                      <td style={{ padding: '0.75rem 0.5rem', fontWeight: 600 }}>{s.bandRange || s.cefrLevel || '—'}</td>
+                      <td style={{ padding: '0.75rem 0.5rem', fontWeight: 600 }}>{formatBandRange(s.bandRange) || s.cefrLevel || '—'}</td>
                       <td style={{ padding: '0.75rem 0.5rem' }}>{s.wordCount} từ</td>
                       <td style={{ padding: '0.75rem 0.5rem' }}>
                         <span style={{ fontSize: '0.75rem', fontWeight: 700, color: s.status === 'ACTIVE' ? '#16a34a' : '#94a3b8' }}>

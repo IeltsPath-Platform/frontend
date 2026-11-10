@@ -1,7 +1,6 @@
-import React, { useRef, useState, useEffect } from 'react'
-import { Camera, Flame, Target, Trophy, Trash2, Calendar, ShieldCheck, Loader2 } from 'lucide-react'
-import { motion, useReducedMotion } from 'motion/react'
-import type { LearnerProfile, LearningGoal, StreakData, UserResponse } from '../api/profileApi'
+import React, { useRef, useState } from 'react'
+import { Camera, Trash2, Calendar, ShieldCheck, Loader2 } from 'lucide-react'
+import type { LearnerProfile, UserResponse } from '../api/profileApi'
 import { validateAvatarFile, AvatarUploadError } from '../api/profileApi'
 import { AvatarCropDialog } from './AvatarCropDialog'
 import { Button } from '@/components/ui/button'
@@ -9,8 +8,6 @@ import { Button } from '@/components/ui/button'
 interface ProfileHeaderProps {
   user: UserResponse | null
   profile: LearnerProfile | null
-  activeGoal: LearningGoal | null
-  streak: StreakData | null
   onUploadAvatar: (file: Blob | File) => Promise<unknown>
   onDeleteAvatar: () => Promise<unknown>
   isUploadingAvatar: boolean
@@ -50,47 +47,9 @@ function getRoleLabel(roleName?: string): string {
   }
 }
 
-/**
- * Animated number counter component
- */
-function CountUpNumber({ end, duration = 1000 }: { end: number; duration?: number }) {
-  const shouldReduceMotion = useReducedMotion()
-  const [count, setCount] = useState(0)
-
-  useEffect(() => {
-    if (shouldReduceMotion) return
-
-    let startTimestamp: number | null = null
-    let animationFrameId: number
-
-    const step = (timestamp: number) => {
-      if (!startTimestamp) startTimestamp = timestamp
-      const progress = Math.min((timestamp - startTimestamp) / duration, 1)
-      setCount(Math.floor(progress * end))
-
-      if (progress < 1) {
-        animationFrameId = requestAnimationFrame(step)
-      } else {
-        setCount(end)
-      }
-    }
-
-    animationFrameId = requestAnimationFrame(step)
-    return () => cancelAnimationFrame(animationFrameId)
-  }, [end, duration, shouldReduceMotion])
-
-  if (shouldReduceMotion) {
-    return <span className="profile-chip-number">{end}</span>
-  }
-
-  return <span className="profile-chip-number">{count}</span>
-}
-
 export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   user,
   profile,
-  activeGoal,
-  streak,
   onUploadAvatar,
   onDeleteAvatar,
   isUploadingAvatar,
@@ -105,7 +64,6 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   const displayName = profile?.displayName || user?.fullName || 'Học viên'
   const primaryRole = user?.roles?.[0]?.name ?? 'CUSTOMER'
   const avatarUrl = profile?.avatarReference
-  const currentStreakDays = streak?.currentDays ?? 0
 
   const handleFilePicked = (file: File) => {
     try {
@@ -282,55 +240,6 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
               <Calendar size={14} aria-hidden="true" />
               Thành viên từ {formatMemberSince(user?.createdAt || profile?.createdAt)}
             </span>
-          </div>
-
-          {/* Interactive Statistics Chips */}
-          <div className="profile-chips-row">
-            <motion.div
-              className="profile-stat-chip chip-streak"
-              whileHover={{ scale: 1.03 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-            >
-              <Flame size={18} className="chip-icon-flame" aria-hidden="true" />
-              <div className="chip-text">
-                <span className="chip-label">Chuỗi học tập</span>
-                <strong className="chip-value">
-                  <CountUpNumber end={currentStreakDays} /> ngày
-                </strong>
-              </div>
-            </motion.div>
-
-            <motion.div
-              className="profile-stat-chip chip-self-band"
-              whileHover={{ scale: 1.03 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-            >
-              <Target size={18} className="chip-icon-target" aria-hidden="true" />
-              <div className="chip-text">
-                <span className="chip-label">Band tự khai</span>
-                <strong className="chip-value">
-                  {profile?.selfReportedBand != null
-                    ? `IELTS ${Number(profile.selfReportedBand).toFixed(1)}`
-                    : 'Chưa đặt'}
-                </strong>
-              </div>
-            </motion.div>
-
-            <motion.div
-              className="profile-stat-chip chip-goal-band"
-              whileHover={{ scale: 1.03 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-            >
-              <Trophy size={18} className="chip-icon-trophy" aria-hidden="true" />
-              <div className="chip-text">
-                <span className="chip-label">Mục tiêu hiện tại</span>
-                <strong className="chip-value">
-                  {activeGoal != null
-                    ? `Band ${Number(activeGoal.targetBand).toFixed(1)}`
-                    : 'Chưa đặt'}
-                </strong>
-              </div>
-            </motion.div>
           </div>
         </div>
       </div>

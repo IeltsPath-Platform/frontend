@@ -1,56 +1,26 @@
-import React from 'react'
-import { useNavigate } from 'react-router-dom'
+﻿import { useNavigate } from 'react-router-dom'
 import { useAuthSession } from '@/features/auth/authSession'
 import { useOverviewData } from '../hooks/useOverviewData'
-import {
-  bandSummary,
-  calendarStatuses,
-  currentCourse,
-  orbitSkills,
-  recommendations,
-} from '../overviewViewModel'
-import { OverviewActivityCalendar } from './OverviewActivityCalendar'
-import { OverviewAiRecommendations } from './OverviewAiRecommendations'
+import { heroCourses } from '../overviewViewModel'
+import { dashboardBand } from '../overviewDashboardModel'
 import { OverviewGeneralStats } from './OverviewGeneralStats'
 import { OverviewHeroBanner } from './OverviewHeroBanner'
-import { OverviewLearningOrbit } from './OverviewLearningOrbit'
+import { OverviewSkillsAndCourses } from './OverviewSkillsAndCourses'
+import { OverviewBlockStatus } from './OverviewBlockStatus'
 
-/** The "Tổng quát" tab: every block reads the learner's own data and degrades to dashes when a source has nothing. */
-export const OverviewHome: React.FC = () => {
+export function OverviewHome() {
   const navigate = useNavigate()
-  const { userName } = useAuthSession()
+  const { userName, userId, email } = useAuthSession()
   const data = useOverviewData()
-
-  const band = bandSummary(data.report.data, data.profile.data?.selfReportedBand)
-  const course = currentCourse(data.progress.data)
-
+  const band = dashboardBand(data.report.data, data.profile.data?.selfReportedBand)
+  const courses = heroCourses(data.progress.data)
+  const heroSources = [data.profile, data.progress, data.report]
   return (
-    <div className="overview-flow-sections">
-      <OverviewHeroBanner
-        username={data.profile.data?.displayName || userName}
-        band={band}
-        journeyStart={data.placement.data?.baseline ?? null}
-        course={course}
-        onContinueStudy={() => navigate(course ? `/learn/courses/${course.id}` : '/learn')}
-      />
-
-      <OverviewGeneralStats time={data.time} practice={data.practice} streak={data.streak} today={data.today} />
-
-      <OverviewActivityCalendar
-        statuses={data.time.data ? calendarStatuses(data.time.data.days) : {}}
-        currentStreakDays={data.streak.data?.currentDays ?? null}
-        trackedFrom={data.time.data?.dataFrom ?? null}
-        loading={data.time.loading && !data.time.data}
-        error={data.time.error}
-        onRetry={data.time.reload}
-      />
-
-      <OverviewLearningOrbit skills={orbitSkills(data.report.data)} band={band} />
-
-      <OverviewAiRecommendations
-        recommendations={recommendations(data.report.data, data.notebook.data)}
-        onAction={(item) => navigate(item.to)}
-      />
+    <div className="overview-home-shell">
+      <OverviewHeroBanner key={userId ?? email ?? 'guest'} username={data.profile.data?.displayName || userName} band={band} bandSourceLabel={band.sourceLabel} journeyStart={data.report.data?.placementBand ?? null} courses={courses} courseLoading={data.progress.loading && !data.progress.data} courseError={!!data.progress.error} onContinueStudy={(course) => navigate(course ? `/learn/courses/${course.id}` : '/learn')} />
+      <OverviewBlockStatus loading={heroSources.some((resource) => resource.loading)} error={heroSources.find((resource) => resource.error)?.error ?? null} onRetry={() => heroSources.forEach((resource) => { if (resource.error) resource.reload() })} />
+      <OverviewGeneralStats learning={data.learning} time={data.time} streak={data.streak} today={data.today} courses={courses} />
+      <OverviewSkillsAndCourses report={data.report.data} courses={courses} reportSource={data.report} courseSource={data.progress} />
     </div>
   )
 }

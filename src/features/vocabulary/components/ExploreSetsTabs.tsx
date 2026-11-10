@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, Layers, Target } from 'lucide-react'
 import { notebookApi, type VocabularySetSummary, type VocabularyTopic } from '../api/notebookApi'
+import { formatBandRange } from '../lib/band-range'
 
 type TabKey = 'BAND' | 'TOPIC'
 
@@ -56,7 +57,7 @@ export function ExploreSetsTabs() {
       <div className="dict-tab-panel" key={activeTab}>
         {activeTab === 'BAND' && (
           <SetGrid sets={bandSets} empty="Chưa có bộ từ vựng theo band." loadingText="Đang tải bộ từ theo band…"
-            badge={(set) => (set.bandRange ? `Band ${set.bandRange}` : set.cefrLevel ? `CEFR ${set.cefrLevel}` : 'Band')} />
+            badge={(set) => { const range = formatBandRange(set.bandRange); return range ? `Band ${range}` : set.cefrLevel ? `CEFR ${set.cefrLevel}` : 'Band' }} />
         )}
 
         {activeTab === 'TOPIC' && (
