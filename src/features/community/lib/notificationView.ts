@@ -5,6 +5,7 @@ export const GRADING_DUE_SOON = 'assessment.grading-due-soon.v1'
 export const GRADING_REQUESTED = 'assessment.grading-requested.v1'
 export const GRADING_COMPLETED = 'assessment.grading-completed.v1'
 export const SUBSCRIPTION_GRANTED = 'access.subscription-granted.v1'
+export const SUBSCRIPTION_EXPIRY_NOTICE = 'access.subscription-expiry-notice.v1'
 
 /** The learner's list of essays an examiner graded, where each one opens to the comments and the marked errors. */
 export const EXAMINER_REVIEWS_PATH = '/writing-reviews'
@@ -28,6 +29,9 @@ const COMMUNITY_TEXT: Record<string, string> = {
 export function describeNotification(item: Pick<Notification, 'eventType' | 'postId' | 'actorId' | 'gradingJobId'>): { text: string; to: string } {
   if (item.eventType === SUBSCRIPTION_GRANTED) {
     return { text: 'Bạn đã được nâng cấp Premium. Xem các quyền lợi học tập của gói.', to: '/overview' }
+  }
+  if (item.eventType === SUBSCRIPTION_EXPIRY_NOTICE) {
+    return { text: 'Gói Premium của bạn sắp hết hạn hoặc đã hết hạn. Xem thông tin gói.', to: '/overview' }
   }
   if (item.eventType === GRADING_OVERDUE && item.gradingJobId) {
     return { text: 'Giáo viên chưa chấm bài của bạn. Bạn có thể chờ tiếp hoặc đổi giáo viên', to: `/grading-jobs/${item.gradingJobId}` }

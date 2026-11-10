@@ -40,6 +40,11 @@ describe('describeNotification', () => {
       .toEqual({ text: 'Bạn đã được nâng cấp Premium. Xem các quyền lợi học tập của gói.', to: '/overview' })
   })
 
+  it('describes an expiring Premium plan and links to the overview', () => {
+    expect(describeNotification({ ...base, eventType: 'access.subscription-expiry-notice.v1' }))
+      .toEqual({ text: 'Gói Premium của bạn sắp hết hạn hoặc đã hết hạn. Xem thông tin gói.', to: '/overview' })
+  })
+
   it('uses a neutral message and safe destination for unknown non-community event types', () => {
     expect(describeNotification({ ...base, eventType: 'future.notice.v1' }))
       .toEqual({ text: 'Bạn có thông báo mới.', to: '/overview' })
