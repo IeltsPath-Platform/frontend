@@ -1,0 +1,22 @@
+.overview-chart-content { position: relative; min-width: 0; }
+.overview-chart-updating { position: absolute; z-index: 1; top: 10px; left: 50%; transform: translateX(-50%); margin: 0; padding: 6px 12px; border: 1px solid var(--detail-border, #dce4f4); border-radius: 20px; background: white; color: var(--detail-muted, #64748b); font-size: 12px; white-space: nowrap; }
+.overview-chart-snapshot.is-updating { opacity: .5; pointer-events: none; }
+.detailed-skill-card .overview-chart-snapshot { display: grid; gap: 16px; }
+.overview-chart-enter { animation: overview-chart-enter 450ms ease-out both; }
+.overview-chart-line { stroke-dasharray: 1; stroke-dashoffset: 0; animation: overview-chart-line-draw 650ms ease-out both; }
+.overview-chart-bar { transform-box: fill-box; transform-origin: center bottom; animation: overview-chart-bar-grow 650ms ease-out both; }
+.overview-chart-progress { transform-origin: left center; animation: overview-chart-progress-grow 650ms ease-out both; }
+.overview-chart-radar { transform-box: view-box; transform-origin: 150px 122px; animation: overview-chart-radar-grow 650ms ease-out both; }
+.overview-chart-ring { animation: overview-chart-ring-draw 650ms ease-out both; }
+.overview-chart-point { animation: overview-chart-point-appear 200ms 450ms ease-out both; }
+@keyframes overview-chart-enter { from { opacity: .25; } to { opacity: 1; } }
+@keyframes overview-chart-line-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes overview-chart-ring-draw { from { stroke-dashoffset: 1; } }
+@keyframes overview-chart-point-appear { from { opacity: 0; } to { opacity: 1; } }
+@keyframes overview-chart-bar-grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes overview-chart-progress-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes overview-chart-radar-grow { from { transform: scale(.05); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .overview-chart-enter, .overview-chart-line, .overview-chart-bar,
+  .overview-chart-progress, .overview-chart-radar, .overview-chart-ring, .overview-chart-point { animation: none; }
+}

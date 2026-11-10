@@ -1,11 +1,22 @@
-import { fireEvent, render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
-import type { StudyDay } from '../api/overviewApi'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { overviewApi, type StudyDay, type StudyTimeStatistics } from '../api/overviewApi'
 import { daysAgo, isoDate } from '../overviewViewModel'
 import { OverviewStudyChart } from './OverviewStudyChart'
 
+vi.mock('@/features/auth/authSession', () => ({ useAuthSession: () => ({ isLoggedIn: true, email: 'learner@example.test' }) }))
+vi.mock('../api/overviewApi', () => ({ overviewApi: { time: vi.fn() } }))
+
 const today = new Date(2026, 10, 8)
 const day = (ago: number, seconds: number): StudyDay => ({ date: isoDate(daysAgo(today, ago)), timezone: 'Asia/Ho_Chi_Minh', actualSeconds: seconds, plannedSeconds: null, status: 'COMPLETE' })
+const originalScroll = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollIntoView')
+beforeAll(() => Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', { configurable: true, value: vi.fn() }))
+afterAll(() => {
+  if (originalScroll) Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', originalScroll)
+  else Reflect.deleteProperty(HTMLElement.prototype, 'scrollIntoView')
+})
+beforeEach(() => vi.resetAllMocks())
 
 describe('overview study time chart', () => {
   it('uses recorded days for the chart and compares complete seven-day periods', () => {
@@ -26,9 +37,11 @@ describe('overview study time chart', () => {
 
   it('switches between seven and thirty days', () => {
     render(<OverviewStudyChart totalSeconds={3600} days={[day(0, 3600)]} today={today} />)
+    const previousGraph = screen.getByRole('img', { name: 'Thời gian học từng ngày trong 7 ngày qua' })
     expect(screen.getByRole('button', { name: '7 ngày' })).toHaveAttribute('aria-pressed', 'true')
     fireEvent.click(screen.getByRole('button', { name: '30 ngày' }))
     expect(screen.getByRole('img', { name: 'Thời gian học từng ngày trong 30 ngày qua' })).toBeVisible()
+    expect(screen.getByRole('img', { name: 'Thời gian học từng ngày trong 30 ngày qua' })).not.toBe(previousGraph)
     expect(screen.getByRole('button', { name: '30 ngày' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getAllByRole('listitem')).toHaveLength(30)
   })
@@ -66,5 +79,23 @@ describe('overview study time chart', () => {
     render(<OverviewStudyChart totalSeconds={10800} days={[day(0, 3600), day(8, 7200)]} today={today} />)
     expect(screen.getByText(/trung bình mỗi ngày học so với 7 ngày trước/)).toBeVisible()
     expect(screen.getByText('Tuần này có 1/7 ngày học được ghi nhận, tuần trước 1/7.')).toBeVisible()
+  })
+
+  it('keeps the graph during a course request and replays it once the new data arrives', async () => {
+    const user = userEvent.setup()
+    let resolve!: (value: StudyTimeStatistics) => void
+    vi.mocked(overviewApi.time).mockReturnValue(new Promise((res) => { resolve = res }))
+    const { container } = render(<OverviewStudyChart totalSeconds={3600} days={[day(0, 3600)]} today={today} courses={[{ id: 'course-1', name: 'IELTS Foundation' }]} />)
+    const graph = screen.getByRole('img', { name: /Thời gian học từng ngày/ })
+    screen.getByRole('combobox', { name: 'Lọc theo khóa học' }).focus()
+    await user.keyboard('{Enter}{End}{Enter}')
+    expect(screen.getByRole('img', { name: /Thời gian học từng ngày/ })).toBe(graph)
+    expect(container.querySelector('.overview-chart-snapshot')).toHaveAttribute('inert')
+    expect(screen.getByText('Đang cập nhật biểu đồ…')).toBeInTheDocument()
+    expect(container.querySelector('.overview-study-chart-total strong')).toHaveTextContent('1h 00m')
+    await act(async () => resolve({ availability: 'AVAILABLE', generatedAt: '', dataFrom: null, timezonePolicy: 'LOCAL', scope: 'COURSE', days: [day(0, 7200)] }))
+    await waitFor(() => expect(screen.getByRole('img', { name: /Thời gian học từng ngày/ })).not.toBe(graph))
+    expect(container.querySelector('.overview-study-chart-total strong')).toHaveTextContent('2h 00m')
+    expect(screen.queryByText('Đang cập nhật biểu đồ…')).not.toBeInTheDocument()
   })
 })

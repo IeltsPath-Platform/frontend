@@ -4,7 +4,7 @@ import { GameSetupPage } from '@/features/games/pages/GameSetupPage'
 import { GameRoomPage } from '@/features/games/pages/GameRoomPage'
 import { WordlyPlayPage } from '@/features/games/pages/WordlyPlayPage'
 import { GameResultPage } from '@/features/games/pages/GameResultPage'
-import { lazy, Suspense, useLayoutEffect } from 'react'
+import { lazy, Suspense, useLayoutEffect, useRef } from 'react'
 import { USE_MOCK_ROCKET } from '@/lib/env'
 import { BrowserRouter, Navigate, Routes, Route, useLocation, useNavigate, useNavigationType, useParams } from 'react-router-dom'
 import { AdminRoutes } from '@/features/admin/AdminRoutes'
@@ -224,8 +224,11 @@ function AppContent() {
 function ScrollToTopOnNavigate() {
   const { pathname } = useLocation()
   const navigationType = useNavigationType()
+  const previousPathname = useRef(pathname)
   useLayoutEffect(() => {
-    if (navigationType !== 'POP') window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+    const changedPage = previousPathname.current !== pathname
+    previousPathname.current = pathname
+    if (changedPage && navigationType !== 'POP') window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
   }, [pathname, navigationType])
   return null
 }

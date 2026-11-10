@@ -1,4 +1,6 @@
 import { render, screen } from '@/test/render'
+import userEvent from '@testing-library/user-event'
+import { Link, useSearchParams } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 
@@ -17,6 +19,15 @@ vi.mock('@/features/admin/overview/pages/OverviewPage', () => ({
 vi.mock('@/features/community/components/NotificationBell', () => ({ NotificationBell: () => null }))
 vi.mock('@/components/SiteFooter', () => ({ SiteFooter: () => <footer>Chân trang học viên</footer> }))
 vi.mock('@/components/OwlMascot', () => ({ OwlMascot: () => <div>Linh vật học viên</div> }))
+vi.mock('@/features/overview/pages/OverviewPage', () => ({
+  OverviewPage: () => {
+    const [params, setParams] = useSearchParams()
+    return <>
+      <button onClick={() => setParams({ tab: 'detailed-stats', skill: params.get('skill') === 'WRITING' ? 'READING' : 'WRITING' })}>Đổi kỹ năng</button>
+      <Link to="/missing-page">Trang khác</Link>
+    </>
+  },
+}))
 
 describe('staff workspace entry through the application router', () => {
   beforeEach(() => {
@@ -53,5 +64,21 @@ describe('staff workspace entry through the application router', () => {
     render(<App />)
     expect(screen.getByRole('heading', { name: 'Bạn không có quyền truy cập' })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Tổng quan chấm bài' })).not.toBeInTheDocument()
+  })
+
+  it('keeps the scroll position for the first and subsequent skill filters but resets it for another page', async () => {
+    const user = userEvent.setup()
+    auth.mockReturnValue({ isLoggedIn: true, hydrated: true, roles: [], userName: 'Học viên', email: null, userId: null, avatarUrl: null, points: 0, tier: 'FREE' })
+    window.history.replaceState(null, '', '/overview?tab=detailed-stats')
+    render(<App />)
+    vi.mocked(window.scrollTo).mockClear()
+    await user.click(screen.getByRole('button', { name: 'Đổi kỹ năng' }))
+    expect(window.location.search).toContain('skill=WRITING')
+    expect(window.scrollTo).not.toHaveBeenCalled()
+    await user.click(screen.getByRole('button', { name: 'Đổi kỹ năng' }))
+    expect(window.location.search).toContain('skill=READING')
+    expect(window.scrollTo).not.toHaveBeenCalled()
+    await user.click(screen.getByRole('link', { name: 'Trang khác' }))
+    expect(window.scrollTo).toHaveBeenCalledWith({ top: 0, left: 0, behavior: 'instant' })
   })
 })

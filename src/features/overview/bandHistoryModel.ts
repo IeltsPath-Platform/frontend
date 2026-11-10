@@ -22,17 +22,17 @@ export function bandRange(period: BandPeriod, now = new Date()) {
   return { from: dayString(start), to: dayString(end) }
 }
 
-const seriesKinds: SeriesKind[] = ['OFFICIAL_PRACTICE', 'MOCK', 'PLACEMENT']
+// The placement test can only be taken once, so it is a starting reference line, never a series of its own.
+const seriesKinds: SeriesKind[] = ['OFFICIAL_PRACTICE', 'MOCK']
 const skills: BandSkill[] = ['LISTENING', 'READING', 'WRITING', 'SPEAKING', 'OVERALL']
 export function selectBandHistory(options: BandAvailabilityOption[], requestedSeries: string | null, requestedSkill: string | null): { series: SeriesKind; skill: BandSkill } {
   const series = seriesKinds.find((value) => value === requestedSeries)
   const skill = skills.find((value) => value === requestedSkill)
-  const matching = options.filter((option) => !series || option.seriesKind === series)
+  const matching = options.filter((option) => option.seriesKind !== 'PLACEMENT' && (!series || option.seriesKind === series))
     .sort((a, b) => Date.parse(b.latestSubmittedAt) - Date.parse(a.latestSubmittedAt)
       || seriesKinds.indexOf(a.seriesKind) - seriesKinds.indexOf(b.seriesKind)
       || skills.indexOf(a.skill) - skills.indexOf(b.skill))
-  const usableSkill = skill && !(series === 'PLACEMENT' && (skill === 'SPEAKING' || skill === 'OVERALL'))
-    && (skill !== 'OVERALL' || matching.some((option) => option.skill === 'OVERALL'))
+  const usableSkill = skill && (skill !== 'OVERALL' || matching.some((option) => option.skill === 'OVERALL'))
   if (usableSkill) {
     return { series: series ?? matching.find((option) => option.skill === skill)?.seriesKind ?? 'OFFICIAL_PRACTICE', skill }
   }
@@ -40,9 +40,30 @@ export function selectBandHistory(options: BandAvailabilityOption[], requestedSe
   return { series: series ?? latest?.seriesKind ?? 'OFFICIAL_PRACTICE', skill: latest?.skill ?? 'LISTENING' }
 }
 
-export function bandPracticeLink(series: SeriesKind, skill: BandSkill) {
-  if (series === 'PLACEMENT') return { to: '/learn/placement', label: 'Làm bài kiểm tra đầu vào' }
+/** The placement test grades Listening, Reading and Writing only, so only those skills have a starting reference. */
+export const hasPlacementReference = (skill: BandSkill) => skill === 'LISTENING' || skill === 'READING' || skill === 'WRITING'
+
+export function bandPracticeLink(skill: BandSkill) {
   // The practice catalog exposes separately graded skills; it does not offer a combined Overall attempt.
   const selected = skill === 'OVERALL' ? 'reading' : skill.toLowerCase()
   return { to: `/practice-tests?skill=${selected}`, label: `Làm bài luyện ${selected[0].toUpperCase()}${selected.slice(1)}` }
+}
+
+/**
+ * Band axis that fits the data instead of always spanning 0-9, so a few half-band steps stay visible.
+ * It is at least three bands tall; half-band gridlines are used while the span is four bands or less.
+ */
+export function bandAxis(values: number[]) {
+  const min = Math.min(...values)
+  const max = Math.max(...values)
+  let lo = Math.max(0, Math.floor(min - 0.5))
+  let hi = Math.min(9, Math.ceil(max + 0.5))
+  if (hi - lo < 3) {
+    hi = Math.min(9, lo + 3)
+    lo = Math.max(0, hi - 3)
+  }
+  const step = hi - lo <= 4 ? 0.5 : 1
+  const ticks: number[] = []
+  for (let value = lo; value <= hi + 1e-9; value += step) ticks.push(value)
+  return { lo, hi, ticks }
 }

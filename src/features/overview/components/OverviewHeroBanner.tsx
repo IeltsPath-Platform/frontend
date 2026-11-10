@@ -6,6 +6,7 @@ import type { BandSummary, HeroCourse } from '../overviewViewModel'
 import { percentLabel } from '../statisticsFormat'
 import mascot from '../assets/mascot-owl-idea.png'
 import dots from '../assets/hero-grid-dots.png'
+import '../chart-transitions.css'
 
 interface OverviewHeroBannerProps {
   username: string
@@ -21,12 +22,11 @@ const formatBand = (value: number | null) => value === null ? '—' : value.toFi
 
 function ProgressRing({ percent }: { percent: number | null }) {
   const clamped = Math.min(100, Math.max(0, percent ?? 0))
-  const circumference = 2 * Math.PI * 34
   return (
-    <div className="overview-course-ring">
+    <div className="overview-course-ring overview-chart-enter">
       <svg viewBox="0 0 80 80" role="img" aria-label={percent === null ? 'Chưa có dữ liệu tiến độ' : `Hoàn thành ${Math.round(clamped)}%`}>
         <circle cx="40" cy="40" r="34" fill="none" stroke="currentColor" opacity="0.2" strokeWidth="7" />
-        <circle cx="40" cy="40" r="34" fill="none" stroke="var(--overview-yellow)" strokeWidth="7" strokeLinecap="round" strokeDasharray={`${circumference * clamped / 100} ${circumference}`} />
+        <circle className="overview-chart-ring" cx="40" cy="40" r="34" pathLength={1} fill="none" stroke="var(--overview-yellow)" strokeWidth="7" strokeLinecap="round" strokeDasharray="1" strokeDashoffset={1 - clamped / 100} />
       </svg>
       <span>{percent === null ? '—' : `${Math.round(clamped)}%`}<small>{percent === null ? 'chưa có dữ liệu' : 'hoàn thành'}</small></span>
     </div>
@@ -64,7 +64,7 @@ export function OverviewHeroBanner({ username, band, bandSourceLabel, journeySta
             <p>{course?.startedAt ? `Bắt đầu: ${new Date(course.startedAt).toLocaleDateString('vi-VN')}` : courseLoading || courseError ? 'Tiến độ sẽ hiện khi dữ liệu sẵn sàng' : 'Sẵn sàng cho hành trình mới'}</p>
           </section>
           <section className="overview-hero-glass overview-course-completion" aria-label="Tiến độ khóa học">
-            <ProgressRing percent={course?.percent ?? null} />
+            <ProgressRing key={course?.id ?? 'all'} percent={course?.percent ?? null} />
             <div><p className="overview-hero-eyebrow">Tiến độ khóa</p><strong>{course?.completedLessons ?? '—'} <small>/ {course?.totalLessons ?? '—'} bài</small></strong><p>{course ? `Còn ${Math.max(0, course.totalLessons - course.completedLessons)} bài học` : 'Chưa có tiến độ'}</p></div>
           </section>
         </div>

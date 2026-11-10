@@ -6,8 +6,9 @@ import { overviewApi, type BandAvailability, type BandStatistics } from '../api/
 import { bandRange } from '../bandHistoryModel'
 import { BandHistoryPanel } from './BandHistoryPanel'
 
-vi.mock('@/features/auth/authSession', () => ({ useAuthSession: () => ({ isLoggedIn: true, email: 'learner@example.test' }) }))
-vi.mock('../api/overviewApi', () => ({ overviewApi: { bands: vi.fn(), bandAvailability: vi.fn() } }))
+const session = vi.hoisted(() => ({ isLoggedIn: true, email: 'learner@example.test' }))
+vi.mock('@/features/auth/authSession', () => ({ useAuthSession: () => session }))
+vi.mock('../api/overviewApi', () => ({ overviewApi: { bands: vi.fn(), bandAvailability: vi.fn(), placementBand: vi.fn() } }))
 const availability: BandAvailability = { options: [
   { seriesKind: 'MOCK', skill: 'OVERALL', latestSubmittedAt: '2026-11-09T10:00:00Z' },
   { seriesKind: 'OFFICIAL_PRACTICE', skill: 'READING', latestSubmittedAt: '2026-11-08T10:00:00Z' },
@@ -34,8 +35,11 @@ afterAll(() => {
 })
 beforeEach(() => {
   vi.resetAllMocks()
+  session.email = 'learner@example.test'
+  session.isLoggedIn = true
   vi.mocked(overviewApi.bandAvailability).mockResolvedValue(availability)
   vi.mocked(overviewApi.bands).mockResolvedValue(history)
+  vi.mocked(overviewApi.placementBand).mockResolvedValue(null)
 })
 
 describe('BandHistoryPanel', () => {
@@ -73,22 +77,34 @@ describe('BandHistoryPanel', () => {
     expect(overviewApi.bands).toHaveBeenCalledWith(expect.any(String), expect.any(String), 'READING', 'OFFICIAL_PRACTICE', '', expect.any(AbortSignal))
     expect(screen.getByRole('button', { name: 'Overall' })).toBeDisabled()
   })
-  it('changes the source through the keyboard and disables unsupported placement skills', async () => {
+  it('changes the source through the keyboard and offers no placement series', async () => {
     const user = userEvent.setup()
-    vi.mocked(overviewApi.bandAvailability).mockResolvedValue({ options: [...availability.options,
-      { seriesKind: 'PLACEMENT', skill: 'WRITING', latestSubmittedAt: '2026-10-01T10:00:00Z' },
-    ] })
     mount()
     await screen.findByText('+0.5 BAND')
     screen.getByRole('combobox', { name: 'Loại bài thi' }).focus()
     await user.keyboard('{Enter}')
-    screen.getByRole('option', { name: 'Đầu vào' }).focus()
+    expect(screen.queryByRole('option', { name: 'Đầu vào' })).not.toBeInTheDocument()
+    screen.getByRole('option', { name: 'Thi thử' }).focus()
     await user.keyboard('{Enter}')
-    await waitFor(() => expect(overviewApi.bands).toHaveBeenLastCalledWith(expect.any(String), expect.any(String), 'WRITING', 'PLACEMENT', '', expect.any(AbortSignal)))
-    expect(screen.getByRole('button', { name: 'Speaking' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Overall' })).toBeDisabled()
-    expect(params().get('series')).toBe('PLACEMENT')
-    expect(params().get('skill')).toBe('WRITING')
+    await waitFor(() => expect(params().get('series')).toBe('MOCK'))
+  })
+  it('turns an old placement link into the practice series', async () => {
+    mount('&series=PLACEMENT&skill=READING')
+    await screen.findByText('+0.5 BAND')
+    expect(overviewApi.bands).not.toHaveBeenCalledWith(expect.any(String), expect.any(String), expect.anything(), 'PLACEMENT', expect.anything(), expect.anything())
+  })
+  it('draws the placement band as a starting reference line for a skill the placement test grades', async () => {
+    vi.mocked(overviewApi.placementBand).mockResolvedValue(4)
+    const { container } = mount()
+    expect(await screen.findByText('Đầu vào 4.0')).toBeInTheDocument()
+    expect(container.querySelector('.band-ref-line.is-placement')).toBeInTheDocument()
+    expect(screen.getByText('Bài đầu vào')).toBeInTheDocument()
+  })
+  it('has no placement reference for Speaking, which the placement test does not grade', async () => {
+    const { container } = mount('&series=OFFICIAL_PRACTICE&skill=SPEAKING')
+    await screen.findByText('+0.5 BAND')
+    expect(container.querySelector('.band-ref-line.is-placement')).not.toBeInTheDocument()
+    expect(overviewApi.placementBand).not.toHaveBeenCalled()
   })
   it('offers skill practice for an empty history without inventing improvement', async () => {
     vi.mocked(overviewApi.bandAvailability).mockResolvedValue({ options: [] })
@@ -111,11 +127,49 @@ describe('BandHistoryPanel', () => {
     expect(container.querySelectorAll('circle')).toHaveLength(2)
     expect(container.querySelector('.statistics-actual-line')).toBeInTheDocument()
   })
+  it('keeps the chart mounted during a skill request and redraws it when the new history arrives', async () => {
+    const user = userEvent.setup()
+    const next = deferred<BandStatistics>()
+    vi.mocked(overviewApi.bands).mockImplementation((_from, _to, skill, series) => series === 'PLACEMENT'
+      ? Promise.resolve({ ...history, latest: null }) : skill === 'WRITING' ? next.promise : Promise.resolve(history))
+    const { container } = mount()
+    const chart = await screen.findByRole('img', { name: /Lịch sử band/ })
+    await user.click(screen.getByRole('button', { name: 'Writing' }))
+    expect(screen.getByRole('img', { name: /Lịch sử band/ })).toBe(chart)
+    expect(screen.getByRole('region', { name: 'Hành trình band của bạn' })).toHaveAttribute('aria-busy', 'true')
+    expect(screen.getByText('Đang cập nhật biểu đồ…')).toHaveAttribute('role', 'status')
+    expect(screen.getByText('Điểm Reading từ các lần thi đã được chấm.')).toBeInTheDocument()
+    expect(container.querySelector('.band-chart')).toHaveClass('is-reading')
+    expect(params().get('skill')).toBe('WRITING')
+    await act(async () => next.resolve({ ...history, skill: 'WRITING', latest: 7, points: history.points.map((point) => ({ ...point, band: point.band + 1.5 })) }))
+    await waitFor(() => expect(container.querySelector('.band-chart')).toHaveClass('is-writing'))
+    expect(screen.getByRole('img', { name: /Lịch sử band/ })).not.toBe(chart)
+    expect(container.querySelector('.statistics-actual-line')).toHaveAttribute('pathLength', '1')
+    expect(screen.queryByText('Đang cập nhật biểu đồ…')).not.toBeInTheDocument()
+    expect(screen.getByText('Điểm Writing từ các lần thi đã được chấm.')).toBeInTheDocument()
+  })
+  it('clears the retained chart if the account changes while a skill request is pending', async () => {
+    const user = userEvent.setup()
+    const next = deferred<BandStatistics>()
+    const otherAvailability = deferred<BandAvailability>()
+    vi.mocked(overviewApi.bands).mockImplementation((_from, _to, skill, series) => series === 'PLACEMENT'
+      ? Promise.resolve({ ...history, latest: null }) : skill === 'WRITING' ? next.promise : Promise.resolve(history))
+    const { rerender } = mount()
+    await screen.findByRole('img', { name: /Lịch sử band/ })
+    await user.click(screen.getByRole('button', { name: 'Writing' }))
+    vi.mocked(overviewApi.bandAvailability).mockReturnValue(otherAvailability.promise)
+    session.email = 'other@example.test'
+    rerender(<MemoryRouter><BandHistoryPanel /><LocationProbe /></MemoryRouter>)
+    expect(screen.queryByRole('img', { name: /Lịch sử band/ })).not.toBeInTheDocument()
+    expect(screen.queryByText('+0.5 BAND')).not.toBeInTheDocument()
+    await act(async () => next.resolve(history))
+    expect(screen.queryByRole('img', { name: /Lịch sử band/ })).not.toBeInTheDocument()
+  })
   it.each(['success', 'failure'] as const)('ignores stale availability %s after a range change', async (outcome) => {
     const user = userEvent.setup()
     const stale = deferred<BandAvailability>()
     vi.mocked(overviewApi.bandAvailability).mockReturnValueOnce(stale.promise).mockResolvedValue(availability)
-    mount()
+    mount('&series=OFFICIAL_PRACTICE&skill=READING')
     await waitFor(() => expect(overviewApi.bandAvailability).toHaveBeenCalledTimes(1))
     await user.click(screen.getByRole('button', { name: '8 tuần' }))
     await screen.findByText('+0.5 BAND')
@@ -127,14 +181,17 @@ describe('BandHistoryPanel', () => {
   it.each(['success', 'failure'] as const)('ignores stale history %s after a skill change', async (outcome) => {
     const user = userEvent.setup()
     const stale = deferred<BandStatistics>()
-    vi.mocked(overviewApi.bands).mockReturnValueOnce(stale.promise).mockResolvedValue(history)
     mount()
-    await waitFor(() => expect(overviewApi.bands).toHaveBeenCalledTimes(1))
-    await user.click(screen.getByRole('button', { name: 'Writing' }))
     await screen.findByText('+0.5 BAND')
-    expect(vi.mocked(overviewApi.bands).mock.calls[0][5].aborted).toBe(true)
+    vi.mocked(overviewApi.bands).mockReturnValueOnce(stale.promise)
+    await user.click(screen.getByRole('button', { name: 'Writing' }))
+    const writingRequest = vi.mocked(overviewApi.bands).mock.calls.find((call) => call[2] === 'WRITING')!
+    await user.click(screen.getByRole('button', { name: 'Listening' }))
+    await screen.findByText('Điểm Listening từ các lần thi đã được chấm.')
+    expect(writingRequest[5].aborted).toBe(true)
     await act(async () => { if (outcome === 'success') stale.resolve({ ...history, points: [], delta: null }); else stale.reject(new Error('stale history')) })
     expect(screen.getByText('+0.5 BAND')).toBeVisible()
+    expect(screen.getByText('Điểm Listening từ các lần thi đã được chấm.')).toBeInTheDocument()
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
   it.each(['bandAvailability', 'bands'] as const)('retries a failed %s request', async (method) => {

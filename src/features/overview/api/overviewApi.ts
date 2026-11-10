@@ -196,6 +196,9 @@ export const overviewApi = {
     apiRequest<BandAvailability>(`/api/assessments/me/statistics/bands/availability?${query({ from, to, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone })}`, { signal, auth: true }),
   bands: (from: string, to: string, skill: BandSkill, seriesKind: SeriesKind, cursor: string, signal: AbortSignal) =>
     apiRequest<BandStatistics>(`/api/assessments/me/statistics/bands?${query({ from, to, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, skill, seriesKind, cursor, limit: 100 })}`, { signal, auth: true }),
+  /** The learner's placement band for one skill (the placement test is taken once), or null when there is none. */
+  placementBand: (from: string, to: string, skill: BandSkill, signal: AbortSignal) =>
+    overviewApi.bands(from, to, skill, 'PLACEMENT', '', signal).then((history) => history.latest),
   /** The 50 most recent finished attempts (the server's page limit) and how many there are in all. */
   practiceHistory: (signal: AbortSignal) =>
     apiRequest<PracticeHistory>(`/api/assessments/practice/history?${query({ page: 0, size: 50 })}`, { signal, auth: true }),

@@ -36,7 +36,7 @@ function axisLabel(minutes: number): string {
 }
 
 /** Daily study time as bars joined by a trend line. A day without a recording is a gap in the line, not a zero. */
-export function StudyDaysGraph({ points, ariaLabel }: { points: DayPoint[]; ariaLabel: string }) {
+export function StudyDaysGraph({ points, ariaLabel, animationKey }: { points: DayPoint[]; ariaLabel: string; animationKey?: string }) {
   const frameRef = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState(DEFAULT_WIDTH)
 
@@ -71,7 +71,7 @@ export function StudyDaysGraph({ points, ariaLabel }: { points: DayPoint[]; aria
 
   return (
     <div className="overview-study-frame" ref={frameRef}>
-      <svg className="overview-study-graph" viewBox={`0 0 ${width} ${HEIGHT}`} role="img" aria-label={ariaLabel}>
+      <svg key={animationKey} className="overview-study-graph overview-chart-enter" viewBox={`0 0 ${width} ${HEIGHT}`} role="img" aria-label={ariaLabel}>
         {[0, 0.5, 1].map((fraction) => {
           const y = BASELINE - fraction * (BASELINE - TOP)
           return (
@@ -92,6 +92,7 @@ export function StudyDaysGraph({ points, ariaLabel }: { points: DayPoint[]; aria
             <g key={point.key}>
               {point.actual !== null && (
                 <rect
+                  className="overview-chart-bar"
                   x={x}
                   y={yFor(point.actual)}
                   width={barWidth}
@@ -115,8 +116,8 @@ export function StudyDaysGraph({ points, ariaLabel }: { points: DayPoint[]; aria
         })}
         {trend.map((segment, segmentIndex) => (
           <g key={segmentIndex} className="overview-study-trend">
-            {segment.length > 1 && <polyline points={segment.map((item) => `${item.x},${item.y}`).join(' ')} />}
-            {segment.map((item, itemIndex) => <circle key={itemIndex} cx={item.x} cy={item.y} r="3" />)}
+            {segment.length > 1 && <polyline className="overview-chart-line" pathLength={1} points={segment.map((item) => `${item.x},${item.y}`).join(' ')} />}
+            {segment.map((item, itemIndex) => <circle className="overview-chart-point" key={itemIndex} cx={item.x} cy={item.y} r="3" />)}
           </g>
         ))}
       </svg>

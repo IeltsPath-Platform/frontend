@@ -46,7 +46,7 @@ export function OverviewGeneralStats({ learning, time, streak, today, courses = 
         </header>
         <OverviewBlockStatus loading={time.loading} error={time.error} onRetry={time.reload} />
         <div className="overview-week-summary"><p><strong>{streak.data?.currentDays ?? '—'}</strong> ngày liên tiếp có làm bài</p><p><strong>{streak.data?.longestDays ?? '—'}</strong> ngày <span>(Kỷ lục chuỗi làm bài)</span></p></div>
-        <ul className="overview-week-days">{days.map((date, index) => {
+        <ul key={isoDate(weekStart)} className="overview-week-days overview-chart-enter">{days.map((date, index) => {
           const key = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`
           const frozen = frozenDays.has(isoDate(date))
           const active = !frozen && statuses[key] === 'completed'

@@ -7,7 +7,7 @@ import { notebookApi } from '@/features/vocabulary/api/notebookApi'
 import { OverviewDetailedStats } from './OverviewDetailedStats'
 
 vi.mock('@/features/auth/authSession', () => ({ useAuthSession: () => ({ isLoggedIn: true, email: 'learner@example.test' }) }))
-vi.mock('../api/overviewApi', () => ({ overviewApi: { allProgress: vi.fn(), progress: vi.fn(), bands: vi.fn(), bandAvailability: vi.fn() } }))
+vi.mock('../api/overviewApi', () => ({ overviewApi: { allProgress: vi.fn(), progress: vi.fn(), bands: vi.fn(), bandAvailability: vi.fn(), report: vi.fn(), placementBand: vi.fn() } }))
 vi.mock('@/features/vocabulary/api/notebookApi', () => ({ notebookApi: { getVocabularyMap: vi.fn() } }))
 
 const course = { courseId: 'course-1', name: 'IELTS Foundation', bandLevel: 5.5, completedLessons: 3, totalLessons: 10, percent: 30, startedAt: null, lastStudiedAt: null, activityProvenance: 'STUDY_SESSION', resumeTarget: { type: 'COURSE' as const, courseId: 'course-1' } }
@@ -44,6 +44,8 @@ beforeEach(() => {
   vi.mocked(overviewApi.allProgress).mockResolvedValue(progress)
   vi.mocked(overviewApi.progress).mockResolvedValue(progress)
   vi.mocked(overviewApi.bands).mockResolvedValue(bands)
+  vi.mocked(overviewApi.placementBand).mockResolvedValue(null)
+  vi.mocked(overviewApi.report).mockResolvedValue({ skills: [], estimatedBand: null, target: { targetBand: 7, gap: 1, examDate: null } })
   vi.mocked(overviewApi.bandAvailability).mockResolvedValue({ options: [{ seriesKind: 'MOCK', skill: 'LISTENING', latestSubmittedAt: '2026-11-02T10:00:00Z' }, { seriesKind: 'PLACEMENT', skill: 'LISTENING', latestSubmittedAt: '2026-10-02T10:00:00Z' }] })
   vi.mocked(notebookApi.getVocabularyMap).mockResolvedValue({ currentBand: 'B1', suggestedBand: 'A2', bands: [{ cefr: 'B1', band: '4.0–5.0', total: 100, learned: 70, learning: 40, needsReview: 30, notLearned: 30 }] })
 })
@@ -55,10 +57,28 @@ describe('OverviewDetailedStats', () => {
     expect(screen.queryByRole('region', { name: 'Biểu đồ thời gian học' })).not.toBeInTheDocument()
     expect(screen.queryByRole('region', { name: 'Các Khóa Học Của Tôi' })).not.toBeInTheDocument()
     expect(screen.getByRole('progressbar', { name: 'Tỷ lệ từ vựng đã học' })).toHaveAttribute('value', '70')
-    expect(screen.getByRole('img', { name: /B1, IELTS/ })).toHaveAccessibleName(/70 đã học, 40 đang học, 30 cần ôn/)
+    expect(screen.getByRole('progressbar', { name: /B1, IELTS 4.0–5.0/ })).toHaveAttribute('aria-valuetext', '70 trên 100 nghĩa đã học')
+    expect(screen.getByText('40 đang học · 30 cần ôn')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /Xem bản đồ chi tiết/ })).toHaveAttribute('href', '/vocabulary/map')
     expect(screen.queryByText(/Study Plan|Phản hồi từ mentor|AI nhận xét|Tiếp tục học/i)).not.toBeInTheDocument()
     expect(overviewApi.bands).toHaveBeenCalledWith(expect.any(String), expect.any(String), 'LISTENING', 'MOCK', '', expect.any(AbortSignal))
+  })
+
+  it('puts the band journey in its own block below skill progress and shows the target', async () => {
+    mount()
+    await screen.findByText('+0.5 BAND')
+    const skills = screen.getByRole('region', { name: 'Tiến Độ 4 Kỹ Năng' })
+    const journey = screen.getByRole('region', { name: 'Hành trình band của bạn' })
+    expect(skills.contains(journey)).toBe(false)
+    expect(skills.compareDocumentPosition(journey) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(await screen.findByText('Mục tiêu 7.0', { selector: 'li' })).toBeInTheDocument()
+  })
+
+  it('keeps the band journey working when the target report cannot be loaded', async () => {
+    vi.mocked(overviewApi.report).mockRejectedValue(new Error('report unavailable'))
+    mount()
+    expect(await screen.findByText('+0.5 BAND')).toBeVisible()
+    expect(screen.queryByText(/Mục tiêu \d/)).not.toBeInTheDocument()
   })
 
   it('requests the selected rolling range for the bands and keeps progress independent of it', async () => {
@@ -73,12 +93,11 @@ describe('OverviewDetailedStats', () => {
     expect(screen.getByRole('button', { name: '8 tuần' })).toHaveAttribute('aria-pressed', 'true')
   })
 
-  it('does not request unavailable overall/speaking placement bands', async () => {
+  it('never requests placement as a series, even from an old placement link', async () => {
     mount('&series=PLACEMENT&skill=SPEAKING')
-    await screen.findByText('+0.5 BAND')
-    expect(overviewApi.bands).toHaveBeenCalledWith(expect.any(String), expect.any(String), 'LISTENING', 'PLACEMENT', '', expect.any(AbortSignal))
-    expect(screen.getByRole('button', { name: 'Overall' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Speaking' })).toBeDisabled()
+    await screen.findByRole('region', { name: 'Hành trình band của bạn' })
+    await waitFor(() => expect(overviewApi.bands).toHaveBeenCalledWith(expect.any(String), expect.any(String), 'SPEAKING', 'OFFICIAL_PRACTICE', '', expect.any(AbortSignal)))
+    expect(overviewApi.bands).not.toHaveBeenCalledWith(expect.any(String), expect.any(String), expect.anything(), 'PLACEMENT', expect.anything(), expect.anything())
   })
 
   it('paginates band history and resets the cursor on a skill change', async () => {
@@ -162,9 +181,12 @@ describe('OverviewDetailedStats', () => {
     vi.mocked(overviewApi.progress).mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise).mockReturnValueOnce(latest.promise)
     mount()
     await within(skillCard()).findByRole('progressbar', { name: 'Listening: 3/10 bài' })
+    const previousRadar = skillCard().querySelector('.statistics-radar')
     await chooseCourse(user, 'IELTS Course 1')
     expect(skillCard()).toHaveAttribute('aria-busy', 'true')
-    expect(within(skillCard()).queryByRole('progressbar')).not.toBeInTheDocument()
+    expect(skillCard().querySelector('.statistics-radar')).toBe(previousRadar)
+    expect(skillCard().querySelector('.overview-chart-snapshot')).toHaveAttribute('inert')
+    expect(within(skillCard()).getByText('Đang cập nhật biểu đồ…')).toBeInTheDocument()
     await chooseCourse(user, 'IELTS Course 2')
     await chooseCourse(user, 'IELTS Course 1')
     expect(overviewApi.progress).toHaveBeenCalledTimes(3)
@@ -172,6 +194,7 @@ describe('OverviewDetailedStats', () => {
     expect(vi.mocked(overviewApi.progress).mock.calls[1][2].aborted).toBe(true)
     await act(async () => { latest.resolve(selectedProgress(9, 10)) })
     expect(await within(skillCard()).findByRole('progressbar', { name: 'Listening: 9/10 bài' })).toHaveAttribute('value', '90')
+    expect(skillCard().querySelector('.statistics-radar')).not.toBe(previousRadar)
 
     await act(async () => {
       second.resolve(selectedProgress(1, 10))
