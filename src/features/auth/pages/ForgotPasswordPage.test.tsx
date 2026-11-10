@@ -20,7 +20,7 @@ describe('ForgotPasswordPage', () => {
 
   it('sends the request and enforces the resend cooldown', async () => {
     render(<MemoryRouter><ForgotPasswordPage /></MemoryRouter>)
-    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'learner@example.test' } })
+    fireEvent.change(screen.getByLabelText(/^Email/),{ target: { value: 'learner@example.test' } })
     fireEvent.click(screen.getByRole('button', { name: 'Gửi email đặt lại' }))
     await waitFor(() => expect(forgotPasswordMock).toHaveBeenCalledWith('learner@example.test'))
     expect(await screen.findByRole('button', { name: 'Gửi lại sau 60s' })).toBeDisabled()

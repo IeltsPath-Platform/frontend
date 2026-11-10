@@ -14,14 +14,11 @@ vi.mock('@/components/OwlHero', () => ({
   OwlHero: () => null,
 }))
 
-describe('AuthShell header visibility', () => {
-  it('omits the site header when requested', () => {
-    render(<AuthShell showNavbar={false}><p>Đăng nhập</p></AuthShell>)
-    expect(screen.queryByTestId('site-header')).toBeNull()
-  })
-
-  it('keeps the site header by default on other auth screens', () => {
-    render(<AuthShell><p>Khôi phục mật khẩu</p></AuthShell>)
+describe('AuthShell', () => {
+  it('renders the site header and ambient copy on password recovery and OAuth screens', () => {
+    render(<AuthShell ambientTitle="Khôi phục mật khẩu"><p>Biểu mẫu khôi phục</p></AuthShell>)
     expect(screen.getByTestId('site-header')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Khôi phục mật khẩu' })).toBeInTheDocument()
+    expect(screen.getByText('Biểu mẫu khôi phục')).toBeInTheDocument()
   })
 })

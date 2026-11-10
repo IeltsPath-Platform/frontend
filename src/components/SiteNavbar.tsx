@@ -6,6 +6,8 @@ import { NavOwl } from './NavOwl'
 import type { NavOwlHandle } from './NavOwl'
 import { UserTierDropdown } from './UserTierDropdown'
 import { logoutSession, useAuthSession } from '@/features/auth/authSession'
+import type { AuthMode } from '@/features/auth/components/AuthForm'
+import { AuthPage } from '@/features/auth/pages/AuthPage'
 import { NotificationBell } from '@/features/community/components/NotificationBell'
 import { ReviewBasketBadge } from './ReviewBasketBadge'
 import { useReviewBasketSummary } from './useReviewBasketSummary'
@@ -114,11 +116,15 @@ export interface SiteNavbarProps {
 export function SiteNavbar({ isLoggedIn, userName, activePath }: SiteNavbarProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [loggingOut, setLoggingOut] = useState(false)
+  const [authModalMode, setAuthModalMode] = useState<AuthMode | null>(null)
+  const authTriggerRef = useRef<HTMLButtonElement | null>(null)
   const location = useLocation()
   const pathname = activePath ?? location.pathname
   const search = activePath ? '' : location.search
   const loginMatch = useMatch('/login')
   const registerMatch = useMatch('/register')
+  const forgotMatch = useMatch('/forgot-password')
+  const isRouteAuthModal = Boolean(loginMatch || registerMatch || forgotMatch)
   const navigate = useNavigate()
   const session = useAuthSession()
   const activeIsLoggedIn = isLoggedIn ?? session.isLoggedIn
@@ -186,6 +192,7 @@ export function SiteNavbar({ isLoggedIn, userName, activePath }: SiteNavbarProps
       indicator.style.transition = ''
       indicatorPlaced.current = true
     }
+    if (typeof ResizeObserver === 'undefined') return undefined
     const observer = new ResizeObserver(place)
     observer.observe(links)
     links.querySelectorAll('.site-nav-link').forEach((link) => observer.observe(link))
@@ -304,10 +311,30 @@ export function SiteNavbar({ isLoggedIn, userName, activePath }: SiteNavbarProps
                 email={session.email}
                 avatarUrl={session.avatarUrl}
               />
-            ) : !loginMatch && !registerMatch && (
+            ) : (
               <>
-                <Link to="/login" className="site-login-btn">Đăng nhập</Link>
-                <Link to="/register" className="site-register-btn">Đăng ký</Link>
+                <button
+                  type="button"
+                  className="site-login-btn"
+                  onClick={(event) => {
+                    authTriggerRef.current = event.currentTarget
+                    closeMenu()
+                    setAuthModalMode('sign-in')
+                  }}
+                >
+                  Đăng nhập
+                </button>
+                <button
+                  type="button"
+                  className="site-register-btn"
+                  onClick={(event) => {
+                    authTriggerRef.current = event.currentTarget
+                    closeMenu()
+                    setAuthModalMode('sign-up')
+                  }}
+                >
+                  Đăng ký
+                </button>
               </>
             )}
             <button type="button" ref={menuButtonRef} className="site-menu-btn" aria-label={menuOpen ? 'Đóng điều hướng' : 'Mở điều hướng'}
@@ -335,6 +362,19 @@ export function SiteNavbar({ isLoggedIn, userName, activePath }: SiteNavbarProps
             })}
           </div>
         </nav>
+      ) : null}
+      {authModalMode !== null && !isRouteAuthModal && !activeIsLoggedIn ? (
+        <AuthPage
+          mode={authModalMode}
+          open
+          onReturnFocus={() => authTriggerRef.current?.focus()}
+          onModeChange={setAuthModalMode}
+          onOpenChange={(nextOpen) => {
+            if (!nextOpen) {
+              setAuthModalMode(null)
+            }
+          }}
+        />
       ) : null}
     </header>
   )
