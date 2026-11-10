@@ -61,6 +61,14 @@ describe('NotificationBell pop-up', () => {
     expect(screen.getByRole('region', { name: 'Thông báo' })).toBeInTheDocument()
   })
 
+  it('offers a load-more action when another page is available', () => {
+    state.current = { items: [], unread: 0, error: '', announcement: '', fresh: null, dismissFresh, markRead,
+      markAll: vi.fn(), hasMore: true, loadingMore: false, loadMore: vi.fn() }
+    render(<MemoryRouter><NotificationBell enabled /></MemoryRouter>)
+    fireEvent.click(screen.getByRole('button', { name: /Thông báo/ }))
+    expect(screen.getByRole('button', { name: 'Xem thêm' })).toBeInTheDocument()
+  })
+
   it('shows nothing at all for someone who does not get notifications', () => {
     state.current = { items: [], unread: 0, error: '', announcement: '', fresh: null, dismissFresh, markRead, markAll: vi.fn() }
     const { container } = render(<MemoryRouter><NotificationBell enabled={false} /></MemoryRouter>)

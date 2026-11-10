@@ -97,7 +97,7 @@ export const communityApi = {
   updateComment: (id: string, body: string) => apiRequest(`/api/community/comments/${id}`, { method: 'PUT', auth: true, body: { body } }),
   deleteComment: (id: string) => apiRequest<void>(`/api/community/comments/${id}`, { method: 'DELETE', auth: true }),
   follow: (id: string, active: boolean) => apiRequest<void>(`/api/community/users/${id}/follow`, { method: active ? 'DELETE' : 'POST', auth: true }),
-  notifications: async () => z.array(notificationSchema).parse(await apiRequest('/api/notifications?size=20', { auth: true })),
+  notifications: async (page = 0) => z.array(notificationSchema).parse(await apiRequest(`/api/notifications?page=${page}&size=20`, { auth: true })),
   notificationPreferences: async () => z.array(notificationPreferenceSchema).parse(await apiRequest('/api/notifications/preferences', { auth: true })),
   mailPreferences: async () => z.object({ learning: z.boolean() }).parse(await apiRequest('/api/notifications/mail-preferences', { auth: true })),
   updateMailPreferences: async (learning: boolean) => z.object({ learning: z.boolean() }).parse(

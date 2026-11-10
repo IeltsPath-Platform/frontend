@@ -79,6 +79,12 @@
 .community-notice-panel time { color: #475569; font-size: .78rem; font-weight: 400; }
 .community-notice-panel p { margin: 0; padding: .8rem 1rem; color: #475569; }
 .community-notice-panel p[role='alert'] { color: #b91c1c; }
+.community-notice-load-more {
+  display: block; width: calc(100% - 2rem); margin: .25rem 1rem .8rem; padding: .55rem;
+  border: 1px solid #c7d6f7; border-radius: 8px; background: #eff4ff; color: #1946b3; font-weight: 600; cursor: pointer;
+}
+.community-notice-load-more:hover:not(:disabled) { background: #dfe9ff; }
+.community-notice-load-more:disabled { opacity: .65; cursor: wait; }
 
 @media (max-width: 480px) {
   .community-notice-panel { position: fixed; top: 4.2rem; right: 1rem; left: 1rem; width: auto; }

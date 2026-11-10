@@ -10,7 +10,7 @@ export const TOAST_MS = 8000
 
 export function NotificationBell({ enabled }: { enabled: boolean }) {
   const [open, setOpen] = useState(false)
-  const { items, unread, error, announcement, fresh, dismissFresh, markRead, markAll } = useCommunityNotifications(enabled)
+  const { items, unread, error, announcement, fresh, dismissFresh, markRead, markAll, hasMore, loadingMore, loadMore } = useCommunityNotifications(enabled)
 
   useEffect(() => {
     if (!fresh) return
@@ -47,6 +47,9 @@ export function NotificationBell({ enabled }: { enabled: boolean }) {
           </Link>
         </li>
       })}</ul>}
+      {hasMore && <button className="community-notice-load-more" type="button" onClick={() => void loadMore?.()} disabled={loadingMore}>
+        {loadingMore ? 'Đang tải…' : 'Xem thêm'}
+      </button>}
     </section>}
   </div>
 }

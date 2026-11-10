@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Client } from '@stomp/stompjs'
 import { API_BASE_URL } from '@/lib/env'
 import { getAccessToken } from '@/lib/httpClient'
@@ -7,6 +7,13 @@ import { NOTIFICATION_PUSHED } from '../lib/notificationEvents'
 
 /** What the socket pushes the moment a notification is stored: enough to say what happened and where it leads. */
 export type PushedNotification = Pick<Notification, 'id' | 'eventType' | 'actorId'> & Partial<Pick<Notification, 'postId' | 'gradingJobId'>>
+const PAGE_SIZE = 20
+
+function mergeById(existing: Notification[], incoming: Notification[]) {
+  const merged = new Map(existing.map((item) => [item.id, item]))
+  incoming.forEach((item) => merged.set(item.id, item))
+  return [...merged.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.id.localeCompare(a.id))
+}
 
 export function useCommunityNotifications(enabled: boolean) {
   const [items, setItems] = useState<Notification[]>([])
@@ -14,10 +21,34 @@ export function useCommunityNotifications(enabled: boolean) {
   const [unread, setUnread] = useState(0)
   const [error, setError] = useState('')
   const [announcement, setAnnouncement] = useState('')
+  const [hasMore, setHasMore] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const nextPage = useRef(1)
+  const loadMoreInFlight = useRef(false)
   const refresh = useCallback(async () => {
-    try { const [list, count] = await Promise.all([communityApi.notifications(), communityApi.unread()]); setItems(list); setUnread(count.count); setError('') }
+    try {
+      const [list, count] = await Promise.all([communityApi.notifications(0), communityApi.unread()])
+      setItems((current) => mergeById(current, list))
+      if (nextPage.current === 1) setHasMore(list.length === PAGE_SIZE)
+      setUnread(count.count)
+      setError('')
+    }
     catch { setError('Không thể tải thông báo. Vui lòng thử lại.') }
   }, [])
+  const loadMore = useCallback(async () => {
+    if (loadMoreInFlight.current || !hasMore) return
+    loadMoreInFlight.current = true
+    setLoadingMore(true)
+    try {
+      const page = nextPage.current
+      const list = await communityApi.notifications(page)
+      setItems((current) => mergeById(current, list))
+      nextPage.current = page + 1
+      setHasMore(list.length === PAGE_SIZE)
+      setError('')
+    } catch { setError('Không thể tải thêm thông báo. Vui lòng thử lại.') }
+    finally { loadMoreInFlight.current = false; setLoadingMore(false) }
+  }, [hasMore])
   useEffect(() => {
     if (!enabled) return
     void Promise.resolve().then(refresh)
@@ -50,5 +81,5 @@ export function useCommunityNotifications(enabled: boolean) {
   const markRead = async (id: string) => { await communityApi.markRead(id); await refresh() }
   const markAll = async () => { await communityApi.markAll(); await refresh() }
   const dismissFresh = useCallback(() => setFresh(null), [])
-  return { items, unread, error, announcement, fresh, dismissFresh, refresh, markRead, markAll }
+  return { items, unread, error, announcement, fresh, dismissFresh, refresh, markRead, markAll, hasMore, loadingMore, loadMore }
 }

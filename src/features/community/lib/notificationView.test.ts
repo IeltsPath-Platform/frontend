@@ -35,6 +35,16 @@ describe('describeNotification', () => {
       .toBe('Có bình luận mới trên bài viết')
   })
 
+  it('describes a granted Premium plan and links to the overview', () => {
+    expect(describeNotification({ ...base, eventType: 'access.subscription-granted.v1' }))
+      .toEqual({ text: 'Bạn đã được nâng cấp Premium. Xem các quyền lợi học tập của gói.', to: '/overview' })
+  })
+
+  it('uses a neutral message and safe destination for unknown non-community event types', () => {
+    expect(describeNotification({ ...base, eventType: 'future.notice.v1' }))
+      .toEqual({ text: 'Bạn có thông báo mới.', to: '/overview' })
+  })
+
   it('does not send a late-examiner notice without a job to a broken link', () => {
     expect(describeNotification({ ...base, eventType: 'assessment.grading-overdue.v1' }).to).toBe(`/community/users/${base.actorId}`)
   })
