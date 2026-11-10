@@ -45,5 +45,29 @@ describe('NotificationPreferencesPage', () => {
     fireEvent.click(comments)
     await waitFor(() => expect(api.updateNotificationPreference).toHaveBeenCalledWith('community.post-commented.v1', false))
     expect(comments).not.toBeChecked()
+    expect(screen.getByRole('heading', { name: 'Học viên' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Giám khảo' })).not.toBeInTheDocument()
+  })
+
+  it('groups examiner notification preferences separately while keeping one learning mail switch', async () => {
+    api.notificationPreferences.mockResolvedValue([
+      ...defaults,
+      { eventType: 'assessment.grading-requested.v1', enabled: true },
+      { eventType: 'assessment.grading-due-soon.v1', enabled: true },
+      { eventType: 'assessment.grading-overdue.v1', enabled: true },
+      { eventType: 'assessment.grading-completed.v1', enabled: true },
+      { eventType: 'access.subscription-granted.v1', enabled: true },
+      { eventType: 'access.subscription-expiry-notice.v1', enabled: true },
+      { eventType: 'assessment.result-ready.v1', enabled: true },
+    ])
+    render(<MemoryRouter initialEntries={['/notifications/preferences']}><Routes>
+      <Route path="/notifications/preferences" element={<NotificationPreferencesPage />} />
+    </Routes></MemoryRouter>)
+
+    expect(await screen.findByRole('heading', { name: 'Giám khảo' })).toBeInTheDocument()
+    expect(screen.getAllByRole('switch')).toHaveLength(13)
+    expect(screen.getAllByRole('switch', { name: /email học tập/i })).toHaveLength(1)
+    expect(screen.getByRole('switch', { name: 'Premium sắp hết hạn' })).toBeInTheDocument()
+    expect(screen.getByRole('switch', { name: 'Đã có kết quả bài thi' })).toBeInTheDocument()
   })
 })

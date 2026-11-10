@@ -1,4 +1,4 @@
-import { Bell, CheckCheck, X } from 'lucide-react'
+import { Bell, CheckCheck, Trash2, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useCommunityNotifications } from '../hooks/useCommunityNotifications'
@@ -10,7 +10,7 @@ export const TOAST_MS = 8000
 
 export function NotificationBell({ enabled }: { enabled: boolean }) {
   const [open, setOpen] = useState(false)
-  const { items, unread, error, announcement, fresh, dismissFresh, markRead, markAll } = useCommunityNotifications(enabled)
+  const { items, unread, error, announcement, fresh, dismissFresh, markRead, markAll, removeOne, removeRead, hasMore, loadingMore, loadMore } = useCommunityNotifications(enabled)
 
   useEffect(() => {
     if (!fresh) return
@@ -37,6 +37,7 @@ export function NotificationBell({ enabled }: { enabled: boolean }) {
     {open && <section className="community-notice-panel" aria-label="Thông báo" aria-live="polite">
       <header><strong>Thông báo</strong><div><Link to="/notifications/preferences" onClick={() => setOpen(false)}>Tùy chọn</Link><button type="button" aria-label="Đóng thông báo" onClick={() => setOpen(false)}><X size={17} /></button></div></header>
       {unread > 0 && <button className="community-notice-readall" type="button" onClick={() => void markAll()}><CheckCheck size={15} /> Đánh dấu đã đọc</button>}
+      {items.some((item) => item.readAt) && <button className="community-notice-readall" type="button" onClick={() => void removeRead()}><Trash2 size={15} /> Xóa đã đọc</button>}
       {error && <p role="alert">{error}</p>}
       {items.length === 0 ? <p className="community-empty">Chưa có thông báo.</p> : <ul>{items.map((item) => {
         const view = describeNotification(item)
@@ -45,8 +46,12 @@ export function NotificationBell({ enabled }: { enabled: boolean }) {
             <span>{view.text}</span>
             <time dateTime={item.createdAt}>{new Date(item.createdAt).toLocaleString('vi-VN')}</time>
           </Link>
+          <button className="community-notice-delete" type="button" aria-label="Xóa thông báo" onClick={() => void removeOne(item.id)}><X size={15} /></button>
         </li>
       })}</ul>}
+      {hasMore && <button className="community-notice-load-more" type="button" onClick={() => void loadMore?.()} disabled={loadingMore}>
+        {loadingMore ? 'Đang tải…' : 'Xem thêm'}
+      </button>}
     </section>}
   </div>
 }

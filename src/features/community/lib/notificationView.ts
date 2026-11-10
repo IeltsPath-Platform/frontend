@@ -4,6 +4,9 @@ export const GRADING_OVERDUE = 'assessment.grading-overdue.v1'
 export const GRADING_DUE_SOON = 'assessment.grading-due-soon.v1'
 export const GRADING_REQUESTED = 'assessment.grading-requested.v1'
 export const GRADING_COMPLETED = 'assessment.grading-completed.v1'
+export const SUBSCRIPTION_GRANTED = 'access.subscription-granted.v1'
+export const SUBSCRIPTION_EXPIRY_NOTICE = 'access.subscription-expiry-notice.v1'
+export const RESULT_READY = 'assessment.result-ready.v1'
 
 /** The learner's list of essays an examiner graded, where each one opens to the comments and the marked errors. */
 export const EXAMINER_REVIEWS_PATH = '/writing-reviews'
@@ -16,6 +19,7 @@ const COMMUNITY_TEXT: Record<string, string> = {
   'community.post-reacted.v1': 'Bài viết của bạn nhận được cảm xúc',
   'community.comment-mentioned.v1': 'Bạn được nhắc trong một bình luận',
   'community.comment-replied.v1': 'Có phản hồi mới trong cuộc trò chuyện',
+  'community.comment-created.v1': 'Có bình luận mới trên bài viết',
 }
 
 /**
@@ -25,6 +29,15 @@ const COMMUNITY_TEXT: Record<string, string> = {
  * else is a community notification (a post or a person).
  */
 export function describeNotification(item: Pick<Notification, 'eventType' | 'postId' | 'actorId' | 'gradingJobId'>): { text: string; to: string } {
+  if (item.eventType === SUBSCRIPTION_GRANTED) {
+    return { text: 'Bạn đã được nâng cấp Premium. Xem các quyền lợi học tập của gói.', to: '/overview' }
+  }
+  if (item.eventType === SUBSCRIPTION_EXPIRY_NOTICE) {
+    return { text: 'Gói Premium của bạn sắp hết hạn hoặc đã hết hạn. Xem thông tin gói.', to: '/overview' }
+  }
+  if (item.eventType === RESULT_READY) {
+    return { text: 'Kết quả bài thi của bạn đã sẵn sàng. Xem chi tiết kết quả.', to: '/overview?tab=detailed-stats' }
+  }
   if (item.eventType === GRADING_OVERDUE && item.gradingJobId) {
     return { text: 'Giáo viên chưa chấm bài của bạn. Bạn có thể chờ tiếp hoặc đổi giáo viên', to: `/grading-jobs/${item.gradingJobId}` }
   }
@@ -37,8 +50,11 @@ export function describeNotification(item: Pick<Notification, 'eventType' | 'pos
   if (item.eventType === GRADING_DUE_SOON) {
     return { text: 'Có bài sắp quá hạn chấm (còn khoảng 12 giờ). Hãy ưu tiên chấm', to: EXAMINER_QUEUE }
   }
-  return {
-    text: COMMUNITY_TEXT[item.eventType] ?? 'Có bình luận mới trên bài viết',
-    to: item.postId ? `/community/posts/${item.postId}` : `/community/users/${item.actorId}`,
+  if (item.eventType.startsWith('community.')) {
+    return {
+      text: COMMUNITY_TEXT[item.eventType] ?? 'Có hoạt động mới trong cộng đồng',
+      to: item.postId ? `/community/posts/${item.postId}` : `/community/users/${item.actorId}`,
+    }
   }
+  return { text: 'Bạn có thông báo mới.', to: '/overview' }
 }
