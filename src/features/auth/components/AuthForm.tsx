@@ -1,11 +1,10 @@
+import { ArrowRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useState, type FormEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   isPasswordLengthValid,
-  PASSWORD_LENGTH_HINT,
   PASSWORD_LENGTH_MESSAGE,
-  PASSWORD_LENGTH_PLACEHOLDER,
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
   PASSWORD_MISMATCH_MESSAGE,
@@ -23,139 +22,324 @@ export interface AuthSubmitPayload {
 
 interface AuthFormProps {
   mode: AuthMode
+  transitionDirection?: 'none' | 'rtl' | 'ltr'
   submitting?: boolean
   oauthEnabled?: boolean
   onSubmit: (payload: AuthSubmitPayload) => void
   onSocialSelect: (provider: SocialProvider) => void
+  onModeChange?: (nextMode: AuthMode) => void
+  onForgotPasswordClick?: () => void
 }
 
-const FORM_COPY: Record<AuthMode, { title: string; description: string; submitLabel: string; prompt: string; switchLabel: string; switchTo: string }> = {
+const AUTH_MODAL_COPY: Record<
+  AuthMode,
+  {
+    submitLabel: string
+    prompt: string
+    switchLabel: string
+    switchTo: string
+    nextMode: AuthMode
+  }
+> = {
   'sign-in': {
-    title: 'Chào mừng bạn trở lại',
-    description: 'Đăng nhập để tiếp tục lộ trình IELTS của bạn.',
     submitLabel: 'Đăng nhập',
     prompt: 'Chưa có tài khoản?',
     switchLabel: 'Đăng ký ngay',
     switchTo: '/register',
+    nextMode: 'sign-up',
   },
   'sign-up': {
-    title: 'Tạo tài khoản mới',
-    description: 'Bắt đầu kế hoạch học IELTS phù hợp với bạn.',
     submitLabel: 'Tạo tài khoản',
     prompt: 'Đã có tài khoản?',
     switchLabel: 'Đăng nhập',
     switchTo: '/login',
+    nextMode: 'sign-in',
   },
 }
 
 export function AuthForm({
   mode,
+  transitionDirection = 'none',
   submitting = false,
   oauthEnabled = false,
   onSubmit,
   onSocialSelect,
+  onModeChange,
+  onForgotPasswordClick,
 }: AuthFormProps) {
-  const copy = FORM_COPY[mode]
+  const copy = AUTH_MODAL_COPY[mode]
+  const isSignUp = mode === 'sign-up'
   const passwordAutocomplete = mode === 'sign-in' ? 'current-password' : 'new-password'
-  const [clientMessage, setClientMessage] = useState('')
+  const [validationState, setValidationState] = useState<{ mode: AuthMode; message: string; shake: boolean }>({
+    mode,
+    message: '',
+    shake: false,
+  })
+  const clientMessage = validationState.mode === mode ? validationState.message : ''
+  const shakeActive = validationState.mode === mode && validationState.shake
+
+  function triggerValidationError(message: string) {
+    setValidationState({ mode, message, shake: false })
+    if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+      window.requestAnimationFrame(() => setValidationState({ mode, message, shake: true }))
+    } else {
+      setValidationState({ mode, message, shake: true })
+    }
+  }
+
+  function handleModeSwitch(targetMode: AuthMode) {
+    if (targetMode === mode) return
+    setValidationState({ mode: targetMode, message: '', shake: false })
+    onModeChange?.(targetMode)
+  }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    setClientMessage('')
+    setValidationState({ mode, message: '', shake: false })
     const formData = new FormData(event.currentTarget)
     const email = formData.get('email')
     const password = formData.get('password')
     const fullName = formData.get('fullName')
     const confirmPassword = formData.get('confirmPassword')
 
-    if (typeof email !== 'string' || typeof password !== 'string' || !email || !password) return
-
-    if (mode === 'sign-up') {
-      if (typeof fullName !== 'string' || !fullName.trim()) return
-      if (!isPasswordLengthValid(password)) {
-        setClientMessage(PASSWORD_LENGTH_MESSAGE)
-        return
-      }
-      if (typeof confirmPassword !== 'string' || password !== confirmPassword) {
-        setClientMessage(PASSWORD_MISMATCH_MESSAGE)
-        return
-      }
-      onSubmit({ email, password, fullName: fullName.trim() })
+    if (typeof email !== 'string' || typeof password !== 'string' || !email.trim() || !password) {
+      triggerValidationError('Vui lòng điền đầy đủ thông tin bắt buộc.')
       return
     }
 
-    onSubmit({ email, password })
+    if (mode === 'sign-up') {
+      if (typeof fullName !== 'string' || !fullName.trim()) {
+        triggerValidationError('Vui lòng nhập họ và tên của bạn.')
+        return
+      }
+      if (!isPasswordLengthValid(password)) {
+        triggerValidationError(PASSWORD_LENGTH_MESSAGE)
+        return
+      }
+      if (typeof confirmPassword !== 'string' || password !== confirmPassword) {
+        triggerValidationError(PASSWORD_MISMATCH_MESSAGE)
+        return
+      }
+      onSubmit({ email: email.trim(), password, fullName: fullName.trim() })
+      return
+    }
+
+    onSubmit({ email: email.trim(), password })
   }
 
   return (
-    <section className="auth-form-panel" aria-labelledby="auth-form-title">
-      <header className="auth-form-heading">
-        <p>{mode === 'sign-in' ? 'IELTS SPACE' : 'BẮT ĐẦU HỌC'}</p>
-        <h1 id="auth-form-title">{copy.title}</h1>
-        <span>{copy.description}</span>
-      </header>
-      <form className="auth-form" onSubmit={handleSubmit}>
-        <div className="auth-fields">
-          {mode === 'sign-up' ? (
-            <InputField
-              id={`${mode}-fullName`}
-              name="fullName"
-              label="Họ và tên"
-              type="text"
-              autoComplete="name"
-              required
-              placeholder="Nguyễn Văn A"
+    <section
+      className={`auth-form-panel auth-modal-form-card${shakeActive ? ' auth-form-panel--shake' : ''}`}
+      aria-labelledby="auth-modal-title"
+      data-mode={mode}
+      data-direction={transitionDirection}
+      onAnimationEnd={(event) => {
+        if (event.animationName === 'auth-modal-shake') {
+          setValidationState((prev) => ({ ...prev, shake: false }))
+        }
+      }}
+    >
+      <div className="auth-modal-tabs" role="tablist" aria-label="Chế độ xác thực">
+        {onModeChange ? (
+          <>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === 'sign-in'}
+              className={`auth-modal-tab${mode === 'sign-in' ? ' is-active' : ''}`}
+              onClick={() => handleModeSwitch('sign-in')}
+            >
+              Đăng nhập
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === 'sign-up'}
+              className={`auth-modal-tab${mode === 'sign-up' ? ' is-active' : ''}`}
+              onClick={() => handleModeSwitch('sign-up')}
+            >
+              Đăng ký
+            </button>
+          </>
+        ) : (
+          <>
+            <Link
+              to="/login"
+              role="tab"
+              aria-selected={mode === 'sign-in'}
+              className={`auth-modal-tab${mode === 'sign-in' ? ' is-active' : ''}`}
+            >
+              Đăng nhập
+            </Link>
+            <Link
+              to="/register"
+              role="tab"
+              aria-selected={mode === 'sign-up'}
+              className={`auth-modal-tab${mode === 'sign-up' ? ' is-active' : ''}`}
+            >
+              Đăng ký
+            </Link>
+          </>
+        )}
+        <span
+          className="auth-modal-tab-indicator"
+          data-mode={mode}
+          aria-hidden="true"
+        />
+      </div>
+
+      <div className="auth-match-move-stage" data-mode={mode} data-direction={transitionDirection}>
+        <form className="auth-form" noValidate onSubmit={handleSubmit}>
+          <div className="auth-fields auth-fields--match-move">
+            {/* Slot 1: Họ và tên (Match & Move right-to-left / left-to-right + expand/collapse) */}
+            <div
+              className={`auth-morph-slot auth-morph-slot--signup-only${isSignUp ? ' is-expanded' : ' is-collapsed'}`}
+              aria-hidden={!isSignUp}
+            >
+              <div className="auth-morph-slot-inner auth-morph-slot-inner--top">
+                <InputField
+                  id="auth-fullName"
+                  name="fullName"
+                  label="Họ và tên"
+                  requiredMark
+                  icon="user"
+                  type="text"
+                  autoComplete="name"
+                  required={isSignUp}
+                  disabled={!isSignUp}
+                  tabIndex={isSignUp ? undefined : -1}
+                  placeholder="Nhập họ và tên của bạn"
+                />
+              </div>
+            </div>
+
+            {/* Shared Field: Email (glides horizontally & vertically, morphing icon & label) */}
+            <div className="auth-shared-item auth-shared-item--email" data-shared-step="1">
+              <InputField
+                id="auth-email"
+                name="email"
+                label={isSignUp ? 'Email' : 'Email hoặc số điện thoại'}
+                requiredMark={isSignUp}
+                icon={isSignUp ? 'mail' : 'user'}
+                type="email"
+                autoComplete="username"
+                autoCapitalize="none"
+                inputMode="email"
+                required
+                placeholder={isSignUp ? 'Nhập email của bạn' : 'Nhập email hoặc số điện thoại'}
+              />
+            </div>
+
+            {/* Shared Field: Mật khẩu (glides horizontally & vertically) */}
+            <div className="auth-shared-item auth-shared-item--password" data-shared-step="2">
+              <InputField
+                id="auth-password"
+                name="password"
+                label="Mật khẩu"
+                icon="lock"
+                type="password"
+                autoComplete={passwordAutocomplete}
+                required
+                minLength={isSignUp ? PASSWORD_MIN_LENGTH : undefined}
+                maxLength={isSignUp ? PASSWORD_MAX_LENGTH : undefined}
+                placeholder="Nhập mật khẩu"
+              />
+            </div>
+
+            {/* Slot 4: Xác nhận mật khẩu (Match & Move right-to-left / left-to-right + expand/collapse) */}
+            <div
+              className={`auth-morph-slot auth-morph-slot--signup-only${isSignUp ? ' is-expanded' : ' is-collapsed'}`}
+              aria-hidden={!isSignUp}
+            >
+              <div className="auth-morph-slot-inner auth-morph-slot-inner--bottom">
+                <InputField
+                  id="auth-confirmPassword"
+                  name="confirmPassword"
+                  label="Xác nhận mật khẩu"
+                  icon="lock"
+                  type="password"
+                  autoComplete="new-password"
+                  required={isSignUp}
+                  disabled={!isSignUp}
+                  tabIndex={isSignUp ? undefined : -1}
+                  minLength={PASSWORD_MIN_LENGTH}
+                  maxLength={PASSWORD_MAX_LENGTH}
+                  placeholder="Nhập lại mật khẩu"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Slot: Quên mật khẩu? (glides left/right + collapses smoothly when switching to sign-up) */}
+          <div
+            className={`auth-morph-slot auth-morph-slot--forgot auth-morph-slot--signin-only${!isSignUp ? ' is-expanded' : ' is-collapsed'}`}
+            aria-hidden={isSignUp}
+          >
+            <div className="auth-morph-slot-inner">
+              <div className="auth-forgot-row">
+                <Link
+                  className="auth-forgot-password"
+                  to="/forgot-password"
+                  tabIndex={!isSignUp ? undefined : -1}
+                  onClick={onForgotPasswordClick}
+                >
+                  Quên mật khẩu?
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          <div className="auth-shared-item auth-shared-item--cta" data-shared-step="3">
+            <Button
+              type="submit"
+              className="auth-submit-button auth-submit-button--cta"
+              disabled={submitting}
+            >
+              <span key={mode} className="auth-submit-label-morph">
+                {submitting ? 'Đang xử lý…' : copy.submitLabel}
+              </span>
+              {!submitting ? <ArrowRight className="auth-submit-arrow" aria-hidden="true" size={18} strokeWidth={2.25} /> : null}
+            </Button>
+          </div>
+
+          {clientMessage ? (
+            <p className="auth-status auth-status--error" role="status" aria-live="polite">
+              {clientMessage}
+            </p>
+          ) : (
+            <p className="auth-status" role="status" aria-live="polite" />
+          )}
+
+          <div className="auth-shared-item auth-shared-item--social" data-shared-step="4">
+            <div className="auth-divider" role="separator" aria-label="Hoặc">
+              <span>Hoặc</span>
+            </div>
+
+            <SocialButtons
+              mode={mode}
+              disabled={!oauthEnabled}
+              onSelect={onSocialSelect}
             />
-          ) : null}
-          <InputField
-            id={`${mode}-email`}
-            name="email"
-            label="Email"
-            type="email"
-            autoComplete="username"
-            autoCapitalize="none"
-            inputMode="email"
-            required
-            placeholder="name@example.com"
-          />
-          <InputField
-            id={`${mode}-password`}
-            name="password"
-            label="Mật khẩu"
-            type="password"
-            autoComplete={passwordAutocomplete}
-            required
-            minLength={mode === 'sign-up' ? PASSWORD_MIN_LENGTH : undefined}
-            maxLength={mode === 'sign-up' ? PASSWORD_MAX_LENGTH : undefined}
-            placeholder={mode === 'sign-up' ? PASSWORD_LENGTH_PLACEHOLDER : 'Mật khẩu'}
-            hint={mode === 'sign-up' ? PASSWORD_LENGTH_HINT : undefined}
-          />
-          {mode === 'sign-up' ? (
-            <InputField
-              id={`${mode}-confirmPassword`}
-              name="confirmPassword"
-              label="Xác nhận mật khẩu"
-              type="password"
-              autoComplete="new-password"
-              required
-              minLength={PASSWORD_MIN_LENGTH}
-              maxLength={PASSWORD_MAX_LENGTH}
-              placeholder="Nhập lại mật khẩu"
-              hint={PASSWORD_LENGTH_HINT}
-            />
-          ) : null}
-        </div>
-        {mode === 'sign-in' ? (
-          <Link className="auth-forgot-password" to="/forgot-password">Quên mật khẩu?</Link>
-        ) : null}
-        <Button type="submit" className="auth-submit-button auth-submit-button--cta" disabled={submitting}>
-          {submitting ? 'Đang xử lý…' : copy.submitLabel}
-        </Button>
-        <div className="auth-divider" role="separator" aria-label="hoặc"><span>hoặc</span></div>
-        <SocialButtons disabled={!oauthEnabled} onSelect={onSocialSelect} />
-        <p className="auth-status" role="status" aria-live="polite">{clientMessage}</p>
-      </form>
-      <p className="auth-mode-toggle">{copy.prompt} <Link to={copy.switchTo}>{copy.switchLabel}</Link></p>
+          </div>
+        </form>
+
+        <p className="auth-mode-toggle auth-shared-item auth-shared-item--footer" data-shared-step="5">
+          <span key={`prompt-${mode}`} className="auth-mode-toggle-copy">
+            {copy.prompt}{' '}
+            {onModeChange ? (
+              <button
+                type="button"
+                className="auth-mode-toggle-btn"
+                onClick={() => handleModeSwitch(copy.nextMode)}
+              >
+                {copy.switchLabel}
+              </button>
+            ) : (
+              <Link to={copy.switchTo}>{copy.switchLabel}</Link>
+            )}
+          </span>
+        </p>
+      </div>
     </section>
   )
 }

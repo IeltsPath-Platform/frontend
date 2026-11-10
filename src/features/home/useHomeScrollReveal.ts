@@ -26,9 +26,21 @@ export function useHomeScrollReveal() {
       })
     }, { rootMargin: '0px 0px -8% 0px', threshold: 0.12 })
 
-    revealElements.forEach((element) => observer.observe(element))
+    const observeElements = () => {
+      document.querySelectorAll<HTMLElement>(REVEAL_SELECTOR).forEach((element) => {
+        if (!element.classList.contains('is-visible')) {
+          observer.observe(element)
+        }
+      })
+    }
+
+    observeElements()
+
+    const mutationObserver = new MutationObserver(() => observeElements())
+    mutationObserver.observe(page, { childList: true, subtree: true })
 
     return () => {
+      mutationObserver.disconnect()
       observer.disconnect()
       page.classList.remove('home-reveal-enabled')
     }

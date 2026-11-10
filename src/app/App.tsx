@@ -25,6 +25,7 @@ import { ReadingPracticePage } from '@/features/practice/reading/ReadingPractice
 import { ReadingResultPage } from '@/features/practice/reading/ReadingResultPage'
 import { ReadingHistoryPage } from '@/features/practice/reading/ReadingHistoryPage'
 import { HomePage } from '@/features/home/HomePage'
+import { ExaminerDetailPage } from '@/features/home/pages/ExaminerDetailPage'
 import { DeckDetailPage } from '@/features/flashcards/pages/DeckDetailPage'
 import { DeckEditorPage } from '@/features/flashcards/pages/DeckEditorPage'
 import { LearnPage } from '@/features/flashcards/pages/LearnPage'
@@ -197,14 +198,15 @@ function AppContent() {
       <Route path="/flashcards/study" element={<RequireAuth><FlashcardStudyPage /></RequireAuth>} />
       <Route path="/writing-samples" element={<RequireAuth><RouteStatusPage title="Bài mẫu Writing 8.0+" /></RequireAuth>} />
       <Route path="/student-results" element={<RequireAuth><RouteStatusPage title="Kết quả học viên" /></RequireAuth>} />
-      <Route path="/login" element={<GuestOnly><AuthPage mode="sign-in" /></GuestOnly>} />
-      <Route path="/register" element={<GuestOnly><AuthPage mode="sign-up" /></GuestOnly>} />
-      <Route path="/forgot-password" element={<GuestOnly><ForgotPasswordPage /></GuestOnly>} />
-      <Route path="/reset-password" element={<GuestOnly><ResetPasswordPage /></GuestOnly>} />
+      <Route path="/login" element={<GuestOnly><HomePage /><AuthPage mode="sign-in" /></GuestOnly>} />
+      <Route path="/register" element={<GuestOnly><HomePage /><AuthPage mode="sign-up" /></GuestOnly>} />
+      <Route path="/forgot-password" element={<GuestOnly><HomePage /><ForgotPasswordPage /></GuestOnly>} />
+      <Route path="/reset-password" element={<GuestOnly><HomePage /><ResetPasswordPage /></GuestOnly>} />
       <Route path="/auth/oauth/callback" element={<GuestOnly><OAuthCallbackPage /></GuestOnly>} />
       <Route path="/classes/:classCode/join" element={<RouteStatusPage title="Phòng học trực tuyến" />} />
       <Route path="/lessons/:lessonId" element={<LessonRedirect />} />
-      <Route path="/mentors/:mentorSlug" element={<RouteStatusPage title="Liên hệ Mentor" />} />
+      <Route path="/mentors" element={<ExaminerDetailPage />} />
+      <Route path="/mentors/:mentorSlug" element={<ExaminerDetailPage />} />
       <Route path="/terms" element={<RouteStatusPage title="Điều khoản sử dụng" />} />
       <Route path="/privacy" element={<RouteStatusPage title="Chính sách bảo mật" />} />
       <Route path="/copyright" element={<RouteStatusPage title="Chính sách bản quyền" />} />

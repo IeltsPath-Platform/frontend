@@ -1,0 +1,120 @@
+.consultation-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: clamp(1.5rem, 4vw, 3rem);
+  align-items: center;
+  padding: clamp(1.75rem, 4vw, 3rem);
+  border-radius: 1.5rem;
+  background: linear-gradient(160deg, #061c64, #0d2b8d 60%, var(--home-blue));
+  color: var(--home-surface);
+  box-shadow: 0 1.25rem 3rem color-mix(in srgb, var(--home-navy) 30%, transparent);
+}
+
+.consultation-kicker {
+  margin: 0;
+  color: #a9bcf5;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.consultation-copy h2 {
+  margin: 0.5rem 0;
+  font-size: clamp(1.7rem, 3.2vw, 2.4rem);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.consultation-lead {
+  margin: 0;
+  color: #dbe5ff;
+  font-size: 1.05rem;
+}
+
+.consultation-form {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.consultation-form input {
+  height: 3.25rem;
+  border: 0;
+  border-radius: 0.9rem;
+  padding-inline: 1rem;
+  background: var(--home-surface);
+  color: #0a0a0a;
+  font-size: 1rem;
+}
+
+.consultation-form input::placeholder {
+  color: #98a2b3;
+}
+
+.consultation-form input[aria-invalid='true'] {
+  box-shadow: 0 0 0 2px #ffb4a8;
+}
+
+.consultation-submit {
+  height: 3.25rem;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(100deg, var(--home-orange), var(--home-yellow));
+  color: var(--home-surface);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.consultation-submit:hover {
+  filter: brightness(1.05);
+}
+
+.consultation-error {
+  min-height: 1.25rem;
+  margin: 0;
+  color: #ffd1c6;
+  font-size: 0.9rem;
+}
+
+.consultation-success {
+  /* The dialog is portaled outside .home-page, so it defines the home colour tokens itself. */
+  --home-navy: var(--site-navy, #0d2b72);
+  --home-orange: var(--site-orange, #ff7624);
+  --home-yellow: var(--classroom-warning, #ffb524);
+  --home-surface: var(--classroom-surface, #fff);
+  --home-muted: var(--site-text-muted, var(--classroom-text-muted, #667085));
+  justify-items: center;
+  text-align: center;
+}
+
+.consultation-success-owl {
+  width: min(10rem, 45%);
+  height: auto;
+}
+
+.consultation-success-title {
+  color: var(--home-navy);
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.consultation-success-text {
+  color: var(--home-muted);
+  font-size: 1rem;
+}
+
+.consultation-success-cta {
+  height: 3rem;
+  border: 0;
+  border-radius: 999px;
+  padding-inline: 2rem;
+  background: linear-gradient(100deg, var(--home-orange), var(--home-yellow));
+  color: var(--home-surface);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+@media (max-width: 48rem) {
+  .consultation-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
