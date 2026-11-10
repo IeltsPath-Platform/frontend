@@ -4,7 +4,7 @@ import type { StreakStatus } from '~types/learningPath'
 import { useBuyStreakFreeze } from '../../lib/useBuyStreakFreeze'
 
 /** The streak, and a way to buy a freeze that keeps it through one missed day. */
-export function StreakPanel({ streak, onChanged }: { streak: StreakStatus; onChanged: () => void }) {
+export function StreakPanel({ streak, onChanged, compact = false }: { streak: StreakStatus; onChanged: () => void; compact?: boolean }) {
   const { buy: buyFreeze, buying, error } = useBuyStreakFreeze(onChanged)
   const lost = streak.currentDays === 0 && streak.lostStreakDays > 0
 
@@ -45,10 +45,10 @@ export function StreakPanel({ streak, onChanged }: { streak: StreakStatus; onCha
       )}
       {error ? <p className="lp-error" role="alert">{error}</p> : null}
 
-      <p className="lp-hint">
+      {compact ? <details className="achievement-streak-rules"><summary>Cách giữ chuỗi & phần thưởng</summary><p className="lp-hint">Mỗi 7 ngày liên tiếp được +100 XP và +10 điểm; đạt 30 ngày được thêm +500 XP. Đóng băng liên tiếp giá tăng dần (10, 20, 30… điểm), tối đa 5 ngày liên tiếp.</p></details> : <p className="lp-hint">
         Mỗi 7 ngày liên tiếp được +100 XP và +10 điểm; đạt 30 ngày được thêm +500 XP. Đóng băng liên tiếp giá tăng dần
         (10, 20, 30… điểm), tối đa 5 ngày liên tiếp.
-      </p>
+      </p>}
     </div>
   )
 }
