@@ -23,6 +23,7 @@ Mở URL Vite in ra (mặc định `http://localhost:5173`).
 | Biến | Mặc định | Ý nghĩa |
 | --- | --- | --- |
 | `VITE_API_BASE_URL` | `http://localhost:8080` | Gateway BE |
+| `VITE_GOOGLE_CLIENT_ID` | *(unset)* | Google Identity Services Web client ID; unset hides Google sign-in |
 | `VITE_USE_MOCK_LEARNING` | `false` khi có base URL | `true` = mock learning; `false` = HTTP `/api/learning/**` |
 | `VITE_USE_MOCK_ROCKET` | `false` | `false` = Game Tên lửa (`/games/rocket`) gọi HTTP `/api/games/rocket/**`, cần đăng nhập; `true` = chạy mock trong trình duyệt (10 từ mẫu, chỉ chơi đơn, không cần đăng nhập) |
 

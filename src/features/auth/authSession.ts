@@ -131,6 +131,11 @@ export async function loginWithPassword(email: string, password: string) {
   return loginWithAccessToken(tokens.accessToken)
 }
 
+export async function loginWithGoogle(idToken: string) {
+  const tokens = await authApi.googleLogin(idToken)
+  return loginWithAccessToken(tokens.accessToken)
+}
+
 export async function registerWithPassword(input: {
   email: string
   password: string

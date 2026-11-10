@@ -1,6 +1,3 @@
-/** UI/API provider id. */
-export type SocialProvider = 'Google'
-
 export interface AuthTokenResponse {
   message: string
   accessToken: string

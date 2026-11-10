@@ -43,7 +43,6 @@ import { signInDestination } from '@/features/auth/staffRoles'
 import { SiteFooter } from '@/components/SiteFooter'
 import { OwlMascot } from '@/components/OwlMascot'
 import { ForgotPasswordPage } from '@/features/auth/pages/ForgotPasswordPage'
-import { OAuthCallbackPage } from '@/features/auth/pages/OAuthCallbackPage'
 import { ResetPasswordPage } from '@/features/auth/pages/ResetPasswordPage'
 import { AuthProvider } from '@/features/auth/AuthProvider'
 import { ToastProvider } from '@/components/toast/ToastProvider'
@@ -202,7 +201,6 @@ function AppContent() {
       <Route path="/register" element={<GuestOnly><AuthPage mode="sign-up" /></GuestOnly>} />
       <Route path="/forgot-password" element={<GuestOnly><ForgotPasswordPage /></GuestOnly>} />
       <Route path="/reset-password" element={<GuestOnly><ResetPasswordPage /></GuestOnly>} />
-      <Route path="/auth/oauth/callback" element={<GuestOnly><OAuthCallbackPage /></GuestOnly>} />
       <Route path="/classes/:classCode/join" element={<RouteStatusPage title="Phòng học trực tuyến" />} />
       <Route path="/lessons/:lessonId" element={<LessonRedirect />} />
       <Route path="/mentors/:mentorSlug" element={<RouteStatusPage title="Liên hệ Mentor" />} />

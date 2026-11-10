@@ -11,7 +11,7 @@ import {
   PASSWORD_MISMATCH_MESSAGE,
 } from '../lib/passwordRules'
 import { InputField } from './InputField'
-import { SocialButtons, type SocialProvider } from './SocialButtons'
+import { SocialButtons } from './SocialButtons'
 
 export type AuthMode = 'sign-in' | 'sign-up'
 
@@ -24,9 +24,9 @@ export interface AuthSubmitPayload {
 interface AuthFormProps {
   mode: AuthMode
   submitting?: boolean
-  oauthEnabled?: boolean
   onSubmit: (payload: AuthSubmitPayload) => void
-  onSocialSelect: (provider: SocialProvider) => void
+  onGoogleCredential: (credential: string) => void
+  onGoogleError: (message: string) => void
 }
 
 const FORM_COPY: Record<AuthMode, { title: string; description: string; submitLabel: string; prompt: string; switchLabel: string; switchTo: string }> = {
@@ -51,9 +51,9 @@ const FORM_COPY: Record<AuthMode, { title: string; description: string; submitLa
 export function AuthForm({
   mode,
   submitting = false,
-  oauthEnabled = false,
   onSubmit,
-  onSocialSelect,
+  onGoogleCredential,
+  onGoogleError,
 }: AuthFormProps) {
   const copy = FORM_COPY[mode]
   const passwordAutocomplete = mode === 'sign-in' ? 'current-password' : 'new-password'
@@ -152,7 +152,7 @@ export function AuthForm({
           {submitting ? 'Đang xử lý…' : copy.submitLabel}
         </Button>
         <div className="auth-divider" role="separator" aria-label="hoặc"><span>hoặc</span></div>
-        <SocialButtons disabled={!oauthEnabled} onSelect={onSocialSelect} />
+        <SocialButtons onGoogleCredential={onGoogleCredential} onError={onGoogleError} disabled={submitting} />
         <p className="auth-status" role="status" aria-live="polite">{clientMessage}</p>
       </form>
       <p className="auth-mode-toggle">{copy.prompt} <Link to={copy.switchTo}>{copy.switchLabel}</Link></p>
