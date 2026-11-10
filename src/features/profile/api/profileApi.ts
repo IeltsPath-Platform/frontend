@@ -12,6 +12,7 @@ export const userResponseSchema = z.object({
   fullName: z.string(),
   phoneNumber: z.string().nullable().optional(),
   status: z.string(),
+  hasPassword: z.boolean().optional(),
   roles: z.array(roleResponseSchema).default([]),
   createdAt: z.string().optional(),
   updatedAt: z.string().optional(),

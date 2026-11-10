@@ -1,4 +1,4 @@
-/** UI/API provider id for future OAuth login. */
+/** UI/API provider id. */
 export type SocialProvider = 'Google'
 
 export interface AuthTokenResponse {
@@ -26,6 +26,7 @@ export interface UserResponse {
   phoneNumber: string | null
   status: string
   roles: RoleResponse[]
+  hasPassword?: boolean
   createdAt?: string
   updatedAt?: string
 }

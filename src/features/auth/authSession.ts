@@ -16,6 +16,7 @@ export interface AuthSessionSnapshot {
   avatarUrl: string | null
   userId: string | null
   roles: string[]
+  hasPassword: boolean
 }
 
 const GUEST_SESSION: AuthSessionSnapshot = {
@@ -28,6 +29,7 @@ const GUEST_SESSION: AuthSessionSnapshot = {
   avatarUrl: null,
   userId: null,
   roles: [],
+  hasPassword: true,
 }
 
 let session = GUEST_SESSION
@@ -75,6 +77,7 @@ function applyUser(user: UserResponse) {
     email: user.email,
     userId: user.id,
     roles: user.roles.map((role) => role.name),
+    hasPassword: user.hasPassword ?? true,
   }
   emitChange()
 }
