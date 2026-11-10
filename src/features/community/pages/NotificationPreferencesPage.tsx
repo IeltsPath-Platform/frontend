@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { SiteNavbar } from '@/components/SiteNavbar'
 import { communityApi, type NotificationPreference } from '../api/communityApi'
+import { MailPreferenceToggle } from '../components/MailPreferenceToggle'
 import './community.css'
 import './NotificationPreferencesPage.css'
 
@@ -48,5 +49,6 @@ export function NotificationPreferencesPage() {
         </label>
       </li>
     })}</ul>}
+    <MailPreferenceToggle />
   </main></div>
 }

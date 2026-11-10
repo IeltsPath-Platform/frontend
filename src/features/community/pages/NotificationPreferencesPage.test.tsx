@@ -3,7 +3,12 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { NotificationPreferencesPage } from './NotificationPreferencesPage'
 
-const { api } = vi.hoisted(() => ({ api: { notificationPreferences: vi.fn(), updateNotificationPreference: vi.fn() } }))
+const { api } = vi.hoisted(() => ({ api: {
+  notificationPreferences: vi.fn(),
+  updateNotificationPreference: vi.fn(),
+  mailPreferences: vi.fn(() => Promise.resolve({ learning: true })),
+  updateMailPreferences: vi.fn((learning: boolean) => Promise.resolve({ learning })),
+} }))
 vi.mock('../api/communityApi', () => ({ communityApi: api }))
 
 const defaults = [
@@ -33,7 +38,8 @@ describe('NotificationPreferencesPage', () => {
       <Route path="/notifications/preferences" element={<NotificationPreferencesPage />} />
     </Routes></MemoryRouter>)
     expect(await screen.findByRole('heading', { name: 'Tùy chọn thông báo' })).toBeInTheDocument()
-    expect(screen.getAllByRole('switch')).toHaveLength(5)
+    // Five community switches plus the learning-email switch.
+    expect(screen.getAllByRole('switch')).toHaveLength(6)
     const comments = screen.getByRole('switch', { name: 'Bình luận bài viết' })
     expect(comments).toBeChecked()
     fireEvent.click(comments)
