@@ -16,7 +16,6 @@ vi.mock('../api/notebookApi', () => ({
     getNotebookSummary: vi.fn().mockResolvedValue(null),
     getLearningReport: vi.fn().mockResolvedValue(null),
     getTopicsProgress: vi.fn().mockResolvedValue(null),
-    getVocabularyMap: vi.fn().mockResolvedValue(null),
     getWeeklyGoal: vi.fn().mockResolvedValue(null),
   },
 }))

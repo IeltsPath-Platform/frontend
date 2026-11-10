@@ -91,7 +91,8 @@ export interface VocabularySetSummary {
   description: string | null
   kind: 'BAND' | 'TOPIC'
   cefrLevel: string | null
-  bandRange: string | null
+  /** `{min, max}` from the API; use `formatBandRange` to display it. */
+  bandRange: string | { min: number; max: number } | null
   coverKey: string | null
   coverUrl: string | null
   wordCount: number

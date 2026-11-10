@@ -133,7 +133,6 @@ export function useProfile() {
       const updatedProfile = await profileApi.updateProfile({
         displayName: input.displayName.trim(),
         bio: input.bio?.trim() || null,
-        selfReportedBand: input.selfReportedBand ?? null,
         timezone: input.timezone?.trim() || null,
         // A stored COMMUNITY profile cannot be re-sent; leaving the value out keeps it as it is.
         visibility: profile?.visibility === 'PUBLIC' || profile?.visibility === 'PRIVATE' ? profile.visibility : undefined,

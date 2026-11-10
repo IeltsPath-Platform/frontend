@@ -6,7 +6,6 @@ import { ProfileHeader } from './components/ProfileHeader'
 import { PersonalInfoSection } from './components/PersonalInfoSection'
 import { PrivacySection } from './components/PrivacySection'
 import { SecuritySection } from './components/SecuritySection'
-import { DangerZoneSection } from './components/DangerZoneSection'
 import { ProfileSkeleton } from './components/ProfileSkeleton'
 import { ErrorBoundary } from '@/app/ErrorBoundary'
 import { useToast } from '@/components/toast/toastContext'
@@ -17,9 +16,7 @@ const ProfileTabContent: React.FC = () => {
   const {
     user,
     profile,
-    activeGoal,
     oauthIdentities,
-    streak,
     loading,
     error,
     isUploadingAvatar,
@@ -92,8 +89,6 @@ const ProfileTabContent: React.FC = () => {
         <ProfileHeader
           user={user}
           profile={profile}
-          activeGoal={activeGoal}
-          streak={streak}
           onUploadAvatar={uploadAvatar}
           onDeleteAvatar={deleteAvatar}
           isUploadingAvatar={isUploadingAvatar}
@@ -126,16 +121,6 @@ const ProfileTabContent: React.FC = () => {
           oauthIdentities={oauthIdentities}
           onChangePassword={changePassword}
           onUnlinkOAuth={unlinkOAuth}
-          onShowToast={handleShowToast}
-        />
-      </motion.div>
-
-      {/* 6. Danger Zone (Avatar Deletion) */}
-      <motion.div variants={itemVariants}>
-        <DangerZoneSection
-          profile={profile}
-          onDeleteAvatar={deleteAvatar}
-          isDeleting={isUploadingAvatar}
           onShowToast={handleShowToast}
         />
       </motion.div>

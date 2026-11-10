@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Eye, Lock, Check, Loader2 } from 'lucide-react'
+import { Eye } from 'lucide-react'
 import type { LearnerProfile, ProfileVisibilityChoice } from '../api/profileApi'
 
 interface PrivacySectionProps {
@@ -8,47 +8,26 @@ interface PrivacySectionProps {
   onShowToast: (message: string, tone?: 'success' | 'error' | 'info') => void
 }
 
-interface PrivacyOption {
-  value: ProfileVisibilityChoice
-  title: string
-  description: string
-  icon: React.ElementType
-}
-
-const privacyOptions: PrivacyOption[] = [
-  {
-    value: 'PUBLIC',
-    title: 'Công khai (Public)',
-    description: 'Các học viên đã đăng nhập trên IeltsPath có thể xem tên, ảnh đại diện, tiểu sử và mục tiêu của bạn.',
-    icon: Eye,
-  },
-  {
-    value: 'PRIVATE',
-    title: 'Riêng tư (Private)',
-    description: 'Chỉ riêng bạn mới có quyền xem thông tin chi tiết và tiến độ học tập của mình.',
-    icon: Lock,
-  },
-]
-
 export const PrivacySection: React.FC<PrivacySectionProps> = ({
   profile,
   onUpdateVisibility,
   onShowToast,
 }) => {
-  const currentVisibility = profile?.visibility ?? 'PUBLIC'
-  const [updatingValue, setUpdatingValue] = useState<string | null>(null)
+  const isPublic = (profile?.visibility ?? 'PUBLIC') === 'PUBLIC'
+  const [updating, setUpdating] = useState(false)
 
-  const handleSelectVisibility = async (value: ProfileVisibilityChoice) => {
-    if (value === currentVisibility || updatingValue !== null) return
-    setUpdatingValue(value)
+  const handleToggle = async () => {
+    if (updating) return
+    const next: ProfileVisibilityChoice = isPublic ? 'PRIVATE' : 'PUBLIC'
+    setUpdating(true)
     try {
-      await onUpdateVisibility(value)
-      onShowToast(`Đã chuyển quyền riêng tư sang "${value}"`, 'success')
+      await onUpdateVisibility(next)
+      onShowToast(next === 'PUBLIC' ? 'Đã công khai hồ sơ' : 'Đã chuyển hồ sơ sang riêng tư', 'success')
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Lỗi cập nhật quyền riêng tư.'
       onShowToast(msg, 'error')
     } finally {
-      setUpdatingValue(null)
+      setUpdating(false)
     }
   }
 
@@ -68,47 +47,26 @@ export const PrivacySection: React.FC<PrivacySectionProps> = ({
         </div>
       </div>
 
-      <div className="profile-privacy-grid" role="radiogroup" aria-label="Lựa chọn mức độ hiển thị hồ sơ">
-        {privacyOptions.map((opt) => {
-          const Icon = opt.icon
-          const isSelected = currentVisibility === opt.value
-          const isPending = updatingValue === opt.value
-
-          return (
-            <div
-              key={opt.value}
-              className={`profile-privacy-card ${isSelected ? 'privacy-active' : ''}`}
-              onClick={() => handleSelectVisibility(opt.value)}
-              role="radio"
-              aria-checked={isSelected}
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault()
-                  void handleSelectVisibility(opt.value)
-                }
-              }}
-            >
-              <div className="profile-privacy-top">
-                <span className="profile-privacy-icon-box">
-                  <Icon size={20} aria-hidden="true" />
-                </span>
-                <span className="profile-privacy-radio-circle">
-                  {isPending ? (
-                    <Loader2 size={16} className="profile-spinner text-primary" aria-hidden="true" />
-                  ) : isSelected ? (
-                    <Check size={16} aria-hidden="true" />
-                  ) : null}
-                </span>
-              </div>
-
-              <h3 className="profile-privacy-card-title">{opt.title}</h3>
-              <p className="profile-privacy-card-desc">{opt.description}</p>
-            </div>
-          )
-        })}
+      <div className="profile-privacy-row">
+        <div className="profile-privacy-text">
+          <strong id="privacy-switch-label">Công khai hồ sơ</strong>
+          <p id="privacy-switch-desc">
+            {isPublic
+              ? 'Đang bật: học viên đã đăng nhập có thể xem tên, ảnh đại diện, tiểu sử và mục tiêu của bạn.'
+              : 'Đang tắt: chỉ riêng bạn xem được thông tin và tiến độ học tập của mình.'}
+          </p>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          className="profile-switch"
+          aria-checked={isPublic}
+          aria-labelledby="privacy-switch-label"
+          aria-describedby="privacy-switch-desc"
+          disabled={updating}
+          onClick={() => void handleToggle()}
+        />
       </div>
     </section>
   )
 }
-
