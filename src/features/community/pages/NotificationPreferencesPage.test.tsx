@@ -3,7 +3,12 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { NotificationPreferencesPage } from './NotificationPreferencesPage'
 
-const { api } = vi.hoisted(() => ({ api: { notificationPreferences: vi.fn(), updateNotificationPreference: vi.fn() } }))
+const { api } = vi.hoisted(() => ({ api: {
+  notificationPreferences: vi.fn(),
+  updateNotificationPreference: vi.fn(),
+  mailPreferences: vi.fn(() => Promise.resolve({ learning: true })),
+  updateMailPreferences: vi.fn((learning: boolean) => Promise.resolve({ learning })),
+} }))
 vi.mock('../api/communityApi', () => ({ communityApi: api }))
 
 const defaults = [
@@ -33,11 +38,36 @@ describe('NotificationPreferencesPage', () => {
       <Route path="/notifications/preferences" element={<NotificationPreferencesPage />} />
     </Routes></MemoryRouter>)
     expect(await screen.findByRole('heading', { name: 'Tùy chọn thông báo' })).toBeInTheDocument()
-    expect(screen.getAllByRole('switch')).toHaveLength(5)
+    // Five community switches plus the learning-email switch.
+    expect(screen.getAllByRole('switch')).toHaveLength(6)
     const comments = screen.getByRole('switch', { name: 'Bình luận bài viết' })
     expect(comments).toBeChecked()
     fireEvent.click(comments)
     await waitFor(() => expect(api.updateNotificationPreference).toHaveBeenCalledWith('community.post-commented.v1', false))
     expect(comments).not.toBeChecked()
+    expect(screen.getByRole('heading', { name: 'Học viên' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Giám khảo' })).not.toBeInTheDocument()
+  })
+
+  it('groups examiner notification preferences separately while keeping one learning mail switch', async () => {
+    api.notificationPreferences.mockResolvedValue([
+      ...defaults,
+      { eventType: 'assessment.grading-requested.v1', enabled: true },
+      { eventType: 'assessment.grading-due-soon.v1', enabled: true },
+      { eventType: 'assessment.grading-overdue.v1', enabled: true },
+      { eventType: 'assessment.grading-completed.v1', enabled: true },
+      { eventType: 'access.subscription-granted.v1', enabled: true },
+      { eventType: 'access.subscription-expiry-notice.v1', enabled: true },
+      { eventType: 'assessment.result-ready.v1', enabled: true },
+    ])
+    render(<MemoryRouter initialEntries={['/notifications/preferences']}><Routes>
+      <Route path="/notifications/preferences" element={<NotificationPreferencesPage />} />
+    </Routes></MemoryRouter>)
+
+    expect(await screen.findByRole('heading', { name: 'Giám khảo' })).toBeInTheDocument()
+    expect(screen.getAllByRole('switch')).toHaveLength(13)
+    expect(screen.getAllByRole('switch', { name: /email học tập/i })).toHaveLength(1)
+    expect(screen.getByRole('switch', { name: 'Premium sắp hết hạn' })).toBeInTheDocument()
+    expect(screen.getByRole('switch', { name: 'Đã có kết quả bài thi' })).toBeInTheDocument()
   })
 })

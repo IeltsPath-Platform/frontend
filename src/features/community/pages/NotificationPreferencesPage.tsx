@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { SiteNavbar } from '@/components/SiteNavbar'
 import { communityApi, type NotificationPreference } from '../api/communityApi'
+import { MailPreferenceToggle } from '../components/MailPreferenceToggle'
 import './community.css'
 import './NotificationPreferencesPage.css'
 
@@ -12,7 +13,25 @@ const labels: Record<string, { title: string; description: string; icon: LucideI
   'community.comment-mentioned.v1': { title: 'Được nhắc trong bình luận', description: 'Khi có người nhắc bạn trong một bình luận.', icon: AtSign, tone: 'amber' },
   'community.post-reacted.v1': { title: 'Cảm xúc bài viết', description: 'Khi có người bày tỏ cảm xúc với bài viết của bạn.', icon: Heart, tone: 'rose' },
   'community.user-followed.v1': { title: 'Lượt theo dõi mới', description: 'Khi có người bắt đầu theo dõi bạn.', icon: UserPlus, tone: 'green' },
+  'assessment.grading-requested.v1': { title: 'Bài viết cần chấm', description: 'Khi học viên chọn bạn chấm bài.', icon: Bell, tone: 'amber' },
+  'assessment.grading-due-soon.v1': { title: 'Sắp đến hạn chấm', description: 'Nhắc khi bài được giao sắp đến hạn.', icon: Bell, tone: 'amber' },
+  'assessment.grading-overdue.v1': { title: 'Bài chấm quá hạn', description: 'Khi bài viết bạn chọn chấm bị quá hạn.', icon: Bell, tone: 'rose' },
+  'assessment.grading-completed.v1': { title: 'Đã có kết quả chấm', description: 'Khi bài viết của bạn được chấm xong.', icon: Bell, tone: 'green' },
+  'access.subscription-granted.v1': { title: 'Đã kích hoạt Premium', description: 'Khi quyền Premium được cấp cho tài khoản.', icon: Bell, tone: 'violet' },
+  'access.subscription-expiry-notice.v1': { title: 'Premium sắp hết hạn', description: 'Nhắc khi quyền Premium sắp hết hạn hoặc đã hết hạn.', icon: Bell, tone: 'amber' },
+  'assessment.result-ready.v1': { title: 'Đã có kết quả bài thi', description: 'Khi kết quả bài thi đã sẵn sàng.', icon: Bell, tone: 'green' },
 }
+
+const roleGroups = [
+  { id: 'learner', title: 'Học viên', eventTypes: new Set([
+    'community.post-commented.v1', 'community.comment-replied.v1', 'community.comment-mentioned.v1',
+    'community.post-reacted.v1', 'community.user-followed.v1', 'access.subscription-granted.v1', 'access.subscription-expiry-notice.v1',
+    'assessment.result-ready.v1', 'assessment.grading-completed.v1', 'assessment.grading-overdue.v1',
+  ]) },
+  { id: 'examiner', title: 'Giám khảo', eventTypes: new Set([
+    'assessment.grading-requested.v1', 'assessment.grading-due-soon.v1',
+  ]) },
+]
 
 export function NotificationPreferencesPage() {
   const [preferences, setPreferences] = useState<NotificationPreference[]>([])
@@ -25,6 +44,11 @@ export function NotificationPreferencesPage() {
     catch { setPreferences(previous); setError('Không thể lưu tùy chọn. Hãy thử lại.') }
   }
   const activeCount = preferences.filter((item) => item.enabled).length
+  const groupedPreferences = roleGroups.map((group) => ({
+    ...group,
+    items: preferences.filter((preference) => group.eventTypes.has(preference.eventType)),
+  })).filter((group) => group.items.length > 0)
+  const ungroupedPreferences = preferences.filter((preference) => !roleGroups.some((group) => group.eventTypes.has(preference.eventType)))
   return <div className="community-page"><SiteNavbar /><main className="notification-preferences-page">
     <Link className="notification-preferences-back" to="/community"><ArrowLeft size={16} aria-hidden="true" /> Quay lại cộng đồng</Link>
     <header className="notification-preferences-hero">
@@ -36,7 +60,24 @@ export function NotificationPreferencesPage() {
       {preferences.length > 0 && <span className="notification-preferences-count">{activeCount}/{preferences.length} đang bật</span>}
     </header>
     {error && <p className="notification-preferences-error" role="alert">{error}</p>}
-    {preferences.length === 0 && !error ? <p className="notification-preferences-loading" role="status">Đang tải tùy chọn…</p> : <ul className="notification-preferences-list">{preferences.map((preference) => {
+    {preferences.length === 0 && !error ? <p className="notification-preferences-loading" role="status">Đang tải tùy chọn…</p> : <>
+      {groupedPreferences.map((group) => <section className="notification-preferences-group" key={group.id} aria-labelledby={`notification-group-${group.id}`}>
+        <h2 id={`notification-group-${group.id}`}>{group.title}</h2>
+        <ul className="notification-preferences-list">{group.items.map((preference) => {
+          const label = labels[preference.eventType] ?? { title: preference.eventType, description: '', icon: Bell, tone: 'blue' }
+          const Icon = label.icon
+          return <li key={preference.eventType} className={preference.enabled ? 'is-on' : ''}>
+            <span className={`notification-preferences-icon tone-${label.tone}`} aria-hidden="true"><Icon size={20} /></span>
+            <div className="notification-preferences-text"><strong>{label.title}</strong><p>{label.description}</p></div>
+            <label className="notification-switch"><span className="sr-only">{label.title}</span>
+              <input type="checkbox" role="switch" checked={preference.enabled} onChange={(event) => void changePreference(preference.eventType, event.target.checked)} />
+              <span className="notification-switch-track" aria-hidden="true"><span className="notification-switch-thumb" /></span>
+            </label>
+          </li>
+        })}</ul>
+      </section>)}
+      {ungroupedPreferences.length > 0 && <section className="notification-preferences-group" aria-labelledby="notification-group-other">
+        <h2 id="notification-group-other">Khác</h2><ul className="notification-preferences-list">{ungroupedPreferences.map((preference) => {
       const label = labels[preference.eventType] ?? { title: preference.eventType, description: '', icon: Bell, tone: 'blue' }
       const Icon = label.icon
       return <li key={preference.eventType} className={preference.enabled ? 'is-on' : ''}>
@@ -47,6 +88,8 @@ export function NotificationPreferencesPage() {
           <span className="notification-switch-track" aria-hidden="true"><span className="notification-switch-thumb" /></span>
         </label>
       </li>
-    })}</ul>}
+      })}</ul></section>}
+    </>}
+    <MailPreferenceToggle />
   </main></div>
 }

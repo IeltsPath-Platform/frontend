@@ -35,7 +35,27 @@ describe('describeNotification', () => {
       .toBe('Có bình luận mới trên bài viết')
   })
 
+  it('describes a granted Premium plan and links to the overview', () => {
+    expect(describeNotification({ ...base, eventType: 'access.subscription-granted.v1' }))
+      .toEqual({ text: 'Bạn đã được nâng cấp Premium. Xem các quyền lợi học tập của gói.', to: '/overview' })
+  })
+
+  it('describes an expiring Premium plan and links to the overview', () => {
+    expect(describeNotification({ ...base, eventType: 'access.subscription-expiry-notice.v1' }))
+      .toEqual({ text: 'Gói Premium của bạn sắp hết hạn hoặc đã hết hạn. Xem thông tin gói.', to: '/overview' })
+  })
+
+  it('describes a ready placement or mock result and links to detailed results', () => {
+    expect(describeNotification({ ...base, eventType: 'assessment.result-ready.v1' }))
+      .toEqual({ text: 'Kết quả bài thi của bạn đã sẵn sàng. Xem chi tiết kết quả.', to: '/overview?tab=detailed-stats' })
+  })
+
+  it('uses a neutral message and safe destination for unknown non-community event types', () => {
+    expect(describeNotification({ ...base, eventType: 'future.notice.v1' }))
+      .toEqual({ text: 'Bạn có thông báo mới.', to: '/overview' })
+  })
+
   it('does not send a late-examiner notice without a job to a broken link', () => {
-    expect(describeNotification({ ...base, eventType: 'assessment.grading-overdue.v1' }).to).toBe(`/community/users/${base.actorId}`)
+    expect(describeNotification({ ...base, eventType: 'assessment.grading-overdue.v1' }).to).toBe('/overview')
   })
 })
