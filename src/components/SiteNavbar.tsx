@@ -66,6 +66,7 @@ const coursesNav: NavItem = {
 /** Signed-in learners only: what is waiting for them to review. */
 const reviewBasket: NavItem = { to: '/learn/review-basket', label: 'Giỏ ôn tập' }
 const practice: NavItem = { to: '/practice-tests', label: 'Luyện tập 4 kỹ năng', children: practiceSkills }
+const mentors: NavItem = { to: '/mentors', label: 'Đội ngũ chuyên gia' }
 const discovery: NavItem = {
   to: '/community',
   label: 'Khám phá',
@@ -83,6 +84,7 @@ const guestNavigation: readonly NavItem[] = [
   { to: '/home', label: 'Trang chủ' },
   coursesNav,
   practice,
+  mentors,
   discovery,
 ]
 
@@ -99,6 +101,7 @@ const memberNavigation: readonly NavItem[] = [
   coursesNav,
   reviewBasket,
   practice,
+  mentors,
   discovery,
 ]
 

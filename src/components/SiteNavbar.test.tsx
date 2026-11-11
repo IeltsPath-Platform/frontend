@@ -168,4 +168,23 @@ describe('SiteNavbar navigation', () => {
     await user.click(screen.getByRole('button', { name: 'Phần nội dung' }))
     expect(screen.queryByRole('navigation', { name: 'Khám phá' })).not.toBeInTheDocument()
   })
+
+  it('places "Đội ngũ chuyên gia" right before "Khám phá" for both guests and members, and keeps it active on /mentors and /mentors/abc', () => {
+    const { unmount } = render(<MemoryRouter initialEntries={['/mentors/abc']}><SiteNavbar /></MemoryRouter>)
+    const main = screen.getByRole('navigation', { name: 'Điều hướng chính' })
+    const memberItems = Array.from(main.querySelectorAll('.site-nav-link')).map((el) => el.textContent?.trim())
+    expect(memberItems.indexOf('Đội ngũ chuyên gia')).toBe(memberItems.indexOf('Khám phá') - 1)
+
+    const mentorsLink = within(main).getByRole('link', { name: 'Đội ngũ chuyên gia' })
+    expect(mentorsLink).toHaveAttribute('href', '/mentors')
+    expect(mentorsLink).toHaveClass('active')
+    unmount()
+
+    authSessionMock.mockReturnValue({ isLoggedIn: false, userName: '' })
+    render(<MemoryRouter initialEntries={['/mentors']}><SiteNavbar /></MemoryRouter>)
+    const guestMain = screen.getByRole('navigation', { name: 'Điều hướng chính' })
+    const guestItems = Array.from(guestMain.querySelectorAll('.site-nav-link')).map((el) => el.textContent?.trim())
+    expect(guestItems.indexOf('Đội ngũ chuyên gia')).toBe(guestItems.indexOf('Khám phá') - 1)
+    expect(within(guestMain).getByRole('link', { name: 'Đội ngũ chuyên gia' })).toHaveClass('active')
+  })
 })

@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, KeyRound, ShieldCheck, X } from 'lucide-react'
+import { ArrowLeft, ArrowRight, X } from 'lucide-react'
 import { Dialog as DialogPrimitive } from 'radix-ui'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useNavigationType, useSearchParams } from 'react-router-dom'
@@ -174,96 +174,73 @@ export function ResetPasswordPage({ open = true, onOpenChange }: ResetPasswordPa
                   <span className="auth-forgot-step-badge is-sent">Bước cuối · Mật khẩu mới</span>
                 </div>
 
-                <header className="auth-forgot-header">
-                  <h1 id="reset-form-title" className="auth-forgot-heading-title">Đặt lại mật khẩu</h1>
-                  <p id="reset-form-description" className="auth-forgot-heading-desc">
-                    Nhập mã xác nhận và mật khẩu mới cho tài khoản của bạn.
-                  </p>
-                </header>
+                <div className="auth-forgot-body">
+                  <header className="auth-forgot-header">
+                    <h1 id="reset-form-title" className="auth-forgot-heading-title">Đặt lại mật khẩu</h1>
+                    <p id="reset-form-description" className="auth-forgot-heading-desc">
+                      Nhập mã xác nhận và mật khẩu mới cho tài khoản của bạn.
+                    </p>
+                  </header>
 
-                <div className="auth-match-move-stage" data-direction="none">
-                  <form className="auth-form" noValidate onSubmit={handleSubmit}>
-                    <div className="auth-fields">
-                      {tokenFromUrl && <input type="hidden" name="token" value={tokenFromUrl} />}
-                      {!tokenFromUrl && <InputField
-                        id="reset-token"
-                        name="token"
-                        label="Mã đặt lại"
-                        requiredMark
-                        icon="mail"
-                        type="text"
-                        autoComplete="one-time-code"
-                        required
-                        placeholder="Dán mã từ email"
-                        disabled={submitting}
-                      />}
-                      <InputField
-                        id="reset-new-password"
-                        name="newPassword"
-                        label="Mật khẩu mới"
-                        requiredMark
-                        icon="lock"
-                        type="password"
-                        autoComplete="new-password"
-                        required
-                        minLength={PASSWORD_MIN_LENGTH}
-                        maxLength={PASSWORD_MAX_LENGTH}
-                        placeholder={PASSWORD_LENGTH_PLACEHOLDER}
-                        hint={PASSWORD_LENGTH_HINT}
-                        disabled={submitting}
-                      />
-                      <InputField
-                        id="reset-confirm-password"
-                        name="confirmPassword"
-                        label="Xác nhận mật khẩu"
-                        requiredMark
-                        icon="lock"
-                        type="password"
-                        autoComplete="new-password"
-                        required
-                        minLength={PASSWORD_MIN_LENGTH}
-                        maxLength={PASSWORD_MAX_LENGTH}
-                        placeholder="Nhập lại mật khẩu mới"
-                        disabled={submitting}
-                      />
-                    </div>
-
-                    {validationMessage ? (
-                      <p className="auth-status auth-status--error" role="status" aria-live="polite">{validationMessage}</p>
-                    ) : (
-                      <p className="auth-status" role="status" aria-live="polite" />
-                    )}
-
-                    <Button type="submit" className="auth-submit-button auth-submit-button--cta" disabled={submitting}>
-                      <span className="auth-submit-label-morph">{submitting ? 'Đang xử lý…' : 'Đặt lại mật khẩu'}</span>
-                      {!submitting ? <ArrowRight className="auth-submit-arrow" aria-hidden="true" size={18} strokeWidth={2.25} /> : null}
-                    </Button>
-                  </form>
-
-                  <div className="auth-forgot-info-card">
-                    <div className="auth-forgot-info-inner">
-                      <div className="auth-forgot-info-row">
-                        <span className="auth-forgot-info-icon" aria-hidden="true"><KeyRound size={17} strokeWidth={2} /></span>
-                        <div className="auth-forgot-info-copy">
-                          <strong>Mã lấy ở đâu?</strong>
-                          <p>Mở liên kết trong email đặt lại mật khẩu để tiếp tục, hoặc dán mã từ email.</p>
-                        </div>
+                  <div className="auth-match-move-stage" data-direction="none">
+                    <form className="auth-form" noValidate onSubmit={handleSubmit}>
+                      <div className="auth-fields">
+                        {tokenFromUrl && <input type="hidden" name="token" value={tokenFromUrl} />}
+                        {!tokenFromUrl && <InputField
+                          id="reset-token"
+                          name="token"
+                          label="Mã đặt lại"
+                          requiredMark
+                          icon="mail"
+                          type="text"
+                          autoComplete="one-time-code"
+                          required
+                          placeholder="Dán mã từ email"
+                          disabled={submitting}
+                        />}
+                        <InputField
+                          id="reset-new-password"
+                          name="newPassword"
+                          label="Mật khẩu mới"
+                          requiredMark
+                          icon="lock"
+                          type="password"
+                          autoComplete="new-password"
+                          required
+                          minLength={PASSWORD_MIN_LENGTH}
+                          maxLength={PASSWORD_MAX_LENGTH}
+                          placeholder={PASSWORD_LENGTH_PLACEHOLDER}
+                          hint={PASSWORD_LENGTH_HINT}
+                          disabled={submitting}
+                        />
+                        <InputField
+                          id="reset-confirm-password"
+                          name="confirmPassword"
+                          label="Xác nhận mật khẩu"
+                          requiredMark
+                          icon="lock"
+                          type="password"
+                          autoComplete="new-password"
+                          required
+                          minLength={PASSWORD_MIN_LENGTH}
+                          maxLength={PASSWORD_MAX_LENGTH}
+                          placeholder="Nhập lại mật khẩu mới"
+                          disabled={submitting}
+                        />
                       </div>
-                      <div className="auth-forgot-info-row">
-                        <span className="auth-forgot-info-icon" aria-hidden="true"><ShieldCheck size={17} strokeWidth={2} /></span>
-                        <div className="auth-forgot-info-copy">
-                          <strong>Mật khẩu an toàn</strong>
-                          <p>Dùng 6–72 ký tự và không trùng mật khẩu cũ để bảo vệ tiến trình học của bạn.</p>
-                        </div>
-                      </div>
-                    </div>
+
+                      <Button type="submit" className="auth-submit-button auth-submit-button--cta" disabled={submitting}>
+                        <span className="auth-submit-label-morph">{submitting ? 'Đang xử lý…' : 'Đặt lại mật khẩu'}</span>
+                        {!submitting ? <ArrowRight className="auth-submit-arrow" aria-hidden="true" size={18} strokeWidth={2.25} /> : null}
+                      </Button>
+
+                      {validationMessage ? (
+                        <p className="auth-status auth-status--error" role="status" aria-live="polite">{validationMessage}</p>
+                      ) : (
+                        <p className="auth-status" role="status" aria-live="polite" />
+                      )}
+                    </form>
                   </div>
-
-                  <p className="auth-mode-toggle">
-                    Chưa có mã? <Link to="/forgot-password">Yêu cầu lại</Link>
-                    {' · '}
-                    <Link to="/login">Đăng nhập</Link>
-                  </p>
                 </div>
               </section>
 

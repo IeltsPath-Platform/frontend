@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, CheckCircle2, KeyRound, ShieldCheck, X } from 'lucide-react'
+import { ArrowLeft, ArrowRight, CheckCircle2, KeyRound, MailCheck, X } from 'lucide-react'
 import { Dialog as DialogPrimitive } from 'radix-ui'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useNavigationType } from 'react-router-dom'
@@ -24,7 +24,6 @@ export function ForgotPasswordPage({ open = true, onOpenChange }: ForgotPassword
 
   const [submitting, setSubmitting] = useState(false)
   const [sent, setSent] = useState(false)
-  const [submittedEmail, setSubmittedEmail] = useState('')
   const [validationError, setValidationError] = useState('')
   const [shake, setShake] = useState(false)
   const [cooldownSeconds, setCooldownSeconds] = useState(0)
@@ -73,7 +72,6 @@ export function ForgotPasswordPage({ open = true, onOpenChange }: ForgotPassword
     setSubmitting(true)
     try {
       const result = await authApi.forgotPassword(normalizedEmail)
-      setSubmittedEmail(normalizedEmail)
       setSent(true)
       setCooldownSeconds(60)
       toast({
@@ -206,104 +204,89 @@ export function ForgotPasswordPage({ open = true, onOpenChange }: ForgotPassword
                   </span>
                 </div>
 
-                <header className="auth-forgot-header">
-                  <h1 id="forgot-form-title" className="auth-forgot-heading-title">
-                    Quên mật khẩu
-                  </h1>
-                  <p id="forgot-form-description" className="auth-forgot-heading-desc">
-                    Chúng tôi sẽ xử lý mã đặt lại mật khẩu cho địa chỉ email đã đăng ký của bạn.
-                  </p>
-                </header>
-
-                <div className="auth-match-move-stage" data-direction={transitionDirection}>
-                  <form className="auth-form" noValidate onSubmit={handleSubmit}>
-                    <div className="auth-fields auth-fields--match-move">
-                      <div className="auth-shared-item auth-shared-item--email" data-shared-step="1">
-                        <InputField
-                          id="forgot-email"
-                          name="email"
-                          label="Email"
-                          requiredMark
-                          icon="mail"
-                          type="email"
-                          autoComplete="username"
-                          autoCapitalize="none"
-                          inputMode="email"
-                          required
-                          placeholder="Nhập email của bạn"
-                          disabled={submitting}
-                        />
-                      </div>
+                <div className="auth-forgot-body">
+                  <header className="auth-forgot-header">
+                    <div className={`auth-forgot-hero-icon${sent ? ' is-sent' : ''}`} aria-hidden="true">
+                      {sent ? <MailCheck size={22} strokeWidth={2.1} /> : <KeyRound size={22} strokeWidth={2.1} />}
                     </div>
+                    <h1 id="forgot-form-title" className="auth-forgot-heading-title">
+                      Quên mật khẩu
+                    </h1>
+                    <p id="forgot-form-description" className="auth-forgot-heading-desc">
+                      {sent
+                        ? 'Yêu cầu khôi phục đã được ghi nhận. Hãy chuyển sang bước đặt lại mật khẩu hoặc gửi lại mã nếu cần.'
+                        : 'Chúng tôi sẽ xử lý mã đặt lại mật khẩu cho địa chỉ email đã đăng ký của bạn.'}
+                    </p>
 
-                    {validationError ? (
-                      <p className="auth-status auth-status--error" role="status" aria-live="polite">
-                        {validationError}
-                      </p>
-                    ) : (
-                      <p className="auth-status" role="status" aria-live="polite" />
-                    )}
-
-                    <div className="auth-shared-item auth-shared-item--cta" data-shared-step="2">
-                      <Button type="submit" className="auth-submit-button auth-submit-button--cta" disabled={submitting || cooldownSeconds > 0}>
-                        <span key={sent ? 'resend' : 'send'} className="auth-submit-label-morph">
-                          {submitting ? 'Đang gửi…' : cooldownSeconds > 0 ? `Gửi lại sau ${cooldownSeconds}s` : sent ? 'Gửi lại email' : 'Gửi email đặt lại'}
+                    <div className="auth-forgot-stepper" aria-hidden="true">
+                      <div className={`auth-forgot-step-item${sent ? ' is-done' : ' is-active'}`}>
+                        <span className="auth-forgot-step-num">
+                          {sent ? <CheckCircle2 size={14} strokeWidth={2.4} /> : '1'}
                         </span>
-                        {!submitting ? <ArrowRight className="auth-submit-arrow" aria-hidden="true" size={18} strokeWidth={2.25} /> : null}
-                      </Button>
+                        <span className="auth-forgot-step-label">Xác minh email</span>
+                      </div>
+                      <span className={`auth-forgot-step-line${sent ? ' is-done' : ''}`} />
+                      <div className={`auth-forgot-step-item${sent ? ' is-active' : ''}`}>
+                        <span className="auth-forgot-step-num">2</span>
+                        <span className="auth-forgot-step-label">Đặt lại mật khẩu</span>
+                      </div>
                     </div>
-                  </form>
+                  </header>
 
-                  <div
-                    className={`auth-forgot-info-card${sent ? ' auth-forgot-info-card--sent' : ''}`}
-                    data-direction={transitionDirection}
-                  >
-                    {sent ? (
-                      <div key="info-sent" className="auth-forgot-info-inner">
-                        <div className="auth-forgot-info-row">
-                          <span className="auth-forgot-info-icon auth-forgot-info-icon--success" aria-hidden="true">
-                            <CheckCircle2 size={18} strokeWidth={2.2} />
-                          </span>
-                          <div className="auth-forgot-info-copy">
-                            <strong>Đã tạo yêu cầu cho {submittedEmail || 'email của bạn'}</strong>
-                            <p>Nếu tài khoản tồn tại, mã xác nhận đã sẵn sàng để bạn đặt lại mật khẩu mới.</p>
-                          </div>
-                        </div>
-                        <Link to="/reset-password" className="auth-forgot-reset-cta">
-                          <span>Tôi đã có mã — đặt lại mật khẩu</span>
-                          <ArrowRight aria-hidden="true" size={16} strokeWidth={2.2} />
-                        </Link>
-                      </div>
-                    ) : (
-                      <div key="info-guide" className="auth-forgot-info-inner">
-                        <div className="auth-forgot-info-row">
-                          <span className="auth-forgot-info-icon" aria-hidden="true">
-                            <KeyRound size={17} strokeWidth={2} />
-                          </span>
-                          <div className="auth-forgot-info-copy">
-                            <strong>Nhận mã khôi phục nhanh chóng</strong>
-                            <p>Nhập đúng email tài khoản để hệ thống cấp mã xác nhận đặt lại mật khẩu.</p>
-                          </div>
-                        </div>
-                        <div className="auth-forgot-info-row">
-                          <span className="auth-forgot-info-icon" aria-hidden="true">
-                            <ShieldCheck size={17} strokeWidth={2} />
-                          </span>
-                          <div className="auth-forgot-info-copy">
-                            <strong>Bảo mật tài khoản học viên</strong>
-                            <p>Mật khẩu mới từ 6–72 ký tự giúp bảo vệ tiến trình học IELTS của bạn.</p>
-                          </div>
+                  <div className="auth-match-move-stage" data-direction={transitionDirection}>
+                    <form className="auth-form" noValidate onSubmit={handleSubmit}>
+                      <div className="auth-fields auth-fields--match-move">
+                        <div className="auth-shared-item auth-shared-item--email" data-shared-step="1">
+                          <InputField
+                            id="forgot-email"
+                            name="email"
+                            label="Email"
+                            requiredMark
+                            icon="mail"
+                            type="email"
+                            autoComplete="username"
+                            autoCapitalize="none"
+                            inputMode="email"
+                            required
+                            placeholder="Nhập email của bạn"
+                            disabled={submitting}
+                          />
                         </div>
                       </div>
-                    )}
+
+                      {sent ? (
+                        <div className="auth-forgot-row">
+                          <button type="submit" className="auth-forgot-password auth-forgot-resend" disabled={submitting || cooldownSeconds > 0}>
+                            {submitting ? 'Đang gửi…' : cooldownSeconds > 0 ? `Gửi lại sau ${cooldownSeconds}s` : 'Gửi lại email'}
+                          </button>
+                        </div>
+                      ) : null}
+
+                      <div className="auth-shared-item auth-shared-item--cta" data-shared-step="2">
+                        {sent ? (
+                          <Button asChild className="auth-submit-button auth-submit-button--cta">
+                            <Link to="/reset-password">
+                              <span key="reset" className="auth-submit-label-morph">Đặt lại mật khẩu</span>
+                              <ArrowRight className="auth-submit-arrow" aria-hidden="true" size={18} strokeWidth={2.25} />
+                            </Link>
+                          </Button>
+                        ) : (
+                          <Button type="submit" className="auth-submit-button auth-submit-button--cta" disabled={submitting}>
+                            <span key="send" className="auth-submit-label-morph">{submitting ? 'Đang gửi…' : 'Gửi email đặt lại'}</span>
+                            {!submitting ? <ArrowRight className="auth-submit-arrow" aria-hidden="true" size={18} strokeWidth={2.25} /> : null}
+                          </Button>
+                        )}
+                      </div>
+
+                      {validationError ? (
+                        <p className="auth-status auth-status--error" role="status" aria-live="polite">
+                          {validationError}
+                        </p>
+                      ) : (
+                        <p className="auth-status" role="status" aria-live="polite" />
+                      )}
+                    </form>
                   </div>
-
-                  <p className="auth-mode-toggle auth-shared-item auth-shared-item--footer" data-shared-step="3">
-                    Nhớ mật khẩu rồi?{' '}
-                    <Link to="/login">Quay lại đăng nhập</Link>
-                    {' · '}
-                    <Link to="/register">Đăng ký ngay</Link>
-                  </p>
                 </div>
               </section>
 

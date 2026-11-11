@@ -31,30 +31,9 @@ interface AuthFormProps {
   onForgotPasswordClick?: () => void
 }
 
-const AUTH_MODAL_COPY: Record<
-  AuthMode,
-  {
-    submitLabel: string
-    prompt: string
-    switchLabel: string
-    switchTo: string
-    nextMode: AuthMode
-  }
-> = {
-  'sign-in': {
-    submitLabel: 'Đăng nhập',
-    prompt: 'Chưa có tài khoản?',
-    switchLabel: 'Đăng ký ngay',
-    switchTo: '/register',
-    nextMode: 'sign-up',
-  },
-  'sign-up': {
-    submitLabel: 'Tạo tài khoản',
-    prompt: 'Đã có tài khoản?',
-    switchLabel: 'Đăng nhập',
-    switchTo: '/login',
-    nextMode: 'sign-in',
-  },
+const AUTH_MODAL_COPY: Record<AuthMode, { submitLabel: string }> = {
+  'sign-in': { submitLabel: 'Đăng nhập' },
+  'sign-up': { submitLabel: 'Tạo tài khoản' },
 }
 
 export function AuthForm({
@@ -302,14 +281,6 @@ export function AuthForm({
             </Button>
           </div>
 
-          {clientMessage ? (
-            <p className="auth-status auth-status--error" role="status" aria-live="polite">
-              {clientMessage}
-            </p>
-          ) : (
-            <p className="auth-status" role="status" aria-live="polite" />
-          )}
-
           <div className="auth-shared-item auth-shared-item--social" data-shared-step="4">
             <div className="auth-divider" role="separator" aria-label="Hoặc">
               <span>Hoặc</span>
@@ -321,24 +292,15 @@ export function AuthForm({
               onError={onGoogleError}
             />
           </div>
-        </form>
 
-        <p className="auth-mode-toggle auth-shared-item auth-shared-item--footer" data-shared-step="5">
-          <span key={`prompt-${mode}`} className="auth-mode-toggle-copy">
-            {copy.prompt}{' '}
-            {onModeChange ? (
-              <button
-                type="button"
-                className="auth-mode-toggle-btn"
-                onClick={() => handleModeSwitch(copy.nextMode)}
-              >
-                {copy.switchLabel}
-              </button>
-            ) : (
-              <Link to={copy.switchTo}>{copy.switchLabel}</Link>
-            )}
-          </span>
-        </p>
+          {clientMessage ? (
+            <p className="auth-status auth-status--error" role="status" aria-live="polite">
+              {clientMessage}
+            </p>
+          ) : (
+            <p className="auth-status" role="status" aria-live="polite" />
+          )}
+        </form>
       </div>
     </section>
   )
