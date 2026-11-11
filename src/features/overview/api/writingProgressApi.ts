@@ -18,6 +18,8 @@ export interface WritingRecurringError {
   fixHint: string | null
   /** Present only when the error type maps to a knowledge point that has a practice set. */
   practiceKnowledgePointId: string | null
+  /** Shown with the practice button; null for grades stored before it was recorded. */
+  practiceKnowledgePointCode: string | null
   essaysWithError: number
   essaysTotal: number
   lastSeenAt: string

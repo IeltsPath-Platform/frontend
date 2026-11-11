@@ -47,7 +47,7 @@ describe('WritingProgressPanel', () => {
     respond(task([point('a', 1, 5), point('b', 2, 5.5), point('c', 3, 6, 'writing-rubric@v2+tplv1')], {
       recurringErrors: [{
         errorCode: 'TENSE', errorName: 'Tense', fixHint: 'Use the past tense for finished events',
-        practiceKnowledgePointId: 'kp-1', essaysWithError: 2, essaysTotal: 3, lastSeenAt: '2026-11-03T10:00:00Z',
+        practiceKnowledgePointId: 'kp-1', practiceKnowledgePointCode: 'GRAMMAR_TENSE', essaysWithError: 2, essaysTotal: 3, lastSeenAt: '2026-11-03T10:00:00Z',
       }],
     }))
 
@@ -63,6 +63,7 @@ describe('WritingProgressPanel', () => {
     respond(task([point('a', 1, 5), point('b', 2, 5), point('c', 3, 5)], {
       recurringErrors: [{
         errorCode: 'ARTICLE', errorName: 'Article', fixHint: 'Add a or an', practiceKnowledgePointId: null,
+        practiceKnowledgePointCode: null,
         essaysWithError: 1, essaysTotal: 3, lastSeenAt: '2026-11-03T10:00:00Z',
       }],
     }))

@@ -70,8 +70,14 @@ function TrendChart({ points }: { points: WritingProgressPoint[] }) {
         {point.promptChanged && <line className="writing-progress-prompt-change" x1={point.x} x2={point.x} y1={0} y2={CHART_HEIGHT}>
           <title>Đổi phiên bản chấm</title>
         </line>}
-        <circle className="writing-progress-dot" cx={point.x} cy={point.y} r={4} />
+        <circle className="writing-progress-dot" cx={point.x} cy={point.y} r={4}>
+          <title>{dateLabel(points[index].gradedAt)} · Band {bandText(point.band)}</title>
+        </circle>
       </g>)}
+      {/* Direct label on the latest essay only: selective labels, not a number on every point. */}
+      <text className="writing-progress-value" x={chart[chart.length - 1].x} y={chart[chart.length - 1].y - 10} textAnchor="end">
+        {bandText(latest.overallBand)}
+      </text>
     </svg>
     <figcaption className="statistics-muted">
       Band tổng ước tính, từ {dateLabel(first.gradedAt)} đến {dateLabel(latest.gradedAt)}. Nét đứt: đổi phiên bản chấm.
@@ -104,8 +110,9 @@ function RecurringErrors({ errors }: { errors: WritingRecurringError[] }) {
         {shown.map((error) => <li key={error.errorCode}>
           <div><strong>{error.errorName ?? error.errorCode}</strong> <span className="statistics-muted">{errorShare(error)}</span></div>
           {error.fixHint && <p>{error.fixHint}</p>}
-          {error.practiceKnowledgePointId && <PracticeButton knowledgePointId={error.practiceKnowledgePointId}
-            name={error.errorName ?? error.errorCode} code={error.errorCode} />}
+          {error.practiceKnowledgePointId && error.practiceKnowledgePointCode && <PracticeButton
+            knowledgePointId={error.practiceKnowledgePointId} name={error.errorName ?? error.errorCode}
+            code={error.practiceKnowledgePointCode} />}
         </li>)}
       </ol>}
   </section>

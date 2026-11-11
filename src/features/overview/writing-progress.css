@@ -6,6 +6,7 @@
 .writing-progress-axis { stroke: var(--color-border); stroke-width: 1; }
 .writing-progress-line { stroke: currentColor; stroke-width: 2; }
 .writing-progress-dot { fill: currentColor; }
+.writing-progress-value { fill: var(--color-foreground); font-size: 12px; font-weight: 600; }
 .writing-progress-prompt-change { stroke: var(--color-muted-foreground); stroke-width: 1; stroke-dasharray: 4 4; }
 .writing-progress-heading { font-size: 1rem; font-weight: 600; margin-bottom: 8px; color: var(--color-foreground); }
 .writing-progress-scores,
