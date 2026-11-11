@@ -7,6 +7,7 @@ import { useApiResource } from '@/features/learning-path/lib/useApiResource'
 import '@/features/learning-path/learning-path.css'
 import { ExaminerResult } from './ExaminerResult'
 import { getWritingSubmission } from './writingApi'
+import { BandLimitNotice } from '../components/BandLimitNotice'
 import type { WritingCorrection, WritingCriterion, WritingSubmission } from './writingApi'
 import { formatClock, loadResultContext, lowestIndex, measureEssay, roundBand } from './writingText'
 import '../reading/reading-workspace.css'
@@ -71,7 +72,7 @@ function Criterion({ item, worst }: { item: WritingCriterion; worst: boolean }) 
     <article className={`wr-criterion${worst ? ' is-worst' : ''}`}>
       <div className="wr-criterion-band" aria-label={`Band ${item.band.toFixed(1)}`}>{item.band.toFixed(1)}</div>
       <div>
-        <h3>{info.name}{worst && <span className="wr-badge">Cần cải thiện nhất</span>}</h3>
+        <h3>{info.name}{worst && <span className="wr-badge">Cần cải thiện nhất</span>}{item.limited && <span className="wr-badge">Đã giới hạn</span>}</h3>
         <p className="wr-muted">{info.meaning}</p>
       </div>
       <ul className="wr-points">
@@ -142,6 +143,7 @@ function Graded({ submission, submissionId }: { submission: WritingSubmission; s
         </section>
 
         <h2 className="wr-h2">Chi tiết theo từng tiêu chí</h2>
+        <BandLimitNotice messages={(submission.bandLimits ?? []).map((limit) => limit.message)} />
         <div className="wr-criteria">{criteria.map((item, index) => <Criterion key={item.code} item={item} worst={index === worst} />)}</div>
 
         <h2 className="wr-h2" id="wr-marked">Bài viết của bạn đã được đánh dấu</h2>

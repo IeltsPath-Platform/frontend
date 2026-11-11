@@ -33,6 +33,16 @@ export interface WritingCriterion {
   band: number
   strengths: string[]
   improvements: string[]
+  /** True when a band cap lowered this criterion. */
+  limited?: boolean
+}
+
+/** A band cap that applied to the essay; the same shape as Speaking's, plus the criterion it lowers. */
+export interface WritingBandLimit {
+  reason: string
+  criterion: string
+  cap: number
+  message: string
 }
 
 export interface WritingCorrection {
@@ -50,6 +60,7 @@ export interface WritingSubmission {
   overallBand?: number
   passed?: boolean
   criteria?: WritingCriterion[]
+  bandLimits?: WritingBandLimit[]
   corrections?: WritingCorrection[]
   summary?: string
   pointsCharged?: number

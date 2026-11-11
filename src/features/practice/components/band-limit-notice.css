@@ -1,0 +1,17 @@
+/* Band cap notice shared by Writing and Speaking: colours come from theme tokens only. */
+.band-limit-notice {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  color: var(--color-foreground);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+.band-limit-notice ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+}

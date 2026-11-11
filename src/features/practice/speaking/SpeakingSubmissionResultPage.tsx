@@ -3,6 +3,7 @@ import { AlertTriangle, CheckCircle2, ChevronDown, Info, Mic, Quote, TrendingUp,
 import { useState } from 'react'
 import { KeyActivationDialog } from '@/features/home/components/KeyActivationDialog'
 import type { ActivationProduct } from '@/features/home/pricingData'
+import { BandLimitNotice } from '@/features/practice/components/BandLimitNotice'
 import { useWritingWallet } from '@/features/practice/writing/useWritingWallet'
 import { PremiumPlansDialog } from './PremiumPlansDialog'
 import { PronunciationBreakdown } from './PronunciationBreakdown'
@@ -162,13 +163,7 @@ function ReferenceNote({ lowQuality, onOpenPlans }: { lowQuality: boolean; onOpe
 function Result({ view, onOpenPlans }: { view: SpeakingResultView; onOpenPlans: () => void }) {
   return <>
     <ReferenceNote lowQuality={view.transcriptWarning !== ''} onOpenPlans={onOpenPlans} />
-    {view.bandLimits.length > 0 && <div className="sres-alert" role="alert">
-      <AlertTriangle size={16} aria-hidden="true" />
-      <div>
-        <b>Band bị giới hạn vì:</b>
-        <ul>{view.bandLimits.map((message, index) => <li key={index}>{message.replace(/ nên band bị giới hạn\.?$/, '').replace(/\.$/, '')}</li>)}</ul>
-      </div>
-    </div>}
+    <BandLimitNotice messages={view.bandLimits} className="sres-alert" />
     <div className="sres-dash">
       <BandCard view={view} />
       <CriteriaCard view={view} />
