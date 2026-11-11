@@ -224,7 +224,7 @@
   grid-template-columns: minmax(0, 1.02fr) minmax(0, 0.98fr);
   gap: 22px;
   align-items: stretch;
-  min-height: 560px;
+  min-height: 520px;
 }
 
 /* Left Column: Sky Backdrop + Greeting + Rocket Owl Flight */
@@ -366,7 +366,7 @@
   grid-area: owl;
   width: 100%;
   max-width: 100%;
-  max-height: 395px;
+  max-height: 365px;
   height: auto;
   display: block;
   object-fit: cover;
@@ -507,7 +507,9 @@
 .auth-match-move-stage {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-x: clip;
+  overflow-y: visible;
+  padding-bottom: 4px;
 }
 
 .auth-form {
@@ -796,6 +798,19 @@
   text-decoration: underline;
 }
 
+/* "Gửi lại mã" is a submit button styled like the forgot-password link. */
+.auth-forgot-resend {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.auth-forgot-resend:disabled {
+  cursor: progress;
+  opacity: 0.6;
+}
+
 /* Primary CTA Button with Horizontal Match & Move label morph */
 .auth-submit-button {
   margin-top: 12px;
@@ -969,17 +984,27 @@
 
 /* Forgot Password Pop-up Card Styles */
 .auth-forgot-card {
-  justify-content: space-between;
+  justify-content: flex-start;
+  padding: 22px 28px 24px;
 }
 
 .auth-forgot-top-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding-bottom: 12px;
-  margin-bottom: 14px;
+  gap: 8px;
+  padding-bottom: 14px;
+  padding-right: 10px;
+  margin-bottom: 0;
   border-bottom: 1.5px solid #e2e8f0;
+}
+
+.auth-forgot-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-block: 14px 6px;
 }
 
 .auth-forgot-back-pill {
@@ -989,9 +1014,10 @@
   color: #334155;
   font-size: 13px;
   font-weight: 600;
-  padding: 5px 11px;
+  padding: 6px 12px;
   border-radius: 999px;
   background: #f1f5f9;
+  white-space: nowrap;
   text-decoration: none;
   transition: background-color 160ms ease, color 160ms ease, transform 160ms var(--auth-match-ease);
 }
@@ -1005,13 +1031,15 @@
 .auth-forgot-step-badge {
   display: inline-flex;
   align-items: center;
+  width: fit-content;
   font-size: 11.5px;
   font-weight: 700;
   color: #2664eb;
   background: #eff6ff;
   border: 1px solid #bfdbfe;
-  padding: 4px 10px;
+  padding: 5px 11px;
   border-radius: 999px;
+  white-space: nowrap;
   transition: all 260ms var(--auth-match-ease);
 }
 
@@ -1022,23 +1050,118 @@
 }
 
 .auth-forgot-header {
-  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.auth-forgot-hero-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border: 1px solid #bfdbfe;
+  color: #2563eb;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+  box-shadow: 0 6px 16px -4px rgba(37, 99, 235, 0.18);
+  transition: all 260ms var(--auth-match-ease);
+}
+
+.auth-forgot-hero-icon.is-sent {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border-color: #bbf7d0;
+  color: #16a34a;
+  box-shadow: 0 6px 16px -4px rgba(22, 163, 74, 0.18);
 }
 
 .auth-forgot-heading-title {
   color: #0f172a;
-  font-size: 21px;
+  font-size: 24px;
   font-weight: 800;
   letter-spacing: -0.02em;
   line-height: 1.25;
-  margin: 0 0 6px;
+  margin: 0 0 8px;
 }
 
 .auth-forgot-heading-desc {
   color: #64748b;
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: 13.5px;
+  line-height: 1.55;
   margin: 0;
+}
+
+.auth-forgot-stepper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin-top: 16px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.auth-forgot-step-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #64748b;
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.auth-forgot-step-item.is-active {
+  color: #1e40af;
+  font-weight: 700;
+}
+
+.auth-forgot-step-item.is-done {
+  color: #15803d;
+  font-weight: 700;
+}
+
+.auth-forgot-step-num {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  color: #475569;
+  font-size: 11.5px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.auth-forgot-step-item.is-active .auth-forgot-step-num {
+  background: #2563eb;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+}
+
+.auth-forgot-step-item.is-done .auth-forgot-step-num {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.auth-forgot-step-line {
+  flex: 1;
+  height: 2px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  min-width: 16px;
+  transition: background-color 260ms ease;
+}
+
+.auth-forgot-step-line.is-done {
+  background: #86efac;
 }
 
 .auth-forgot-info-card {
@@ -1331,13 +1454,48 @@
   }
 
   .auth-modal-close-btn {
-    top: 8px;
-    right: 8px;
+    top: 12px;
+    right: 12px;
   }
 
-  .auth-modal-form-card {
-    padding: 20px 18px 18px;
+  .auth-modal-form-card,
+  .auth-forgot-card {
+    padding: 16px 16px 20px;
     border-radius: 14px;
+  }
+
+  .auth-forgot-top-bar {
+    padding-right: 40px;
+    gap: 6px;
+  }
+
+  .auth-forgot-top-bar .auth-forgot-step-badge {
+    display: none;
+  }
+
+  .auth-forgot-back-pill {
+    font-size: 12.5px;
+    padding: 5px 11px;
+  }
+
+  .auth-forgot-stepper {
+    padding: 9px 11px;
+    gap: 8px;
+  }
+
+  .auth-forgot-step-item {
+    font-size: 11.5px;
+    gap: 6px;
+  }
+
+  .auth-forgot-step-num {
+    width: 20px;
+    height: 20px;
+    font-size: 11px;
+  }
+
+  .auth-forgot-body {
+    padding-block: 14px 4px;
   }
 }
 
