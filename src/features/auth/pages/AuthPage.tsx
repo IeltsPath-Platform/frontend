@@ -4,13 +4,10 @@ import { useRef, useState } from 'react'
 import { useLocation, useNavigate, useNavigationType } from 'react-router-dom'
 import authOwlSignIn from '@/assets/owl/auth-owl-signin.png'
 import authOwlSignUp from '@/assets/owl/auth-owl-signup.png'
-import { OAUTH_ENABLED } from '@/lib/env'
 import { HttpError } from '@/lib/httpClient'
 import { useToast } from '@/components/toast/toastContext'
 import { AuthForm, type AuthMode, type AuthSubmitPayload } from '../components/AuthForm'
-import type { SocialProvider } from '../components/SocialButtons'
 import { loginWithPassword, registerWithPassword } from '../authSession'
-import { authApi } from '../api/authApi'
 import { mapAuthPasswordHttpError } from '../lib/passwordRules'
 import { signInDestination } from '../staffRoles'
 import '../auth.css'
@@ -145,20 +142,6 @@ export function AuthPage({
     }
   }
 
-  function handleSocialSelect(provider: SocialProvider) {
-    if (!OAUTH_ENABLED) {
-      toast({ title: `Đăng nhập với ${provider} chưa được hỗ trợ.`, tone: 'info' })
-      return
-    }
-    try {
-      authApi.startOAuth(provider)
-    } catch (error) {
-      toast({
-        title: error instanceof Error ? error.message : `Không bắt đầu được đăng nhập ${provider}.`,
-        tone: 'error',
-      })
-    }
-  }
 
   const leftCopy = MODAL_LEFT_COPY[currentMode]
   const outgoingCopy = previousMode ? MODAL_LEFT_COPY[previousMode] : null
@@ -275,9 +258,7 @@ export function AuthPage({
                 mode={currentMode}
                 transitionDirection={transitionDirection}
                 submitting={submitting}
-                oauthEnabled={OAUTH_ENABLED}
                 onSubmit={handleSubmit}
-                onSocialSelect={handleSocialSelect}
                 onModeChange={handleSwitchMode}
                 onForgotPasswordClick={handleForgotPassword}
               />

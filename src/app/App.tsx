@@ -26,6 +26,7 @@ import { ReadingResultPage } from '@/features/practice/reading/ReadingResultPage
 import { ReadingHistoryPage } from '@/features/practice/reading/ReadingHistoryPage'
 import { HomePage } from '@/features/home/HomePage'
 import { ExaminerDetailPage } from '@/features/home/pages/ExaminerDetailPage'
+import { ExpertsDirectoryPage } from '@/features/home/pages/ExpertsDirectoryPage'
 import { DeckDetailPage } from '@/features/flashcards/pages/DeckDetailPage'
 import { DeckEditorPage } from '@/features/flashcards/pages/DeckEditorPage'
 import { LearnPage } from '@/features/flashcards/pages/LearnPage'
@@ -205,7 +206,7 @@ function AppContent() {
       <Route path="/auth/oauth/callback" element={<GuestOnly><OAuthCallbackPage /></GuestOnly>} />
       <Route path="/classes/:classCode/join" element={<RouteStatusPage title="Phòng học trực tuyến" />} />
       <Route path="/lessons/:lessonId" element={<LessonRedirect />} />
-      <Route path="/mentors" element={<ExaminerDetailPage />} />
+      <Route path="/mentors" element={<ExpertsDirectoryPage />} />
       <Route path="/mentors/:mentorSlug" element={<ExaminerDetailPage />} />
       <Route path="/terms" element={<RouteStatusPage title="Điều khoản sử dụng" />} />
       <Route path="/privacy" element={<RouteStatusPage title="Chính sách bảo mật" />} />

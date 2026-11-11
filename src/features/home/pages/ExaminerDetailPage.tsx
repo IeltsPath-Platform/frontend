@@ -121,7 +121,7 @@ export function ExaminerDetailPage() {
                   <ArrowLeft size={15} aria-hidden="true" /> Trang chủ
                 </Link>
                 <span aria-hidden="true">/</span>
-                <a href="#exd-directory">Đội ngũ Chuyên gia</a>
+                <Link to="/mentors">Đội ngũ Chuyên gia</Link>
                 <span aria-hidden="true">/</span>
                 <span className="exd-breadcrumb-current">{examiner.displayName}</span>
               </nav>

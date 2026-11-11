@@ -84,7 +84,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.35rem;
+  gap: clamp(0.15rem, 0.3vw, 0.35rem);
   flex: 1;
 }
 
@@ -339,12 +339,12 @@
     z-index: 1;
     background: transparent;
     border: 0;
-    padding: 0.45rem 1.1rem;
+    padding: 0.45rem clamp(0.65rem, 0.85vw, 1.05rem);
   }
   .site-nav-link.active { color: white; font-weight: 700; }
   .site-main-nav {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    grid-template-columns: auto minmax(0, 1fr) auto;
   }
   .site-brand { justify-self: start; }
   .site-nav-actions { justify-self: end; }
