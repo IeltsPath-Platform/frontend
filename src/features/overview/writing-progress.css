@@ -1,0 +1,19 @@
+/* Writing progress panel: colours come from theme tokens only. */
+.writing-progress-tasks { display: flex; gap: 8px; }
+.writing-progress-body { display: grid; gap: 20px; }
+.writing-progress-chart { margin: 0; }
+.writing-progress-chart svg { width: 100%; height: auto; max-width: 480px; overflow: visible; color: var(--color-primary); }
+.writing-progress-axis { stroke: var(--color-border); stroke-width: 1; }
+.writing-progress-line { stroke: currentColor; stroke-width: 2; }
+.writing-progress-dot { fill: currentColor; }
+.writing-progress-prompt-change { stroke: var(--color-muted-foreground); stroke-width: 1; stroke-dasharray: 4 4; }
+.writing-progress-heading { font-size: 1rem; font-weight: 600; margin-bottom: 8px; color: var(--color-foreground); }
+.writing-progress-scores,
+.writing-progress-errors,
+.writing-progress-fixed { display: grid; gap: 10px; padding: 0; margin: 0; list-style: none; }
+.writing-progress-scores li { display: grid; gap: 2px; }
+.writing-progress-errors li { display: grid; gap: 6px; }
+.writing-progress-errors p { margin: 0; color: var(--color-foreground); font-size: .9375rem; line-height: 1.5; }
+.writing-progress-practice { display: grid; gap: 6px; justify-items: start; }
+.writing-progress-note,
+.writing-progress-empty { color: var(--color-foreground); font-size: .9375rem; line-height: 1.5; margin: 0; }
