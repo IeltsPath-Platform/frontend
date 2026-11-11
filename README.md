@@ -11,7 +11,6 @@ Frontend React + Vite của nền tảng luyện thi IELTS **IeltsPath Platform*
 
 ```bash
 cd frontend
-cp .env.example .env.local   # file env duy nhất cần chỉnh
 npm ci                 # hoặc: npm install --engine-strict=false nếu Node chưa đúng engines
 npm run dev
 ```
@@ -26,10 +25,10 @@ Mở URL Vite in ra (mặc định `http://localhost:5173`).
 | `VITE_GOOGLE_CLIENT_ID` | *(unset)* | Google Identity Services Web client ID; unset hides Google sign-in |
 | `VITE_USE_MOCK_LEARNING` | `false` khi có base URL | `true` = mock learning; `false` = HTTP `/api/learning/**` |
 | `VITE_USE_MOCK_ROCKET` | `false` | `false` = Game Tên lửa (`/games/rocket`) gọi HTTP `/api/games/rocket/**`, cần đăng nhập; `true` = chạy mock trong trình duyệt (10 từ mẫu, chỉ chơi đơn, không cần đăng nhập) |
-| `VITE_SUPABASE_MEDIA_HOST` | *(xem `.env.example`)* | Host Supabase được phép cho ảnh và video của cộng đồng |
-| `VITE_SUPABASE_AVATARS_URL` | *(xem `.env.example`)* | URL công khai của bucket `avatars` |
+| `VITE_SUPABASE_MEDIA_HOST` | *(unset)* | Host Supabase được phép cho ảnh và video của cộng đồng, ví dụ `kndrsdqzbzsaiuuruqno.supabase.co`; unset thì ảnh/video Supabase bị chặn (chỉ còn Unsplash, Imgur) |
+| `VITE_SUPABASE_AVATARS_URL` | `https://kndrsdqzbzsaiuuruqno.supabase.co/storage/v1/object/public/avatars` | URL công khai của bucket `avatars` |
 
-Chỉ dùng một file env: `.env.local` (đã có trong `.gitignore`, không commit). `.env.example` là mẫu liệt kê đủ mọi biến; biến nào không đặt thì app dùng giá trị mặc định ghi trong mẫu.
+Chỉ dùng một file env: tạo `frontend/.env.local` (đã có trong `.gitignore`, không commit) và ghi vào đó các biến cần đổi, mỗi dòng dạng `TÊN=giá trị`. Không có file mẫu; bảng trên là nơi mô tả đầy đủ các biến. Biến nào không đặt thì app dùng giá trị mặc định trong bảng.
 
 ### Dashboard
 

@@ -19,7 +19,7 @@ Repository này là một ứng dụng frontend React/Vite cho IeltsPath Platfor
 - Giữ runtime trong khoảng `Node.js >=24 <25` và `npm >=11 <12`; phiên bản làm việc ghi ở [`.nvmrc`](./.nvmrc) là Node 24.21.0, package manager trong [`package.json`](./package.json) là npm 11.19.0. Dùng npm và `package-lock.json` để cài đặt tái lập.
 - Stack hiện có: React 19.3.0, React DOM 19.3.0, TypeScript `~6.0.0` ở chế độ `strict`, Vite 8.3.0, Tailwind CSS 4 qua `@tailwindcss/vite`, shadcn CLI với preset `radix-nova`, ESLint 9. Đối chiếu phiên bản dependency cụ thể với manifest/lockfile trước khi thay đổi.
 - HTTP client (`src/lib/httpClient.ts`) đã hoạt động: auth hybrid (credentials include + Bearer memory-only), refresh 401 single-flight, session expiry callback.
-- Learning: `VITE_USE_MOCK_LEARNING` (bool) chọn mock vs HTTP `/api/learning/**`. Env vars định nghĩa ở `.env.example`.
+- Learning: `VITE_USE_MOCK_LEARNING` (bool) chọn mock vs HTTP `/api/learning/**`. Env vars được liệt kê trong bảng "Biến môi trường" của `README.md`; chỉ dùng một file `.env.local`.
 - `react-router-dom`, Zustand, `react-hook-form`, Zod và `lucide-react` đã là dependency nhưng chưa được nối vào ứng dụng. MUST NOT mô tả chúng như router, store, form hoặc icon đã hoạt động. Chưa có bộ kiểm thử tự động, CI/CD, Docker hoặc cấu hình deployment trong repository.
 
 ## 4. Kiến trúc, tổ chức mã và UI
