@@ -22,4 +22,10 @@ export const authApi = {
   resetPassword: (body: { token: string; newPassword: string }) =>
     apiRequest<MessageResponse>('/auth/reset-password', { method: 'POST', body }),
 
+  verifyEmail: (token: string) =>
+    apiRequest<MessageResponse>('/auth/verify-email', { method: 'POST', body: { token } }),
+
+  resendVerification: (email: string) =>
+    apiRequest<MessageResponse>('/auth/resend-verification', { method: 'POST', body: { email } }),
+
 }
