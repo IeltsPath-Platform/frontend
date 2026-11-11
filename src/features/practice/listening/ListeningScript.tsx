@@ -1,14 +1,7 @@
 import type { ReactNode } from 'react'
+import { splitScriptLine } from './scriptLine'
 
-// "Receptionist: Hello." -> speaker "Receptionist". A line without a speaker label (a talk read by one voice, a note) has no chip.
-const SPEAKER_LINE = /^([A-Z][A-Za-z.' ]{0,28}):\s+/
 const TONES = 4
-
-/** Splits the script line of a recording into the speaker and the words, and how many characters the label took. */
-export function splitScriptLine(line: string): { speaker: string | null; offset: number } {
-  const match = SPEAKER_LINE.exec(line)
-  return match ? { speaker: match[1], offset: match[0].length } : { speaker: null, offset: 0 }
-}
 
 /**
  * The script of a Listening recording as a conversation: every speaker has a colour, the name is shown when the speaker
@@ -19,22 +12,24 @@ export function ListeningScript({ lines, renderWords }: {
   lines: readonly string[]
   renderWords: (line: string, index: number, offset: number) => ReactNode
 }) {
+  // Worked out in one pass before anything is drawn, so no variable is reassigned from inside a render callback.
   const tones = new Map<string, number>()
+  const rows: { line: string; offset: number; speaker: string | null; showName: boolean; tone: number | undefined }[] = []
   let previous: string | null = null
+  for (const line of lines) {
+    const { speaker, offset } = splitScriptLine(line)
+    if (speaker && !tones.has(speaker)) tones.set(speaker, tones.size % TONES)
+    rows.push({ line, offset, speaker, showName: speaker !== null && speaker !== previous, tone: speaker ? tones.get(speaker) : undefined })
+    previous = speaker
+  }
   return (
     <>
-      {lines.map((line, index) => {
-        const { speaker, offset } = splitScriptLine(line)
-        if (speaker && !tones.has(speaker)) tones.set(speaker, tones.size % TONES)
-        const showName = speaker !== null && speaker !== previous
-        previous = speaker
-        return (
-          <div key={index} className={`rv-script-line${showName ? ' has-name' : ''}`} data-tone={speaker ? tones.get(speaker) : undefined}>
-            {showName && <span className="rv-script-speaker">{speaker}</span>}
-            <p className="rv-script-words">{renderWords(line, index, offset)}</p>
-          </div>
-        )
-      })}
+      {rows.map(({ line, offset, speaker, showName, tone }, index) => (
+        <div key={index} className={`rv-script-line${showName ? ' has-name' : ''}`} data-tone={tone}>
+          {showName && <span className="rv-script-speaker">{speaker}</span>}
+          <p className="rv-script-words">{renderWords(line, index, offset)}</p>
+        </div>
+      ))}
     </>
   )
 }
