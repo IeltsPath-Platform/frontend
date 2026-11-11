@@ -82,8 +82,8 @@ describe('AuthPage modal & SiteNavbar integration', () => {
     expect(screen.getByRole('dialog')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Đăng nhập để bắt đầu hành trình!' })).toBeInTheDocument()
     expect(screen.getByLabelText(/Email hoặc số điện thoại/i)).toBeInTheDocument()
-    // Nothing sits below the primary button: no social sign-in, no mode-switch footer.
-    expect(screen.queryByRole('button', { name: /Đăng nhập với Google/i })).not.toBeInTheDocument()
+    // Google sign-in sits below the primary button; there is no mode-switch footer.
+    expect(screen.getByLabelText('Đăng nhập qua mạng xã hội')).toBeInTheDocument()
     expect(screen.queryByText(/Chưa có tài khoản\?/)).not.toBeInTheDocument()
     unmount()
 
@@ -230,6 +230,6 @@ describe('AuthPage modal & SiteNavbar integration', () => {
     fireEvent.click(screen.getByRole('link', { name: 'Quên mật khẩu?' }))
     expect(await screen.findByRole('heading', { name: 'Quên mật khẩu' })).toBeInTheDocument()
     expect(screen.getByRole('dialog')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Gửi mã đặt lại/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Gửi email đặt lại/i })).toBeInTheDocument()
   })
 })

@@ -7,7 +7,7 @@ import authOwlSignUp from '@/assets/owl/auth-owl-signup.png'
 import { HttpError } from '@/lib/httpClient'
 import { useToast } from '@/components/toast/toastContext'
 import { AuthForm, type AuthMode, type AuthSubmitPayload } from '../components/AuthForm'
-import { loginWithPassword, registerWithPassword } from '../authSession'
+import { loginWithGoogle, loginWithPassword, registerWithPassword } from '../authSession'
 import { mapAuthPasswordHttpError } from '../lib/passwordRules'
 import { signInDestination } from '../staffRoles'
 import '../auth.css'
@@ -54,6 +54,7 @@ export function AuthPage({
   const { toast } = useToast()
   const contentRef = useRef<HTMLDivElement>(null)
   const [submitting, setSubmitting] = useState(false)
+  const googleInFlight = useRef(false)
   const [transitionState, setTransitionState] = useState<{
     activeMode: AuthMode
     previousMode: AuthMode | null
@@ -142,6 +143,38 @@ export function AuthPage({
     }
   }
 
+  async function handleGoogleCredential(idToken: string) {
+    if (googleInFlight.current) return
+    googleInFlight.current = true
+    setSubmitting(true)
+    try {
+      const user = await loginWithGoogle(idToken)
+      onOpenChange?.(false)
+      const redirectTo = signInDestination(user.roles.map((role) => role.name), from)
+      navigate(redirectTo, {
+        replace: true,
+        state: currentMode === 'sign-in' && redirectTo.startsWith('/community')
+          ? { communityLoginTransition: true }
+          : null,
+      })
+    } catch (error) {
+      const message = error instanceof HttpError && error.code === 'GOOGLE_EMAIL_NOT_SUPPORTED'
+        ? 'Tài khoản Google cần dùng Gmail hoặc email Google Workspace. Bạn có thể đăng nhập bằng mật khẩu.'
+        : error instanceof HttpError && error.code === 'GOOGLE_SIGNIN_NOT_ALLOWED'
+          ? 'Tài khoản này cần đăng nhập bằng mật khẩu.'
+          : error instanceof HttpError
+            ? error.message
+            : 'Không thể đăng nhập bằng Google. Vui lòng thử lại.'
+      toast({ title: message, tone: 'error' })
+    } finally {
+      googleInFlight.current = false
+      setSubmitting(false)
+    }
+  }
+
+  function handleGoogleError(message: string) {
+    toast({ title: message, tone: 'error' })
+  }
 
   const leftCopy = MODAL_LEFT_COPY[currentMode]
   const outgoingCopy = previousMode ? MODAL_LEFT_COPY[previousMode] : null
@@ -259,6 +292,8 @@ export function AuthPage({
                 transitionDirection={transitionDirection}
                 submitting={submitting}
                 onSubmit={handleSubmit}
+                onGoogleCredential={handleGoogleCredential}
+                onGoogleError={handleGoogleError}
                 onModeChange={handleSwitchMode}
                 onForgotPasswordClick={handleForgotPassword}
               />

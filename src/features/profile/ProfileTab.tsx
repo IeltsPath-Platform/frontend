@@ -4,6 +4,7 @@ import { AlertCircle, RefreshCw } from 'lucide-react'
 import { useProfile } from './hooks/useProfile'
 import { ProfileHeader } from './components/ProfileHeader'
 import { PersonalInfoSection } from './components/PersonalInfoSection'
+import { EmailVerificationBanner } from './components/EmailVerificationBanner'
 import { PrivacySection } from './components/PrivacySection'
 import { SecuritySection } from './components/SecuritySection'
 import { ProfileSkeleton } from './components/ProfileSkeleton'
@@ -96,6 +97,12 @@ const ProfileTabContent: React.FC = () => {
         />
       </motion.div>
 
+      {user && user.emailVerified === false && (
+        <motion.div variants={itemVariants}>
+          <EmailVerificationBanner email={user.email} />
+        </motion.div>
+      )}
+
       {/* 2. Personal Info (In-place View <-> Edit) */}
       <motion.div variants={itemVariants}>
         <PersonalInfoSection
@@ -119,6 +126,8 @@ const ProfileTabContent: React.FC = () => {
       <motion.div variants={itemVariants}>
         <SecuritySection
           oauthIdentities={oauthIdentities}
+          email={user?.email ?? ''}
+          hasPassword={user?.hasPassword ?? true}
           onChangePassword={changePassword}
           onUnlinkOAuth={unlinkOAuth}
           onShowToast={handleShowToast}

@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { ListeningScript, splitScriptLine } from './ListeningScript'
+import { ListeningScript } from './ListeningScript'
+import { splitScriptLine } from './scriptLine'
 
 describe('splitScriptLine', () => {
   it('takes the speaker label off a line', () => {

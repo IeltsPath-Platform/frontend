@@ -1,6 +1,6 @@
 import { ArrowLeft, ArrowRight, CheckCircle2, KeyRound, MailCheck, X } from 'lucide-react'
 import { Dialog as DialogPrimitive } from 'radix-ui'
-import { useRef, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useNavigationType } from 'react-router-dom'
 import authOwlSignIn from '@/assets/owl/auth-owl-signin.png'
 import authOwlSignUp from '@/assets/owl/auth-owl-signup.png'
@@ -26,6 +26,13 @@ export function ForgotPasswordPage({ open = true, onOpenChange }: ForgotPassword
   const [sent, setSent] = useState(false)
   const [validationError, setValidationError] = useState('')
   const [shake, setShake] = useState(false)
+  const [cooldownSeconds, setCooldownSeconds] = useState(0)
+
+  useEffect(() => {
+    if (!cooldownSeconds) return
+    const timer = window.setTimeout(() => setCooldownSeconds((seconds) => Math.max(0, seconds - 1)), 1000)
+    return () => window.clearTimeout(timer)
+  }, [cooldownSeconds])
 
   function handleDismiss() {
     if (onOpenChange) {
@@ -66,11 +73,12 @@ export function ForgotPasswordPage({ open = true, onOpenChange }: ForgotPassword
     try {
       const result = await authApi.forgotPassword(normalizedEmail)
       setSent(true)
+      setCooldownSeconds(60)
       toast({
         title: 'Đã gửi yêu cầu',
         description:
           result.message
-          || 'Nếu email tồn tại, mã đặt lại đã được tạo. (Môi trường demo: lấy mã từ log/Swagger BE.)',
+          || 'Nếu email tồn tại, chúng tôi sẽ gửi hướng dẫn đặt lại mật khẩu.',
         tone: 'success',
       })
     } catch (error) {
@@ -248,8 +256,8 @@ export function ForgotPasswordPage({ open = true, onOpenChange }: ForgotPassword
 
                       {sent ? (
                         <div className="auth-forgot-row">
-                          <button type="submit" className="auth-forgot-password auth-forgot-resend" disabled={submitting}>
-                            {submitting ? 'Đang gửi…' : 'Gửi lại mã'}
+                          <button type="submit" className="auth-forgot-password auth-forgot-resend" disabled={submitting || cooldownSeconds > 0}>
+                            {submitting ? 'Đang gửi…' : cooldownSeconds > 0 ? `Gửi lại sau ${cooldownSeconds}s` : 'Gửi lại email'}
                           </button>
                         </div>
                       ) : null}
@@ -264,7 +272,7 @@ export function ForgotPasswordPage({ open = true, onOpenChange }: ForgotPassword
                           </Button>
                         ) : (
                           <Button type="submit" className="auth-submit-button auth-submit-button--cta" disabled={submitting}>
-                            <span key="send" className="auth-submit-label-morph">{submitting ? 'Đang gửi…' : 'Gửi mã đặt lại'}</span>
+                            <span key="send" className="auth-submit-label-morph">{submitting ? 'Đang gửi…' : 'Gửi email đặt lại'}</span>
                             {!submitting ? <ArrowRight className="auth-submit-arrow" aria-hidden="true" size={18} strokeWidth={2.25} /> : null}
                           </Button>
                         )}

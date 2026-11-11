@@ -33,6 +33,14 @@ export function ResetPasswordPage({ open = true, onOpenChange }: ResetPasswordPa
   const contentRef = useRef<HTMLDivElement>(null)
   const tokenFromUrl = (searchParams.get('token') ?? '').trim()
 
+  // The token has been read into the form, so it is removed from the address bar and browser history entry.
+  useEffect(() => {
+    if (!tokenFromUrl) return
+    const url = new URL(window.location.href)
+    url.searchParams.delete('token')
+    window.history.replaceState(window.history.state, '', url)
+  }, [tokenFromUrl])
+
   // Field validation stays under the form; the submit result is announced as a toast.
   const [validationMessage, setValidationMessage] = useState('')
   const [shake, setShake] = useState(false)
@@ -177,7 +185,8 @@ export function ResetPasswordPage({ open = true, onOpenChange }: ResetPasswordPa
                   <div className="auth-match-move-stage" data-direction="none">
                     <form className="auth-form" noValidate onSubmit={handleSubmit}>
                       <div className="auth-fields">
-                        <InputField
+                        {tokenFromUrl && <input type="hidden" name="token" value={tokenFromUrl} />}
+                        {!tokenFromUrl && <InputField
                           id="reset-token"
                           name="token"
                           label="Mã đặt lại"
@@ -186,10 +195,9 @@ export function ResetPasswordPage({ open = true, onOpenChange }: ResetPasswordPa
                           type="text"
                           autoComplete="one-time-code"
                           required
-                          defaultValue={tokenFromUrl}
-                          placeholder="Dán mã từ email hoặc log BE (demo)"
+                          placeholder="Dán mã từ email"
                           disabled={submitting}
-                        />
+                        />}
                         <InputField
                           id="reset-new-password"
                           name="newPassword"

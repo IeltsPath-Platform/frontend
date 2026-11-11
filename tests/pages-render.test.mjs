@@ -8,21 +8,27 @@ import { createServer } from 'vite'
 
 let server
 before(async () => {
-  server = await createServer({ envDir: false, define: { 'import.meta.env.VITE_OAUTH_ENABLED': '"false"' }, server: { middlewareMode: true }, appType: 'custom' })
+  server = await createServer({ envDir: false, define: { 'import.meta.env.VITE_GOOGLE_CLIENT_ID': '""' }, server: { middlewareMode: true }, appType: 'custom' })
 })
 after(async () => { await server?.close() })
 
 async function render(modulePath, name, props, path) {
   const module = await server.ssrLoadModule(modulePath)
-  return renderToString(createElement(MemoryRouter, { initialEntries: [path] }, createElement(module[name], props)))
+  const { ToastProvider } = await server.ssrLoadModule('/src/components/toast/ToastProvider.tsx')
+  return renderToString(createElement(ToastProvider, null,
+    createElement(MemoryRouter, { initialEntries: [path] }, createElement(module[name], props)),
+  ))
 }
 
 async function renderRoute(modulePath, name, props, path, routePath) {
   const module = await server.ssrLoadModule(modulePath)
+  const { ToastProvider } = await server.ssrLoadModule('/src/components/toast/ToastProvider.tsx')
   const element = createElement(module[name], props)
-  return renderToString(createElement(MemoryRouter, { initialEntries: [path] }, createElement(Routes, null,
-    createElement(Route, { path: routePath, element }),
-  )))
+  return renderToString(createElement(ToastProvider, null,
+    createElement(MemoryRouter, { initialEntries: [path] }, createElement(Routes, null,
+      createElement(Route, { path: routePath, element }),
+    )),
+  ))
 }
 
 test('Home preserves the learning journey hero and renders the complete landing page with activation', async () => {
@@ -389,11 +395,10 @@ test('Dictionary shares the topic vocabulary and interactive affordances', async
 test('Sign-in form has password-manager semantics and only safe non-submit controls', async () => {
   const html = await render('/src/features/auth/pages/AuthPage.tsx', 'AuthPage', { mode: 'sign-in' }, '/login')
   assert.match(html, /<form[^>]*class="auth-form"/)
-  assert.match(html, /<button(?=[^>]*disabled)[^>]*>[\s\S]*?Google \(chưa hỗ trợ\)/)
+  assert.doesNotMatch(html, /Google \(chưa hỗ trợ\)|Continue with Google/)
   assert.doesNotMatch(html, /Continue with Apple/)
   assert.ok(html.indexOf('name="password"') < html.indexOf('type="submit"'))
   assert.ok(html.indexOf('type="submit"') < html.indexOf('hoặc'))
-  assert.ok(html.indexOf('hoặc') < html.indexOf('Google (chưa hỗ trợ)'))
   assert.match(html, /<a(?=[^>]*href="\/forgot-password")[^>]*>Quên mật khẩu\?</)
   assert.match(html, /<input(?=[^>]*type="email")(?=[^>]*autoComplete="username")(?=[^>]*autoCapitalize="none")[^>]*>/)
   assert.match(html, /<input(?=[^>]*type="password")(?=[^>]*autoComplete="current-password")[^>]*>/)
@@ -412,7 +417,6 @@ test('Sign-up form uses new-password and retains the same native form structure'
   assert.match(html, /<input(?=[^>]*type="email")(?=[^>]*autoComplete="username")(?=[^>]*autoCapitalize="none")[^>]*>/)
   assert.match(html, /<input(?=[^>]*type="password")(?=[^>]*autoComplete="new-password")[^>]*>/)
   assert.match(html, /<button(?=[^>]*type="submit")[^>]*>Tạo tài khoản</)
-  assert.ok(html.indexOf('type="submit"') < html.indexOf('Google (chưa hỗ trợ)'))
   assert.match(html, /name="fullName"/)
   assert.match(html, /<input(?=[^>]*name="confirmPassword")(?=[^>]*autoComplete="new-password")[^>]*>/)
   assert.doesNotMatch(html, /Continue with Apple|Quên mật khẩu/)

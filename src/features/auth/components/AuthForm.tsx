@@ -10,6 +10,7 @@ import {
   PASSWORD_MISMATCH_MESSAGE,
 } from '../lib/passwordRules'
 import { InputField } from './InputField'
+import { SocialButtons } from './SocialButtons'
 
 export type AuthMode = 'sign-in' | 'sign-up'
 
@@ -24,6 +25,8 @@ interface AuthFormProps {
   transitionDirection?: 'none' | 'rtl' | 'ltr'
   submitting?: boolean
   onSubmit: (payload: AuthSubmitPayload) => void
+  onGoogleCredential: (idToken: string) => void
+  onGoogleError: (message: string) => void
   onModeChange?: (nextMode: AuthMode) => void
   onForgotPasswordClick?: () => void
 }
@@ -38,6 +41,8 @@ export function AuthForm({
   transitionDirection = 'none',
   submitting = false,
   onSubmit,
+  onGoogleCredential,
+  onGoogleError,
   onModeChange,
   onForgotPasswordClick,
 }: AuthFormProps) {
@@ -274,6 +279,18 @@ export function AuthForm({
               </span>
               {!submitting ? <ArrowRight className="auth-submit-arrow" aria-hidden="true" size={18} strokeWidth={2.25} /> : null}
             </Button>
+          </div>
+
+          <div className="auth-shared-item auth-shared-item--social" data-shared-step="4">
+            <div className="auth-divider" role="separator" aria-label="Hoặc">
+              <span>Hoặc</span>
+            </div>
+
+            <SocialButtons
+              disabled={submitting}
+              onGoogleCredential={onGoogleCredential}
+              onError={onGoogleError}
+            />
           </div>
 
           {clientMessage ? (
