@@ -22,12 +22,20 @@ const CRITERIA: Record<string, { name: string; meaning: string }> = {
   GRA: { name: 'Grammatical Range & Accuracy', meaning: 'Ngữ pháp' },
 }
 
-const CATEGORY: Record<WritingCorrection['category'], { label: string; tone: string }> = {
+const FALLBACK_CATEGORY = { label: 'Khác', tone: 'task' }
+
+/** The error categories Content can attach to a correction; one this page does not know falls back to "Khác". */
+const CATEGORY: Record<string, { label: string; tone: string }> = {
   GRAMMAR: { label: 'Ngữ pháp', tone: 'grammar' },
   VOCABULARY: { label: 'Từ vựng', tone: 'vocabulary' },
   COHERENCE: { label: 'Mạch lạc', tone: 'coherence' },
   TASK: { label: 'Nội dung', tone: 'task' },
-  OTHER: { label: 'Khác', tone: 'task' },
+  SPELLING_NUMBER: { label: 'Chính tả & số', tone: 'vocabulary' },
+  OTHER: FALLBACK_CATEGORY,
+}
+
+function categoryOf(category: WritingCorrection['category']) {
+  return CATEGORY[category] ?? FALLBACK_CATEGORY
 }
 
 function comment(band: number) {
@@ -86,7 +94,7 @@ function Graded({ submission, submissionId }: { submission: WritingSubmission; s
   const band = submission.overallBand ?? roundBand(bands)
   const metrics = useMemo(() => measureEssay(essay), [essay])
   const segments = useMemo(() => markEssay(essay, corrections), [essay, corrections])
-  const tones = [...new Set(corrections.map((item) => CATEGORY[item.category]))]
+  const tones = [...new Set(corrections.map((item) => categoryOf(item.category)))]
 
   return (
     <div className="wr-page">
@@ -141,7 +149,7 @@ function Graded({ submission, submissionId }: { submission: WritingSubmission; s
           {tones.length > 0 && <p className="wr-legend">{tones.map((tone) => <span key={tone.label} className={`wr-mark wr-mark-${tone.tone}`}>{tone.label}</span>)}</p>}
           {segments.length === 0 && <p className="wr-muted">Không còn bản bài viết để hiển thị.</p>}
           {essay && segments.map((segment, index) => segment.correction
-            ? <mark key={index} className={`wr-mark wr-mark-${CATEGORY[segment.correction.category].tone}`} title={segment.correction.suggestion}>{segment.text}</mark>
+            ? <mark key={index} className={`wr-mark wr-mark-${categoryOf(segment.correction.category).tone}`} title={segment.correction.suggestion}>{segment.text}</mark>
             : <span key={index}>{segment.text}</span>)}
         </section>
 
@@ -150,7 +158,7 @@ function Graded({ submission, submissionId }: { submission: WritingSubmission; s
             <h3>Các lỗi cần sửa</h3>
             <ul>{corrections.map((item) => (
               <li key={`${item.excerpt}-${item.suggestion}`}>
-                <span className={`wr-mark wr-mark-${CATEGORY[item.category].tone}`}>{CATEGORY[item.category].label}</span>
+                <span className={`wr-mark wr-mark-${categoryOf(item.category).tone}`}>{categoryOf(item.category).label}</span>
                 <b>{item.excerpt}</b> → {item.suggestion}
               </li>
             ))}</ul>

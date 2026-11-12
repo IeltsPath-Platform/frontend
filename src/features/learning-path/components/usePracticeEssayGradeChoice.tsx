@@ -1,15 +1,14 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react'
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { ExaminerPickDialog } from '@/features/practice/writing/ExaminerPickDialog'
 import { GradeMethodDialog } from '@/features/practice/writing/GradeMethodDialog'
 import { gradeOptions } from '@/features/practice/writing/gradeOptions'
 import { getGradingTerms } from '@/features/practice/writing/writingApi'
+import type { GradingTerms } from '@/features/practice/writing/writingApi'
 import { useWritingWallet, type GradingAccess } from '@/features/practice/writing/useWritingWallet'
 import '@/features/practice/writing/writing-workspace.css'
 import { learningApi, toApiError, userMessage } from '../api'
 import { newRequestId } from '../lib/requestId'
-
-/** The grading terms until the server answers: the same cost and length the server applies by default. */
-const FALLBACK_TERMS = { pointCost: 3, minWords: 50 }
 
 /** What to tell the learner when the essay could not be sent to the examiner; nothing is spent on any of these. */
 function examinerMessage(cause: unknown): string {
@@ -49,20 +48,25 @@ export function usePracticeEssayGradeChoice({ attemptId, questionVersionId, essa
   const wallet = useWritingWallet()
   const [popup, setPopup] = useState<'method' | 'examiner' | null>(null)
   const [access, setAccess] = useState<GradingAccess>({ balance: null, subscription: undefined })
-  const [terms, setTerms] = useState(FALLBACK_TERMS)
+  const [terms, setTerms] = useState<GradingTerms | null>(null)
+  const [termsLoading, setTermsLoading] = useState(true)
+  const termsStatusId = useId()
   const [checking, setChecking] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   // One id per essay text: sending the same text again, to the same or another teacher, continues the same essay.
   const request = useRef<{ text: string; id: string } | null>(null)
 
+  const loadTerms = useCallback((signal?: AbortSignal) => getGradingTerms(signal)
+    .then((found) => { if (!signal?.aborted) setTerms(found) })
+    .catch(() => undefined)
+    .finally(() => { if (!signal?.aborted) setTermsLoading(false) }), [])
+
   useEffect(() => {
     const controller = new AbortController()
-    void getGradingTerms(controller.signal)
-      .then((found) => { if (!controller.signal.aborted) setTerms(found) })
-      .catch(() => undefined)
+    void loadTerms(controller.signal)
     return () => controller.abort()
-  }, [])
+  }, [loadTerms])
 
   function open() {
     if (checking) return
@@ -74,7 +78,7 @@ export function usePracticeEssayGradeChoice({ attemptId, questionVersionId, essa
   }
 
   async function send(examinerId: string) {
-    if (busy) return
+    if (busy || !terms || words < terms.minWords) return
     if (request.current?.text !== essayText) request.current = { text: essayText, id: newRequestId() }
     setBusy(true)
     setError('')
@@ -91,21 +95,40 @@ export function usePracticeEssayGradeChoice({ attemptId, questionVersionId, essa
     }
   }
 
-  const options = gradeOptions({ balance: access.balance, cost: terms.pointCost, subscription: access.subscription })
+  const options = terms ? gradeOptions({ balance: access.balance, cost: terms.pointCost, subscription: access.subscription }) : null
   const close = () => { setError(''); setPopup(null) }
 
   const dialogs = (
     <>
-      {popup === 'method' && (
+      {popup === 'method' && !terms && (
+        <Dialog open onOpenChange={(opened) => { if (!opened) close() }}>
+          <DialogContent className="ww-dialog">
+            <DialogTitle className="ww-dialog-title">Chọn cách chấm bài</DialogTitle>
+            <DialogDescription>{context}</DialogDescription>
+            <p id={termsStatusId} role={termsLoading ? 'status' : 'alert'}>
+              {termsLoading ? 'Đang tải điều khoản chấm…' : 'Chưa tải được điều khoản chấm. Thử lại để chọn cách chấm bài.'}
+            </p>
+            <div className="ww-dialog-actions">
+              <button type="button" className="ww-secondary" disabled aria-describedby={termsStatusId}>Chọn giáo viên</button>
+              <button type="button" className="ww-primary" disabled aria-describedby={termsStatusId}>Chấm bằng AI</button>
+              <button type="button" className="ww-secondary" disabled={termsLoading} onClick={() => {
+                setTermsLoading(true)
+                void loadTerms()
+              }}>Thử lại</button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+      {popup === 'method' && options && terms && (
         <GradeMethodDialog
           options={options}
           context={context}
           onClose={close}
           onTeacher={() => setPopup('examiner')}
-          onAi={() => { setPopup(null); onAi() }}
+          onAi={() => { if (terms) { setPopup(null); onAi() } }}
         />
       )}
-      {popup === 'examiner' && (
+      {popup === 'examiner' && terms && (
         <ExaminerPickDialog
           words={words}
           minWords={terms.minWords}

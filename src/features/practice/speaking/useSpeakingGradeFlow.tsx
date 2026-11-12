@@ -1,6 +1,7 @@
-import { useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { KeyActivationDialog } from '@/features/home/components/KeyActivationDialog'
 import { POINT_PRODUCTS } from '@/features/home/pricingData'
 import { HttpError } from '@/lib/httpClient'
@@ -21,10 +22,6 @@ import { clearSession } from './speakingSession'
 import '../writing/writing-workspace.css'
 import '../writing/writing-examiner.css'
 
-/** Price shown until the server's terms arrive; the server's figure is the one that is charged. */
-export const SPEAKING_AI_POINT_COST = 5
-/** The server's limit for one recording, used only if the terms cannot be read. */
-const FALLBACK_MAX_RECORDING_BYTES = 10 * 1024 * 1024
 const CATALOG_PATH = '/practice-tests?skill=speaking'
 
 export const TEACHER_SOON = 'Giáo viên chấm Speaking sắp có. Hiện bài Speaking được AI chấm.'
@@ -44,7 +41,7 @@ const CONFIRM_COPY: GradeDialogCopy = {
   busyLabel: 'Đang gửi bài…',
 }
 
-type Popup = 'method' | 'confirm' | 'short' | 'sent' | null
+type Popup = 'terms' | 'method' | 'confirm' | 'short' | 'sent' | null
 
 /** The two ways to grade, with the teacher closed: there is no teacher grading for Speaking yet. */
 function speakingOptions(access: GradingAccess, cost: number, enabled: boolean): GradeOptions {
@@ -96,6 +93,7 @@ export function useSpeakingGradeFlow({ context, packageVersionId, partSectionIds
   const [activationOpen, setActivationOpen] = useState(false)
   const [access, setAccess] = useState<GradingAccess>({ balance: null, subscription: undefined })
   const [terms, setTerms] = useState<SpeakingTerms | null>(null)
+  const termsStatusId = useId()
   const [submissionId, setSubmissionId] = useState<string | null>(null)
   /** How many answers were sent: the session's recordings are cleared once the send succeeds, so they cannot be counted later. */
   const [sentCount, setSentCount] = useState(0)
@@ -104,22 +102,29 @@ export function useSpeakingGradeFlow({ context, packageVersionId, partSectionIds
   const [progress, setProgress] = useState<SendProgress | null>(null)
   const [error, setError] = useState('')
   const requestId = useRef<string | null>(null)
+  const termsRequest = useRef<AbortController | null>(null)
   const wallet = useWritingWallet()
-  const cost = terms?.pointCost ?? SPEAKING_AI_POINT_COST
-  const options = speakingOptions(access, cost, terms?.enabled !== false)
+  const options = terms ? speakingOptions(access, terms.pointCost, terms.enabled !== false) : null
+
+  useEffect(() => () => termsRequest.current?.abort(), [])
 
   function start() {
     if (checking) return
+    const controller = new AbortController()
+    termsRequest.current = controller
     setChecking(true)
-    void Promise.all([wallet.checkAccess(), getSpeakingTerms().catch((): null => null)]).then(([found, loaded]) => {
+    setTerms(null)
+    setPopup('terms')
+    void Promise.all([wallet.checkAccess(), getSpeakingTerms(controller.signal).catch((): null => null)]).then(([found, loaded]) => {
+      if (controller.signal.aborted) return
       setAccess(found)
       setTerms(loaded)
-      setPopup('method')
-    }).finally(() => setChecking(false))
+      if (loaded) setPopup('method')
+    }).finally(() => { if (!controller.signal.aborted) setChecking(false) })
   }
 
   function send() {
-    if (sending) return
+    if (sending || !terms || terms.enabled === false || !consent || recordings.length === 0) return
     requestId.current ??= crypto.randomUUID()
     const count = recordings.length
     setSending(true)
@@ -131,7 +136,7 @@ export function useSpeakingGradeFlow({ context, packageVersionId, partSectionIds
       partSectionIds,
       attemptId,
       recordings,
-      maxRecordingBytes: terms?.maxRecordingBytes ?? FALLBACK_MAX_RECORDING_BYTES,
+      maxRecordingBytes: terms.maxRecordingBytes,
       onProgress: setProgress,
     }).then((submission) => {
       requestId.current = null
@@ -152,28 +157,43 @@ export function useSpeakingGradeFlow({ context, packageVersionId, partSectionIds
 
   const dialogs = (
     <>
-      {popup === 'method' && (
+      {popup === 'terms' && (
+        <Dialog open onOpenChange={(opened) => {
+          if (!opened) { termsRequest.current?.abort(); setChecking(false); setPopup(null) }
+        }}>
+          <DialogContent className="ww-dialog">
+            <DialogTitle className="ww-dialog-title">Chọn cách chấm bài</DialogTitle>
+            <DialogDescription>{context}</DialogDescription>
+            <p id={termsStatusId} role={checking ? 'status' : 'alert'}>
+              {checking ? 'Đang tải điều khoản chấm…' : 'Chưa tải được điều khoản chấm. Thử lại để chọn cách chấm bài.'}
+            </p>
+            <button type="button" className="ww-primary" disabled aria-describedby={termsStatusId}>Chấm bằng AI</button>
+            <button type="button" className="ww-secondary" disabled={checking} onClick={start}>Thử lại</button>
+          </DialogContent>
+        </Dialog>
+      )}
+      {popup === 'method' && options && terms && (
         <GradeMethodDialog
           options={options}
           context={context}
           copy={METHOD_COPY}
           onClose={() => setPopup(null)}
           onTeacher={() => setPopup(null)}
-          onAi={() => setPopup(options.ai.enabled ? 'confirm' : 'short')}
+          onAi={() => { if (terms.enabled !== false) setPopup(options.ai.enabled ? 'confirm' : 'short') }}
         />
       )}
-      {popup === 'confirm' && (
+      {popup === 'confirm' && terms && (
         <GradeConfirmDialog
           busy={sending}
           error={error}
-          canGrade={recordings.length > 0}
+          canGrade={recordings.length > 0 && terms.enabled !== false}
           copy={CONFIRM_COPY}
           consent={{ label: CONSENT_LABEL, checked: consent, onChange: setConsent }}
           progress={progress ? `Đang gửi bản ghi ${Math.min(progress.done + 1, progress.total)}/${progress.total}…` : BUSY_PROGRESS}
           onGrade={send}
           onClose={() => { setError(''); setPopup(null) }}
           figures={{
-            cost,
+            cost: terms.pointCost,
             balance: access.balance ?? wallet.balance,
             context,
             benefits: ['Band từng tiêu chí và band tổng (điểm ước lượng để luyện tập)', 'Lỗi cần sửa, kèm gợi ý cải thiện', 'Bài luyện tiếp theo cho điểm yếu của bạn'],
@@ -181,17 +201,17 @@ export function useSpeakingGradeFlow({ context, packageVersionId, partSectionIds
           }}
         />
       )}
-      {popup === 'short' && (
+      {popup === 'short' && terms && (
         <NotEnoughPointsDialog
-          cost={cost}
+          cost={terms.pointCost}
           balance={access.balance ?? wallet.balance}
           copy={{ backLabel: 'Quay lại xem lại bài', kept: 'các bản ghi của bạn vẫn được giữ nguyên' }}
           onClose={() => setPopup(null)}
           onActivate={() => { setPopup(null); setActivationOpen(true) }}
         />
       )}
-      {popup === 'sent' && submissionId && (
-        <SpeakingSentDialog recorded={sentCount} cost={cost} context={context}
+      {popup === 'sent' && submissionId && terms && (
+        <SpeakingSentDialog recorded={sentCount} cost={terms.pointCost} context={context}
           onClose={() => navigate(CATALOG_PATH)} onViewResult={() => { setPopup(null); setViewingId(submissionId) }} />
       )}
       <KeyActivationDialog
