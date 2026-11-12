@@ -18,6 +18,8 @@ export interface ResultCriterion {
 }
 
 export interface ResultError { name: string; partNo: number | null; excerpt: string; suggestion: string }
+/** Every place one kind of mistake happens, in the order the grader listed them. */
+export interface ResultErrorGroup { name: string; items: ResultError[] }
 /** One sound of a word as the speech service scored it (IPA); `heardAs` is the sound it heard instead, when it named one. */
 export interface ResultSound { symbol: string; accuracy: number | null; heardAs: string | null }
 /** One word of an answer with its score; `errorType` is null when the service named no error. */
@@ -117,18 +119,44 @@ export function parseSpeakingResult(display: unknown): SpeakingResultView {
   }
 }
 
-/** The criterion with the lowest band, or null when fewer than two have a band (nothing to compare). */
-export function weakestCriterion(criteria: ResultCriterion[]): ResultCriterion | null {
-  const graded = criteria.filter((item) => item.band !== null)
-  if (graded.length < 2) return null
-  return graded.reduce((worst, item) => ((item.band as number) < (worst.band as number) ? item : worst))
+/**
+ * The criteria with the lowest band. When several share it all of them are returned, because a tie must not single one out
+ * (three criteria at 5.0 do not make the first of them the weakest). Nothing is returned when fewer than two criteria have
+ * a band, or when every graded criterion has the same band: nothing is then weaker than the rest.
+ */
+export function weakestCriteria(criteria: ResultCriterion[]): ResultCriterion[] {
+  const bands = criteria.flatMap((item) => (item.band === null ? [] : [item.band]))
+  if (bands.length < 2) return []
+  const lowest = Math.min(...bands)
+  if (lowest === Math.max(...bands)) return []
+  return criteria.filter((item) => item.band === lowest)
 }
 
-/** The mean of the criterion bands, to one decimal: shown when there is no overall band, labelled as an average. */
+/** The first of the weakest criteria, or null when none stands out: where the result page opens. */
+export function weakestCriterion(criteria: ResultCriterion[]): ResultCriterion | null {
+  return weakestCriteria(criteria)[0] ?? null
+}
+
+/** Puts the places of one kind of mistake together, so a learner sees where it happens and every fix under one name. */
+export function groupErrors(errors: ResultError[]): ResultErrorGroup[] {
+  const groups = new Map<string, ResultErrorGroup>()
+  for (const error of errors) {
+    const group = groups.get(error.name)
+    if (group) group.items.push(error)
+    else groups.set(error.name, { name: error.name, items: [error] })
+  }
+  return [...groups.values()]
+}
+
+/**
+ * The mean of the criterion bands rounded the way IELTS rounds an overall band, to the nearest half band (a quarter rounds
+ * up to the next half, three quarters up to the next whole band). Shown when there is no overall band, and it must match
+ * the server, which keeps the same rule: a band such as 5.1 or 5.2 does not exist.
+ */
 export function averageBand(criteria: ResultCriterion[]): number | null {
   const bands = criteria.map((item) => item.band).filter((band): band is number => band !== null)
   if (bands.length === 0) return null
-  return Math.round((bands.reduce((sum, band) => sum + band, 0) / bands.length) * 10) / 10
+  return Math.round((bands.reduce((sum, band) => sum + band, 0) / bands.length) * 2) / 2
 }
 
 /** A short line about what the band means, in words a learner can act on. */

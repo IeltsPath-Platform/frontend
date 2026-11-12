@@ -18,6 +18,20 @@ function clock(seconds: number) {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
 }
 
+/** After this long the usual wait is over and the note says so, so a long grade is not mistaken for a stuck one. */
+const LONGER_THAN_USUAL_SECONDS = 30
+const MINUTES_SECONDS = 120
+
+/**
+ * What to tell the learner about the time. How long a grade takes depends on how long the answer is and how busy the
+ * grader is, so no figure is promised: the note changes with the time already waited instead.
+ */
+function waitNote(seconds: number) {
+  if (seconds >= MINUTES_SECONDS) return 'Vẫn đang chấm, bài nói dài có thể mất vài phút · bạn không cần gửi lại, kết quả sẽ tự hiện ra'
+  if (seconds >= LONGER_THAN_USUAL_SECONDS) return 'Bài nói dài hoặc hệ thống đang đông nên cần thêm thời gian · vẫn đang chấm, hãy giữ trang này mở'
+  return 'Thời gian chấm tùy độ dài bài nói · giữ trang này mở, kết quả sẽ tự hiện ra'
+}
+
 /** Seconds since the panel appeared, so the learner can see the page is alive and how long it has taken. */
 function useElapsedSeconds() {
   const [seconds, setSeconds] = useState(0)
@@ -60,7 +74,7 @@ export function SpeakingWaitingPanel({ status }: { status: string | undefined })
     </ol>
 
     <div className="sw__meter" aria-hidden="true"><u style={{ width: `${((stage + 0.5) / STEPS.length) * 100}%` }} /></div>
-    <p className="sw__foot"><span>Đã chờ {clock(seconds)}</span><span>Thường mất khoảng 10–20 giây · giữ trang này mở, kết quả sẽ tự hiện ra</span></p>
+    <p className="sw__foot"><span>Đã chờ {clock(seconds)}</span><span>{waitNote(seconds)}</span></p>
   </section>
 }
 

@@ -15,13 +15,13 @@ import { WritingModeModal } from '../components/WritingModeModal'
 import type { WritingMode } from '../writing/writingApi'
 import {
   findSubmittedAttemptId,
+  getCatalogProgress,
   getPracticeFormats,
-  getReadingProgress,
   searchReadingTests,
   startReadingAttempt,
 } from '../reading/readingPracticeApi'
 import type { PracticeFormatCount, ReadingTestCard } from '../reading/readingPracticeApi'
-import { toCatalogKeyFilter } from '../lib/progressKeys'
+import { progressKey, submissionsByKey, toCatalogKeyFilter } from '../lib/progressKeys'
 import { practiceFormatLabel } from '../lib/practiceFormatLabels'
 import {
   PRACTICE_SKILL_CONFIG,
@@ -69,6 +69,11 @@ function cardKey(card: ReadingTestCard) {
   return `${card.packageId}:${card.scope === 'FULL' ? 'full' : (card.parts[0]?.partNo ?? 'part')}`
 }
 
+/** The key the progress list names a finished test by. */
+function doneKey(card: ReadingTestCard) {
+  return progressKey(card.packageId, card.scope === 'FULL' ? null : (card.parts[0]?.partNo ?? null))
+}
+
 export function PracticeCatalogPage({ onOpenTest }: PracticeCatalogPageProps) {
   const [searchParams] = useSearchParams()
   const skill = parsePracticeSkill(searchParams.get('skill'))
@@ -100,6 +105,8 @@ function PracticeCatalog({ skill, onOpenTest }: PracticeCatalogPageProps & { ski
   const [readyCard, setReadyCard] = useState<ReadingTestCard | null>(null)
   // A card of the "done" tab asks what to do with it: see the result, or do the test again.
   const [doneCard, setDoneCard] = useState<ReadingTestCard | null>(null)
+  // Speaking and Writing name the graded answer of each finished test; Reading and Listening look it up on request.
+  const [doneSubmissions, setDoneSubmissions] = useState<Map<string, string>>(() => new Map())
   const [findingResult, setFindingResult] = useState(false)
   const [doneError, setDoneError] = useState('')
   const [starting, setStarting] = useState(false)
@@ -137,7 +144,8 @@ function PracticeCatalog({ skill, onOpenTest }: PracticeCatalogPageProps & { ski
     const requestedPart = partNo
     const currentPage = page
     const requestedFormats = formatKey ? formatKey.split(',') : []
-    void getReadingProgress(requestedScope, controller.signal, config.apiSkill).then((progress) => {
+    void getCatalogProgress(requestedScope, controller.signal, config.apiSkill).then((progress) => {
+      if (!controller.signal.aborted) setDoneSubmissions(submissionsByKey(progress.completed ?? []))
       const keys = (progress.completed ?? []).map(({ packageId, partNo: donePart }) => ({ packageId, partNo: donePart }))
       const progressFilter = toCatalogKeyFilter(tab, keys)
       if (progressFilter === 'EMPTY') return { totalElements: 0, page: currentPage, size: PAGE_SIZE, items: [] as ReadingTestCard[] }
@@ -212,8 +220,8 @@ function PracticeCatalog({ skill, onOpenTest }: PracticeCatalogPageProps & { ski
     const found = visibleCards.find((item) => cardKey(item) === card.id)
     if (!found) return
     setStartError('')
-    // Reading and Listening keep a result for every attempt; the other skills have no result page to go back to.
-    if (tab === 'completed' && (skill === 'reading' || skill === 'listening')) {
+    // A finished test asks what to do with it: see the result of its graded answer, or do it again.
+    if (tab === 'completed') {
       setDoneError('')
       setDoneCard(found)
       return
@@ -229,8 +237,15 @@ function PracticeCatalog({ skill, onOpenTest }: PracticeCatalogPageProps & { ski
   /** Opens the result of the learner's latest submitted attempt of the test. */
   function viewResult(card: ReadingTestCard) {
     if (findingResult) return
-    setFindingResult(true)
     setDoneError('')
+    // Speaking and Writing know the graded answer already: its result page opens directly.
+    if (skill === 'speaking' || skill === 'writing') {
+      const submissionId = doneSubmissions.get(doneKey(card))
+      if (submissionId) navigate(`/practice/${skill}/submissions/${submissionId}/result`)
+      else setDoneError('Không tìm thấy bài làm đã chấm của đề này.')
+      return
+    }
+    setFindingResult(true)
     void findSubmittedAttemptId(config.apiSkill, card, card.scope === 'PART' ? partNo : undefined).then((attemptId) => {
       if (attemptId) navigate(`/practice/${skill}/attempts/${attemptId}/result`)
       else setDoneError('Không tìm thấy bài làm đã nộp của đề này.')
@@ -243,7 +258,9 @@ function PracticeCatalog({ skill, onOpenTest }: PracticeCatalogPageProps & { ski
   function redo(card: ReadingTestCard) {
     setDoneCard(null)
     setStartError('')
-    setModeCard(card)
+    // Speaking has no interface to choose: the learner only confirms they are ready, as for a test never done.
+    if (skill === 'speaking') setReadyCard(card)
+    else setModeCard(card)
   }
 
   /** A Writing task opens its own workspace: the learner picks free writing or the step-by-step guide. */

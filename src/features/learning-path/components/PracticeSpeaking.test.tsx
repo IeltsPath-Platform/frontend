@@ -132,6 +132,18 @@ describe('the recorded answer of a lesson practice set', () => {
     expect(screen.queryByText(/không bị trừ point/)).not.toBeInTheDocument()
   })
 
+  it('says the grader is down, with no mention of an examiner, when grading could not be done', async () => {
+    api.getSpeakingSubmission.mockResolvedValue({ id: 'sub-1', status: 'NEEDS_EXAMINER' })
+    show({ recorded: [item({ latest: { id: 'sub-1', status: 'QUEUED', overallBand: null, passed: null } })] })
+
+    expect(await screen.findByText(/Hệ thống chấm đang lỗi, vui lòng thử lại sau/)).toBeInTheDocument()
+    expect(screen.getByText(/không bị trừ point/)).toBeInTheDocument()
+    expect(screen.queryByText(/giám khảo|examiner/i)).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Thử lại' }))
+
+    expect(screen.getByRole('button', { name: 'Gửi chấm bài nói' })).toBeDisabled()
+  })
+
   it('does not wait for an answer whose file was never sent, and lets the learner record again', () => {
     show({ recorded: [item({ latest: { id: 'sub-1', status: 'UPLOADING', overallBand: null, passed: null } })] })
 
