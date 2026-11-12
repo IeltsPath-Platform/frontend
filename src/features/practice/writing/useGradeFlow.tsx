@@ -7,7 +7,7 @@ import { POINT_PRODUCTS } from '@/features/home/pricingData'
 import { getPendingExaminerSubmission } from './examinerApi'
 import { ExaminerPickDialog } from './ExaminerPickDialog'
 import { GradeMethodDialog } from './GradeMethodDialog'
-import { GradeConfirmDialog, NotEnoughPointsDialog } from './WritingParts'
+import { GradeConfirmDialog, GradingTermsDialog, NotEnoughPointsDialog } from './WritingParts'
 import { gradeOptions } from './gradeOptions'
 import type { WritingMode, WritingTask } from './writingApi'
 import { countWords } from './writingText'
@@ -59,9 +59,10 @@ export function useGradeFlow({ task, mode, draftKey, essay, seconds, label, bene
   }, [task.questionVersionId])
   const pendingId = examiner.pendingId ?? waiting
   const words = countWords(essay)
-  const minWords = task.minWords ?? grading.terms.minWords
-  const canGrade = words >= grading.terms.minWords
-  const options = gradeOptions({ balance: access.balance, cost: grading.terms.pointCost, subscription: access.subscription, teacherPending: pendingId !== null })
+  const terms = grading.terms
+  const minWords = task.minWords ?? terms?.minWords ?? 0
+  const canGrade = terms !== null && words >= terms.minWords
+  const options = terms ? gradeOptions({ balance: access.balance, cost: terms.pointCost, subscription: access.subscription, teacherPending: pendingId !== null }) : null
   const context = `Writing ${task.task === 'TASK_2' ? 'Task 2' : 'Task 1'} · ${task.title} · ${label}`
 
   function start() {
@@ -75,7 +76,10 @@ export function useGradeFlow({ task, mode, draftKey, essay, seconds, label, bene
 
   const dialogs = (
     <>
-      {popup === 'method' && (
+      {popup === 'method' && !terms && (
+        <GradingTermsDialog loading={grading.termsLoading} onRetry={grading.reloadTerms} onClose={() => setPopup(null)} />
+      )}
+      {popup === 'method' && options && (
         <GradeMethodDialog
           options={options}
           context={context}
@@ -84,10 +88,10 @@ export function useGradeFlow({ task, mode, draftKey, essay, seconds, label, bene
           onAi={() => setPopup(options.ai.enabled ? 'confirm' : 'short')}
         />
       )}
-      {popup === 'examiner' && (
+      {popup === 'examiner' && terms && (
         <ExaminerPickDialog
           words={words}
-          minWords={grading.terms.minWords}
+          minWords={terms.minWords}
           busy={examiner.busy}
           error={examiner.error}
           onSend={(examinerId) => void examiner.send(examinerId)}
@@ -95,15 +99,15 @@ export function useGradeFlow({ task, mode, draftKey, essay, seconds, label, bene
           onClose={() => { examiner.clearError(); setPopup(null) }}
         />
       )}
-      {popup === 'confirm' && (
+      {popup === 'confirm' && terms && (
         <GradeConfirmDialog
           busy={grading.grading}
-          error={grading.error || (canGrade ? '' : `Cần ít nhất ${grading.terms.minWords} từ để AI chấm bài.`)}
+          error={grading.error || (canGrade ? '' : `Cần ít nhất ${terms.minWords} từ để AI chấm bài.`)}
           canGrade={canGrade}
           onGrade={() => void grading.grade()}
           onClose={() => { grading.clearError(); setPopup(null) }}
           figures={{
-            cost: grading.terms.pointCost,
+            cost: terms.pointCost,
             balance: access.balance ?? wallet.balance,
             context,
             benefits,
@@ -111,9 +115,9 @@ export function useGradeFlow({ task, mode, draftKey, essay, seconds, label, bene
           }}
         />
       )}
-      {popup === 'short' && (
+      {popup === 'short' && terms && (
         <NotEnoughPointsDialog
-          cost={grading.terms.pointCost}
+          cost={terms.pointCost}
           balance={access.balance ?? wallet.balance}
           onClose={() => setPopup(null)}
           onActivate={() => { setPopup(null); setActivationOpen(true) }}
