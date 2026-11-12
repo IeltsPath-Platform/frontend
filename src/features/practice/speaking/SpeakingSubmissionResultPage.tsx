@@ -9,7 +9,7 @@ import { PronunciationBreakdown } from './PronunciationBreakdown'
 import { SpeakingWaitingPanel } from './SpeakingWaitingPanel'
 import { useSpeakingSubmissionResult } from './useSpeakingSubmissionResult'
 import {
-  averageBand, bandComment, parseSpeakingResult, summaryLine, weakestCriterion,
+  averageBand, bandComment, groupErrors, parseSpeakingResult, summaryLine, weakestCriteria,
   type ResultCriterion, type SpeakingResultView,
 } from './speakingResultView'
 import './speaking-result.css'
@@ -39,11 +39,11 @@ function BandCard({ view }: { view: SpeakingResultView }) {
 }
 
 function CriteriaCard({ view }: { view: SpeakingResultView }) {
-  const worst = weakestCriterion(view.criteria)
+  const worst = weakestCriteria(view.criteria)
   return <section className="sres-card" aria-label="Điểm từng tiêu chí">
     <header><h2>Điểm từng tiêu chí</h2><span>Thang 0–9</span></header>
     {view.criteria.map((item) => <div className="sres-row" key={item.code}>
-      <span>{item.name}{worst?.code === item.code && <em className="sres-badge">Cần cải thiện nhất</em>}</span>
+      <span>{item.name}{worst.some((weak) => weak.code === item.code) && <em className="sres-badge">Cần cải thiện nhất</em>}</span>
       <i className="sres-bar"><u style={{ width: `${((item.band ?? 0) / 9) * 100}%` }} /></i>
       <b>{formatBand(item.band)}</b>
     </div>)}
@@ -74,13 +74,13 @@ type ScoreTile = { label: string; value: string }
  * open on arrival and opening another closes it, so the page stays short and the learner sees first what to fix.
  */
 function CriteriaAccordion({ criteria, tiles }: { criteria: ResultCriterion[]; tiles: ScoreTile[] }) {
-  const worst = weakestCriterion(criteria)
-  const [open, setOpen] = useState<string | null>(worst?.code ?? criteria[0]?.code ?? null)
+  const worst = weakestCriteria(criteria)
+  const [open, setOpen] = useState<string | null>(worst[0]?.code ?? criteria[0]?.code ?? null)
   return <div className="sres-acc">
     <p className="sres-acc__hint">Bấm vào từng tiêu chí để xem chi tiết</p>
     {criteria.map((item) => {
       const isOpen = open === item.code
-      const isWorst = worst?.code === item.code
+      const isWorst = worst.some((weak) => weak.code === item.code)
       const showTiles = item.code === 'PR' && tiles.length > 0
       const hasSides = item.strengths.length > 0 || item.weaknesses.length > 0
       return <article key={item.code} className={`sres-acc__item${isWorst ? ' is-worst' : ''}${isOpen ? ' is-open' : ''}`}>
@@ -187,10 +187,12 @@ function Result({ view, onOpenPlans }: { view: SpeakingResultView; onOpenPlans: 
     </section>}
     {view.errors.length > 0 && <>
       <h2 className="sres-h2">Lỗi nên sửa</h2>
-      <section className="sres-errors" aria-label="Lỗi nên sửa">{view.errors.map((entry, index) => <article key={index}>
-        <h3>{entry.name}{entry.partNo !== null && <small>Part {entry.partNo}</small>}</h3>
-        <blockquote><q>{entry.excerpt}</q></blockquote>
-        {entry.suggestion && <p><b>Gợi ý:</b> {entry.suggestion}</p>}
+      <section className="sres-errors" aria-label="Lỗi nên sửa">{groupErrors(view.errors).map((group) => <article key={group.name}>
+        <h3>{group.name}<small>{group.items.length} chỗ</small></h3>
+        <ul>{group.items.map((entry, index) => <li key={index}>
+          <blockquote><q>{entry.excerpt}</q>{entry.partNo !== null && <small>Part {entry.partNo}</small>}</blockquote>
+          {entry.suggestion && <p><b>Cách sửa:</b> {entry.suggestion}</p>}
+        </li>)}</ul>
       </article>)}</section>
     </>}
     {view.transcripts.length > 0 && <>
@@ -244,8 +246,8 @@ export function SpeakingResultScreen({ submissionId }: { submissionId: string })
       {short && <Notice tone="warn" icon={<AlertTriangle size={20} />} title="Chưa nhận được kết quả">
         <p>Số dư point hiện tại chưa đủ để nhận kết quả bài này. Bài chấm của bạn được giữ lại, bạn nạp thêm point rồi thử lại nhé.</p>
         <button type="button" onClick={retry}>Thử lại</button></Notice>}
-      {status === 'NEEDS_EXAMINER' && <Notice tone="stop" icon={<AlertTriangle size={20} />} title="Cần giám khảo xem lại">
-        <p>Kết quả tự động chưa đủ tin cậy nên bài này cần được xem lại. Bạn không bị trừ point.</p></Notice>}
+      {status === 'NEEDS_EXAMINER' && <Notice tone="stop" icon={<AlertTriangle size={20} />} title="Hệ thống chấm đang lỗi">
+        <p>Hệ thống chấm đang lỗi, vui lòng thử lại sau. Bạn không bị trừ point.</p></Notice>}
       {status === 'ABANDONED' && <Notice tone="stop" icon={<AlertTriangle size={20} />} title="Bài nộp đã dừng">
         <p>Bài này chưa được gửi đủ bản ghi nên đã dừng. Bạn có thể ghi âm và gửi lại.</p></Notice>}
       {error && <Notice tone="stop" icon={<AlertTriangle size={20} />} title="Có lỗi xảy ra"><p>{error}</p>

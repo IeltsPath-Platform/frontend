@@ -40,7 +40,8 @@ export interface ReadingTestSource {
 }
 
 export interface ReadingProgress {
-  completed: Array<{ packageId: string; partNo: number | null }>
+  /** `submissionId` is the graded answer to open; only Speaking and Writing name it. */
+  completed: Array<{ packageId: string; partNo: number | null; submissionId?: string }>
 }
 
 export interface AttemptSection {
@@ -156,6 +157,17 @@ export function getReadingSources(signal?: AbortSignal) {
 
 export function getReadingProgress(scope: ReadingScope, signal?: AbortSignal, skill: PracticeSkill = 'READING') {
   return apiRequest<ReadingProgress>(`/api/assessments/practice/progress?skill=${skill}&scope=${scope}`, { auth: true, signal })
+}
+
+/**
+ * The tests of the catalog the learner has finished. Reading and Listening attempts are kept by Assessment; the graded
+ * Speaking answers and Writing essays are kept by Learning, which names the answer to open for each test.
+ */
+export function getCatalogProgress(scope: ReadingScope, signal?: AbortSignal, skill: PracticeSkill = 'READING') {
+  if (skill === 'SPEAKING' || skill === 'WRITING') {
+    return apiRequest<ReadingProgress>(`/api/learning/practice-progress?skill=${skill}&scope=${scope}`, { auth: true, signal })
+  }
+  return getReadingProgress(scope, signal, skill)
 }
 
 /** Question formats found in the published practice tests of a skill (for the catalog filter). */

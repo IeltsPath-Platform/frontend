@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { averageBand, bandComment, learnerIpa, parseSpeakingResult, summaryLine, weakestCriterion } from './speakingResultView'
+import { averageBand, bandComment, groupErrors, learnerIpa, parseSpeakingResult, summaryLine, weakestCriteria, weakestCriterion } from './speakingResultView'
 
 describe('parseSpeakingResult', () => {
   it('reads a partly filled or wrongly typed result without throwing', () => {
@@ -26,8 +26,41 @@ describe('weakestCriterion and averageBand', () => {
 
   it('finds the lowest band', () => expect(weakestCriterion(criteria)?.code).toBe('LR'))
   it('has no weakest one with a single graded criterion', () => expect(weakestCriterion(criteria.slice(0, 1))).toBeNull())
-  it('averages to one decimal', () => expect(averageBand(criteria)).toBe(5.2))
+  const of = (...bands: number[]) => parseSpeakingResult({
+    criteria: bands.map((band, index) => ({ code: ['FC', 'LR', 'GRA', 'PR'][index], band })),
+  }).criteria
+
+  it('marks every criterion that shares the lowest band, not just the first', () => {
+    expect(weakestCriteria(of(5, 5, 5, 7)).map((item) => item.code)).toEqual(['FC', 'LR', 'GRA'])
+    expect(weakestCriteria(of(5, 6, 5, 7)).map((item) => item.code)).toEqual(['FC', 'GRA'])
+  })
+  it('marks none when every criterion has the same band, so nothing is picked by position', () => {
+    expect(weakestCriteria(of(6, 6, 6, 6))).toEqual([])
+    expect(weakestCriterion(of(6, 6, 6, 6))).toBeNull()
+  })
+  it('still opens on the first of the weakest ones', () => expect(weakestCriterion(of(6, 5, 5, 7))?.code).toBe('LR'))
+
+  it('rounds the mean to the nearest half band, so 5.17 is 5', () => expect(averageBand(criteria)).toBe(5))
+  it('rounds below a quarter down: 5.125 is 5, never 5.1', () => expect(averageBand(of(5, 5, 5, 5.5))).toBe(5))
+  it('rounds a quarter up to the next half band', () => expect(averageBand(of(5, 5, 5, 6))).toBe(5.5))
+  it('rounds three quarters up to the next whole band', () => expect(averageBand(of(5, 6, 6, 6))).toBe(6))
   it('has no average without bands', () => expect(averageBand([])).toBeNull())
+})
+
+describe('groupErrors', () => {
+  const error = (name: string, excerpt: string, partNo: number | null = 1) => ({ name, partNo, excerpt, suggestion: `fix ${excerpt}` })
+
+  it('puts every place of one kind of mistake under one name, keeping the order they first appear', () => {
+    const groups = groupErrors([
+      error('Sai thì', 'I go yesterday'), error('Mạo từ', 'I have dog'), error('Sai thì', 'she visit last year', 2),
+    ])
+
+    expect(groups.map((group) => group.name)).toEqual(['Sai thì', 'Mạo từ'])
+    expect(groups[0].items.map((item) => item.excerpt)).toEqual(['I go yesterday', 'she visit last year'])
+    expect(groups[0].items[1].partNo).toBe(2)
+  })
+
+  it('has no group without errors', () => expect(groupErrors([])).toEqual([]))
 })
 
 describe('bandComment', () => {

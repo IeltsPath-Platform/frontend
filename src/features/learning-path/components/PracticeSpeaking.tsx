@@ -127,7 +127,7 @@ function AnswerProgress({ submissionId, passBand, onFinish, finished, onRetry, d
 
   if (graded) {
     const view = submission?.result ? parseSpeakingResult(submission.result) : null
-    // One answer has no overall band: the mean of its criteria stands for it, as on the server.
+    // One answer has no overall band: the mean of its criteria, to the nearest half band, stands for it, as on the server.
     const band = view ? view.overallBand ?? averageBand(view.criteria) : null
     const passed = band !== null && passBand !== null ? band >= passBand : null
     return (
@@ -158,10 +158,12 @@ function AnswerProgress({ submissionId, passBand, onFinish, finished, onRetry, d
       <div className="lp-rec__result" role="alert">
         <p className="lp-rec__band"><CircleAlert aria-hidden="true" size={18} />
           {status === 'NEEDS_EXAMINER'
-            ? 'Hệ thống chưa chấm được bài nói này. Bạn không bị trừ point, hãy gửi lại.'
+            ? 'Hệ thống chấm đang lỗi, vui lòng thử lại sau. Bạn không bị trừ point.'
             : 'Chưa nghe rõ giọng nói trong bản ghi nên bài chưa được chấm. Bạn không bị trừ point, hãy ghi lại và gửi lại.'}
         </p>
-        <Button className="lp-btn lp-btn--accent" onClick={onRetry} type="button">Ghi âm lại</Button>
+        <Button className="lp-btn lp-btn--accent" onClick={onRetry} type="button">
+          {status === 'NEEDS_EXAMINER' ? 'Thử lại' : 'Ghi âm lại'}
+        </Button>
       </div>
     )
   }
