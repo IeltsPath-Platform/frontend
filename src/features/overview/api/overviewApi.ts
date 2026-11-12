@@ -3,6 +3,43 @@ import { apiRequest, HttpError } from '@/lib/httpClient'
 export type Skill = 'LISTENING' | 'READING' | 'WRITING' | 'SPEAKING'
 export type BandSkill = Skill | 'OVERALL'
 export type SeriesKind = 'PLACEMENT' | 'MOCK' | 'OFFICIAL_PRACTICE'
+/** One graded Writing essay (first submission only) on GET /api/learning/writing/progress; bands are the stored, estimated ones. */
+export interface WritingProgressPoint {
+  submissionId: string
+  source: 'LESSON' | 'PRACTICE' | 'FREE'
+  gradedAt: string
+  overallBand: number
+  /** TA (Task 1) or TR (Task 2), CC, LR, GRA; a criterion the grade lacks is absent. */
+  criteria: Partial<Record<'TA' | 'TR' | 'CC' | 'LR' | 'GRA', number>>
+  /** Changes when the way of grading changes; absent on essays graded before it was kept. */
+  promptVersion?: string
+}
+export interface WritingProgressError {
+  errorCode: string
+  errorName?: string
+  fixHint?: string
+  /** Present only when the error kind has a practice set. */
+  practiceKnowledgePointId?: string
+  essaysWithError: number
+  essaysTotal: number
+  lastSeenAt: string
+}
+export interface WritingProgressFixedError {
+  errorCode: string
+  errorName?: string
+  lastSeenAt: string
+  cleanEssaysSince: number
+}
+export interface WritingProgressTask {
+  task: 'TASK_1' | 'TASK_2'
+  /** True under 3 essays: the lists are still sent, but a trend would mean nothing. */
+  insufficient: boolean
+  /** Oldest first. */
+  points: WritingProgressPoint[]
+  recurringErrors: WritingProgressError[]
+  fixedErrors: WritingProgressFixedError[]
+}
+export interface WritingProgress { tasks: WritingProgressTask[] }
 export interface BandAvailabilityOption {
   seriesKind: SeriesKind
   skill: BandSkill
@@ -199,6 +236,9 @@ export const overviewApi = {
   /** The learner's placement band for one skill (the placement test is taken once), or null when there is none. */
   placementBand: (from: string, to: string, skill: BandSkill, signal: AbortSignal) =>
     overviewApi.bands(from, to, skill, 'PLACEMENT', '', signal).then((history) => history.latest),
+  /** Both tasks, the 10 most recent first-submission essays each. */
+  writingProgress: (signal: AbortSignal) =>
+    apiRequest<WritingProgress>('/api/learning/writing/progress', { signal, auth: true }),
   /** The 50 most recent finished attempts (the server's page limit) and how many there are in all. */
   practiceHistory: (signal: AbortSignal) =>
     apiRequest<PracticeHistory>(`/api/assessments/practice/history?${query({ page: 0, size: 50 })}`, { signal, auth: true }),
