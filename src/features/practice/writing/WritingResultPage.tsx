@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { X } from 'lucide-react'
 import { SiteNavbar } from '@/components/SiteNavbar'
@@ -7,7 +7,11 @@ import { useApiResource } from '@/features/learning-path/lib/useApiResource'
 import '@/features/learning-path/learning-path.css'
 import { ExaminerResult } from './ExaminerResult'
 import { getWritingSubmission } from './writingApi'
-import type { WritingCorrection, WritingCriterion, WritingSubmission } from './writingApi'
+import type { WritingBandLimit, WritingCorrection, WritingCriterion, WritingSubmission } from './writingApi'
+import { DataChecksView, TaskChecksView } from './WritingChecks'
+import { CorrectedEssay, CorrectionList, RevisionSummary } from './WritingErrors'
+import { WritingPriorities } from './WritingPriorities'
+import { certaintyOf, errorNames, markEssay, segmentAt } from './writingResultModel'
 import { formatClock, loadResultContext, lowestIndex, measureEssay, roundBand } from './writingText'
 import '../reading/reading-workspace.css'
 import './writing-result.css'
@@ -45,38 +49,22 @@ function comment(band: number) {
   return 'Bài viết còn nhiều điểm cần cải thiện. Hãy thử chế độ Hướng dẫn từng bước để luyện nền tảng.'
 }
 
-type Segment = { text: string; correction?: WritingCorrection }
-
-/** Cuts the essay at each correction's excerpt, in the order they appear, so the marks never overlap. */
-function markEssay(essay: string, corrections: WritingCorrection[]): Segment[] {
-  const found = corrections
-    .map((correction) => ({ correction, start: essay.indexOf(correction.excerpt) }))
-    .filter((item) => item.start >= 0)
-    .sort((a, b) => a.start - b.start)
-  const segments: Segment[] = []
-  let cursor = 0
-  for (const { correction, start } of found) {
-    if (start < cursor) continue
-    if (start > cursor) segments.push({ text: essay.slice(cursor, start) })
-    segments.push({ text: correction.excerpt, correction })
-    cursor = start + correction.excerpt.length
-  }
-  if (cursor < essay.length) segments.push({ text: essay.slice(cursor) })
-  return segments
-}
-
-function Criterion({ item, worst }: { item: WritingCriterion; worst: boolean }) {
+function Criterion({ item, worst, limits }: { item: WritingCriterion; worst: boolean; limits: WritingBandLimit[] }) {
   const info = CRITERIA[item.code] ?? { name: item.code, meaning: '' }
   return (
     <article className={`wr-criterion${worst ? ' is-worst' : ''}`}>
-      <div className="wr-criterion-band" aria-label={`Band ${item.band.toFixed(1)}`}>{item.band.toFixed(1)}</div>
+      <div className="wr-criterion-band" aria-label={`Band ${item.band.toFixed(1)}, ước tính`}>{item.band.toFixed(1)}</div>
       <div>
         <h3>{info.name}{worst && <span className="wr-badge">Cần cải thiện nhất</span>}</h3>
-        <p className="wr-muted">{info.meaning}</p>
+        <p className="wr-muted">{info.meaning} · band ước tính</p>
       </div>
+      {limits.length > 0 && <ul className="wr-limits">{limits.map((limit) => <li key={limit.reason}>{limit.message}</li>)}</ul>}
       <ul className="wr-points">
         {item.strengths.map((text) => <li key={text}><b>✓ Làm tốt:</b> {text}</li>)}
         {item.improvements.map((text) => <li key={text}><b>△ Cần cải thiện:</b> {text}</li>)}
+        {item.evidence?.map((text) => <li key={text} className="wr-evidence"><b>Dẫn chứng:</b> “{text}”</li>)}
+        {item.descriptor && <li className="wr-muted"><b>Mô tả band này:</b> {item.descriptor}</li>}
+        {item.nextBand && <li className="wr-next"><b>Để lên band {item.nextBand.band.toFixed(1)}:</b> {item.nextBand.descriptor}</li>}
       </ul>
     </article>
   )
@@ -95,6 +83,17 @@ function Graded({ submission, submissionId }: { submission: WritingSubmission; s
   const metrics = useMemo(() => measureEssay(essay), [essay])
   const segments = useMemo(() => markEssay(essay, corrections), [essay, corrections])
   const tones = [...new Set(corrections.map((item) => categoryOf(item.category)))]
+  const groups = useMemo(() => submission.errorGroups ?? [], [submission.errorGroups])
+  const names = useMemo(() => errorNames(corrections, groups), [corrections, groups])
+  const [focusAt, setFocusAt] = useState<number | null>(null)
+
+  /** Scrolls the marked essay to the first place the excerpt is written and lights that stretch up. */
+  function showExcerpt(excerpt: string) {
+    const segment = segmentAt(segments, essay, excerpt)
+    if (!segment) return
+    setFocusAt(segment.start)
+    document.getElementById(`wr-seg-${segment.start}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
 
   return (
     <div className="wr-page">
@@ -130,6 +129,9 @@ function Graded({ submission, submissionId }: { submission: WritingSubmission; s
           </section>
         </div>
 
+        <WritingPriorities priorities={submission.priorities ?? []} onShow={showExcerpt} />
+        {submission.revision && <RevisionSummary revision={submission.revision} names={names} />}
+
         <section className="wr-metrics" aria-label="Số đo tự động từ bài viết">
           <p className="wr-muted">Số đo tự động từ bài viết</p>
           <div>
@@ -142,28 +144,29 @@ function Graded({ submission, submissionId }: { submission: WritingSubmission; s
         </section>
 
         <h2 className="wr-h2">Chi tiết theo từng tiêu chí</h2>
-        <div className="wr-criteria">{criteria.map((item, index) => <Criterion key={item.code} item={item} worst={index === worst} />)}</div>
+        <div className="wr-criteria">
+          {criteria.map((item, index) => (
+            <Criterion key={item.code} item={item} worst={index === worst} limits={(submission.bandLimits ?? []).filter((limit) => limit.criterion === item.code)} />
+          ))}
+        </div>
+
+        {submission.dataChecks && <DataChecksView checks={submission.dataChecks} onShow={showExcerpt} />}
+        {submission.taskChecks && <TaskChecksView checks={submission.taskChecks} onShow={showExcerpt} />}
 
         <h2 className="wr-h2" id="wr-marked">Bài viết của bạn đã được đánh dấu</h2>
         <section className="wr-essay" ref={essayRef} aria-label="Bài viết đã đánh dấu">
           {tones.length > 0 && <p className="wr-legend">{tones.map((tone) => <span key={tone.label} className={`wr-mark wr-mark-${tone.tone}`}>{tone.label}</span>)}</p>}
           {segments.length === 0 && <p className="wr-muted">Không còn bản bài viết để hiển thị.</p>}
-          {essay && segments.map((segment, index) => segment.correction
-            ? <mark key={index} className={`wr-mark wr-mark-${categoryOf(segment.correction.category).tone}`} title={segment.correction.suggestion}>{segment.text}</mark>
-            : <span key={index}>{segment.text}</span>)}
+          {essay && segments.map((segment) => {
+            const focus = focusAt === segment.start ? ' is-focus' : ''
+            return segment.correction
+              ? <mark key={segment.start} id={`wr-seg-${segment.start}`} className={`wr-mark wr-mark-${categoryOf(segment.correction.category).tone}${certaintyOf(segment.correction) === 'SUGGESTION' ? ' wr-mark-suggestion' : ''}${focus}`} title={segment.correction.suggestion}>{segment.text}</mark>
+              : <span key={segment.start} id={`wr-seg-${segment.start}`} className={focus.trim()}>{segment.text}</span>
+          })}
         </section>
 
-        {corrections.length > 0 && (
-          <section className="wr-fixes" aria-label="Các lỗi cần sửa">
-            <h3>Các lỗi cần sửa</h3>
-            <ul>{corrections.map((item) => (
-              <li key={`${item.excerpt}-${item.suggestion}`}>
-                <span className={`wr-mark wr-mark-${categoryOf(item.category).tone}`}>{categoryOf(item.category).label}</span>
-                <b>{item.excerpt}</b> → {item.suggestion}
-              </li>
-            ))}</ul>
-          </section>
-        )}
+        <CorrectionList corrections={corrections} groups={groups} categoryOf={categoryOf} />
+        <CorrectedEssay essay={essay} corrections={corrections} />
 
         {submission.sampleAnswer && (
           <details className="wr-sample">

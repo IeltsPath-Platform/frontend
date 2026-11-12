@@ -78,6 +78,60 @@
 .wr-sample summary { cursor: pointer; font-weight: 700; }
 .wr-sample p { margin: 0.7rem 0 0; line-height: 1.7; white-space: pre-wrap; }
 
+/* Priorities: the three problems to work on first. */
+.wr-priorities { display: grid; gap: 0.7rem; padding: 1.1rem 1.3rem; border: 2px solid var(--wr-accent); border-radius: 14px; background: #ffffff; }
+.wr-priorities h2 { margin: 0; font-size: 1.1rem; }
+.wr-priorities ol { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 0.8rem; margin: 0; padding: 0; list-style: none; }
+.wr-priorities li { display: grid; align-content: start; gap: 0.4rem; padding: 0.8rem 0.9rem; border: 1px solid var(--wr-line); border-radius: 10px; background: #f8fafc; font-size: 0.84rem; line-height: 1.5; }
+.wr-priorities h3 { margin: 0; font-size: 0.95rem; }
+.wr-priorities p { margin: 0; }
+.wr-quote { padding: 0.1rem 0.3rem; border: 0; border-radius: 4px; background: #e2e8f0; color: var(--wr-ink); font: inherit; font-style: italic; text-align: left; cursor: pointer; }
+.wr-quote:hover { background: #cbd5e1; }
+.wr-quote:focus-visible { outline: 3px solid #93c5fd; outline-offset: 2px; }
+.wr-practice { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 0.3rem; }
+.wr-error { color: #b91c1c; font-size: 0.78rem; }
+
+/* Compare with the version before. */
+.wr-revision { padding: 0.9rem 1.2rem; border: 1px solid var(--wr-line); border-radius: 14px; background: #ffffff; }
+.wr-revision h2 { margin: 0 0 0.4rem; font-size: 1rem; }
+.wr-revision ul { display: grid; gap: 0.25rem; margin: 0; padding: 0; list-style: none; font-size: 0.86rem; }
+
+/* Checks against the task: Task 1 figures, Task 2 question parts and outline. */
+.wr-checks { display: grid; gap: 0.6rem; padding: 1rem 1.3rem; border: 1px solid var(--wr-line); border-radius: 14px; background: #ffffff; font-size: 0.86rem; line-height: 1.5; }
+.wr-checks h3 { margin: 0; font-size: 0.95rem; }
+.wr-checks p { margin: 0; }
+.wr-table { width: 100%; border-collapse: collapse; }
+.wr-table th,
+.wr-table td { padding: 0.45rem 0.6rem; border-bottom: 1px solid var(--wr-line); text-align: left; vertical-align: top; }
+.wr-table th { color: var(--wr-muted); font-size: 0.74rem; font-weight: 700; }
+.wr-checklist,
+.wr-outline { display: grid; gap: 0.3rem; margin: 0; padding: 0; list-style: none; }
+.wr-checklist .is-ok,
+.wr-revision .is-ok { color: #166534; }
+.wr-checklist .is-miss,
+.wr-revision .is-miss { color: #b91c1c; }
+.wr-coverage { display: inline-block; margin: 0 0.3rem; padding: 0.05rem 0.5rem; border-radius: 999px; font-size: 0.72rem; font-weight: 700; }
+.wr-coverage-ok { background: #dcfce7; color: #166534; }
+.wr-coverage-part { background: #fef3c7; color: #92400e; }
+.wr-coverage-miss { background: #fee2e2; color: #991b1b; }
+
+/* Criterion extras and caps. */
+.wr-limits { grid-column: 1 / -1; display: grid; gap: 0.2rem; margin: 0; padding: 0.5rem 0.7rem; border-radius: 8px; background: #fef3c7; color: #92400e; list-style: none; font-size: 0.8rem; font-weight: 600; }
+.wr-evidence { color: #334155; }
+.wr-next { padding: 0.4rem 0.6rem; border-radius: 8px; background: #eff6ff; }
+
+/* Corrections: certainty, details, focus. */
+.wr-fix { display: grid; gap: 0.25rem; padding-bottom: 0.6rem; border-bottom: 1px solid var(--wr-line); }
+.wr-fix p { margin: 0; }
+.wr-fix-name { margin-left: 0.4rem; }
+.wr-tag { margin-left: 0.4rem; padding: 0.05rem 0.45rem; border: 1px solid var(--wr-muted); border-radius: 999px; color: #475569; font-size: 0.68rem; font-weight: 700; }
+.wr-mark-suggestion { border-bottom: 2px dotted var(--wr-muted); }
+.wr-essay .is-focus { outline: 3px solid var(--wr-accent); outline-offset: 2px; border-radius: 4px; }
+.wr-corrected { padding: 1rem 1.3rem; border: 1px solid var(--wr-line); border-radius: 14px; background: #ffffff; }
+.wr-corrected summary { cursor: pointer; font-weight: 700; }
+.wr-corrected p { margin: 0.7rem 0 0; line-height: 1.8; white-space: pre-wrap; }
+.wr-corrected ins { background: #dcfce7; text-decoration: none; border-bottom: 2px solid #16a34a; }
+
 @media (max-width: 900px) {
   .wr-hero,
   .wr-criteria { grid-template-columns: minmax(0, 1fr); }
