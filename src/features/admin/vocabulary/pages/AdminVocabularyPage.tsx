@@ -34,7 +34,7 @@ import {
   adminTopicSchema,
   adminSetSchema,
 } from '../vocabularySchemas'
-import '../../admin.css'
+import '../../admin.css'
 import { Loading } from '@/components/loading/Loading'
 
 type AdminVocabTab = 'ITEMS' | 'TOPICS' | 'SETS'

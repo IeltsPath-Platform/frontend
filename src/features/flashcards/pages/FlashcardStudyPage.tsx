@@ -9,7 +9,7 @@ import { FlashcardFace } from '../components/FlashcardFace'
 import { OwlCoach } from '../components/OwlCoach'
 import { StudyHero } from '../components/StudyHero'
 import { getSpacedReviewReaction, type OwlReaction } from '../lib/owl-reactions'
-import '../flashcards.css'
+import '../flashcards.css'
 import { Loading } from '@/components/loading/Loading'
 
 const BATCH = 20

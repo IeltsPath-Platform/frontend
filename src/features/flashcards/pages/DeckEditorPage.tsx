@@ -11,7 +11,7 @@ import {
 import { CardRowEditor } from '../components/CardRowEditor'
 import { ImagePicker } from '../components/ImagePicker'
 import { emptyRow, planSave, rowFromCard, toDraft, validateRows, type EditorImage, type EditorRow } from '../lib/deckEditor'
-import '../flashcards.css'
+import '../flashcards.css'
 import { Loading } from '@/components/loading/Loading'
 
 const TOPIC_SUGGESTIONS = ['Environment', 'Education', 'Technology', 'Health', 'Work & Career', 'Travel', 'Crime', 'Media']

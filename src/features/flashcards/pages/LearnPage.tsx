@@ -14,7 +14,7 @@ import {
   getWrongStreakReminder, type OwlReaction,
 } from '../lib/owl-reactions'
 import { buildChoices, isTypedAnswerCorrect, shuffle, type StudyCard } from '../lib/study'
-import '../flashcards.css'
+import '../flashcards.css'
 import { Loading } from '@/components/loading/Loading'
 
 /** 0 = chưa học, 1 = đúng trắc nghiệm, 2 = đã thuộc (đúng cả phần tự gõ). */

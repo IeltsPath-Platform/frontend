@@ -29,7 +29,7 @@ import {
 import { WeeklyGoalCard } from '../components/WeeklyGoalCard'
 import { PronunciationButton } from '@/components/PronunciationButton'
 import '../vocabulary.css'
-import '../vocabulary-notebook.css'
+import '../vocabulary-notebook.css'
 import { Loading } from '@/components/loading/Loading'
 
 type SetTab = 'OVERVIEW' | 'TOPICS' | 'WORDS' | 'PROGRESS'

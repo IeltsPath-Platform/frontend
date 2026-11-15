@@ -21,7 +21,7 @@ import { SoloGameEntry } from '../components/SoloGameEntry'
 import { RoomSettingsSummary } from '../components/RoomSettingsSummary'
 import { useGameConnection } from '../hooks/useGameConnection'
 import { gameName, playPath, toGameType } from '../lib/gameRoutes'
-import '../games-room.css'
+import '../games-room.css'
 import { Loading } from '@/components/loading/Loading'
 
 export function GameRoomPage() {

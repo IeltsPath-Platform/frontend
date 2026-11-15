@@ -9,7 +9,7 @@ import { StudyHero } from '../components/StudyHero'
 import { useDeckStudyCards } from '../hooks/useDeckStudyCards'
 import { getTestScoreReaction } from '../lib/owl-reactions'
 import { generateTest, gradeQuestion, type AnswerSide, type StudyCard, type TestQuestion, type TestQuestionType } from '../lib/study'
-import '../flashcards.css'
+import '../flashcards.css'
 import { Loading } from '@/components/loading/Loading'
 
 const TYPE_LABELS: Record<TestQuestionType, string> = { choice: 'Trắc nghiệm', truefalse: 'Đúng / Sai', written: 'Tự luận' }

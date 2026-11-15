@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { isActivePremium } from '../accessApi'
 import type { Subscription } from '../accessApi'
 import { POINT_PRODUCTS, PREMIUM_PRODUCTS, type ActivationProduct } from '../pricingData'
-import '../pricing.css'
+import '../pricing.css'
 import { Loading } from '@/components/loading/Loading'
 
 interface PricingCardsProps {

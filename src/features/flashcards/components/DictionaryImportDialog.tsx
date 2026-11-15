@@ -7,7 +7,7 @@ import { senseMeaning, useDictionarySearch, type DictionaryLang } from '@/featur
 import { flashcardApi, flashcardErrorMessage, type FlashcardDeck } from '../api/flashcardApi'
 import { filterSenses, importSensesToDeck, loadTopicSenses, TOPIC_IMPORT_CAP, type PickedSense } from '../lib/dictionary-import'
 import '../flashcards.css'
-import '../dictionary-import.css'
+import '../dictionary-import.css'
 import { Loading } from '@/components/loading/Loading'
 
 type Tab = 'topic' | 'words'

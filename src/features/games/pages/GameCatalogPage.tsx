@@ -29,7 +29,7 @@ import { gameName, setupPath, type GameType } from '../lib/gameRoutes'
 import heroOwl from '../assets/catalog-owl.webp'
 import rocketArt from '../assets/catalog-rocket.webp'
 import wordArt from '../assets/catalog-word.webp'
-import '../games-room.css'
+import '../games-room.css'
 import { Loading } from '@/components/loading/Loading'
 
 export function GameCatalogPage() {

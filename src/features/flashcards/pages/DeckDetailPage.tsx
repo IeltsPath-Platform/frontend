@@ -9,7 +9,7 @@ import { CardFormDialog } from '../components/CardFormDialog'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { DeckBrowser } from '../components/DeckBrowser'
 import { DictionaryImportDialog } from '../components/DictionaryImportDialog'
-import '../flashcards.css'
+import '../flashcards.css'
 import { Loading } from '@/components/loading/Loading'
 import { StatusArt } from '@/components/StatusArt'
 

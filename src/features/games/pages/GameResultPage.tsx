@@ -9,7 +9,7 @@ import { GameRanking } from '../components/GameRanking'
 import { GameNoticeDialog } from '../components/GameNoticeDialog'
 import { recalledMatchHost, rememberMatchHost } from '../lib/matchRoomContext'
 import { HttpError } from '@/lib/httpClient'
-import { playPath, setupPath, toGameType } from '../lib/gameRoutes'
+import { playPath, setupPath, toGameType } from '../lib/gameRoutes'
 import { Loading } from '@/components/loading/Loading'
 
 export function GameResultPage() {

@@ -23,7 +23,7 @@ import { useYouTubeSegmentPlayer } from '../hooks/useYouTubeSegmentPlayer'
 import { useWideScreen } from '../hooks/useWideScreen'
 import { readStoredColumn, readStoredLayout, storeColumn, storeLayout, type ColumnWidths, type ResizableLayout } from '../lib/playerLayout'
 import '../video-dictation.css'
-import '../video-dictation-player.css'
+import '../video-dictation-player.css'
 import { Loading } from '@/components/loading/Loading'
 
 interface Loaded {

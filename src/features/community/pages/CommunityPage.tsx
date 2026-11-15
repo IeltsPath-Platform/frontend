@@ -24,7 +24,7 @@ import {
   isComposerBackgroundKey,
 } from '../components/composerBackgrounds'
 import { CATEGORY_LABELS, type ReactionType } from '../utils/communityFormat'
-import './community.css'
+import './community.css'
 import { Spinner } from '@/components/loading/Loading'
 
 const categories = [

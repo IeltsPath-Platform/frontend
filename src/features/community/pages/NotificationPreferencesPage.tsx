@@ -5,7 +5,7 @@ import { SiteNavbar } from '@/components/SiteNavbar'
 import { communityApi, type NotificationPreference } from '../api/communityApi'
 import { MailPreferenceToggle } from '../components/MailPreferenceToggle'
 import './community.css'
-import './NotificationPreferencesPage.css'
+import './NotificationPreferencesPage.css'
 import { Loading } from '@/components/loading/Loading'
 
 const labels: Record<string, { title: string; description: string; icon: LucideIcon; tone: string }> = {

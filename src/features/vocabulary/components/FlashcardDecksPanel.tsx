@@ -11,7 +11,7 @@ import {
   type FlashcardDeck,
 } from '@/features/flashcards/api/flashcardApi'
 import { ConfirmDialog } from '@/features/flashcards/components/ConfirmDialog'
-import { DictionaryImportDialog } from '@/features/flashcards/components/DictionaryImportDialog'
+import { DictionaryImportDialog } from '@/features/flashcards/components/DictionaryImportDialog'
 import { Loading } from '@/components/loading/Loading'
 
 const PAGE_SIZE = 50

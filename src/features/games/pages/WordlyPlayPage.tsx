@@ -15,7 +15,7 @@ import { useWordClock } from '../hooks/useWordClock'
 import { WordlyBoard } from '../components/WordlyBoard'
 import { WordlyKeyboard } from '../components/WordlyKeyboard'
 import { GameRanking } from '../components/GameRanking'
-import { playerStatusLabel } from '../lib/playerStatusLabel'
+import { playerStatusLabel } from '../lib/playerStatusLabel'
 import { Loading } from '@/components/loading/Loading'
 
 export function WordlyPlayPage() {
