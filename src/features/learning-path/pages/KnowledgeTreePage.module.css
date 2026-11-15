@@ -100,6 +100,10 @@
 .traps li { display: flex; flex-wrap: wrap; align-items: center; gap: .2rem .6rem; }
 .trapName { color: var(--lp-ink); }
 .failure { margin: 0; padding: 0 .8rem .8rem 3.25rem; }
+/* The blocking review of a row, lined up with the row's text like the failure note under it. */
+.review { padding: 0 .8rem .8rem 3.25rem; }
+/* On a skill's filter: a review holds the learner back in that skill. The words are kept for a screen reader. */
+.reviewDot { display: inline-block; inline-size: .45rem; block-size: .45rem; margin-inline-start: .35rem; border-radius: 50%; background: var(--lp-danger); vertical-align: middle; }
 .treeHint { margin: .75rem 0 0; color: var(--lp-muted); font-size: .75rem; line-height: 1.65; }
 
 @media (min-width: 40rem) {
@@ -107,9 +111,8 @@
 }
 
 /* Wide screens: the summary card, then the chart and the panel of the selected point. */
-.summary { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .6rem 1.5rem; padding: .8rem 1rem; border: 1px solid color-mix(in srgb, var(--lp-primary) 18%, var(--lp-line)); border-radius: 1rem; background: linear-gradient(120deg, var(--lp-soft), var(--lp-surface) 80%); }
-.summaryMeta { margin: 0; color: var(--lp-ink); font-family: var(--lp-display); font-size: .95rem; font-weight: 700; }
-.summary .tiers { flex: 1 1 22rem; max-inline-size: 34rem; }
+/* How the points stand, as one quiet row under the filter: no box, since the heading and the filter above already name what is shown. */
+.summary .tiers { max-inline-size: 34rem; }
 .charts { display: grid; gap: 1.25rem; }
 
 @media (max-width: 30rem) {

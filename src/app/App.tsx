@@ -17,6 +17,7 @@ import { ListeningPracticePage } from '@/features/practice/listening/ListeningPr
 import { WritingWorkspacePage } from '@/features/practice/writing/WritingWorkspacePage'
 import { WritingResultPage } from '@/features/practice/writing/WritingResultPage'
 import { ExaminerReviewsPage } from '@/features/practice/writing/ExaminerReviewsPage'
+import { SubmissionHistoryPage } from '@/features/practice/history/SubmissionHistoryPage'
 import { GradingJobPage } from '@/features/practice/writing/GradingJobPage'
 import { SpeakingReviewPage } from '@/features/practice/speaking/SpeakingReviewPage'
 import { SpeakingSubmissionResultPage } from '@/features/practice/speaking/SpeakingSubmissionResultPage'
@@ -188,7 +189,7 @@ function AppContent() {
       <Route path="/vocabulary/notebook" element={<VocabularyNotebookPage />} />
       <Route path="/vocabulary/notebook/review" element={<RequireAuth><NotebookReviewPage /></RequireAuth>} />
       <Route path="/vocabulary/review" element={<Navigate replace to="/vocabulary/notebook/review" />} />
-      <Route path="/submission-history" element={<RequireAuth><ExaminerReviewsPage /></RequireAuth>} />
+      <Route path="/submission-history" element={<RequireAuth><SubmissionHistoryPage /></RequireAuth>} />
       <Route path="/flashcards" element={<Navigate replace to="/vocabulary/notebook?tab=decks" />} />
       <Route path="/flashcards/decks/new" element={<RequireAuth><DeckEditorPage /></RequireAuth>} />
       <Route path="/flashcards/decks/:deckId" element={<RequireAuth><DeckDetailPage /></RequireAuth>} />

@@ -1,11 +1,9 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useId } from 'react'
 import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { EssayStudyPoint } from '~types/learningPath'
-import { toApiError, userMessage } from '../api'
-import { CRITERION_NAME, focusNoteText, groupStudyPoints } from './essayCriteria'
-
-type Practise = (point: EssayStudyPoint) => Promise<void>
+import { CRITERION_NAME, focusNoteText, groupStudyPoints, practiceTargetOf } from './essayCriteria'
+import { usePointPractise, type Practise } from './usePointPractise'
 
 export function EssayStudyPoints({ points, onPractise }: {
   points: EssayStudyPoint[]
@@ -27,38 +25,13 @@ export function EssayStudyPoints({ points, onPractise }: {
 }
 
 function StudyPointItem({ point, notes, onPractise }: { point: EssayStudyPoint; notes: EssayStudyPoint[]; onPractise?: Practise }) {
-  const [opening, setOpening] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const inFlight = useRef(false)
-  const mounted = useRef(true)
-  useEffect(() => {
-    mounted.current = true
-    return () => { mounted.current = false }
-  }, [])
+  const { opening, error, practise } = usePointPractise(point, onPractise)
   const criterion = CRITERION_NAME[point.criterionCode ?? ''] ?? point.criterionCode
   const title = point.name ?? point.title ?? criterion ?? 'Kiến thức cần học'
-  const practiceTarget = point.kind === 'KNOWLEDGE_POINT'
-    ? point.practiceKnowledgePointId ?? point.knowledgePointId
-    : point.kind === 'CRITERION' ? point.knowledgePointId : null
-
-  async function practise() {
-    if (!onPractise || inFlight.current) return
-    inFlight.current = true
-    setOpening(true)
-    setError(null)
-    try {
-      await onPractise(point)
-    } catch (reason) {
-      inFlight.current = false
-      if (mounted.current) {
-        setOpening(false)
-        setError(userMessage(toApiError(reason)))
-      }
-    }
-  }
+  const practiceTarget = practiceTargetOf(point)
 
   return (
-    <li>
+    <li data-kind={point.kind}>
       <strong>{title}</strong>
       {point.kind === 'CRITERION' ? (
         <small className="lp-essay-study__criterion">
@@ -66,7 +39,7 @@ function StudyPointItem({ point, notes, onPractise }: { point: EssayStudyPoint; 
         </small>
       ) : null}
       {point.kind === 'KNOWLEDGE_POINT' ? (
-        <small className="lp-essay-study__criterion">{criterion} · Cần luyện</small>
+        <small className="lp-essay-study__criterion">{criterion ? `${criterion} · ` : ''}Cần luyện</small>
       ) : null}
       {point.kind === 'KNOWLEDGE_POINT' && point.excerpt ? (
         <blockquote className="lp-essay-study__excerpt">{point.excerpt}</blockquote>

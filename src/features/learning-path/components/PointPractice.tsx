@@ -27,7 +27,7 @@ export function PracticeButton({ practice, point, describedBy, className }: {
     <Button
       aria-describedby={describedBy}
       className={`lp-btn ${className}${loud ? ' lp-btn--accent' : ''}`}
-      disabled={!point.practiceAvailable || practice.starting || practice.depleted}
+      disabled={!point.practiceAvailable || practice.starting}
       onClick={() => void practice.practise()}
       type="button"
       variant={loud ? 'default' : 'outline'}

@@ -1,4 +1,4 @@
-import type { MasteryTier, TreePoint } from '~types/learningPath'
+import type { MasteryTier, ReferencePoint, TreePoint } from '~types/learningPath'
 
 export interface TierMeta {
   label: string
@@ -36,11 +36,30 @@ export function orderedTreeSkills(points: TreePoint[]) {
   ]
 }
 
-/** Points of one skill (or all), easier course bands first: the code starts with the band, such as `R55_`. */
+/**
+ * The filter that shows every skill. Not `ALL`: that is a skill of its own, the points every skill builds on, and the two filters
+ * would otherwise be one.
+ */
+export const EVERY_SKILL = '*'
+
+/** Points of one skill (or of {@link EVERY_SKILL}), easier course bands first: the code starts with the band, such as `R55_`. */
 export function visiblePoints(points: TreePoint[], skill: string) {
-  return (skill === 'ALL' ? points : points.filter((point) => pointSkill(point) === skill))
+  return (skill === EVERY_SKILL ? points : points.filter((point) => pointSkill(point) === skill))
     .slice()
     .sort((a, b) => a.code.localeCompare(b.code))
+}
+
+/**
+ * A point of a lower course, in the shape the chart draws. It has no standing of the learner (nothing touched, nothing to
+ * practise), and `reference` says whose it is, so a box can name its course and the panel can tell it from a point of this one.
+ */
+export function referenceAsPoint(point: ReferencePoint): TreePoint {
+  return {
+    knowledgePointId: point.knowledgePointId, code: point.code, name: point.name, skill: point.skill, kind: null,
+    cefrLevel: point.cefrLevel, canDo: null, mastery: null, tier: null, evidenceCount: 0, nextReviewAt: null,
+    prerequisiteIds: point.prerequisiteIds, practiceAvailable: false, topic: point.topic, blockingReview: point.blockingReview,
+    reference: { courseName: point.course?.name ?? 'Course thấp hơn', bandLevel: point.course?.bandLevel ?? null },
+  }
 }
 
 /** Names of the points a point builds on, among those in the same tree. */

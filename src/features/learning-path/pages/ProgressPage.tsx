@@ -7,6 +7,7 @@ import { ProgressSection } from '../components/progress/ProgressSection'
 import { QuestList } from '../components/progress/QuestList'
 import { StreakPanel } from '../components/progress/StreakPanel'
 import { useApiResource } from '../lib/useApiResource'
+import { useHeartsResource } from '../lib/useHeartsResource'
 import { ArrowUpRight, Trophy } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
@@ -15,7 +16,7 @@ import { Button } from '@/components/ui/button'
 export function ProgressPage({ presentation = 'default' }: { presentation?: 'default' | 'achievements' }) {
   const featured = presentation === 'achievements'
   const progress = useApiResource('progress', () => learningApi.getProgress())
-  const hearts = useApiResource('hearts', () => learningApi.getHearts())
+  const hearts = useHeartsResource()
   const streak = useApiResource('streak', () => learningApi.getStreak())
   const quests = useApiResource('quests', () => learningApi.getQuests())
   const badges = useApiResource('badges', () => learningApi.getBadges())

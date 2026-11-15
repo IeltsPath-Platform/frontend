@@ -4,22 +4,29 @@ import { BookOpen, ChevronDown, CornerLeftUp, Headphones, Languages, Layers, Loc
 import { Button } from '@/components/ui/button'
 import type { LearnerTree, TreePoint } from '~types/learningPath'
 import { learningApi, userMessage, type ApiError } from '../api'
-import { HeartsPanel } from '../components/HeartsPanel'
+import { BlockingReviewCallout } from '../components/BlockingReviewCallout'
+import { FreeBadge } from '../components/FreeBadge'
 import { KnowledgeTreeChart } from '../components/KnowledgeTreeChart'
 import { LearnTrail } from '../components/LearnTrail'
 import { ApiErrorState, LoadingState } from '../components/PageState'
 import { PointDetail } from '../components/PointDetail'
 import { PointLessons } from '../components/PointLessons'
 import { PracticeButton, PracticeFeedback } from '../components/PointPractice'
+import { ReviewBadge } from '../components/ReviewBadge'
+import { ReviewDetail } from '../components/ReviewDetail'
+import {
+  blockingReviewsOf, BlockingReviewsContext, holdsBack, kindOf, reviewNodeId, useBlockingReview, type BlockingReviews,
+} from '../lib/blockingReviews'
 import { skillLabel } from '../lib/courseMeta'
 import { knowledgeTreePath } from '../lib/routes'
 import { TIER_ICON } from '../lib/tierIcon'
 import { defaultSelection, dependentsOf, learningOrder } from '../lib/treeChart'
 import {
-  chapterLabel, countByTierGroup, masteryPercent, orderedTreeSkills, pointSkill, prerequisiteNames, prerequisiteSteps, TIER_GROUPS,
-  tierGroup, tierMeta, visiblePoints,
+  chapterLabel, countByTierGroup, EVERY_SKILL, masteryPercent, orderedTreeSkills, pointSkill, prerequisiteNames, prerequisiteSteps, referenceAsPoint,
+  TIER_GROUPS, tierGroup, tierMeta, visiblePoints,
 } from '../lib/treeMeta'
 import { useApiResource } from '../lib/useApiResource'
+import { useHeartsResource } from '../lib/useHeartsResource'
 import { practiceNote, usePointPractice } from '../lib/usePointPractice'
 import { useMediaQuery } from '../lib/useMediaQuery'
 import styles from './KnowledgeTreePage.module.css'
@@ -36,7 +43,11 @@ export function KnowledgeTreePage() {
   const { courseId = '' } = useParams()
   const tree = useApiResource(`tree:${courseId}`, () => learningApi.getLearnerTree(courseId))
   const courses = useApiResource('courses', () => learningApi.listCourses())
-  const hearts = useApiResource('hearts', () => learningApi.getHearts())
+  const hearts = useHeartsResource()
+  // The blocking reviews, finished ones too, so the map keeps them. The tree carries them; the basket (pending ones only) fills in
+  // for a server that does not send them yet, and when it fails to load the tree is simply drawn with what it carries.
+  const basket = useApiResource('review-basket', () => learningApi.getReviewBasket())
+  const reviews = useMemo(() => blockingReviewsOf(tree.data, basket.data), [tree.data, basket.data])
   const course = courses.data?.find((row) => row.id === courseId) ?? null
   const courseLabel = course?.title ?? 'Lộ trình khóa học'
 
@@ -50,25 +61,25 @@ export function KnowledgeTreePage() {
         ]}
       />
       <header className="lp-lesson-head">
-        <p className="lp-eyebrow">{course?.title ?? 'Khóa học'}</p>
         <h1>Cây kiến thức</h1>
-        <p>Khám phá từng nhánh kỹ năng và điểm kiến thức. Luyện tự do không khóa bài học, nhưng trả lời sai vẫn mất tim.</p>
+        <p>Thứ tự học và mức nắm của từng điểm kiến thức.</p>
       </header>
-
-      {hearts.data && hearts.data.hearts === 0 ? <HeartsPanel onChanged={hearts.reload} status={hearts.data} /> : null}
 
       {tree.status === 'loading' ? <LoadingState label="Đang tải cây kiến thức…" /> : null}
       {tree.error ? <TreeLoadError error={tree.error} onRetry={tree.reload} /> : null}
       {tree.data ? (
-        <TreeView
-          backTo={knowledgeTreePath(courseId)}
-          courseName={courseLabel}
-          courseId={courseId}
-          depleted={hearts.data?.hearts === 0}
-          onHeartsChanged={hearts.reload}
-          onCourseChanged={tree.reload}
-          tree={tree.data}
-        />
+        <BlockingReviewsContext.Provider value={reviews}>
+          <TreeView
+            backTo={knowledgeTreePath(courseId)}
+            courseName={courseLabel}
+            courseId={courseId}
+            depleted={hearts.data?.hearts === 0}
+            onHeartsChanged={hearts.reload}
+            onCourseChanged={tree.reload}
+            reviews={reviews}
+            tree={tree.data}
+          />
+        </BlockingReviewsContext.Provider>
       ) : null}
     </div>
   )
@@ -98,13 +109,18 @@ interface ViewProps {
   onCourseChanged: () => void
 }
 
-function TreeView({ tree, ...view }: ViewProps & { tree: LearnerTree }) {
+function TreeView({ tree, reviews, ...view }: ViewProps & { tree: LearnerTree; reviews: BlockingReviews }) {
   const wide = useMediaQuery(CHART_MIN_WIDTH)
   const [choice, setChoice] = useState<string | null>(null)
   const points = tree.knowledgePoints
+  // Points of lower courses the course builds on: drawn before the course's own points, never counted among them.
+  const reference = useMemo(() => (tree.referencePoints ?? []).map(referenceAsPoint), [tree.referencePoints])
   const skills = orderedTreeSkills(points)
-  // One skill's chart is as wide as a screen can show; the whole course in one chart would not be. The list shows all.
-  const skill = choice ?? (wide && skills.length > 1 ? skills[0]! : 'ALL')
+  // The skills with a point the learner is held back on, marked on their filter so a review is not missed under another skill.
+  const blocked = new Set(points.filter((point) => holdsBack(reviews.get(point.knowledgePointId))).map(pointSkill))
+  // One skill's chart is as wide as a screen can show; the whole course in one chart would not be. The list shows all. Until the
+  // learner picks one, the chart opens on the skill where a review holds them back, or else on the first.
+  const skill = choice ?? (wide && skills.length > 1 ? skills.find((key) => blocked.has(key)) ?? skills[0]! : EVERY_SKILL)
   const visible = visiblePoints(points, skill)
 
   if (points.length === 0) return <p className="lp-empty">Khóa này chưa có điểm kiến thức nào.</p>
@@ -115,10 +131,16 @@ function TreeView({ tree, ...view }: ViewProps & { tree: LearnerTree }) {
         <h2 id="lp-tree-title">{points.length} điểm kiến thức</h2>
         {skills.length > 1 ? (
           <div className="lp-segment" role="group" aria-label="Lọc theo kỹ năng">
-            <button aria-pressed={skill === 'ALL'} onClick={() => setChoice('ALL')} type="button">Tất cả</button>
+            <button aria-pressed={skill === EVERY_SKILL} onClick={() => setChoice(EVERY_SKILL)} type="button">Tất cả</button>
             {skills.map((key) => (
               <button aria-pressed={skill === key} key={key} onClick={() => setChoice(key)} type="button">
                 {skillLabel(key) ?? key}
+                {blocked.has(key) ? (
+                  <>
+                    <span aria-hidden="true" className={styles.reviewDot} title="Có bài ôn đang chặn tiến độ" />
+                    <span className="lp-sr-only">, có bài ôn đang chặn</span>
+                  </>
+                ) : null}
               </button>
             ))}
           </div>
@@ -126,7 +148,7 @@ function TreeView({ tree, ...view }: ViewProps & { tree: LearnerTree }) {
       </div>
 
       {wide
-        ? <ChartView {...view} allPoints={points} points={visible} skill={skill} />
+        ? <ChartView {...view} allPoints={points} points={visible} reference={reference} reviews={reviews} />
         : <ListView {...view} allPoints={points} points={visible} />}
     </section>
   )
@@ -154,15 +176,61 @@ function TierSummary({ points }: { points: TreePoint[] }) {
   )
 }
 
+/**
+ * What the points of one skill build on that belongs to another skill of the course (grammar and vocabulary points serve every
+ * skill), and what those build on in turn, so the chart can show the order they are learnt in. The skill's chart holds only its
+ * own points, so without these the line from what is needed first would not be drawn and a point taught late would seem to
+ * build on nothing. What a lower course teaches is not in this tree and is not drawn.
+ */
+function contextOf(own: readonly TreePoint[], byId: ReadonlyMap<string, TreePoint>): TreePoint[] {
+  const ownIds = new Set(own.map((point) => point.knowledgePointId))
+  const outside = new Map<string, TreePoint>()
+  const pending = [...own]
+  for (let point = pending.pop(); point; point = pending.pop()) {
+    for (const id of point.prerequisiteIds) {
+      const found = byId.get(id)
+      if (!found || ownIds.has(id) || outside.has(id)) continue
+      outside.set(id, found)
+      pending.push(found)
+    }
+  }
+  return [...outside.values()]
+}
+
 /** Wide screens: a chart for each skill shown, and under it the selected point with what it builds on and the way to practise it. */
-function ChartView({ points, allPoints, skill, ...view }: ViewProps & { points: TreePoint[]; allPoints: TreePoint[]; skill: string }) {
+function ChartView({ points, allPoints, reference, reviews, ...view }: ViewProps & {
+  points: TreePoint[]
+  allPoints: TreePoint[]
+  /** Points of lower courses the course builds on, for the chart's columns before the course's own points. */
+  reference: TreePoint[]
+  reviews: BlockingReviews
+}) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const byId = useMemo(() => new Map(allPoints.map((point) => [point.knowledgePointId, point])), [allPoints])
+  // The course's own points win over a reference with the same id, which Content should never send.
+  const byId = useMemo(
+    () => new Map([...reference, ...allPoints].map((point) => [point.knowledgePointId, point])),
+    [allPoints, reference],
+  )
   const dependents = useMemo(() => dependentsOf(allPoints), [allPoints])
   const order = useMemo(() => learningOrder(allPoints), [allPoints])
   const skills = orderedTreeSkills(points)
-  // A point picked in another skill is not shown now, so the choice falls back to where the learner should start.
-  const selected = points.find((point) => point.knowledgePointId === selectedId) ?? defaultSelection(points)
+  // One chart for each skill shown. A review is drawn in the chart that draws its point: one of the skill's own, or one of the
+  // points it builds on, and it is there whether it is pending or finished.
+  const charts = skills.map((key) => {
+    const own = points.filter((point) => pointSkill(point) === key)
+    const outside = contextOf(own, byId)
+    const drawn = new Set([...own, ...outside].map((point) => point.knowledgePointId))
+    return { key, own, outside, reviews: [...reviews.values()].filter((review) => drawn.has(review.knowledgePointId)) }
+  })
+  // A review is picked like a point. What was picked in another skill is not shown now, so the choice falls back to the point a
+  // review holds the learner back on, or else to where the learner should start.
+  const selectedReview = charts.flatMap((chart) => chart.reviews).find((review) => reviewNodeId(review) === selectedId)
+  const selected = selectedReview ? null
+    : points.find((point) => point.knowledgePointId === selectedId)
+      ?? points.find((point) => holdsBack(reviews.get(point.knowledgePointId)))
+      ?? defaultSelection(points)
+  const reviewedPoint = selectedReview ? byId.get(selectedReview.knowledgePointId) : undefined
+  const chartSelectedId = selectedReview ? reviewNodeId(selectedReview) : selected?.knowledgePointId ?? null
 
   function select(id: string) {
     setSelectedId(id)
@@ -173,21 +241,30 @@ function ChartView({ points, allPoints, skill, ...view }: ViewProps & { points: 
   return (
     <>
       <div className={styles.summary}>
-        <p className={styles.summaryMeta}>{points.length} điểm kiến thức{skill === 'ALL' ? ' · tất cả kỹ năng' : ` · ${skillLabel(skill) ?? skill}`}</p>
         <TierSummary points={points} />
       </div>
       <div className={styles.charts}>
-        {skills.map((key) => (
+        {charts.map((chart) => (
           <KnowledgeTreeChart
-            key={key}
-            note={skillLabel(key) ?? key}
+            context={chart.outside}
+            key={chart.key}
+            note={skillLabel(chart.key) ?? chart.key}
             onSelect={select}
-            points={points.filter((point) => pointSkill(point) === key)}
-            selectedId={selected?.knowledgePointId ?? null}
-            title={view.courseName}
+            points={chart.own}
+            reviews={chart.reviews}
+            selectedId={chartSelectedId}
           />
         ))}
       </div>
+      {selectedReview && reviewedPoint ? (
+        <ReviewDetail
+          dependents={dependents.get(reviewedPoint.knowledgePointId) ?? []}
+          key={reviewNodeId(selectedReview)}
+          onSelect={select}
+          point={reviewedPoint}
+          review={selectedReview}
+        />
+      ) : null}
       {selected ? (
         <PointDetail
           backTo={view.backTo}
@@ -295,6 +372,7 @@ function PointRow({ point, prerequisites, backTo, courseId, depleted, onHeartsCh
 }) {
   const [open, setOpen] = useState(false)
   const practice = usePointPractice(point, { backTo, depleted, onHeartsChanged })
+  const review = useBlockingReview(point.knowledgePointId)
   const group = tierGroup(point)
   const TierIcon = TIER_ICON[group]
   const tier = tierMeta(point.tier)
@@ -328,6 +406,8 @@ function PointRow({ point, prerequisites, backTo, courseId, depleted, onHeartsCh
           <p className={styles.meta}>
             <span className="lp-sr-only">{tier.label}.</span>
             {point.topic && point.topic.position > 0 ? <span className={styles.origin}>{chapterLabel(point.topic.position)}</span> : null}
+            {review ? <ReviewBadge kind={kindOf(review)} /> : null}
+            {point.freePreview ? <FreeBadge /> : null}
             <span className={styles.code}>{point.code}</span>
             {point.cefrLevel ? <span className={styles.cefr}>{point.cefrLevel}</span> : null}
             {status ? <span>{status}</span> : null}
@@ -346,6 +426,9 @@ function PointRow({ point, prerequisites, backTo, courseId, depleted, onHeartsCh
           <PracticeButton className={styles.act} describedBy={noteId} point={point} practice={practice} />
         </div>
       </div>
+
+      {/* Outside the folded part: on a phone the way into the review must not hide behind a tap. */}
+      {review ? <div className={styles.review}><BlockingReviewCallout point={point} /></div> : null}
 
       <div className={styles.detail} hidden={!open} id={panelId}>
         {point.canDo ? <p className={styles.canDo}>{point.canDo}</p> : null}

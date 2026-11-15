@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { learningApi } from '@/features/learning-path/api'
 import { useAuthSession } from '@/features/auth/authSession'
-import { subscribeGamification } from './owl-events'
+import { subscribeGamification, subscribeHeartsChanged } from './owl-events'
 import { buildAnnouncements, buildOwlMessages, type OwlMessage, type OwlSnapshot } from './owl-messages'
 
 /** Data is refetched on navigation at most this often, so the owl follows the learner's progress. */
@@ -83,6 +83,17 @@ export function useOwlData(): OwlData {
         apply(after)
         const news = buildAnnouncements(before, after, summary)
         if (news.length > 0) setAnnouncements((queue) => [...queue, ...news])
+      })
+    })
+  }, [apply, isLoggedIn])
+
+  // Hearts bought in the owl's popup: the panel should show them without waiting for the next submission.
+  useEffect(() => {
+    if (!isLoggedIn) return undefined
+    return subscribeHeartsChanged(() => {
+      fetchSnapshot(known.current).then((after) => {
+        lastFetch.current = Date.now()
+        apply(after)
       })
     })
   }, [apply, isLoggedIn])

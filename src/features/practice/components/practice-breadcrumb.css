@@ -30,6 +30,9 @@
 .pb-link:hover { background: #e8efff; }
 .pb-link:focus-visible { outline: 2px solid #1d4ed8; outline-offset: 2px; }
 
+/* The house icon: a round hit area of the same size as the links beside it. */
+.pb-home { display: inline-grid; place-items: center; width: 2rem; height: 2rem; padding: 0; }
+
 .pb-current {
   padding: 0.2rem 0.55rem;
   color: #0f172a;

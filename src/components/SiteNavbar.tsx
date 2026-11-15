@@ -63,8 +63,15 @@ const coursesNav: NavItem = {
     { to: '/learn', label: 'Khóa học' },
   ],
 }
-/** Signed-in learners only: what is waiting for them to review. */
-const reviewBasket: NavItem = { to: '/learn/review-basket', label: 'Giỏ ôn tập' }
+const REVIEW_BASKET_PATH = '/learn/review-basket'
+/**
+ * Signed-in learners only: the review basket is part of the course area (its breadcrumb says Khóa học › Giỏ ôn tập), so it is a
+ * section of Khóa học rather than a primary link of its own. The count of what waits there shows on Khóa học and on the section.
+ */
+const memberCoursesNav: NavItem = {
+  ...coursesNav,
+  children: [...(coursesNav.children ?? []), { to: REVIEW_BASKET_PATH, label: 'Giỏ ôn tập' }],
+}
 const practice: NavItem = { to: '/practice-tests', label: 'Luyện tập 4 kỹ năng', children: practiceSkills }
 const discovery: NavItem = {
   to: '/community',
@@ -96,8 +103,7 @@ const memberNavigation: readonly NavItem[] = [
       { to: '/learn', label: 'Khóa học của tôi' },
     ],
   },
-  coursesNav,
-  reviewBasket,
+  memberCoursesNav,
   practice,
   discovery,
 ]
@@ -279,7 +285,7 @@ export function SiteNavbar({ isLoggedIn, userName, activePath }: SiteNavbarProps
                     onMouseEnter={() => previewSections(item)} onFocus={() => previewSections(item)}
                     className={() => `site-nav-link${item === subnavItem ? ' active' : ''}`}>
                     {item.label}
-                    {item === reviewBasket ? <ReviewBasketBadge summary={basketSummary} /> : null}
+                    {item === memberCoursesNav ? <ReviewBasketBadge summary={basketSummary} /> : null}
                   </NavLink>
                 )}
                 {menuOpen && item === subnavItem && item.children ? (
@@ -289,6 +295,7 @@ export function SiteNavbar({ isLoggedIn, userName, activePath }: SiteNavbarProps
                       <Link key={child.to} to={child.to} onClick={closeMenu}
                         aria-current={child === activeChild ? 'page' : undefined}>
                         {child.label}
+                        {child.to === REVIEW_BASKET_PATH ? <ReviewBasketBadge summary={basketSummary} /> : null}
                       </Link>
                     ))}
                   </div>
@@ -357,6 +364,7 @@ export function SiteNavbar({ isLoggedIn, userName, activePath }: SiteNavbarProps
                 <Link key={child.to} to={child.to} className={active ? 'active' : undefined}
                   aria-current={active ? 'page' : undefined} onClick={closeMenu}>
                   {child.label}
+                  {child.to === REVIEW_BASKET_PATH ? <ReviewBasketBadge summary={basketSummary} /> : null}
                 </Link>
               )
             })}

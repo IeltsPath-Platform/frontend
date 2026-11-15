@@ -74,27 +74,34 @@ describe('SiteNavbar navigation', () => {
     expect(history).toHaveAttribute('aria-current', 'page')
   })
 
-  it('lists the review basket with the main links for a signed-in learner, lit on its own page only', () => {
+  it('puts the review basket under Khóa học for a signed-in learner, not among the main links', () => {
     render(<MemoryRouter initialEntries={['/learn/review-basket']}><SiteNavbar /></MemoryRouter>)
     const main = screen.getByRole('navigation', { name: 'Điều hướng chính' })
-    const labels = within(main).getAllByRole('link').map((link) => link.textContent)
-    expect(labels.indexOf('Giỏ ôn tập')).toBe(labels.indexOf('Khóa học') + 1)
-    const basket = within(main).getByRole('link', { name: 'Giỏ ôn tập' })
+    expect(within(main).queryByRole('link', { name: 'Giỏ ôn tập' })).not.toBeInTheDocument()
+    expect(within(main).getByRole('link', { name: 'Khóa học' })).toHaveClass('active')
+
+    // The basket is a section of Khóa học, lit on its own page only.
+    const sections = screen.getByRole('navigation', { name: 'Khóa học' })
+    const basket = within(sections).getByRole('link', { name: 'Giỏ ôn tập' })
     expect(basket).toHaveAttribute('href', '/learn/review-basket')
-    expect(basket).toHaveClass('active')
-    expect(within(main).getByRole('link', { name: 'Khóa học' })).not.toHaveClass('active')
+    expect(basket).toHaveAttribute('aria-current', 'page')
+    expect(within(sections).getByRole('link', { name: 'Khóa học' })).not.toHaveAttribute('aria-current')
   })
 
-  it('shows how much waits in the basket on its link, and nothing when it is empty', async () => {
+  it('shows how much waits in the basket on Khóa học and on its section, and nothing when it is empty', async () => {
     basketSummaryMock.mockResolvedValue({ required: 1, due: 2 })
-    const { unmount } = render(<MemoryRouter initialEntries={['/home']}><SiteNavbar /></MemoryRouter>)
-    const badge = await screen.findByRole('img', { name: '1 bài ôn bắt buộc, 2 bài đến hạn ôn' })
-    expect(badge).toHaveTextContent('3')
-    expect(screen.getByRole('link', { name: /^Giỏ ôn tập/ })).toContainElement(badge)
+    const { unmount } = render(<MemoryRouter initialEntries={['/learn/review-basket']}><SiteNavbar /></MemoryRouter>)
+    const badges = await screen.findAllByRole('img', { name: '1 bài ôn bắt buộc, 2 bài đến hạn ôn' })
+    expect(badges).toHaveLength(2)
+    expect(badges[0]).toHaveTextContent('3')
+    const main = screen.getByRole('navigation', { name: 'Điều hướng chính' })
+    expect(within(main).getByRole('link', { name: /^Khóa học/ })).toContainElement(badges[0]!)
+    const sections = screen.getByRole('navigation', { name: 'Khóa học' })
+    expect(within(sections).getByRole('link', { name: /^Giỏ ôn tập/ })).toContainElement(badges[1]!)
     unmount()
 
     basketSummaryMock.mockResolvedValue({ required: 0, due: 0 })
-    render(<MemoryRouter initialEntries={['/home']}><SiteNavbar /></MemoryRouter>)
+    render(<MemoryRouter initialEntries={['/learn/review-basket']}><SiteNavbar /></MemoryRouter>)
     await waitFor(() => expect(basketSummaryMock).toHaveBeenCalledTimes(2))
     expect(screen.queryByRole('img', { name: /bài/ })).not.toBeInTheDocument()
   })
@@ -107,7 +114,8 @@ describe('SiteNavbar navigation', () => {
 
   it('keeps Khóa học for the other pages under /learn, and hides the basket from a visitor', () => {
     const { unmount } = render(<MemoryRouter initialEntries={['/learn/progress']}><SiteNavbar /></MemoryRouter>)
-    expect(screen.getByRole('link', { name: 'Giỏ ôn tập' })).not.toHaveClass('active')
+    // The basket is one of the sections of Khóa học, not the current one here.
+    expect(screen.getByRole('link', { name: 'Giỏ ôn tập' })).not.toHaveAttribute('aria-current')
     expect(screen.getAllByRole('link', { name: 'Khóa học' })[0]).toHaveClass('active')
     unmount()
 

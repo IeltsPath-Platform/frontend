@@ -10,11 +10,9 @@ import type {
 import { learningApi, toApiError } from '../api'
 import { newRequestId } from '../lib/requestId'
 import { reportApiError } from '../lib/reviewGate'
-import { useApiResource } from '../lib/useApiResource'
 import { AudioBlock } from './blocks/AudioBlock'
 import { ExerciseBlock, type GradedOutcome } from './blocks/ExerciseBlock'
 import { PassageBlock } from './blocks/PassageBlock'
-import { HeartsPanel } from './HeartsPanel'
 import { RewardSummary } from './RewardSummary'
 
 interface LessonExercisesProps {
@@ -27,16 +25,12 @@ interface LessonExercisesProps {
 
 /** The lesson's passages, audio and exercises, in the order Content gives them. Passing every exercise completes the lesson. */
 export function LessonExercises({ lessonId, blocks, onChanged, refreshAudioUrl }: LessonExercisesProps) {
-  // The hearts are an extra: if they cannot be read, the exercises still open and the server refuses them when needed.
-  const hearts = useApiResource('hearts', () => learningApi.getHearts())
   const [rewards, setRewards] = useState<Record<string, GamificationSummary | null>>({})
 
   async function submit(block: ExerciseBlockData, answers: AnswerInput[]): Promise<GradedOutcome> {
     try {
       const result = await learningApi.submitLessonExercise(lessonId, block.id, { requestId: newRequestId(), answers })
       setRewards((current) => ({ ...current, [block.id]: result.gamification }))
-      // Wrong answers cost hearts, so what is left has changed.
-      if ((result.gamification?.heartsLost ?? 0) > 0) hearts.reload()
       onChanged()
       const correctCount = result.results.filter((item) => item.correct).length
       const totalCount = block.questions.length
@@ -49,8 +43,8 @@ export function LessonExercises({ lessonId, blocks, onChanged, refreshAudioUrl }
       }
     } catch (reason) {
       const apiError = toApiError(reason)
+      // A refusal for lack of hearts opens the owl's popup from here.
       reportApiError(apiError)
-      if (apiError.code === 'HEARTS_DEPLETED') hearts.reload()
       throw apiError
     }
   }
@@ -61,7 +55,6 @@ export function LessonExercises({ lessonId, blocks, onChanged, refreshAudioUrl }
   }
 
   const hasPassage = blocks.some(isPassage)
-  const heartsNotice = hearts.data?.hearts === 0 ? <HeartsPanel onChanged={hearts.reload} status={hearts.data} /> : null
   const exerciseNodes = (block: ExerciseBlockData) => (
     <div key={block.id}>
       <ExerciseBlock block={block} onSubmit={(answers) => submit(block, answers)} />
@@ -82,7 +75,6 @@ export function LessonExercises({ lessonId, blocks, onChanged, refreshAudioUrl }
           ))}
         </div>
         <div className="lp-split__work">
-          {heartsNotice}
           {blocks.filter(isExercise).map(exerciseNodes)}
         </div>
       </section>
@@ -91,7 +83,6 @@ export function LessonExercises({ lessonId, blocks, onChanged, refreshAudioUrl }
 
   return (
     <div className="lp-lesson-exercises">
-      {heartsNotice}
       {blocks.map((block) => {
         if (isExercise(block)) return exerciseNodes(block)
         if (isAudio(block)) return <AudioBlock key={block.id} audio={block}

@@ -1,0 +1,3 @@
+/* The same tone as the "Học thử miễn phí" tag of a lesson, one size smaller. The text colour is the dark accent so it holds 4.5:1 on
+   the tinted background. */
+.badge { display: inline-flex; flex: none; align-items: center; padding: 0 .4rem; border-radius: 999px; background: color-mix(in srgb, var(--lp-accent) 18%, var(--lp-surface)); color: var(--lp-accent-ink); font-size: .64rem; font-weight: 750; letter-spacing: .03em; line-height: 1.5; text-transform: uppercase; white-space: nowrap; }

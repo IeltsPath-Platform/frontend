@@ -46,16 +46,19 @@ describe('EssayStudyPoints', () => {
     expect(onPractise).toHaveBeenCalledExactlyOnceWith(point)
   })
 
-  it('falls back to the knowledge point itself and hides practice when neither target exists', () => {
+  it('hides practice for a knowledge point that names no practice target, even when it has an id', () => {
     const point: EssayStudyPoint = {
       kind: 'KNOWLEDGE_POINT', criterionCode: 'CC', band: null, knowledgePointId: 'kp-1',
       practiceKnowledgePointId: null, code: 'LINKING', name: 'Từ nối', title: null,
       reason: null, excerpt: null,
     }
-    const { rerender } = render(<EssayStudyPoints points={[point]} onPractise={vi.fn()} />)
-    expect(screen.getByRole('button', { name: 'Luyện tập Từ nối' })).toBeInTheDocument()
-    rerender(<EssayStudyPoints points={[{ ...point, knowledgePointId: null }]} onPractise={vi.fn()} />)
+    render(<EssayStudyPoints points={[point]} onPractise={vi.fn()} />)
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  })
+
+  it('practises the criterion point itself when a weak criterion names no other target', () => {
+    render(<EssayStudyPoints points={[criterion]} onPractise={vi.fn()} />)
+    expect(screen.getByRole('button', { name: `Luyện tập ${criterion.name}` })).toBeInTheDocument()
   })
 
   it('falls back to the readable criterion when its name and title are missing', () => {
@@ -128,5 +131,34 @@ describe('EssayStudyPoints', () => {
     expect(screen.getByText('<b>Title</b>')).toBeInTheDocument()
     expect(screen.getByText('<img src=x onerror=alert(1)>')).toBeInTheDocument()
     expect(container.querySelector('b, img')).toBeNull()
+  })
+
+  describe('a failed knowledge point of the question', () => {
+    const questionPoint: EssayStudyPoint = {
+      kind: 'KNOWLEDGE_POINT', criterionCode: null, band: null, knowledgePointId: 'kp-topic',
+      code: 'DEMO_WRITING_TOPIC_SENTENCE', name: 'Câu chủ đề', title: 'Câu chủ đề', reason: 'Mở đoạn chưa nêu ý chính.',
+      excerpt: 'Trees are good.', practiceKnowledgePointId: null,
+    }
+
+    it('has no practice action when the point has no practice set of its own', () => {
+      render(<EssayStudyPoints points={[questionPoint]} onPractise={vi.fn()} />)
+      expect(screen.getByText('Câu chủ đề')).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /Luyện tập/ })).not.toBeInTheDocument()
+    })
+
+    it('practises the point itself when it has a practice set', () => {
+      render(<EssayStudyPoints points={[{ ...questionPoint, practiceKnowledgePointId: 'kp-topic' }]} onPractise={vi.fn()} />)
+      expect(screen.getByRole('button', { name: 'Luyện tập Câu chủ đề' })).toBeInTheDocument()
+    })
+
+    it('does not start its label with a separator when it belongs to no criterion', () => {
+      render(<EssayStudyPoints points={[questionPoint]} />)
+      expect(screen.getByText('Cần luyện')).toBeInTheDocument()
+    })
+
+    it('still names the criterion for a point of an older grade', () => {
+      render(<EssayStudyPoints points={[{ ...questionPoint, criterionCode: 'CC', practiceKnowledgePointId: 'kp-parent' }]} />)
+      expect(screen.getByText('Coherence & Cohesion · Cần luyện')).toBeInTheDocument()
+    })
   })
 })

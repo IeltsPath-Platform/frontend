@@ -136,6 +136,8 @@ export interface ErrorHint {
 export interface QuestionResult {
   questionId: string
   correct: boolean
+  /** What the learner wrote, when the server kept it (a Practice or free practice set submitted after it started to). */
+  submittedAnswer?: string
   correctAnswer?: string
   explanation?: string
   hint?: string | null
@@ -450,6 +452,8 @@ export interface EssayCorrection {
   excerpt: string
   suggestion: string
   category: string | null
+  /** SUGGESTION: the text is acceptable and a better wording exists; anything else is an error. */
+  certainty?: string | null
 }
 
 export interface EssayStudyPoint {
@@ -478,6 +482,8 @@ export interface EssayGrade {
   criteria: EssayCriterion[]
   corrections: EssayCorrection[]
   studyPoints: EssayStudyPoint[]
+  /** How the essay did on each knowledge point the question practises; absent for grades made before they were judged. */
+  taskKnowledgePointJudgments?: EssayKnowledgeJudgment[]
   summary: string | null
   pointsCharged: number | null
   sampleAnswer: string | null
@@ -686,6 +692,23 @@ export interface ReviewBasket {
   weak: BasketOptionalItem[]
 }
 
+/**
+ * The learner's blocking review of a point, kept after it is finished so the tree still shows it: still `PENDING` (it holds back
+ * the lessons that follow), `DONE` after a passed set, or `SKIPPED` when no unseen set was left. `doneAt` is null while pending;
+ * `lastCorrect` and `lastTotal` score the latest submitted set (null before any).
+ */
+export interface TreeBlockingReview {
+  reviewId: string
+  status: 'PENDING' | 'DONE' | 'SKIPPED'
+  /** The lesson that raised the review. */
+  lessonId: string | null
+  createdAt: string | null
+  doneAt: string | null
+  setsAnswered: number
+  lastCorrect: number | null
+  lastTotal: number | null
+}
+
 /** One knowledge point of the learner's tree (`GET /api/learning/tree`). */
 export interface TreePoint {
   knowledgePointId: string
@@ -710,6 +733,33 @@ export interface TreePoint {
   topic?: TreePointTopic | null
   /** The lessons of the course that teach the point, in the order of their chặng and then of the lesson. */
   lessons?: TreePointLesson[]
+  /**
+   * True when a paying course teaches the point in one of the first lessons of its skill, the lessons it shows free. A fact about
+   * the point, not about what the learner has bought (that is {@link locked}); absent from a server that does not say.
+   */
+  freePreview?: boolean
+  /** The learner's blocking review of the point, in whatever state; absent or null when it never had one. */
+  blockingReview?: TreeBlockingReview | null
+  /**
+   * Set only on a point of a lower course that the tree draws for reference (see {@link ReferencePoint}); it has no standing of
+   * the learner and cannot be practised. The tree page makes these from `LearnerTree.referencePoints`.
+   */
+  reference?: { courseName: string; bandLevel: number | null }
+}
+
+/** A point of a lower course that the course builds on, named only so the order of learning is not cut off at the course's edge. */
+export interface ReferencePoint {
+  knowledgePointId: string
+  code: string
+  name: string
+  skill: string | null
+  cefrLevel: string | null
+  prerequisiteIds: string[]
+  course: { courseId: string; name: string; bandLevel: number | null } | null
+  /** The chặng of its own course; `position` counts from 1 inside its skill there. */
+  topic: TreePointTopic | null
+  /** A diagnosis can send the learner back to a point of a lower course, so a reference point can hold a review too. */
+  blockingReview?: TreeBlockingReview | null
 }
 
 /** A chặng as the tree names it; `position` counts from 1 inside its own skill, the number the course page shows. */
@@ -743,6 +793,8 @@ export interface ErrorTrapPoint {
 export interface LearnerTree {
   courseId: string
   knowledgePoints: TreePoint[]
+  /** Points of lower courses the course builds on; absent from a server that does not send them. */
+  referencePoints?: ReferencePoint[]
 }
 
 export interface TestAssignment {

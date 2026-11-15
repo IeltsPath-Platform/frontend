@@ -606,6 +606,15 @@
   grid-column: 1 / -1;
   overflow-wrap: anywhere;
 }
+.lp-essay-criteria__kps small {
+  grid-column: 1 / -1;
+}
+.lp-essay-task-kps {
+  margin-top: 1rem;
+}
+.lp-essay-task-kps h4 {
+  margin: 0;
+}
 .lp-essay-study__excerpt {
   margin: 0;
   padding: .45rem .65rem;

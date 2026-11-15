@@ -23,7 +23,7 @@ export interface OwlSnapshot {
 const NEAR_RATIO = 0.5
 const NEAR_REMAINING = 3
 const MAX_BADGE_MESSAGES = 2
-/** At this many hearts or fewer the owl warns after a mistake. */
+/** At this many hearts the owl warns after a mistake. */
 const LOW_HEARTS = 1
 
 /** Badges still to earn that have a counter, nearest to done first. */
@@ -120,14 +120,10 @@ export function buildAnnouncements(before: OwlSnapshot, after: OwlSnapshot, summ
     }
   }
 
+  // With no heart left the owl opens its popup instead (HeartsDepletedDialog), so the bubble only covers the last one.
   const { heartsLost, heartsRemaining } = summary
-  if ((heartsLost ?? 0) > 0 && heartsRemaining !== null && heartsRemaining <= LOW_HEARTS) {
-    news.push({
-      id: 'hearts-low',
-      text: heartsRemaining === 0 ? 'Hết tim rồi! Nghỉ một chút, tim sẽ hồi dần nhé.' : 'Chỉ còn 1 tim thôi, làm cẩn thận nhé!',
-      tab: 'quests',
-      mood: 'warn',
-    })
+  if ((heartsLost ?? 0) > 0 && heartsRemaining === LOW_HEARTS) {
+    news.push({ id: 'hearts-low', text: 'Chỉ còn 1 tim thôi, làm cẩn thận nhé!', tab: 'quests', mood: 'warn' })
   }
 
   return news

@@ -1,6 +1,7 @@
 import { Fragment } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, ChevronRight, House } from 'lucide-react'
+import { ChevronRight, House } from 'lucide-react'
+import { HOME_PATH } from '../lib/resultOrigin'
 
 export interface TrailItem {
   label: string
@@ -12,23 +13,22 @@ export interface TrailItem {
   onClick?: () => void
 }
 
-/** Back button plus the pages the learner passed through, ending at the current page. `showBack={false}` leaves the button out. */
-export function LearnTrail({ items, showBack = true }: { items: TrailItem[]; showBack?: boolean }) {
-  if (items.length < 2) return null
+const HOME: TrailItem = { label: 'Trang chủ', to: HOME_PATH, home: true }
 
-  const parents = items.slice(0, -1)
-  const back = showBack ? [...parents].reverse().find((item) => item.to) : undefined
-  const last = items.length - 1
+/**
+ * The pages the learner passed through, ending at the current page. Every trail starts with the house icon that leads to the
+ * home page, so a page does not list it itself; there is no separate back button, the steps are the way back.
+ */
+export function LearnTrail({ items }: { items: TrailItem[] }) {
+  if (items.length === 0) return null
+
+  const trail = items[0].home ? items : [HOME, ...items]
+  const last = trail.length - 1
 
   return (
     <nav aria-label="Đường dẫn trang" className="lp-trail">
-      {back?.to ? (
-        <Link aria-label={`Quay lại: ${back.label}`} className="lp-trail__back" onClick={back.onClick} title={`Quay lại: ${back.label}`} to={back.to}>
-          <ArrowLeft aria-hidden="true" size={18} />
-        </Link>
-      ) : null}
       <ol className="lp-trail__list">
-        {items.map((item, index) => (
+        {trail.map((item, index) => (
           <Fragment key={`${index}:${item.label}`}>
             <li className={index === last ? 'lp-trail__item is-current' : 'lp-trail__item'}>
               {index === last || !item.to ? (

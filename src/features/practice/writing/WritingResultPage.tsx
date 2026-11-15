@@ -1,12 +1,19 @@
-import { useMemo, useRef } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
-import { X } from 'lucide-react'
+import { useMemo, useRef, useState } from 'react'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { SiteNavbar } from '@/components/SiteNavbar'
+import { mapKnowledgeJudgments, mapStudyPoints } from '@/features/learning-path/api/learningAdapters'
+import { LearnTrail } from '@/features/learning-path/components/LearnTrail'
 import { ApiErrorState, LoadingState } from '@/features/learning-path/components/PageState'
+import { HISTORY_PATH, historyTrail, readOrigin } from '@/features/learning-path/lib/resultOrigin'
+import { startStudyPointPractice } from '@/features/learning-path/lib/studyPointPractice'
 import { useApiResource } from '@/features/learning-path/lib/useApiResource'
 import '@/features/learning-path/learning-path.css'
+import '@/features/learning-path/practice-essay.css'
 import { ExaminerResult } from './ExaminerResult'
 import { getWritingSubmission } from './writingApi'
+import { WritingFixList } from './WritingFixList'
+import { WritingNextSteps } from './WritingNextSteps'
+import { categoryOf, fixId, type ActiveFix } from './writingFixes'
 import { BandLimitNotice } from '../components/BandLimitNotice'
 import type { WritingCorrection, WritingCriterion, WritingSubmission } from './writingApi'
 import { formatClock, loadResultContext, lowestIndex, measureEssay, roundBand } from './writingText'
@@ -23,22 +30,6 @@ const CRITERIA: Record<string, { name: string; meaning: string }> = {
   GRA: { name: 'Grammatical Range & Accuracy', meaning: 'Ngữ pháp' },
 }
 
-const FALLBACK_CATEGORY = { label: 'Khác', tone: 'task' }
-
-/** The error categories Content can attach to a correction; one this page does not know falls back to "Khác". */
-const CATEGORY: Record<string, { label: string; tone: string }> = {
-  GRAMMAR: { label: 'Ngữ pháp', tone: 'grammar' },
-  VOCABULARY: { label: 'Từ vựng', tone: 'vocabulary' },
-  COHERENCE: { label: 'Mạch lạc', tone: 'coherence' },
-  TASK: { label: 'Nội dung', tone: 'task' },
-  SPELLING_NUMBER: { label: 'Chính tả & số', tone: 'vocabulary' },
-  OTHER: FALLBACK_CATEGORY,
-}
-
-function categoryOf(category: WritingCorrection['category']) {
-  return CATEGORY[category] ?? FALLBACK_CATEGORY
-}
-
 function comment(band: number) {
   if (band >= 7) return 'Bài viết rất tốt! Hãy giữ nhịp luyện tập để chạm band cao hơn.'
   if (band >= 6) return 'Bài viết khá tốt! Hãy sửa các lỗi được đánh dấu để lên band cao hơn.'
@@ -46,20 +37,21 @@ function comment(band: number) {
   return 'Bài viết còn nhiều điểm cần cải thiện. Hãy thử chế độ Hướng dẫn từng bước để luyện nền tảng.'
 }
 
-type Segment = { text: string; correction?: WritingCorrection }
+/** {@code number} is the position of the correction in the list of mistakes, so a mark in the essay and its card share a number. */
+type Segment = { text: string; correction?: WritingCorrection; number?: number }
 
 /** Cuts the essay at each correction's excerpt, in the order they appear, so the marks never overlap. */
 function markEssay(essay: string, corrections: WritingCorrection[]): Segment[] {
   const found = corrections
-    .map((correction) => ({ correction, start: essay.indexOf(correction.excerpt) }))
+    .map((correction, index) => ({ correction, number: index + 1, start: essay.indexOf(correction.excerpt) }))
     .filter((item) => item.start >= 0)
     .sort((a, b) => a.start - b.start)
   const segments: Segment[] = []
   let cursor = 0
-  for (const { correction, start } of found) {
+  for (const { correction, number, start } of found) {
     if (start < cursor) continue
     if (start > cursor) segments.push({ text: essay.slice(cursor, start) })
-    segments.push({ text: correction.excerpt, correction })
+    segments.push({ text: correction.excerpt, correction, number })
     cursor = start + correction.excerpt.length
   }
   if (cursor < essay.length) segments.push({ text: essay.slice(cursor) })
@@ -85,7 +77,12 @@ function Criterion({ item, worst }: { item: WritingCriterion; worst: boolean }) 
 
 function Graded({ submission, submissionId }: { submission: WritingSubmission; submissionId: string }) {
   const navigate = useNavigate()
+  const location = useLocation()
+  const origin = useMemo(() => readOrigin(location.search), [location.search])
   const essayRef = useRef<HTMLElement>(null)
+  const [active, setActive] = useState<ActiveFix | null>(null)
+  /** Picking a mark of the essay scrolls to its card in the list of mistakes and highlights both. */
+  const pick = (number: number) => setActive((current) => ({ number, tick: (current?.tick ?? 0) + 1 }))
   const context = useMemo(() => loadResultContext(submissionId), [submissionId])
   const criteria = submission.criteria ?? []
   const corrections = useMemo(() => submission.corrections ?? [], [submission.corrections])
@@ -96,12 +93,14 @@ function Graded({ submission, submissionId }: { submission: WritingSubmission; s
   const metrics = useMemo(() => measureEssay(essay), [essay])
   const segments = useMemo(() => markEssay(essay, corrections), [essay, corrections])
   const tones = [...new Set(corrections.map((item) => categoryOf(item.category)))]
+  const studyPoints = useMemo(() => mapStudyPoints(submission.studyPoints), [submission.studyPoints])
+  const taskJudgments = useMemo(() => mapKnowledgeJudgments(submission.taskKnowledgePointJudgments), [submission.taskKnowledgePointJudgments])
 
   return (
     <div className="wr-page">
-      <SiteNavbar />
-      <header className="wr-top"><Link className="rw-exit" to={CATALOG_PATH} aria-label="Về danh mục Writing"><X size={16} aria-hidden="true" /></Link></header>
+      <SiteNavbar activePath={HISTORY_PATH} />
       <main className="wr-main">
+        <LearnTrail items={historyTrail('Kết quả bài viết', origin)} />
         <div className="wr-hero">
           <section className="wr-band" aria-label="Band Score">
             <p>Band Score:</p>
@@ -150,22 +149,32 @@ function Graded({ submission, submissionId }: { submission: WritingSubmission; s
         <section className="wr-essay" ref={essayRef} aria-label="Bài viết đã đánh dấu">
           {tones.length > 0 && <p className="wr-legend">{tones.map((tone) => <span key={tone.label} className={`wr-mark wr-mark-${tone.tone}`}>{tone.label}</span>)}</p>}
           {segments.length === 0 && <p className="wr-muted">Không còn bản bài viết để hiển thị.</p>}
-          {essay && segments.map((segment, index) => segment.correction
-            ? <mark key={index} className={`wr-mark wr-mark-${categoryOf(segment.correction.category).tone}`} title={segment.correction.suggestion}>{segment.text}</mark>
-            : <span key={index}>{segment.text}</span>)}
+          {essay && segments.map((segment, index) => {
+            const { correction, number } = segment
+            if (!correction || number === undefined) return <span key={index}>{segment.text}</span>
+            return (
+              <mark
+                aria-controls={fixId(number)} key={index} role="button" tabIndex={0}
+                className={`wr-mark wr-mark-${categoryOf(correction.category).tone} wr-mark--pick${active?.number === number ? ' is-active' : ''}`}
+                onClick={() => pick(number)}
+                onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); pick(number) } }}
+                title="Bấm để xem giải thích lỗi này"
+              >
+                {segment.text}<sup className="wr-mark__no" aria-label={`lỗi ${number}`}>{number}</sup>
+              </mark>
+            )
+          })}
         </section>
 
-        {corrections.length > 0 && (
-          <section className="wr-fixes" aria-label="Các lỗi cần sửa">
-            <h3>Các lỗi cần sửa</h3>
-            <ul>{corrections.map((item) => (
-              <li key={`${item.excerpt}-${item.suggestion}`}>
-                <span className={`wr-mark wr-mark-${categoryOf(item.category).tone}`}>{categoryOf(item.category).label}</span>
-                <b>{item.excerpt}</b> → {item.suggestion}
-              </li>
-            ))}</ul>
-          </section>
-        )}
+        {corrections.length > 0 && <WritingFixList active={active} corrections={corrections} />}
+
+        <WritingNextSteps
+          backTo={`${location.pathname}${location.search}`}
+          points={studyPoints}
+          judgments={taskJudgments}
+          submissionId={submissionId}
+          onPractise={(point) => startStudyPointPractice(point, `${location.pathname}${location.search}`, navigate, 'Kết quả bài viết')}
+        />
 
         {submission.sampleAnswer && (
           <details className="wr-sample">

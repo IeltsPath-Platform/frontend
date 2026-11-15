@@ -99,4 +99,42 @@ describe('mapEssayGrade study points', () => {
       },
     ])
   })
+
+describe('mapEssayGrade judgments of the question points', () => {
+  it('reads a grade made before the question points were judged as having none', () => {
+    expect(mapEssayGrade({ submissionId: 'old', status: 'GRADED' }).taskKnowledgePointJudgments).toEqual([])
+  })
+
+  it('maps the question point judgments and treats unknown values as unassessed', () => {
+    const result = mapEssayGrade({ submissionId: 'new', status: 'GRADED', taskKnowledgePointJudgments: [
+      { knowledgePointId: 'kp-1', code: 'TOPIC', name: 'Câu chủ đề', judgment: 'FAIL', excerpt: 'Trees are good.', reason: 'Thiếu ý chính.' },
+      { knowledgePointId: 'kp-2', judgment: 'SOMETHING_NEW' },
+      { code: 'NO_ID', judgment: 'PASS' },
+    ] })
+
+    expect(result.taskKnowledgePointJudgments).toEqual([
+      { knowledgePointId: 'kp-1', code: 'TOPIC', name: 'Câu chủ đề', judgment: 'FAIL', excerpt: 'Trees are good.', reason: 'Thiếu ý chính.' },
+      { knowledgePointId: 'kp-2', code: null, name: null, judgment: 'NOT_ASSESSED', excerpt: null, reason: null },
+    ])
+  })
+
+  it('keeps a failed question point whose practice target is absent as it came', () => {
+    const [point] = mapEssayGrade({ submissionId: 'new', status: 'GRADED', studyPoints: [
+      { kind: 'KNOWLEDGE_POINT', knowledgePointId: 'kp-1', name: 'Câu chủ đề', excerpt: 'Trees are good.' },
+    ] }).studyPoints
+
+    expect(point).toMatchObject({ kind: 'KNOWLEDGE_POINT', criterionCode: null, band: null, practiceKnowledgePointId: null })
+  })
+})
+})
+
+describe('mapEssayGrade corrections', () => {
+  it('keeps whether a correction is only a suggestion of better wording', () => {
+    const result = mapEssayGrade({ submissionId: 'new', status: 'GRADED', corrections: [
+      { excerpt: 'a', suggestion: 'b', category: 'GRAMMAR', certainty: 'SUGGESTION' },
+      { excerpt: 'c', suggestion: 'd' },
+    ] })
+
+    expect(result.corrections.map((item) => item.certainty)).toEqual(['SUGGESTION', null])
+  })
 })

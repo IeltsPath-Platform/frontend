@@ -18,10 +18,21 @@ describe('PracticeBreadcrumb', () => {
 
     const path = screen.getByRole('navigation', { name: 'Đường dẫn' })
     expect(within(path).getAllByRole('listitem').filter((item) => item.textContent)).toHaveLength(4)
+    expect(within(path).getAllByRole('link')).toHaveLength(4)
     expect(within(path).getByRole('link', { name: 'Luyện tập' })).toHaveAttribute('href', '/practice-tests')
     expect(within(path).getByRole('link', { name: 'Passage 2' })).toHaveAttribute('href', '/practice-tests?skill=reading&part=2')
     expect(within(path).queryByRole('link', { name: 'Kết quả' })).not.toBeInTheDocument()
     expect(within(path).getByText('Kết quả')).toHaveAttribute('aria-current', 'page')
+  })
+
+  it('starts with the house icon that leads home, so a page does not list it', () => {
+    render(<MemoryRouter><PracticeBreadcrumb items={[{ label: 'Luyện tập', to: '/practice-tests' }, { label: 'Kết quả' }]} /></MemoryRouter>)
+
+    const path = screen.getByRole('navigation', { name: 'Đường dẫn' })
+    const [first] = within(path).getAllByRole('link')
+    expect(first).toHaveAccessibleName('Trang chủ')
+    expect(first).toHaveAttribute('href', '/home')
+    expect(first).toHaveTextContent('')
   })
 
   it('does not call the word "Danh mục" a step of the path', () => {

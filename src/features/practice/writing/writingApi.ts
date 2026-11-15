@@ -1,4 +1,5 @@
 import { apiRequest } from '@/lib/httpClient'
+import type { EssayKnowledgeJudgmentDto, EssayStudyPointDto } from '@/features/learning-path/api/learningAdapters'
 
 /** 'practice' is the screen with the guide and the dictionary; 'exam' is the timed screen that copies the real test. */
 export type WritingMode = 'practice' | 'exam'
@@ -49,6 +50,12 @@ export interface WritingCorrection {
   excerpt: string
   suggestion: string
   category: 'GRAMMAR' | 'VOCABULARY' | 'COHERENCE' | 'TASK' | 'OTHER'
+  /** SUGGESTION: the text is acceptable and a better wording exists; anything else is an error. */
+  certainty?: string | null
+  /** One Vietnamese sentence naming the rule that was broken; only essays graded with the second prompt template onward have it. */
+  reason?: string | null
+  /** What kind of mistake it is, in Vietnamese, for example "Sai số ít hoặc số nhiều của danh từ". */
+  errorName?: string | null
 }
 
 export interface WritingSubmission {
@@ -62,6 +69,10 @@ export interface WritingSubmission {
   criteria?: WritingCriterion[]
   bandLimits?: WritingBandLimit[]
   corrections?: WritingCorrection[]
+  /** What to study next: weak criteria and failed knowledge points, then the grader's focus notes. */
+  studyPoints?: EssayStudyPointDto[]
+  /** How the essay did on each knowledge point the question practises; absent when the question has none. */
+  taskKnowledgePointJudgments?: EssayKnowledgeJudgmentDto[]
   summary?: string
   pointsCharged?: number
   sampleAnswer?: string

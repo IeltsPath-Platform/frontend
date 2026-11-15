@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react'
+import { publishHeartsDepleted } from '@/components/owl-events'
 import type { PracticeReviewCreated, ReviewRef } from '~types/learningPath'
 import type { ApiError } from '../api/apiError'
 
@@ -39,6 +40,8 @@ export function resolvePendingReview(reviewId: string) {
   setPendingReviews(pending.filter((review) => review.reviewId !== reviewId))
 }
 
+/** Feeds what the gates need from an API error: the blocking reviews, and the owl's popup when the hearts ran out. */
 export function reportApiError(error: ApiError) {
   if (error.code === 'REVIEW_REQUIRED' && error.details.reviews?.length) setPendingReviews(error.details.reviews)
+  if (error.code === 'HEARTS_DEPLETED') publishHeartsDepleted()
 }

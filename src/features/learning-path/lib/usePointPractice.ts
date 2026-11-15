@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { publishHeartsDepleted } from '@/components/owl-events'
 import type { TreePoint } from '~types/learningPath'
 import { learningApi, toApiError, type ApiError } from '../api'
 import { freePracticePath, type FreePracticeNavigationState } from './routes'
@@ -19,6 +20,8 @@ export function usePointPractice(point: TreePoint, { backTo, depleted, onHeartsC
 
   async function practise() {
     if (inFlight.current) return
+    // No hearts: the owl's popup sells them, instead of a button that is dead until they return.
+    if (depleted) { publishHeartsDepleted(); return }
     inFlight.current = true
     setStarting(true)
     setFailure(null)
@@ -31,8 +34,9 @@ export function usePointPractice(point: TreePoint, { backTo, depleted, onHeartsC
       const error = toApiError(reason)
       reportApiError(error)
       if (error.code === 'PAYWALL') { setUnlockOpen(true); inFlight.current = false; setStarting(false); return }
-      setFailure(error)
+      // A refusal for lack of hearts opens the popup from reportApiError, so it needs no message under the button.
       if (error.code === 'HEARTS_DEPLETED') onHeartsChanged()
+      else setFailure(error)
       inFlight.current = false
       setStarting(false)
     }
@@ -44,7 +48,7 @@ export type PointPractice = ReturnType<typeof usePointPractice>
 
 /** Why practice may be unavailable, or how much the learner has done; one sentence, shared by the row and the panel. */
 export function practiceNote(point: TreePoint, depleted: boolean) {
-  if (depleted) return 'Hết tim, hồi tim để luyện.'
+  if (depleted) return 'Hết tim, bấm Luyện để mua tim.'
   if (!point.locked && !point.practiceAvailable) return 'Đã hết bộ luyện tự do, các bộ còn lại dành cho bài ôn.'
   return point.evidenceCount > 0 ? `${point.evidenceCount} lượt làm` : 'Chưa làm lượt nào'
 }

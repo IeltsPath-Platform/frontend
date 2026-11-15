@@ -17,6 +17,7 @@ import { LoadingState } from './PageState'
 
 import { CRITERION_NAME, JUDGMENT_LABEL } from './essayCriteria'
 import { EssayStudyPoints } from './EssayStudyPoints'
+import { EssayTaskJudgments } from './EssayTaskJudgments'
 import { usePracticeEssayGradeChoice } from './usePracticeEssayGradeChoice'
 
 const TASK_LABEL: Record<string, string> = { TASK_1: 'Task 1', TASK_2: 'Task 2' }
@@ -536,6 +537,8 @@ function EssayResult({ grade, passBand, onPractise }: {
         })}
       </ul>
 
+      <EssayTaskJudgments judgments={grade.taskKnowledgePointJudgments} />
+
       {grade.corrections.length > 0 ? (
         <div className="lp-essay-corrections">
           <h4>Chỗ cần sửa</h4>
@@ -543,8 +546,8 @@ function EssayResult({ grade, passBand, onPractise }: {
             {grade.corrections.map((correction) => (
               <li key={`${correction.excerpt}-${correction.suggestion}`}>
                 <del>{correction.excerpt}</del>
-                <ins>{correction.suggestion}</ins>
-                {correction.category ? <small>{correction.category}</small> : null}
+                {correction.suggestion ? <ins>{correction.suggestion}</ins> : null}
+                {correction.certainty === 'SUGGESTION' ? <small>Gợi ý diễn đạt hay hơn</small> : correction.category ? <small>{correction.category}</small> : null}
               </li>
             ))}
           </ul>

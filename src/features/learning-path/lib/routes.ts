@@ -11,9 +11,12 @@ export interface ReviewNavigationState {
   reviewOrigin?: ReviewOrigin
 }
 
-/** What the free practice page needs from the tree card that started it; lost on a reload, so every field has a fallback. */
+/**
+ * What the free practice page needs from the screen that started it; lost on a reload, so every field has a fallback.
+ * `backLabel` names the screen `backTo` leads to, such as "Kết quả bài viết"; without it the page leads back to the tree.
+ */
 export interface FreePracticeNavigationState {
-  freePractice?: { pointName: string; pointCode: string; backTo: string }
+  freePractice?: { pointName: string; pointCode: string; backTo: string; backLabel?: string }
 }
 
 /** The learner's knowledge tree of one course, with a "Luyện" button on each point. */

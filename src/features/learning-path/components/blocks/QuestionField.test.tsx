@@ -11,6 +11,51 @@ function renderField(result?: QuestionResult) {
   )
 }
 
+const choice: Question = {
+  id: 'q-2', number: 2, prompt: 'Which one?', hint: null,
+  options: [{ value: 'A', label: 'One' }, { value: 'B', label: 'Two' }, { value: 'C', label: 'Three' }],
+}
+
+function renderChoice(result: QuestionResult | undefined, value: string) {
+  return render(<QuestionField disabled={false} onChange={vi.fn()} question={choice} result={result} review value={value} />)
+}
+
+const optionOf = (label: string) => screen.getByText(label).closest('label') as HTMLElement
+
+describe('QuestionField verdict on the question', () => {
+  it('marks a wrong choice red and says so, without the right answer when the grade does not carry it', () => {
+    renderChoice({ questionId: 'q-2', correct: false }, 'B')
+
+    expect(optionOf('Two')).toHaveAttribute('data-verdict', 'wrong')
+    expect(optionOf('One')).not.toHaveAttribute('data-verdict')
+    expect(optionOf('Three')).not.toHaveAttribute('data-verdict')
+    expect(screen.getByText('Bạn trả lời sai')).toBeInTheDocument()
+    expect(screen.queryByText('Đáp án:')).not.toBeInTheDocument()
+  })
+
+  it('marks a right choice green and says so even when the grade does not carry the right answer', () => {
+    renderChoice({ questionId: 'q-2', correct: true }, 'A')
+
+    expect(optionOf('One')).toHaveAttribute('data-verdict', 'correct')
+    expect(screen.getByText('Bạn trả lời đúng')).toBeInTheDocument()
+  })
+
+  it('marks both the wrong choice and the right option when the grade carries the right answer', () => {
+    renderChoice({ questionId: 'q-2', correct: false, correctAnswer: 'C', explanation: 'Because.' }, 'B')
+
+    expect(optionOf('Two')).toHaveAttribute('data-verdict', 'wrong')
+    expect(optionOf('Three')).toHaveAttribute('data-verdict', 'correct')
+    expect(screen.getByText('Đáp án:')).toBeInTheDocument()
+  })
+
+  it('shows no verdict before the question is graded', () => {
+    renderChoice(undefined, 'B')
+
+    expect(optionOf('Two')).not.toHaveAttribute('data-verdict')
+    expect(screen.queryByText(/Bạn trả lời/)).not.toBeInTheDocument()
+  })
+})
+
 describe('QuestionField hint', () => {
   it('hides the hint before the answer is graded', () => {
     renderField()

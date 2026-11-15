@@ -80,8 +80,8 @@ describe('practice result review', () => {
     expect(await screen.findByRole('heading', { name: 'Đọc hiểu 1' })).toBeInTheDocument()
     expect(api.getPracticeAttemptReview).toHaveBeenCalledWith('a1')
     expect(screen.getByRole('status')).toHaveTextContent('Chưa đạt · 50% (1/2 câu đúng)')
-    const items = within(screen.getByRole('list', { name: 'Kết quả từng câu' })).getAllByRole('listitem')
-    expect(items[0]).toHaveTextContent('Đáp án đúng: B · Large')
+    const items = within(screen.getByRole('list', { name: 'Bài làm đã nộp' })).getAllByRole('listitem')
+    expect(items[0]).toHaveTextContent('Đáp án: B')
     expect(items[1]).toHaveTextContent('Cold is the opposite of hot.')
     expect(screen.queryByRole('button', { name: /Nộp/ })).not.toBeInTheDocument()
 
@@ -107,10 +107,49 @@ describe('practice result review', () => {
     renderPractice()
     fireEvent.click(await screen.findByRole('button', { name: 'Xem kết quả: Đọc hiểu 1' }))
 
-    const items = within(await screen.findByRole('list', { name: 'Kết quả từng câu' })).getAllByRole('listitem')
+    const items = within(await screen.findByRole('list', { name: 'Bài làm đã nộp' })).getAllByRole('listitem')
     expect(within(items[0]).queryByRole('note', { name: 'Lỗi cần sửa' })).not.toBeInTheDocument()
     expect(within(items[1]).getByRole('note', { name: 'Lỗi cần sửa' })).toHaveTextContent('Chọn đáp án chỉ vì trùng từ khóa')
     expect(within(items[1]).getByRole('note', { name: 'Lỗi cần sửa' })).toHaveTextContent('Kiểm tra cả câu.')
+  })
+
+  describe('shown as it was filled in', () => {
+    const optionOf = (item: HTMLElement, label: string) => within(item).getByText(label).closest('label')!
+
+    async function openReview(results: Review['result']['results']) {
+      api.getLessonPracticeSets.mockResolvedValue(catalog([item({})]))
+      api.getPracticeAttemptReview.mockResolvedValue({ ...review, result: { ...review.result, results } })
+      renderPractice()
+      fireEvent.click(await screen.findByRole('button', { name: 'Xem kết quả: Đọc hiểu 1' }))
+      return within(await screen.findByRole('list', { name: 'Bài làm đã nộp' })).getAllByRole('listitem')
+    }
+
+    it('chooses what the learner chose, marks the right option green and a wrong choice red, and every option stays fixed', async () => {
+      const items = await openReview([
+        { questionId: 'q1', correct: true, correctAnswer: 'B', submittedAnswer: 'B', explanation: 'Large means big.' },
+        { questionId: 'q2', correct: false, correctAnswer: 'B', submittedAnswer: 'A', explanation: 'Cold is the opposite of hot.' },
+      ])
+
+      expect(optionOf(items[0], 'Large')).toHaveAttribute('data-checked', 'true')
+      expect(optionOf(items[0], 'Large')).toHaveAttribute('data-verdict', 'correct')
+      expect(optionOf(items[0], 'Big')).not.toHaveAttribute('data-verdict')
+      expect(within(items[0]).getByText('Bạn trả lời đúng')).toBeInTheDocument()
+
+      expect(optionOf(items[1], 'Hot')).toHaveAttribute('data-checked', 'true')
+      expect(optionOf(items[1], 'Hot')).toHaveAttribute('data-verdict', 'wrong')
+      expect(optionOf(items[1], 'Cold')).toHaveAttribute('data-verdict', 'correct')
+      expect(within(items[1]).getByText('Bạn trả lời sai')).toBeInTheDocument()
+      within(items[1]).getAllByRole('radio').forEach((radio) => expect(radio).toBeDisabled())
+    })
+
+    it('for a set submitted before answers were kept, knows a right answer and says a wrong one was not kept', async () => {
+      const items = await openReview(review.result.results)
+
+      expect(optionOf(items[0], 'Large')).toHaveAttribute('data-checked', 'true')
+      expect(optionOf(items[1], 'Cold')).toHaveAttribute('data-verdict', 'correct')
+      expect(optionOf(items[1], 'Hot')).toHaveAttribute('data-checked', 'false')
+      expect(within(items[1]).getByText(/đáp án bạn đã chọn không được lưu/)).toBeInTheDocument()
+    })
   })
 
   it('says so when the result cannot be loaded', async () => {

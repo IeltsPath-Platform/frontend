@@ -1,51 +1,62 @@
-/* The panel beside the chart. On wide screens it stays in view while the chart pans. */
-.detail { --tone: var(--lp-locked); display: grid; gap: 1rem 2rem; min-inline-size: 0; padding: 1rem 1.1rem; border: 1px solid color-mix(in srgb, var(--tone) 25%, var(--lp-line)); border-block-start: 4px solid var(--tone); border-radius: 1rem; background: var(--lp-surface); box-shadow: 0 4px 14px color-mix(in srgb, var(--lp-primary) 6%, transparent); }
+/* The panel under the chart: what the point is on the left, the order of learning around it and the way to practise it on the
+   right. One quiet container split by a hairline; type and thin rules carry the structure, not boxes and pills. */
+.detail { --tone: var(--lp-locked); display: grid; gap: 1.5rem 2.5rem; min-inline-size: 0; padding: 1.4rem 1.6rem; border: 1px solid var(--lp-line); border-radius: 1rem; background: var(--lp-surface); }
 .detail[data-group='MAINTAIN'] { --tone: var(--lp-success); }
 .detail[data-group='CONSOLIDATE'] { --tone: var(--lp-primary); }
 .detail[data-group='PRIORITY'] { --tone: var(--lp-accent); }
-/* It sits under the chart, so the chart has the whole width; the panel splits in two to stay short. */
-.summaryColumn, .actionColumn { display: grid; gap: .85rem; align-content: start; min-inline-size: 0; }
+/* The panel of a review: red while it holds the learner back, green once it is done, the quiet default when it was skipped. */
+.detail[data-review='PENDING'] { --tone: var(--lp-danger); }
+.detail[data-review='SUGGESTED'] { --tone: var(--lp-accent-ink); }
+.detail[data-review='DONE'] { --tone: var(--lp-success); }
+.about, .path { display: grid; gap: 1.1rem; align-content: start; min-inline-size: 0; }
+.path { padding-block-start: 1.4rem; border-block-start: 1px solid var(--lp-line); }
 @media (min-width: 44rem) {
-  .detail { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .detail { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); }
+  .path { padding-block-start: 0; padding-inline-start: 2.5rem; border-block-start: 0; border-inline-start: 1px solid var(--lp-line); }
 }
 
-.head { display: flex; align-items: flex-start; gap: .75rem; }
-.mark { display: grid; flex: 0 0 2.25rem; block-size: 2.25rem; place-items: center; border-radius: 50%; background: color-mix(in srgb, var(--tone) 14%, var(--lp-surface)); color: var(--tone); }
-.detail[data-group='MAINTAIN'] .mark { background: var(--lp-success); color: var(--lp-surface); }
-.title { display: grid; gap: .2rem; min-inline-size: 0; }
-.kicker { margin: 0; color: var(--lp-primary); font-size: .7rem; font-weight: 750; letter-spacing: .04em; text-transform: uppercase; }
-.title h3 { margin: 0; color: var(--lp-ink); font-family: var(--lp-display); font-size: 1.05rem; line-height: 1.3; overflow-wrap: anywhere; }
-.code { display: flex; flex-wrap: wrap; align-items: center; gap: .1rem .5rem; margin: 0; color: var(--lp-muted); font-size: .72rem; overflow-wrap: anywhere; }
-.cefr { padding: 0 .4rem; border-radius: .4rem; background: var(--lp-soft); color: var(--lp-primary); font-size: .68rem; font-weight: 700; }
+.head { display: grid; gap: .25rem; }
+.kicker { margin: 0; color: var(--lp-muted); font-size: .78rem; font-weight: 650; }
+.free { margin-inline-start: .5rem; vertical-align: 1px; }
+.head h3 { margin: 0; color: var(--lp-ink); font-family: var(--lp-display); font-size: 1.35rem; line-height: 1.25; overflow-wrap: anywhere; }
+.code { display: flex; flex-wrap: wrap; align-items: center; gap: .1rem .6rem; margin: 0; color: var(--lp-muted); font-size: .74rem; overflow-wrap: anywhere; }
+.code span + span::before { content: '·'; margin-inline-end: .6rem; }
+.canDo { margin: 0; color: var(--lp-ink); font-size: .95rem; line-height: 1.6; }
 
-.status { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem .6rem; color: var(--lp-muted); font-size: .8rem; line-height: 1.5; }
-.gauge { display: flex; align-items: center; gap: .6rem; color: var(--lp-ink); font-size: .8rem; font-variant-numeric: tabular-nums; font-weight: 650; }
-.gauge meter, .empty { flex: 1; min-inline-size: 0; block-size: .5rem; border: 0; border-radius: 999px; }
-.gauge meter { appearance: none; overflow: hidden; background: var(--lp-line); }
+/* Where the learner stands, in one line: a dot of the tier's colour, the tier in words, and what it means. */
+.status { display: flex; flex-wrap: wrap; align-items: baseline; gap: .2rem .6rem; margin: 0; color: var(--lp-muted); font-size: .85rem; line-height: 1.5; }
+.state { display: inline-flex; align-items: center; gap: .45rem; color: var(--lp-ink); font-weight: 700; }
+.state::before { content: ''; flex: none; inline-size: .55rem; block-size: .55rem; border-radius: 50%; background: var(--tone); }
+.gauge { display: flex; align-items: center; gap: .7rem; color: var(--lp-ink); font-size: .82rem; font-variant-numeric: tabular-nums; font-weight: 650; }
+.gauge meter { flex: 1; min-inline-size: 0; block-size: .45rem; border: 0; border-radius: 999px; appearance: none; overflow: hidden; background: var(--lp-line); }
 .gauge meter::-webkit-meter-bar { border-radius: 999px; background: var(--lp-line); }
 .gauge meter::-webkit-meter-optimum-value, .gauge meter::-webkit-meter-suboptimum-value, .gauge meter::-webkit-meter-even-less-good-value { border-radius: 999px; background: var(--tone); }
 .gauge meter::-moz-meter-bar { border-radius: 999px; background: var(--tone); }
-.empty { background: repeating-linear-gradient(90deg, var(--lp-line) 0 6px, transparent 6px 9px); }
-.gauge > span:last-child { flex: none; }
-.canDo { margin: 0; color: var(--lp-ink); font-size: .85rem; line-height: 1.6; }
+.gauge > span { flex: none; }
 
-/* What comes before and after: each name moves the selection, so the order can be followed by hand. */
-.links h4, .traps h4 { margin: 0 0 .4rem; color: var(--lp-muted); font-size: .72rem; font-weight: 750; letter-spacing: .04em; text-transform: uppercase; }
-.links p { margin: 0; color: var(--lp-muted); font-size: .8rem; }
-.links ul, .traps ul { display: flex; flex-wrap: wrap; gap: .4rem; margin: 0; padding: 0; list-style: none; }
-.links button { min-block-size: 2.5rem; max-inline-size: 100%; padding: .3rem .75rem; border: 1px solid color-mix(in srgb, var(--lp-primary) 28%, var(--lp-line)); border-radius: 999px; background: var(--lp-soft); color: var(--lp-primary-strong); font: inherit; font-size: .8rem; font-weight: 650; text-align: start; cursor: pointer; transition: background-color 150ms ease-out, border-color 150ms ease-out; }
-.links button small { display: block; margin-block-start: .1rem; color: var(--lp-muted); font-size: .68rem; font-weight: 600; }
-.links button small[data-out-of-order='true'] { color: var(--lp-accent-ink); }
-.links button:hover { border-color: var(--lp-primary); background: color-mix(in srgb, var(--lp-primary) 12%, var(--lp-surface)); }
-.links button:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; }
-.traps ul { display: grid; gap: .5rem; color: var(--lp-muted); font-size: .78rem; }
-.traps li { display: flex; flex-wrap: wrap; align-items: center; gap: .2rem .6rem; }
-.trapName { color: var(--lp-ink); }
+/* The order of learning as a rail: what comes before, the point itself, what comes after. Each name moves the selection. */
+.order { position: relative; display: grid; gap: 1rem; padding-inline-start: 1.5rem; }
+.order::before { content: ''; position: absolute; inset-block: .6rem .6rem; inset-inline-start: .3rem; inline-size: 1px; background: var(--lp-line); }
+.order > * { position: relative; margin: 0; }
+.order > *::before { content: ''; position: absolute; inset-block-start: .3rem; inset-inline-start: calc(-1.2rem - 4px); inline-size: 9px; block-size: 9px; box-sizing: border-box; border: 1.5px solid var(--lp-locked); border-radius: 50%; background: var(--lp-surface); }
+.here { color: var(--lp-ink); font-size: .9rem; font-weight: 700; }
+.here::before { border-color: var(--tone); background: var(--tone); }
+.links h4, .traps h4 { margin: 0 0 .3rem; color: var(--lp-muted); font-size: .74rem; font-weight: 700; letter-spacing: .03em; }
+.links p { margin: 0; color: var(--lp-muted); font-size: .84rem; line-height: 1.5; }
+.links ul { display: grid; margin: 0; padding: 0; list-style: none; }
+.links button { display: flex; flex-wrap: wrap; align-items: baseline; gap: .1rem .6rem; min-block-size: 2.5rem; max-inline-size: 100%; padding: .45rem 0; border: 0; background: none; color: var(--lp-primary-strong); font: inherit; font-size: .92rem; font-weight: 650; text-align: start; cursor: pointer; }
+.links button:hover { text-decoration: underline; text-underline-offset: 3px; }
+.links button:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; border-radius: 4px; }
+.links button small { color: var(--lp-muted); font-size: .74rem; font-weight: 500; }
+.links button small[data-out-of-order='true'] { color: var(--lp-accent-ink); font-weight: 650; }
 
-.action { display: grid; gap: .5rem; }
-.detail .act { min-block-size: 2.75rem; inline-size: 100%; gap: .4rem; font-size: .9rem; }
-.note { display: flex; flex-wrap: wrap; gap: .2rem .75rem; margin: 0; color: var(--lp-muted); font-size: .78rem; line-height: 1.5; }
+/* A point of a lower course: named like the others, but plain text, since it cannot be picked. */
+.reference { display: flex; flex-wrap: wrap; align-items: baseline; gap: .1rem .6rem; min-block-size: 2.5rem; padding: .45rem 0; color: var(--lp-ink); font-size: .92rem; font-weight: 600; }
+.reference small { color: var(--lp-muted); font-size: .74rem; font-weight: 500; }
+.traps ul { display: grid; gap: .5rem; margin: 0; padding: 0; list-style: none; color: var(--lp-muted); font-size: .8rem; }
+.traps li { display: flex; flex-wrap: wrap; align-items: baseline; gap: .1rem .6rem; }
+.trapName { color: var(--lp-ink); font-weight: 600; }
 
-@media (prefers-reduced-motion: reduce) {
-  .links button { transition: none; }
-}
+.action { display: grid; gap: .6rem; padding-block-start: 1.1rem; border-block-start: 1px solid var(--lp-line); }
+.detail .act { min-block-size: 2.75rem; inline-size: 100%; gap: .4rem; font-size: .92rem; }
+.note { display: flex; flex-wrap: wrap; gap: .2rem .75rem; margin: 0; color: var(--lp-muted); font-size: .8rem; line-height: 1.5; }

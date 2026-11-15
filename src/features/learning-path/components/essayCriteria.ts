@@ -26,6 +26,16 @@ const FOCUS_TOPICS: Array<[RegExp, string[]]> = [
 const GENERIC_FOCUS_TITLE =
   /^(task\s*(achievement|response)|coherence(\s*(and|&)\s*cohesion)?|lexical\s*resource|vocabulary|grammatical?\s*range(\s*(and|&)\s*accuracy)?|grammar)$/i
 
+/**
+ * The knowledge point a study point's practice button opens. A failed question point is practised only when it has a
+ * practice set of its own, so it never falls back to its id; a weak criterion practises its own point.
+ */
+export function practiceTargetOf(point: EssayStudyPoint): string | null {
+  if (point.kind === 'KNOWLEDGE_POINT') return point.practiceKnowledgePointId ?? null
+  if (point.kind === 'CRITERION') return point.practiceKnowledgePointId ?? point.knowledgePointId
+  return null
+}
+
 export interface StudyPointGroup {
   point: EssayStudyPoint
   /** AI suggestions about the same criterion, shown with the point they belong to. */

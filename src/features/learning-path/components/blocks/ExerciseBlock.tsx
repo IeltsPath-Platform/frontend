@@ -45,18 +45,15 @@ function initialGraded(block: ExerciseBlockData): Graded | null {
 const PASS_PERCENT = 70
 const VERDICT_TOAST_MS = 6000
 
-/** The grade of one submission, reported as a toast: the score, the verdict and which questions were wrong. */
-function verdictToast(outcome: GradedOutcome, questions: ExerciseBlockData['questions'], allowResubmit: boolean): ToastOptions {
-  const { passed, correctCount, totalCount, percent, results } = outcome
-  const correctById = new Map(results.map((result) => [result.questionId, result.correct]))
+/** The grade of one submission, reported as a toast: the score and the verdict. Which questions were wrong is marked on them. */
+function verdictToast(outcome: GradedOutcome, allowResubmit: boolean): ToastOptions {
+  const { passed, correctCount, totalCount, percent } = outcome
   const title = `${passed ? 'Đã đạt' : 'Chưa đạt'}: ${correctCount}/${totalCount} câu đúng`
   if (passed) {
     return { title, description: 'Đáp án và giải thích hiện dưới từng câu.', tone: 'success', duration: VERDICT_TOAST_MS }
   }
   const needed = Math.ceil((totalCount * PASS_PERCENT) / 100)
-  const wrongNumbers = questions.filter((question) => !correctById.get(question.id)).map((question) => question.number)
   const parts = [`${percent}% số câu đúng, cần từ ${PASS_PERCENT}% (${needed}/${totalCount} câu).`]
-  if (wrongNumbers.length > 0) parts.push(`Sai: câu ${wrongNumbers.join(', ')}.`)
   if (allowResubmit) parts.push('Sửa các câu sai rồi nộp lại.')
   return { title, description: parts.join(' '), tone: 'error', duration: VERDICT_TOAST_MS }
 }
@@ -94,7 +91,7 @@ export function ExerciseBlock({ block, onSubmit, allowResubmit = true, failedFoo
       const outcome = await onSubmit(block.questions.map((question) => ({ questionId: question.id, answer: snapshot[question.id].trim() })))
       if (mounted.current) {
         setGraded({ outcome, answers: snapshot })
-        toast(verdictToast(outcome, block.questions, allowResubmit))
+        toast(verdictToast(outcome, allowResubmit))
       }
     } catch (reason) {
       if (mounted.current) {
@@ -135,6 +132,7 @@ export function ExerciseBlock({ block, onSubmit, allowResubmit = true, failedFoo
                 onChange={(value) => setAnswers((current) => ({ ...current, [question.id]: value }))}
                 question={question}
                 result={stillGraded ? result : undefined}
+                review
                 value={answers[question.id] ?? ''}
               />
             </li>
