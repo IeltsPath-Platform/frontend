@@ -10,7 +10,7 @@ import {
   PASSWORD_MISMATCH_MESSAGE,
 } from '../lib/passwordRules'
 import { InputField } from './InputField'
-import { SocialButtons, type SocialProvider } from './SocialButtons'
+import { SocialButtons } from './SocialButtons'
 
 export type AuthMode = 'sign-in' | 'sign-up'
 
@@ -24,46 +24,25 @@ interface AuthFormProps {
   mode: AuthMode
   transitionDirection?: 'none' | 'rtl' | 'ltr'
   submitting?: boolean
-  oauthEnabled?: boolean
   onSubmit: (payload: AuthSubmitPayload) => void
-  onSocialSelect: (provider: SocialProvider) => void
+  onGoogleCredential: (idToken: string) => void
+  onGoogleError: (message: string) => void
   onModeChange?: (nextMode: AuthMode) => void
   onForgotPasswordClick?: () => void
 }
 
-const AUTH_MODAL_COPY: Record<
-  AuthMode,
-  {
-    submitLabel: string
-    prompt: string
-    switchLabel: string
-    switchTo: string
-    nextMode: AuthMode
-  }
-> = {
-  'sign-in': {
-    submitLabel: 'Đăng nhập',
-    prompt: 'Chưa có tài khoản?',
-    switchLabel: 'Đăng ký ngay',
-    switchTo: '/register',
-    nextMode: 'sign-up',
-  },
-  'sign-up': {
-    submitLabel: 'Tạo tài khoản',
-    prompt: 'Đã có tài khoản?',
-    switchLabel: 'Đăng nhập',
-    switchTo: '/login',
-    nextMode: 'sign-in',
-  },
+const AUTH_MODAL_COPY: Record<AuthMode, { submitLabel: string }> = {
+  'sign-in': { submitLabel: 'Đăng nhập' },
+  'sign-up': { submitLabel: 'Tạo tài khoản' },
 }
 
 export function AuthForm({
   mode,
   transitionDirection = 'none',
   submitting = false,
-  oauthEnabled = false,
   onSubmit,
-  onSocialSelect,
+  onGoogleCredential,
+  onGoogleError,
   onModeChange,
   onForgotPasswordClick,
 }: AuthFormProps) {
@@ -302,6 +281,18 @@ export function AuthForm({
             </Button>
           </div>
 
+          <div className="auth-shared-item auth-shared-item--social" data-shared-step="4">
+            <div className="auth-divider" role="separator" aria-label="Hoặc">
+              <span>Hoặc</span>
+            </div>
+
+            <SocialButtons
+              disabled={submitting}
+              onGoogleCredential={onGoogleCredential}
+              onError={onGoogleError}
+            />
+          </div>
+
           {clientMessage ? (
             <p className="auth-status auth-status--error" role="status" aria-live="polite">
               {clientMessage}
@@ -309,36 +300,7 @@ export function AuthForm({
           ) : (
             <p className="auth-status" role="status" aria-live="polite" />
           )}
-
-          <div className="auth-shared-item auth-shared-item--social" data-shared-step="4">
-            <div className="auth-divider" role="separator" aria-label="Hoặc">
-              <span>Hoặc</span>
-            </div>
-
-            <SocialButtons
-              mode={mode}
-              disabled={!oauthEnabled}
-              onSelect={onSocialSelect}
-            />
-          </div>
         </form>
-
-        <p className="auth-mode-toggle auth-shared-item auth-shared-item--footer" data-shared-step="5">
-          <span key={`prompt-${mode}`} className="auth-mode-toggle-copy">
-            {copy.prompt}{' '}
-            {onModeChange ? (
-              <button
-                type="button"
-                className="auth-mode-toggle-btn"
-                onClick={() => handleModeSwitch(copy.nextMode)}
-              >
-                {copy.switchLabel}
-              </button>
-            ) : (
-              <Link to={copy.switchTo}>{copy.switchLabel}</Link>
-            )}
-          </span>
-        </p>
       </div>
     </section>
   )

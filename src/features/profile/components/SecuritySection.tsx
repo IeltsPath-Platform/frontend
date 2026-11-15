@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 import { Shield, KeyRound, Eye, EyeOff, Check, AlertCircle, Loader2, Link2, Unlink } from 'lucide-react'
@@ -12,6 +12,7 @@ import {
 import { createZodResolver } from '@/lib/zodResolver'
 import { HttpError } from '@/lib/httpClient'
 import { Button } from '@/components/ui/button'
+import { authApi } from '@/features/auth/api/authApi'
 
 const changePasswordSchema = z
   .object({
@@ -31,6 +32,8 @@ type ChangePasswordFormData = z.infer<typeof changePasswordSchema>
 
 interface SecuritySectionProps {
   oauthIdentities: OAuthIdentity[]
+  email: string
+  hasPassword: boolean
   onChangePassword: (currentPassword: string, newPassword: string) => Promise<void>
   onUnlinkOAuth: (provider: string) => Promise<void>
   onShowToast: (message: string, tone?: 'success' | 'error' | 'info') => void
@@ -59,6 +62,8 @@ function calculatePasswordStrength(pass: string): { score: number; label: string
 
 export const SecuritySection: React.FC<SecuritySectionProps> = ({
   oauthIdentities,
+  email,
+  hasPassword,
   onChangePassword,
   onUnlinkOAuth,
   onShowToast,
@@ -70,6 +75,27 @@ export const SecuritySection: React.FC<SecuritySectionProps> = ({
   const [isChangingPass, setIsChangingPass] = useState(false)
   const [passChangeSuccess, setPassChangeSuccess] = useState(false)
   const [serverPassError, setServerPassError] = useState<string | null>(null)
+  const [resetCooldown, setResetCooldown] = useState(0)
+  const [requestingReset, setRequestingReset] = useState(false)
+
+  useEffect(() => {
+    if (!resetCooldown) return
+    const timer = window.setTimeout(() => setResetCooldown((seconds) => Math.max(0, seconds - 1)), 1000)
+    return () => window.clearTimeout(timer)
+  }, [resetCooldown])
+
+  async function handleRequestPasswordReset() {
+    setRequestingReset(true)
+    try {
+      const result = await authApi.forgotPassword(email)
+      setResetCooldown(60)
+      onShowToast(result.message || 'Nếu email tồn tại, hướng dẫn đặt lại sẽ được gửi tới hộp thư của bạn.', 'success')
+    } catch (error) {
+      onShowToast(error instanceof Error ? error.message : 'Không gửi được yêu cầu. Vui lòng thử lại.', 'error')
+    } finally {
+      setRequestingReset(false)
+    }
+  }
 
   const [unlinkingProvider, setUnlinkingProvider] = useState<string | null>(null)
   const [providerToUnlink, setProviderToUnlink] = useState<string | null>(null)
@@ -156,10 +182,10 @@ export const SecuritySection: React.FC<SecuritySectionProps> = ({
         <div className="profile-security-subcard">
           <div className="profile-subcard-header">
             <KeyRound size={18} className="profile-subcard-icon" aria-hidden="true" />
-            <h3 className="profile-subcard-title">Đổi mật khẩu</h3>
+            <h3 className="profile-subcard-title">{hasPassword ? 'Đổi mật khẩu' : 'Mật khẩu tài khoản'}</h3>
           </div>
 
-          <form onSubmit={handleSubmit(handlePasswordSubmit)} className="profile-password-form" noValidate>
+          {hasPassword ? <form onSubmit={handleSubmit(handlePasswordSubmit)} className="profile-password-form" noValidate>
             {serverPassError && (
               <div className="profile-form-banner-error" role="alert">
                 <AlertCircle size={16} aria-hidden="true" />
@@ -295,7 +321,15 @@ export const SecuritySection: React.FC<SecuritySectionProps> = ({
                 'Cập nhật mật khẩu'
               )}
             </Button>
-          </form>
+          </form> : (
+            <div className="profile-password-form">
+              <p role="status">Tài khoản này chưa có mật khẩu. Gửi email để tạo mật khẩu đăng nhập.</p>
+              <Button type="button" onClick={() => void handleRequestPasswordReset()}
+                disabled={requestingReset || resetCooldown > 0} className="profile-change-pass-btn">
+                {requestingReset ? 'Đang gửi…' : resetCooldown > 0 ? `Gửi lại sau ${resetCooldown}s` : 'Gửi email đặt mật khẩu'}
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* ================= OAUTH IDENTITIES ================= */}

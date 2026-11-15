@@ -27,6 +27,7 @@ import { ReadingResultPage } from '@/features/practice/reading/ReadingResultPage
 import { ReadingHistoryPage } from '@/features/practice/reading/ReadingHistoryPage'
 import { HomePage } from '@/features/home/HomePage'
 import { ExaminerDetailPage } from '@/features/home/pages/ExaminerDetailPage'
+import { ExpertsDirectoryPage } from '@/features/home/pages/ExpertsDirectoryPage'
 import { DeckDetailPage } from '@/features/flashcards/pages/DeckDetailPage'
 import { DeckEditorPage } from '@/features/flashcards/pages/DeckEditorPage'
 import { LearnPage } from '@/features/flashcards/pages/LearnPage'
@@ -45,8 +46,8 @@ import { signInDestination } from '@/features/auth/staffRoles'
 import { SiteFooter } from '@/components/SiteFooter'
 import { OwlMascot } from '@/components/OwlMascot'
 import { ForgotPasswordPage } from '@/features/auth/pages/ForgotPasswordPage'
-import { OAuthCallbackPage } from '@/features/auth/pages/OAuthCallbackPage'
 import { ResetPasswordPage } from '@/features/auth/pages/ResetPasswordPage'
+import { VerifyEmailPage } from '@/features/auth/pages/VerifyEmailPage'
 import { AuthProvider } from '@/features/auth/AuthProvider'
 import { ToastProvider } from '@/components/toast/ToastProvider'
 import { GuestOnly, RequireAuth } from '@/features/auth/AuthGuards'
@@ -203,10 +204,10 @@ function AppContent() {
       <Route path="/register" element={<GuestOnly><HomePage /><AuthPage mode="sign-up" /></GuestOnly>} />
       <Route path="/forgot-password" element={<GuestOnly><HomePage /><ForgotPasswordPage /></GuestOnly>} />
       <Route path="/reset-password" element={<GuestOnly><HomePage /><ResetPasswordPage /></GuestOnly>} />
-      <Route path="/auth/oauth/callback" element={<GuestOnly><OAuthCallbackPage /></GuestOnly>} />
+      <Route path="/verify-email" element={<VerifyEmailPage />} />
       <Route path="/classes/:classCode/join" element={<RouteStatusPage title="Phòng học trực tuyến" />} />
       <Route path="/lessons/:lessonId" element={<LessonRedirect />} />
-      <Route path="/mentors" element={<ExaminerDetailPage />} />
+      <Route path="/mentors" element={<ExpertsDirectoryPage />} />
       <Route path="/mentors/:mentorSlug" element={<ExaminerDetailPage />} />
       <Route path="/terms" element={<RouteStatusPage title="Điều khoản sử dụng" />} />
       <Route path="/privacy" element={<RouteStatusPage title="Chính sách bảo mật" />} />

@@ -50,6 +50,20 @@ describe('SpeakingWaitingPanel', () => {
     expect(screen.getByText('Đã chờ 1:05')).toBeInTheDocument()
   })
 
+  it('promises no fixed time and changes its note as the wait gets longer', () => {
+    vi.useFakeTimers()
+    render(<SpeakingWaitingPanel status="GRADING" />)
+    expect(screen.getByText(/Thời gian chấm tùy độ dài bài nói/)).toBeInTheDocument()
+    expect(screen.queryByText(/giây · giữ trang/)).not.toBeInTheDocument()
+
+    act(() => { vi.advanceTimersByTime(35_000) })
+    expect(screen.getByText(/cần thêm thời gian/)).toBeInTheDocument()
+
+    act(() => { vi.advanceTimersByTime(90_000) })
+    expect(screen.getByText(/có thể mất vài phút/)).toBeInTheDocument()
+    expect(screen.getByText(/không cần gửi lại/)).toBeInTheDocument()
+  })
+
   it('shows a plain loading message before the status is known', () => {
     render(<SpeakingWaitingPanel status={undefined} />)
 

@@ -29,33 +29,105 @@ export interface GradingTerms {
   maxWords: number
 }
 
+/** The next band the rubric describes above the one shown, and what it asks for; absent at the top band. */
+export interface WritingNextBand {
+  band: number
+  descriptor: string
+}
+
 export interface WritingCriterion {
   code: string
   band: number
   strengths: string[]
   improvements: string[]
-  /** True when a band cap lowered this criterion. */
+  /** True only when a band cap lowered this criterion; see `WritingSubmission.bandLimits` for why. */
   limited?: boolean
-}
-
-/** A band cap that applied to the essay; the same shape as Speaking's, plus the criterion it lowers. */
-export interface WritingBandLimit {
-  reason: string
-  criterion: string
-  cap: number
-  message: string
+  /** Quotations that support the band; second prompt template only. */
+  evidence?: string[]
+  /** The rubric descriptor the band matched; second prompt template only. */
+  descriptor?: string
+  nextBand?: WritingNextBand
 }
 
 export interface WritingCorrection {
   excerpt: string
   suggestion: string
   category: 'GRAMMAR' | 'VOCABULARY' | 'COHERENCE' | 'TASK' | 'OTHER'
-  /** SUGGESTION: the text is acceptable and a better wording exists; anything else is an error. */
-  certainty?: string | null
-  /** One Vietnamese sentence naming the rule that was broken; only essays graded with the second prompt template onward have it. */
-  reason?: string | null
-  /** What kind of mistake it is, in Vietnamese, for example "Sai số ít hoặc số nhiều của danh từ". */
-  errorName?: string | null
+  errorCode?: string
+  errorName?: string
+  fixHint?: string
+  severity?: number
+  practiceKnowledgePointId?: string
+  /** Character range of `excerpt` in `essayText` (UTF-16, as in JavaScript); absent when the excerpt has no free place. */
+  start?: number
+  end?: number
+  /** Why it is wrong; second prompt template only. */
+  reason?: string
+  /** A missing value is an ERROR; a SUGGESTION is an improvement, not a mistake. */
+  certainty?: 'ERROR' | 'SUGGESTION'
+}
+
+export interface WritingBandLimit {
+  reason: string
+  /** The criterion the cap lowers, such as TA or TR. */
+  criterion: string
+  cap: number
+  /** Ready to show: says which rule lowered the band and to what. */
+  message: string
+}
+
+/** The errors of one kind, worst first; suggestions are not counted. */
+export interface WritingErrorGroup {
+  errorCode: string
+  errorName?: string
+  category?: string
+  count: number
+  severity: number
+  fixHint?: string
+  example?: { wrong: string; right: string }
+  practiceKnowledgePointId?: string
+}
+
+/** A problem to work on first. `source` is AI when the model chose it, RULE when it was derived from the errors. */
+export interface WritingPriority {
+  title: string
+  explanation?: string
+  excerpts?: string[]
+  action?: string
+  errorCodes?: string[]
+  practiceKnowledgePointId?: string
+  source: 'AI' | 'RULE'
+}
+
+/** Task 1: sentences the essay got wrong about the chart, with the statement that is right. A flag the model did not give is absent. */
+export interface WritingDataChecks {
+  wrong: Array<{ excerpt: string; expected: string }>
+  correctCount: number
+  hasOverview?: boolean
+  overviewAccurate?: boolean
+  hasPersonalOpinion?: boolean
+}
+
+export type QuestionPartCoverage = 'FULL' | 'PARTIAL' | 'NONE'
+export type OutlineRole = 'INTRODUCTION' | 'BODY' | 'CONCLUSION'
+
+/** Task 2: which parts of the question the essay answered, its position and its outline, and the flags drawn from them. */
+export interface WritingTaskChecks {
+  questionParts?: Array<{ part: string; addressed: QuestionPartCoverage; excerpt?: string }>
+  position?: { required: boolean; stated: boolean; excerpt?: string; consistent?: boolean; conflictExcerpt?: string }
+  outline?: Array<{ role: OutlineRole; mainIdea: string; developed: boolean; excerpt?: string }>
+  partialAnswer: boolean
+  noPosition: boolean
+  inconsistentPosition: boolean
+  noConclusion: boolean
+}
+
+/** Only for an essay sent again: how its error kinds compare with the version before. */
+export interface WritingRevision {
+  previousSubmissionId: string
+  fixedCodes: string[]
+  repeatedCodes: string[]
+  newCodes: string[]
 }
 
 export interface WritingSubmission {
@@ -67,7 +139,6 @@ export interface WritingSubmission {
   overallBand?: number
   passed?: boolean
   criteria?: WritingCriterion[]
-  bandLimits?: WritingBandLimit[]
   corrections?: WritingCorrection[]
   /** What to study next: weak criteria and failed knowledge points, then the grader's focus notes. */
   studyPoints?: EssayStudyPointDto[]
@@ -79,6 +150,12 @@ export interface WritingSubmission {
   essayText?: string
   code?: string
   failureCode?: string
+  bandLimits?: WritingBandLimit[]
+  errorGroups?: WritingErrorGroup[]
+  priorities?: WritingPriority[]
+  dataChecks?: WritingDataChecks
+  taskChecks?: WritingTaskChecks
+  revision?: WritingRevision
 }
 
 export function getWritingTask(packageVersionId: string, sectionId: string, signal?: AbortSignal) {

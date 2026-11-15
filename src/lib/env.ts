@@ -25,5 +25,5 @@ export const USE_MOCK_LEARNING = (() => {
  */
 export const USE_MOCK_ROCKET = import.meta.env.VITE_USE_MOCK_ROCKET === 'true'
 
-/** Social OAuth login. Off until user-service exposes a real authorize endpoint. */
-export const OAUTH_ENABLED = import.meta.env.VITE_OAUTH_ENABLED === 'true'
+/** Google Identity Services web client ID. */
+export const GOOGLE_CLIENT_ID = (import.meta.env.VITE_GOOGLE_CLIENT_ID ?? '').trim()

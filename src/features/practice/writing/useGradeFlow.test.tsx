@@ -42,8 +42,10 @@ interface Server {
   submit?: () => Response
   /** The essay of this prompt that still waits for its teacher, if any. */
   waiting?: string | null
+  /** 'error' makes the grading terms fail; leave it out for the usual terms. */
+  terms?: 'error'
 }
-function server({ balance = 0, subscription: sub = subscription(), full = [], backlog = [], submit, waiting = null }: Server = {}) {
+function server({ balance = 0, subscription: sub = subscription(), full = [], backlog = [], submit, waiting = null, terms }: Server = {}) {
   fetchMock.mockImplementation(async (input, options = {}) => {
     const url = new URL(String(input))
     const call = { path: url.pathname, method: options.method ?? 'GET', body: typeof options.body === 'string' ? JSON.parse(options.body) : options.body }
@@ -51,7 +53,7 @@ function server({ balance = 0, subscription: sub = subscription(), full = [], ba
     switch (url.pathname) {
       case '/api/access/me/points': return json(wallet(balance))
       case '/api/access/me/subscription': return sub === 'error' ? json({ message: 'down' }, 500) : sub === null ? json(null, 204) : json(sub)
-      case '/api/learning/free-writing/grading-terms': return json({ pointCost: 3, minWords: 50, maxWords: 1000 })
+      case '/api/learning/free-writing/grading-terms': return terms === 'error' ? json({ message: 'down' }, 500) : json({ pointCost: 3, minWords: 50, maxWords: 1000 })
       case '/api/users/examiners': return json([examiner(ids.lan, 'Ms Lan Phương'), examiner(ids.quan, 'Mr Minh Quân')])
       case '/api/assessments/examiners/availability': return json([...new Set([...full, ...backlog])].map((examinerId) => ({ examinerId, full: true, backlog: backlog.includes(examinerId) })))
       case '/api/learning/free-writing/examiner-submissions/pending': return json(waiting ? { pending: true, submissionId: waiting } : { pending: false })
@@ -94,6 +96,23 @@ describe('finishing a Writing essay', () => {
     expect(cardOf(dialog, 'Giáo viên chấm').getByRole('button', { name: 'Chọn giáo viên' })).toBeEnabled()
     expect(cardOf(dialog, 'AI chấm').getByText(/số dư 0 point · còn thiếu 3 point/)).toBeInTheDocument()
     expect(cardOf(dialog, 'AI chấm').getByRole('button', { name: 'Nạp point để AI chấm' })).toBeInTheDocument()
+  })
+
+  it('shows no price while the grading terms cannot be read, and the choice once a retry reads them', async () => {
+    server({ balance: 10, terms: 'error' })
+    show()
+    fireEvent.click(screen.getByRole('button', { name: 'Hoàn thành' }))
+
+    const unavailable = await screen.findByRole('dialog', { name: 'Chọn cách chấm bài' })
+    expect(await within(unavailable).findByText(/Chưa tải được điều khoản chấm/)).toBeInTheDocument()
+    expect(within(unavailable).queryByText(/point/)).not.toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'AI chấm' })).not.toBeInTheDocument()
+
+    server({ balance: 10 })
+    fireEvent.click(within(unavailable).getByRole('button', { name: 'Thử lại' }))
+
+    expect(await screen.findByRole('region', { name: 'AI chấm' })).toBeInTheDocument()
+    expect(screen.queryByText(/Chưa tải được điều khoản chấm/)).not.toBeInTheDocument()
   })
 
   it('sends the essay to the chosen teacher and opens the result page; no point is touched', async () => {

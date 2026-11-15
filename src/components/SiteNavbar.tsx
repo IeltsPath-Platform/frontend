@@ -73,6 +73,7 @@ const memberCoursesNav: NavItem = {
   children: [...(coursesNav.children ?? []), { to: REVIEW_BASKET_PATH, label: 'Giỏ ôn tập' }],
 }
 const practice: NavItem = { to: '/practice-tests', label: 'Luyện tập 4 kỹ năng', children: practiceSkills }
+const mentors: NavItem = { to: '/mentors', label: 'Đội ngũ chuyên gia' }
 const discovery: NavItem = {
   to: '/community',
   label: 'Khám phá',
@@ -90,6 +91,7 @@ const guestNavigation: readonly NavItem[] = [
   { to: '/home', label: 'Trang chủ' },
   coursesNav,
   practice,
+  mentors,
   discovery,
 ]
 
@@ -105,6 +107,7 @@ const memberNavigation: readonly NavItem[] = [
   },
   memberCoursesNav,
   practice,
+  mentors,
   discovery,
 ]
 

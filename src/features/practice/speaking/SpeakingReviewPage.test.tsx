@@ -6,7 +6,7 @@ import { HttpError } from '@/lib/httpClient'
 import { SpeakingReviewPage } from './SpeakingReviewPage'
 import { RecordingTooLongError } from './sendSpeakingSubmission'
 import { clearSession, getRecording, saveRecording } from './speakingSession'
-import { SPEAKING_AI_POINT_COST, TEACHER_SOON } from './useSpeakingGradeFlow'
+import { TEACHER_SOON } from './useSpeakingGradeFlow'
 import type { SpeakingTask } from './speakingApi'
 
 const api = vi.hoisted(() => ({ getSpeakingTask: vi.fn() }))
@@ -24,6 +24,8 @@ vi.mock('./sendSpeakingSubmission', async (importOriginal) => ({
 vi.mock('../writing/useWritingWallet', () => ({
   useWritingWallet: () => ({ client: undefined, isLoggedIn: true, balance: null, error: '', check: () => Promise.resolve(2), checkAccess: wallet.checkAccess, onActivated: vi.fn() }),
 }))
+
+const SERVER_TERMS = { enabled: true, pointCost: 9, maxRecordingBytes: 6 * 1024 * 1024, retentionDays: 90 }
 
 const PART_1 = '00000000-0000-0000-0000-000000000001'
 const PART_2 = '00000000-0000-0000-0000-000000000002'
@@ -53,9 +55,8 @@ describe('SpeakingReviewPage', () => {
   beforeEach(() => {
     clearSession('pv')
     sender.send.mockReset()
-    // No terms from the server unless a test says so: the built-in price is shown.
     terms.getSpeakingTerms.mockReset()
-    terms.getSpeakingTerms.mockRejectedValue(new Error('terms unavailable'))
+    terms.getSpeakingTerms.mockResolvedValue(SERVER_TERMS)
     api.getSpeakingTask.mockImplementation(async (_version: string, sectionId: string) => (
       sectionId === PART_1 ? task(PART_1, 1, ['Where is your hometown?', 'What do you like about it?']) : task(PART_2, 2, ['Describe a teacher who influenced you. You should say: who the teacher was, and why.'])
     ))
@@ -168,9 +169,87 @@ describe('SpeakingReviewPage', () => {
       const dialog = await screen.findByRole('dialog')
       expect(within(dialog).getByText('Chọn cách chấm bài')).toBeInTheDocument()
       expect(within(dialog).getByText(/Speaking · Part 1, Part 2/)).toBeInTheDocument()
-      expect(within(dialog).getByText(`Chi phí ${SPEAKING_AI_POINT_COST} point · số dư 12 point`)).toBeInTheDocument()
+      expect(within(dialog).getByText(`Chi phí ${SERVER_TERMS.pointCost} point · số dư 12 point`)).toBeInTheDocument()
       expect(within(dialog).getByRole('button', { name: 'Chọn giáo viên' })).toBeDisabled()
       expect(within(dialog).getByText(TEACHER_SOON)).toBeInTheDocument()
+    })
+
+    it('disables AI without a guessed price when terms fail and keeps all recordings', async () => {
+      terms.getSpeakingTerms.mockRejectedValue(new Error('terms unavailable'))
+      recordAll()
+      wallet.checkAccess.mockResolvedValue({ balance: 20, subscription: null })
+      renderReview()
+      await userEvent.click(await screen.findByRole('button', { name: 'Tiếp tục' }))
+
+      const dialog = await screen.findByRole('dialog')
+      expect(await within(dialog).findByRole('alert')).toHaveTextContent('Chưa tải được điều khoản chấm.')
+      const ai = within(dialog).getByRole('button', { name: 'Chấm bằng AI' })
+      expect(ai).toBeDisabled()
+      expect(ai).toHaveAccessibleDescription(/Thử lại để chọn cách chấm bài/)
+      expect(within(dialog).queryByText(/\d+ point/)).not.toBeInTheDocument()
+      await userEvent.click(ai)
+      expect(sender.send).not.toHaveBeenCalled()
+      expect(getRecording('pv', `${PART_1}-q0`)).not.toBeNull()
+      expect(getRecording('pv', `${PART_1}-q1`)).not.toBeNull()
+      expect(getRecording('pv', `${PART_2}-q0`)).not.toBeNull()
+    })
+
+    it('retries terms and sends only after confirming the returned price and upload limit', async () => {
+      const retriedTerms = { ...SERVER_TERMS, pointCost: 13, maxRecordingBytes: 4 * 1024 * 1024 }
+      terms.getSpeakingTerms.mockRejectedValueOnce(new Error('terms unavailable')).mockResolvedValue(retriedTerms)
+      sender.send.mockResolvedValue({ id: 'submission-1' })
+      recordAll()
+      wallet.checkAccess.mockResolvedValue({ balance: 30, subscription: null })
+      renderReview()
+      await userEvent.click(await screen.findByRole('button', { name: 'Tiếp tục' }))
+      await within(await screen.findByRole('dialog')).findByRole('alert')
+      await userEvent.click(screen.getByRole('button', { name: 'Thử lại' }))
+
+      expect(await screen.findByText('Chi phí 13 point · số dư 30 point')).toBeInTheDocument()
+      expect(terms.getSpeakingTerms).toHaveBeenCalledTimes(2)
+      expect(sender.send).not.toHaveBeenCalled()
+      await userEvent.click(screen.getByRole('button', { name: 'Chấm bằng AI · 13 point' }))
+      const dialog = await screen.findByRole('dialog')
+      await userEvent.click(within(dialog).getByRole('checkbox'))
+      await userEvent.click(within(dialog).getByRole('button', { name: /Chấm bài · 13 point/ }))
+      expect(sender.send).toHaveBeenCalledTimes(1)
+      expect(sender.send.mock.calls[0][0].maxRecordingBytes).toBe(retriedTerms.maxRecordingBytes)
+    })
+
+    it('keeps AI disabled when retried terms explicitly disable Speaking grading', async () => {
+      terms.getSpeakingTerms.mockRejectedValueOnce(new Error('terms unavailable'))
+        .mockResolvedValue({ ...SERVER_TERMS, enabled: false })
+      recordAll()
+      wallet.checkAccess.mockResolvedValue({ balance: 30, subscription: null })
+      renderReview()
+      await userEvent.click(await screen.findByRole('button', { name: 'Tiếp tục' }))
+      await within(await screen.findByRole('dialog')).findByRole('alert')
+      await userEvent.click(screen.getByRole('button', { name: 'Thử lại' }))
+
+      const ai = await screen.findByRole('button', { name: 'Chưa khả dụng' })
+      expect(ai).toBeDisabled()
+      expect(screen.getByText(/Chấm Speaking bằng AI hiện chưa được bật/)).toBeInTheDocument()
+      await userEvent.click(ai)
+      expect(sender.send).not.toHaveBeenCalled()
+    })
+
+    it('keeps AI disabled while terms load and does not reopen a dismissed loading dialog', async () => {
+      let resolveTerms!: (value: typeof SERVER_TERMS) => void
+      terms.getSpeakingTerms.mockReturnValue(new Promise((resolve) => { resolveTerms = resolve }))
+      recordAll()
+      wallet.checkAccess.mockResolvedValue({ balance: 30, subscription: null })
+      renderReview()
+      await userEvent.click(await screen.findByRole('button', { name: 'Tiếp tục' }))
+
+      const dialog = await screen.findByRole('dialog')
+      expect(within(dialog).getByRole('status')).toHaveTextContent('Đang tải điều khoản chấm…')
+      expect(within(dialog).getByRole('button', { name: 'Chấm bằng AI' })).toBeDisabled()
+      expect(within(dialog).getByRole('button', { name: 'Thử lại' })).toBeDisabled()
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Đóng' }))
+      await act(async () => resolveTerms(SERVER_TERMS))
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      expect(sender.send).not.toHaveBeenCalled()
+      expect(getRecording('pv', `${PART_1}-q0`)).not.toBeNull()
     })
 
     /** Opens the confirmation with enough points, as far as the button that sends. */
@@ -179,17 +258,17 @@ describe('SpeakingReviewPage', () => {
       wallet.checkAccess.mockResolvedValue({ balance, subscription: null })
       renderReview()
       await userEvent.click(await screen.findByRole('button', { name: 'Tiếp tục' }))
-      await userEvent.click(await screen.findByRole('button', { name: `Chấm bằng AI · ${SPEAKING_AI_POINT_COST} point` }))
+      await userEvent.click(await screen.findByRole('button', { name: `Chấm bằng AI · ${SERVER_TERMS.pointCost} point` }))
       return screen.findByRole('dialog')
     }
 
-    const sendButton = (dialog: HTMLElement) => within(dialog).getByRole('button', { name: new RegExp(`Chấm bài · ${SPEAKING_AI_POINT_COST} point`) })
+    const sendButton = (dialog: HTMLElement) => within(dialog).getByRole('button', { name: new RegExp(`Chấm bài · ${SERVER_TERMS.pointCost} point`) })
 
     it('shows the cost and what is sent, and does not send before the learner agrees', async () => {
       const dialog = await openConfirmation()
 
       expect(within(dialog).getByText('Chấm bài bằng AI')).toBeInTheDocument()
-      expect(within(dialog).getByText(`${12 - SPEAKING_AI_POINT_COST} point`)).toBeInTheDocument()
+      expect(within(dialog).getByText(`${12 - SERVER_TERMS.pointCost} point`)).toBeInTheDocument()
       expect(within(dialog).getByText('3 bản ghi · tổng 00:30 ✓')).toBeInTheDocument()
       expect(sendButton(dialog)).toBeDisabled()
 
@@ -297,7 +376,7 @@ describe('SpeakingReviewPage', () => {
       expect(await within(dialog).findByRole('alert')).toHaveTextContent('Part 2, câu 1 dài quá giới hạn')
     })
 
-    it('shows the price the server sets rather than the built-in one', async () => {
+    it('uses the server price and recording limit', async () => {
       terms.getSpeakingTerms.mockResolvedValue({ pointCost: 7, maxRecordingBytes: 10 * 1024 * 1024, retentionDays: 90 })
       sender.send.mockResolvedValue({ id: 'submission-1' })
       recordAll()
@@ -319,12 +398,12 @@ describe('SpeakingReviewPage', () => {
       renderReview()
 
       await userEvent.click(await screen.findByRole('button', { name: 'Tiếp tục' }))
-      expect(await screen.findByText(`Chi phí ${SPEAKING_AI_POINT_COST} point · số dư 2 point · còn thiếu ${SPEAKING_AI_POINT_COST - 2} point`)).toBeInTheDocument()
+      expect(await screen.findByText(`Chi phí ${SERVER_TERMS.pointCost} point · số dư 2 point · còn thiếu ${SERVER_TERMS.pointCost - 2} point`)).toBeInTheDocument()
       await userEvent.click(screen.getByRole('button', { name: 'Nạp point để AI chấm' }))
 
       const dialog = await screen.findByRole('dialog')
       expect(within(dialog).getByText('Bạn chưa đủ point để chấm bài')).toBeInTheDocument()
-      expect(within(dialog).getByText(`${SPEAKING_AI_POINT_COST - 2} point`)).toBeInTheDocument()
+      expect(within(dialog).getByText(`${SERVER_TERMS.pointCost - 2} point`)).toBeInTheDocument()
 
       await userEvent.click(within(dialog).getByRole('button', { name: /Nạp Key/ }))
       expect(await screen.findByText('Kích hoạt Gói / Nạp Key')).toBeInTheDocument()

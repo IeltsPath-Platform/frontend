@@ -3,7 +3,9 @@ import { HttpError } from '@/lib/httpClient'
 import { getSpeakingSubmission, settleSpeakingSubmission } from './speakingPracticeApi'
 import type { SpeakingSubmission } from './speakingPracticeApi'
 
-const POLL_MS = 4000
+/** A grade usually lands within the first half minute, so the first polls are quick and a long wait is checked less often. */
+const POLL_STEPS_MS = [4000, 4000, 4000, 4000, 4000, 8000, 8000, 8000, 15000]
+const pollDelay = (polls: number) => POLL_STEPS_MS[Math.min(polls, POLL_STEPS_MS.length - 1)]
 const TERMINAL = new Set(['GRADED', 'NEEDS_EXAMINER', 'ABANDONED'])
 
 export interface SpeakingSubmissionResultState {
@@ -31,6 +33,7 @@ export function useSpeakingSubmissionResult(submissionId: string): SpeakingSubmi
     let stopped = false
     let timer: number | undefined
     const controller = new AbortController()
+    let polls = 0
 
     const settle = async () => {
       if (settling.current || blocked.current) return
@@ -46,6 +49,9 @@ export function useSpeakingSubmissionResult(submissionId: string): SpeakingSubmi
     }
 
     const load = async () => {
+      timer = undefined
+      // A hidden tab asks nothing; coming back to it checks at once (see the visibility listener below).
+      if (document.visibilityState === 'hidden') { timer = window.setTimeout(load, pollDelay(polls)); return }
       try {
         const next = await getSpeakingSubmission(submissionId, controller.signal)
         if (stopped) return
@@ -53,14 +59,26 @@ export function useSpeakingSubmissionResult(submissionId: string): SpeakingSubmi
         setError('')
         if (next.status === 'PAYMENT_PENDING') void settle()
         // A grade waiting for a top-up does not change by itself, so polling stops until the learner retries.
-        if (!TERMINAL.has(next.status) && !blocked.current) timer = window.setTimeout(load, POLL_MS)
+        if (!TERMINAL.has(next.status) && !blocked.current) timer = window.setTimeout(load, pollDelay(polls++))
       } catch (cause) {
         if (stopped || controller.signal.aborted) return
         setError(cause instanceof Error ? cause.message : 'Không tải được trạng thái bài Speaking.')
       }
     }
+    const onVisible = () => {
+      // Only a poll that is waiting for its turn is brought forward; one already in flight schedules the next itself.
+      if (document.visibilityState !== 'visible' || stopped || timer === undefined) return
+      window.clearTimeout(timer)
+      void load()
+    }
+    document.addEventListener('visibilitychange', onVisible)
     void load()
-    return () => { stopped = true; controller.abort(); if (timer) window.clearTimeout(timer) }
+    return () => {
+      stopped = true
+      controller.abort()
+      if (timer) window.clearTimeout(timer)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
   }, [submissionId, round])
 
   const retry = useCallback(() => { blocked.current = false; setShort(false); setError(''); setRound((value) => value + 1) }, [])

@@ -97,8 +97,11 @@ export const communityApi = {
   updateComment: (id: string, body: string) => apiRequest(`/api/community/comments/${id}`, { method: 'PUT', auth: true, body: { body } }),
   deleteComment: (id: string) => apiRequest<void>(`/api/community/comments/${id}`, { method: 'DELETE', auth: true }),
   follow: (id: string, active: boolean) => apiRequest<void>(`/api/community/users/${id}/follow`, { method: active ? 'DELETE' : 'POST', auth: true }),
-  notifications: async () => z.array(notificationSchema).parse(await apiRequest('/api/notifications?size=20', { auth: true })),
+  notifications: async (page = 0) => z.array(notificationSchema).parse(await apiRequest(`/api/notifications?page=${page}&size=20`, { auth: true })),
   notificationPreferences: async () => z.array(notificationPreferenceSchema).parse(await apiRequest('/api/notifications/preferences', { auth: true })),
+  mailPreferences: async () => z.object({ learning: z.boolean() }).parse(await apiRequest('/api/notifications/mail-preferences', { auth: true })),
+  updateMailPreferences: async (learning: boolean) => z.object({ learning: z.boolean() }).parse(
+    await apiRequest('/api/notifications/mail-preferences', { method: 'PUT', auth: true, body: { learning } })),
   updateNotificationPreference: (eventType: string, enabled: boolean) => apiRequest<NotificationPreference>(`/api/notifications/preferences/${encodeURIComponent(eventType)}`, { method: 'PUT', auth: true, body: { enabled } }),
   reportContent: async (contentType: 'POST' | 'COMMENT', contentId: string, reason: string) => contentReportSchema.parse(await apiRequest('/api/community/reports', { method: 'POST', auth: true, body: { contentType, contentId, reason } })),
   pendingReports: async (page = 0, size = 20) => reportQueueSchema.parse(await apiRequest(`/api/community/admin/reports?page=${page}&size=${size}`, { auth: true })),
@@ -106,6 +109,8 @@ export const communityApi = {
   unread: async () => z.object({ count: z.number() }).parse(await apiRequest('/api/notifications/unread-count', { auth: true })),
   markRead: (id: string) => apiRequest<void>(`/api/notifications/${id}/read`, { method: 'PUT', auth: true }),
   markAll: () => apiRequest('/api/notifications/read-all', { method: 'PUT', auth: true }),
+  deleteNotification: (id: string) => apiRequest<void>(`/api/notifications/${id}`, { method: 'DELETE', auth: true }),
+  deleteReadNotifications: async () => z.object({ count: z.number() }).parse(await apiRequest('/api/notifications/read', { method: 'DELETE', auth: true })),
 }
 
 export type Comment = { id: string; authorId: string; parentCommentId: string | null; body: string; replyCount: number; author?: { displayName: string } }

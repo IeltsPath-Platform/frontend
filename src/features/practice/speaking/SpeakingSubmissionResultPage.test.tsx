@@ -61,8 +61,9 @@ describe('SpeakingSubmissionResultPage', () => {
     renderPage()
 
     expect(await screen.findByText('Đã chấm xong')).toBeInTheDocument()
-    // No overall band for one part: the average of the four criteria is shown and said to be an average.
-    expect(screen.getByText('4.9')).toBeInTheDocument()
+    // No overall band for one part: the average of the four criteria, rounded to the nearest half band like an IELTS
+    // overall band (4.875 shows as 5.0, never 4.9), is shown and said to be an average.
+    expect(within(screen.getByRole('region', { name: 'Band Speaking' })).getByText('5.0')).toBeInTheDocument()
     expect(screen.getByText(/Trung bình các tiêu chí/)).toBeInTheDocument()
     // The weakest criterion is marked in the score panel and again on its own bar.
     expect(screen.getAllByText('Cần cải thiện nhất')).toHaveLength(2)
@@ -111,12 +112,14 @@ describe('SpeakingSubmissionResultPage', () => {
     expect(api.settleSpeakingSubmission).toHaveBeenCalledTimes(2)
   })
 
-  it('says a submission that needs an examiner was not charged', async () => {
+  it('says the grader is down, not that an examiner will look, and that the learner was not charged', async () => {
     api.getSpeakingSubmission.mockResolvedValue(submission('NEEDS_EXAMINER'))
     renderPage()
 
-    expect(await screen.findByText('Cần giám khảo xem lại')).toBeInTheDocument()
+    expect(await screen.findByText('Hệ thống chấm đang lỗi')).toBeInTheDocument()
+    expect(screen.getByText(/vui lòng thử lại sau/)).toBeInTheDocument()
     expect(screen.getByText(/không bị trừ point/)).toBeInTheDocument()
+    expect(screen.queryByText(/giám khảo/i)).not.toBeInTheDocument()
   })
 
   it('shows a calm waiting message while the submission is being graded', async () => {

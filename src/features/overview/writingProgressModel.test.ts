@@ -1,51 +1,69 @@
 import { describe, expect, it } from 'vitest'
-import type { WritingProgressPoint, WritingRecurringError } from './api/writingProgressApi'
-import { chartPoints, errorShare, linePath, shownErrors } from './writingProgressModel'
+import type { WritingProgressPoint, WritingProgressTask } from './api/overviewApi'
+import { criteriaOf, defaultTask, gradingChanges, layoutChart } from './writingProgressModel'
 
-const point = (band: number, promptVersion: string | null): WritingProgressPoint => ({
-  submissionId: `${band}-${promptVersion}`,
-  source: 'LESSON',
-  gradedAt: '2026-11-01T10:00:00Z',
-  overallBand: band,
-  criteria: {},
-  promptVersion,
+function point(overallBand: number, extra: Partial<WritingProgressPoint> = {}): WritingProgressPoint {
+  return { submissionId: `s-${overallBand}-${Math.random()}`, source: 'FREE', gradedAt: '2026-11-01T10:00:00Z', overallBand, criteria: { TR: overallBand, CC: overallBand, LR: overallBand, GRA: overallBand }, ...extra }
+}
+const task = (code: WritingProgressTask['task'], count: number): WritingProgressTask => ({
+  task: code, insufficient: count < 3, points: Array.from({ length: count }, () => point(6)), recurringErrors: [], fixedErrors: [],
 })
 
-describe('chartPoints', () => {
-  it('spreads essays oldest-left and maps bands 0–9 onto the height', () => {
-    const chart = chartPoints([point(0, 'v1'), point(9, 'v1')], 100, 90)
-
-    expect(chart.map((item) => [item.x, item.y])).toEqual([[0, 90], [100, 0]])
-  })
-
-  it('marks the first essay after a prompt version change only', () => {
-    const chart = chartPoints([point(5, 'v1'), point(5.5, 'v1'), point(6, 'v2')], 100, 90)
-
-    expect(chart.map((item) => item.promptChanged)).toEqual([false, false, true])
-  })
-
-  it('returns nothing for an empty list and puts a single essay at the left edge', () => {
-    expect(chartPoints([], 100, 90)).toEqual([])
-    expect(chartPoints([point(6, 'v1')], 100, 90)[0].x).toBe(0)
+describe('criteriaOf', () => {
+  it('grades Task 1 on Task Achievement and Task 2 on Task Response', () => {
+    expect(criteriaOf('TASK_1')).toEqual(['TA', 'CC', 'LR', 'GRA'])
+    expect(criteriaOf('TASK_2')).toEqual(['TR', 'CC', 'LR', 'GRA'])
   })
 })
 
-describe('linePath', () => {
-  it('joins the points with a move then lines', () => {
-    expect(linePath(chartPoints([point(0, 'v1'), point(9, 'v1')], 100, 90))).toBe('M0 90 L100 0')
+describe('defaultTask', () => {
+  it('opens the task with more essays, Task 1 on a tie, and Task 1 when there is nothing', () => {
+    expect(defaultTask([task('TASK_1', 1), task('TASK_2', 4)])).toBe('TASK_2')
+    expect(defaultTask([task('TASK_1', 2), task('TASK_2', 2)])).toBe('TASK_1')
+    expect(defaultTask([])).toBe('TASK_1')
   })
 })
 
-describe('errorShare', () => {
-  it('reads as essays with the error out of essays in the window', () => {
-    expect(errorShare({ essaysWithError: 3, essaysTotal: 5 })).toBe('3/5 bài')
+describe('gradingChanges', () => {
+  it('marks where the prompt version changed and ignores essays without one', () => {
+    const points = [point(5, { promptVersion: 'v1' }), point(5, { promptVersion: 'v1' }), point(6, { promptVersion: 'v2' }), point(6), point(6, { promptVersion: 'v2' })]
+
+    expect(gradingChanges(points)).toEqual([2])
   })
 })
 
-describe('shownErrors', () => {
-  it('keeps the first five errors the API ordered', () => {
-    const errors = Array.from({ length: 8 }, (_, index) => ({ errorCode: `E${index}` }) as WritingRecurringError)
+describe('layoutChart', () => {
+  it('fits the band window to the data with half a band of room, inside 0 to 9', () => {
+    const low = layoutChart([point(5), point(6)], criteriaOf('TASK_2')).yTicks.map((tick) => tick.value)
+    expect(low).toEqual([4, 5, 6, 7])
+    const top = layoutChart([point(8.5), point(9)], criteriaOf('TASK_2')).yTicks.map((tick) => tick.value)
+    expect(top.at(-1)).toBe(9)
+  })
 
-    expect(shownErrors(errors).map((error) => error.errorCode)).toEqual(['E0', 'E1', 'E2', 'E3', 'E4'])
+  it('draws one run per series and puts a higher band higher on the chart', () => {
+    const layout = layoutChart([point(5), point(7)], criteriaOf('TASK_2'))
+    const overall = layout.series[0]
+
+    expect(layout.series.map((series) => series.key)).toEqual(['OVERALL', 'TR', 'CC', 'LR', 'GRA'])
+    expect(overall.runs).toHaveLength(1)
+    expect(overall.dots[1].y).toBeLessThan(overall.dots[0].y)
+    expect(overall.dots[1].x).toBeGreaterThan(overall.dots[0].x)
+  })
+
+  it('cuts a line where a criterion has no band instead of joining across the gap', () => {
+    const missing = point(6)
+    delete missing.criteria.CC
+    const layout = layoutChart([point(6), missing, point(6), point(6)], criteriaOf('TASK_2'))
+    const cc = layout.series.find((series) => series.key === 'CC')!
+
+    expect(cc.dots.map((dot) => dot.index)).toEqual([0, 2, 3])
+    expect(cc.runs).toHaveLength(2)
+  })
+
+  it('puts a single essay in the middle instead of dividing by zero', () => {
+    const layout = layoutChart([point(6)], criteriaOf('TASK_1'))
+
+    expect(Number.isFinite(layout.xs[0])).toBe(true)
+    expect(layout.series[0].dots[0].y).toSatisfy(Number.isFinite)
   })
 })

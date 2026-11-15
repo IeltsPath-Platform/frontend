@@ -7,7 +7,7 @@ import { notebookApi } from '@/features/vocabulary/api/notebookApi'
 import { OverviewDetailedStats } from './OverviewDetailedStats'
 
 vi.mock('@/features/auth/authSession', () => ({ useAuthSession: () => ({ isLoggedIn: true, email: 'learner@example.test' }) }))
-vi.mock('../api/overviewApi', () => ({ overviewApi: { allProgress: vi.fn(), progress: vi.fn(), bands: vi.fn(), bandAvailability: vi.fn(), report: vi.fn(), placementBand: vi.fn() } }))
+vi.mock('../api/overviewApi', () => ({ overviewApi: { allProgress: vi.fn(), progress: vi.fn(), bands: vi.fn(), bandAvailability: vi.fn(), report: vi.fn(), placementBand: vi.fn(), writingProgress: vi.fn() } }))
 vi.mock('@/features/vocabulary/api/notebookApi', () => ({ notebookApi: { getVocabularyMap: vi.fn() } }))
 
 const course = { courseId: 'course-1', name: 'IELTS Foundation', bandLevel: 5.5, completedLessons: 3, totalLessons: 10, percent: 30, startedAt: null, lastStudiedAt: null, activityProvenance: 'STUDY_SESSION', resumeTarget: { type: 'COURSE' as const, courseId: 'course-1' } }
@@ -45,6 +45,7 @@ beforeEach(() => {
   vi.mocked(overviewApi.progress).mockResolvedValue(progress)
   vi.mocked(overviewApi.bands).mockResolvedValue(bands)
   vi.mocked(overviewApi.placementBand).mockResolvedValue(null)
+  vi.mocked(overviewApi.writingProgress).mockResolvedValue({ tasks: [] })
   vi.mocked(overviewApi.report).mockResolvedValue({ skills: [], estimatedBand: null, target: { targetBand: 7, gap: 1, examDate: null } })
   vi.mocked(overviewApi.bandAvailability).mockResolvedValue({ options: [{ seriesKind: 'MOCK', skill: 'LISTENING', latestSubmittedAt: '2026-11-02T10:00:00Z' }, { seriesKind: 'PLACEMENT', skill: 'LISTENING', latestSubmittedAt: '2026-10-02T10:00:00Z' }] })
   vi.mocked(notebookApi.getVocabularyMap).mockResolvedValue({ currentBand: 'B1', suggestedBand: 'A2', bands: [{ cefr: 'B1', band: '4.0–5.0', total: 100, learned: 70, learning: 40, needsReview: 30, notLearned: 30 }] })

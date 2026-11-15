@@ -184,6 +184,25 @@ export function GradeConfirmDialog({ figures, busy, error, canGrade, onGrade, on
   )
 }
 
+/** The grading terms (cost, word limits) did not load: nothing can be priced, so say so and let the learner try again. */
+export function GradingTermsDialog({ loading, onRetry, onClose }: { loading: boolean; onRetry: () => void; onClose: () => void }) {
+  return (
+    <Dialog open onOpenChange={(open) => { if (!open) onClose() }}>
+      <DialogContent className="ww-dialog">
+        <DialogTitle className="ww-dialog-title">Chọn cách chấm bài</DialogTitle>
+        <DialogDescription>Bài viết của bạn vẫn được giữ nguyên.</DialogDescription>
+        <p role={loading ? 'status' : 'alert'}>
+          {loading ? 'Đang tải điều khoản chấm…' : 'Chưa tải được điều khoản chấm. Thử lại để chọn cách chấm bài.'}
+        </p>
+        <div className="ww-dialog-actions">
+          <button type="button" className="ww-secondary" onClick={onClose}>Quay lại chỉnh sửa</button>
+          <button type="button" className="ww-primary" disabled={loading} onClick={onRetry}>Thử lại</button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 /** The balance is under the cost: say by how much and offer to add points with an activation key. */
 export function NotEnoughPointsDialog({ cost, balance, onActivate, onClose, copy }: {
   cost: number

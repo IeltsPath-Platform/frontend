@@ -11,11 +11,12 @@ import '@/features/learning-path/learning-path.css'
 import '@/features/learning-path/practice-essay.css'
 import { ExaminerResult } from './ExaminerResult'
 import { getWritingSubmission } from './writingApi'
-import { WritingFixList } from './WritingFixList'
+import type { WritingBandLimit, WritingCorrection, WritingCriterion, WritingSubmission } from './writingApi'
+import { DataChecksView, TaskChecksView } from './WritingChecks'
+import { CorrectedEssay, CorrectionList, RevisionSummary } from './WritingErrors'
+import { WritingPriorities } from './WritingPriorities'
+import { certaintyOf, errorNames, markEssay, segmentAt } from './writingResultModel'
 import { WritingNextSteps } from './WritingNextSteps'
-import { categoryOf, fixId, type ActiveFix } from './writingFixes'
-import { BandLimitNotice } from '../components/BandLimitNotice'
-import type { WritingCorrection, WritingCriterion, WritingSubmission } from './writingApi'
 import { formatClock, loadResultContext, lowestIndex, measureEssay, roundBand } from './writingText'
 import '../reading/reading-workspace.css'
 import './writing-result.css'
@@ -30,6 +31,21 @@ const CRITERIA: Record<string, { name: string; meaning: string }> = {
   GRA: { name: 'Grammatical Range & Accuracy', meaning: 'Ngữ pháp' },
 }
 
+const FALLBACK_CATEGORY = { label: 'Khác', tone: 'task' }
+
+/** The error categories Content can attach to a correction; one this page does not know falls back to "Khác". */
+const CATEGORY: Record<string, { label: string; tone: string }> = {
+  GRAMMAR: { label: 'Ngữ pháp', tone: 'grammar' },
+  VOCABULARY: { label: 'Từ vựng', tone: 'vocabulary' },
+  COHERENCE: { label: 'Mạch lạc', tone: 'coherence' },
+  TASK: { label: 'Nội dung', tone: 'task' },
+  SPELLING_NUMBER: { label: 'Chính tả & số', tone: 'vocabulary' },
+  OTHER: FALLBACK_CATEGORY,
+}
+
+function categoryOf(category: WritingCorrection['category']) {
+  return CATEGORY[category] ?? FALLBACK_CATEGORY
+}
 function comment(band: number) {
   if (band >= 7) return 'Bài viết rất tốt! Hãy giữ nhịp luyện tập để chạm band cao hơn.'
   if (band >= 6) return 'Bài viết khá tốt! Hãy sửa các lỗi được đánh dấu để lên band cao hơn.'
@@ -37,39 +53,22 @@ function comment(band: number) {
   return 'Bài viết còn nhiều điểm cần cải thiện. Hãy thử chế độ Hướng dẫn từng bước để luyện nền tảng.'
 }
 
-/** {@code number} is the position of the correction in the list of mistakes, so a mark in the essay and its card share a number. */
-type Segment = { text: string; correction?: WritingCorrection; number?: number }
-
-/** Cuts the essay at each correction's excerpt, in the order they appear, so the marks never overlap. */
-function markEssay(essay: string, corrections: WritingCorrection[]): Segment[] {
-  const found = corrections
-    .map((correction, index) => ({ correction, number: index + 1, start: essay.indexOf(correction.excerpt) }))
-    .filter((item) => item.start >= 0)
-    .sort((a, b) => a.start - b.start)
-  const segments: Segment[] = []
-  let cursor = 0
-  for (const { correction, number, start } of found) {
-    if (start < cursor) continue
-    if (start > cursor) segments.push({ text: essay.slice(cursor, start) })
-    segments.push({ text: correction.excerpt, correction, number })
-    cursor = start + correction.excerpt.length
-  }
-  if (cursor < essay.length) segments.push({ text: essay.slice(cursor) })
-  return segments
-}
-
-function Criterion({ item, worst }: { item: WritingCriterion; worst: boolean }) {
+function Criterion({ item, worst, limits }: { item: WritingCriterion; worst: boolean; limits: WritingBandLimit[] }) {
   const info = CRITERIA[item.code] ?? { name: item.code, meaning: '' }
   return (
     <article className={`wr-criterion${worst ? ' is-worst' : ''}`}>
-      <div className="wr-criterion-band" aria-label={`Band ${item.band.toFixed(1)}`}>{item.band.toFixed(1)}</div>
+      <div className="wr-criterion-band" aria-label={`Band ${item.band.toFixed(1)}, ước tính`}>{item.band.toFixed(1)}</div>
       <div>
-        <h3>{info.name}{worst && <span className="wr-badge">Cần cải thiện nhất</span>}{item.limited && <span className="wr-badge">Đã giới hạn</span>}</h3>
-        <p className="wr-muted">{info.meaning}</p>
+        <h3>{info.name}{worst && <span className="wr-badge">Cần cải thiện nhất</span>}</h3>
+        <p className="wr-muted">{info.meaning} · band ước tính</p>
       </div>
+      {limits.length > 0 && <ul className="wr-limits">{limits.map((limit) => <li key={limit.reason}>{limit.message}</li>)}</ul>}
       <ul className="wr-points">
         {item.strengths.map((text) => <li key={text}><b>✓ Làm tốt:</b> {text}</li>)}
         {item.improvements.map((text) => <li key={text}><b>△ Cần cải thiện:</b> {text}</li>)}
+        {item.evidence?.map((text) => <li key={text} className="wr-evidence"><b>Dẫn chứng:</b> “{text}”</li>)}
+        {item.descriptor && <li className="wr-muted"><b>Mô tả band này:</b> {item.descriptor}</li>}
+        {item.nextBand && <li className="wr-next"><b>Để lên band {item.nextBand.band.toFixed(1)}:</b> {item.nextBand.descriptor}</li>}
       </ul>
     </article>
   )
@@ -80,9 +79,6 @@ function Graded({ submission, submissionId }: { submission: WritingSubmission; s
   const location = useLocation()
   const origin = useMemo(() => readOrigin(location.search), [location.search])
   const essayRef = useRef<HTMLElement>(null)
-  const [active, setActive] = useState<ActiveFix | null>(null)
-  /** Picking a mark of the essay scrolls to its card in the list of mistakes and highlights both. */
-  const pick = (number: number) => setActive((current) => ({ number, tick: (current?.tick ?? 0) + 1 }))
   const context = useMemo(() => loadResultContext(submissionId), [submissionId])
   const criteria = submission.criteria ?? []
   const corrections = useMemo(() => submission.corrections ?? [], [submission.corrections])
@@ -95,6 +91,17 @@ function Graded({ submission, submissionId }: { submission: WritingSubmission; s
   const tones = [...new Set(corrections.map((item) => categoryOf(item.category)))]
   const studyPoints = useMemo(() => mapStudyPoints(submission.studyPoints), [submission.studyPoints])
   const taskJudgments = useMemo(() => mapKnowledgeJudgments(submission.taskKnowledgePointJudgments), [submission.taskKnowledgePointJudgments])
+  const groups = useMemo(() => submission.errorGroups ?? [], [submission.errorGroups])
+  const names = useMemo(() => errorNames(corrections, groups), [corrections, groups])
+  const [focusAt, setFocusAt] = useState<number | null>(null)
+
+  /** Scrolls the marked essay to the first place the excerpt is written and lights that stretch up. */
+  function showExcerpt(excerpt: string) {
+    const segment = segmentAt(segments, essay, excerpt)
+    if (!segment) return
+    setFocusAt(segment.start)
+    document.getElementById(`wr-seg-${segment.start}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
 
   return (
     <div className="wr-page">
@@ -130,6 +137,9 @@ function Graded({ submission, submissionId }: { submission: WritingSubmission; s
           </section>
         </div>
 
+        <WritingPriorities priorities={submission.priorities ?? []} onShow={showExcerpt} />
+        {submission.revision && <RevisionSummary revision={submission.revision} names={names} />}
+
         <section className="wr-metrics" aria-label="Số đo tự động từ bài viết">
           <p className="wr-muted">Số đo tự động từ bài viết</p>
           <div>
@@ -142,31 +152,29 @@ function Graded({ submission, submissionId }: { submission: WritingSubmission; s
         </section>
 
         <h2 className="wr-h2">Chi tiết theo từng tiêu chí</h2>
-        <BandLimitNotice messages={(submission.bandLimits ?? []).map((limit) => limit.message)} />
-        <div className="wr-criteria">{criteria.map((item, index) => <Criterion key={item.code} item={item} worst={index === worst} />)}</div>
+        <div className="wr-criteria">
+          {criteria.map((item, index) => (
+            <Criterion key={item.code} item={item} worst={index === worst} limits={(submission.bandLimits ?? []).filter((limit) => limit.criterion === item.code)} />
+          ))}
+        </div>
+
+        {submission.dataChecks && <DataChecksView checks={submission.dataChecks} onShow={showExcerpt} />}
+        {submission.taskChecks && <TaskChecksView checks={submission.taskChecks} onShow={showExcerpt} />}
 
         <h2 className="wr-h2" id="wr-marked">Bài viết của bạn đã được đánh dấu</h2>
         <section className="wr-essay" ref={essayRef} aria-label="Bài viết đã đánh dấu">
           {tones.length > 0 && <p className="wr-legend">{tones.map((tone) => <span key={tone.label} className={`wr-mark wr-mark-${tone.tone}`}>{tone.label}</span>)}</p>}
           {segments.length === 0 && <p className="wr-muted">Không còn bản bài viết để hiển thị.</p>}
-          {essay && segments.map((segment, index) => {
-            const { correction, number } = segment
-            if (!correction || number === undefined) return <span key={index}>{segment.text}</span>
-            return (
-              <mark
-                aria-controls={fixId(number)} key={index} role="button" tabIndex={0}
-                className={`wr-mark wr-mark-${categoryOf(correction.category).tone} wr-mark--pick${active?.number === number ? ' is-active' : ''}`}
-                onClick={() => pick(number)}
-                onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); pick(number) } }}
-                title="Bấm để xem giải thích lỗi này"
-              >
-                {segment.text}<sup className="wr-mark__no" aria-label={`lỗi ${number}`}>{number}</sup>
-              </mark>
-            )
+          {essay && segments.map((segment) => {
+            const focus = focusAt === segment.start ? ' is-focus' : ''
+            return segment.correction
+              ? <mark key={segment.start} id={`wr-seg-${segment.start}`} className={`wr-mark wr-mark-${categoryOf(segment.correction.category).tone}${certaintyOf(segment.correction) === 'SUGGESTION' ? ' wr-mark-suggestion' : ''}${focus}`} title={segment.correction.suggestion}>{segment.text}</mark>
+              : <span key={segment.start} id={`wr-seg-${segment.start}`} className={focus.trim()}>{segment.text}</span>
           })}
         </section>
 
-        {corrections.length > 0 && <WritingFixList active={active} corrections={corrections} />}
+        <CorrectionList corrections={corrections} groups={groups} categoryOf={categoryOf} />
+        <CorrectedEssay essay={essay} corrections={corrections} />
 
         <WritingNextSteps
           backTo={`${location.pathname}${location.search}`}

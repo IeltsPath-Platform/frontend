@@ -27,6 +27,8 @@
 .notification-preferences-list {
   margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: .7rem;
 }
+.notification-preferences-group { margin-top: 1.5rem; }
+.notification-preferences-group h2 { margin: 0 0 .65rem; color: var(--community-text); font-size: 1.05rem; }
 .notification-preferences-list li {
   display: flex; align-items: center; gap: 1rem; padding: 1rem 1.15rem; border: 1px solid var(--community-border);
   border-radius: 14px; background: var(--community-surface); box-shadow: var(--community-shadow-sm);

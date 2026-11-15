@@ -20,7 +20,6 @@ pnpm-debug.log*
 # Local environment configuration
 .env
 .env.*
-!.env.example
 plans/reports/**/*.env
 
 # Certificates / secrets accidentally dropped in tree

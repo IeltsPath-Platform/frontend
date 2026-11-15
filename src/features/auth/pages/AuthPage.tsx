@@ -4,13 +4,10 @@ import { useRef, useState } from 'react'
 import { useLocation, useNavigate, useNavigationType } from 'react-router-dom'
 import authOwlSignIn from '@/assets/owl/auth-owl-signin.png'
 import authOwlSignUp from '@/assets/owl/auth-owl-signup.png'
-import { OAUTH_ENABLED } from '@/lib/env'
 import { HttpError } from '@/lib/httpClient'
 import { useToast } from '@/components/toast/toastContext'
 import { AuthForm, type AuthMode, type AuthSubmitPayload } from '../components/AuthForm'
-import type { SocialProvider } from '../components/SocialButtons'
-import { loginWithPassword, registerWithPassword } from '../authSession'
-import { authApi } from '../api/authApi'
+import { loginWithGoogle, loginWithPassword, registerWithPassword } from '../authSession'
 import { mapAuthPasswordHttpError } from '../lib/passwordRules'
 import { signInDestination } from '../staffRoles'
 import '../auth.css'
@@ -57,6 +54,7 @@ export function AuthPage({
   const { toast } = useToast()
   const contentRef = useRef<HTMLDivElement>(null)
   const [submitting, setSubmitting] = useState(false)
+  const googleInFlight = useRef(false)
   const [transitionState, setTransitionState] = useState<{
     activeMode: AuthMode
     previousMode: AuthMode | null
@@ -145,19 +143,37 @@ export function AuthPage({
     }
   }
 
-  function handleSocialSelect(provider: SocialProvider) {
-    if (!OAUTH_ENABLED) {
-      toast({ title: `Đăng nhập với ${provider} chưa được hỗ trợ.`, tone: 'info' })
-      return
-    }
+  async function handleGoogleCredential(idToken: string) {
+    if (googleInFlight.current) return
+    googleInFlight.current = true
+    setSubmitting(true)
     try {
-      authApi.startOAuth(provider)
-    } catch (error) {
-      toast({
-        title: error instanceof Error ? error.message : `Không bắt đầu được đăng nhập ${provider}.`,
-        tone: 'error',
+      const user = await loginWithGoogle(idToken)
+      onOpenChange?.(false)
+      const redirectTo = signInDestination(user.roles.map((role) => role.name), from)
+      navigate(redirectTo, {
+        replace: true,
+        state: currentMode === 'sign-in' && redirectTo.startsWith('/community')
+          ? { communityLoginTransition: true }
+          : null,
       })
+    } catch (error) {
+      const message = error instanceof HttpError && error.code === 'GOOGLE_EMAIL_NOT_SUPPORTED'
+        ? 'Tài khoản Google cần dùng Gmail hoặc email Google Workspace. Bạn có thể đăng nhập bằng mật khẩu.'
+        : error instanceof HttpError && error.code === 'GOOGLE_SIGNIN_NOT_ALLOWED'
+          ? 'Tài khoản này cần đăng nhập bằng mật khẩu.'
+          : error instanceof HttpError
+            ? error.message
+            : 'Không thể đăng nhập bằng Google. Vui lòng thử lại.'
+      toast({ title: message, tone: 'error' })
+    } finally {
+      googleInFlight.current = false
+      setSubmitting(false)
     }
+  }
+
+  function handleGoogleError(message: string) {
+    toast({ title: message, tone: 'error' })
   }
 
   const leftCopy = MODAL_LEFT_COPY[currentMode]
@@ -275,9 +291,9 @@ export function AuthPage({
                 mode={currentMode}
                 transitionDirection={transitionDirection}
                 submitting={submitting}
-                oauthEnabled={OAUTH_ENABLED}
                 onSubmit={handleSubmit}
-                onSocialSelect={handleSocialSelect}
+                onGoogleCredential={handleGoogleCredential}
+                onGoogleError={handleGoogleError}
                 onModeChange={handleSwitchMode}
                 onForgotPasswordClick={handleForgotPassword}
               />

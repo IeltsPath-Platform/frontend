@@ -90,7 +90,7 @@ export function TeacherSection() {
           ))}
         </div>
         <Button asChild className="home-orange-cta home-teacher-cta">
-          <Link to={`/mentors/${examiners[0]?.id ?? 'experts'}`}>
+          <Link to="/mentors">
             Xem hồ sơ chuyên gia <GraduationCap aria-hidden="true" /><ArrowRight aria-hidden="true" />
           </Link>
         </Button>
