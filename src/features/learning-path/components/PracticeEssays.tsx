@@ -2,6 +2,9 @@ import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'rea
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import { CheckCircle2, CircleAlert, ExternalLink, Hourglass, Loader2, X } from 'lucide-react'
+import { AiWaitPanel } from '@/components/loading/AiWaitPanel'
+import { essayWaitNote } from '@/components/loading/aiWaitNotes'
+import { Spinner } from '@/components/loading/Loading'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { boldRuns, countWords, essaySections, joinSections } from '@/features/practice/writing/writingText'
@@ -329,6 +332,7 @@ function EssayEditor({ active, attemptId, essay, grade, index, locked, onGrade, 
             </div>
           )}
         </div>
+        {submitting ? <AiWaitPanel compact hint="AI đang đọc bài viết và chấm theo 4 tiêu chí IELTS. Đừng đóng trang này." note={essayWaitNote} title="Đang chấm bài viết" /> : null}
         {(restoring && !waiting) || (locked && !graded && !waiting) ? null : (
           <footer className="lp-ws-card__foot">
             {waitingId !== null ? (
@@ -355,10 +359,10 @@ function EssayEditor({ active, attemptId, essay, grade, index, locked, onGrade, 
                   onClick={choice.open}
                   type="button"
                 >
-                  {submitting ? <Loader2 aria-hidden="true" className="lp-spin" /> : null}
+                  {submitting ? <Spinner /> : null}
                   {submitting ? 'Đang chấm bài…' : 'Nộp để chấm'}
                 </Button>
-                {submitting ? <p className="lp-hint lp-ws-card__note" role="status">Đang chấm, thường mất 10 đến 20 giây. Đừng đóng trang này.</p> : null}
+
                 {error ? (
                   <p className="lp-error lp-ws-card__note" role="alert">
                     <CircleAlert aria-hidden="true" size={16} /> {error}

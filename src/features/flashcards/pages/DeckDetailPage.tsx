@@ -9,7 +9,9 @@ import { CardFormDialog } from '../components/CardFormDialog'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { DeckBrowser } from '../components/DeckBrowser'
 import { DictionaryImportDialog } from '../components/DictionaryImportDialog'
-import '../flashcards.css'
+import '../flashcards.css'
+import { Loading } from '@/components/loading/Loading'
+import { StatusArt } from '@/components/StatusArt'
 
 type Modal = { kind: 'card'; card: Flashcard } | { kind: 'delete-deck' } | { kind: 'remove'; item: DeckItem } | { kind: 'import' } | null
 
@@ -84,15 +86,12 @@ export function DeckDetailPage() {
         )}
 
         <div id="deck-cards">
-          {items === null ? <p className="flashcards-empty">Đang tải thẻ…</p>
+          {items === null ? <Loading label="Đang tải thẻ…" />
             : items.length === 0 ? (
-              <div className="flashcards-empty">
-                <p>Học phần chưa có thẻ.</p>
-                <div className="fc-empty-actions">
-                  <Button onClick={() => setModal({ kind: 'import' })}><BookOpenText />Thêm từ từ điển</Button>
-                  <Button variant="outline" onClick={() => navigate(`/flashcards/decks/${deckId}/edit`)}><Pencil />Tự soạn thẻ</Button>
-                </div>
-              </div>
+              <StatusArt compact kind="empty" title="Học phần chưa có thẻ">
+                <Button onClick={() => setModal({ kind: 'import' })}><BookOpenText />Thêm từ từ điển</Button>
+                <Button variant="outline" onClick={() => navigate(`/flashcards/decks/${deckId}/edit`)}><Pencil />Tự soạn thẻ</Button>
+              </StatusArt>
             ) : <DeckBrowser items={items} onEdit={(item) => void editCard(item)} onRemove={(item) => setModal({ kind: 'remove', item })} />}
         </div>
       </main>

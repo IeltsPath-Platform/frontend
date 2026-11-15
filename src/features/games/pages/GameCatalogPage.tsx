@@ -29,7 +29,8 @@ import { gameName, setupPath, type GameType } from '../lib/gameRoutes'
 import heroOwl from '../assets/catalog-owl.webp'
 import rocketArt from '../assets/catalog-rocket.webp'
 import wordArt from '../assets/catalog-word.webp'
-import '../games-room.css'
+import '../games-room.css'
+import { Loading } from '@/components/loading/Loading'
 
 export function GameCatalogPage() {
   const navigate = useNavigate()
@@ -153,8 +154,8 @@ export function GameCatalogPage() {
           </Button>
         </div>
       ) : !catalog ? (
-        <div className="game-panel game-state" role="status">
-          Đang tải trò chơi…
+        <div className="game-panel game-state">
+          <Loading label="Đang tải trò chơi…" />
         </div>
       ) : catalog.games.length === 0 ? (
         <div className="game-panel game-state">

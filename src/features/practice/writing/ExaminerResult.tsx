@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom'
 import { Ban, Check, Hourglass } from 'lucide-react'
 import { SiteNavbar } from '@/components/SiteNavbar'
 import { LearnTrail } from '@/features/learning-path/components/LearnTrail'
-import { ApiErrorState, LoadingState } from '@/features/learning-path/components/PageState'
+import { ApiErrorState, PageSkeleton } from '@/features/learning-path/components/PageState'
 import { HISTORY_PATH, historyTrail, readOrigin } from '@/features/learning-path/lib/resultOrigin'
 import { useApiResource } from '@/features/learning-path/lib/useApiResource'
 import { getExaminer, getHumanReview, readStudyPoints } from './examinerApi'
@@ -261,7 +261,7 @@ export function ExaminerResult({ submission, submissionId }: { submission: Writi
     return () => window.clearInterval(id)
   }, [done, cancelled, refresh])
 
-  if (review.status === 'loading') return <LoadingState label="Đang tải kết quả chấm bài…" />
+  if (review.status === 'loading') return <PageSkeleton label="Đang tải kết quả chấm bài…" variant="article" />
   if (review.status === 'error' && review.error) return <ApiErrorState error={review.error} onRetry={reload} />
   const data = review.data
   if (!data) return null

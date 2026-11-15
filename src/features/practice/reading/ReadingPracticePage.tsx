@@ -13,7 +13,7 @@ import { ExamFinishBar } from './ExamFinishBar'
 import { useExamAnnotations } from './useExamAnnotations'
 import { useWordLookup } from './useWordLookup'
 import { WordLookupPopover } from './WordLookupPopover'
-import { LoadingState, ApiErrorState } from '@/features/learning-path/components/PageState'
+import { LoadingState, PageSkeleton, ApiErrorState } from '@/features/learning-path/components/PageState'
 import { StudyActivityTracker } from '@/features/study-time/StudyActivityTracker'
 import { useApiResource } from '@/features/learning-path/lib/useApiResource'
 import type { TestSection } from '@/features/learning-path/lib/attemptSnapshot'
@@ -23,6 +23,7 @@ import type { ReadingAttempt } from './readingPracticeApi'
 import { clockSeconds, isTypingTarget, toSavedResponses } from './workspace-support'
 import '@/features/learning-path/learning-path.css'
 import { parseSections } from './readingSections'
+import { StatusArt } from '@/components/StatusArt'
 import './reading-practice.css'
 import './reading-workspace.css'
 import './reading-workspace-practice.css'
@@ -40,7 +41,7 @@ export function ReadingPracticePage() {
   })
 
   if (!attemptId) return <Navigate replace to={CATALOG_PATH} />
-  if (resource.status === 'loading') return <LoadingState label="Đang tải bài Reading…" />
+  if (resource.status === 'loading') return <PageSkeleton label="Đang tải bài Reading…" variant="article" />
   if (resource.status === 'error' && resource.error) return <ApiErrorState error={resource.error} onRetry={resource.reload} />
   if (!resource.data) return null
   if (resource.data.attempt.status === 'SUBMITTED') return <NavigateResult attemptId={attemptId} navigate={navigate} />
@@ -187,7 +188,7 @@ function ReadingRunner({ attemptId, attempt, sections, saved }: {
     wordLookup.onClick(event)
   }
 
-  if (!section || sections.length === 0) return <main className="reading-state reading-empty"><h1>Đề chưa có câu hỏi</h1><Link to={CATALOG_PATH}>Về danh mục Reading</Link></main>
+  if (!section || sections.length === 0) return <main className="reading-practice-page"><StatusArt kind="empty" page title="Đề chưa có câu hỏi"><Link className="home-orange-cta" to={CATALOG_PATH}>Về danh mục Reading</Link></StatusArt></main>
 
   const title = section.snapshot?.title ?? `Passage ${section.partNo ?? activeIndex + 1}`
   const partLabel = `${timed ? 'Part' : 'Passage'} ${section.partNo ?? activeIndex + 1}`

@@ -34,7 +34,8 @@ import {
   adminTopicSchema,
   adminSetSchema,
 } from '../vocabularySchemas'
-import '../../admin.css'
+import '../../admin.css'
+import { Loading } from '@/components/loading/Loading'
 
 type AdminVocabTab = 'ITEMS' | 'TOPICS' | 'SETS'
 
@@ -620,7 +621,7 @@ export function AdminVocabularyPage() {
               {loadingItemDetail ? (
                 <div style={{ textAlign: 'center', padding: '3rem' }}>
                   <RotateCcw size={24} className="animate-spin" style={{ margin: '0 auto 0.5rem', color: '#2563eb' }} />
-                  <p style={{ color: '#64748b' }}>Đang tải dữ liệu từ…</p>
+                  <Loading label="Đang tải dữ liệu từ…" />
                 </div>
               ) : selectedItemDetail ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -887,7 +888,7 @@ export function AdminVocabularyPage() {
             </div>
 
             {loadingTopics ? (
-              <p style={{ textAlign: 'center', color: '#64748b' }}>Đang tải chủ đề…</p>
+              <Loading label="Đang tải chủ đề…" />
             ) : (
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
                 <thead>
@@ -970,7 +971,7 @@ export function AdminVocabularyPage() {
             </div>
 
             {loadingSets ? (
-              <p style={{ textAlign: 'center', color: '#64748b' }}>Đang tải bộ từ…</p>
+              <Loading label="Đang tải bộ từ…" />
             ) : (
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
                 <thead>
@@ -1171,7 +1172,7 @@ export function AdminVocabularyPage() {
 
             <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.4rem', paddingRight: '0.5rem' }}>
               {loadingReorder ? (
-                <p style={{ textAlign: 'center', color: '#64748b' }}>Đang tải danh sách từ…</p>
+                <Loading label="Đang tải danh sách từ…" />
               ) : reorderItems.length === 0 ? (
                 <p style={{ textAlign: 'center', color: '#64748b' }}>Bộ từ này chưa có từ vựng nào.</p>
               ) : (

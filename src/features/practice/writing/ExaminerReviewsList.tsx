@@ -1,13 +1,14 @@
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Ban, CheckCircle2, ChevronRight, Hourglass, TriangleAlert } from 'lucide-react'
-import { ApiErrorState, EmptyState, LoadingState } from '@/features/learning-path/components/PageState'
+import { ApiErrorState, EmptyState, PageSkeleton } from '@/features/learning-path/components/PageState'
 import { useApiResource } from '@/features/learning-path/lib/useApiResource'
 import { toApiError } from '@/features/learning-path/api/apiError'
 import { withOrigin } from '@/features/learning-path/lib/resultOrigin'
 import { listExaminerReviews, REVIEWS_PAGE_SIZE } from './examinerReviewsApi'
 import type { ExaminerReviewItem } from './examinerReviewsApi'
 import { getMyGradingJobs } from './gradingJobApi'
+import { StatusArt } from '@/components/StatusArt'
 import {
   countReviews, dateText, joinReviews, sourceText, taskText, viewReviews,
   type ReviewFilter, type ReviewRow,
@@ -118,7 +119,7 @@ export function ExaminerReviewsList() {
 
   return (
     <>
-      {first.status === 'loading' && <LoadingState label="Đang tải danh sách bài…" />}
+      {first.status === 'loading' && <PageSkeleton label="Đang tải danh sách bài…" variant="list" />}
       {first.status === 'error' && first.error && <ApiErrorState error={first.error} onRetry={reload} />}
       {first.status === 'success' && (
         rows.length === 0 ? (
@@ -135,7 +136,7 @@ export function ExaminerReviewsList() {
             {jobs.status === 'error' ? <p className="wl-note" role="status">Chưa lấy được trạng thái chấm bài; các bài đang hiện là đang chờ.</p> : null}
 
             {shown.length === 0
-              ? <p className="wl-empty">Không có bài nào trong mục này.</p>
+              ? <StatusArt compact kind="empty" title="Không có bài nào trong mục này." />
               : <ol className="wl-rows">{shown.map((row) => <Row key={row.submissionId} row={row} />)}</ol>}
 
             {hasNext ? (

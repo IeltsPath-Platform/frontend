@@ -20,13 +20,14 @@ import { PracticeAttemptReview } from './PracticeAttemptReview'
 import { PracticeEssays } from './PracticeEssays'
 import { PracticeSpeaking } from './PracticeSpeaking'
 import { PracticeReviewNotice } from './PracticeReviewNotice'
-import { ApiErrorState, LoadingState } from './PageState'
+import { ApiErrorState, PageSkeleton } from './PageState'
 import { RewardSummary } from './RewardSummary'
 import { newRequestId } from '../lib/requestId'
 import { startStudyPointPractice } from '../lib/studyPointPractice'
 import { reportApiError, reviewRefsFromSubmission, setPendingReviews } from '../lib/reviewGate'
 import { useApiResource } from '../lib/useApiResource'
 import type { ReviewOrigin } from '../lib/routes'
+import { StatusArt } from '@/components/StatusArt'
 
 type ItemMeta = { label: string; tone: 'success' | 'accent' | 'locked'; icon: typeof Lock }
 
@@ -75,7 +76,7 @@ export function LessonPractice({ lessonId, onChanged, reviewOrigin }: {
     onChanged?.()
   }
 
-  if (resource.status === 'loading') return <LoadingState label="Đang tải luyện thêm…" />
+  if (resource.status === 'loading') return <PageSkeleton label="Đang tải luyện thêm…" variant="list" />
   if (resource.status === 'error' && resource.error) return <ApiErrorState error={resource.error} onRetry={resource.reload} />
   if (!resource.data) return null
   return (
@@ -308,7 +309,7 @@ function PracticeView({ catalog, onReload, reviewOrigin, reviews }: {
         </p>
       ) : null}
       {catalog.items.length === 0 && reviews.length === 0 ? (
-        <p className="lp-empty">Bài này không có bộ luyện thêm.</p>
+        <StatusArt compact kind="empty" title="Bài này không có bộ luyện thêm." />
       ) : (
         <ul className="lp-practice-list" aria-label="Bài ôn và các bộ luyện thêm">
           {looseReviews.map((review) => <ReviewCard key={review.reviewId} review={review} reviewOrigin={reviewOrigin} />)}

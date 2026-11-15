@@ -27,7 +27,7 @@ import { LessonPractice } from '../components/LessonPractice'
 import { courseTopicPath, topicPagePath, type ReviewOrigin } from '../lib/routes'
 import { hasRequiredPractice, lessonPath, lessonPracticePath } from '../lib/lessonPractice'
 import { NoticeBanner } from '../components/NoticeBanner'
-import { ApiErrorState, LoadingState } from '../components/PageState'
+import { ApiErrorState, LoadingState, PageSkeleton } from '../components/PageState'
 import { LessonDocuments } from '../components/resources/LessonDocuments'
 import { LessonSlides } from '../components/resources/LessonSlides'
 import { LessonSummary } from '../components/resources/LessonSummary'
@@ -58,7 +58,7 @@ export function LessonPage() {
   const resource = useApiResource(`lesson:${lessonId}`, () => learningApi.getLesson(lessonId))
   useSyncPendingReviews(resource.status === 'success' ? resource.data?.pendingReviews : undefined)
 
-  if (resource.status === 'loading') return <LoadingState label="Đang tải bài học…" />
+  if (resource.status === 'loading') return <PageSkeleton label="Đang tải bài học…" variant="article" />
   if (resource.status === 'error' && resource.error) return <ApiErrorState error={resource.error} onRetry={resource.reload} />
   if (!resource.data) return null
   return <LessonView key={resource.data.id} lesson={resource.data} onLessonChanged={resource.reload} />

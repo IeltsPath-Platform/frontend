@@ -11,10 +11,11 @@ import { QuestionField } from '../components/blocks/QuestionField'
 import { UnsupportedBlock } from '../components/blocks/UnsupportedBlock'
 import { LearnTrail } from '../components/LearnTrail'
 import { topicPagePath } from '../lib/routes'
-import { ApiErrorState, LoadingState } from '../components/PageState'
+import { ApiErrorState, PageSkeleton } from '../components/PageState'
 import { parseAttemptStructure, type TestItem, type TestSection } from '../lib/attemptSnapshot'
 import { reportApiError } from '../lib/reviewGate'
 import { useApiResource } from '../lib/useApiResource'
+import { StatusArt } from '@/components/StatusArt'
 
 type SaveState = 'saving' | 'saved' | 'error'
 
@@ -27,7 +28,7 @@ export function TopicTestPage() {
   const practice = searchParams.get('practice') === '1'
   const resource = useApiResource(`attempt:${attemptId}`, async () => parseAttemptStructure(await learningApi.getAttemptStructure(attemptId)))
 
-  if (resource.status === 'loading') return <LoadingState label="Đang tải đề…" />
+  if (resource.status === 'loading') return <PageSkeleton label="Đang tải đề…" variant="article" />
   if (resource.status === 'error' && resource.error) return <ApiErrorState error={resource.error} onRetry={resource.reload} />
   if (!resource.data) return null
   return (
@@ -151,7 +152,7 @@ function TestRunner({
     }
   }
 
-  if (sections.length === 0 || !section) return <p className="lp-empty">Đề này chưa có câu hỏi.</p>
+  if (sections.length === 0 || !section) return <StatusArt compact kind="empty" title="Đề này chưa có câu hỏi." />
 
   return (
     <article className="lp-page lp-test-page" aria-labelledby="lp-test-title">

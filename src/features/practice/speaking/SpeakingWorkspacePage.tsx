@@ -1,6 +1,6 @@
 import { Fragment } from 'react'
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { ApiErrorState, LoadingState } from '@/features/learning-path/components/PageState'
+import { ApiErrorState, PageSkeleton } from '@/features/learning-path/components/PageState'
 import { useApiResource } from '@/features/learning-path/lib/useApiResource'
 import { SpeakingPage } from '../pages/SpeakingPage'
 import { getSpeakingTask } from './speakingApi'
@@ -22,7 +22,7 @@ export function SpeakingWorkspacePage() {
   const practiceSessionId = usePracticeSession('SPEAKING', resource.status === 'success' && !!resource.data)
 
   if (!packageVersionId || !sectionId) return <Navigate replace to={CATALOG_PATH} />
-  if (resource.status === 'loading') return <LoadingState label="Đang tải đề Speaking…" />
+  if (resource.status === 'loading') return <PageSkeleton label="Đang tải đề Speaking…" variant="article" />
   if (resource.status === 'error' && resource.error) return <ApiErrorState error={resource.error} onRetry={resource.reload} />
   const task = resource.data
   if (!task) return null

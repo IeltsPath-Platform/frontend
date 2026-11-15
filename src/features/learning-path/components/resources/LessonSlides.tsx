@@ -1,6 +1,7 @@
 import { Download, Maximize2, MonitorPlay } from 'lucide-react'
 import { useRef, useState } from 'react'
 import type { LessonSlideItem } from '~types/lesson'
+import { StatusArt } from '@/components/StatusArt'
 
 interface GoogleSlidesLinks {
   embedUrl: string
@@ -41,7 +42,7 @@ export function LessonSlides({ slides }: { slides: readonly LessonSlideItem[] })
   const [activeIndex, setActiveIndex] = useState(0)
   const frameRef = useRef<HTMLDivElement>(null)
 
-  if (slides.length === 0) return <p className="lp-res-empty">Bài học này chưa có slide.</p>
+  if (slides.length === 0) return <StatusArt compact kind="empty" title="Bài học này chưa có slide." />
 
   const active = slides[activeIndex] ?? slides[0]!
   const google = getGoogleSlidesLinks(active.url)

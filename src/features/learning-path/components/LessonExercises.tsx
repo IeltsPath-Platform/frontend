@@ -14,6 +14,7 @@ import { AudioBlock } from './blocks/AudioBlock'
 import { ExerciseBlock, type GradedOutcome } from './blocks/ExerciseBlock'
 import { PassageBlock } from './blocks/PassageBlock'
 import { RewardSummary } from './RewardSummary'
+import { StatusArt } from '@/components/StatusArt'
 
 interface LessonExercisesProps {
   lessonId: string
@@ -51,7 +52,7 @@ export function LessonExercises({ lessonId, blocks, onChanged, refreshAudioUrl }
 
   const exercises = blocks.filter(isExercise)
   if (exercises.length === 0) {
-    return <p className="lp-empty">Bài học này chưa có bài tập. Bấm “Hoàn thành bài” để ghi nhận tiến độ.</p>
+    return <StatusArt compact kind="empty" title="Bài học này chưa có bài tập. Bấm “Hoàn thành bài” để ghi nhận tiến độ." />
   }
 
   const hasPassage = blocks.some(isPassage)

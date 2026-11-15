@@ -13,6 +13,7 @@ import {
 import { CardFormDialog } from '@/features/flashcards/components/CardFormDialog'
 import { CardTile } from '@/features/flashcards/components/CardTile'
 import { ConfirmDialog } from '@/features/flashcards/components/ConfirmDialog'
+import { StatusArt } from '@/components/StatusArt'
 
 const PAGE_SIZE = 50
 
@@ -148,11 +149,9 @@ export function FlashcardCardsPanel({ onChanged }: FlashcardCardsPanelProps) {
       )}
 
       {filteredCards.length === 0 ? (
-        <p className="flashcards-empty">
-          {keyword || sourceFilter !== 'ALL'
-            ? 'Không có thẻ phù hợp với bộ lọc.'
-            : 'Chưa có thẻ nào. Nhấn “Tạo học phần” hoặc nhập từ Từ điển.'}
-        </p>
+        keyword || sourceFilter !== 'ALL'
+          ? <StatusArt compact kind="no-results" title="Không có thẻ phù hợp với bộ lọc" />
+          : <StatusArt compact kind="empty" message="Nhấn “Tạo học phần” hoặc nhập từ Từ điển." title="Chưa có thẻ nào" />
       ) : (
         <ul className="flashcards-card-grid">
           {filteredCards.map((card) => {

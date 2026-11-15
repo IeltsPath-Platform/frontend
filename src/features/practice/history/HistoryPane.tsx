@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { CheckCircle2, ChevronRight, Hourglass, TriangleAlert } from 'lucide-react'
-import { ApiErrorState, EmptyState, LoadingState } from '@/features/learning-path/components/PageState'
+import { ApiErrorState, EmptyState, PageSkeleton } from '@/features/learning-path/components/PageState'
 import { toApiError } from '@/features/learning-path/api/apiError'
 import { useApiResource } from '@/features/learning-path/lib/useApiResource'
 import { withOrigin } from '@/features/learning-path/lib/resultOrigin'
@@ -92,7 +92,7 @@ export function HistoryPane({ paneKey, label, load, empty }: {
 
   const reload = () => { setMore(null); first.reload() }
 
-  if (first.status === 'loading') return <LoadingState label="Đang tải lịch sử…" />
+  if (first.status === 'loading') return <PageSkeleton label="Đang tải lịch sử…" variant="list" />
   if (first.status === 'error' && first.error) return <ApiErrorState error={first.error} onRetry={reload} />
   if (rows.length === 0) {
     return <EmptyState title={empty.title} description={empty.description} actionLabel={empty.actionLabel} onAction={() => navigate(empty.to)} />

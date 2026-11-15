@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { BookOpen, Search } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { HttpError } from '@/lib/httpClient'
 import type { PracticeCard, PracticeMode, SkillType } from '@/types/practice'
 import { PracticeNavbar } from '../components/PracticeNavbar'
@@ -31,6 +31,7 @@ import {
   toScopeAndPart,
 } from '../lib/practiceSkillConfig'
 import type { PracticePart } from '../lib/practiceSkillConfig'
+import { StatusArt } from '@/components/StatusArt'
 import '../reading/reading-practice.css'
 import '../practice-catalog-responsive.css'
 
@@ -356,10 +357,9 @@ function PracticeCatalog({ skill, onOpenTest }: PracticeCatalogPageProps & { ski
             </div>
 
             {error && (
-              <div className="reading-state reading-error" role="alert">
-                <p>{error}</p>
-                <button type="button" onClick={() => setReload((current) => current + 1)}>Thử lại</button>
-              </div>
+              <StatusArt compact kind="error" message={error} title="Chưa tải được danh sách đề">
+                <button className="home-orange-cta" type="button" onClick={() => setReload((current) => current + 1)}>Thử lại</button>
+              </StatusArt>
             )}
 
             {loading && (
@@ -369,15 +369,14 @@ function PracticeCatalog({ skill, onOpenTest }: PracticeCatalogPageProps & { ski
             )}
 
             {!loading && !error && practiceCards.length === 0 && (
-              <div className="reading-state reading-empty">
-                <BookOpen size={28} aria-hidden="true" />
-                <h3>{tab === 'completed' ? 'Bạn chưa làm bài nào ở mục này' : 'Chưa có đề phù hợp'}</h3>
-                <p>
-                  {tab === 'completed'
-                    ? 'Hoàn thành một đề để xem lại tại đây.'
-                    : `Thử đổi ${config.partLabel}, dạng bài hoặc từ khóa tìm kiếm.`}
-                </p>
-              </div>
+              <StatusArt
+                compact
+                kind={tab === 'completed' ? 'empty' : 'no-results'}
+                message={tab === 'completed'
+                  ? 'Hoàn thành một đề để xem lại tại đây.'
+                  : `Thử đổi ${config.partLabel}, dạng bài hoặc từ khóa tìm kiếm.`}
+                title={tab === 'completed' ? 'Bạn chưa làm bài nào ở mục này' : 'Chưa có đề phù hợp'}
+              />
             )}
 
             {!loading && !error && practiceCards.length > 0 && (

@@ -14,7 +14,7 @@ import { ExerciseBlock } from '../components/blocks/ExerciseBlock'
 import { PassageBlock } from '../components/blocks/PassageBlock'
 import { LearnTrail, type TrailItem } from '../components/LearnTrail'
 import { PracticeAttemptReview } from '../components/PracticeAttemptReview'
-import { ApiErrorState, LoadingState } from '../components/PageState'
+import { ApiErrorState, PageSkeleton } from '../components/PageState'
 import { RewardSummary } from '../components/RewardSummary'
 import { newRequestId } from '../lib/requestId'
 import { HISTORY_PATH, historyTrail, readOrigin } from '../lib/resultOrigin'
@@ -53,7 +53,7 @@ export function FreePracticePage() {
   const backLabel = origin?.backLabel ?? 'Cây kiến thức'
   const attempt = useApiResource(`free-practice:${attemptId}`, () => learningApi.getPracticeAttempt(attemptId))
 
-  if (attempt.status === 'loading') return <LoadingState label="Đang tải bộ luyện…" />
+  if (attempt.status === 'loading') return <PageSkeleton label="Đang tải bộ luyện…" variant="article" />
   if (attempt.error) return <ApiErrorState error={attempt.error} onRetry={attempt.reload} />
   if (!attempt.data) return null
 

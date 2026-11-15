@@ -431,6 +431,13 @@
   margin-top: .4rem;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .lp-skeleton-box,
+  .lp-skeleton-line {
+    animation: none;
+  }
+}
+
 /* Course Catalog Skeleton */
 .lp-skeleton-catalog {
   display: grid;

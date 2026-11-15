@@ -6,7 +6,7 @@ import { useApiResource } from '../lib/useApiResource'
 import { AudioBlock } from './blocks/AudioBlock'
 import { PassageBlock } from './blocks/PassageBlock'
 import { QuestionField } from './blocks/QuestionField'
-import { ApiErrorState, LoadingState } from './PageState'
+import { ApiErrorState, PageSkeleton } from './PageState'
 import { PracticeEssays } from './PracticeEssays'
 
 const percentOf = (value: number) => Math.round(value * (value <= 1 ? 100 : 1))
@@ -51,7 +51,7 @@ export function PracticeAttemptReview({ attemptId, item, onBack, backLabel = 'V�
   backLabel?: string
 }) {
   const resource = useApiResource(`practice-review:${attemptId}`, () => learningApi.getPracticeAttemptReview(attemptId))
-  if (resource.status === 'loading') return <LoadingState label="Đang tải kết quả…" />
+  if (resource.status === 'loading') return <PageSkeleton label="Đang tải kết quả…" variant="article" />
   if (resource.status === 'error' && resource.error) return <ApiErrorState error={resource.error} onRetry={resource.reload} />
   if (!resource.data) return null
 

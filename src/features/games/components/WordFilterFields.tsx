@@ -9,6 +9,7 @@ import society from '../assets/topics/society.webp'
 import technology from '../assets/topics/technology.webp'
 import workBusiness from '../assets/topics/work-business.webp'
 import type { WordFilter } from '../types/game'
+import { Spinner } from '@/components/loading/Loading'
 import {
   availableWords,
   CEFR_LEVELS,
@@ -152,7 +153,7 @@ export function WordFilterFields({
         )}
         {state.loading && (
           <p className="game-word-filters-note" role="status">
-            Đang tải chủ đề…
+            <Spinner /> Đang tải chủ đề…
           </p>
         )}
         {state.failed && (

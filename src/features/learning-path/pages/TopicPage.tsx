@@ -4,7 +4,7 @@ import { learningApi } from '../api'
 import { LearnHero, type HeroFact } from '../components/LearnHero'
 import { LearnTrail } from '../components/LearnTrail'
 import { NoticeBanner } from '../components/NoticeBanner'
-import { ApiErrorState, LoadingState } from '../components/PageState'
+import { ApiErrorState, PageSkeleton } from '../components/PageState'
 import { SegmentMeter } from '../components/SegmentMeter'
 import { TopicLessonsView } from '../components/TopicLessonsPanel'
 import { skillLabel } from '../lib/courseMeta'
@@ -19,7 +19,7 @@ export function TopicPage() {
   const resource = useApiResource(`topic:${topicId}`, () => learningApi.getTopicLessons(topicId))
   useSyncPendingReviews(resource.status === 'success' ? resource.data?.pendingReviews : undefined, { allowClear: true })
 
-  if (resource.status === 'loading') return <LoadingState label="Đang tải chặng học…" />
+  if (resource.status === 'loading') return <PageSkeleton label="Đang tải chặng học…" variant="list" />
   if (resource.status === 'error' && resource.error) return <ApiErrorState error={resource.error} onRetry={resource.reload} />
   if (!resource.data) return null
 

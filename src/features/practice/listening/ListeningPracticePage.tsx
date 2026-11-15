@@ -4,7 +4,7 @@ import { ArrowLeft, ArrowRight, Check, LoaderCircle } from 'lucide-react'
 import type { AttemptItemResponse } from '~types/learningPath'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
-import { LoadingState, ApiErrorState } from '@/features/learning-path/components/PageState'
+import { PageSkeleton, ApiErrorState } from '@/features/learning-path/components/PageState'
 import { StudyActivityTracker } from '@/features/study-time/StudyActivityTracker'
 import { useApiResource } from '@/features/learning-path/lib/useApiResource'
 import type { TestSection } from '@/features/learning-path/lib/attemptSnapshot'
@@ -24,6 +24,7 @@ import { ListeningExamAudio } from './ListeningExamAudio'
 import { ListeningSectionHeader } from './ListeningSectionHeader'
 import { ListeningToolRail } from './ListeningToolRail'
 import { readPlayedSections, writePlayedSections } from './examPlayback'
+import { StatusArt } from '@/components/StatusArt'
 import '../reading/reading-practice.css'
 import '../reading/reading-workspace.css'
 import '../reading/reading-exam-annotations.css'
@@ -43,7 +44,7 @@ export function ListeningPracticePage() {
   })
 
   if (!attemptId) return <Navigate replace to={CATALOG_PATH} />
-  if (resource.status === 'loading') return <LoadingState label="Đang tải bài Listening…" />
+  if (resource.status === 'loading') return <PageSkeleton label="Đang tải bài Listening…" variant="article" />
   if (resource.status === 'error' && resource.error) return <ApiErrorState error={resource.error} onRetry={resource.reload} />
   if (!resource.data) return null
   if (resource.data.attempt.status === 'SUBMITTED') return <Navigate replace to={`/practice/listening/attempts/${attemptId}/result`} />
@@ -209,7 +210,7 @@ function ListeningRunner({ attemptId, attempt, sections, saved }: {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [])
 
-  if (!section || sections.length === 0) return <main className="reading-state reading-empty"><h1>Đề chưa có câu hỏi</h1><Link to={CATALOG_PATH}>Về danh mục Listening</Link></main>
+  if (!section || sections.length === 0) return <main className="reading-practice-page"><StatusArt kind="empty" page title="Đề chưa có câu hỏi"><Link className="home-orange-cta" to={CATALOG_PATH}>Về danh mục Listening</Link></StatusArt></main>
 
   const audio = section.snapshot?.audio
   const title = section.snapshot?.title ?? `Section ${section.partNo ?? activeIndex + 1}`

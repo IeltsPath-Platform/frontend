@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { AlertCircle, ArrowRight, BookOpen, Library, RefreshCw, Sparkles } from 'lucide-react'
+import owlNoResults from '@/assets/owl/owl-no-results.webp'
 import {
   notebookApi,
   type NotebookEntryResponse,
@@ -405,7 +406,7 @@ export function NotebookWordsPanel({ summary, onChanged }: NotebookWordsPanelPro
             border: '1px dashed #cbd5e1',
           }}
         >
-          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🦉</div>
+          {hasActiveFilters ? <img alt="" draggable={false} src={owlNoResults} style={{ width: '12rem', maxWidth: '100%', height: 'auto', margin: '0 auto 0.5rem' }} /> : <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🦉</div>}
           {hasActiveFilters ? (
             <>
               <h3 style={{ fontSize: '1.2rem', fontWeight: 700, margin: '0 0 0.5rem', color: '#0f172a' }}>

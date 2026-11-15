@@ -5,7 +5,8 @@ import { SiteNavbar } from '@/components/SiteNavbar'
 import { communityApi, type NotificationPreference } from '../api/communityApi'
 import { MailPreferenceToggle } from '../components/MailPreferenceToggle'
 import './community.css'
-import './NotificationPreferencesPage.css'
+import './NotificationPreferencesPage.css'
+import { Loading } from '@/components/loading/Loading'
 
 const labels: Record<string, { title: string; description: string; icon: LucideIcon; tone: string }> = {
   'community.post-commented.v1': { title: 'Bình luận bài viết', description: 'Khi có người bình luận bài viết của bạn.', icon: MessageCircle, tone: 'blue' },
@@ -60,7 +61,7 @@ export function NotificationPreferencesPage() {
       {preferences.length > 0 && <span className="notification-preferences-count">{activeCount}/{preferences.length} đang bật</span>}
     </header>
     {error && <p className="notification-preferences-error" role="alert">{error}</p>}
-    {preferences.length === 0 && !error ? <p className="notification-preferences-loading" role="status">Đang tải tùy chọn…</p> : <>
+    {preferences.length === 0 && !error ? <Loading label="Đang tải tùy chọn…" /> : <>
       {groupedPreferences.map((group) => <section className="notification-preferences-group" key={group.id} aria-labelledby={`notification-group-${group.id}`}>
         <h2 id={`notification-group-${group.id}`}>{group.title}</h2>
         <ul className="notification-preferences-list">{group.items.map((preference) => {

@@ -8,7 +8,7 @@ import { BlockingReviewCallout } from '../components/BlockingReviewCallout'
 import { FreeBadge } from '../components/FreeBadge'
 import { KnowledgeTreeChart } from '../components/KnowledgeTreeChart'
 import { LearnTrail } from '../components/LearnTrail'
-import { ApiErrorState, LoadingState } from '../components/PageState'
+import { ApiErrorState, PageSkeleton } from '../components/PageState'
 import { PointDetail } from '../components/PointDetail'
 import { PointLessons } from '../components/PointLessons'
 import { PracticeButton, PracticeFeedback } from '../components/PointPractice'
@@ -30,6 +30,7 @@ import { useHeartsResource } from '../lib/useHeartsResource'
 import { practiceNote, usePointPractice } from '../lib/usePointPractice'
 import { useMediaQuery } from '../lib/useMediaQuery'
 import styles from './KnowledgeTreePage.module.css'
+import { StatusArt } from '@/components/StatusArt'
 
 const SKILL_ICONS: Record<string, LucideIcon> = {
   LISTENING: Headphones, READING: BookOpen, WRITING: PenLine, SPEAKING: Mic, GRAMMAR: Languages, VOCABULARY: Layers,
@@ -65,7 +66,7 @@ export function KnowledgeTreePage() {
         <p>Thứ tự học và mức nắm của từng điểm kiến thức.</p>
       </header>
 
-      {tree.status === 'loading' ? <LoadingState label="Đang tải cây kiến thức…" /> : null}
+      {tree.status === 'loading' ? <PageSkeleton label="Đang tải cây kiến thức…" variant="chart" /> : null}
       {tree.error ? <TreeLoadError error={tree.error} onRetry={tree.reload} /> : null}
       {tree.data ? (
         <BlockingReviewsContext.Provider value={reviews}>
@@ -123,7 +124,7 @@ function TreeView({ tree, reviews, ...view }: ViewProps & { tree: LearnerTree; r
   const skill = choice ?? (wide && skills.length > 1 ? skills.find((key) => blocked.has(key)) ?? skills[0]! : EVERY_SKILL)
   const visible = visiblePoints(points, skill)
 
-  if (points.length === 0) return <p className="lp-empty">Khóa này chưa có điểm kiến thức nào.</p>
+  if (points.length === 0) return <StatusArt compact kind="empty" title="Khóa này chưa có điểm kiến thức nào." />
 
   return (
     <section className={`lp-section ${styles.panel}`} aria-labelledby="lp-tree-title">

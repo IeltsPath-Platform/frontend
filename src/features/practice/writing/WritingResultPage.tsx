@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { SiteNavbar } from '@/components/SiteNavbar'
 import { mapKnowledgeJudgments, mapStudyPoints } from '@/features/learning-path/api/learningAdapters'
 import { LearnTrail } from '@/features/learning-path/components/LearnTrail'
-import { ApiErrorState, LoadingState } from '@/features/learning-path/components/PageState'
+import { ApiErrorState, PageSkeleton } from '@/features/learning-path/components/PageState'
 import { HISTORY_PATH, historyTrail, readOrigin } from '@/features/learning-path/lib/resultOrigin'
 import { startStudyPointPractice } from '@/features/learning-path/lib/studyPointPractice'
 import { useApiResource } from '@/features/learning-path/lib/useApiResource'
@@ -18,6 +18,7 @@ import { WritingPriorities } from './WritingPriorities'
 import { certaintyOf, errorNames, markEssay, segmentAt } from './writingResultModel'
 import { WritingNextSteps } from './WritingNextSteps'
 import { formatClock, loadResultContext, lowestIndex, measureEssay, roundBand } from './writingText'
+import { StatusArt } from '@/components/StatusArt'
 import '../reading/reading-workspace.css'
 import './writing-result.css'
 
@@ -200,17 +201,22 @@ export function WritingResultPage() {
   const { submissionId = '' } = useParams()
   const resource = useApiResource(`writing-result:${submissionId}`, () => getWritingSubmission(submissionId))
 
-  if (resource.status === 'loading') return <LoadingState label="Đang tải kết quả chấm bài…" />
+  if (resource.status === 'loading') return <PageSkeleton label="Đang tải kết quả chấm bài…" variant="article" />
   if (resource.status === 'error' && resource.error) return <ApiErrorState error={resource.error} onRetry={resource.reload} />
   const submission = resource.data
   if (!submission) return null
   if (submission.status === 'AWAITING_EXAMINER') return <ExaminerResult submission={submission} submissionId={submissionId} />
   if (submission.status !== 'GRADED') {
     return (
-      <main className="reading-state reading-empty">
-        <h1>Bài viết chưa có điểm</h1>
-        <p>Bài này chưa được chấm xong{submission.failureCode ? ` (${submission.failureCode})` : ''}. Point chỉ bị trừ khi chấm thành công.</p>
-        <Link to={CATALOG_PATH}>Về danh mục Writing</Link>
+      <main className="reading-practice-page">
+        <StatusArt
+          kind="empty"
+          message={`Bài này chưa được chấm xong${submission.failureCode ? ` (${submission.failureCode})` : ''}. Point chỉ bị trừ khi chấm thành công.`}
+          page
+          title="Bài viết chưa có điểm"
+        >
+          <Link className="home-orange-cta" to={CATALOG_PATH}>Về danh mục Writing</Link>
+        </StatusArt>
       </main>
     )
   }

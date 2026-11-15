@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
-import { BookOpenText, Info, RotateCcw, Bookmark, BookmarkCheck } from 'lucide-react'
+import { Info, RotateCcw, Bookmark, BookmarkCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { getLessonVocabularySenses } from '../api/lessonVocabularyApi'
 import { notebookApi } from '@/features/vocabulary/api/notebookApi'
 import { useApiResource } from '../lib/useApiResource'
 import { LoadingState } from './PageState'
 import { PronunciationButton } from './PronunciationButton'
+import { StatusArt } from '@/components/StatusArt'
 import '../lesson-vocabulary.css'
 
 interface LessonVocabularyProps {
@@ -26,11 +27,7 @@ const PART_OF_SPEECH_LABELS: Record<string, string> = {
 export function LessonVocabulary({ senseIds }: LessonVocabularyProps) {
   if (senseIds.length === 0) {
     return (
-      <div className="lp-vocabulary__empty" role="status">
-        <BookOpenText aria-hidden="true" size={28} />
-        <p>Bài học này chưa có từ vựng.</p>
-        <p className="lp-vocabulary__muted">Bạn có thể tiếp tục xem các nội dung khác của bài học.</p>
-      </div>
+      <StatusArt compact kind="empty" message="Bạn có thể tiếp tục xem các nội dung khác của bài học." title="Bài học này chưa có từ vựng." />
     )
   }
 
@@ -87,11 +84,7 @@ function VocabularyList({ senseIds }: LessonVocabularyProps) {
 
   if (senses.length === 0) {
     return (
-      <div className="lp-vocabulary__empty" role="status">
-        <BookOpenText aria-hidden="true" size={28} />
-        <p>Từ vựng của bài học hiện chưa khả dụng.</p>
-        <p className="lp-vocabulary__muted">Bạn có thể tiếp tục học và quay lại sau.</p>
-      </div>
+      <StatusArt compact kind="empty" message="Bạn có thể tiếp tục học và quay lại sau." title="Từ vựng của bài học hiện chưa khả dụng." />
     )
   }
 
