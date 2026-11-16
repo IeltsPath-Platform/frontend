@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { PointerEvent as ReactPointerEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeftRight, Clock3, Highlighter, Quote, Settings, X } from 'lucide-react'
+import { ArrowLeftRight, Clock3, Highlighter, Languages, Quote, Settings, X } from 'lucide-react'
 import { PracticeSettingsPopover } from '../components/PracticeSettingsPopover'
 
 export type WorkspaceFontSize = 'small' | 'medium' | 'large'
@@ -52,27 +52,34 @@ export function ReadingTopBar({ seconds, timed, showClock = true, exitTo, eyeCom
   )
 }
 
-/** Area B: the practice tool. The real exam interface has none. */
-export function ReadingToolRail({ onHighlight, onNote }: {
-  onHighlight: () => void
-  onNote: () => void
-}) {
+/** The practice tools. Only one is in use at a time: choosing one puts the others down. */
+export type ReadingTool = 'highlight' | 'note' | 'lookup'
+
+const TOOLS: Array<{ tool: ReadingTool; label: string; key: string; icon: typeof Highlighter }> = [
+  { tool: 'highlight', label: 'Highlight', key: 'H', icon: Highlighter },
+  { tool: 'note', label: 'Note', key: 'N', icon: Quote },
+  { tool: 'lookup', label: 'Tra từ vựng', key: 'T', icon: Languages },
+]
+
+/**
+ * Area B: the practice tools. The chosen one is pressed: with Highlight or Note, every text selected is marked at once; with
+ * Tra từ vựng, a click on a word opens its meaning. Pressing the chosen tool again puts it down. The real exam interface has none.
+ */
+export function ReadingToolRail({ tool, onPick }: { tool: ReadingTool | null; onPick: (tool: ReadingTool) => void }) {
   return (
     <aside className="rw-tools" aria-label="Công cụ hỗ trợ">
       <p className="rw-tools-title">Công cụ</p>
       {/* mousedown is cancelled so pressing a button never drops the text selection */}
-      <button type="button" className="rw-tool" onMouseDown={(event) => event.preventDefault()} onClick={onHighlight} aria-keyshortcuts="H">
-        <Highlighter size={16} aria-hidden="true" />
-        <span>Highlight</span>
-        <small>Phím (H)</small>
-      </button>
-      <button type="button" className="rw-tool" onMouseDown={(event) => event.preventDefault()} onClick={onNote}>
-        <Quote size={16} aria-hidden="true" />
-        <span>Note</span>
-      </button>
-      <p className="rw-tools-help">Bôi đen đoạn trong bài rồi bấm Highlight hoặc Note.</p>
-      <p className="rw-tools-help">Bấm vào chữ đã đánh dấu rồi chọn Clear để bỏ.</p>
-      <p className="rw-tools-help">Bấm vào một từ để xem nghĩa.</p>
+      {TOOLS.map(({ tool: candidate, label, key, icon: Icon }) => (
+        <button
+          aria-keyshortcuts={key} aria-pressed={tool === candidate} className={`rw-tool${tool === candidate ? ' is-on' : ''}`}
+          key={candidate} onClick={() => onPick(candidate)} onMouseDown={(event) => event.preventDefault()} type="button"
+        >
+          <Icon size={16} aria-hidden="true" />
+          <span>{label}</span>
+          <small>Phím ({key})</small>
+        </button>
+      ))}
     </aside>
   )
 }

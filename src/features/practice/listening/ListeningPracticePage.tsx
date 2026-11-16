@@ -85,9 +85,10 @@ function ListeningRunner({ attemptId, attempt, sections, saved }: {
   const timed = attempt.mode === 'TIMED'
   const answers = useAttemptAnswers(attemptId, saved, async (id, itemId, answer, revision) => saveAttemptAnswer(id, itemId, answer, revision))
   const section = sections[activeIndex]
-  const annotations = useExamAnnotations({ enabled: true, sectionId: section?.id, passageRef, questionsRef })
+  // The practice layout has the tool rail, so selected text opens no card; the exam layout has none and keeps it.
+  const annotations = useExamAnnotations({ enabled: true, sectionId: section?.id, passageRef, questionsRef, menuOnSelection: timed })
   // A fresh selection (not a click on a mark) is waiting for Highlight or Notes.
-  const hasSelection = annotations.popup !== null && annotations.popup.annotationId === null
+  const hasSelection = annotations.hasSelection
   const hasNotes = !notesClosed && annotations.notes.length > 0
   const allItems = useMemo(() => sections.flatMap((item) => item.items.filter((question) => question.question !== null)), [sections])
   // One continuous numbering across every section, in the order the learner sees the questions.
