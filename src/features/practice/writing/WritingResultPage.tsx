@@ -11,10 +11,12 @@ import '@/features/learning-path/learning-path.css'
 import '@/features/learning-path/practice-essay.css'
 import { ExaminerResult } from './ExaminerResult'
 import { getWritingSubmission } from './writingApi'
-import type { WritingBandLimit, WritingCorrection, WritingCriterion, WritingSubmission } from './writingApi'
+import type { WritingBandLimit, WritingCriterion, WritingSubmission } from './writingApi'
 import { DataChecksView, TaskChecksView } from './WritingChecks'
-import { CorrectedEssay, CorrectionList, RevisionSummary } from './WritingErrors'
+import { CorrectedEssay, RevisionSummary } from './WritingErrors'
+import { WritingFixList } from './WritingFixList'
 import { WritingPriorities } from './WritingPriorities'
+import { categoryOf, fixId, type ActiveFix } from './writingFixes'
 import { certaintyOf, errorNames, markEssay, segmentAt } from './writingResultModel'
 import { WritingNextSteps } from './WritingNextSteps'
 import { formatClock, loadResultContext, lowestIndex, measureEssay, roundBand } from './writingText'
@@ -32,21 +34,6 @@ const CRITERIA: Record<string, { name: string; meaning: string }> = {
   GRA: { name: 'Grammatical Range & Accuracy', meaning: 'Ngữ pháp' },
 }
 
-const FALLBACK_CATEGORY = { label: 'Khác', tone: 'task' }
-
-/** The error categories Content can attach to a correction; one this page does not know falls back to "Khác". */
-const CATEGORY: Record<string, { label: string; tone: string }> = {
-  GRAMMAR: { label: 'Ngữ pháp', tone: 'grammar' },
-  VOCABULARY: { label: 'Từ vựng', tone: 'vocabulary' },
-  COHERENCE: { label: 'Mạch lạc', tone: 'coherence' },
-  TASK: { label: 'Nội dung', tone: 'task' },
-  SPELLING_NUMBER: { label: 'Chính tả & số', tone: 'vocabulary' },
-  OTHER: FALLBACK_CATEGORY,
-}
-
-function categoryOf(category: WritingCorrection['category']) {
-  return CATEGORY[category] ?? FALLBACK_CATEGORY
-}
 function comment(band: number) {
   if (band >= 7) return 'Bài viết rất tốt! Hãy giữ nhịp luyện tập để chạm band cao hơn.'
   if (band >= 6) return 'Bài viết khá tốt! Hãy sửa các lỗi được đánh dấu để lên band cao hơn.'
@@ -95,6 +82,9 @@ function Graded({ submission, submissionId }: { submission: WritingSubmission; s
   const groups = useMemo(() => submission.errorGroups ?? [], [submission.errorGroups])
   const names = useMemo(() => errorNames(corrections, groups), [corrections, groups])
   const [focusAt, setFocusAt] = useState<number | null>(null)
+  const [active, setActive] = useState<ActiveFix | null>(null)
+  /** Picking a mark of the essay scrolls to its card in the list of mistakes and highlights both. */
+  const pick = (number: number) => setActive((current) => ({ number, tick: (current?.tick ?? 0) + 1 }))
 
   /** Scrolls the marked essay to the first place the excerpt is written and lights that stretch up. */
   function showExcerpt(excerpt: string) {
@@ -168,13 +158,24 @@ function Graded({ submission, submissionId }: { submission: WritingSubmission; s
           {segments.length === 0 && <p className="wr-muted">Không còn bản bài viết để hiển thị.</p>}
           {essay && segments.map((segment) => {
             const focus = focusAt === segment.start ? ' is-focus' : ''
-            return segment.correction
-              ? <mark key={segment.start} id={`wr-seg-${segment.start}`} className={`wr-mark wr-mark-${categoryOf(segment.correction.category).tone}${certaintyOf(segment.correction) === 'SUGGESTION' ? ' wr-mark-suggestion' : ''}${focus}`} title={segment.correction.suggestion}>{segment.text}</mark>
-              : <span key={segment.start} id={`wr-seg-${segment.start}`} className={focus.trim()}>{segment.text}</span>
+            const { correction } = segment
+            if (!correction) return <span key={segment.start} id={`wr-seg-${segment.start}`} className={focus.trim()}>{segment.text}</span>
+            const number = corrections.indexOf(correction) + 1
+            return (
+              <mark
+                aria-controls={fixId(number)} key={segment.start} id={`wr-seg-${segment.start}`} role="button" tabIndex={0}
+                className={`wr-mark wr-mark-${categoryOf(correction.category).tone} wr-mark--pick${certaintyOf(correction) === 'SUGGESTION' ? ' wr-mark-suggestion' : ''}${active?.number === number ? ' is-active' : ''}${focus}`}
+                onClick={() => pick(number)}
+                onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); pick(number) } }}
+                title="Bấm để xem giải thích lỗi này"
+              >
+                {segment.text}<sup className='wr-mark__no' aria-label={`lỗi ${number}`}>{number}</sup>
+              </mark>
+            )
           })}
         </section>
 
-        <CorrectionList corrections={corrections} groups={groups} categoryOf={categoryOf} />
+        {corrections.length > 0 && <WritingFixList active={active} corrections={corrections} errorGroups={groups} />}
         <CorrectedEssay essay={essay} corrections={corrections} />
 
         <WritingNextSteps

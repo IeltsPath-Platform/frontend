@@ -1,44 +1,5 @@
-import type { WritingCorrection, WritingErrorGroup, WritingRevision } from './writingApi'
-import { PracticeErrorButton } from './PracticeErrorButton'
-import { certaintyOf, correctedEssay } from './writingResultModel'
-
-export interface CategoryLook { label: string; tone: string }
-
-/** The corrections as cards: what was written, the fix, why it is wrong, the rule, and a similar example from the error kind. */
-export function CorrectionList({ corrections, groups, categoryOf }: {
-  corrections: WritingCorrection[]
-  groups: WritingErrorGroup[]
-  categoryOf: (category: WritingCorrection['category']) => CategoryLook
-}) {
-  if (corrections.length === 0) return null
-  const groupOf = new Map(groups.map((group) => [group.errorCode, group]))
-  return (
-    <section className="wr-fixes" aria-label="Các lỗi cần sửa">
-      <h3>Các lỗi cần sửa</h3>
-      <ul>
-        {corrections.map((item, index) => {
-          const look = categoryOf(item.category)
-          const group = item.errorCode ? groupOf.get(item.errorCode) : undefined
-          const suggestion = certaintyOf(item) === 'SUGGESTION'
-          const rule = item.fixHint ?? group?.fixHint
-          const knowledgePoint = item.practiceKnowledgePointId ?? group?.practiceKnowledgePointId
-          return (
-            <li key={`${item.excerpt}-${index}`} className={suggestion ? 'wr-fix is-suggestion' : 'wr-fix'}>
-              <span className={`wr-mark wr-mark-${look.tone}`}>{look.label}</span>
-              {suggestion && <span className="wr-tag">Gợi ý</span>}
-              {item.errorName && <b className="wr-fix-name">{item.errorName}</b>}
-              <p className="wr-fix-change"><b>{item.excerpt}</b> → {item.suggestion}</p>
-              {item.reason && <p><b>Tại sao sai?</b> {item.reason}</p>}
-              {rule && <p><b>Quy tắc:</b> {rule}</p>}
-              {group?.example && <p className="wr-muted">Ví dụ tương tự: “{group.example.wrong}” → “{group.example.right}”</p>}
-              <PracticeErrorButton knowledgePointId={knowledgePoint} name={item.errorName ?? look.label} code={item.errorCode} />
-            </li>
-          )
-        })}
-      </ul>
-    </section>
-  )
-}
+import type { WritingCorrection, WritingRevision } from './writingApi'
+import { correctedEssay } from './writingResultModel'
 
 /** How an essay sent again compares with the version before: kinds of error fixed, still repeated, and new. */
 export function RevisionSummary({ revision, names }: { revision: WritingRevision; names: Map<string, string> }) {
