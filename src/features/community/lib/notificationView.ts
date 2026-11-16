@@ -7,6 +7,7 @@ export const GRADING_COMPLETED = 'assessment.grading-completed.v1'
 export const SUBSCRIPTION_GRANTED = 'access.subscription-granted.v1'
 export const SUBSCRIPTION_EXPIRY_NOTICE = 'access.subscription-expiry-notice.v1'
 export const RESULT_READY = 'assessment.result-ready.v1'
+export const VOCABULARY_REVIEW_DUE = 'library.vocabulary-review-due.v1'
 
 /** The learner's list of essays an examiner graded, where each one opens to the comments and the marked errors. */
 export const EXAMINER_REVIEWS_PATH = '/writing-reviews'
@@ -37,6 +38,9 @@ export function describeNotification(item: Pick<Notification, 'eventType' | 'pos
   }
   if (item.eventType === RESULT_READY) {
     return { text: 'Kết quả bài thi của bạn đã sẵn sàng. Xem chi tiết kết quả.', to: '/overview?tab=detailed-stats' }
+  }
+  if (item.eventType === VOCABULARY_REVIEW_DUE) {
+    return { text: 'Bạn có từ vựng đến hạn ôn tập. Ôn ngay để nhớ lâu hơn.', to: '/vocabulary/notebook/review' }
   }
   if (item.eventType === GRADING_OVERDUE && item.gradingJobId) {
     return { text: 'Giáo viên chưa chấm bài của bạn. Bạn có thể chờ tiếp hoặc đổi giáo viên', to: `/grading-jobs/${item.gradingJobId}` }

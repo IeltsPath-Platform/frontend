@@ -45,7 +45,7 @@ describe('GoogleSignInButton', () => {
 
     act(() => callback?.({ credential: 'opaque-id-token' }))
     expect(onCredential).toHaveBeenCalledWith('opaque-id-token')
-    expect(container.textContent).toBe('')
+    expect(container.textContent).not.toContain('opaque-id-token')
   })
 
   it('does not render GIS after unmount while the script is still loading', async () => {

@@ -1,4 +1,4 @@
-import { ArrowLeft, AtSign, Bell, Heart, MessageCircle, Reply, UserPlus, type LucideIcon } from 'lucide-react'
+import { ArrowLeft, AtSign, Bell, BookOpen, Heart, MessageCircle, Reply, UserPlus, type LucideIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { SiteNavbar } from '@/components/SiteNavbar'
@@ -21,6 +21,7 @@ const labels: Record<string, { title: string; description: string; icon: LucideI
   'access.subscription-granted.v1': { title: 'Đã kích hoạt Premium', description: 'Khi quyền Premium được cấp cho tài khoản.', icon: Bell, tone: 'violet' },
   'access.subscription-expiry-notice.v1': { title: 'Premium sắp hết hạn', description: 'Nhắc khi quyền Premium sắp hết hạn hoặc đã hết hạn.', icon: Bell, tone: 'amber' },
   'assessment.result-ready.v1': { title: 'Đã có kết quả bài thi', description: 'Khi kết quả bài thi đã sẵn sàng.', icon: Bell, tone: 'green' },
+  'library.vocabulary-review-due.v1': { title: 'Từ vựng đến hạn ôn', description: 'Nhắc mỗi sáng khi bạn có từ vựng đến hạn ôn tập.', icon: BookOpen, tone: 'blue' },
 }
 
 const roleGroups = [
@@ -28,6 +29,7 @@ const roleGroups = [
     'community.post-commented.v1', 'community.comment-replied.v1', 'community.comment-mentioned.v1',
     'community.post-reacted.v1', 'community.user-followed.v1', 'access.subscription-granted.v1', 'access.subscription-expiry-notice.v1',
     'assessment.result-ready.v1', 'assessment.grading-completed.v1', 'assessment.grading-overdue.v1',
+    'library.vocabulary-review-due.v1',
   ]) },
   { id: 'examiner', title: 'Giám khảo', eventTypes: new Set([
     'assessment.grading-requested.v1', 'assessment.grading-due-soon.v1',

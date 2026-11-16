@@ -50,6 +50,11 @@ describe('describeNotification', () => {
       .toEqual({ text: 'Kết quả bài thi của bạn đã sẵn sàng. Xem chi tiết kết quả.', to: '/overview?tab=detailed-stats' })
   })
 
+  it('reminds the learner that saved words are due and leads straight to the review', () => {
+    expect(describeNotification({ ...base, eventType: 'library.vocabulary-review-due.v1' }))
+      .toEqual({ text: 'Bạn có từ vựng đến hạn ôn tập. Ôn ngay để nhớ lâu hơn.', to: '/vocabulary/notebook/review' })
+  })
+
   it('uses a neutral message and safe destination for unknown non-community event types', () => {
     expect(describeNotification({ ...base, eventType: 'future.notice.v1' }))
       .toEqual({ text: 'Bạn có thông báo mới.', to: '/overview' })
