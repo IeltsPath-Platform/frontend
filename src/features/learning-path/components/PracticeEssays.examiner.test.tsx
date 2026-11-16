@@ -9,6 +9,11 @@ const { submitPracticeEssay, submitPracticeEssayToExaminer, getWritingSubmission
   submitPracticeEssay: vi.fn(), submitPracticeEssayToExaminer: vi.fn(), getWritingSubmission: vi.fn(),
 }))
 
+vi.mock('@/features/practice/writing/writingApi', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/features/practice/writing/writingApi')>()),
+  getGradingTerms: () => Promise.resolve({ pointCost: 11, minWords: 50, maxWords: 1200 }),
+}))
+
 vi.mock('../api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../api')>()),
   learningApi: { submitPracticeEssay, submitPracticeEssayToExaminer, getWritingSubmission },

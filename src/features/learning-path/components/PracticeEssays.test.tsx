@@ -8,6 +8,12 @@ const { submitPracticeEssay, getWritingSubmission } = vi.hoisted(() => ({
   submitPracticeEssay: vi.fn(), getWritingSubmission: vi.fn(),
 }))
 
+// "Chấm bằng AI" stays closed until the server's grading terms load, so the tests answer them.
+vi.mock('@/features/practice/writing/writingApi', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/features/practice/writing/writingApi')>()),
+  getGradingTerms: () => Promise.resolve({ pointCost: 11, minWords: 1, maxWords: 1200 }),
+}))
+
 vi.mock('../api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../api')>()),
   learningApi: { submitPracticeEssay, getWritingSubmission },
