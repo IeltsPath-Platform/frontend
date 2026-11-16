@@ -1,11 +1,14 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { WordLookupPopover } from './WordLookupPopover'
 import type { WordLookupState } from './useWordLookup'
 import type { WordEntry } from './wordLookupApi'
 
 const speak = vi.hoisted(() => vi.fn())
+const notebook = vi.hoisted(() => ({ getSavedNotebookSenses: vi.fn(), saveNotebookEntry: vi.fn() }))
+vi.mock('@/features/vocabulary/api/notebookApi', () => ({ notebookApi: notebook }))
 vi.mock('@/features/flashcards/lib/speak', () => ({ speak }))
 
 const rect = { left: 10, right: 60, top: 10, bottom: 30, width: 50, height: 20 } as DOMRect
@@ -23,6 +26,8 @@ describe('WordLookupPopover pronunciation', () => {
 
   beforeEach(() => {
     played.length = 0
+    notebook.getSavedNotebookSenses.mockReset().mockResolvedValue([])
+    notebook.saveNotebookEntry.mockReset().mockResolvedValue({})
     failToPlay = false
     speak.mockClear()
     vi.stubGlobal('Audio', class {
@@ -76,5 +81,52 @@ describe('WordLookupPopover pronunciation', () => {
     render(<WordLookupPopover state={{ word: 'zzz', rect, status: 'missing' }} onClose={() => {}} onRetry={() => {}} />)
 
     expect(screen.queryByRole('button', { name: /Nghe/ })).not.toBeInTheDocument()
+  })
+
+  describe('saving a meaning to the notebook', () => {
+    const withSenses = () => found({
+      senses: [
+        { id: 'sense-1', partOfSpeech: 'NOUN', vietnameseMeaning: 'bề mặt', englishDefinition: null, exampleSentence: null },
+        { id: 'sense-2', partOfSpeech: 'VERB', vietnameseMeaning: 'nổi lên', englishDefinition: null, exampleSentence: null },
+      ],
+    })
+    const show = (state: WordLookupState) => render(<MemoryRouter><WordLookupPopover state={state} onClose={() => {}} onRetry={() => {}} /></MemoryRouter>)
+
+    it('saves the meaning that was tapped with one tap and then shows it as saved', async () => {
+      show(withSenses())
+
+      await userEvent.click(screen.getByRole('button', { name: /Lưu "surface" \(bề mặt\) vào sổ từ/ }))
+
+      expect(notebook.saveNotebookEntry).toHaveBeenCalledExactlyOnceWith('sense-1')
+      expect(await screen.findByRole('button', { name: 'Đã lưu "surface" vào sổ từ' })).toBeDisabled()
+      expect(screen.getByRole('button', { name: /Lưu "surface" \(nổi lên\) vào sổ từ/ })).toBeEnabled()
+      expect(screen.getByRole('link', { name: 'Mở sổ từ vựng' })).toHaveAttribute('href', '/vocabulary/notebook')
+    })
+
+    it('shows a meaning that is already in the notebook as saved', async () => {
+      notebook.getSavedNotebookSenses.mockResolvedValue(['sense-2'])
+      show(withSenses())
+
+      expect(await screen.findByRole('button', { name: 'Đã lưu "surface" vào sổ từ' })).toBeDisabled()
+      expect(notebook.getSavedNotebookSenses).toHaveBeenCalledWith(['sense-1', 'sense-2'], expect.any(AbortSignal))
+    })
+
+    it('says so and keeps the meaning unsaved when the notebook cannot take it', async () => {
+      notebook.saveNotebookEntry.mockRejectedValue(new Error('offline'))
+      show(withSenses())
+
+      await userEvent.click(screen.getByRole('button', { name: /Lưu "surface" \(bề mặt\)/ }))
+
+      expect(await screen.findByRole('alert')).toHaveTextContent('Chưa lưu được từ này vào sổ')
+      expect(screen.getByRole('button', { name: /Lưu "surface" \(bề mặt\)/ })).toBeEnabled()
+    })
+
+    it('offers no save for a meaning the library did not give an id', () => {
+      show(found({ senses: [{ id: null, partOfSpeech: 'NOUN', vietnameseMeaning: 'bề mặt', englishDefinition: null, exampleSentence: null }] }))
+
+      expect(screen.getByText('bề mặt')).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /vào sổ từ/ })).not.toBeInTheDocument()
+      expect(notebook.getSavedNotebookSenses).not.toHaveBeenCalled()
+    })
   })
 })

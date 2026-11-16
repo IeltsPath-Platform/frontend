@@ -1,11 +1,15 @@
 import { useEffect, useRef } from 'react'
-import { Layers, LoaderCircle, Volume2, X } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { BookmarkCheck, BookmarkPlus, LoaderCircle, Volume2, X } from 'lucide-react'
 import { speak } from '@/features/flashcards/lib/speak'
+import { useSenseSaves } from './useSenseSaves'
 import type { WordLookupState } from './useWordLookup'
 import './reading-word-lookup.css'
 
 const POPOVER_WIDTH = 328
 const POPOVER_HEIGHT_ESTIMATE = 260
+/** The card shows a word's first meanings only; the notebook has the rest. */
+const SENSES_SHOWN = 3
 
 const PART_OF_SPEECH: Record<string, string> = {
   NOUN: 'danh từ', VERB: 'động từ', ADJECTIVE: 'tính từ', ADVERB: 'trạng từ', PREPOSITION: 'giới từ',
@@ -13,8 +17,8 @@ const PART_OF_SPEECH: Record<string, string> = {
 }
 
 /**
- * The card next to a clicked word: its meaning and pronunciation from the vocabulary library, and a "save to flashcards"
- * button (not wired yet).
+ * The card next to a clicked word: its meaning and pronunciation from the vocabulary library, and a button on each meaning
+ * that saves it into the learner's vocabulary notebook (which also makes its flashcard).
  */
 export function WordLookupPopover({ state, onClose, onRetry }: { state: WordLookupState; onClose: () => void; onRetry: () => void }) {
   const card = useRef<HTMLDivElement>(null)
@@ -37,6 +41,8 @@ export function WordLookupPopover({ state, onClose, onRetry }: { state: WordLook
   const above = rect.bottom + POPOVER_HEIGHT_ESTIMATE > window.innerHeight && rect.top > POPOVER_HEIGHT_ESTIMATE
   const style = above ? { left, bottom: window.innerHeight - rect.top + 8 } : { left, top: rect.bottom + 8 }
   const entry = state.status === 'found' ? state.entry : null
+  const shown = entry?.senses.slice(0, SENSES_SHOWN) ?? []
+  const notebook = useSenseSaves(shown.flatMap((sense) => (sense.id ? [sense.id] : [])))
 
   /** Plays the recording of one accent; without one (or when it cannot load) the browser reads the word aloud. */
   function pronounce(url: string | null) {
@@ -76,23 +82,45 @@ export function WordLookupPopover({ state, onClose, onRetry }: { state: WordLook
 
       {entry && entry.senses.length > 0 && (
         <ul className="rw-word-senses">
-          {entry.senses.slice(0, 3).map((sense, index) => (
+          {shown.map((sense, index) => (
             <li key={index}>
               {/* A meaning that opens with its own grammar note, "(đại từ) …", already says what kind of word it is. */}
               {sense.partOfSpeech && !sense.vietnameseMeaning?.startsWith('(') && <span className="rw-word-pos">{PART_OF_SPEECH[sense.partOfSpeech] ?? sense.partOfSpeech.toLowerCase()}</span>}
               {sense.vietnameseMeaning && <p className="rw-word-vi">{sense.vietnameseMeaning}</p>}
               {sense.englishDefinition && <p className="rw-word-en">{sense.englishDefinition}</p>}
               {sense.exampleSentence && <p className="rw-word-example">“{sense.exampleSentence}”</p>}
+              {sense.id && (
+                <SaveButton
+                  lemma={entry.lemma} meaning={sense.vietnameseMeaning ?? sense.englishDefinition}
+                  saved={notebook.saved.has(sense.id)} saving={notebook.saving.has(sense.id)} onSave={() => void notebook.save(sense.id!)}
+                />
+              )}
+              {sense.id && notebook.failed === sense.id && <p className="rw-word-note rw-word-save-error" role="alert">Chưa lưu được từ này vào sổ. Bạn thử lại nhé.</p>}
             </li>
           ))}
         </ul>
       )}
 
-      {/* Saving to flashcards comes later; the button is only shown for now. */}
-      <button type="button" className="rw-word-save" disabled title="Tính năng đang phát triển">
-        <Layers size={15} aria-hidden="true" /> Lưu vào Flashcard
-      </button>
+      {notebook.saved.size > 0 && <Link className="rw-word-notebook" target="_blank" to="/vocabulary/notebook">Mở sổ từ vựng</Link>}
     </div>
+  )
+}
+
+function SaveButton({ lemma, meaning, saved, saving, onSave }: {
+  lemma: string
+  meaning: string | null
+  saved: boolean
+  saving: boolean
+  onSave: () => void
+}) {
+  return (
+    <button
+      type="button" className={`rw-word-save${saved ? ' is-saved' : ''}`} disabled={saved || saving} onClick={onSave}
+      aria-label={saved ? `Đã lưu "${lemma}" vào sổ từ` : `Lưu "${lemma}" (${meaning ?? 'nghĩa này'}) vào sổ từ`}
+    >
+      {saving ? <LoaderCircle className="animate-spin" size={14} aria-hidden="true" /> : saved ? <BookmarkCheck size={14} aria-hidden="true" /> : <BookmarkPlus size={14} aria-hidden="true" />}
+      {saved ? 'Đã lưu' : 'Lưu vào sổ từ'}
+    </button>
   )
 }
 
