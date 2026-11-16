@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { Expand, KeyRound, Search, Settings, Sparkles, TriangleAlert, X } from 'lucide-react'
+import { Expand, KeyRound, Settings, Sparkles, TriangleAlert, X } from 'lucide-react'
 import { AiWaitPanel } from '@/components/loading/AiWaitPanel'
 import { essayWaitNote } from '@/components/loading/aiWaitNotes'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
@@ -82,28 +82,6 @@ export function WritingTaskPanel({ task, showGuide }: { task: WritingTask; showG
         )}
       </div>
     </section>
-  )
-}
-
-const LOOKUP_LIMIT = 50
-
-/** Area D: the dictionary panel, one box to look a word up in. Only the layout is drawn for now; looking a word up is not connected yet. */
-export function WritingDictionaryPanel({ children }: { children?: ReactNode }) {
-  const [query, setQuery] = useState('')
-
-  return (
-    <aside className="ww-card ww-dictionary" aria-label="Tra từ vựng">
-      <header className="ww-card-head"><strong>Tra từ vựng</strong></header>
-      <div className="ww-dictionary-body">{children}</div>
-      <div className="ww-lookup">
-        <input value={query} maxLength={LOOKUP_LIMIT} placeholder="Nhập từ hoặc cụm từ cần tra"
-          aria-label="Từ cần tra" onChange={(event) => setQuery(event.target.value)} />
-        <div className="ww-lookup-foot">
-          <span>{query.length}/{LOOKUP_LIMIT} ký tự</span>
-          <button type="button" disabled><Search size={12} aria-hidden="true" /> Tra từ vựng</button>
-        </div>
-      </div>
-    </aside>
   )
 }
 

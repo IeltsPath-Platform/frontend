@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { EssayGrade, EssayStudyPoint, PracticeEssay } from '~types/learningPath'
 import { PracticeEssays } from './PracticeEssays'
@@ -13,6 +14,9 @@ vi.mock('@/features/practice/writing/writingApi', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/features/practice/writing/writingApi')>()),
   getGradingTerms: () => Promise.resolve({ pointCost: 11, minWords: 1, maxWords: 1200 }),
 }))
+
+const vocabulary = vi.hoisted(() => ({ getCatalogVocabulary: vi.fn(), getSavedNotebookSenses: vi.fn(), saveNotebookEntry: vi.fn() }))
+vi.mock('@/features/vocabulary/api/notebookApi', () => ({ notebookApi: vocabulary }))
 
 vi.mock('../api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../api')>()),
@@ -407,14 +411,25 @@ describe('PracticeEssays', () => {
     expect(screen.getByRole('textbox', { name: 'Introduction' })).toHaveValue('Free tuition helps')
   })
 
-  it('looks a word up on Wiktionary in a new tab and lists it', async () => {
+  it('looks a word up in the vocabulary library without leaving the essay, and saves it to the notebook', async () => {
     const open = vi.spyOn(window, 'open').mockReturnValue(null)
-    renderEssays()
-    await userEvent.type(screen.getByLabelText('Từ cần tra'), 'giáo dục')
+    vocabulary.getCatalogVocabulary.mockResolvedValue({ items: [{
+      id: 'item-1', lemma: 'education', ipa: null, ipaUs: 'ˌedʒuˈkeɪʃn', ipaUk: null, pronunciationAudioReference: null,
+      senses: [{ id: 'sense-1', partOfSpeech: 'NOUN', vietnameseMeaning: 'giáo dục', englishDefinition: null, exampleSentence: null }],
+    }], page: 0, size: 5, total: 1 })
+    vocabulary.getSavedNotebookSenses.mockResolvedValue([])
+    vocabulary.saveNotebookEntry.mockResolvedValue({})
+    render(<MemoryRouter><PracticeEssays attemptId="attempt-1" essays={[essay]} finished={false} onExit={vi.fn()} onFinish={vi.fn()} /></MemoryRouter>)
+
+    await userEvent.type(screen.getByLabelText('Từ cần tra'), 'education')
     await userEvent.click(screen.getByRole('button', { name: 'Tra từ vựng' }))
 
-    expect(open).toHaveBeenCalledWith(expect.stringContaining('wiktionary.org'), '_blank', 'noopener,noreferrer')
-    expect(screen.getByRole('link', { name: /giáo dục/ })).toBeInTheDocument()
+    expect(await screen.findByText('giáo dục')).toBeInTheDocument()
+    expect(vocabulary.getCatalogVocabulary).toHaveBeenCalledWith({ q: 'education', lang: 'EN', size: 5 }, expect.any(AbortSignal))
+    await userEvent.click(screen.getByRole('button', { name: /Lưu "education" \(giáo dục\) vào sổ từ/ }))
+    await waitFor(() => expect(vocabulary.saveNotebookEntry).toHaveBeenCalledWith('sense-1'))
+    expect(await screen.findByRole('button', { name: 'Đã lưu "education" vào sổ từ' })).toBeDisabled()
+    expect(open).not.toHaveBeenCalled()
     open.mockRestore()
   })
 })

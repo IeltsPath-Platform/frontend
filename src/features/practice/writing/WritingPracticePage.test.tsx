@@ -33,7 +33,8 @@ describe('WritingPracticePage', () => {
     expect(within(screen.getByRole('group', { name: 'Bài làm của bạn' })).getAllByRole('textbox').map((box) => box.id)).toEqual(['ww-part-0', 'ww-part-1', 'ww-part-2', 'ww-part-3'])
     for (const label of ['Introduction', 'Overview', 'Body 1', 'Body 2']) expect(screen.getByRole('textbox', { name: label })).toBeInTheDocument()
     expect(screen.getByRole('complementary', { name: 'Tra từ vựng' })).toBeInTheDocument()
-    expect(screen.queryByText(/Tra Việt-Anh|Tra Anh-Việt/)).not.toBeInTheDocument()
+    expect(within(screen.getByRole('tablist', { name: 'Chiều tra từ' })).getAllByRole('tab').map((tab) => tab.textContent)).toEqual(['Tra Việt-Anh', 'Tra Anh-Việt'])
+    expect(screen.getByRole('textbox', { name: 'Từ cần tra' })).toBeInTheDocument()
   })
 
   it('shows the clock at the top', () => {

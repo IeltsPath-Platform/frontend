@@ -1,4 +1,4 @@
-import { Highlighter, Languages, Layers, StickyNote } from 'lucide-react'
+import { Highlighter, Layers, StickyNote } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { PassageAction, PassageSelection } from '@/types/practice'
 
@@ -13,7 +13,6 @@ interface PassageToolsProps {
 const PASSAGE_TOOLS = [
   { action: 'highlight', label: 'Highlight', icon: Highlighter },
   { action: 'note', label: 'Note', icon: StickyNote },
-  { action: 'dictionary', label: 'Tra từ vựng', icon: Languages },
   { action: 'flashcard', label: 'Tạo Flashcard', icon: Layers },
 ] as const
 

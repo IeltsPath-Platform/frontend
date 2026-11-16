@@ -12,7 +12,6 @@ import { QuestionNavigation } from '../components/QuestionNavigation'
 import { FloatingNotes } from '../components/FloatingNotes'
 import { FlashcardDialog } from '../components/FlashcardDialog'
 import { FlashcardLibrary } from '../components/FlashcardLibrary'
-import { DictionaryDialog } from '../components/DictionaryDialog'
 import { canUsePassageAction, mergeHighlights } from '../lib/passageTools'
 import { MOCK_QUESTIONS } from '@/mocks/practiceData'
 import type { PassageAction, PassageSelection, PracticeFlashcard, PracticeMode, PracticeNote, TextHighlight } from '@/types/practice'
@@ -39,7 +38,6 @@ export function PracticeTestPage({ testId = 'snow-makers', mode = 'practice', on
   const [highlights, setHighlights] = useState<TextHighlight[]>([])
   const [flashcardText, setFlashcardText] = useState<string | null>(null)
   const [flashcardToEdit, setFlashcardToEdit] = useState<PracticeFlashcard | null>(null)
-  const [dictionaryText, setDictionaryText] = useState<string | null>(null)
   const [libraryOpen, setLibraryOpen] = useState(false)
   const [answers, setAnswers] = useState<Record<number, string>>({})
   const [flagged, setFlagged] = useState<Record<number, boolean>>({})
@@ -64,8 +62,7 @@ export function PracticeTestPage({ testId = 'snow-makers', mode = 'practice', on
     } else if (action === 'note') {
       setNoteSelection(selected)
       setNoteView('expanded')
-    } else if (action === 'flashcard') setFlashcardText(selected.text)
-    else setDictionaryText(selected.text)
+    } else setFlashcardText(selected.text)
   }
 
   const selectQuestion = useCallback((questionNumber: number) => {
@@ -138,7 +135,6 @@ export function PracticeTestPage({ testId = 'snow-makers', mode = 'practice', on
           }, ...current])}
           onDelete={(id) => setNotes((current) => current.filter((note) => note.id !== id))} />
         {(flashcardText !== null || flashcardToEdit !== null) && <FlashcardDialog text={flashcardToEdit?.word ?? flashcardText ?? ''} testId={testId} card={flashcardToEdit ?? undefined} onClose={() => { setFlashcardText(null); setFlashcardToEdit(null) }} onSaved={() => toast({ title: 'Đã lưu Flashcard trên trình duyệt này. Mở “Thẻ đã lưu” để xem.', tone: 'success' })} />}
-        {dictionaryText !== null && <DictionaryDialog text={dictionaryText} onClose={() => setDictionaryText(null)} />}
         {libraryOpen && <FlashcardLibrary onClose={() => setLibraryOpen(false)} onEdit={(card) => { setLibraryOpen(false); setFlashcardToEdit(card) }} />}
       </>}
     </div>
