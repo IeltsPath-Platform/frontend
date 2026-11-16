@@ -47,7 +47,7 @@ afterEach(() => { vi.unstubAllGlobals() })
 describe('lesson vocabulary', () => {
   it('shows an empty state without a Library request for a lesson with no IDs', () => {
     render(<LessonVocabulary senseIds={[]} />)
-    expect(screen.getByRole('status')).toHaveTextContent('Bài học này chưa có từ vựng.')
+    expect(screen.getByRole('heading', { name: 'Bài học này chưa có từ vựng.' })).toBeInTheDocument()
     expect(getLessonVocabularySenses).not.toHaveBeenCalled()
   })
 

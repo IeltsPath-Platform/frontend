@@ -26,6 +26,7 @@ import { PracticeTestStop } from './PracticeTestStop'
 import { SegmentMeter } from './SegmentMeter'
 import { TopicStop } from './TopicStop'
 import { UnlockDialog } from './UnlockDialog'
+import { StatusArt } from '@/components/StatusArt'
 
 const LANE_STATE_LABEL: Record<LaneState, string> = {
   SOON: 'Sắp ra mắt',
@@ -163,11 +164,13 @@ export function CourseSkillBoard({
           />
 
           {active.topics.length === 0 ? (
-            <p className="lp-empty lp-lane__empty">
-              {active.key === 'SPEAKING'
+            <StatusArt
+              compact
+              kind="empty"
+              title={active.key === 'SPEAKING'
                 ? 'Speaking sắp ra mắt. Bạn vẫn học đầy đủ ba kỹ năng còn lại.'
                 : `Khóa này chưa có chặng ${laneName(active.key)}.`}
-            </p>
+            />
           ) : (
             <ol className="lp-route" aria-label={`Các chặng ${laneName(active.key)}`}>
               {active.topics.map((topic, index) => {

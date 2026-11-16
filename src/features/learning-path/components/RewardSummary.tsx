@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { publishGamification } from '@/components/owl-events'
+import { publishGamification, publishHeartsDepleted } from '@/components/owl-events'
 import { useToast } from '@/components/toast/toastContext'
 import type { GamificationSummary } from '~types/learningPath'
 
@@ -18,6 +18,8 @@ export function RewardSummary({ gamification }: { gamification: GamificationSumm
     announced.current = gamification
     // The owl reloads quests and badges to tell what this submission completed.
     publishGamification(gamification)
+    // The last heart is gone: the owl offers to buy more instead of leaving a notice on the page.
+    if ((gamification.heartsLost ?? 0) > 0 && gamification.heartsRemaining === 0) publishHeartsDepleted()
     const { xpEarned, xpCapped, totalXp, level, leveledUp, heartsLost, heartsRemaining } = gamification
 
     if (leveledUp) {

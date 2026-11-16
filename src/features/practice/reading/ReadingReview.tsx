@@ -12,6 +12,7 @@ import { formatClockTime } from '../lib/practiceAnalysis'
 import { parseExplanation } from '../lib/explanationSteps'
 import { locateEvidence, parseEvidence } from '../lib/evidenceHighlight'
 import type { EvidenceRef } from '../lib/evidenceHighlight'
+import { StatusArt } from '@/components/StatusArt'
 import './reading-practice.css'
 import './reading-workspace.css'
 import './reading-review.css'
@@ -185,7 +186,7 @@ export function ReadingReview({ attemptId, sections, view, skill = 'reading', tr
     window.setTimeout(() => document.getElementById(`review-question-${item.itemId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 0)
   }
 
-  if (!section) return <main className="reading-state reading-empty"><h1>Chưa có nội dung để xem lại</h1><Link to={resultTo}>Về kết quả</Link></main>
+  if (!section) return <main className="reading-practice-page"><StatusArt kind="empty" page title="Chưa có nội dung để xem lại"><Link className="home-orange-cta" to={resultTo}>Về kết quả</Link></StatusArt></main>
 
   const groups = section.snapshot?.groups ?? []
   const items = section.items.filter((entry) => entry.question !== null)

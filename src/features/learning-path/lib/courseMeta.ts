@@ -10,6 +10,8 @@ const SKILL_LABEL: Record<string, string> = {
   SPEAKING: 'Speaking',
   GRAMMAR: 'Grammar',
   VOCABULARY: 'Vocabulary',
+  /** Points every skill builds on (grammar, linking words): named so they are not mistaken for the "all skills" filter. */
+  ALL: 'Nền tảng',
   OTHER: 'Khác',
 }
 

@@ -6,10 +6,11 @@ import { ToastProvider } from '@/components/toast/ToastProvider'
 import type { Suggestion } from '~types/learningPath'
 import { ApiError } from '@/features/learning-path/api/apiError'
 import { OwlPanel } from './OwlPanel'
+import { subscribeHeartsChanged } from './owl-events'
 import type { OwlSnapshot } from './owl-messages'
 import type { OwlSuggestionsState } from './useOwlSuggestions'
 
-const api = vi.hoisted(() => ({ startBasketReview: vi.fn() }))
+const api = vi.hoisted(() => ({ startBasketReview: vi.fn(), refillHearts: vi.fn() }))
 
 vi.mock('@/features/learning-path/api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/features/learning-path/api')>()),
@@ -26,7 +27,7 @@ function suggestion(overrides: Partial<Suggestion> = {}): Suggestion {
   }
 }
 
-function renderPanel(suggestions: OwlSuggestionsState, handlers: { onClose?: () => void, onRetry?: () => void, onTab?: () => void } = {}) {
+function renderPanel(suggestions: OwlSuggestionsState, handlers: { onClose?: () => void, onRetry?: () => void, onTab?: () => void, snapshot?: OwlSnapshot } = {}) {
   return render(
     <ToastProvider>
       <MemoryRouter initialEntries={['/home']}>
@@ -38,7 +39,7 @@ function renderPanel(suggestions: OwlSuggestionsState, handlers: { onClose?: () 
                 onClose={handlers.onClose ?? vi.fn()}
                 onRetrySuggestions={handlers.onRetry ?? vi.fn()}
                 onTab={handlers.onTab ?? vi.fn()}
-                snapshot={EMPTY}
+                snapshot={handlers.snapshot ?? EMPTY}
                 suggestions={suggestions}
                 tab="suggestions"
               />
@@ -140,5 +141,34 @@ describe('OwlPanel suggestions tab', () => {
     })
     await userEvent.click(screen.getByRole('link', { name: 'Xem trong khóa học' }))
     expect(await screen.findByText('Trang khóa học')).toBeInTheDocument()
+  })
+})
+
+describe('OwlPanel hearts', () => {
+  const hearts = (count: number) => ({ ...EMPTY, hearts: { hearts: count, maxHearts: 5, nextHeartAt: null, refillCost: 5 } })
+
+  it('sells a full refill while hearts are missing, and tells the others', async () => {
+    const user = userEvent.setup()
+    const changed = vi.fn()
+    const unsubscribe = subscribeHeartsChanged(changed)
+    api.refillHearts.mockResolvedValue({ hearts: 5, maxHearts: 5, nextHeartAt: null, refillCost: 5 })
+    renderPanel({ status: 'ready', items: [] }, { snapshot: hearts(2) })
+    await user.click(screen.getByRole('button', { name: 'Mua tim · 5 điểm' }))
+    expect(api.refillHearts).toHaveBeenCalledTimes(1)
+    await waitFor(() => expect(changed).toHaveBeenCalledTimes(1))
+    unsubscribe()
+  })
+
+  it('says when the points are not enough', async () => {
+    const user = userEvent.setup()
+    api.refillHearts.mockRejectedValue(new ApiError(402, 'INSUFFICIENT_POINTS', 'Not enough points'))
+    renderPanel({ status: 'ready', items: [] }, { snapshot: hearts(0) })
+    await user.click(screen.getByRole('button', { name: 'Mua tim · 5 điểm' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Bạn cần 5 điểm')
+  })
+
+  it('offers nothing when the hearts are full', () => {
+    renderPanel({ status: 'ready', items: [] }, { snapshot: hearts(5) })
+    expect(screen.queryByRole('button', { name: /Mua tim/ })).not.toBeInTheDocument()
   })
 })

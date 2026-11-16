@@ -1,42 +1,93 @@
 .chart { display: grid; gap: .75rem; min-inline-size: 0; }
 
-.bar { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem 1.25rem; }
-.root { display: inline-flex; align-items: center; gap: .6rem; padding: .55rem .9rem; border-radius: .75rem; background: var(--lp-primary-strong); box-shadow: 0 2px 6px color-mix(in srgb, var(--lp-primary-strong) 25%, transparent); color: var(--lp-surface); }
-.root > span { display: grid; gap: .1rem; }
-.root strong { font-size: .95rem; }
-.root small { color: color-mix(in srgb, var(--lp-surface) 80%, transparent); font-size: .72rem; }
-.hint { flex: 1 1 22rem; max-inline-size: 64ch; margin: 0; color: var(--lp-muted); font-size: .78rem; line-height: 1.6; }
+/* The skill the chart shows: a name above it, nothing more; the page already says which course it is. */
+.root { display: inline-flex; align-items: center; gap: .5rem; margin: 0; color: var(--lp-primary-strong); }
+.root strong { font-family: var(--lp-display); font-size: 1rem; }
 
-/* The chart is scaled to the width of this frame; only a chart that cannot fit even at the smallest scale pans sideways. */
-.scroller { overflow-x: auto; border: 1px solid var(--lp-line); border-radius: 1rem; background: var(--lp-surface); background-image: radial-gradient(var(--lp-line) .75px, transparent .75px); background-size: 18px 18px; scrollbar-width: thin; }
-.scroller:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3px; }
-.frame { position: relative; margin-inline: auto; }
-.canvas { position: absolute; inset: 0 auto auto 0; transform-origin: 0 0; }
-.links { position: absolute; inset: 0 auto auto 0; overflow: visible; pointer-events: none; }
-.link { fill: none; stroke: color-mix(in srgb, var(--lp-primary) 28%, var(--lp-line)); stroke-width: 1.5; transition: stroke 150ms ease-out, opacity 150ms ease-out; }
+/* The frame React Flow fills; its height is set by the chart so the whole tree fits the width. React Flow brings its own light
+   theme, so what it paints (background, controls) is put back in the colours of the page. */
+.stage { position: relative; overflow: hidden; border: 1px solid var(--lp-line); border-radius: 1rem; background: var(--lp-surface); background-image: radial-gradient(var(--lp-line) .75px, transparent .75px); background-size: 18px 18px; }
+.stage :global(.react-flow) { background: transparent; }
+.stage :global(.react-flow__pane) { cursor: grab; }
+.stage :global(.react-flow__pane.dragging) { cursor: grabbing; }
+.stage :global(.react-flow__controls) { border: 1px solid var(--lp-line); border-radius: .6rem; overflow: hidden; box-shadow: 0 1px 3px color-mix(in srgb, var(--lp-primary) 12%, transparent); }
+.stage :global(.react-flow__controls-button) { inline-size: 2.25rem; block-size: 2.25rem; border-bottom: 1px solid var(--lp-line); background: var(--lp-surface); color: var(--lp-primary-strong); }
+.stage :global(.react-flow__controls-button:hover) { background: var(--lp-soft); }
+.stage :global(.react-flow__controls-button:focus-visible) { outline: 3px solid var(--color-focus); outline-offset: -3px; }
+.stage :global(.react-flow__controls-button svg) { max-inline-size: 1rem; max-block-size: 1rem; fill: currentColor; }
+.stage :global(.react-flow__attribution) { background: transparent; font-size: .62rem; opacity: .7; }
+/* React Flow draws every line in an svg of its own inside a layer that has no width. The page's reset caps an svg at the width
+   of its container (max-inline-size: 100%), which would make each of these zero wide, and an svg of no width is not drawn at all. */
+.stage :global(.react-flow__edges svg) { max-inline-size: none; }
+/* The arrowheads are defined here once and used by every line; a zero-size box, not display:none, or the markers would not draw. */
+.defs { position: absolute; inline-size: 0; block-size: 0; overflow: hidden; }
+/* Where a line meets a box. React Flow needs the handle to exist to know the spot, but nobody ever sees or uses it. */
+.handle { inline-size: 1px; block-size: 1px; min-inline-size: 0; min-block-size: 0; border: 0; background: transparent; opacity: 0; pointer-events: none; }
+.link { fill: none; stroke: color-mix(in srgb, var(--lp-primary) 45%, var(--lp-line)); stroke-width: 1.75; transition: stroke 150ms ease-out, opacity 150ms ease-out; }
 .link.lit { stroke: var(--lp-primary); stroke-width: 2.5; }
 .link.faded { opacity: .35; }
-.arrowQuiet { fill: color-mix(in srgb, var(--lp-primary) 40%, var(--lp-line)); }
+.arrowQuiet { fill: color-mix(in srgb, var(--lp-primary) 55%, var(--lp-line)); }
 .arrowLit { fill: var(--lp-primary); }
+/* The line through a review: red and dashed while the review holds the learner back, green once it is done, so what stands in the
+   way reads apart from the order of learning. A skipped review keeps the quiet line. */
+.link.reviewLink { stroke: var(--lp-danger); stroke-dasharray: 6 4; }
+.link.doneLink { stroke: var(--lp-success); }
+.link.suggestedLink { stroke: var(--lp-accent-ink); stroke-dasharray: 6 4; }
+.link.reviewLink.lit, .link.doneLink.lit, .link.suggestedLink.lit { stroke-width: 2.5; }
+.arrowReview { fill: var(--lp-danger); }
+.arrowDone { fill: var(--lp-success); }
+.arrowSuggested { fill: var(--lp-accent-ink); }
 
-.columnName { position: absolute; display: flex; align-items: center; gap: .45rem; margin: 0; color: var(--lp-primary-strong); font-size: .72rem; font-weight: 750; letter-spacing: .04em; text-transform: uppercase; }
+.columnName { display: flex; align-items: center; gap: .45rem; margin: 0; color: var(--lp-primary-strong); font-size: .72rem; font-weight: 750; letter-spacing: .04em; text-transform: uppercase; }
 .columnName span { display: grid; flex: none; inline-size: 1.35rem; block-size: 1.35rem; place-items: center; border-radius: 50%; background: var(--lp-primary); color: var(--lp-surface); font-size: .7rem; font-variant-numeric: tabular-nums; letter-spacing: 0; }
 
+/* The steps of points of other skills read the same way, but dashed and quiet like their boxes. */
+.columnContext { color: var(--lp-muted); }
+.columnContext span { border: 1px dashed var(--lp-primary); background: var(--lp-surface); color: var(--lp-primary-strong); }
+
+/* The column that holds only reviews: quiet, since a review may be finished and then it is no alarm. */
+.columnReview { color: var(--lp-muted); }
+.columnReview span { background: var(--lp-muted); }
+
 /* A box is a button: the tier colours its left edge and an icon repeats it, so the tier never rests on colour alone. */
-.box { --tone: var(--lp-locked); position: absolute; display: grid; grid-template-rows: auto 1fr auto; gap: 3px; box-sizing: border-box; padding: 8px 10px 8px 12px; border: 1px solid var(--lp-line); border-inline-start: 4px solid var(--tone); border-radius: 8px; background: var(--lp-surface); box-shadow: 0 1px 2px color-mix(in srgb, var(--lp-primary) 8%, transparent); color: var(--lp-ink); font: inherit; text-align: start; cursor: pointer; transition: border-color 150ms ease-out, box-shadow 150ms ease-out, opacity 150ms ease-out; }
+.box { --tone: var(--lp-locked); display: grid; inline-size: 100%; block-size: 100%; grid-template-rows: auto 1fr auto; gap: 4px; box-sizing: border-box; padding: 9px 11px 9px 13px; border: 1px solid var(--lp-line); border-inline-start: 4px solid var(--tone); border-radius: 8px; background: var(--lp-surface); box-shadow: 0 1px 2px color-mix(in srgb, var(--lp-primary) 8%, transparent); color: var(--lp-ink); font: inherit; text-align: start; cursor: pointer; transition: border-color 150ms ease-out, box-shadow 150ms ease-out, opacity 150ms ease-out; }
 .box[data-group='MAINTAIN'] { --tone: var(--lp-success); }
 .box[data-group='CONSOLIDATE'] { --tone: var(--lp-primary); }
 .box[data-group='PRIORITY'] { --tone: var(--lp-accent); }
 .box[data-locked='true'] { background: color-mix(in srgb, var(--lp-locked-soft) 60%, var(--lp-surface)); }
 .box:hover, .box[data-related='true'] { border-color: color-mix(in srgb, var(--lp-primary) 50%, var(--lp-line)); border-inline-start-color: var(--tone); }
+/* A point with a blocking review keeps the red edge of its badge, hovered or not; the tier still colours the left edge. Being
+   selected outranks it, below, since the panel then says the same thing in full. */
+.box[data-review='true'] { border-color: var(--lp-danger); border-inline-start-color: var(--tone); }
 .box[aria-pressed='true'] { border-color: var(--lp-primary); border-inline-start-color: var(--tone); background: color-mix(in srgb, var(--lp-primary) 7%, var(--lp-surface)); box-shadow: 0 0 0 3px color-mix(in srgb, var(--lp-primary) 22%, transparent); }
 .box:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; }
+/* A point of another skill that this skill builds on: quiet and dashed, not a button, so it reads as context rather than a step. */
+.context { display: grid; inline-size: 100%; block-size: 100%; align-content: center; gap: 4px; box-sizing: border-box; padding: 8px 12px; border: 1px dashed var(--lp-locked); border-radius: 8px; background: color-mix(in srgb, var(--lp-locked-soft) 45%, var(--lp-surface)); color: var(--lp-muted); transition: border-color 150ms ease-out; }
+.context[data-related='true'] { border-color: var(--lp-primary); color: var(--lp-ink); }
+.context[data-review='true'] { border-color: var(--lp-danger); color: var(--lp-ink); }
+.context .name { font-size: .84rem; }
+/* A blocking review: not a step but what stands between two, so it has its own colour for each state, and the way into it is the
+   one thing on it that acts (the rest of the box picks it, like a point). Red while it holds the learner back, green once done. */
+.reviewBox { --tone: var(--lp-danger); --tint: var(--lp-danger-soft); display: grid; inline-size: 100%; block-size: 100%; grid-template-rows: 1fr auto; gap: 4px; box-sizing: border-box; padding: 9px 11px 9px 13px; border: 1px solid var(--tone); border-inline-start: 4px solid var(--tone); border-radius: 8px; background: var(--tint); color: var(--lp-ink); transition: box-shadow 150ms ease-out; }
+.reviewBox[data-state='DONE'] { --tone: var(--lp-success); --tint: var(--lp-success-soft); }
+.reviewBox[data-state='SUGGESTED'] { --tone: var(--lp-accent-ink); --tint: var(--lp-accent-soft); }
+.reviewBox[data-state='SKIPPED'] { --tone: var(--lp-locked); --tint: color-mix(in srgb, var(--lp-locked-soft) 60%, var(--lp-surface)); }
+.reviewBox:has(.reviewPick[aria-pressed='true']) { box-shadow: 0 0 0 3px color-mix(in srgb, var(--tone) 25%, transparent); }
+.reviewPick { display: grid; align-content: start; gap: 4px; min-inline-size: 0; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: start; cursor: pointer; }
+.reviewPick:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; border-radius: 4px; }
+.reviewBox .name { -webkit-line-clamp: 2; }
+.reviewTag { display: inline-flex; align-items: center; gap: 4px; color: var(--tone); font-size: .7rem; font-weight: 750; white-space: nowrap; }
+.reviewBox[data-state='SKIPPED'] .reviewTag { color: var(--lp-muted); }
+.reviewGo { display: inline-flex; align-items: center; justify-self: start; gap: 4px; padding: 2px 10px; border-radius: 999px; background: var(--tone); color: #fff; font-size: .74rem; font-weight: 700; text-decoration: none; }
+.reviewBox[data-state='SKIPPED'] .reviewGo { background: var(--lp-muted); }
+.reviewGo:hover { filter: brightness(.92); }
+.reviewGo:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; }
 .head { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-inline-size: 0; }
 .origin { min-inline-size: 0; overflow: hidden; color: var(--lp-muted); font-size: .7rem; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
 .badges { display: inline-flex; flex: none; align-items: center; gap: 6px; }
 .cefr { padding: 0 .4rem; border-radius: .4rem; background: var(--lp-soft); color: var(--lp-primary); font-size: .68rem; font-weight: 700; }
 .tierIcon { color: var(--tone); }
-.name { display: -webkit-box; overflow: hidden; font-family: var(--lp-display); font-size: .88rem; font-weight: 650; line-height: 1.3; overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.name { display: -webkit-box; align-self: start; overflow: hidden; font-family: var(--lp-display); font-size: .88rem; font-weight: 650; line-height: 1.32; overflow-wrap: break-word; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
 .gauge { display: flex; align-items: center; gap: 6px; color: var(--lp-muted); font-size: .68rem; font-variant-numeric: tabular-nums; }
 .track { flex: 1; block-size: 5px; overflow: hidden; border-radius: 999px; background: var(--lp-line); }
 .track > span { display: block; block-size: 100%; background: var(--tone); }

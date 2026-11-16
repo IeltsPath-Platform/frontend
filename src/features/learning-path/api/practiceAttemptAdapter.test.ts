@@ -75,6 +75,21 @@ describe('mapPracticeAttemptView', () => {
     ])
   })
 
+  it('keeps what the learner wrote for each question, and nothing for a set stored before it was kept', () => {
+    const mapped = mapPracticeSubmission({
+      ...submissionWith([]),
+      results: [
+        { questionVersionId: 'q1', correct: false, correctAnswer: 'B', submittedAnswer: 'A' },
+        { questionVersionId: 'q2', correct: true, correctAnswer: 'B' },
+        { questionVersionId: 'q3', correct: false, correctAnswer: 'B', submittedAnswer: null },
+      ],
+    })
+
+    expect(mapped.results[0].submittedAnswer).toBe('A')
+    expect(mapped.results[1]).not.toHaveProperty('submittedAnswer')
+    expect(mapped.results[2]).not.toHaveProperty('submittedAnswer')
+  })
+
   it('has no essays when the set has only questions', () => {
     expect(mapPracticeAttemptView({ ...essayOnlyAttempt, sections: [{ essays: [] }] }).essays).toEqual([])
     expect(mapPracticeAttemptView({ ...essayOnlyAttempt, sections: undefined }).essays).toEqual([])

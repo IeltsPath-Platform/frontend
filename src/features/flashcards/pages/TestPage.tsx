@@ -10,6 +10,7 @@ import { useDeckStudyCards } from '../hooks/useDeckStudyCards'
 import { getTestScoreReaction } from '../lib/owl-reactions'
 import { generateTest, gradeQuestion, type AnswerSide, type StudyCard, type TestQuestion, type TestQuestionType } from '../lib/study'
 import '../flashcards.css'
+import { Loading } from '@/components/loading/Loading'
 
 const TYPE_LABELS: Record<TestQuestionType, string> = { choice: 'Trắc nghiệm', truefalse: 'Đúng / Sai', written: 'Tự luận' }
 type Response = string | boolean
@@ -24,7 +25,7 @@ export function TestPage() {
         <Link to={`/flashcards/decks/${deckId}`} className="flashcards-back"><ArrowLeft size={16} aria-hidden="true" />{deck?.name ?? 'Về học phần'}</Link>
         <StudyHero eyebrow="Bài kiểm tra" title={deck?.name ?? 'Học phần'} subtitle="Thử sức với trắc nghiệm, đúng sai và tự luận trong một lần làm." />
         {error && <p role="alert" className="flashcard-error">{error}</p>}
-        {cards === null ? <p className="flashcards-empty">Đang tải thẻ…</p>
+        {cards === null ? <Loading label="Đang tải thẻ…" />
           : cards.length < 2 ? <p className="flashcards-empty">Cần ít nhất 2 thẻ để làm bài kiểm tra.</p>
             : <TestSession key={deckId} cards={cards} />}
       </main>

@@ -3,7 +3,7 @@ import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-r
 import { ArrowLeft, Check, CircleAlert, Mic, Play, Radio } from 'lucide-react'
 import { SiteNavbar } from '@/components/SiteNavbar'
 import { Button } from '@/components/ui/button'
-import { ApiErrorState, LoadingState } from '@/features/learning-path/components/PageState'
+import { ApiErrorState, PageSkeleton } from '@/features/learning-path/components/PageState'
 import { useApiResource } from '@/features/learning-path/lib/useApiResource'
 import { formatDuration } from '../lib/time'
 import { SpeakingResultScreen } from './SpeakingSubmissionResultPage'
@@ -94,7 +94,7 @@ export function SpeakingReviewPage() {
   // Once the answers are sent and the learner asks for the result, it is shown here, on the same page.
   if (grading.viewingId) return <SpeakingResultScreen submissionId={grading.viewingId} />
   if (!packageVersionId || parts.length === 0) return <Navigate replace to={CATALOG_PATH} />
-  if (resource.status === 'loading') return <LoadingState label="Đang tải bài của bạn…" />
+  if (resource.status === 'loading') return <PageSkeleton label="Đang tải bài của bạn…" variant="article" />
   if (resource.status === 'error' && resource.error) return <ApiErrorState error={resource.error} onRetry={resource.reload} />
   if (!tasks) return null
 

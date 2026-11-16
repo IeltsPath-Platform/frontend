@@ -8,6 +8,7 @@ import { flashcardApi, flashcardErrorMessage, type FlashcardDeck } from '../api/
 import { filterSenses, importSensesToDeck, loadTopicSenses, TOPIC_IMPORT_CAP, type PickedSense } from '../lib/dictionary-import'
 import '../flashcards.css'
 import '../dictionary-import.css'
+import { Loading } from '@/components/loading/Loading'
 
 type Tab = 'topic' | 'words'
 const DRAG_TYPE = 'application/x-ieltspath-sense'
@@ -250,7 +251,7 @@ function TopicPicker({ picked, onToggle, onAdd, onRemove, onTopicName }: PickerP
   if (!topic) {
     return (
       <div className="dict-import__topics">
-        {topics === null && <p className="flashcard-hint">Đang tải chủ đề…</p>}
+        {topics === null && <Loading label="Đang tải chủ đề…" />}
         {topics?.length === 0 && <p className="flashcard-hint">Chưa có chủ đề trong từ điển.</p>}
         {topics?.map((item, index) => (
           <button key={item.id} type="button" className="dict-import__topic" style={{ animationDelay: `${index * 30}ms` }} onClick={() => choose(item)}>
@@ -282,7 +283,7 @@ function TopicPicker({ picked, onToggle, onAdd, onRemove, onTopicName }: PickerP
         </label>
       )}
       {failed && <p role="alert" className="flashcard-error">Không tải được từ của chủ đề này.</p>}
-      {!list && !failed && <p className="flashcard-hint">Đang tải từ vựng…</p>}
+      {!list && !failed && <Loading label="Đang tải từ vựng…" />}
       {list?.length === 0 && <p className="flashcard-hint">Chủ đề này chưa có từ.</p>}
       {list && topic.wordCount > TOPIC_IMPORT_CAP && <p className="flashcard-hint">Hiển thị {TOPIC_IMPORT_CAP} từ đầu của chủ đề.</p>}
       {shown?.length === 0 && list!.length > 0 && <p className="flashcard-hint">Không có từ nào khớp “{filter.trim()}”.</p>}

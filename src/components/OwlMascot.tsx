@@ -8,6 +8,7 @@ import stepRight from '@/assets/owl/owl-step-right.png'
 import wait from '@/assets/owl/owl-wait.png'
 import styles from './OwlMascot.module.css'
 import { useAuthSession } from '@/features/auth/authSession'
+import { HeartsDepletedDialog } from './HeartsDepletedDialog'
 import { OwlPanel } from './OwlPanel'
 import type { OwlTab } from './owl-messages'
 import { useOwlData } from './useOwlData'
@@ -168,6 +169,7 @@ export function OwlMascot() {
 
   return (
     <div className={styles.root} data-pose={shownPose} ref={rootRef}>
+      <HeartsDepletedDialog />
       {open && isLoggedIn ? (
         <OwlPanel
           onClose={() => setOpen(false)}

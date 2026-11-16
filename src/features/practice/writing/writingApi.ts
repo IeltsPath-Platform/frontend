@@ -1,4 +1,5 @@
 import { apiRequest } from '@/lib/httpClient'
+import type { EssayKnowledgeJudgmentDto, EssayStudyPointDto } from '@/features/learning-path/api/learningAdapters'
 
 /** 'practice' is the screen with the guide and the dictionary; 'exam' is the timed screen that copies the real test. */
 export type WritingMode = 'practice' | 'exam'
@@ -139,6 +140,10 @@ export interface WritingSubmission {
   passed?: boolean
   criteria?: WritingCriterion[]
   corrections?: WritingCorrection[]
+  /** What to study next: weak criteria and failed knowledge points, then the grader's focus notes. */
+  studyPoints?: EssayStudyPointDto[]
+  /** How the essay did on each knowledge point the question practises; absent when the question has none. */
+  taskKnowledgePointJudgments?: EssayKnowledgeJudgmentDto[]
   summary?: string
   pointsCharged?: number
   sampleAnswer?: string

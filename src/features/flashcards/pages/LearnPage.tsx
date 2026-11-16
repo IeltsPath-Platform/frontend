@@ -15,6 +15,7 @@ import {
 } from '../lib/owl-reactions'
 import { buildChoices, isTypedAnswerCorrect, shuffle, type StudyCard } from '../lib/study'
 import '../flashcards.css'
+import { Loading } from '@/components/loading/Loading'
 
 /** 0 = chưa học, 1 = đúng trắc nghiệm, 2 = đã thuộc (đúng cả phần tự gõ). */
 type Stage = 0 | 1 | 2
@@ -36,7 +37,7 @@ export function LearnPage() {
         <Link to={`/flashcards/decks/${deckId}`} className="flashcards-back"><ArrowLeft size={16} aria-hidden="true" />{deck?.name ?? 'Về học phần'}</Link>
         <StudyHero eyebrow="Chế độ học" title={deck?.name ?? 'Học phần'} subtitle="Chọn đúng nghĩa trước, rồi gõ lại từ để thuộc hẳn." />
         {error && <p role="alert" className="flashcard-error">{error}</p>}
-        {cards === null ? <p className="flashcards-empty">Đang tải thẻ…</p>
+        {cards === null ? <Loading label="Đang tải thẻ…" />
           : cards.length < 2 ? <p className="flashcards-empty">Cần ít nhất 2 thẻ để học.</p>
             : <LearnSession key={deckId} deckId={deckId} cards={cards} />}
       </main>

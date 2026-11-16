@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Expand, KeyRound, Search, Settings, Sparkles, TriangleAlert, X } from 'lucide-react'
+import { AiWaitPanel } from '@/components/loading/AiWaitPanel'
+import { essayWaitNote } from '@/components/loading/aiWaitNotes'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { PracticeSettingsPopover } from '../components/PracticeSettingsPopover'
 import type { WorkspaceFontSize } from '../reading/ReadingWorkspaceParts'
@@ -172,6 +174,7 @@ export function GradeConfirmDialog({ figures, busy, error, canGrade, onGrade, on
         )}
         {error && <p className="ww-error" role="alert">{error}</p>}
         {busy && progress && <p className="ww-muted" role="status">{progress}</p>}
+        {busy && <AiWaitPanel compact hint="AI đang đọc bài viết và chấm theo 4 tiêu chí IELTS. Đừng đóng trang này." note={essayWaitNote} title="Đang chấm bài viết" />}
         <div className="ww-dialog-actions">
           <button type="button" className="ww-secondary" disabled={busy} onClick={onClose}>{copy?.backLabel ?? 'Quay lại chỉnh sửa'}</button>
           <button type="button" className="ww-primary" disabled={busy || !canGrade || (consent !== undefined && !consent.checked)} onClick={onGrade}>

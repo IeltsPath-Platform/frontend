@@ -6,6 +6,7 @@ import { Markdown } from './Markdown'
 import { SUMMARY_COMPONENTS } from './summary-components'
 import { SectionContext, type Fact } from './summary-context'
 import { splitSections } from './summary-shapes'
+import { StatusArt } from '@/components/StatusArt'
 
 /**
  * A lesson summary written in Markdown, shown as a banner and one collapsible card per `##` heading.
@@ -14,7 +15,7 @@ import { splitSections } from './summary-shapes'
  */
 export function LessonSummary({ markdown, topicTitle }: { markdown: string | null; topicTitle?: string }) {
   const parsed = useMemo(() => (markdown?.trim() ? splitSections(markdown) : null), [markdown])
-  if (!parsed) return <p className="lp-res-empty">Bài học này chưa có phần tóm tắt.</p>
+  if (!parsed) return <StatusArt compact kind="empty" title="Bài học này chưa có phần tóm tắt." />
   if (parsed.sections.length === 0) return <Markdown>{markdown ?? ''}</Markdown>
 
   return (

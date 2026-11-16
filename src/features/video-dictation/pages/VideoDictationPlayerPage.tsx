@@ -1,6 +1,7 @@
+import { NotFoundArt } from '@/components/NotFoundArt'
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { AlertTriangle, ArrowLeft, Loader2 } from 'lucide-react'
+import { AlertTriangle, ArrowLeft } from 'lucide-react'
 import { SiteNavbar } from '@/components/SiteNavbar'
 import { Button } from '@/components/ui/button'
 import { HttpError } from '@/lib/httpClient'
@@ -23,6 +24,7 @@ import { useWideScreen } from '../hooks/useWideScreen'
 import { readStoredColumn, readStoredLayout, storeColumn, storeLayout, type ColumnWidths, type ResizableLayout } from '../lib/playerLayout'
 import '../video-dictation.css'
 import '../video-dictation-player.css'
+import { Loading } from '@/components/loading/Loading'
 
 interface Loaded {
   detail: DictationVideoDetail
@@ -49,16 +51,33 @@ export function VideoDictationPlayerPage() {
   const { videoId = '' } = useParams<{ videoId: string }>()
   const [loaded, setLoaded] = useState<Loaded | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [missing, setMissing] = useState(false)
   const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
     const controller = new AbortController()
     Promise.all([videoDictationApi.detail(videoId, controller.signal), videoDictationApi.progress(videoId, controller.signal)])
       .then(([detail, progress]) => { if (!controller.signal.aborted) setLoaded({ detail, progress }) })
-      .catch((reason: unknown) => { if (!controller.signal.aborted) setError(loadError(reason)) })
+      .catch((reason: unknown) => {
+        if (controller.signal.aborted) return
+        setMissing(reason instanceof HttpError && reason.status === 404)
+        setError(loadError(reason))
+      })
     return () => controller.abort()
   }, [videoId, attempt])
 
+  if (error && missing) {
+    return (
+      <PageFrame>
+        <main className="vd-main">
+          <NotFoundArt title="Không tìm thấy video" message={error}>
+            <Button asChild><Link to="/video-dictation">Về thư viện video</Link></Button>
+            <Button type="button" variant="outline" onClick={() => { setError(null); setMissing(false); setAttempt((value) => value + 1) }}>Thử lại</Button>
+          </NotFoundArt>
+        </main>
+      </PageFrame>
+    )
+  }
   if (error) {
     return (
       <PageFrame>
@@ -67,7 +86,7 @@ export function VideoDictationPlayerPage() {
           <div className="vd-state" role="alert">
             <AlertTriangle aria-hidden="true" size={28} />
             <p>{error}</p>
-            <Button type="button" onClick={() => { setError(null); setAttempt((value) => value + 1) }}>Thử lại</Button>
+            <Button type="button" onClick={() => { setError(null); setMissing(false); setAttempt((value) => value + 1) }}>Thử lại</Button>
           </div>
         </main>
       </PageFrame>
@@ -77,10 +96,7 @@ export function VideoDictationPlayerPage() {
     return (
       <PageFrame>
         <main className="vd-main">
-          <div className="vd-state" role="status" aria-live="polite">
-            <Loader2 aria-hidden="true" className="vd-spin" size={28} />
-            <p>Đang tải video…</p>
-          </div>
+          <Loading label="Đang tải video…" variant="article" />
         </main>
       </PageFrame>
     )

@@ -35,9 +35,16 @@ describe('startStudyPointPractice', () => {
     expect(startFreePractice).toHaveBeenCalledExactlyOnceWith('practice-kp')
   })
 
-  it('falls back to the assessed knowledge point when no practice target is supplied', async () => {
+  it('starts nothing for a failed knowledge point that has no practice target of its own', async () => {
     const navigate = vi.fn()
     await startStudyPointPractice({ ...point, kind: 'KNOWLEDGE_POINT', practiceKnowledgePointId: null }, '/back', navigate)
+    expect(startFreePractice).not.toHaveBeenCalled()
+    expect(navigate).not.toHaveBeenCalled()
+  })
+
+  it('falls back to the criterion knowledge point when a weak criterion names no other target', async () => {
+    const navigate = vi.fn()
+    await startStudyPointPractice({ ...point, practiceKnowledgePointId: null }, '/back', navigate)
     expect(startFreePractice).toHaveBeenCalledExactlyOnceWith('kp-1')
   })
 

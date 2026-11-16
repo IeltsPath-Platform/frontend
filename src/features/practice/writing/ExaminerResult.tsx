@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useLocation } from 'react-router-dom'
 import { Ban, Check, Hourglass } from 'lucide-react'
 import { SiteNavbar } from '@/components/SiteNavbar'
 import { LearnTrail } from '@/features/learning-path/components/LearnTrail'
-import { ApiErrorState, LoadingState } from '@/features/learning-path/components/PageState'
+import { ApiErrorState, PageSkeleton } from '@/features/learning-path/components/PageState'
+import { HISTORY_PATH, historyTrail, readOrigin } from '@/features/learning-path/lib/resultOrigin'
 import { useApiResource } from '@/features/learning-path/lib/useApiResource'
 import { getExaminer, getHumanReview, readStudyPoints } from './examinerApi'
 import { errorTypesByCode, getApprovedErrorTypes } from './examinerReviewsApi'
@@ -22,8 +24,6 @@ import '../reading/reading-workspace.css'
 import './writing-result.css'
 import './writing-examiner.css'
 
-/** The menu item a graded essay belongs to, and the page the trail leads back to. */
-const HISTORY_PATH = '/submission-history'
 /** Time between checks while the teacher has not finished. */
 const POLL_MS = 60_000
 
@@ -242,6 +242,8 @@ export function ExaminerResult({ submission, submissionId }: { submission: Writi
   const cancelled = review.data?.status === 'CANCELLED'
   const essay = submission.essayText ?? ''
   const context = useMemo(() => loadResultContext(submissionId), [submissionId])
+  const { search } = useLocation()
+  const origin = useMemo(() => readOrigin(search), [search])
   const examinerId = review.data?.examinerId ?? null
   const reviewId = review.data?.reviewSubmissionId ?? null
   // The profile and the job are extras: when either cannot be read the review still shows.
@@ -259,7 +261,7 @@ export function ExaminerResult({ submission, submissionId }: { submission: Writi
     return () => window.clearInterval(id)
   }, [done, cancelled, refresh])
 
-  if (review.status === 'loading') return <LoadingState label="Đang tải kết quả chấm bài…" />
+  if (review.status === 'loading') return <PageSkeleton label="Đang tải kết quả chấm bài…" variant="article" />
   if (review.status === 'error' && review.error) return <ApiErrorState error={review.error} onRetry={reload} />
   const data = review.data
   if (!data) return null
@@ -269,10 +271,7 @@ export function ExaminerResult({ submission, submissionId }: { submission: Writi
     <div className="wr-page we-page lp-root">
       <SiteNavbar activePath={HISTORY_PATH} />
       <main className="wr-main we-detail">
-        <LearnTrail
-          items={[{ label: 'Trang chủ', to: '/', home: true }, { label: 'Lịch sử nộp bài', to: HISTORY_PATH }, { label: title }]}
-          showBack={false}
-        />
+        <LearnTrail items={historyTrail(title, origin)} />
         <h1 className="we-title">{title}</h1>
         {!done && !cancelled && job.data && <LateExaminerNotice job={job.data} examinerName={profile.data?.displayName} onChanged={refresh} />}
         {done ? (

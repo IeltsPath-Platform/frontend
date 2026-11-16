@@ -25,6 +25,7 @@ import {
 } from '../components/composerBackgrounds'
 import { CATEGORY_LABELS, type ReactionType } from '../utils/communityFormat'
 import './community.css'
+import { Spinner } from '@/components/loading/Loading'
 
 const categories = [
   'GENERAL',
@@ -998,7 +999,7 @@ export function CommunityPage() {
           {/* Loading indicator */}
           {loading && posts.length > 0 && (
             <p className="community-loading" role="status">
-              Đang tải bài viết…
+              <Spinner /> Đang tải bài viết…
             </p>
           )}
           {profileTab === 'posts' && !hasNext && posts.length > 0 && (

@@ -1,4 +1,6 @@
+
 import { useEffect, useMemo, useState } from 'react'
+import { StatusArt } from '@/components/StatusArt'
 import { Link } from 'react-router-dom'
 import {
   ArrowRight,
@@ -519,15 +521,11 @@ export function ExpertsDirectoryPage() {
                 ))}
               </div>
             ) : filteredExaminers.length === 0 ? (
-              <div className="exp-empty-state" role="status">
-                <h3>Không tìm thấy chuyên gia phù hợp</h3>
-                <p>
-                  Không có chuyên gia nào khớp với từ khóa hoặc bộ lọc kỹ năng bạn đã chọn. Hãy thử điều chỉnh hoặc xóa bộ lọc.
-                </p>
+              <StatusArt compact headingId="exp-no-results" kind="no-results" message="Không có chuyên gia nào khớp với từ khóa hoặc bộ lọc kỹ năng bạn đã chọn. Hãy thử điều chỉnh hoặc xóa bộ lọc." title="Không tìm thấy chuyên gia phù hợp">
                 <Button type="button" onClick={handleResetFilters} className="home-orange-cta">
                   <RotateCcw size={15} aria-hidden="true" /> Xóa bộ lọc
                 </Button>
-              </div>
+              </StatusArt>
             ) : (
               <div className="exp-grid" role="list" aria-label="Danh sách chuyên gia">
                 {filteredExaminers.map((examiner) => {

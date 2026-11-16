@@ -22,6 +22,7 @@ import { RoomSettingsSummary } from '../components/RoomSettingsSummary'
 import { useGameConnection } from '../hooks/useGameConnection'
 import { gameName, playPath, toGameType } from '../lib/gameRoutes'
 import '../games-room.css'
+import { Loading } from '@/components/loading/Loading'
 
 export function GameRoomPage() {
   const { roomId } = useParams()
@@ -196,7 +197,7 @@ function GameRoomContent() {
           className="game-panel game-state"
           role={error ? 'alert' : 'status'}
         >
-          <p>{error || 'Đang tải phòng chơi…'}</p>
+          {error ? <p>{error}</p> : <Loading label="Đang tải phòng chơi…" />}
           {error && (
             <Button
               variant="outline"

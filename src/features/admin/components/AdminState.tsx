@@ -1,13 +1,9 @@
 import type { ReactNode } from 'react'
-import { AlertTriangle, Inbox, Loader2 } from 'lucide-react'
+import { AlertTriangle, Inbox } from 'lucide-react'
+import { Loading } from '@/components/loading/Loading'
 
 export function AdminLoading({ label = 'Đang tải…' }: { label?: string }) {
-  return (
-    <div className="adm-state" role="status" aria-live="polite">
-      <Loader2 aria-hidden="true" className="adm-spin" size={22} />
-      <p>{label}</p>
-    </div>
-  )
+  return <Loading label={label} variant="block" />
 }
 
 export function AdminError({ message, onRetry }: { message: string; onRetry?: () => void }) {

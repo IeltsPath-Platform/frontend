@@ -12,6 +12,7 @@ import { CardRowEditor } from '../components/CardRowEditor'
 import { ImagePicker } from '../components/ImagePicker'
 import { emptyRow, planSave, rowFromCard, toDraft, validateRows, type EditorImage, type EditorRow } from '../lib/deckEditor'
 import '../flashcards.css'
+import { Loading } from '@/components/loading/Loading'
 
 const TOPIC_SUGGESTIONS = ['Environment', 'Education', 'Technology', 'Health', 'Work & Career', 'Travel', 'Crime', 'Media']
 const CONCURRENCY = 4
@@ -154,7 +155,7 @@ export function DeckEditorPage() {
         </header>
         {error && <p role="alert" className="flashcard-error">{error}</p>}
 
-        {loading ? <p className="flashcards-empty">Đang tải học phần…</p> : <>
+        {loading ? <Loading label="Đang tải học phần…" /> : <>
           <section className="deck-editor-meta">
             <div className="deck-editor-meta-fields">
               <label className={`deck-editor-title${showErrors && !title.trim() ? ' has-error' : ''}`}>

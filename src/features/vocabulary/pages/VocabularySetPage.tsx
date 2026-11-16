@@ -30,6 +30,7 @@ import { WeeklyGoalCard } from '../components/WeeklyGoalCard'
 import { PronunciationButton } from '@/components/PronunciationButton'
 import '../vocabulary.css'
 import '../vocabulary-notebook.css'
+import { Loading } from '@/components/loading/Loading'
 
 type SetTab = 'OVERVIEW' | 'TOPICS' | 'WORDS' | 'PROGRESS'
 
@@ -187,7 +188,7 @@ export function VocabularySetPage() {
         <SiteNavbar />
         <main className="vocab-container" style={{ padding: '3rem 1.5rem', textAlign: 'center' }}>
           <RotateCcw size={32} className="animate-spin" style={{ color: '#2563eb', margin: '0 auto 1rem' }} />
-          <p style={{ color: '#64748b', fontWeight: 600 }}>Đang tải bộ từ vựng…</p>
+          <Loading label="Đang tải bộ từ vựng…" />
         </main>
       </div>
     )

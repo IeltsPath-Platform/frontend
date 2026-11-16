@@ -21,7 +21,7 @@ import { ErrorHintNote } from '../components/blocks/ErrorHintNote'
 import { ExerciseBlock } from '../components/blocks/ExerciseBlock'
 import { RewardSummary } from '../components/RewardSummary'
 import { PassageBlock } from '../components/blocks/PassageBlock'
-import { ApiErrorState, LoadingState } from '../components/PageState'
+import { ApiErrorState, PageSkeleton } from '../components/PageState'
 import { LessonSummary } from '../components/resources/LessonSummary'
 import { newRequestId } from '../lib/requestId'
 import { reportApiError, resolvePendingReview } from '../lib/reviewGate'
@@ -41,7 +41,7 @@ export function ReviewPage() {
   const { reviewId = '' } = useParams()
   const resource = useApiResource(`review:${reviewId}`, () => learningApi.getReview(reviewId))
 
-  if (resource.status === 'loading') return <LoadingState label="Đang tải bài ôn…" />
+  if (resource.status === 'loading') return <PageSkeleton label="Đang tải bài ôn…" variant="article" />
   if (resource.status === 'error' && resource.error) return <ApiErrorState error={resource.error} onRetry={resource.reload} />
   if (!resource.data) return null
   const review = resource.data

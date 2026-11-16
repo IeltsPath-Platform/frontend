@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button'
 import type {
   AnswerInput,
   ExerciseBlockData,
-  HeartsStatus,
   LessonPracticeSets,
   PracticeAttemptView,
   PracticeSetItem,
@@ -21,14 +20,14 @@ import { PracticeAttemptReview } from './PracticeAttemptReview'
 import { PracticeEssays } from './PracticeEssays'
 import { PracticeSpeaking } from './PracticeSpeaking'
 import { PracticeReviewNotice } from './PracticeReviewNotice'
-import { HeartsPanel } from './HeartsPanel'
-import { ApiErrorState, LoadingState } from './PageState'
+import { ApiErrorState, PageSkeleton } from './PageState'
 import { RewardSummary } from './RewardSummary'
 import { newRequestId } from '../lib/requestId'
 import { startStudyPointPractice } from '../lib/studyPointPractice'
 import { reportApiError, reviewRefsFromSubmission, setPendingReviews } from '../lib/reviewGate'
 import { useApiResource } from '../lib/useApiResource'
 import type { ReviewOrigin } from '../lib/routes'
+import { StatusArt } from '@/components/StatusArt'
 
 type ItemMeta = { label: string; tone: 'success' | 'accent' | 'locked'; icon: typeof Lock }
 
@@ -71,23 +70,18 @@ export function LessonPractice({ lessonId, onChanged, reviewOrigin }: {
   const resource = useApiResource(`practice:${lessonId}`, () => learningApi.getLessonPracticeSets(lessonId))
   const reviews = useApiResource(`practice-reviews:${lessonId}`, async () =>
     (await learningApi.getPendingReviews()).filter((review) => review.lessonId === lessonId))
-  // The hearts are an extra: if they cannot be read, the sets still open and the server refuses them when needed.
-  const hearts = useApiResource('hearts', () => learningApi.getHearts())
   const reloadAll = () => {
     resource.reload()
     reviews.reload()
-    hearts.reload()
     onChanged?.()
   }
 
-  if (resource.status === 'loading') return <LoadingState label="Đang tải luyện thêm…" />
+  if (resource.status === 'loading') return <PageSkeleton label="Đang tải luyện thêm…" variant="list" />
   if (resource.status === 'error' && resource.error) return <ApiErrorState error={resource.error} onRetry={resource.reload} />
   if (!resource.data) return null
   return (
     <PracticeView
       catalog={resource.data}
-      hearts={hearts.data}
-      onHeartsChanged={hearts.reload}
       onReload={reloadAll}
       reviewOrigin={reviewOrigin}
       reviews={reviews.data ?? []}
@@ -95,10 +89,8 @@ export function LessonPractice({ lessonId, onChanged, reviewOrigin }: {
   )
 }
 
-function PracticeView({ catalog, hearts, onHeartsChanged, onReload, reviewOrigin, reviews }: {
+function PracticeView({ catalog, onReload, reviewOrigin, reviews }: {
   catalog: LessonPracticeSets
-  hearts: HeartsStatus | null
-  onHeartsChanged: () => void
   onReload: () => void
   reviewOrigin?: ReviewOrigin
   reviews: ReviewRef[]
@@ -121,9 +113,9 @@ function PracticeView({ catalog, hearts, onHeartsChanged, onReload, reviewOrigin
       setActive({ item, attempt })
     } catch (reason) {
       const apiError = toApiError(reason)
+      // No hearts: the owl's popup takes over, so the list shows no error of its own.
       reportApiError(apiError)
-      setError(userMessage(apiError))
-      if (apiError.code === 'HEARTS_DEPLETED') onHeartsChanged()
+      if (apiError.code !== 'HEARTS_DEPLETED') setError(userMessage(apiError))
     } finally {
       setStartingId(null)
     }
@@ -137,8 +129,6 @@ function PracticeView({ catalog, hearts, onHeartsChanged, onReload, reviewOrigin
         answers,
       })
       setSubmission(outcome)
-      // Wrong answers cost hearts, so what is left has changed.
-      if ((outcome.gamification?.heartsLost ?? 0) > 0) onHeartsChanged()
       if (outcome.reviewsCreated.length > 0) {
         setPendingReviews(reviewRefsFromSubmission(outcome.reviewsCreated, catalog.lessonId))
       }
@@ -152,7 +142,6 @@ function PracticeView({ catalog, hearts, onHeartsChanged, onReload, reviewOrigin
     } catch (reason) {
       const apiError = toApiError(reason)
       reportApiError(apiError)
-      if (apiError.code === 'HEARTS_DEPLETED') onHeartsChanged()
       throw apiError
     }
   }
@@ -251,7 +240,6 @@ function PracticeView({ catalog, hearts, onHeartsChanged, onReload, reviewOrigin
               : null}
           </div>
           <div className="lp-split__work">
-            {hearts?.hearts === 0 ? <HeartsPanel onChanged={onHeartsChanged} status={hearts} /> : null}
             {essays}
             {speaking}
             <ExerciseBlock
@@ -314,7 +302,6 @@ function PracticeView({ catalog, hearts, onHeartsChanged, onReload, reviewOrigin
             : (PRACTICE_STATUS_TEXT[catalog.practiceStatus] ?? catalog.practiceStatus)}
         </p>
       </header>
-      {hearts ? <HeartsPanel onChanged={onHeartsChanged} status={hearts} /> : null}
       {error ? <p className="lp-error" role="alert">{error}</p> : null}
       {looseReviews.some((review) => review.blocking === false) ? (
         <p className="lp-hint" role="status">
@@ -322,7 +309,7 @@ function PracticeView({ catalog, hearts, onHeartsChanged, onReload, reviewOrigin
         </p>
       ) : null}
       {catalog.items.length === 0 && reviews.length === 0 ? (
-        <p className="lp-empty">Bài này không có bộ luyện thêm.</p>
+        <StatusArt compact kind="empty" title="Bài này không có bộ luyện thêm." />
       ) : (
         <ul className="lp-practice-list" aria-label="Bài ôn và các bộ luyện thêm">
           {looseReviews.map((review) => <ReviewCard key={review.reviewId} review={review} reviewOrigin={reviewOrigin} />)}

@@ -12,6 +12,7 @@ import {
 } from '@/features/flashcards/api/flashcardApi'
 import { ConfirmDialog } from '@/features/flashcards/components/ConfirmDialog'
 import { DictionaryImportDialog } from '@/features/flashcards/components/DictionaryImportDialog'
+import { Loading } from '@/components/loading/Loading'
 
 const PAGE_SIZE = 50
 
@@ -139,7 +140,7 @@ export function FlashcardDecksPanel({ onChanged }: FlashcardDecksPanelProps) {
       )}
 
       {visibleDecks === null || visibleDecks === undefined ? (
-        <p className="flashcards-empty">Đang tải bộ thẻ…</p>
+        <Loading label="Đang tải bộ thẻ…" />
       ) : visibleDecks.length === 0 ? (
         <EmptyDecks
           onCreate={() => navigate('/flashcards/decks/new')}

@@ -116,13 +116,12 @@ describe('buildAnnouncements', () => {
     expect(buildAnnouncements(before, after, summary())).toEqual([])
   })
 
-  it('warns about hearts only when one or none is left', () => {
+  it('warns in a bubble only about the last heart; running out is the popup\'s job', () => {
     const empty = snap({})
     expect(buildAnnouncements(empty, empty, summary({ heartsLost: 1, heartsRemaining: 3 }))).toEqual([])
     const [one] = buildAnnouncements(empty, empty, summary({ heartsLost: 1, heartsRemaining: 1 }))
     expect(one.mood).toBe('warn')
-    const [none] = buildAnnouncements(empty, empty, summary({ heartsLost: 1, heartsRemaining: 0 }))
-    expect(none.text).toContain('Hết tim')
+    expect(buildAnnouncements(empty, empty, summary({ heartsLost: 1, heartsRemaining: 0 }))).toEqual([])
   })
 
   it('skips what it could not load before the submission', () => {

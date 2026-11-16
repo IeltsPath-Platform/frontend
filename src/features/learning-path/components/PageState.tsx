@@ -1,19 +1,21 @@
 import { useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { AlertTriangle, FileQuestion, Loader2, Lock, RotateCcw } from 'lucide-react'
+import { RotateCcw } from 'lucide-react'
+import { Loading, type LoadingVariant } from '@/components/loading/Loading'
+import { NotFoundArt } from '@/components/NotFoundArt'
+import { StatusArt } from '@/components/StatusArt'
 import { Button } from '@/components/ui/button'
 import type { ApiError } from '../api/apiError'
 import { topicPagePath } from '../lib/routes'
 
+/** The loading look of the app lives in `@/components/loading`; these two keep the names the learning pages already use. */
 export function LoadingState({ label = 'Đang tải…' }: { label?: string }) {
-  return (
-    <div className="lp-state" role="status" aria-live="polite">
-      <Loader2 aria-hidden="true" className="lp-spin" size={24} />
-      <p>{label}</p>
-    </div>
-  )
+  return <Loading label={label} variant="block" />
 }
 
+export function PageSkeleton({ label = 'Đang tải…', variant = 'article' }: { label?: string; variant?: LoadingVariant }) {
+  return <Loading label={label} variant={variant} />
+}
 export function EmptyState({
   title = 'Chưa có nội dung',
   description = 'Không tìm thấy dữ liệu phù hợp với bộ lọc hiện tại.',
@@ -26,18 +28,13 @@ export function EmptyState({
   onAction?: () => void
 }) {
   return (
-    <div className="lp-empty-card" role="status">
-      <div className="lp-empty-card__icon" aria-hidden="true">
-        <FileQuestion size={32} />
-      </div>
-      <h2 className="lp-empty-card__title">{title}</h2>
-      <p className="lp-empty-card__desc">{description}</p>
+    <StatusArt compact headingId="lp-empty-title" kind="empty" message={description} title={title}>
       {actionLabel && onAction ? (
         <Button className="lp-btn lp-btn--accent" onClick={onAction} type="button">
           {actionLabel}
         </Button>
       ) : null}
-    </div>
+    </StatusArt>
   )
 }
 
@@ -99,12 +96,9 @@ export function TopicListSkeleton() {
 
 export function NotFoundState({ message = 'Nội dung này không tồn tại hoặc đã bị gỡ.' }: { message?: string }) {
   return (
-    <section className="lp-state lp-state--panel" aria-labelledby="lp-not-found">
-      <FileQuestion aria-hidden="true" size={28} />
-      <h1 id="lp-not-found">Không tìm thấy trang</h1>
-      <p>{message}</p>
+    <NotFoundArt headingId="lp-not-found" message={message} title="Không tìm thấy trang">
       <Button asChild className="lp-btn"><Link to="/learn">Về lộ trình</Link></Button>
-    </section>
+    </NotFoundArt>
   )
 }
 
@@ -134,33 +128,33 @@ export function ApiErrorState({ error, onRetry }: { error: ApiError; onRetry: ()
     const review = error.details.reviews?.[0]
     const topicPath = error.details.topicId ? topicPagePath(error.details.topicId) : '/learn'
     return (
-      <section className="lp-state lp-state--panel" aria-labelledby="lp-review-required">
-        <Lock aria-hidden="true" size={26} />
-        <h1 id="lp-review-required">Nội dung này đang tạm khóa</h1>
-        <p>
-          Làm xong bài ôn{review ? ` “${review.knowledgePointTitle}”` : ''} trước, bài học sẽ tự mở lại.
-        </p>
-        <div className="lp-state__actions">
-          {review ? (
-            <Button asChild className="lp-btn lp-btn--accent lp-btn--cta">
-              <Link to={`/learn/reviews/${review.reviewId}`}>Làm bài ôn</Link>
-            </Button>
-          ) : null}
-          <Link className="lp-state__link" to={topicPath}>Về danh sách bài</Link>
-        </div>
-      </section>
+      <StatusArt
+        headingId="lp-review-required"
+        kind="locked"
+        message={`Làm xong bài ôn${review ? ` “${review.knowledgePointTitle}”` : ''} trước, bài học sẽ tự mở lại.`}
+        page
+        title="Nội dung này đang tạm khóa"
+      >
+        {review ? (
+          <Button asChild className="lp-btn lp-btn--accent lp-btn--cta">
+            <Link to={`/learn/reviews/${review.reviewId}`}>Làm bài ôn</Link>
+          </Button>
+        ) : null}
+        <Link className="lp-state__link" to={topicPath}>Về danh sách bài</Link>
+      </StatusArt>
     )
   }
   return (
-    <section className="lp-state lp-state--panel" role="alert">
-      <AlertTriangle aria-hidden="true" size={28} />
-      <h1>Chưa tải được nội dung</h1>
-      <p>{error.status >= 500 || error.status === 0 ? 'Máy chủ đang gặp sự cố hoặc mất kết nối.' : error.message} Hãy thử lại.</p>
+    <StatusArt
+      kind="error"
+      message={`${error.status >= 500 || error.status === 0 ? 'Máy chủ đang gặp sự cố hoặc mất kết nối.' : error.message} Hãy thử lại.`}
+      page
+      title="Chưa tải được nội dung"
+    >
       <Button className="lp-btn" onClick={onRetry} type="button"><RotateCcw aria-hidden="true" />Thử lại</Button>
-    </section>
+    </StatusArt>
   )
 }
-
 function lockRedirect(error: ApiError): { to: string; notice: string } | null {
   if (error.code === 'TOPIC_LOCKED') return { to: '/learn', notice: 'Topic đó chưa mở. Hãy hoàn thành chặng trước.' }
   const topicPath = error.details.topicId ? topicPagePath(error.details.topicId) : '/learn'

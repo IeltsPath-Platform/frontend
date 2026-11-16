@@ -10,6 +10,7 @@ import { OwlCoach } from '../components/OwlCoach'
 import { StudyHero } from '../components/StudyHero'
 import { getSpacedReviewReaction, type OwlReaction } from '../lib/owl-reactions'
 import '../flashcards.css'
+import { Loading } from '@/components/loading/Loading'
 
 const BATCH = 20
 
@@ -86,7 +87,7 @@ export function FlashcardStudyPage() {
           progress={card ? { label: 'Tiến độ ôn', value: index, max: queue?.length ?? 0 } : undefined}
         />
         {error && <p role="alert" className="flashcard-error">{error}</p>}
-        {queue === null ? <p className="flashcards-empty">Đang tải thẻ đến hạn…</p>
+        {queue === null ? <Loading label="Đang tải thẻ đến hạn…" />
           : !card ? (
             <section className="flashcards-study-done">
               <OwlHero pose={score.remembered > 0 ? 'party' : 'cheer'} motion="hop" size="md" celebrateKey={score.remembered > 0 ? 'spaced-done' : null} alt="" />

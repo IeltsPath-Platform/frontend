@@ -1,10 +1,14 @@
 import { useMemo, useRef, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
-import { X } from 'lucide-react'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { SiteNavbar } from '@/components/SiteNavbar'
-import { ApiErrorState, LoadingState } from '@/features/learning-path/components/PageState'
+import { mapKnowledgeJudgments, mapStudyPoints } from '@/features/learning-path/api/learningAdapters'
+import { LearnTrail } from '@/features/learning-path/components/LearnTrail'
+import { ApiErrorState, PageSkeleton } from '@/features/learning-path/components/PageState'
+import { HISTORY_PATH, historyTrail, readOrigin } from '@/features/learning-path/lib/resultOrigin'
+import { startStudyPointPractice } from '@/features/learning-path/lib/studyPointPractice'
 import { useApiResource } from '@/features/learning-path/lib/useApiResource'
 import '@/features/learning-path/learning-path.css'
+import '@/features/learning-path/practice-essay.css'
 import { ExaminerResult } from './ExaminerResult'
 import { getWritingSubmission } from './writingApi'
 import type { WritingBandLimit, WritingCorrection, WritingCriterion, WritingSubmission } from './writingApi'
@@ -12,7 +16,9 @@ import { DataChecksView, TaskChecksView } from './WritingChecks'
 import { CorrectedEssay, CorrectionList, RevisionSummary } from './WritingErrors'
 import { WritingPriorities } from './WritingPriorities'
 import { certaintyOf, errorNames, markEssay, segmentAt } from './writingResultModel'
+import { WritingNextSteps } from './WritingNextSteps'
 import { formatClock, loadResultContext, lowestIndex, measureEssay, roundBand } from './writingText'
+import { StatusArt } from '@/components/StatusArt'
 import '../reading/reading-workspace.css'
 import './writing-result.css'
 
@@ -41,7 +47,6 @@ const CATEGORY: Record<string, { label: string; tone: string }> = {
 function categoryOf(category: WritingCorrection['category']) {
   return CATEGORY[category] ?? FALLBACK_CATEGORY
 }
-
 function comment(band: number) {
   if (band >= 7) return 'Bài viết rất tốt! Hãy giữ nhịp luyện tập để chạm band cao hơn.'
   if (band >= 6) return 'Bài viết khá tốt! Hãy sửa các lỗi được đánh dấu để lên band cao hơn.'
@@ -72,6 +77,8 @@ function Criterion({ item, worst, limits }: { item: WritingCriterion; worst: boo
 
 function Graded({ submission, submissionId }: { submission: WritingSubmission; submissionId: string }) {
   const navigate = useNavigate()
+  const location = useLocation()
+  const origin = useMemo(() => readOrigin(location.search), [location.search])
   const essayRef = useRef<HTMLElement>(null)
   const context = useMemo(() => loadResultContext(submissionId), [submissionId])
   const criteria = submission.criteria ?? []
@@ -83,6 +90,8 @@ function Graded({ submission, submissionId }: { submission: WritingSubmission; s
   const metrics = useMemo(() => measureEssay(essay), [essay])
   const segments = useMemo(() => markEssay(essay, corrections), [essay, corrections])
   const tones = [...new Set(corrections.map((item) => categoryOf(item.category)))]
+  const studyPoints = useMemo(() => mapStudyPoints(submission.studyPoints), [submission.studyPoints])
+  const taskJudgments = useMemo(() => mapKnowledgeJudgments(submission.taskKnowledgePointJudgments), [submission.taskKnowledgePointJudgments])
   const groups = useMemo(() => submission.errorGroups ?? [], [submission.errorGroups])
   const names = useMemo(() => errorNames(corrections, groups), [corrections, groups])
   const [focusAt, setFocusAt] = useState<number | null>(null)
@@ -97,9 +106,9 @@ function Graded({ submission, submissionId }: { submission: WritingSubmission; s
 
   return (
     <div className="wr-page">
-      <SiteNavbar />
-      <header className="wr-top"><Link className="rw-exit" to={CATALOG_PATH} aria-label="Về danh mục Writing"><X size={16} aria-hidden="true" /></Link></header>
+      <SiteNavbar activePath={HISTORY_PATH} />
       <main className="wr-main">
+        <LearnTrail items={historyTrail('Kết quả bài viết', origin)} />
         <div className="wr-hero">
           <section className="wr-band" aria-label="Band Score">
             <p>Band Score:</p>
@@ -168,6 +177,14 @@ function Graded({ submission, submissionId }: { submission: WritingSubmission; s
         <CorrectionList corrections={corrections} groups={groups} categoryOf={categoryOf} />
         <CorrectedEssay essay={essay} corrections={corrections} />
 
+        <WritingNextSteps
+          backTo={`${location.pathname}${location.search}`}
+          points={studyPoints}
+          judgments={taskJudgments}
+          submissionId={submissionId}
+          onPractise={(point) => startStudyPointPractice(point, `${location.pathname}${location.search}`, navigate, 'Kết quả bài viết')}
+        />
+
         {submission.sampleAnswer && (
           <details className="wr-sample">
             <summary>Xem bài mẫu</summary>
@@ -184,17 +201,22 @@ export function WritingResultPage() {
   const { submissionId = '' } = useParams()
   const resource = useApiResource(`writing-result:${submissionId}`, () => getWritingSubmission(submissionId))
 
-  if (resource.status === 'loading') return <LoadingState label="Đang tải kết quả chấm bài…" />
+  if (resource.status === 'loading') return <PageSkeleton label="Đang tải kết quả chấm bài…" variant="article" />
   if (resource.status === 'error' && resource.error) return <ApiErrorState error={resource.error} onRetry={resource.reload} />
   const submission = resource.data
   if (!submission) return null
   if (submission.status === 'AWAITING_EXAMINER') return <ExaminerResult submission={submission} submissionId={submissionId} />
   if (submission.status !== 'GRADED') {
     return (
-      <main className="reading-state reading-empty">
-        <h1>Bài viết chưa có điểm</h1>
-        <p>Bài này chưa được chấm xong{submission.failureCode ? ` (${submission.failureCode})` : ''}. Point chỉ bị trừ khi chấm thành công.</p>
-        <Link to={CATALOG_PATH}>Về danh mục Writing</Link>
+      <main className="reading-practice-page">
+        <StatusArt
+          kind="empty"
+          message={`Bài này chưa được chấm xong${submission.failureCode ? ` (${submission.failureCode})` : ''}. Point chỉ bị trừ khi chấm thành công.`}
+          page
+          title="Bài viết chưa có điểm"
+        >
+          <Link className="home-orange-cta" to={CATALOG_PATH}>Về danh mục Writing</Link>
+        </StatusArt>
       </main>
     )
   }

@@ -5,6 +5,8 @@ import { SiteNavbar } from '@/components/SiteNavbar'
 import { HttpError } from '@/lib/httpClient'
 import { getReadingHistory, searchReadingTests, type ReadingHistoryItem, type ReadingTestCard } from './readingPracticeApi'
 import { historyTitle, historyTitleMap, historyTitleRequests } from '../lib/historyTitles'
+import { StatusArt } from '@/components/StatusArt'
+import { Loading } from '@/components/loading/Loading'
 import './reading-practice.css'
 
 export function ReadingHistoryPage() {
@@ -42,8 +44,8 @@ export function ReadingHistoryPage() {
   return <div className="reading-practice-page"><SiteNavbar /><main className="reading-history-page">
     <header><Link to="/practice-tests?skill=reading"><ArrowLeft size={17} /> Danh mục Reading</Link><h1>Lịch sử làm bài Reading</h1><p>Các bài Reading bạn đã nộp.</p></header>
     {error && <div role="alert" className="reading-state reading-error"><p>{error}</p><button type="button" onClick={() => setReload((value) => value + 1)}>Thử lại</button></div>}
-    {loading && <p role="status">Đang tải lịch sử…</p>}
-    {!loading && !error && items.length === 0 && <section className="reading-state reading-empty"><h2>Bạn chưa nộp bài Reading nào</h2><Link to="/practice-tests?skill=reading">Chọn đề Reading</Link></section>}
+    {loading && <Loading label="Đang tải lịch sử…" variant="list" />}
+    {!loading && !error && items.length === 0 && <StatusArt compact kind="empty" title="Bạn chưa nộp bài Reading nào"><Link className="home-orange-cta" to="/practice-tests?skill=reading">Chọn đề Reading</Link></StatusArt>}
     <ol className="reading-history-list">{items.filter((item) => item.status === 'SUBMITTED').map((item) => <li key={item.attemptId}>
       <div><h2>{historyTitle(item, titles)}</h2><p>{item.scope === 'PART' && item.partNos[0] ? `Passage ${item.partNos[0]}` : 'Full test'}</p>
       <time dateTime={item.submittedAt ?? undefined}>{item.submittedAt ? new Date(item.submittedAt).toLocaleDateString('vi-VN') : 'Ngày nộp chưa có'}</time></div>

@@ -1,7 +1,8 @@
 import { useEffect, useEffectEvent, useMemo, useState } from 'react'
 import { StudyActivityTracker } from '@/features/study-time/StudyActivityTracker'
 import { Navigate } from 'react-router-dom'
-import { Loader2 } from 'lucide-react'
+import { AiWaitPanel } from '@/components/loading/AiWaitPanel'
+import { essayWaitNote } from '@/components/loading/aiWaitNotes'
 import { Button } from '@/components/ui/button'
 import type { AssessmentAttempt, AttemptItemResponse } from '~types/learningPath'
 import { learningApi, toApiError } from '../api'
@@ -22,6 +23,7 @@ import { PlacementSurvey } from '../placement/PlacementSurvey'
 import { SpeakingSectionRunner } from '../placement/SpeakingSectionRunner'
 import { WritingSectionRunner } from '../placement/WritingSectionRunner'
 import type { SectionTiming } from '../placement/placementSkills'
+import { StatusArt } from '@/components/StatusArt'
 import '../placement/placement.css'
 
 const POLL_INTERVAL_MS = 2_000
@@ -58,7 +60,7 @@ function PlacementFlow({ initialAttempt }: { initialAttempt: AssessmentAttempt |
   if (!usableAttempt && placement.status === 'error' && placement.error) {
     if (placement.error.code === 'PLACEMENT_ALREADY_DONE') return <Navigate replace to="/learn" />
     if (placement.error.code === 'NO_PLACEMENT_TEST') {
-      return <p className="lp-empty">Chưa có bài kiểm tra đầu vào nào được mở. Hãy quay lại sau.</p>
+      return <StatusArt compact kind="empty" title="Chưa có bài kiểm tra đầu vào nào được mở. Hãy quay lại sau." />
     }
     return <ApiErrorState error={placement.error} onRetry={placement.reload} />
   }
@@ -129,7 +131,7 @@ function PlacementTest({ attempt, onProgress, onSubmitted, onRedoSurvey }: Place
   if (data.status === 'loading') return <LoadingState label="Đang tải đề…" />
   if (data.status === 'error' && data.error) return <ApiErrorState error={data.error} onRetry={data.reload} />
   if (!data.data) return null
-  if (data.data.sections.length === 0) return <p className="lp-empty">Đề này chưa có câu hỏi.</p>
+  if (data.data.sections.length === 0) return <StatusArt compact kind="empty" title="Đề này chưa có câu hỏi." />
   return <PlacementHub attempt={attempt} data={data.data} onProgress={onProgress} onRedoSurvey={onRedoSurvey} onSubmitted={onSubmitted} />
 }
 
@@ -269,19 +271,24 @@ function PlacementGrading({ attemptId, onGraded }: { attemptId: string; onGraded
   }, [phase, attemptId])
 
   return (
+    phase === 'grading' ? (
+      <div className="pl-grading">
+        <AiWaitPanel
+          hint="Bài luận được chấm tự động nên có thể mất tới một phút. Đừng đóng trang này."
+          note={essayWaitNote}
+          title="Đang chấm bài của bạn"
+        />
+      </div>
+    ) : (
     <section className="lp-state lp-state--panel pl-grading" aria-live="polite">
-      {phase === 'grading' ? <Loader2 aria-hidden="true" className="lp-spin" size={28} /> : null}
-      <h1>{phase === 'failed' ? 'Chưa lấy được kết quả' : phase === 'slow' ? 'Kết quả đang được chấm' : 'Đang chấm bài của bạn…'}</h1>
+      <h1>{phase === 'failed' ? 'Chưa lấy được kết quả' : 'Kết quả đang được chấm'}</h1>
       <p>
         {phase === 'failed'
           ? error
-          : phase === 'slow'
-            ? 'Việc chấm đang lâu hơn bình thường. Bài của bạn đã được nộp, hãy kiểm tra lại sau ít phút.'
-            : 'Bài luận được chấm tự động nên có thể mất tới một phút. Đừng đóng trang này.'}
+          : 'Việc chấm đang lâu hơn bình thường. Bài của bạn đã được nộp, hãy kiểm tra lại sau ít phút.'}
       </p>
-      {phase !== 'grading' ? (
-        <Button className="lp-btn" onClick={() => { setError(null); setPhase('grading') }} type="button">Kiểm tra lại</Button>
-      ) : null}
+      <Button className="lp-btn" onClick={() => { setError(null); setPhase('grading') }} type="button">Kiểm tra lại</Button>
     </section>
+    )
   )
 }

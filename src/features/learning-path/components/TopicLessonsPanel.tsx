@@ -10,6 +10,7 @@ import { useApiResource } from '../lib/useApiResource'
 import { lessonStatusMeta } from '../lib/statusMeta'
 import type { CourseUnlockTarget } from '~types/learningPath'
 import { UnlockDialog } from './UnlockDialog'
+import { StatusArt } from '@/components/StatusArt'
 
 /** Lessons of one topic, shown inside its expanded card on the course screen. Mount it only once the card is first opened. */
 export function TopicLessonsPanel({ topicId }: { topicId: string }) {
@@ -71,7 +72,7 @@ export function TopicLessonsView({
 }) {
   const [unlockTarget, setUnlockTarget] = useState<CourseUnlockTarget | null>(null)
   const lessons = [...unsorted].sort((a, b) => a.sortOrder - b.sortOrder)
-  if (lessons.length === 0) return <p className="lp-mini__empty">Chặng này chưa có bài học.</p>
+  if (lessons.length === 0) return <StatusArt compact kind="empty" title="Chặng này chưa có bài học." />
 
   const nextId = lessons.find((lesson) => lesson.status === 'AVAILABLE')?.id ?? null
   const totalMinutes = totalLessonMinutes(lessons)

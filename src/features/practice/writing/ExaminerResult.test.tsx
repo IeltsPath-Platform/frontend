@@ -58,7 +58,7 @@ describe('the result of an essay sent to a teacher', () => {
     expect(within(waiting).queryByRole('link', { name: 'Về danh mục Writing' })).not.toBeInTheDocument()
     // The trail leaves for the home page and for the learner's list of essays sent to teachers, with no back button.
     expect(screen.getByRole('link', { name: 'Lịch sử nộp bài' })).toHaveAttribute('href', '/submission-history')
-    expect(screen.getByRole('link', { name: 'Trang chủ' })).toHaveAttribute('href', '/')
+    expect(screen.getByRole('link', { name: 'Trang chủ' })).toHaveAttribute('href', '/home')
     expect(screen.queryByRole('link', { name: /Quay lại/ })).not.toBeInTheDocument()
   })
 

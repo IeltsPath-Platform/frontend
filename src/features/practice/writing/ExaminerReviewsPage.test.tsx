@@ -59,10 +59,10 @@ describe('the list a "your essay was graded" notice opens', () => {
     expect(rows[0]).toHaveTextContent('Prompt number 2')
     expect(rows[0]).toHaveTextContent('Đã chấm')
     expect(within(rows[0]).getByLabelText('Band 6.5')).toHaveTextContent('6.5')
-    expect(within(rows[0]).getByRole('link', { name: 'Xem nhận xét' })).toHaveAttribute('href', `/practice/writing/submissions/${id(2)}/result`)
+    expect(within(rows[0]).getByRole('link', { name: 'Xem nhận xét' })).toHaveAttribute('href', `/practice/writing/submissions/${id(2)}/result?from=%2Fwriting-reviews`)
     expect(rows[1]).toHaveTextContent('Đang chờ chấm')
     expect(within(rows[1]).queryByLabelText(/Band/)).not.toBeInTheDocument()
-    expect(within(rows[1]).getByRole('link', { name: 'Xem bài' })).toHaveAttribute('href', `/practice/writing/submissions/${id(1)}/result`)
+    expect(within(rows[1]).getByRole('link', { name: 'Xem bài' })).toHaveAttribute('href', `/practice/writing/submissions/${id(1)}/result?from=%2Fwriting-reviews`)
   })
 
   it('leads to the home page with the house icon alone, without a back button or a catalogue step', async () => {
@@ -70,10 +70,18 @@ describe('the list a "your essay was graded" notice opens', () => {
     show()
 
     await listed()
-    expect(screen.getByRole('link', { name: 'Trang chủ' })).toHaveAttribute('href', '/')
+    expect(screen.getByRole('link', { name: 'Trang chủ' })).toHaveAttribute('href', '/home')
     expect(screen.queryByRole('link', { name: /Quay lại/ })).not.toBeInTheDocument()
     expect(screen.queryByText('Luyện tập Writing')).not.toBeInTheDocument()
-    expect(screen.getByRole('heading', { level: 1, name: 'Bài giáo viên đã chấm' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'Lịch sử nộp bài' })).toBeInTheDocument()
+  })
+
+  it('opens the teacher tab at its old address, whatever tab the page shows by default', async () => {
+    server({ pages: [[item(1)]], jobs: [job(1)] })
+    show()
+
+    await listed()
+    expect(screen.getByRole('tab', { name: 'Bài giáo viên đã chấm' })).toHaveAttribute('aria-selected', 'true')
   })
 
   it('opens an essay on the screen with the comments and the marked errors', async () => {

@@ -5,6 +5,7 @@ import { isActivePremium } from '../accessApi'
 import type { Subscription } from '../accessApi'
 import { POINT_PRODUCTS, PREMIUM_PRODUCTS, type ActivationProduct } from '../pricingData'
 import '../pricing.css'
+import { Loading } from '@/components/loading/Loading'
 
 interface PricingCardsProps {
   isLoggedIn: boolean
@@ -42,7 +43,7 @@ export function PricingCards({
     <>
       {isLoggedIn && (
         <div className={`home-current-access is-${accessStatus}`} role="status" aria-live="polite">
-          {accessStatus === 'loading' && <p>Đang tải thông tin gói hiện tại…</p>}
+          {accessStatus === 'loading' && <Loading label="Đang tải thông tin gói hiện tại…" />}
           {accessStatus === 'unavailable' && <p>Phiên đăng nhập hiện tại chưa kết nối với dịch vụ gói và Activation Key.</p>}
           {accessStatus === 'error' && (
             <div>

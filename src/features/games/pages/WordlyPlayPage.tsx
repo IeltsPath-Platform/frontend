@@ -16,6 +16,7 @@ import { WordlyBoard } from '../components/WordlyBoard'
 import { WordlyKeyboard } from '../components/WordlyKeyboard'
 import { GameRanking } from '../components/GameRanking'
 import { playerStatusLabel } from '../lib/playerStatusLabel'
+import { Loading } from '@/components/loading/Loading'
 
 export function WordlyPlayPage() {
   const { matchId = '' } = useParams()
@@ -113,7 +114,7 @@ function WordlyPlayContent({ matchId }: WordlyPlayContentProps) {
             : 'Đang nối lại kết nối · Vẫn đồng bộ định kỳ. Thời gian trận tiếp tục chạy.'}
         </p>
       )}
-      {game.loading && <p role="status">Đang tải lượt chơi…</p>}
+      {game.loading && <Loading label="Đang tải lượt chơi…" />}
       {game.error && (
         <div className="games-alert" role="alert">
           <p>{game.error}</p>

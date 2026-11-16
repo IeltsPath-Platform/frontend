@@ -1,0 +1,15 @@
+/* The tabs and skill buttons of the page "Lịch sử nộp bài"; the lines themselves use the wl-* classes of the teacher list. */
+.sh-tabs { display: flex; flex-wrap: wrap; gap: 0 1.6rem; border-bottom: 1px solid var(--wr-line); }
+.sh-tab { position: relative; min-height: 44px; padding: 0 0.1rem; border: 0; background: transparent; font: inherit; font-size: 1rem; color: var(--wr-muted); cursor: pointer; }
+.sh-tab:hover { color: var(--wr-ink); }
+.sh-tab[aria-selected="true"] { color: var(--wr-ink); font-weight: 700; }
+.sh-tab[aria-selected="true"]::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--wr-accent); }
+.sh-tab:focus-visible { outline: 3px solid #93c5fd; outline-offset: -3px; border-radius: 4px; }
+
+#sh-panel { display: grid; gap: 1rem; min-width: 0; padding-top: 1rem; }
+
+.sh-skills { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.sh-skill { min-height: 36px; padding: 0 0.95rem; border: 1px solid var(--wr-line); border-radius: 999px; background: #ffffff; font: inherit; font-size: 0.9rem; color: var(--wr-muted); cursor: pointer; }
+.sh-skill:hover { color: var(--wr-ink); border-color: #cbd5e1; }
+.sh-skill[aria-pressed="true"] { border-color: var(--wr-accent); background: #eaf1ff; color: var(--wr-accent); font-weight: 700; }
+.sh-skill:focus-visible { outline: 3px solid #93c5fd; outline-offset: 2px; }

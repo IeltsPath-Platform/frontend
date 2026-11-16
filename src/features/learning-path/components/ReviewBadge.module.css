@@ -1,0 +1,5 @@
+/* Red rather than the orange of the Free badge, so the two never read as one; the dark red holds 4.5:1 on its tint. Green once the
+   review is done. */
+.badge { display: inline-flex; flex: none; align-items: center; gap: .2rem; padding: 0 .4rem; border-radius: 999px; background: var(--lp-danger-soft); color: var(--lp-danger); font-size: .64rem; font-weight: 750; letter-spacing: .02em; line-height: 1.5; white-space: nowrap; }
+.badge.done { background: var(--lp-success-soft); color: var(--lp-success); }
+.badge.suggested { background: var(--lp-accent-soft); color: var(--lp-accent-ink); }

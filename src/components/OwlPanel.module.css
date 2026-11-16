@@ -140,6 +140,10 @@
 .cta:hover { background: #0d2d94; }
 .cta:disabled { opacity: .6; cursor: wait; }
 
+.refill { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin-block-start: .5rem; }
+.refill .cta { margin-block-start: 0; }
+.refillError { margin: 0; color: #b3261e; font-size: .78rem; }
+
 .retry { padding: 0; border: 0; background: none; color: #123ab5; font: inherit; font-weight: 700; text-decoration: underline; cursor: pointer; }
 
 .tabs button:focus-visible, .close:focus-visible, .more:focus-visible, .cta:focus-visible, .retry:focus-visible { outline: 2px solid #123ab5; outline-offset: 2px; }

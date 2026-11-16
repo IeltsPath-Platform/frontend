@@ -1,0 +1,35 @@
+/*
+ * The one loading look of the app: grey blocks in the shape of what is coming, with a soft shimmer. The colour comes from
+ * the text colour of the place it sits in (currentColor), so it reads on a light page, an admin screen and a dark game
+ * alike. Waiting for an AI grade has its own look: see ai-wait.css.
+ */
+
+.ld { --ld-base: color-mix(in srgb, currentColor 9%, transparent); --ld-shine: color-mix(in srgb, currentColor 16%, transparent); display: grid; gap: 1.1rem; inline-size: 100%; box-sizing: border-box; }
+.ld__bar { display: block; border-radius: 8px; background: linear-gradient(90deg, var(--ld-base) 25%, var(--ld-shine) 50%, var(--ld-base) 75%); background-size: 200% 100%; animation: ld-shimmer 1.6s ease-in-out infinite; }
+.ld__line { block-size: 14px; inline-size: 100%; }
+.ld__line--short { inline-size: 32%; block-size: 12px; }
+.ld__line--title { inline-size: 62%; block-size: 22px; border-radius: 6px; }
+.ld__line--wide { inline-size: 88%; }
+.ld__line--meter { block-size: 8px; border-radius: 999px; }
+
+.ld__card { display: grid; align-content: start; gap: .7rem; padding: 1.2rem 1.4rem; border: 1px solid var(--ld-base); border-radius: 12px; }
+.ld__card--tall { min-block-size: 15rem; }
+.ld__split { display: grid; gap: 1.1rem; grid-template-columns: 1fr; }
+@media (min-width: 60rem) { .ld__split { grid-template-columns: minmax(0, 1fr) 17rem; } }
+.ld__figure { min-block-size: 17rem; border-radius: 12px; }
+.ld__rows { display: grid; gap: .6rem; }
+.ld__row { display: grid; grid-template-columns: 2.5rem 1fr 4.5rem; align-items: center; gap: .85rem; padding: .8rem 1rem; border: 1px solid var(--ld-base); border-radius: 12px; }
+.ld__row-icon { inline-size: 2.5rem; block-size: 2.5rem; border-radius: 10px; }
+.ld__row-body { display: grid; gap: .45rem; }
+.ld__row-tail { block-size: 1.5rem; border-radius: 999px; }
+
+/* A small spinner for a button or a line of text that is working: the same ring everywhere. */
+.ld-spin { display: inline-block; inline-size: 1em; block-size: 1em; vertical-align: -0.125em; border: 2px solid color-mix(in srgb, currentColor 25%, transparent); border-block-start-color: currentColor; border-radius: 50%; animation: ld-rotate .8s linear infinite; }
+
+@keyframes ld-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+@keyframes ld-rotate { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .ld__bar { animation: none; }
+  .ld-spin { animation-duration: 2.4s; }
+}

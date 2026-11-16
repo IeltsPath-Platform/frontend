@@ -11,6 +11,7 @@ import { StatisticsCard } from './StatisticsCard'
 import { SkillCompletionChart } from './StatisticsCharts'
 import { BandHistoryPanel } from './BandHistoryPanel'
 import { WritingProgressPanel } from './WritingProgressPanel'
+import { ErrorBoundary } from '@/app/ErrorBoundary'
 import { DetailedStatisticsHero } from './DetailedStatisticsHero'
 import { DetailedVocabularyMap } from './DetailedVocabularyMap'
 import '../statistics.css'
@@ -73,7 +74,7 @@ export function OverviewDetailedStats() {
         </div>}
     </StatisticsCard>
     <BandHistoryPanel targetBand={targetBand} />
-    <WritingProgressPanel />
+    <ErrorBoundary title="Không thể tải tiến bộ Writing"><WritingProgressPanel /></ErrorBoundary>
     <StatisticsCard title="Bản đồ từ vựng của bạn" subtitle="Tiến độ theo cấp độ, tính trên kho từ của IELTS Space" resource={vocabulary} className="detailed-vocabulary">{(data) => <DetailedVocabularyMap data={data} learnerBand={learnerBand} targetBand={targetBand} />}</StatisticsCard>
 
   </div>

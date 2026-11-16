@@ -1,6 +1,8 @@
 import { Award, CheckCircle2, Circle, Heart, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import type { Suggestion } from '~types/learningPath'
+import type { HeartsStatus, Suggestion } from '~types/learningPath'
+import { useHeartsRefill } from '@/features/learning-path/lib/useHeartsRefill'
+import { publishHeartsChanged } from './owl-events'
 import { skillLabel } from '@/features/learning-path/lib/courseMeta'
 import { reasonMeta, suggestionCtaLabel, suggestionTypeLabel } from '@/features/learning-path/lib/masteryGuide'
 import { levelFraction, questReward, questTitle } from '@/features/learning-path/lib/progressMeta'
@@ -39,6 +41,20 @@ function Summary({ snapshot }: { snapshot: OwlSnapshot }) {
           {hearts.hearts}/{hearts.maxHearts}
         </span>
       ) : null}
+    </div>
+  )
+}
+
+/** Buys a full refill of hearts for points; shown only while some are missing. */
+function RefillHearts({ hearts }: { hearts: HeartsStatus }) {
+  const { refilling, error, refill } = useHeartsRefill({ refillCost: hearts.refillCost, onRefilled: publishHeartsChanged })
+  if (hearts.hearts >= hearts.maxHearts) return null
+  return (
+    <div className={styles.refill}>
+      <button aria-busy={refilling} className={styles.cta} disabled={refilling} onClick={() => void refill()} type="button">
+        {refilling ? 'Đang mua…' : `Mua tim · ${hearts.refillCost} điểm`}
+      </button>
+      {error ? <p className={styles.refillError} role="alert">{error}</p> : null}
     </div>
   )
 }
@@ -191,6 +207,7 @@ export function OwlPanel({ snapshot, suggestions, tab, onTab, onRetrySuggestions
         </button>
       </header>
       <Summary snapshot={snapshot} />
+      {snapshot.hearts ? <RefillHearts hearts={snapshot.hearts} /> : null}
       <div className={styles.content} role="tabpanel">
         {tab === 'quests' ? <Quests snapshot={snapshot} />
           : tab === 'badges' ? <Badges snapshot={snapshot} />

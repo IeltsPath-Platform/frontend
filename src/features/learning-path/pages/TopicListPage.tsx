@@ -14,6 +14,7 @@ import { reportApiError } from '../lib/reviewGate'
 import { knowledgeTreePath } from '../lib/routes'
 import { useApiResource } from '../lib/useApiResource'
 import { usePracticeTests } from '../lib/usePracticeTests'
+import { StatusArt } from '@/components/StatusArt'
 
 /** One course, picked on the course list screen: its four skills and the final test. */
 export function TopicListPage() {
@@ -56,7 +57,7 @@ export function TopicListPage() {
 
       {loading ? <TopicListSkeleton /> : null}
       {error ? <ApiErrorState error={error} onRetry={reload} /> : null}
-      {topics?.length === 0 ? <p className="lp-empty">Khóa này chưa có chặng nào.</p> : null}
+      {topics?.length === 0 ? <StatusArt compact kind="empty" title="Khóa này chưa có chặng nào." /> : null}
       {topics && topics.length > 0 ? (
         <CourseSkillBoard
           course={courseSummary}
