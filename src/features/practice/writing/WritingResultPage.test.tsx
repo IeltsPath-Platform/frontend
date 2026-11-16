@@ -101,7 +101,7 @@ describe('the result of an essay graded by the AI', () => {
     await screen.findByLabelText('Bài viết đã đánh dấu')
 
     const marks = [...container.querySelectorAll('mark')]
-    expect(marks.map((mark) => mark.textContent)).toEqual([FELL, 'I think this is sad.'])
+    expect(marks.map((mark) => mark.textContent)).toEqual([`${FELL}1`, 'I think this is sad.2'])
     expect(marks[0]).not.toHaveClass('wr-mark-suggestion')
     expect(marks[1]).toHaveClass('wr-mark-suggestion')
   })
