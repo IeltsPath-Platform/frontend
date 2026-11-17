@@ -40,7 +40,7 @@ describe('lemmaCandidates', () => {
 })
 
 describe('pickEntry', () => {
-  const sense = { partOfSpeech: 'NOUN', englishDefinition: 'a book', vietnameseMeaning: 'sách', exampleSentence: null }
+  const sense = { id: 'sense-1', partOfSpeech: 'NOUN', englishDefinition: 'a book', vietnameseMeaning: 'sách', exampleSentence: null }
 
   it('picks the item whose lemma is exactly a form asked for', () => {
     const entry = pickEntry([
@@ -50,6 +50,8 @@ describe('pickEntry', () => {
     expect(entry?.lemma).toBe('download')
     expect(entry?.ipa).toBe('/ˈdaʊnləʊd/')
     expect(entry?.senses).toHaveLength(1)
+    // The sense keeps its id, which is what the notebook saves.
+    expect(entry?.senses[0].id).toBe('sense-1')
   })
 
   it('prefers the first form that has a meaning over an earlier form that only has a pronunciation', () => {

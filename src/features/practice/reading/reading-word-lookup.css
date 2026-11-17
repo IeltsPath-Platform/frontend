@@ -41,15 +41,20 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.4rem;
-  width: 100%;
-  padding: 0.5rem 0.8rem;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+  padding: 0.3rem 0.7rem;
   border: 1px solid #1d4ed8;
   border-radius: 8px;
-  background: #1d4ed8;
-  color: #ffffff;
-  font-size: 0.85rem;
+  background: #ffffff;
+  color: #1d4ed8;
+  font-size: 0.78rem;
   font-weight: 700;
+  cursor: pointer;
 }
 
-.rw-word-save:disabled { opacity: 0.55; cursor: not-allowed; }
+.rw-word-save:hover:not(:disabled) { background: #1d4ed8; color: #ffffff; }
+.rw-word-save:disabled { cursor: default; }
+.rw-word-save.is-saved { border-color: #cbd5e1; color: #15803d; }
+.rw-word-save-error { margin: 0.4rem 0 0; color: #b91c1c; }
+.rw-word-notebook { display: inline-block; margin-top: 0.6rem; color: #1d4ed8; font-size: 0.82rem; font-weight: 700; }
