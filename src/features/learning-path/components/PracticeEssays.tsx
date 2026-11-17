@@ -1,16 +1,16 @@
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
-import { CheckCircle2, CircleAlert, ExternalLink, Hourglass, Loader2, X } from 'lucide-react'
+import { CheckCircle2, CircleAlert, Hourglass, Loader2, X } from 'lucide-react'
 import { AiWaitPanel } from '@/components/loading/AiWaitPanel'
 import { essayWaitNote } from '@/components/loading/aiWaitNotes'
 import { Spinner } from '@/components/loading/Loading'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
+import { VocabularyLookup } from '@/features/practice/writing/VocabularyLookup'
 import { boldRuns, countWords, essaySections, joinSections } from '@/features/practice/writing/writingText'
 import { learningApi, toApiError, userMessage, type ApiError } from '../api'
 import { mapEssayGrade } from '../api/learningAdapters'
-import { LOOKUP_MAX_CHARS, LOOKUP_TABS, lookupUrl, type LookupDirection } from '../placement/dictionaryLookup'
 import { newRequestId } from '../lib/requestId'
 import { reportApiError } from '../lib/reviewGate'
 import { useApiResource } from '../lib/useApiResource'
@@ -390,7 +390,7 @@ function EssayEditor({ active, attemptId, essay, grade, index, locked, onGrade, 
           </div>
         </header>
         <div className="lp-essay-ws__rail-pane" hidden={rail !== 'lookup'}>
-          <EssayLookup />
+          <VocabularyLookup />
         </div>
         <div className="lp-essay-ws__rail-pane" hidden={rail !== 'result'}>
           {graded && displayedGrade ? (
@@ -402,76 +402,6 @@ function EssayEditor({ active, attemptId, essay, grade, index, locked, onGrade, 
       </aside>
       {choice.dialogs}
     </article>
-  )
-}
-
-/** Looks a word up while writing. The result opens on Wiktionary in a new tab, so the essay is never interrupted. */
-function EssayLookup() {
-  const [direction, setDirection] = useState<LookupDirection>('vi-en')
-  const [term, setTerm] = useState('')
-  const [history, setHistory] = useState<Array<{ direction: LookupDirection; term: string }>>([])
-  const current = LOOKUP_TABS.find((candidate) => candidate.id === direction) ?? LOOKUP_TABS[0]
-
-  function search(event: FormEvent) {
-    event.preventDefault()
-    const value = term.trim()
-    if (!value) return
-    window.open(lookupUrl(direction, value), '_blank', 'noopener,noreferrer')
-    setHistory((previous) => [
-      { direction, term: value },
-      ...previous.filter((entry) => entry.term !== value || entry.direction !== direction),
-    ].slice(0, 8))
-  }
-
-  return (
-    <>
-      <div className="lp-ws-card__scroll">
-        {history.length === 0 ? (
-          <p className="lp-lookup__empty">
-            Nhập từ cần tra bên dưới. Kết quả mở ở tab mới nên bài viết của bạn không bị gián đoạn.
-          </p>
-        ) : (
-          <ul className="lp-lookup__history" aria-label="Các từ đã tra">
-            {history.map((entry) => (
-              <li key={`${entry.direction}-${entry.term}`}>
-                <a href={lookupUrl(entry.direction, entry.term)} rel="noopener noreferrer" target="_blank">
-                  <strong>{entry.term}</strong>
-                  <small>{entry.direction === 'vi-en' ? 'Việt → Anh' : 'Anh → Việt'}</small>
-                  <ExternalLink aria-hidden="true" size={14} />
-                </a>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-      <form className="lp-lookup" onSubmit={search}>
-        <div className="lp-lookup__tabs" role="tablist" aria-label="Chiều tra từ">
-          {LOOKUP_TABS.map((candidate) => (
-            <button
-              aria-selected={candidate.id === direction}
-              key={candidate.id}
-              onClick={() => setDirection(candidate.id)}
-              role="tab"
-              type="button"
-            >
-              {candidate.label}
-            </button>
-          ))}
-        </div>
-        <input
-          aria-label="Từ cần tra"
-          className="lp-lookup__input"
-          maxLength={LOOKUP_MAX_CHARS}
-          onChange={(event) => setTerm(event.target.value)}
-          placeholder={current.placeholder}
-          value={term}
-        />
-        <div className="lp-lookup__foot">
-          <span>{term.length}/{LOOKUP_MAX_CHARS} ký tự</span>
-          <Button className="lp-btn lp-btn--accent" disabled={!term.trim()} type="submit">Tra từ vựng</Button>
-        </div>
-      </form>
-    </>
   )
 }
 

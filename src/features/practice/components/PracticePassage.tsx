@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Highlighter, Languages, Layers, StickyNote } from 'lucide-react'
+import { Highlighter, Layers, StickyNote } from 'lucide-react'
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu'
 import type { PassageAction, PassageSelection, PracticeMode, TextHighlight } from '@/types/practice'
 import { MOCK_PASSAGE_CONTENT } from '@/mocks/practiceData'
@@ -75,7 +75,6 @@ export function PracticePassage({ mode, highlights, onSelection, onAction }: Pra
         }}>
           <ContextMenuItem disabled={!menuSelection} onSelect={() => { pendingAction.current = 'highlight' }}><Highlighter />Highlight</ContextMenuItem>
           <ContextMenuItem disabled={!menuSelection} onSelect={() => { pendingAction.current = 'note' }}><StickyNote />Note</ContextMenuItem>
-          <ContextMenuItem disabled={!menuSelection} onSelect={() => { pendingAction.current = 'dictionary' }}><Languages />Tra từ vựng</ContextMenuItem>
           <ContextMenuItem disabled={!menuSelection} onSelect={() => { pendingAction.current = 'flashcard' }}><Layers />Tạo Flashcard</ContextMenuItem>
         </ContextMenuContent>
       </ContextMenu> : <div ref={root} className="passage-paragraphs-flow" aria-label="Nội dung bài đọc">

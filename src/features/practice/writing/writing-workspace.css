@@ -130,6 +130,8 @@
 .ww-error { margin: 0; color: #b91c1c; font-size: 0.8rem; }
 
 /* D */
+/* The lookup brings its own colours, so it also works outside the Writing workspace (a lesson essay) and fills what holds it. */
+.ww-vocab { --rw-accent: #1d4ed8; --rw-line: #d9dee5; --rw-ink: #111827; --rw-muted: #64748b; --rw-surface: #ffffff; display: flex; flex: 1; flex-direction: column; min-height: 0; }
 .ww-dictionary-body { flex: 1; min-height: 0; padding: 0.9rem 1rem; overflow-y: auto; }
 .ww-lookup { display: grid; gap: 0.4rem; margin: 0.4rem 0.6rem 0.6rem; padding: 0.4rem; border: 1px solid var(--rw-line); border-radius: 8px; }
 .ww-lookup input { box-sizing: border-box; width: 100%; padding: 0.3rem 0.4rem; border: 0; background: transparent; color: var(--rw-ink); font: inherit; font-size: 0.78rem; }
@@ -137,6 +139,36 @@
 .ww-lookup-foot { display: flex; align-items: center; justify-content: space-between; color: var(--rw-muted); font-size: 0.7rem; }
 .ww-lookup-foot button { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.2rem 0.6rem; border: 1px solid var(--rw-accent); border-radius: 4px; background: var(--rw-accent); color: #ffffff; font-size: 0.7rem; font-weight: 600; }
 .ww-lookup-foot button:disabled { border-color: var(--rw-line); background: #e2e8f0; color: #94a3b8; }
+
+.ww-dict-tabs { display: flex; gap: 0.25rem; padding: 0.5rem 0.8rem 0; border-bottom: 1px solid var(--rw-line); }
+.ww-dict-tabs button { margin-bottom: -1px; padding: 0.35rem 0.7rem; border: 1px solid transparent; border-bottom: 0; border-radius: 6px 6px 0 0; background: transparent; color: var(--rw-muted); font-size: 0.78rem; font-weight: 600; cursor: pointer; }
+.ww-dict-tabs button[aria-selected="true"] { border-color: var(--rw-line); background: var(--rw-surface); color: var(--rw-accent); }
+.ww-dict-tabs button:focus-visible { outline: 2px solid var(--rw-accent); outline-offset: 1px; }
+.ww-dict-loading { display: inline-flex; align-items: center; gap: 0.4rem; }
+.ww-spin { animation: ww-spin 0.9s linear infinite; }
+@keyframes ww-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .ww-spin { animation: none; } }
+.ww-dict-results, .ww-dict-word ul { display: grid; gap: 0.6rem; margin: 0; padding: 0; list-style: none; }
+.ww-dict-word { display: grid; gap: 0.35rem; padding-bottom: 0.6rem; border-bottom: 1px solid var(--rw-line); }
+.ww-dict-word header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem; }
+.ww-dict-word header strong { font-size: 1rem; color: var(--rw-ink); }
+.ww-dict-ipa { color: var(--rw-muted); font-size: 0.78rem; }
+.ww-dict-audio { display: inline-flex; gap: 0.25rem; }
+.ww-dict-audio button { display: inline-flex; align-items: center; gap: 0.2rem; padding: 0.1rem 0.4rem; border: 1px solid var(--rw-line); border-radius: 999px; background: var(--rw-surface); color: var(--rw-accent); font-size: 0.68rem; font-weight: 700; cursor: pointer; }
+.ww-dict-audio button:hover { border-color: var(--rw-accent); }
+.ww-dict-sense { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; font-size: 0.82rem; line-height: 1.45; }
+.ww-dict-sense__text { display: grid; gap: 0.15rem; min-width: 0; color: var(--rw-ink); }
+.ww-dict-pos { margin-right: 0.4rem; color: var(--rw-muted); font-size: 0.72rem; }
+.ww-dict-example { color: var(--rw-muted); font-size: 0.76rem; }
+.ww-dict-save { display: inline-flex; flex: none; align-items: center; gap: 0.25rem; padding: 0.2rem 0.5rem; border: 1px solid var(--rw-accent); border-radius: 4px; background: var(--rw-surface); color: var(--rw-accent); font-size: 0.7rem; font-weight: 600; cursor: pointer; }
+.ww-dict-save:hover:not(:disabled) { background: var(--rw-accent); color: #ffffff; }
+.ww-dict-save:disabled { cursor: default; }
+.ww-dict-save.is-saved { border-color: var(--rw-line); color: #15803d; }
+.ww-dict-empty { display: grid; gap: 0.3rem; font-size: 0.8rem; }
+.ww-dict-empty a { display: inline-flex; align-items: center; gap: 0.25rem; color: var(--rw-accent); }
+.ww-dict-history { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin-top: 0.8rem; }
+.ww-dict-history ul { display: flex; flex-wrap: wrap; gap: 0.3rem; margin: 0; padding: 0; list-style: none; }
+.ww-dict-history button { padding: 0.1rem 0.5rem; border: 1px solid var(--rw-line); border-radius: 999px; background: var(--rw-surface); color: var(--rw-ink); font-size: 0.72rem; cursor: pointer; }
 
 /* dialogs: they are rendered outside the workspace, so they bring its colours with them (without these, the buttons and chips have no fill) */
 .ww-dialog { --rw-accent: #1d4ed8; --rw-line: #d9dee5; --rw-ink: #111827; --rw-muted: #64748b; --rw-surface: #ffffff; max-width: 34rem; gap: 1rem; }

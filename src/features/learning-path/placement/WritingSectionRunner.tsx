@@ -6,7 +6,6 @@ import { Textarea } from '@/components/ui/textarea'
 import type { Passage } from '~types/learningPath'
 import { learningApi, toApiError } from '../api'
 import { reportApiError } from '../lib/reviewGate'
-import { DictionaryPanel } from './DictionaryPanel'
 import { PlacementExamShell, type SectionRunnerProps } from './PlacementExamShell'
 import { partLabel } from './placementGroups'
 import { TASK_1_PARTS, WRITING_PARTS, countWords, joinWritingParts, questionItems, readWritingParts } from './placementSkills'
@@ -15,8 +14,8 @@ import { formatHoursMinutesSeconds, useSectionSeconds } from './sectionClock'
 const TARGET_WORDS = 150
 
 /**
- * Writing as three panels like the real test: the task (and for Task 1 its data) on the left, the essay in its usual
- * paragraphs in the middle, a dictionary on the right. The paragraphs are saved as the item's response while drafting;
+ * Writing as two panels like the real test, which has no dictionary: the task (and for Task 1 its data) on the left, the
+ * essay in its usual paragraphs on the right. The paragraphs are saved as the item's response while drafting;
  * handing the section in sends the joined essay for grading.
  */
 export function WritingSectionRunner(props: SectionRunnerProps) {
@@ -143,8 +142,6 @@ export function WritingSectionRunner(props: SectionRunnerProps) {
             </footer>
           ) : null}
         </section>
-
-        <DictionaryPanel />
       </div>
 
       <Dialog open={confirming} onOpenChange={setConfirming}>

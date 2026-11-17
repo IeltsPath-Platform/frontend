@@ -1,7 +1,7 @@
 export type SkillType = 'reading' | 'listening' | 'writing' | 'speaking'
 
 export type PracticeMode = 'practice' | 'exam'
-export type PassageAction = 'highlight' | 'note' | 'dictionary' | 'flashcard'
+export type PassageAction = 'highlight' | 'note' | 'flashcard'
 
 export interface TextHighlight {
   paragraph: string

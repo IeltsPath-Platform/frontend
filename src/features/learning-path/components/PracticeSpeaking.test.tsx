@@ -52,7 +52,7 @@ describe('the recorded answer of a lesson practice set', () => {
   beforeEach(() => {
     sender.send.mockReset()
     wallet.checkAccess.mockReset().mockResolvedValue({ balance: 12, subscription: null })
-    api.getSpeakingTerms.mockReset().mockRejectedValue(new Error('terms unavailable'))
+    api.getSpeakingTerms.mockReset().mockResolvedValue({ pointCost: 12, maxRecordingBytes: 10_000_000, retentionDays: 30 })
     api.getSpeakingSubmission.mockReset()
     api.settleSpeakingSubmission.mockReset()
   })
