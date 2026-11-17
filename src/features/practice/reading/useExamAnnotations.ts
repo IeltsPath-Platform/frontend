@@ -72,21 +72,46 @@ function readSelection(container: HTMLElement, pane: AnnotationPane, range: Rang
   return { pane, start, end: start + text.length, text }
 }
 
-export function useExamAnnotations({ enabled, sectionId, passageRef, questionsRef }: {
+export function useExamAnnotations({ enabled, sectionId, passageRef, questionsRef, autoAction = null, menuOnSelection = true, onNoteAdded }: {
   enabled: boolean
   sectionId: string | undefined
   passageRef: RefObject<HTMLElement | null>
   questionsRef: RefObject<HTMLElement | null>
+  /**
+   * The tool the learner chose beforehand: a selection is then marked with it as soon as the pointer is released, with no
+   * popup to answer. Null keeps the popup that asks what to do with the selection.
+   */
+  autoAction?: Annotation['kind'] | null
+  /**
+   * Whether selected text opens the small Note / Highlight card. The practice layouts have a tool rail for that and turn it off;
+   * the exam layouts have no rail and keep it. A mark that was already made still opens its Clear card either way.
+   */
+  menuOnSelection?: boolean
+  /** Called when a note is added, so the notes panel can open for it. */
+  onNoteAdded?: () => void
 }) {
   const [bySection, setBySection] = useState<Record<string, Annotation[]>>({})
   const [popup, setPopup] = useState<AnnotationPopup | null>(null)
   const [focusNoteId, setFocusNoteId] = useState<string | null>(null)
+  /** True while selected text is waiting to be marked (whether or not a card is shown for it). */
+  const [hasSelection, setHasSelection] = useState(false)
   const pendingRef = useRef<PendingSelection | null>(null)
   const pointerRef = useRef({ x: 0, y: 0 })
   const containers = useMemo<Record<AnnotationPane, RefObject<HTMLElement | null>>>(() => ({ passage: passageRef, questions: questionsRef }), [passageRef, questionsRef])
   const current = useMemo(() => (sectionId ? bySection[sectionId] ?? [] : []), [bySection, sectionId])
   const currentRef = useRef(current)
-  useEffect(() => { currentRef.current = current })
+  // The listeners below are attached once per part, so they read the latest of these through refs.
+  const autoActionRef = useRef(autoAction)
+  const menuOnSelectionRef = useRef(menuOnSelection)
+  const onNoteAddedRef = useRef(onNoteAdded)
+  const addRef = useRef<(kind: Annotation['kind']) => boolean>(() => false)
+  useEffect(() => {
+    currentRef.current = current
+    autoActionRef.current = autoAction
+    menuOnSelectionRef.current = menuOnSelection
+    onNoteAddedRef.current = onNoteAdded
+    addRef.current = add
+  })
 
   const update = useCallback((change: (list: Annotation[]) => Annotation[]) => {
     if (!sectionId) return
@@ -122,6 +147,7 @@ export function useExamAnnotations({ enabled, sectionId, passageRef, questionsRe
     function evaluate() {
       const live = window.getSelection()
       pendingRef.current = null
+      setHasSelection(false)
       if (!live || !live.rangeCount) { setPopup(null); return }
       const range = live.getRangeAt(0)
       for (const pane of PANES) {
@@ -145,6 +171,10 @@ export function useExamAnnotations({ enabled, sectionId, passageRef, questionsRe
         const picked = readSelection(container, pane, range)
         if (!picked) continue
         pendingRef.current = picked
+        setHasSelection(true)
+        // A chosen tool marks the selection when the pointer is released, and a layout with a tool rail has no card to answer;
+        // the selection stays pending for the rail's buttons and keys.
+        if (autoActionRef.current || !menuOnSelectionRef.current) { setPopup(null); return }
         const rect = range.getClientRects()[0]
         if (rect) show(rect.left + rect.width / 2, rect.top, rect.bottom, null)
         else show(pointerRef.current.x, pointerRef.current.y, pointerRef.current.y, null)
@@ -160,25 +190,34 @@ export function useExamAnnotations({ enabled, sectionId, passageRef, questionsRe
       if (live && !live.isCollapsed && container?.contains(live.anchorNode)) { event.preventDefault(); event.stopPropagation() }
     }
     function rememberPointer(event: PointerEvent) { pointerRef.current = { x: event.clientX, y: event.clientY } }
+    // The selection is complete once the pointer is up; the timeout lets the browser settle it first.
+    function markWithChosenTool() {
+      const kind = autoActionRef.current
+      if (!kind) return
+      window.setTimeout(() => { if (autoActionRef.current === kind && pendingRef.current) addRef.current(kind) }, 0)
+    }
 
     const questions = containers.questions.current
     questions?.addEventListener('click', keepAnswers, true)
     document.addEventListener('pointerdown', rememberPointer, true)
     document.addEventListener('pointerup', rememberPointer, true)
+    document.addEventListener('pointerup', markWithChosenTool)
     document.addEventListener('selectionchange', evaluate)
     document.addEventListener('scroll', evaluate, true)
     return () => {
       questions?.removeEventListener('click', keepAnswers, true)
       document.removeEventListener('pointerdown', rememberPointer, true)
       document.removeEventListener('pointerup', rememberPointer, true)
+      document.removeEventListener('pointerup', markWithChosenTool)
       document.removeEventListener('selectionchange', evaluate)
       document.removeEventListener('scroll', evaluate, true)
     }
   }, [enabled, containers, sectionId])
 
-  function add(kind: Annotation['kind']) {
+  /** Marks the pending selection; false when there is none. */
+  function add(kind: Annotation['kind']): boolean {
     const pending = pendingRef.current
-    if (!pending) return
+    if (!pending) return false
     const id = crypto.randomUUID()
     update((list) => {
       if (kind === 'note') return [...list, { id, pane: pending.pane, kind, start: pending.start, end: pending.end, text: pending.text, note: '' }]
@@ -190,10 +229,15 @@ export function useExamAnnotations({ enabled, sectionId, passageRef, questionsRe
       const text = (container ? rangeAt(container, start, end)?.toString() : null) ?? pending.text
       return [...list.filter((item) => !touching.includes(item)), { id, pane: pending.pane, kind, start, end, text, note: '' }]
     })
-    if (kind === 'note') setFocusNoteId(id)
+    if (kind === 'note') {
+      setFocusNoteId(id)
+      onNoteAddedRef.current?.()
+    }
     pendingRef.current = null
+    setHasSelection(false)
     setPopup(null)
     window.getSelection()?.removeAllRanges()
+    return true
   }
 
   const remove = useCallback((id: string) => update((list) => list.filter((item) => item.id !== id)), [update])
@@ -210,6 +254,7 @@ export function useExamAnnotations({ enabled, sectionId, passageRef, questionsRe
 
   return {
     popup: popup && popup.sectionId === sectionId ? popup : null,
+    hasSelection,
     notes,
     focusNoteId,
     highlight: () => add('highlight'),

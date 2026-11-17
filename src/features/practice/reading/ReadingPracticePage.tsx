@@ -6,11 +6,12 @@ import type { AttemptItemResponse } from '~types/learningPath'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { ReadingQuestionNav, ReadingSplitHandle, ReadingToolRail, ReadingTopBar } from './ReadingWorkspaceParts'
-import type { QuestionNavGroup, WorkspaceFontSize } from './ReadingWorkspaceParts'
+import type { QuestionNavGroup, ReadingTool, WorkspaceFontSize } from './ReadingWorkspaceParts'
 import { ReadingQuestionsPanel } from './ReadingQuestionsPanel'
 import { ExamNotesPanel, ExamSelectionPopup } from './ExamAnnotationUi'
 import { ExamFinishBar } from './ExamFinishBar'
 import { useExamAnnotations } from './useExamAnnotations'
+import { useToolShortcuts } from './useToolShortcuts'
 import { useWordLookup } from './useWordLookup'
 import { WordLookupPopover } from './WordLookupPopover'
 import { LoadingState, PageSkeleton, ApiErrorState } from '@/features/learning-path/components/PageState'
@@ -20,7 +21,7 @@ import type { TestSection } from '@/features/learning-path/lib/attemptSnapshot'
 import { useAttemptAnswers } from '@/features/learning-path/lib/useAttemptAnswers'
 import { getAttemptResponses, getAttemptStructure, getReadingAttempt, saveAttemptAnswer, startAttemptSection, submitReadingAttempt } from './readingPracticeApi'
 import type { ReadingAttempt } from './readingPracticeApi'
-import { clockSeconds, isTypingTarget, toSavedResponses } from './workspace-support'
+import { clockSeconds, toSavedResponses } from './workspace-support'
 import '@/features/learning-path/learning-path.css'
 import { parseSections } from './readingSections'
 import { StatusArt } from '@/components/StatusArt'
@@ -88,9 +89,14 @@ function ReadingRunner({ attemptId, attempt, sections, saved }: {
   const answers = useAttemptAnswers(attemptId, saved, async (id, itemId, answer, revision) => saveAttemptAnswer(id, itemId, answer, revision))
   const section = sections[activeIndex]
   // Highlights and notes work the same in both layouts.
-  const annotations = useExamAnnotations({ enabled: true, sectionId: section?.id, passageRef, questionsRef })
-  // Practice layout only: clicking a word of the passage looks it up in the vocabulary library.
-  const wordLookup = useWordLookup(!timed)
+  // Practice layout: one tool at a time. Highlight and Note mark every selection as soon as it is made; Tra từ vựng (the one
+  // in use when the page opens) looks a word up when it is clicked.
+  const [tool, setTool] = useState<ReadingTool | null>('lookup')
+  const annotations = useExamAnnotations({
+    enabled: true, sectionId: section?.id, passageRef, questionsRef,
+    autoAction: timed || tool === 'lookup' ? null : tool, menuOnSelection: timed, onNoteAdded: () => setNotesClosed(false),
+  })
+  const wordLookup = useWordLookup(!timed && tool === 'lookup')
   const allItems = useMemo(() => sections.flatMap((item) => item.items.filter((question) => question.question !== null)), [sections])
   // One continuous numbering across every passage, in the order the learner sees the questions.
   const numberByItem = useMemo(() => new Map(allItems.map((item, index) => [item.id, index + 1])), [allItems])
@@ -168,19 +174,23 @@ function ReadingRunner({ attemptId, attempt, sections, saved }: {
     else reveal()
   }
 
-  // Practice layout: the H key highlights the selected text, as the tool rail says.
-  const highlightRef = useRef(annotations.highlight)
-  useEffect(() => { highlightRef.current = annotations.highlight })
-  useEffect(() => {
-    if (timed) return
-    function onKeyDown(event: KeyboardEvent) {
-      if ((event.key === 'h' || event.key === 'H') && !event.ctrlKey && !event.metaKey && !event.altKey && !isTypingTarget(event.target)) {
-        highlightRef.current()
-      }
+  /**
+   * Pressing a tool takes it up and puts the one in use down, or puts it down when it is the one in use. Highlight or Note
+   * pressed while text is already selected marks that text at once instead, and the tool in use stays as it was. Leaving the
+   * lookup closes an open card and takes the underline off the word under the pointer.
+   */
+  function chooseTool(next: ReadingTool) {
+    if (next !== 'lookup' && (next === 'highlight' ? annotations.highlight() : annotations.note())) return
+    const chosen = tool === next ? null : next
+    if (tool === 'lookup' && chosen !== 'lookup') {
+      wordLookup.close()
+      wordLookup.onMouseLeave()
     }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [timed])
+    setTool(chosen)
+  }
+
+  // Practice layout: the H, N and T keys are the shortcuts the tool rail names.
+  useToolShortcuts(!timed, { highlight: () => chooseTool('highlight'), note: () => chooseTool('note'), lookup: () => chooseTool('lookup') })
 
   // A click on marked text opens its Clear card, so it does not also look the word up.
   function onPassageClick(event: ReactMouseEvent<HTMLElement>) {
@@ -217,7 +227,7 @@ function ReadingRunner({ attemptId, attempt, sections, saved }: {
 
     <div className={`rw-body${timed ? ' rw-body-exam' : ''}${finishing ? ' rw-body-finish' : ''}`} style={timed ? ({ '--rw-split': split } as CSSProperties) : undefined}>
       {!timed && (
-        <ReadingToolRail onHighlight={annotations.highlight} onNote={() => { setNotesClosed(false); annotations.note() }} />
+        <ReadingToolRail tool={tool} onPick={chooseTool} />
       )}
 
       <section className="rw-passage" aria-label="Bài đọc">
