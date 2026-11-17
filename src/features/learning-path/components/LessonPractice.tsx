@@ -2,6 +2,7 @@ import { StudyActivityTracker } from '@/features/study-time/StudyActivityTracker
 import { Fragment, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { AlertTriangle, ArrowRight, CheckCircle2, CircleDot, Loader2, Lock, ShieldAlert } from 'lucide-react'
+import { Spinner } from '@/components/loading/Loading'
 import { Button } from '@/components/ui/button'
 import type {
   AnswerInput,
@@ -76,7 +77,15 @@ export function LessonPractice({ lessonId, onChanged, reviewOrigin }: {
     onChanged?.()
   }
 
-  if (resource.status === 'loading') return <PageSkeleton label="Đang tải luyện thêm…" variant="list" />
+  // The pending reviews decide what the section shows first, so wait for them too instead of letting them pop in later.
+  if (resource.status === 'loading' || reviews.status === 'loading') {
+    return (
+      <div className="lp-practice-loading">
+        <p className="lp-practice-loading__label"><Spinner /> Đang tải bài luyện tập…</p>
+        <PageSkeleton label="Đang tải bài luyện tập…" variant="list" />
+      </div>
+    )
+  }
   if (resource.status === 'error' && resource.error) return <ApiErrorState error={resource.error} onRetry={resource.reload} />
   if (!resource.data) return null
   return (
