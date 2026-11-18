@@ -1,8 +1,7 @@
 import { useMemo } from 'react'
 import { GraduationCap } from 'lucide-react'
 import { AdminModal } from '../../components/AdminLayer'
-import { ChartZoomControls, KnowledgeOrgChart } from '../../components/KnowledgeOrgChart'
-import { useChartZoom } from '../../lib/chartZoom'
+import { KnowledgeOrgChart } from '../../components/KnowledgeOrgChart'
 import type { TreeEdge, TreeNode } from '../../knowledge-graph/types'
 import { courseKnowledgeTree } from '../lib/courseKnowledgeTree'
 
@@ -12,7 +11,7 @@ import { courseKnowledgeTree } from '../lib/courseKnowledgeTree'
  * deep as they go. Every other box has a checkbox that works like the one in the chooser, so a pick can be made or
  * undone from here; ticking a point brings its prerequisites, which then show ticked beneath it.
  *
- * The drawing itself, with its cross links and zoom, is the shared `KnowledgeOrgChart`.
+ * The drawing itself, with its cross links, panning and zoom, is the shared `KnowledgeOrgChart`, built on React Flow.
  */
 export function CourseKnowledgeChartDialog({ nodes, edges, picked, limit, description, root, onChange, onClose }: {
   nodes: readonly TreeNode[]; edges: readonly TreeEdge[]; picked: readonly string[]; limit: number; description: string
@@ -22,7 +21,6 @@ export function CourseKnowledgeChartDialog({ nodes, edges, picked, limit, descri
 }) {
   const rows = useMemo(() => courseKnowledgeTree(nodes, edges), [nodes, edges])
   const atLimit = picked.length >= limit
-  const zoom = useChartZoom()
 
   /** Ticks every point in the chart, as many as the limit leaves room for. */
   function selectAll() {
@@ -37,8 +35,7 @@ export function CourseKnowledgeChartDialog({ nodes, edges, picked, limit, descri
   return <AdminModal title="Sơ đồ điểm kiến thức" description={description} size="xl" stacked onClose={onClose}>
     {(close) => <>
       <div className="adm-kp-dialog__bar adm-kp-chart__hint">
-        <p className="adm-muted">Điểm nằm dưới phải học trước điểm ngay trên nó. Đường kẻ màu đi từ chấm tròn (điểm tiên quyết) tới mũi tên (điểm khác cũng cần nó); rê chuột vào một ô để làm nổi đường nối của nó.</p>
-        <ChartZoomControls zoom={zoom} />
+        <p className="adm-muted">Điểm nằm dưới phải học trước điểm ngay trên nó. Đường kẻ màu đi từ chấm tròn (điểm tiên quyết) tới mũi tên (điểm khác cũng cần nó); rê chuột vào một ô để làm nổi đường nối của nó. Kéo để di chuyển sơ đồ, dùng các nút ở góc để phóng to, thu nhỏ.</p>
       </div>
       <div className="adm-kp-dialog__list">
         {rows.length
@@ -46,7 +43,6 @@ export function CourseKnowledgeChartDialog({ nodes, edges, picked, limit, descri
             label="Sơ đồ điểm kiến thức"
             root={<><GraduationCap aria-hidden="true" size={20} /><span><strong>{root.title}</strong><small>{root.note}</small></span></>}
             rows={rows}
-            zoom={zoom.zoom}
             renderBox={(row, box) => {
               const { node } = row
               return <label {...box}>

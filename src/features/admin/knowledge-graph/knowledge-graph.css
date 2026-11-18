@@ -23,7 +23,7 @@
 .kg-chart.kg-popup { display: flex; flex: 1; flex-direction: column; gap: 10px; min-height: 0; padding: 14px 20px 18px; }
 .kg-popup__main { display: grid; flex: 1; grid-template-columns: minmax(0, 1fr); gap: 14px; min-height: 0; }
 .kg-popup .kg-section { display: flex; flex-direction: column; height: 100%; min-height: 0; }
-.kg-popup .kg-section .adm-kp-chart { flex: 1; min-height: 0; max-height: none; }
+.kg-popup .kg-section .adm-kp-chart { flex: 1; block-size: auto; min-height: 0; max-height: none; }
 
 .kg-chart { display: grid; gap: 18px; min-width: 0; }
 
@@ -37,10 +37,10 @@
 .kg-chart .kg-legend__item--writing, .kg-chart .kg-box--writing, .kg-chart .kg-section--writing { --accent: var(--adm-skill-writing); }
 .kg-chart .kg-legend__item--speaking, .kg-chart .kg-box--speaking, .kg-chart .kg-section--speaking { --accent: var(--adm-skill-speaking); }
 
-/* One chart per skill: a card with its tools above and the chart, which scrolls sideways when it is wider than the page. */
+/* One chart per skill: a card with its tools above and the chart, which pans and zooms inside its frame. */
 .kg-section { display: grid; gap: 8px; min-width: 0; }
 .kg-section__tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
-.kg-section .adm-kp-chart { min-height: 220px; max-height: 78dvh; padding: 22px 20px 20px; overflow: auto; background: var(--adm-surface); border: 1px solid var(--adm-border); border-radius: var(--adm-radius); }
+.kg-section .adm-kp-chart { min-height: 220px; max-height: 78dvh; }
 .kg-section .adm-kp-chart__root { background: color-mix(in srgb, var(--accent) 60%, #0f1f55); box-shadow: 0 2px 6px color-mix(in srgb, var(--accent) 35%, transparent); }
 .kg-section .adm-kp-chart__root svg { flex: none; }
 
