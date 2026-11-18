@@ -67,7 +67,9 @@ import type {
   LearningGoalRequest,
   LessonDetail,
   PlacementResult,
-  PlacementTest,
+  PlacementAssignment,
+  PlacementOptions,
+  PlacementPool,
   PracticeAttemptView,
   PracticeSubmissionResult,
   ReviewDetail,
@@ -107,8 +109,8 @@ const CODE_MAP: Record<string, ApiErrorCode> = {
   INSUFFICIENT_POINTS: 'INSUFFICIENT_POINTS',
   GRADING_UNAVAILABLE: 'GRADING_UNAVAILABLE',
   DAILY_LIMIT_REACHED: 'DAILY_LIMIT_REACHED',
-  PLACEMENT_ALREADY_DONE: 'PLACEMENT_ALREADY_DONE',
   NO_PLACEMENT_TEST: 'NO_PLACEMENT_TEST',
+  PLACEMENT_LIMIT_REACHED: 'PLACEMENT_LIMIT_REACHED',
   HEARTS_DEPLETED: 'HEARTS_DEPLETED',
   HEARTS_FULL: 'HEARTS_FULL',
   ACCESS_UNAVAILABLE: 'ACCESS_UNAVAILABLE',
@@ -193,8 +195,16 @@ export function createHttpLearningApi(): LearningApi {
   }
 
   return {
-    async getPlacementTest(): Promise<PlacementTest> {
-      return learningRequest<PlacementTest>('/placement-test')
+    async getPlacementOptions(): Promise<PlacementOptions> {
+      return learningRequest<PlacementOptions>('/placement-test/options')
+    },
+
+    async assignPlacementTest(pool: PlacementPool): Promise<PlacementAssignment> {
+      return learningRequest<PlacementAssignment>('/placement-test/assignments', { method: 'POST', body: { pool } })
+    },
+
+    async releasePlacementAssignment(assignmentId: string): Promise<void> {
+      await learningRequest<null>(`/placement-test/assignments/${encodeURIComponent(assignmentId)}/release`, { method: 'POST' })
     },
 
     async submitLearnerSubmission(request: LearnerSubmissionRequest) {
@@ -453,6 +463,10 @@ export function createHttpLearningApi(): LearningApi {
         method: 'POST',
         body: toStartAttemptBody(request),
       })
+    },
+
+    async cancelAttempt(attemptId: string): Promise<void> {
+      await assessmentRequest<null>(`/attempts/${encodeURIComponent(attemptId)}/cancel`, { method: 'POST' })
     },
 
     async getAttemptStructure(attemptId: string): Promise<AttemptStructure> {

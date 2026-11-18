@@ -23,7 +23,7 @@
 /* Stepper: equal columns; each step's connector runs from its dot to the next one and fills as the step completes. */
 .pl-stepper { --pl-dot: 2.5rem; width: min(100%, 42rem); margin: .75rem auto 0; }
 .pl-stepper--wide { width: min(100%, 64rem); }
-.pl-stepper ol { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 0; padding: 0; list-style: none; }
+.pl-stepper ol { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 0; padding: 0; list-style: none; }
 .pl-stepper__step { position: relative; display: grid; justify-items: center; gap: .55rem; text-align: center; }
 .pl-stepper__dot { position: relative; z-index: 1; display: grid; place-items: center; width: var(--pl-dot); height: var(--pl-dot); border: 2px solid #d6dae3; border-radius: 50%; background: #fff; color: #8a93a3; font-size: 1rem; font-weight: 800; transition: background .3s ease, border-color .3s ease, color .3s ease, box-shadow .3s ease; }
 .pl-stepper__step--done .pl-stepper__dot { border-color: var(--pl-blue); background: var(--pl-blue); color: #fff; }
@@ -413,3 +413,37 @@ button.pl-qnav__num { cursor: pointer; }
   .pl-countdown-bar { animation: none; background-size: 100% 100%; }
   .pl-stepper__seg > span, .pl-stepper__dot { transition: none; }
 }
+
+.pl-pools { width: min(100%, 66rem); margin: clamp(1.5rem, 4vw, 3rem) auto; padding: 0 1rem; }
+.pl-pools__intro { max-width: 42rem; margin: 0 auto 1.5rem; text-align: center; }
+.pl-pools__intro h1 { margin: .25rem 0 .5rem; color: var(--lp-ink); font-size: clamp(1.65rem, 4vw, 2.35rem); line-height: 1.15; }
+.pl-pools__intro p:last-child { color: var(--lp-muted); line-height: 1.55; }
+.pl-pools__cards { display: grid; grid-template-columns: 1fr; gap: .75rem; }
+.pl-pool-card { display: grid; gap: .55rem; min-height: 9rem; padding: 1rem; border: 1px solid var(--lp-line); border-radius: 1rem; background: var(--lp-surface); color: var(--lp-ink); text-align: left; cursor: pointer; transition: border-color .18s ease, box-shadow .18s ease, background .18s ease; }
+.pl-pool-card:hover:not(:disabled) { border-color: var(--lp-accent); }
+.pl-pool-card:focus-visible { outline: 3px solid var(--lp-accent); outline-offset: 3px; }
+.pl-pool-card[data-selected="true"] { border-color: var(--lp-accent); background: var(--lp-accent-soft); box-shadow: 0 0 0 2px var(--lp-accent); }
+.pl-pool-card:disabled { cursor: not-allowed; opacity: .62; }
+.pl-pool-card__title { font-size: 1.15rem; font-weight: 750; }
+.pl-pool-card__description { color: var(--lp-muted); line-height: 1.45; }
+.pl-pool-card__count { color: var(--lp-primary-strong); font-weight: 700; }
+.pl-pool-card__warning { display: flex; gap: .4rem; align-items: flex-start; color: var(--lp-accent-ink); font-size: .9rem; line-height: 1.45; }
+.pl-pools__hint { margin: .85rem 0; color: var(--lp-muted); text-align: center; }
+.pl-pools__confirm { margin: .75rem 0; text-align: center; font-weight: 650; }
+.pl-pools__limit { display: flex; gap: .65rem; align-items: flex-start; margin: 0 0 1rem; padding: .9rem 1rem; border: 1px solid var(--lp-accent); border-radius: .75rem; color: var(--lp-accent-ink); background: var(--lp-accent-soft); line-height: 1.45; }
+.pl-pools__start { min-height: 2.9rem; margin: 1rem auto 0; display: flex; gap: .5rem; }
+.pl-resume { width: min(100% - 2rem, 40rem); margin: 2rem auto; }
+.pl-resume__actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1rem; }
+.pl-report__placement-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; margin: 1rem 0 1.5rem; padding: 1rem; border: 1px solid var(--lp-line); border-radius: 14px; background: var(--lp-surface); }
+.pl-report__placement-actions p { margin: 0; }
+.pl-report__partial, .pl-report__courses-waiting { padding: .9rem 1rem; border-left: 4px solid var(--lp-accent); background: var(--lp-accent-soft); color: var(--lp-accent-ink); line-height: 1.5; }
+.pl-report__higher-pool { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; margin: 1rem 0; padding: 1.1rem; border: 1px solid var(--lp-accent); border-radius: 14px; background: var(--lp-accent-soft); }
+.pl-report__higher-pool h2 { margin: 0 0 .4rem; font-size: 1.1rem; }
+.pl-report__higher-pool p { margin: 0; line-height: 1.45; }
+.pl-report-not-graded { display: flex; align-items: flex-start; gap: .5rem; margin: .5rem 0; color: var(--lp-muted); }
+
+@media (min-width: 42rem) {
+  .pl-pools__cards { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+  .pl-pool-card { min-height: 13rem; padding: 1.25rem; }
+}
+@media (prefers-reduced-motion: reduce) { .pl-pool-card { transition: none; } }
