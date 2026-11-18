@@ -1,37 +1,40 @@
 /* The knowledge point org chart shared by the course request dialog and the knowledge tree screen: one large box at the
-   top, boxes beneath joined by lines, cross links drawn on top by KnowledgeOrgChart, and a zoom that scales the whole chart. */
-.adm-kp-chart__zoom { display: flex; align-items: center; gap: 6px; }
-.adm-kp-chart__zoom-value { min-width: 64px; font-variant-numeric: tabular-nums; }
-.adm-kp-chart { --kp-line: color-mix(in srgb, var(--adm-muted) 45%, var(--adm-surface)); display: flex; padding-block: 14px 8px; }
-.adm-kp-chart__frame { position: relative; flex: none; margin-inline: auto; }
-.adm-kp-chart__tree { position: absolute; top: 0; left: 0; width: max-content; transform-origin: 0 0; }
-.adm-kp-chart__links { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+   top, boxes beneath joined by lines, all drawn by React Flow (KnowledgeOrgChart). The frame has a height of its own because
+   React Flow fills it; pan with the pointer, zoom with the buttons. */
+.adm-kp-chart { --kp-line: color-mix(in srgb, var(--adm-muted) 45%, var(--adm-surface)); position: relative; box-sizing: border-box; inline-size: 100%; block-size: clamp(360px, 70dvh, 760px); min-inline-size: 0; overflow: hidden; background: var(--adm-surface); background-image: radial-gradient(var(--kp-line) .75px, transparent .75px); background-size: 18px 18px; border: 1px solid var(--adm-border); border-radius: var(--adm-radius, 10px); }
+/* React Flow brings its own light theme; what it paints is put back in the colours of the screen. */
+.adm-kp-chart .react-flow { background: transparent; }
+.adm-kp-chart .react-flow__pane { cursor: grab; }
+.adm-kp-chart .react-flow__pane.dragging { cursor: grabbing; }
+.adm-kp-chart .react-flow__controls { border: 1px solid var(--adm-border); border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgb(13 43 141 / 12%); }
+.adm-kp-chart .react-flow__controls-button { inline-size: 2rem; block-size: 2rem; border-bottom: 1px solid var(--adm-border); background: var(--adm-surface); color: var(--adm-text, inherit); }
+.adm-kp-chart .react-flow__controls-button:hover { background: var(--adm-surface-2); }
+.adm-kp-chart .react-flow__controls-button:focus-visible { outline: 2px solid var(--adm-focus); outline-offset: -2px; }
+.adm-kp-chart .react-flow__controls-button svg { max-inline-size: 1rem; max-block-size: 1rem; fill: currentColor; }
+.adm-kp-chart .react-flow__attribution { background: transparent; font-size: .62rem; opacity: .7; }
+/* React Flow draws every line in an svg of its own inside a layer that has no width; the page's reset caps an svg at the width
+   of its container, which would make each of these zero wide, and an svg of no width is not drawn at all. */
+.adm-kp-chart .react-flow__edges svg { max-inline-size: none; }
+/* The arrowheads are defined once and used by every cross link; a zero-size box, not display:none, or the markers would not draw. */
+.adm-kp-chart__defs { position: absolute; inline-size: 0; block-size: 0; overflow: hidden; }
+.adm-kp-chart__arrow { fill: var(--adm-accent); }
+.adm-kp-chart__arrow--1 { fill: var(--adm-ok); }
+.adm-kp-chart__arrow--2 { fill: var(--adm-warn); }
+
+.adm-kp-chart__branch { fill: none; stroke: var(--kp-line); stroke-width: 1.5; }
 .adm-kp-chart__link { color: var(--adm-accent); transition: opacity .12s ease; }
 .adm-kp-chart__link--1 { color: var(--adm-ok); }
 .adm-kp-chart__link--2 { color: var(--adm-warn); }
-.adm-kp-chart__link circle, .adm-kp-chart__link path { fill: currentColor; stroke: none; }
+.adm-kp-chart__link circle { fill: currentColor; stroke: none; }
 .adm-kp-chart__link .adm-kp-chart__line { fill: none; stroke: currentColor; stroke-linejoin: round; stroke-width: 1.5; }
 .adm-kp-chart__link.is-active .adm-kp-chart__line { stroke-width: 2.5; }
 .adm-kp-chart__link.is-dim { opacity: .18; }
-.adm-kp-chart__root { position: relative; z-index: 1; display: flex; align-items: center; gap: 12px; padding: 12px 22px; background: var(--adm-accent-strong); border-radius: 10px; box-shadow: 0 2px 6px rgb(13 43 141 / 25%); color: #fff; }
-.adm-kp-chart__root > span { display: grid; gap: 2px; }
-.adm-kp-chart__root strong { font-size: 1.05rem; }
-.adm-kp-chart__root small { color: rgb(255 255 255 / 80%); font-size: .8rem; }
-.adm-kp-chart ul { position: relative; display: flex; justify-content: center; margin: 0; padding: 22px 0 0; list-style: none; }
-.adm-kp-chart__tree > ul { padding-top: 0; }
-.adm-kp-chart ul ul::before { content: ''; position: absolute; top: 0; left: 50%; height: 22px; border-left: 1.5px solid var(--kp-line); }
-.adm-kp-chart li { position: relative; display: flex; flex-direction: column; align-items: center; padding: 22px 16px 0; }
-.adm-kp-chart li::before, .adm-kp-chart li::after { content: ''; position: absolute; top: 0; right: 50%; width: 50%; height: 22px; border-top: 1.5px solid var(--kp-line); }
-.adm-kp-chart li::after { right: auto; left: 50%; border-left: 1.5px solid var(--kp-line); }
-.adm-kp-chart__tree > ul > li { padding-top: 0; }
-.adm-kp-chart__tree > ul > li::before, .adm-kp-chart__tree > ul > li::after { display: none; }
-/* An only child keeps the same gap as siblings, so every level sits on the same row across the chart. */
-.adm-kp-chart ul ul > li:only-child::after { display: none; }
-.adm-kp-chart ul ul > li:only-child::before { right: auto; left: 50%; width: 0; border: 0; border-left: 1.5px solid var(--kp-line); border-radius: 0; }
-.adm-kp-chart li:first-child::before, .adm-kp-chart li:last-child::after { border: 0; }
-.adm-kp-chart li:last-child::before { border-right: 1.5px solid var(--kp-line); border-radius: 0 7px 0 0; }
-.adm-kp-chart li:first-child::after { border-radius: 7px 0 0 0; }
-.adm-kp-chart__box { position: relative; z-index: 1; display: flex; align-items: flex-start; gap: 8px; box-sizing: border-box; width: 236px; height: 78px; padding: 8px 10px; background: var(--adm-surface); border: 1px solid var(--adm-border); border-radius: 8px; box-shadow: 0 1px 2px rgb(13 43 141 / 8%); cursor: pointer; transition: border-color .12s ease, background-color .12s ease; }
+
+.adm-kp-chart__root { box-sizing: border-box; display: flex; align-items: center; gap: 12px; inline-size: 100%; block-size: 100%; min-inline-size: 0; padding: 0 22px; background: var(--adm-accent-strong); border-radius: 10px; box-shadow: 0 2px 6px rgb(13 43 141 / 25%); color: #fff; }
+.adm-kp-chart__root > span { display: grid; gap: 2px; min-inline-size: 0; }
+.adm-kp-chart__root strong { overflow: hidden; font-size: 1.05rem; text-overflow: ellipsis; white-space: nowrap; }
+.adm-kp-chart__root small { overflow: hidden; color: rgb(255 255 255 / 80%); font-size: .8rem; text-overflow: ellipsis; white-space: nowrap; }
+.adm-kp-chart__box { position: relative; display: flex; align-items: flex-start; gap: 8px; box-sizing: border-box; width: 236px; height: 78px; padding: 8px 10px; background: var(--adm-surface); border: 1px solid var(--adm-border); border-radius: 8px; box-shadow: 0 1px 2px rgb(13 43 141 / 8%); cursor: pointer; transition: border-color .12s ease, background-color .12s ease; }
 .adm-kp-chart__box:hover { border-color: var(--adm-accent); }
 .adm-kp-chart__box:has(input:checked) { background: color-mix(in srgb, var(--adm-accent) 9%, var(--adm-surface)); border-color: var(--adm-accent); }
 .adm-kp-chart__box:has(input:disabled) { opacity: .5; cursor: not-allowed; }

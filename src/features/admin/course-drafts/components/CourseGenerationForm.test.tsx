@@ -106,52 +106,6 @@ describe('CourseGenerationForm', () => {
       expect(screen.queryByRole('button', { name: /Thu gọn tất cả|Mở tất cả/ })).not.toBeInTheDocument()
     })
 
-    it('draws the same points in a chart of boxes, the goal on top and what it needs in the boxes beneath', async () => {
-      render(<CourseGenerationForm onCreated={vi.fn()} onCancel={vi.fn()} />)
-      await pickParaphrase()
-      const dialog = await openChart()
-
-      const box = (code: RegExp) => within(dialog).getByRole('checkbox', { name: code }).closest('li') as HTMLElement
-      const goal = box(/^KP_PARAPHRASE/)
-      const basics = box(/^KP_READ_BASICS/)
-      expect(within(goal).getByRole('checkbox', { name: /^KP_READ_BASICS/ })).toBeInTheDocument()
-      expect(within(goal).getByRole('checkbox', { name: /^KP_READ_FOUNDATION/ })).toBeInTheDocument()
-      expect(within(basics).getByRole('checkbox', { name: /^KP_READ_FOUNDATION/ })).toBeInTheDocument()
-      expect(within(basics).queryByRole('checkbox', { name: /^KP_PARAPHRASE/ })).not.toBeInTheDocument()
-      expect(within(dialog).getByText(/^Điểm nằm dưới phải học trước điểm ngay trên nó\./)).toBeInTheDocument()
-    })
-
-    it('hangs the whole chart from one box for the course band, with every goal joined to it', async () => {
-      render(<CourseGenerationForm onCreated={vi.fn()} onCancel={vi.fn()} />)
-      await pickParaphrase()
-      const dialog = await openChart()
-
-      const root = within(dialog).getByText('Khóa học band 6.5').closest('li') as HTMLElement
-      expect(within(root).getByText('Đọc')).toBeInTheDocument()
-      expect(within(root).getAllByRole('checkbox')).toHaveLength(within(dialog).getAllByRole('checkbox').length)
-      expect(within(dialog).getAllByText('Khóa học band 6.5')).toHaveLength(1)
-    })
-
-    it('zooms the chart in and out in steps, stops at both ends, and goes back to 100%', async () => {
-      render(<CourseGenerationForm onCreated={vi.fn()} onCancel={vi.fn()} />)
-      const dialog = await openChart()
-      const zoom = within(within(dialog).getByRole('group', { name: 'Thu phóng sơ đồ' }))
-      expect(zoom.getByText('100%')).toBeInTheDocument()
-      expect(zoom.getByRole('button', { name: /^Đặt lại về 100%/ })).toBeDisabled()
-
-      fireEvent.click(zoom.getByRole('button', { name: 'Thu nhỏ' }))
-      expect(zoom.getByText('90%')).toBeInTheDocument()
-      for (let times = 0; times < 5; times += 1) fireEvent.click(zoom.getByRole('button', { name: 'Thu nhỏ' }))
-      expect(zoom.getByText('40%')).toBeInTheDocument()
-      expect(zoom.getByRole('button', { name: 'Thu nhỏ' })).toBeDisabled()
-
-      fireEvent.click(zoom.getByRole('button', { name: /^Đặt lại về 100%/ }))
-      expect(zoom.getByText('100%')).toBeInTheDocument()
-      for (let times = 0; times < 4; times += 1) fireEvent.click(zoom.getByRole('button', { name: 'Phóng to' }))
-      expect(zoom.getByText('200%')).toBeInTheDocument()
-      expect(zoom.getByRole('button', { name: 'Phóng to' })).toBeDisabled()
-    })
-
     it('draws a point that two goals need once, and names the other goal in a note on its box', async () => {
       const current = await tree.fetchKnowledgeTree()
       const secondId = '88888888-8888-4888-8888-888888888888'
