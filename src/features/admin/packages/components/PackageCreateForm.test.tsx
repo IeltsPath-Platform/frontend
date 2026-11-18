@@ -53,6 +53,7 @@ describe('PackageCreateForm', () => {
     expect(screen.queryByLabelText('Chủ đề')).not.toBeInTheDocument()
     fireEvent.change(screen.getByLabelText('Loại gói'), { target: { value: 'PRACTICE_TEST' } })
     expect(screen.getByLabelText('Nguồn đề (tùy chọn)')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Kho đề đầu vào')).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Khóa học')).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Bài học')).not.toBeInTheDocument()
     await screen.findByRole('option', { name: 'Cambridge' })
@@ -78,6 +79,19 @@ describe('PackageCreateForm', () => {
     titleAndCode()
     submit()
     await waitFor(() => expect(api.createPackage).toHaveBeenCalledWith(expect.objectContaining({ sourceCode: null, lessonId: null, topicId: null, courseId: null })))
+  })
+
+  it('requires a placement pool and sends it when creating a placement test', async () => {
+    render(<PackageCreateForm initialType="PLACEMENT_TEST" onCreated={vi.fn()} onCancel={vi.fn()} />)
+    titleAndCode()
+    submit()
+    expect(await screen.findByRole('alert')).toHaveTextContent('Chọn kho đề đầu vào')
+    expect(api.createPackage).not.toHaveBeenCalled()
+    const pool = screen.getByLabelText('Kho đề đầu vào')
+    expect(pool).toBeRequired()
+    fireEvent.change(pool, { target: { value: 'BAND_3_5' } })
+    submit()
+    await waitFor(() => expect(api.createPackage).toHaveBeenCalledWith(expect.objectContaining({ packageType: 'PLACEMENT_TEST', placementPool: 'BAND_3_5' })))
   })
 
   it('keeps a created package available when draft creation fails without creating it twice', async () => {

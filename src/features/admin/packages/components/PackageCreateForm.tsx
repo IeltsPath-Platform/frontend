@@ -6,6 +6,7 @@ import { useAdminResource } from '../../lib/useAdminResource'
 import { createDraftVersion, createPackage, listPracticeSources } from '../api/packageApi'
 import { PACKAGE_TYPE_LABEL, packageError } from '../lib/packageLabels'
 import type { CreatePackageRequest, PackageType } from '../types'
+import type { PlacementPool } from '~types/learningPath'
 import { useAdminError } from '../../lib/useAdminError'
 
 const CREATE_TYPES = ['PRACTICE_SET', 'PRACTICE_TEST', 'MOCK_TEST', 'PLACEMENT_TEST', 'QUIZ', 'TOPIC_TEST', 'COURSE_TEST'] as const
@@ -21,6 +22,7 @@ export function PackageCreateForm({ onCreated, onCancel, initialType }: {
   const [topicId, setTopicId] = useState('')
   const [lessonId, setLessonId] = useState('')
   const [sourceCode, setSourceCode] = useState('')
+  const [placementPool, setPlacementPool] = useState<PlacementPool | ''>('')
   const [pending, setPending] = useState(false)
   const [createdId, setCreatedId] = useState<string | null>(null)
   const [, setError] = useAdminError()
@@ -38,6 +40,7 @@ export function PackageCreateForm({ onCreated, onCancel, initialType }: {
     event.preventDefault()
     if (pending || createdId) return
     if (!code.trim() || !title.trim()) { setError('Nhập mã và tiêu đề gói.'); return }
+    if (type === 'PLACEMENT_TEST' && !placementPool) { setError('Chọn kho đề đầu vào.'); return }
     if (needsCourse && (courses.status !== 'success' || !courses.data?.some((course) => course.id === courseId))) { setError('Chọn khóa học hợp lệ.'); return }
     if (needsTopic && (topics.status !== 'success' || !availableTopics.some((topic) => topic.id === topicId))) { setError('Chọn chủ đề thuộc khóa học đã chọn.'); return }
     if (type === 'PRACTICE_SET' && (lessons.status !== 'success' || !lessons.data?.some((lesson) => lesson.id === lessonId))) { setError('Chọn bài học thuộc chủ đề đã chọn.'); return }
@@ -48,6 +51,7 @@ export function PackageCreateForm({ onCreated, onCancel, initialType }: {
       topicId: type === 'TOPIC_TEST' ? topicId : null,
       courseId: type === 'COURSE_TEST' ? courseId : null,
       sourceCode: type === 'PRACTICE_TEST' ? sourceCode || null : null,
+      ...(type === 'PLACEMENT_TEST' && placementPool ? { placementPool } : {}),
     }
     setPending(true); setError(null)
     try {
@@ -70,6 +74,7 @@ export function PackageCreateForm({ onCreated, onCancel, initialType }: {
       <label className="adm-field"><span>Tiêu đề gói</span><input className="adm-input" required maxLength={255} value={title} onChange={(event) => setTitle(event.target.value)} /></label>
       <label className="adm-field"><span>Loại gói</span><select className="adm-select" value={type} onChange={(event) => { setType(event.target.value as Exclude<PackageType, 'LESSON'>); setError(null) }}>{CREATE_TYPES.map((value) => <option key={value} value={value}>{PACKAGE_TYPE_LABEL[value]}</option>)}</select></label>
       <label className="adm-field"><span>Truy cập</span><select className="adm-select" value={access} onChange={(event) => setAccess(event.target.value as 'FREE' | 'PREMIUM')}><option value="FREE">Miễn phí</option><option value="PREMIUM">Premium</option></select></label>
+      {type === 'PLACEMENT_TEST' ? <label className="adm-field"><span>Kho đề đầu vào</span><select className="adm-select" required value={placementPool} onChange={(event) => setPlacementPool(event.target.value as PlacementPool | '')}><option value="">Chọn kho</option><option value="BAND_0_3">Band 0–3</option><option value="BAND_3_5">Band 3–5</option><option value="BAND_5_9">Band 5–9</option></select></label> : null}
       {needsCourse ? <>
         {courses.status === 'loading' ? <AdminLoading label="Đang tải khóa học…" /> : null}
         {courses.status === 'error' ? <AdminError message={courses.error!} onRetry={courses.reload} /> : null}

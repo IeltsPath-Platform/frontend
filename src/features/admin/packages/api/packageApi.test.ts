@@ -17,7 +17,7 @@ const audio = { assetId: questionId, mediaReference: 'listening/demo/ls1.mp3', m
 const section = { ...sectionRequest, id: sectionId, passage: 'Passage text', audio, questions: [sectionQuestion] }
 const draft: PackageVersion = { id: draftId, versionNumber: 1, status: 'DRAFT', rulesJson: '{}', publishedAt: null, publishAt: null, lastPublishError: null, sections: [section] }
 const timestamp = '2026-10-23T00:00:00Z'
-const packageFields = { id: packageId, code: 'READ-1', title: 'Reading test', packageType: 'PRACTICE_SET' as const, accessLevel: 'FREE' as const, status: 'DRAFT' as const, currentPublishedVersionId: null, lessonId: null, sourceCode: null, createdAt: timestamp, updatedAt: timestamp }
+const packageFields = { id: packageId, code: 'READ-1', title: 'Reading test', packageType: 'PRACTICE_SET' as const, accessLevel: 'FREE' as const, status: 'DRAFT' as const, currentPublishedVersionId: null, lessonId: null, sourceCode: null, placementPool: null, createdAt: timestamp, updatedAt: timestamp }
 const makePackage = (versions: PackageVersion[] = [draft]): ContentPackage => ({ ...packageFields, topicId: null, courseId: null, versions })
 const summary = { ...packageFields, topicId: null, courseId: null, latestVersionNumber: 1, hasDraft: true }
 const createBody = { code: 'READ-1', title: 'Reading test', packageType: 'PRACTICE_SET' as const, accessLevel: 'FREE' as const, lessonId: null, sourceCode: null, topicId: null, courseId: null }
@@ -132,6 +132,20 @@ describe('package authoring API', () => {
     request(`${API_BASE_URL}/api/content/admin/packages`, 'GET')
   })
 
+  it('sends the selected placement pool as a package list filter', async () => {
+    respond([summary])
+    await expect(listPackages({ type: 'PLACEMENT_TEST', placementPool: 'BAND_3_5' })).resolves.toEqual([summary])
+    request(`${API_BASE_URL}/api/content/admin/packages?type=PLACEMENT_TEST&placementPool=BAND_3_5`, 'GET')
+  })
+
+  it('creates a placement package with its required pool', async () => {
+    const body = { ...createBody, packageType: 'PLACEMENT_TEST' as const, placementPool: 'BAND_3_5' as const }
+    const created = { ...makePackage([]), ...body, placementPool: 'BAND_3_5' }
+    respond(created, 201)
+    await expect(createPackage(body)).resolves.toMatchObject({ placementPool: 'BAND_3_5' })
+    request(`${API_BASE_URL}/api/content/admin/packages`, 'POST', body)
+  })
+
   it.each(['PRACTICE_SET', 'TOPIC_TEST', 'COURSE_TEST'] as const)('creates a %s package without a version', async (packageType) => {
     const body = { ...createBody, packageType, topicId: packageType === 'TOPIC_TEST' ? questionId : null, courseId: packageType === 'COURSE_TEST' ? questionId : null }
     const result = { ...makePackage([]), packageType, topicId: body.topicId, courseId: body.courseId }
@@ -197,6 +211,9 @@ describe('package authoring API', () => {
 
   it.each([
     () => listPackages({ lessonId: 'invalid' }),
+    () => listPackages({ placementPool: 'invalid' as never }),
+    () => createPackage({ ...createBody, packageType: 'PLACEMENT_TEST' }),
+    () => createPackage({ ...createBody, placementPool: 'BAND_3_5' as never }),
     () => createPackage({ ...createBody, packageType: 'TOPIC_TEST' }),
     () => createPackage({ ...createBody, packageType: 'COURSE_TEST' }),
     () => createPackage({ ...createBody, packageType: 'QUIZ', topicId: questionId }),

@@ -3,6 +3,7 @@ import { z } from 'zod'
 export const packageStatusSchema = z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED'])
 export const PACKAGE_TYPES = ['MOCK_TEST', 'PLACEMENT_TEST', 'PRACTICE_SET', 'PRACTICE_TEST', 'QUIZ', 'LESSON', 'TOPIC_TEST', 'COURSE_TEST'] as const
 export const packageTypeSchema = z.enum(PACKAGE_TYPES)
+export const placementPoolSchema = z.enum(['BAND_0_3', 'BAND_3_5', 'BAND_5_9'])
 export const sectionSkillSchema = z.enum(['READING', 'LISTENING', 'WRITING', 'SPEAKING'])
 export const sectionAudioSchema = z.object({
   assetId: z.guid(), mediaReference: z.string(), mediaUrl: z.string().nullable(),
@@ -28,7 +29,7 @@ export const publishedPackageSchema = z.object({
   packageType: packageTypeSchema,
   accessLevel: z.enum(['FREE', 'PREMIUM']), status: packageStatusSchema,
   currentPublishedVersionId: z.guid().nullable(), lessonId: z.guid().nullable(),
-  sourceCode: z.string().nullable(), createdAt: z.iso.datetime(), updatedAt: z.iso.datetime(),
+  sourceCode: z.string().nullable(), placementPool: placementPoolSchema.nullable(), createdAt: z.iso.datetime(), updatedAt: z.iso.datetime(),
 })
 export const packageListItemSchema = publishedPackageSchema.extend({
   topicId: z.guid().nullable(), courseId: z.guid().nullable(), latestVersionNumber: z.int().positive().nullable(), hasDraft: z.boolean(),
@@ -46,13 +47,13 @@ export const sectionRequestSchema = z.object({
 export const sectionOrderSchema = z.object({ sectionIds: z.array(z.guid()).refine((ids) => new Set(ids).size === ids.length) })
 export const packageFiltersSchema = z.object({
   type: packageTypeSchema.optional(), status: packageStatusSchema.optional(), lessonId: z.guid().optional(),
-  topicId: z.guid().optional(), courseId: z.guid().optional(), q: z.string().optional(),
+  topicId: z.guid().optional(), courseId: z.guid().optional(), q: z.string().optional(), placementPool: placementPoolSchema.optional(),
 })
 export const createPackageRequestSchema = z.object({
   code: z.string().trim().min(1).max(100), title: z.string().trim().min(1).max(255),
   packageType: packageTypeSchema.exclude(['LESSON']), accessLevel: z.enum(['FREE', 'PREMIUM']).optional(),
   lessonId: z.guid().nullable().optional(), sourceCode: z.string().max(40).nullable().optional(),
-  topicId: z.guid().nullable().optional(), courseId: z.guid().nullable().optional(),
+  topicId: z.guid().nullable().optional(), courseId: z.guid().nullable().optional(), placementPool: placementPoolSchema.nullable().optional(),
 }).superRefine((body, ctx) => {
   const issue = (path: string) => ctx.addIssue({ code: 'custom', message: 'Liên kết không phù hợp với loại gói.', path: [path] })
   if (body.packageType === 'TOPIC_TEST') {
@@ -64,6 +65,8 @@ export const createPackageRequestSchema = z.object({
   } else if (body.topicId || body.courseId) issue('packageType')
   if (body.lessonId && body.packageType !== 'PRACTICE_SET') issue('lessonId')
   if (body.sourceCode != null && body.packageType !== 'PRACTICE_TEST') issue('sourceCode')
+  if (body.packageType === 'PLACEMENT_TEST' && !body.placementPool) issue('placementPool')
+  if (body.packageType !== 'PLACEMENT_TEST' && body.placementPool != null) issue('placementPool')
 })
 export const addSectionQuestionRequestSchema = z.object({ questionVersionId: z.guid(), maxScore: z.number().positive().optional() })
 export const sectionQuestionOrderSchema = z.object({ sectionQuestionIds: z.array(z.guid()).refine((ids) => new Set(ids).size === ids.length) })
