@@ -12,12 +12,16 @@ function ReportPanel({ skill, title, band, children }: { skill: PlacementSkill; 
       <summary>
         <Icon aria-hidden="true" className="pl-report-panel__icon" size={20} />
         <span className="pl-report-panel__name">{title}</span>
-        <span className="pl-report-pill">{band !== null ? band.toFixed(1) : '…'}</span>
+        <span className="pl-report-pill">{band !== null ? band.toFixed(1) : 'Chưa chấm'}</span>
         <ChevronDown aria-hidden="true" className="pl-report-panel__chevron" size={18} />
       </summary>
       <div className="pl-report-panel__body">{children}</div>
     </details>
   )
+}
+
+export function NotGradedReport({ skill }: { skill: PlacementSkill }) {
+  return <p className="pl-report-not-graded"><Info aria-hidden="true" size={16} />{SKILL_META[skill].label}: Chưa chấm. Kỹ năng này chưa có band trong kết quả.</p>
 }
 
 /** One part of a Listening / Reading test as the report shows it; question numbers restart in every part. */

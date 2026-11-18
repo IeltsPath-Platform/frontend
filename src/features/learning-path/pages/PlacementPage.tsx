@@ -1,10 +1,9 @@
 import { useEffect, useEffectEvent, useMemo, useState } from 'react'
 import { StudyActivityTracker } from '@/features/study-time/StudyActivityTracker'
-import { Navigate } from 'react-router-dom'
 import { AiWaitPanel } from '@/components/loading/AiWaitPanel'
 import { essayWaitNote } from '@/components/loading/aiWaitNotes'
 import { Button } from '@/components/ui/button'
-import type { AssessmentAttempt, AttemptItemResponse } from '~types/learningPath'
+import type { AssessmentAttempt, AttemptItemResponse, PlacementPool } from '~types/learningPath'
 import { learningApi, toApiError } from '../api'
 import { LearnTrail } from '../components/LearnTrail'
 import { NoticeBanner } from '../components/NoticeBanner'
@@ -18,6 +17,8 @@ import { PlacementDashboard } from '../placement/PlacementDashboard'
 import type { SectionRunnerProps } from '../placement/PlacementExamShell'
 import { groupSections } from '../placement/placementGroups'
 import { PlacementResultView } from '../placement/PlacementResultView'
+import { PlacementPoolPicker } from '../placement/PlacementPoolPicker'
+import { PLACEMENT_POLL_ATTEMPTS, PLACEMENT_POLL_INTERVAL_MS } from '../placement/placementPolling'
 import { PlacementStepper } from '../placement/PlacementStepper'
 import { PlacementSurvey } from '../placement/PlacementSurvey'
 import { SpeakingSectionRunner } from '../placement/SpeakingSectionRunner'
@@ -26,17 +27,14 @@ import type { SectionTiming } from '../placement/placementSkills'
 import { StatusArt } from '@/components/StatusArt'
 import '../placement/placement.css'
 
-const POLL_INTERVAL_MS = 2_000
-const POLL_ATTEMPTS = 45
-
 const sleep = (ms: number) => new Promise<void>((resolve) => { window.setTimeout(resolve, ms) })
 
-type View = 'survey' | 'test' | 'grading' | 'result'
+type View = 'survey' | 'pool' | 'resume' | 'test' | 'grading' | 'result'
 
 /** Where a learner lands: no usable attempt → survey, one in progress → the test, a submitted one → its result. */
 function viewFor(attempt: AssessmentAttempt | null): View {
   if (!attempt || attempt.status === 'EXPIRED' || attempt.status === 'CANCELLED') return 'survey'
-  return attempt.status === 'IN_PROGRESS' ? 'test' : 'grading'
+  return attempt.status === 'IN_PROGRESS' ? 'resume' : 'grading'
 }
 
 /** The placement every learner takes once: survey → four-skill test → result. All progress lives on the server. */
@@ -50,35 +48,75 @@ export function PlacementPage() {
 
 function PlacementFlow({ initialAttempt }: { initialAttempt: AssessmentAttempt | null }) {
   const [attempt, setAttempt] = useState(initialAttempt)
-  const [view, setView] = useState<View>(() => viewFor(initialAttempt))
+  const [viewState, setView] = useState<View>(() => viewFor(initialAttempt))
+  const [selectedPool, setSelectedPool] = useState<PlacementPool | null>(null)
+  const [startError, setStartError] = useState<string | null>(null)
+  const [starting, setStarting] = useState(false)
+  const [cancelling, setCancelling] = useState(false)
+  const [cancelError, setCancelError] = useState<string | null>(null)
   const [surveyProgress, setSurveyProgress] = useState(0)
   const [testProgress, setTestProgress] = useState(0)
-  const placement = useApiResource('placement-test', () => learningApi.getPlacementTest())
+  const options = useApiResource('placement-options', () => learningApi.getPlacementOptions())
+  const abandonedWithPlacement = (attempt?.status === 'CANCELLED' || attempt?.status === 'EXPIRED') && options.data?.hasPlacement
+  const view = viewState === 'survey' && abandonedWithPlacement ? 'pool' : viewState
   const usableAttempt = viewFor(attempt) !== 'survey' ? attempt : null
 
-  // Without an attempt of their own, a learner the gate reports as placed has nothing to do here.
-  if (!usableAttempt && placement.status === 'error' && placement.error) {
-    if (placement.error.code === 'PLACEMENT_ALREADY_DONE') return <Navigate replace to="/learn" />
-    if (placement.error.code === 'NO_PLACEMENT_TEST') {
-      return <StatusArt compact kind="empty" title="Chưa có bài kiểm tra đầu vào nào được mở. Hãy quay lại sau." />
-    }
-    return <ApiErrorState error={placement.error} onRetry={placement.reload} />
-  }
-
   async function startTest() {
-    if (usableAttempt) {
-      setView('test')
-      return
-    }
-    if (!placement.data) throw new Error('Bài kiểm tra chưa sẵn sàng.')
-    const created = await learningApi.createAttempt({
-      packageVersionId: placement.data.packageVersionId, attemptType: 'PLACEMENT_TEST', mode: 'STANDARD', channel: 'WEB', expiresAt: null,
-    })
-    setAttempt(created)
-    setView('test')
+    setSelectedPool(null)
+    setStartError(null)
+    setView('pool')
   }
 
-  const step = view === 'survey' ? 0 : view === 'test' ? 1 : 2
+  async function startSelectedPool() {
+    const requestedPool = selectedPool
+    if ((!requestedPool && !options.data?.openAssignment) || !options.data || starting) return
+    setStarting(true)
+    setStartError(null)
+    let assignment = options.data.openAssignment
+    try {
+      if (options.data.retakesLeft <= 0 && !assignment) throw Object.assign(new Error('Bạn đã dùng hết lượt làm lại trong 24 giờ.'), { code: 'PLACEMENT_LIMIT_REACHED' })
+      if (!assignment) {
+        if (!requestedPool) return
+        assignment = await learningApi.assignPlacementTest(requestedPool)
+      }
+      const created = await learningApi.createAttempt({
+        packageVersionId: assignment.packageVersionId, attemptType: 'PLACEMENT_TEST', mode: 'STANDARD', channel: 'WEB', expiresAt: null,
+      })
+      setAttempt(created)
+      setView('test')
+    } catch (reason) {
+      if (assignment) await learningApi.releasePlacementAssignment(assignment.assignmentId).catch(() => {})
+      const error = toApiError(reason)
+      const next = options.data.nextRetakeAt
+      const when = next ? new Date(next).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' }) : null
+      setStartError(error.code === 'PLACEMENT_LIMIT_REACHED'
+        ? `Bạn đã dùng hết lượt làm lại trong 24 giờ.${when ? ` Có thể làm lại từ ${when}.` : ''}`
+        : error.code === 'NO_PLACEMENT_TEST'
+          ? 'Kho này hiện chưa có đề được xuất bản. Hãy chọn kho khác.'
+          : `${error.message.replace(/[.!?]?$/, '.')} Hãy thử lại.`)
+    } finally {
+      setStarting(false)
+    }
+  }
+
+  async function cancelOpenAttempt() {
+    if (!usableAttempt || cancelling) return
+    setCancelling(true)
+    setCancelError(null)
+    try {
+      await learningApi.cancelAttempt(usableAttempt.id)
+      setAttempt({ ...usableAttempt, status: 'CANCELLED' })
+      setSelectedPool(null)
+      setView('pool')
+      options.reload()
+    } catch (reason) {
+      setCancelError(`${toApiError(reason).message.replace(/[.!?]?$/, '.')} Hãy thử lại.`)
+    } finally {
+      setCancelling(false)
+    }
+  }
+
+  const step = view === 'survey' ? 0 : view === 'pool' || view === 'resume' ? 1 : view === 'test' ? 2 : 3
 
   return (
     <div className="lp-page pl-page">
@@ -88,6 +126,24 @@ function PlacementFlow({ initialAttempt }: { initialAttempt: AssessmentAttempt |
 
       {view === 'survey' ? (
         <PlacementSurvey onContinue={startTest} onProgress={(answered, total) => setSurveyProgress(answered / total)} />
+      ) : null}
+
+      {view === 'pool' ? options.status === 'loading' ? <LoadingState label="Đang tải các kho đề…" />
+        : options.status === 'error' && options.error ? <ApiErrorState error={options.error} onRetry={options.reload} />
+          : options.data ? <PlacementPoolPicker error={startError} onSelect={(pool) => { setSelectedPool(pool); setStartError(null) }} onStart={() => void startSelectedPool()} options={options.data} selectedPool={selectedPool} starting={starting} /> : null : null}
+
+      {view === 'resume' && usableAttempt ? (
+        <section className="lp-state lp-state--panel pl-resume" aria-labelledby="pl-resume-title">
+          <h1 id="pl-resume-title">Bạn có một lượt thi đang làm</h1>
+          <p>Câu trả lời đã lưu sẽ được giữ nguyên khi bạn tiếp tục.</p>
+          {cancelError ? <p className="lp-error" role="alert">{cancelError}</p> : null}
+          <div className="pl-resume__actions">
+            <Button className="pl-btn pl-btn--accent" onClick={() => setView('test')} type="button">Tiếp tục</Button>
+            <Button className="pl-btn" disabled={cancelling} onClick={() => void cancelOpenAttempt()} type="button" variant="outline">
+              {cancelling ? 'Đang hủy…' : 'Hủy lượt thi này'}
+            </Button>
+          </div>
+        </section>
       ) : null}
 
       {view === 'test' && usableAttempt ? (
@@ -101,7 +157,7 @@ function PlacementFlow({ initialAttempt }: { initialAttempt: AssessmentAttempt |
       ) : null}
 
       {view === 'grading' && usableAttempt ? <PlacementGrading attemptId={usableAttempt.id} onGraded={() => setView('result')} /> : null}
-      {view === 'result' && usableAttempt ? <PlacementResultView attemptId={usableAttempt.id} /> : null}
+      {view === 'result' && usableAttempt ? <PlacementResultView attemptId={usableAttempt.id} onRetake={() => { setSelectedPool(null); options.reload(); setView('pool') }} /> : null}
     </div>
   )
 }
@@ -251,7 +307,7 @@ function PlacementGrading({ attemptId, onGraded }: { attemptId: string; onGraded
     if (phase !== 'grading') return
     let live = true
     void (async () => {
-      for (let tries = 0; tries < POLL_ATTEMPTS && live; tries += 1) {
+      for (let tries = 0; tries < PLACEMENT_POLL_ATTEMPTS && live; tries += 1) {
         try {
           await learningApi.getPlacementResult(attemptId)
           if (live) graded()
@@ -263,7 +319,7 @@ function PlacementGrading({ attemptId, onGraded }: { attemptId: string; onGraded
             return
           }
         }
-        await sleep(POLL_INTERVAL_MS)
+        await sleep(PLACEMENT_POLL_INTERVAL_MS)
       }
       if (live) setPhase('slow')
     })()

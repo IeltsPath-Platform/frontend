@@ -1,15 +1,18 @@
 import type { CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, ChevronsRight, Lightbulb } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { useAuthSession } from '@/features/auth/authSession'
-import type { CourseSummary, LearningGoal, PlacementResult } from '~types/learningPath'
+import type { CourseSummary, LearningGoal, PlacementOptions, PlacementResult } from '~types/learningPath'
 import { learningApi } from '../api'
 import { ApiErrorState, LoadingState } from '../components/PageState'
 import { useApiResource } from '../lib/useApiResource'
 import { BAND_STEPS, bandStep, daysUntil, feasibility, hoursPerWeek, stepLabel } from './placementReport'
 import { titleLabel, titleTopic } from './placementGroups'
 import { SKILL_META } from './placementSkills'
-import { ObjectiveReport, SpeakingReport, WritingReport } from './ReportSkillPanels'
+import { NotGradedReport, ObjectiveReport, SpeakingReport, WritingReport } from './ReportSkillPanels'
+import { PLACEMENT_POLL_ATTEMPTS, PLACEMENT_POLL_INTERVAL_MS } from './placementPolling'
+import { placementPoolLabel } from './placementPools'
 
 const SKILL_ORDER = ['READING', 'LISTENING', 'WRITING', 'SPEAKING'] as const
 
@@ -18,7 +21,11 @@ interface ResultData {
   /** Every course by band; the placement marks one as recommended. */
   courses: CourseSummary[]
   goal: LearningGoal | null
+  options: PlacementOptions | null
+  bandApplied: boolean
 }
+
+const pause = (ms: number) => new Promise<void>((resolve) => { window.setTimeout(resolve, ms) })
 
 /** Why a course that is not the recommended one might still matter. */
 function courseNote(course: CourseSummary, recommendedBand: number | null) {
@@ -27,22 +34,35 @@ function courseNote(course: CourseSummary, recommendedBand: number | null) {
 }
 
 /** Step 3: the placement report — bands against the target, how reachable it is, and the detail of every skill. */
-export function PlacementResultView({ attemptId }: { attemptId: string }) {
+export function PlacementResultView({ attemptId, onRetake }: { attemptId: string; onRetake: () => void }) {
   const { userName } = useAuthSession()
   const resource = useApiResource<ResultData>(`placement-result:${attemptId}`, async () => {
-    const [result, courses, goal] = await Promise.all([
+    const [result, goal] = await Promise.all([
       learningApi.getPlacementResult(attemptId),
-      learningApi.listCourses(),
       // The goal only adds the target side of the report; the bands still show without it.
       learningApi.getActiveLearningGoal().catch(() => null),
     ])
-    return { result, courses: [...courses].sort((a, b) => a.bandLevel - b.bandLevel), goal }
+    let options: PlacementOptions | null = null
+    let bandApplied = result.overallBand === null
+    if (result.overallBand !== null) {
+      for (let tries = 0; tries < PLACEMENT_POLL_ATTEMPTS; tries += 1) {
+        try {
+          options = await learningApi.getPlacementOptions()
+          if (options.currentBand === result.overallBand) { bandApplied = true; break }
+        } catch {
+          break
+        }
+        if (tries < PLACEMENT_POLL_ATTEMPTS - 1) await pause(PLACEMENT_POLL_INTERVAL_MS)
+      }
+    }
+    const courses = bandApplied ? await learningApi.listCourses() : []
+    return { result, courses: [...courses].sort((a, b) => a.bandLevel - b.bandLevel), goal, options, bandApplied }
   })
   if (resource.status === 'loading') return <LoadingState label="Đang tải báo cáo…" />
   if (resource.status === 'error' && resource.error) return <ApiErrorState error={resource.error} onRetry={resource.reload} />
   if (!resource.data) return null
 
-  const { result, courses, goal } = resource.data
+  const { result, courses, goal, options, bandApplied } = resource.data
   const recommendedBand = courses.find((course) => course.recommended)?.bandLevel ?? null
   const overall = result.overallBand ?? 0
   const bySkill = new Map(result.skills.map((entry) => [entry.skill, entry.band]))
@@ -67,8 +87,8 @@ export function PlacementResultView({ attemptId }: { attemptId: string }) {
           <h2>Estimated overall band score</h2>
           <p className="pl-report-card__big pl-report-card__big--current">{result.overallBand !== null ? overall.toFixed(1) : '–'}</p>
           <ul className="pl-report-card__skills">
-            {SKILL_ORDER.filter((skill) => bySkill.has(skill)).map((skill) => (
-              <li key={skill}><span>{SKILL_META[skill].label}</span><strong>{(bySkill.get(skill) ?? 0).toFixed(1)}</strong></li>
+            {SKILL_ORDER.map((skill) => (
+              <li key={skill}><span>{SKILL_META[skill].label}</span><strong>{bySkill.has(skill) ? bySkill.get(skill)!.toFixed(1) : 'Chưa chấm'}</strong></li>
             ))}
           </ul>
         </div>
@@ -82,6 +102,22 @@ export function PlacementResultView({ attemptId }: { attemptId: string }) {
           </ul>
         </div>
       </section>
+
+      <section className="pl-report__placement-actions" aria-label="Làm lại bài kiểm tra đầu vào">
+        <p>Kết quả bài làm này cập nhật band hiện tại của bạn.</p>
+        <Button className="pl-btn" onClick={onRetake} type="button" variant="outline">
+          Làm lại bài test đầu vào{options ? options.retakesLeft > 0 ? ` · còn ${options.retakesLeft} lượt` : ' · hết lượt' : ''}
+        </Button>
+        {options?.retakesLeft === 0 && options.nextRetakeAt ? <p role="status">Mở lượt tiếp theo: {new Date(options.nextRetakeAt).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })}</p> : null}
+      </section>
+
+      {result.partial ? <p className="pl-report__partial" role="status">Một phần bài thi chưa thể chấm tự động. Kết quả chỉ tính các kỹ năng đã có band; kỹ năng chưa chấm không bị tính là 0.</p> : null}
+      {result.reachedCeiling && result.pool && result.pool !== 'BAND_5_9' ? (
+        <section className="pl-report__higher-pool" aria-label="Gợi ý kho đề cao hơn">
+          <div><h2>Bạn đạt mức tối đa của kho {placementPoolLabel(result.pool)}</h2><p>Thử kho cao hơn để kết quả phản ánh đầy đủ hơn trình độ của bạn.</p></div>
+          <Button className="pl-btn pl-btn--accent" onClick={onRetake} type="button">Chọn kho cao hơn<ArrowRight aria-hidden="true" size={18} /></Button>
+        </section>
+      ) : null}
 
       <section className="pl-report__block" aria-labelledby="pl-report-feasible">
         <h2 className="pl-report__heading" id="pl-report-feasible">Đánh giá khả thi</h2>
@@ -115,7 +151,7 @@ export function PlacementResultView({ attemptId }: { attemptId: string }) {
             {SKILL_ORDER.map((skill) => {
               // One block per skill however many parts the test split it into; its band comes from the skill list.
               const sections = result.sections.filter((section) => section.skill === skill)
-              if (sections.length === 0 && !bySkill.has(skill)) return null
+              if (!bySkill.has(skill)) return <NotGradedReport key={skill} skill={skill} />
               const band = bySkill.get(skill) ?? null
               if (skill === 'READING' || skill === 'LISTENING') {
                 const parts = sections.map((section, index) => ({
@@ -159,6 +195,7 @@ export function PlacementResultView({ attemptId }: { attemptId: string }) {
           </ul>
         </section>
       ) : null}
+      {!bandApplied ? <p className="pl-report__courses-waiting" role="status">Band mới đã được chấm và đang đồng bộ. Hãy tải lại sau ít phút để xem khóa học được gợi ý.</p> : null}
     </article>
   )
 }

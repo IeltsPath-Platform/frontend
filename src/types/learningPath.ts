@@ -820,10 +820,25 @@ export interface PracticeTestMilestone {
   percent: number | null
 }
 
-/** The published placement test a learner without a placement band sits first. */
-export interface PlacementTest {
+export type PlacementPool = 'BAND_0_3' | 'BAND_3_5' | 'BAND_5_9'
+
+export interface PlacementAssignment {
+  assignmentId: string
+  pool: PlacementPool
   packageId: string
   packageVersionId: string
+  retakesLeft: number
+  nextRetakeAt: string | null
+}
+
+export interface PlacementOptions {
+  pools: { pool: PlacementPool; examCount: number }[]
+  limitPer24h: number
+  retakesLeft: number
+  nextRetakeAt: string | null
+  hasPlacement: boolean
+  currentBand: number | null
+  openAssignment: PlacementAssignment | null
 }
 
 /** The learner's study goal from the placement survey (POST /api/users/me/learning-goals). */
@@ -848,6 +863,10 @@ export interface PlacementResult {
   overallBand: number | null
   completedAt: string | null
   skills: { skill: PlacementSkill; band: number }[]
+  pool: PlacementPool | null
+  ceiling: number | null
+  reachedCeiling: boolean
+  partial: boolean
   /** In test order; empty from a backend that predates the report. */
   sections: PlacementReportSection[]
 }

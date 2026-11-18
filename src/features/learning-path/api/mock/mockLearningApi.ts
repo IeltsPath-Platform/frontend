@@ -44,10 +44,14 @@ export function createMockLearningApi({ storage = null, latencyMs = 0, now = () 
   const timestamp = () => now().toISOString()
 
   return {
-    // The mock learner has no placement gate: the test is treated as already taken.
-    getPlacementTest: async () => {
-      throw new ApiError(409, 'PLACEMENT_ALREADY_DONE', 'Mock learning không có placement test.')
+    getPlacementOptions: async () => ({
+      pools: [{ pool: 'BAND_0_3', examCount: 0 }, { pool: 'BAND_3_5', examCount: 0 }, { pool: 'BAND_5_9', examCount: 0 }],
+      limitPer24h: 3, retakesLeft: 0, nextRetakeAt: null, hasPlacement: false, currentBand: null, openAssignment: null,
+    }),
+    assignPlacementTest: async () => {
+      throw new ApiError(404, 'NO_PLACEMENT_TEST', 'Mock learning không có đề đầu vào.')
     },
+    releasePlacementAssignment: async () => {},
     saveLearningGoal: async () => {
       throw new ApiError(404, 'NOT_FOUND', 'Mock learning không lưu mục tiêu học.')
     },
@@ -139,6 +143,7 @@ export function createMockLearningApi({ storage = null, latencyMs = 0, now = () 
       throw new ApiError(404, 'NOT_FOUND', 'Mock learning không có đề luyện theo mốc.', { courseId })
     }),
     createAttempt: (request) => respond((s) => tests.createAttempt(s, request, timestamp())),
+    cancelAttempt: async () => {},
     getAttemptStructure: (attemptId) => respond((s) => tests.getAttemptStructure(s, attemptId)),
     saveItemResponse: (attemptId, itemId, request) => respond((s) => tests.saveItemResponse(s, attemptId, itemId, request, timestamp())),
     submitAttempt: (attemptId) => respond((s) => tests.submitAttempt(s, attemptId, timestamp())),

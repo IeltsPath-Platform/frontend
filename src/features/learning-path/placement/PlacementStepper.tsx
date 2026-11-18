@@ -1,7 +1,7 @@
 import { Check } from 'lucide-react'
 import type { CSSProperties } from 'react'
 
-const STEPS = ['Khảo sát', 'Bài test', 'Kết quả'] as const
+const STEPS = ['Khảo sát', 'Chọn kho', 'Bài test', 'Kết quả'] as const
 
 interface PlacementStepperProps {
   /** Zero-based index of the current step. */
