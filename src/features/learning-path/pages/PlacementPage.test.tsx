@@ -59,10 +59,20 @@ describe('PlacementPage', () => {
 
   it('resumes or cancels an in-progress attempt and returns to pool selection', async () => {
     api.getCurrentPlacementAttempt.mockResolvedValue(attempt)
+    api.getPlacementOptions.mockResolvedValue({
+      ...options,
+      openAssignment: { assignmentId: 'attempt-assignment', pool: 'BAND_3_5', packageId: 'package-1', packageVersionId: 'version-1', retakesLeft: 1, nextRetakeAt: null },
+    })
+    api.releasePlacementAssignment.mockRejectedValueOnce(Object.assign(new Error('Already released'), { code: 'PLACEMENT_ASSIGNMENT_NOT_FOUND', status: 404 }))
     show()
     expect(await screen.findByRole('button', { name: 'Tiếp tục' })).toBeInTheDocument()
+    await waitFor(() => expect(api.getPlacementOptions).toHaveBeenCalledTimes(1))
+    await api.getPlacementOptions.mock.results[0].value
     fireEvent.click(screen.getByRole('button', { name: 'Hủy lượt thi này' }))
     await waitFor(() => expect(api.cancelAttempt).toHaveBeenCalledWith('attempt-1'))
+    expect(api.releasePlacementAssignment).toHaveBeenCalledWith('attempt-assignment')
+    expect(api.cancelAttempt.mock.invocationCallOrder[0]).toBeLessThan(api.releasePlacementAssignment.mock.invocationCallOrder[0])
+    await waitFor(() => expect(api.getPlacementOptions).toHaveBeenCalledTimes(2))
     expect(await screen.findByRole('heading', { name: 'Chọn kho đề đầu vào' })).toBeInTheDocument()
   })
 
@@ -92,6 +102,49 @@ describe('PlacementPage', () => {
     fireEvent.click(await screen.findByRole('button', { name: /3–5.*2 đề/i }))
     fireEvent.click(screen.getByRole('button', { name: 'Bắt đầu làm bài' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('Kho này hiện chưa có đề được xuất bản. Hãy chọn kho khác.')
+  })
+
+  it('releases an open assignment from another pool before assigning the selected pool', async () => {
+    api.getCurrentPlacementAttempt.mockResolvedValue({ ...attempt, status: 'CANCELLED' })
+    api.getPlacementOptions.mockResolvedValue({
+      ...options,
+      hasPlacement: true,
+      openAssignment: { assignmentId: 'old-assignment', pool: 'BAND_0_3', packageId: 'old-package', packageVersionId: 'old-version', retakesLeft: 1, nextRetakeAt: null },
+    })
+    api.assignPlacementTest.mockResolvedValue({ assignmentId: 'new-assignment', pool: 'BAND_3_5', packageId: 'new-package', packageVersionId: 'new-version', retakesLeft: 0, nextRetakeAt: null })
+    show()
+    await waitFor(() => expect(document.querySelector('.pl-pools')).toBeInTheDocument())
+    fireEvent.click(document.querySelectorAll<HTMLButtonElement>('.pl-pool-card')[1])
+    fireEvent.click(document.querySelector<HTMLButtonElement>('.pl-pools__start')!)
+    await waitFor(() => expect(api.createAttempt).toHaveBeenCalledWith(expect.objectContaining({ packageVersionId: 'new-version' })))
+    expect(api.releasePlacementAssignment).toHaveBeenCalledWith('old-assignment')
+    expect(api.assignPlacementTest).toHaveBeenCalledWith('BAND_3_5')
+    expect(api.releasePlacementAssignment.mock.invocationCallOrder[0]).toBeLessThan(api.assignPlacementTest.mock.invocationCallOrder[0])
+  })
+
+  it('reuses a matching open assignment without assigning, even with no retakes left', async () => {
+    api.getCurrentPlacementAttempt.mockResolvedValue({ ...attempt, status: 'CANCELLED' })
+    api.getPlacementOptions.mockResolvedValue({
+      ...options,
+      retakesLeft: 0,
+      hasPlacement: true,
+      openAssignment: { assignmentId: 'open-assignment', pool: 'BAND_3_5', packageId: 'open-package', packageVersionId: 'open-version', retakesLeft: 0, nextRetakeAt: null },
+    })
+    show()
+    await waitFor(() => expect(document.querySelector('.pl-pools')).toBeInTheDocument())
+    fireEvent.click(document.querySelectorAll<HTMLButtonElement>('.pl-pool-card')[1])
+    fireEvent.click(document.querySelector<HTMLButtonElement>('.pl-pools__start')!)
+    await waitFor(() => expect(api.createAttempt).toHaveBeenCalledWith(expect.objectContaining({ packageVersionId: 'open-version' })))
+    expect(api.assignPlacementTest).not.toHaveBeenCalled()
+    expect(api.releasePlacementAssignment).not.toHaveBeenCalled()
+  })
+
+  it('skips the survey when placement exists without a current attempt', async () => {
+    api.getCurrentPlacementAttempt.mockResolvedValue(null)
+    api.getPlacementOptions.mockResolvedValue({ ...options, hasPlacement: true })
+    show()
+    await waitFor(() => expect(document.querySelector('.pl-pools')).toBeInTheDocument())
+    expect(screen.queryByRole('button', { name: 'Finish survey' })).not.toBeInTheDocument()
   })
 
   it('skips the survey for a returning learner whose last attempt was cancelled', async () => {

@@ -19,13 +19,13 @@ function nextRetakeLabel(value: string | null) {
 }
 
 export function PlacementPoolPicker({ options, selectedPool, onSelect, onStart, starting = false, error = null }: Props) {
-  const lockedPool = options.openAssignment?.pool ?? null
-  const activePool = lockedPool ?? selectedPool
+  const activePool = selectedPool
   const selected = PLACEMENT_POOLS.find((pool) => pool.pool === activePool)
   const selectedCount = options.pools.find((item) => item.pool === activePool)?.examCount ?? 0
   const nextRetakeAt = nextRetakeLabel(options.nextRetakeAt)
   const currentBand = options.currentBand
-  const limited = options.retakesLeft <= 0 && !lockedPool
+  const canReuseOpenAssignment = options.openAssignment?.pool === selectedPool
+  const limited = options.retakesLeft <= 0 && !canReuseOpenAssignment
 
   return (
     <section className="pl-pools" aria-labelledby="pl-pools-title">
@@ -52,7 +52,7 @@ export function PlacementPoolPicker({ options, selectedPool, onSelect, onStart, 
               aria-pressed={activePool === pool.pool}
               className="pl-pool-card"
               data-selected={activePool === pool.pool}
-              disabled={empty || starting || limited || (lockedPool !== null && lockedPool !== pool.pool)}
+              disabled={empty || starting || (options.retakesLeft <= 0 && options.openAssignment?.pool !== pool.pool)}
               key={pool.pool}
               onClick={() => onSelect(pool.pool)}
               type="button"
@@ -67,9 +67,9 @@ export function PlacementPoolPicker({ options, selectedPool, onSelect, onStart, 
       </div>
 
       <p className="pl-pools__hint">Không chắc thì chọn 3–5.</p>
-      {selected ? <p className="pl-pools__confirm" aria-live="polite">{lockedPool ? 'Bạn có lượt thi đã được phân đề. ' : 'Bạn đã chọn '}{selected.label}{selectedCount ? ` · ${selectedCount} đề có sẵn` : ''}.</p> : null}
+      {selected ? <p className="pl-pools__confirm" aria-live="polite">Bạn đã chọn {selected.label}{selectedCount ? ` · ${selectedCount} đề có sẵn` : ''}.</p> : null}
       {error ? <p className="lp-error" role="alert">{error}</p> : null}
-      <Button className="pl-btn pl-btn--accent pl-pools__start" disabled={!activePool || selectedCount === 0 || starting || limited} onClick={onStart} type="button">
+      <Button className="pl-btn pl-btn--accent pl-pools__start" disabled={!selectedPool || selectedCount === 0 || starting || limited} onClick={onStart} type="button">
         {starting ? 'Đang mở đề…' : 'Bắt đầu làm bài'}<ArrowRight aria-hidden="true" size={18} />
       </Button>
     </section>

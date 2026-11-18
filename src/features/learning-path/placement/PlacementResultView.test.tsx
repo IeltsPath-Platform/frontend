@@ -33,7 +33,8 @@ describe('PlacementResultView', () => {
     expect(screen.getByText(/Kết quả bài làm này cập nhật band hiện tại của bạn/i)).toBeInTheDocument()
     expect(screen.getByText(/Một phần bài thi chưa thể chấm/i)).toBeInTheDocument()
     expect(screen.getByText('Chưa chấm')).toBeInTheDocument()
-    screen.getByRole('button', { name: /Làm lại bài test đầu vào.*còn 2 lượt/i }).click()
+    const retakeButton = await screen.findByRole('button', { name: /Làm lại bài test đầu vào.*còn 2 lượt/i })
+    retakeButton.click()
     expect(onRetake).toHaveBeenCalledTimes(1)
   })
 
@@ -53,5 +54,14 @@ describe('PlacementResultView', () => {
     await act(async () => applyBand(options))
     await screen.findByRole('heading', { name: 'Báo cáo kết quả bài test' })
     expect(api.listCourses).toHaveBeenCalledTimes(1)
+  })
+
+  it('renders the report while the course pathway waits for Learning to apply the band', async () => {
+    api.getPlacementOptions.mockImplementation(() => new Promise(() => {}))
+    show()
+    await waitFor(() => expect(document.querySelector('.pl-report')).toBeInTheDocument())
+    expect(document.querySelector('.pl-report__courses-waiting')).toBeInTheDocument()
+    expect(document.querySelector('.pl-report__block[aria-labelledby="pl-report-courses"]')).toBeInTheDocument()
+    expect(api.listCourses).not.toHaveBeenCalled()
   })
 })

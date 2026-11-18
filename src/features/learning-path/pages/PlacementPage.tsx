@@ -3,7 +3,7 @@ import { StudyActivityTracker } from '@/features/study-time/StudyActivityTracker
 import { AiWaitPanel } from '@/components/loading/AiWaitPanel'
 import { essayWaitNote } from '@/components/loading/aiWaitNotes'
 import { Button } from '@/components/ui/button'
-import type { AssessmentAttempt, AttemptItemResponse, PlacementPool } from '~types/learningPath'
+import type { AssessmentAttempt, AttemptItemResponse, PlacementAssignment, PlacementPool } from '~types/learningPath'
 import { learningApi, toApiError } from '../api'
 import { LearnTrail } from '../components/LearnTrail'
 import { NoticeBanner } from '../components/NoticeBanner'
@@ -57,8 +57,11 @@ function PlacementFlow({ initialAttempt }: { initialAttempt: AssessmentAttempt |
   const [surveyProgress, setSurveyProgress] = useState(0)
   const [testProgress, setTestProgress] = useState(0)
   const options = useApiResource('placement-options', () => learningApi.getPlacementOptions())
-  const abandonedWithPlacement = (attempt?.status === 'CANCELLED' || attempt?.status === 'EXPIRED') && options.data?.hasPlacement
+  const abandonedWithPlacement = (!attempt || attempt.status === 'CANCELLED' || attempt.status === 'EXPIRED') && options.data?.hasPlacement
   const view = viewState === 'survey' && abandonedWithPlacement ? 'pool' : viewState
+  const waitingForPlacementOptions = viewState === 'survey'
+    && (!attempt || attempt.status === 'CANCELLED' || attempt.status === 'EXPIRED')
+    && options.status === 'loading'
   const usableAttempt = viewFor(attempt) !== 'survey' ? attempt : null
 
   async function startTest() {
@@ -69,14 +72,17 @@ function PlacementFlow({ initialAttempt }: { initialAttempt: AssessmentAttempt |
 
   async function startSelectedPool() {
     const requestedPool = selectedPool
-    if ((!requestedPool && !options.data?.openAssignment) || !options.data || starting) return
+    if (!requestedPool || !options.data || starting) return
     setStarting(true)
     setStartError(null)
-    let assignment = options.data.openAssignment
+    let assignment: PlacementAssignment | null = null
     try {
-      if (options.data.retakesLeft <= 0 && !assignment) throw Object.assign(new Error('Bạn đã dùng hết lượt làm lại trong 24 giờ.'), { code: 'PLACEMENT_LIMIT_REACHED' })
-      if (!assignment) {
-        if (!requestedPool) return
+      const openAssignment = options.data.openAssignment
+      if (openAssignment?.pool === requestedPool) {
+        assignment = openAssignment
+      } else {
+        if (openAssignment) await learningApi.releasePlacementAssignment(openAssignment.assignmentId)
+        if (options.data.retakesLeft <= 0) throw Object.assign(new Error('Bạn đã dùng hết lượt làm lại trong 24 giờ.'), { code: 'PLACEMENT_LIMIT_REACHED' })
         assignment = await learningApi.assignPlacementTest(requestedPool)
       }
       const created = await learningApi.createAttempt({
@@ -101,10 +107,14 @@ function PlacementFlow({ initialAttempt }: { initialAttempt: AssessmentAttempt |
 
   async function cancelOpenAttempt() {
     if (!usableAttempt || cancelling) return
+    const assignment = options.data?.openAssignment?.packageVersionId === usableAttempt.packageVersionId
+      ? options.data.openAssignment
+      : null
     setCancelling(true)
     setCancelError(null)
     try {
       await learningApi.cancelAttempt(usableAttempt.id)
+      if (assignment) await learningApi.releasePlacementAssignment(assignment.assignmentId).catch(() => {})
       setAttempt({ ...usableAttempt, status: 'CANCELLED' })
       setSelectedPool(null)
       setView('pool')
@@ -124,7 +134,8 @@ function PlacementFlow({ initialAttempt }: { initialAttempt: AssessmentAttempt |
       <LearnTrail items={[{ label: 'Khóa học', to: '/learn' }, { label: 'Test đầu vào' }]} />
       <PlacementStepper current={step} wide={view === 'result'} progress={view === 'survey' ? surveyProgress : view === 'test' ? testProgress : view === 'result' ? 1 : 0} />
 
-      {view === 'survey' ? (
+      {view === 'survey' && waitingForPlacementOptions ? <LoadingState label="Đang kiểm tra trạng thái bài kiểm tra đầu vào…" /> : null}
+      {view === 'survey' && !waitingForPlacementOptions ? (
         <PlacementSurvey onContinue={startTest} onProgress={(answered, total) => setSurveyProgress(answered / total)} />
       ) : null}
 

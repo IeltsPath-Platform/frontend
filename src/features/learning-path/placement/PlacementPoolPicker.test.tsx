@@ -51,11 +51,28 @@ describe('PlacementPoolPicker', () => {
       retakesLeft: 0,
       openAssignment: { assignmentId: 'assignment-1', pool: 'BAND_5_9' as const, packageId: 'package-1', packageVersionId: 'version-1', retakesLeft: 0, nextRetakeAt: null },
     }
-    render(<PlacementPoolPicker options={openOptions} selectedPool={null} onSelect={vi.fn()} onStart={onStart} />)
+    render(<PlacementPoolPicker options={openOptions} selectedPool="BAND_5_9" onSelect={vi.fn()} onStart={onStart} />)
     expect(screen.getByRole('button', { name: /5–9.*1 đề/i })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('button', { name: /0–3.*2 đề/i })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Bắt đầu làm bài' })).toBeEnabled()
     fireEvent.click(screen.getByRole('button', { name: 'Bắt đầu làm bài' }))
     expect(onStart).toHaveBeenCalledTimes(1)
+  })
+
+  it('allows selecting any available pool while an assignment is open', () => {
+    const openOptions = {
+      ...options,
+      openAssignment: { assignmentId: 'assignment-1', pool: 'BAND_5_9' as const, packageId: 'package-1', packageVersionId: 'version-1', retakesLeft: 1, nextRetakeAt: null },
+    }
+    const onSelect = vi.fn()
+    const onStart = vi.fn()
+    const view = render(<PlacementPoolPicker options={openOptions} selectedPool={null} onSelect={onSelect} onStart={onStart} />)
+    const otherPool = document.querySelectorAll<HTMLButtonElement>('.pl-pool-card')[0]
+    expect(otherPool).toBeEnabled()
+    expect(document.querySelector<HTMLButtonElement>('.pl-pools__start')!).toBeDisabled()
+    fireEvent.click(otherPool)
+    expect(onSelect).toHaveBeenCalledWith('BAND_0_3')
+    view.rerender(<PlacementPoolPicker options={openOptions} selectedPool="BAND_0_3" onSelect={onSelect} onStart={onStart} />)
+    expect(document.querySelector<HTMLButtonElement>('.pl-pools__start')!).toBeEnabled()
   })
 })

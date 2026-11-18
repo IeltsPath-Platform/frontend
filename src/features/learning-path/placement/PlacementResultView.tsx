@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, ChevronsRight, Lightbulb } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -18,9 +18,11 @@ const SKILL_ORDER = ['READING', 'LISTENING', 'WRITING', 'SPEAKING'] as const
 
 interface ResultData {
   result: PlacementResult
+}
+
+interface CoursePathState {
   /** Every course by band; the placement marks one as recommended. */
   courses: CourseSummary[]
-  goal: LearningGoal | null
   options: PlacementOptions | null
   bandApplied: boolean
 }
@@ -37,32 +39,54 @@ function courseNote(course: CourseSummary, recommendedBand: number | null) {
 export function PlacementResultView({ attemptId, onRetake }: { attemptId: string; onRetake: () => void }) {
   const { userName } = useAuthSession()
   const resource = useApiResource<ResultData>(`placement-result:${attemptId}`, async () => {
-    const [result, goal] = await Promise.all([
-      learningApi.getPlacementResult(attemptId),
-      // The goal only adds the target side of the report; the bands still show without it.
-      learningApi.getActiveLearningGoal().catch(() => null),
-    ])
-    let options: PlacementOptions | null = null
-    let bandApplied = result.overallBand === null
-    if (result.overallBand !== null) {
-      for (let tries = 0; tries < PLACEMENT_POLL_ATTEMPTS; tries += 1) {
-        try {
-          options = await learningApi.getPlacementOptions()
-          if (options.currentBand === result.overallBand) { bandApplied = true; break }
-        } catch {
-          break
-        }
-        if (tries < PLACEMENT_POLL_ATTEMPTS - 1) await pause(PLACEMENT_POLL_INTERVAL_MS)
-      }
-    }
-    const courses = bandApplied ? await learningApi.listCourses() : []
-    return { result, courses: [...courses].sort((a, b) => a.bandLevel - b.bandLevel), goal, options, bandApplied }
+    return { result: await learningApi.getPlacementResult(attemptId) }
   })
+  const [goal, setGoal] = useState<LearningGoal | null>(null)
+  const [coursePath, setCoursePath] = useState<CoursePathState>({ courses: [], options: null, bandApplied: false })
+  useEffect(() => {
+    if (!resource.data) return
+    let active = true
+    void learningApi.getActiveLearningGoal().then(
+      (value) => { if (active) setGoal(value) },
+      () => { if (active) setGoal(null) },
+    )
+    return () => { active = false }
+  }, [resource.data])
+  useEffect(() => {
+    const data = resource.data
+    if (!data) return
+    let active = true
+    void (async () => {
+      let options: PlacementOptions | null = null
+      let bandApplied = data.result.overallBand === null
+      if (data.result.overallBand !== null) {
+        for (let tries = 0; tries < PLACEMENT_POLL_ATTEMPTS && active; tries += 1) {
+          try {
+            options = await learningApi.getPlacementOptions()
+            if (active) setCoursePath((current) => ({ ...current, options }))
+            if (options.currentBand === data.result.overallBand) { bandApplied = true; break }
+          } catch {
+            break
+          }
+          if (tries < PLACEMENT_POLL_ATTEMPTS - 1) await pause(PLACEMENT_POLL_INTERVAL_MS)
+        }
+      }
+      if (!active) return
+      if (!bandApplied) {
+        setCoursePath((current) => ({ ...current, options, bandApplied: false }))
+        return
+      }
+      const courses = await learningApi.listCourses().catch(() => [])
+      if (active) setCoursePath({ courses: [...courses].sort((a, b) => a.bandLevel - b.bandLevel), options, bandApplied: true })
+    })()
+    return () => { active = false }
+  }, [resource.data])
   if (resource.status === 'loading') return <LoadingState label="Đang tải báo cáo…" />
   if (resource.status === 'error' && resource.error) return <ApiErrorState error={resource.error} onRetry={resource.reload} />
   if (!resource.data) return null
 
-  const { result, courses, goal, options, bandApplied } = resource.data
+  const { result } = resource.data
+  const { courses, options, bandApplied } = coursePath
   const recommendedBand = courses.find((course) => course.recommended)?.bandLevel ?? null
   const overall = result.overallBand ?? 0
   const bySkill = new Map(result.skills.map((entry) => [entry.skill, entry.band]))
@@ -173,7 +197,7 @@ export function PlacementResultView({ attemptId, onRetake }: { attemptId: string
         )}
       </section>
 
-      {courses.length > 0 ? (
+      {courses.length > 0 || (result.overallBand !== null && !bandApplied) ? (
         <section className="pl-report__block" aria-labelledby="pl-report-courses">
           <h2 className="pl-report__heading" id="pl-report-courses">Lộ trình khóa học</h2>
           <ul className="pl-courses">
@@ -193,9 +217,9 @@ export function PlacementResultView({ attemptId, onRetake }: { attemptId: string
               </li>
             ))}
           </ul>
+          {result.overallBand !== null && !bandApplied ? <p className="pl-report__courses-waiting" role="status">Đang đồng bộ band mới để tải lộ trình khóa học được gợi ý.</p> : null}
         </section>
       ) : null}
-      {!bandApplied ? <p className="pl-report__courses-waiting" role="status">Band mới đã được chấm và đang đồng bộ. Hãy tải lại sau ít phút để xem khóa học được gợi ý.</p> : null}
     </article>
   )
 }
