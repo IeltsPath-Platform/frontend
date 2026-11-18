@@ -2,8 +2,8 @@ import { z } from 'zod'
 import { apiRequest } from '@/lib/httpClient'
 import { fetchAiDraft, fetchAiDrafts } from '../../ai-drafts/api/aiDraftApi'
 import {
-  courseAnalysisSchema, courseApprovalSchema, courseDraftSchema, courseGenerationRequestSchema, courseStructureSchema,
-  type CourseDraftFilters, type CourseGenerationRequest, type CourseStructure,
+  courseAnalysisSchema, courseApprovalSchema, courseDraftSchema, courseStructureSchema,
+  type CourseDraftFilters, type CourseStructure,
 } from '../types'
 
 const BASE = '/api/content/admin/course-drafts'
@@ -42,8 +42,4 @@ export async function listFittingPracticeSets(knowledgePointIds: readonly string
 
 export async function approveCourseDraft(id: string) {
   return courseApprovalSchema.parse(await apiRequest<unknown>(`${draftPath(id)}/approve`, { auth: true, method: 'POST' }))
-}
-
-export async function requestCourseDraft(body: CourseGenerationRequest) {
-  return courseDraftSchema.parse(await apiRequest<unknown>('/api/content/admin/ai-drafts/courses', { auth: true, method: 'POST', body: courseGenerationRequestSchema.parse(body) }))
 }

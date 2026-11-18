@@ -2,7 +2,6 @@ import { z } from 'zod'
 import { aiDraftSchema, type AiDraftQuery } from '../ai-drafts/types'
 
 export const COURSE_DRAFT_SKILLS = ['LISTENING', 'READING', 'WRITING', 'SPEAKING'] as const
-export const COURSE_CANDIDATE_LIMIT = 40
 /** Most question references one exercise block may carry. */
 export const COURSE_QUESTION_LIMIT = 100
 const skillSchema = z.enum(COURSE_DRAFT_SKILLS)
@@ -103,16 +102,7 @@ export const courseStructureSchema = z.object({
   })
 })
 
-export const courseGenerationRequestSchema = z.object({
-  bandLevel: bandSchema,
-  skills: z.array(skillSchema).min(1).max(4).refine((skills) => new Set(skills).size === skills.length),
-  topics: z.array(nonblank.max(100)).max(10).default([]),
-  knowledgePointIds: z.array(z.guid()).max(COURSE_CANDIDATE_LIMIT).default([]),
-  lessonCount: z.int().min(1).max(30).nullable().optional(), instructions: z.string().max(500).nullable().optional(),
-  /** Whether the generator adds the prerequisites itself. The request form lets the author pick them, so it sends false. */
-  includePrerequisites: z.boolean().nullish(),
-}).refine((body) => body.topics.length > 0 || body.knowledgePointIds.length > 0, { message: 'Chọn kiến thức hoặc nhập chủ đề.' })
-
+/** `unmatchedTopics`, `warnings` and `gapHints` are only present on drafts the model wrote before it stopped doing so. */
 export const courseDraftResultSchema = courseStructureSchema.safeExtend({
   unmatchedTopics: z.array(z.string()).optional(),
   warnings: z.array(z.object({ code: z.string(), subject: z.string() })).optional(),
@@ -121,7 +111,6 @@ export const courseDraftResultSchema = courseStructureSchema.safeExtend({
 })
 export const courseDraftSchema = aiDraftSchema.extend({
   kind: z.literal('COURSE'),
-  request: z.union([z.object({}).strict(), courseGenerationRequestSchema]),
   result: courseDraftResultSchema.nullable(),
 })
 export const courseApprovalSchema = z.object({
@@ -143,7 +132,6 @@ export type CourseMilestone = CourseStructure['practiceTestMilestones'][number]
 export type CourseGap = z.infer<typeof courseGapSchema>
 export type CourseAnalysisIssue = z.infer<typeof courseAnalysisIssueSchema>
 export type CourseAnalysis = z.infer<typeof courseAnalysisSchema>
-export type CourseGenerationRequest = z.infer<typeof courseGenerationRequestSchema>
 export type CourseDraft = z.infer<typeof courseDraftSchema>
 export type CourseApproval = z.infer<typeof courseApprovalSchema>
 export type CourseDraftFilters = Omit<AiDraftQuery, 'kind'>
