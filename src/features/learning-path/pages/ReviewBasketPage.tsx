@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, CheckCircle2, Loader2, ShieldAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import type { BasketOptionalItem, BasketRequiredItem } from '~types/learningPath'
+import type { BasketOptionalItem, BasketReason, BasketRequiredItem } from '~types/learningPath'
 import { learningApi } from '../api'
 import { MasteryRing } from '../components/guide/MasteryRing'
 import { LearnTrail } from '../components/LearnTrail'
@@ -165,6 +165,20 @@ function RequiredRow({ item }: { item: BasketRequiredItem }) {
   )
 }
 
+/** Why a point is in the basket, when the tier alone does not say it. */
+function reasonLabel(reason: BasketReason): string | null {
+  switch (reason) {
+    case 'PRIORITY':
+      return 'Còn yếu'
+    case 'UNBLOCKED':
+      return 'Bài ôn chưa đạt'
+    case 'DECAYED':
+      return 'Lâu chưa ôn'
+    default:
+      return null
+  }
+}
+
 function OptionalRow({ item, now, busyId, onStart }: {
   item: BasketOptionalItem
   now: Date
@@ -176,6 +190,7 @@ function OptionalRow({ item, now, busyId, onStart }: {
   const due = dueLabel(item.dueAt, now)
   const busy = busyId === item.knowledgePointId
   const resumable = item.reviewId !== null
+  const reason = reasonLabel(item.reason)
 
   return (
     <li className="lp-brow">
@@ -186,6 +201,7 @@ function OptionalRow({ item, now, busyId, onStart }: {
           <span className="lp-brow__code">{item.code}</span>
           {skill ? <span>{skill}</span> : null}
           <span className={`lp-chip lp-chip--${tier.chip}`}>{tier.label}</span>
+          {reason ? <span className="lp-chip lp-chip--accent">{reason}</span> : null}
         </p>
         {item.errorTrap ? <p className="lp-brow__trap">Lỗi hay gặp: {item.errorTrap.name}</p> : null}
       </div>

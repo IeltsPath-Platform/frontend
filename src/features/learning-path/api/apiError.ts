@@ -17,6 +17,10 @@ export type ApiErrorCode =
   | 'LESSON_HAS_EXERCISES'
   | 'REVIEW_REQUIRED'
   | 'REVIEW_SET_CLOSED'
+  /** The diagnostic probe was answered with another request, has no set, or its set was seen elsewhere. */
+  | 'PROBE_CLOSED'
+  /** The diagnosis cannot be skipped before at least one probe is answered. */
+  | 'DIAGNOSIS_PROBE_REQUIRED'
   | 'NOT_FOUND'
   | 'VALIDATION_FAILED'
   | 'INSUFFICIENT_POINTS'
@@ -120,6 +124,10 @@ export function userMessage(error: ApiError): string {
       return 'Điểm này chưa có bộ đề mới để ôn. Hãy quay lại sau.'
     case 'NOT_IN_REVIEW_BASKET':
       return 'Điểm này không còn trong giỏ ôn tập. Hãy tải lại trang.'
+    case 'PROBE_CLOSED':
+      return 'Bài kiểm tra này đã đóng. Hãy tải lại trang để xem trạng thái mới.'
+    case 'DIAGNOSIS_PROBE_REQUIRED':
+      return 'Hãy làm ít nhất một bài kiểm tra nền trước khi bỏ qua.'
     case 'INSUFFICIENT_POINTS':
       return 'Bạn chưa đủ điểm.'
     case 'FREEZE_ALREADY_OWNED':
@@ -148,6 +156,8 @@ const CODE_MAP: Record<string, ApiErrorCode> = {
   LESSON_HAS_EXERCISES: 'LESSON_HAS_EXERCISES',
   REVIEW_REQUIRED: 'REVIEW_REQUIRED',
   REVIEW_SET_CLOSED: 'REVIEW_SET_CLOSED',
+  PROBE_CLOSED: 'PROBE_CLOSED',
+  DIAGNOSIS_PROBE_REQUIRED: 'DIAGNOSIS_PROBE_REQUIRED',
   THEORY_REQUIRED: 'REVIEW_REQUIRED',
   THEORY_NOT_REQUIRED: 'VALIDATION_FAILED',
   ATTEMPT_ALREADY_SUBMITTED: 'VALIDATION_FAILED',

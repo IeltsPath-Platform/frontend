@@ -21,6 +21,7 @@ import { ErrorHintNote } from '../components/blocks/ErrorHintNote'
 import { ExerciseBlock } from '../components/blocks/ExerciseBlock'
 import { RewardSummary } from '../components/RewardSummary'
 import { PassageBlock } from '../components/blocks/PassageBlock'
+import { DiagnosisPanel, WaitingPanel } from '../components/DiagnosisPanel'
 import { ApiErrorState, PageSkeleton } from '../components/PageState'
 import { LessonSummary } from '../components/resources/LessonSummary'
 import { newRequestId } from '../lib/requestId'
@@ -47,7 +48,7 @@ export function ReviewPage() {
   const review = resource.data
   return (
     <ReviewView
-      key={`${review.reviewId}:${review.stage}:${review.set?.setId ?? 'theory'}:${review.status}`}
+      key={`${review.reviewId}:${review.stage}:${review.set?.setId ?? 'theory'}:${review.status}:${review.state ?? 'ACTIVE'}`}
       onAdvance={async () => {
         const next = await learningApi.getReview(review.reviewId)
         resource.mutate((current) => current.reviewId === next.reviewId ? next : current)
@@ -92,6 +93,8 @@ function ReviewView({ review, onAdvance, onReload, reviewOrigin }: {
   const [confirming, setConfirming] = useState(false)
   const [confirmError, setConfirmError] = useState<string | null>(null)
   const status = result?.status ?? review.status
+  // The set that just failed ended the review's hold on the path: it is still open, but as an optional review.
+  const movedToBasket = result?.status === 'PENDING' && result.blocking === false && review.blocking !== false
   // Keep the submitted set visible until the learner explicitly moves to the server's next stage.
   const stage = review.stage
   const set = review.status === 'PENDING' && stage === 'PRACTICE' ? review.set : null
@@ -128,7 +131,8 @@ function ReviewView({ review, onAdvance, onReload, reviewOrigin }: {
         setId: activeSet.setId,
         answers,
       })
-      if (outcome.status !== 'PENDING') resolvePendingReview(review.reviewId)
+      // A review that moved to the basket no longer holds the lessons back, even though it is still open.
+      if (outcome.status !== 'PENDING' || outcome.blocking === false) resolvePendingReview(review.reviewId)
       setResult(outcome)
       return outcome
     } catch (reason) {
@@ -186,7 +190,7 @@ function ReviewView({ review, onAdvance, onReload, reviewOrigin }: {
         </p>
         <h1 id="lp-review-title">{review.knowledgePoint.title}</h1>
         {review.status === 'PENDING' && review.failedSets > 0 ? (
-          <p>Số bộ chưa đạt: {review.failedSets}/{review.maxFailedSets}.</p>
+          <p>Số bộ chưa đạt: {review.failedSets}{review.maxFailedSets !== null ? `/${review.maxFailedSets}` : ''}.</p>
         ) : null}
       </header>
 
@@ -194,11 +198,20 @@ function ReviewView({ review, onAdvance, onReload, reviewOrigin }: {
 
       {status === 'PENDING' && review.errorTrap ? <ErrorHintNote hint={review.errorTrap} variant="review" /> : null}
 
+      {status === 'PENDING' && review.state === 'DIAGNOSING' && review.diagnosticSessionId ? (
+        <DiagnosisPanel onChanged={onReload} review={review} />
+      ) : null}
+      {status === 'PENDING' && review.state === 'WAITING_ON_PREREQUISITES' ? <WaitingPanel review={review} /> : null}
+
       {review.theory.length > 0 ? (
         <section className="lp-theory" aria-labelledby="lp-theory-title">
           <h2 id="lp-theory-title"><BookOpenCheck aria-hidden="true" size={20} />Lý thuyết cần nhớ</h2>
           <LessonSummary markdown={review.theory.join('\n\n')} />
         </section>
+      ) : review.theoryScope === 'NO_LESSON' ? (
+        <p className="lp-hint" role="note">
+          Kiến thức này chưa có bài học trong lộ trình của bạn. Hãy làm bộ câu hỏi và đọc lời giải sau khi nộp.
+        </p>
       ) : null}
 
       {opensQuestions && !confirmError ? (
@@ -237,7 +250,19 @@ function ReviewView({ review, onAdvance, onReload, reviewOrigin }: {
                 review.knowledgePoint.code,
                 set.setId,
               )}
-              failedFooter={result?.status === 'PENDING' ? (
+              failedFooter={movedToBasket ? (
+                <div className="lp-review-retry">
+                  <p>
+                    Bài ôn này đã chuyển vào giỏ ôn, bạn có thể học tiếp. Bạn vẫn có thể quay lại ôn điểm này bất cứ lúc nào.
+                  </p>
+                  <Button asChild className="lp-btn lp-btn--accent">
+                    <Link to={resumePath(review)}>Học tiếp<ArrowRight aria-hidden="true" /></Link>
+                  </Button>
+                  <Button asChild className="lp-btn">
+                    <Link to="/learn/review-basket">Mở giỏ ôn</Link>
+                  </Button>
+                </div>
+              ) : result?.status === 'PENDING' ? (
                 <div className="lp-review-retry">
                   <p>
                     Đã dùng {result.failedSets}{review.maxFailedSets !== null ? `/${review.maxFailedSets}` : ''} bộ.
@@ -270,7 +295,7 @@ function ReviewOutcome({ review, status }: { review: ReviewDetail; status: 'DONE
         <h2 id="lp-review-outcome">{skipped ? 'Đã bỏ qua bài ôn' : 'Đã hoàn thành bài ôn'}</h2>
         <p>
           {skipped
-            ? `Bạn chưa đạt sau ${review.maxFailedSets} bộ. Bài ôn được bỏ qua để bạn tiếp tục học.`
+            ? 'Bài ôn được bỏ qua để bạn tiếp tục học.'
             : 'Lộ trình đã mở lại. Bạn có thể học tiếp.'}
         </p>
       </div>

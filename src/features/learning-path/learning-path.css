@@ -3923,6 +3923,69 @@ a.lp-step__row:hover {
   line-height: 1.5;
 }
 
+/* Prerequisite diagnosis of a review */
+.lp-diagnosis {
+  display: grid;
+  gap: .85rem;
+  padding: 1.1rem 1.25rem;
+  border: 1px solid color-mix(in srgb, var(--lp-accent) 35%, var(--lp-line));
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--lp-accent-soft) 55%, var(--lp-surface));
+}
+.lp-diagnosis h2 {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin: 0;
+  font-size: 1.1rem;
+}
+.lp-diagnosis > p {
+  margin: 0;
+  color: var(--lp-muted);
+  line-height: 1.55;
+}
+.lp-diagnosis__probes {
+  display: grid;
+  gap: .6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.lp-diagnosis__probe {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem 1rem;
+  padding: .75rem .9rem;
+  border: 1px solid var(--lp-line);
+  border-radius: 12px;
+  background: var(--lp-surface);
+}
+.lp-diagnosis__name {
+  margin: 0;
+  font-weight: 700;
+}
+.lp-diagnosis__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem .75rem;
+  margin: .2rem 0 0;
+  color: var(--lp-muted);
+  font-size: .85rem;
+}
+.lp-diagnosis__probe.is-answered .lp-diagnosis__meta { color: var(--lp-ink); }
+.lp-diagnosis__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .5rem 1rem;
+}
+.lp-diagnosis__note {
+  color: var(--lp-muted);
+  font-size: .85rem;
+}
+
 /* Final test */
 .lp-test-head {
   display: flex;

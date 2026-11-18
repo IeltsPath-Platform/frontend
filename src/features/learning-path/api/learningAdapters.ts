@@ -199,6 +199,9 @@ export type ReviewDetailDto = {
   blocking?: boolean
   triggerKind?: string | null
   errorTrap?: ErrorHintDto | null
+  state?: 'ACTIVE' | 'DIAGNOSING' | 'WAITING_ON_PREREQUISITES'
+  diagnosticSessionId?: string | null
+  waitingOnReviewIds?: string[] | null
 }
 
 /** `gamification` of a submission response; the hearts fields are null or absent for a submission that costs no hearts. */
@@ -231,6 +234,8 @@ export type ReviewSubmissionResultDto = {
   reviewStatus: ReviewStatus
   stage?: 'PRACTICE' | 'THEORY'
   failedSets?: number
+  /** Whether the review still blocks after the set; absent in answers saved before this field existed. */
+  blocking?: boolean | null
   gamification?: GamificationDto | null
   results: Array<{
     questionVersionId: string
@@ -411,7 +416,7 @@ export type LearnerAttemptResultDto = {
   }>
 }
 
-function mapQuestion(dto: QuestionDto): Question {
+export function mapQuestion(dto: QuestionDto): Question {
   return {
     id: dto.questionVersionId,
     number: dto.sortOrder,
@@ -425,7 +430,7 @@ function mapQuestion(dto: QuestionDto): Question {
   }
 }
 
-function mapQuestionResult(dto: {
+export function mapQuestionResult(dto: {
   questionVersionId: string
   correct: boolean
   correctAnswer?: string
@@ -651,7 +656,7 @@ export function splitPassage(text: string) {
   })
 }
 
-function mapPassageField(
+export function mapPassageField(
   passage?: string | { title?: string; paragraphs?: Array<{ label?: string | null; text: string }> } | null,
 ) {
   if (!passage) return { title: '', paragraphs: [] as Array<{ label: string | null; text: string }> }
@@ -709,6 +714,10 @@ export function mapReviewDetail(dto: ReviewDetailDto, topicId: string): ReviewDe
     ...(dto.blocking === undefined ? {} : { blocking: dto.blocking }),
     ...(dto.triggerKind === undefined ? {} : { triggerKind: dto.triggerKind }),
     ...(errorTrap ? { errorTrap } : {}),
+    state: dto.state ?? 'ACTIVE',
+    diagnosticSessionId: dto.diagnosticSessionId ?? null,
+    waitingOnReviewIds: dto.waitingOnReviewIds ?? [],
+    theoryScope: dto.theoryScope ?? null,
   }
 }
 
@@ -921,6 +930,7 @@ export function mapReviewSubmission(
     resumeLessonId,
     topicId,
     gamification: mapGamification(dto.gamification),
+    blocking: dto.blocking ?? null,
   }
 }
 

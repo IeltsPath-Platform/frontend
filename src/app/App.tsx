@@ -60,6 +60,7 @@ import { LessonPage } from '@/features/learning-path/pages/LessonPage'
 import { PlacementPage } from '@/features/learning-path/pages/PlacementPage'
 import { ReviewBasketPage } from '@/features/learning-path/pages/ReviewBasketPage'
 import { ReviewPage } from '@/features/learning-path/pages/ReviewPage'
+import { DiagnosticProbePage } from '@/features/learning-path/pages/DiagnosticProbePage'
 import { TopicPage } from '@/features/learning-path/pages/TopicPage'
 import { TopicListPage } from '@/features/learning-path/pages/TopicListPage'
 import { TopicTestPage } from '@/features/learning-path/pages/TopicTestPage'
@@ -134,6 +135,7 @@ function AppContent() {
         <Route path="lessons/:lessonId" element={<LessonPage />} />
         <Route path="lessons/:lessonId/practice" element={<LessonPracticeRedirect />} />
         <Route path="reviews/:reviewId" element={<ReviewPage />} />
+        <Route path="reviews/:reviewId/diagnostics/:sessionId/probes/:probeId" element={<DiagnosticProbePage />} />
         <Route path="tests/:attemptId" element={<TopicTestPage />} />
         <Route path="tests/:attemptId/result" element={<TopicTestResultPage />} />
         <Route path="*" element={<NotFoundState />} />

@@ -44,6 +44,14 @@ import {
   type TopicSummaryDto,
 } from './learningAdapters'
 import {
+  mapDiagnostic,
+  mapDiagnosticProbe,
+  mapDiagnosticProbeSubmission,
+  type DiagnosticDto,
+  type DiagnosticProbeDto,
+  type DiagnosticProbeSubmissionDto,
+} from './diagnosticAdapters'
+import {
   mapReviewBasket,
   mapSuggestions,
   type ReviewBasketDto,
@@ -417,6 +425,28 @@ export function createHttpLearningApi(): LearningApi {
         },
       })
       return mapTheoryCheck(dto)
+    },
+
+    async getDiagnostic(sessionId) {
+      return mapDiagnostic(await learningRequest<DiagnosticDto>(`/diagnostics/${sessionId}`))
+    },
+
+    async getDiagnosticProbe(sessionId, probeId) {
+      return mapDiagnosticProbe(
+        await learningRequest<DiagnosticProbeDto>(`/diagnostics/${sessionId}/probes/${probeId}`),
+      )
+    },
+
+    async submitDiagnosticProbe(sessionId, probeId, request) {
+      const dto = await learningRequest<DiagnosticProbeSubmissionDto>(
+        `/diagnostics/${sessionId}/probes/${probeId}/submissions`,
+        { method: 'POST', body: { requestId: request.requestId, answers: toWireAnswers(request.answers) } },
+      )
+      return mapDiagnosticProbeSubmission(dto)
+    },
+
+    async skipDiagnostic(sessionId) {
+      return mapDiagnostic(await learningRequest<DiagnosticDto>(`/diagnostics/${sessionId}/skip`, { method: 'POST' }))
     },
 
     async createTestAssignment(topicId: string): Promise<TestAssignment> {

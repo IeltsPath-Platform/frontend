@@ -7,6 +7,10 @@ import type {
   CourseSummary,
   CourseUnlockTarget,
   DailyQuests,
+  Diagnostic,
+  DiagnosticProbe,
+  DiagnosticProbeSubmission,
+  DiagnosticProbeSubmissionRequest,
   HeartsStatus,
   League,
   LeagueHistoryEntry,
@@ -144,6 +148,16 @@ export interface LearningApi {
   getReview(reviewId: string): Promise<ReviewDetail>
   submitReview(reviewId: string, request: ReviewSubmissionRequest): Promise<ReviewSubmissionResult>
   submitTheoryCheck(reviewId: string, request: TheoryCheckRequest): Promise<TheoryCheckResult>
+  /** The probes the review opened on its prerequisites, and the conclusion once none is left open. */
+  getDiagnostic(sessionId: string): Promise<Diagnostic>
+  getDiagnosticProbe(sessionId: string, probeId: string): Promise<DiagnosticProbe>
+  submitDiagnosticProbe(
+    sessionId: string,
+    probeId: string,
+    request: DiagnosticProbeSubmissionRequest,
+  ): Promise<DiagnosticProbeSubmission>
+  /** Closes the probes still open and concludes from the ones answered; rejects with `DIAGNOSIS_PROBE_REQUIRED` before any is. */
+  skipDiagnostic(sessionId: string): Promise<Diagnostic>
   createTestAssignment(topicId: string): Promise<TestAssignment>
   /** Course final test when `GET /courses` reports `testStatus = AVAILABLE`. */
   createCourseTestAssignment(courseId: string): Promise<TestAssignment>

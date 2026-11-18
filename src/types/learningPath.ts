@@ -298,6 +298,64 @@ export interface ReviewDetail {
   triggerKind?: string | null
   /** The mistake this review's set was picked to fix; absent when the learner has no repeated mistake on the point. */
   errorTrap?: ErrorHint
+  /** `DIAGNOSING` and `WAITING_ON_PREREQUISITES` give no set; absent means `ACTIVE`. */
+  state?: ReviewState
+  /** The prerequisite diagnosis opened for this review; null when no probe was opened. */
+  diagnosticSessionId?: string | null
+  /** The reviews of the gap points that this review waits for. */
+  waitingOnReviewIds?: string[]
+  /** `NO_LESSON` when no lesson of the learner teaches the point, so there is no theory to read. */
+  theoryScope?: string | null
+}
+
+export type ReviewState = 'ACTIVE' | 'DIAGNOSING' | 'WAITING_ON_PREREQUISITES'
+
+export type DiagnosticProbeStatus = 'OPEN' | 'ANSWERED' | 'NO_SET' | 'SKIPPED'
+
+export interface DiagnosticProbeSummary {
+  probeId: string
+  knowledgePoint: { knowledgePointId: string; code: string; name: string }
+  depth: number
+  status: DiagnosticProbeStatus
+  correct: number | null
+  total: number | null
+  /** `null` while the probe is open. */
+  result: 'PASSED' | 'FAILED' | 'UNKNOWN' | null
+}
+
+/** The prerequisite diagnosis of a review (`GET /api/learning/diagnostics/{sessionId}`). */
+export interface Diagnostic {
+  sessionId: string
+  rootReviewId: string
+  status: 'PROBING' | 'CONCLUDED'
+  probes: DiagnosticProbeSummary[]
+  conclusion: Array<{ knowledgePointId: string; code: string; name: string }>
+  waitingOnReviewIds: string[]
+}
+
+/** One probe to answer; `questions` is empty when the probe is not open. */
+export interface DiagnosticProbe {
+  sessionId: string
+  probeId: string
+  knowledgePointId: string
+  status: DiagnosticProbeStatus
+  passage: Passage
+  audio: MediaAudio | null
+  questions: Question[]
+}
+
+export interface DiagnosticProbeSubmissionRequest {
+  requestId: string
+  answers: AnswerInput[]
+}
+
+export interface DiagnosticProbeSubmission {
+  probeId: string
+  passed: boolean
+  correct: number
+  total: number
+  results: QuestionResult[]
+  sessionStatus: 'PROBING' | 'CONCLUDED'
 }
 
 export interface ExerciseSubmissionRequest {
@@ -348,6 +406,8 @@ export interface ReviewSubmissionResult {
   resumeLessonId: string | null
   topicId: string
   gamification: GamificationSummary | null
+  /** Whether the review still blocks after this set; `false` means it moved to the review basket. Null when unknown. */
+  blocking: boolean | null
 }
 
 export interface TheoryCheckRequest {
@@ -657,6 +717,23 @@ export interface BasketRequiredItem {
   skill: string | null
 }
 
+/**
+ * Why a point is in the basket: its tier (`CONSOLIDATE`, `DUE`, `PRIORITY`), a long gap since it was last practised
+ * (`DECAYED`), a required review that moved to the basket after repeated misses (`UNBLOCKED`), or what raised the review.
+ */
+export type BasketReason =
+  | 'CONSOLIDATE'
+  | 'DUE'
+  | 'PRIORITY'
+  | 'DECAYED'
+  | 'UNBLOCKED'
+  | 'WRITING_CRITERION'
+  | 'SPEAKING_CRITERION'
+  | 'ERROR_PATTERN'
+  | 'PRACTICE'
+  | 'ASSESSMENT'
+  | 'DIAGNOSTIC'
+
 /** A weak or due point the learner may review when they choose (`GET /api/learning/review-basket`). */
 export interface BasketOptionalItem {
   knowledgePointId: string
@@ -667,7 +744,7 @@ export interface BasketOptionalItem {
   /** 0–1. */
   mastery: number
   dueAt: string | null
-  reason: 'CONSOLIDATE' | 'DUE' | 'WRITING_CRITERION' | 'SPEAKING_CRITERION' | 'ERROR_PATTERN' | 'PRACTICE'
+  reason: BasketReason
   /** False when Content has no set the learner has not seen, so the review cannot start. */
   hasUnrevealedSet: boolean
   /** Set when the learner already started an optional review of the point. */
