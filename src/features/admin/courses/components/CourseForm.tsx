@@ -1,10 +1,14 @@
-import { useRef, useState, type DragEvent, type FormEvent } from 'react'
+import { useMemo, useRef, useState, type DragEvent, type FormEvent } from 'react'
 import { ImageOff, ImagePlus, Loader2, RefreshCw, Trash2 } from 'lucide-react'
+import { z } from 'zod'
 import { createCourse, deleteCourse, updateCourse } from '../api/courseApi'
 import { useAdminConfirm } from '../../lib/useAdminConfirm'
+import { AdminField } from '../../components/AdminField'
 import { AdminSwitch } from '../../components/AdminSwitch'
 import { courseErrorMessage } from '../lib/courseErrorMessage'
-import { validBand, type Course } from '../types'
+import { bandText, optionalText, positiveIntegerText, requiredText } from '@/lib/validation/fields'
+import { useFormErrors } from '@/lib/validation/useFormErrors'
+import type { Course } from '../types'
 import { adminErrorMessage } from '../../lib/adminErrors'
 import { useAdminError } from '../../lib/useAdminError'
 import { TOPIC_SKILLS, SKILL_LABEL } from '../types'
@@ -15,11 +19,50 @@ import { uploadAdminImage } from '../../media/api/mediaUploadApi'
 interface CourseImage { reference: string; preview: string }
 type ImageSlot = 'cover' | 'banner'
 
+const NO_COURSES: Course[] = []
+const PRICE_FIELDS = TOPIC_SKILLS.map((skill) => ({ skill, name: `price${skill}` }))
+
+/**
+ * The rules of the form: what each field needs, and the checks that need other fields or the courses already there
+ * (a code or a band another course holds, a combo price outside what the skill prices allow). Errors are shown under
+ * the field they are about.
+ */
+function courseSchema(existing: Course[], current: Course | undefined) {
+  const others = existing.filter((item) => item.id !== current?.id)
+  const shape: Record<string, z.ZodType> = {
+    code: requiredText('Mã khóa học', 100),
+    name: requiredText('Tên khóa học', 255),
+    band: bandText('Band khóa học'),
+    description: optionalText('Mô tả khóa học', 2000),
+    combo: positiveIntegerText('Giá gói kết hợp', { optional: true }),
+  }
+  for (const { skill, name } of PRICE_FIELDS) shape[name] = positiveIntegerText(`Giá mở khóa ${SKILL_LABEL[skill]}`, { optional: true })
+  return z.object(shape).superRefine((value, ctx) => {
+    const text = value as Record<string, string>
+    if (!current) {
+      const sameCode = others.find((item) => item.code === (text.code ?? '').trim())
+      if (sameCode) ctx.addIssue({ code: 'custom', path: ['code'], message: `Mã khóa học "${sameCode.code}" đã được dùng. Hãy chọn mã khác.` })
+    }
+    const band = Number(text.band)
+    if ((text.band ?? '').trim() !== '' && Number.isFinite(band)) {
+      const sameBand = others.find((item) => item.bandLevel === band)
+      if (sameBand) ctx.addIssue({ code: 'custom', path: ['band'], message: `Band ${band.toFixed(1)} đã có khóa học "${sameBand.name}". Mỗi band chỉ có một khóa học.` })
+    }
+    const prices = PRICE_FIELDS.map(({ name }) => (text[name] ?? '').trim()).filter((price) => /^\d+$/.test(price) && Number(price) > 0).map(Number)
+    const comboText = (text.combo ?? '').trim()
+    if (/^\d+$/.test(comboText) && Number(comboText) > 0) {
+      const combo = Number(comboText)
+      if (prices.length && combo < Math.max(...prices)) ctx.addIssue({ code: 'custom', path: ['combo'], message: 'Giá gói kết hợp không được thấp hơn giá kỹ năng cao nhất.' })
+      else if (prices.length >= 2 && combo > prices.reduce((sum, price) => sum + price, 0)) ctx.addIssue({ code: 'custom', path: ['combo'], message: 'Giá gói kết hợp không được cao hơn tổng giá các kỹ năng.' })
+    }
+  })
+}
+
 /**
  * `existing` is every course the author already sees: a code or a band one of them holds is refused before the request,
  * naming that course. A new course starts inactive, so it can be filled in before learners can see it.
  */
-export function CourseForm({ course, existing = [], onSaved, onDeleted, onCancel }: {
+export function CourseForm({ course, existing = NO_COURSES, onSaved, onDeleted, onCancel }: {
   course?: Course
   existing?: Course[]
   onSaved: (saved: Course) => void
@@ -44,6 +87,13 @@ export function CourseForm({ course, existing = [], onSaved, onDeleted, onCancel
   const [uploading, setUploading] = useState<ImageSlot | null>(null)
   const [, setError] = useAdminError()
   const { confirm, confirmDialog } = useAdminConfirm()
+  const schema = useMemo(() => courseSchema(existing, course), [existing, course])
+  // A free course sells nothing, so whatever was typed into the price fields is neither checked nor sent.
+  const form = useFormErrors(schema, {
+    code, name, band, description,
+    combo: free ? '' : comboPrice,
+    ...Object.fromEntries(PRICE_FIELDS.map(({ skill, name: field }) => [field, free ? '' : skillPrices[skill] ?? ''])),
+  })
 
   async function remove() {
     if (!course || saving) return
@@ -74,25 +124,13 @@ export function CourseForm({ course, existing = [], onSaved, onDeleted, onCancel
   async function submit(event: FormEvent) {
     event.preventDefault()
     if (saving) return
-    if (!code.trim() || !name.trim() || !validBand(band)) { setError('Nhập mã, tên khóa học và band từ 0 đến 9 theo bước 0,5.'); return }
-    const others = existing.filter((item) => item.id !== course?.id)
-    const sameCode = course ? undefined : others.find((item) => item.code === code.trim())
-    if (sameCode) { setError(`Mã khóa học "${sameCode.code}" đã được dùng. Hãy chọn mã khác.`); return }
-    const sameBand = others.find((item) => item.bandLevel === Number(band))
-    if (sameBand) { setError(`Band ${Number(band).toFixed(1)} đã có khóa học "${sameBand.name}". Mỗi band chỉ có một khóa học.`); return }
+    if (!form.validate()) return
     const parsedPrices: Partial<Record<TopicSkill, number>> = {}
-    // A free course sells nothing, so whatever was typed into the price fields is not sent.
     for (const skill of free ? [] : TOPIC_SKILLS) {
       const value = skillPrices[skill]?.trim() ?? ''
-      if (!value) continue
-      if (!/^\d+$/.test(value) || Number(value) <= 0) { setError(`Giá mở khóa ${SKILL_LABEL[skill]} phải là số nguyên dương.`); return }
-      parsedPrices[skill] = Number(value)
+      if (value) parsedPrices[skill] = Number(value)
     }
     const combo = free || comboPrice.trim() === '' ? null : Number(comboPrice)
-    if (combo !== null && (!/^\d+$/.test(comboPrice.trim()) || combo <= 0)) { setError('Giá gói kết hợp phải là số nguyên dương.'); return }
-    const prices = Object.values(parsedPrices)
-    if (combo !== null && prices.length && combo < Math.max(...prices)) { setError('Giá gói kết hợp không được thấp hơn giá kỹ năng cao nhất.'); return }
-    if (combo !== null && prices.length >= 2 && combo > prices.reduce((sum, price) => sum + price, 0)) { setError('Giá gói kết hợp không được cao hơn tổng giá các kỹ năng.'); return }
     setSaving(true)
     setError(null)
     try {
@@ -111,9 +149,9 @@ export function CourseForm({ course, existing = [], onSaved, onDeleted, onCancel
   return <form aria-label={course ? 'Sửa khóa học' : 'Tạo khóa học'} className="adm-course-form" noValidate onSubmit={(event) => void submit(event)}>
     <fieldset className="adm-author-fields" disabled={saving || uploading !== null}>
       <div className="adm-course-form__basics">
-        <label className="adm-field"><span>Mã khóa học</span><input className="adm-input" maxLength={100} required disabled={!!course} value={code} onChange={(event) => setCode(event.target.value)} /></label>
-        <label className="adm-field"><span>Tên khóa học</span><input className="adm-input" maxLength={255} required value={name} onChange={(event) => setName(event.target.value)} /></label>
-        <label className="adm-field"><span>Band khóa học</span><input className="adm-input" type="number" min={0} max={9} step={0.5} required value={band} onChange={(event) => setBand(event.target.value)} /></label>
+        <AdminField label="Mã khóa học" {...form.field('code')} required={!course}><input className="adm-input" maxLength={100} disabled={!!course} value={code} onChange={(event) => setCode(event.target.value)} /></AdminField>
+        <AdminField label="Tên khóa học" {...form.field('name')}><input className="adm-input" maxLength={255} value={name} onChange={(event) => setName(event.target.value)} /></AdminField>
+        <AdminField label="Band khóa học" {...form.field('band')}><input className="adm-input" type="number" min={0} max={9} step={0.5} value={band} onChange={(event) => setBand(event.target.value)} /></AdminField>
         <label className="adm-field"><span>Trạng thái khóa học</span><select className="adm-select" value={status} onChange={(event) => setStatus(event.target.value as Course['status'])}><option value="ACTIVE">Đang dùng</option><option value="INACTIVE">{course ? 'Ngừng dùng' : 'Chưa kích hoạt'}</option></select></label>
       </div>
       <div className="adm-course-form__images">
@@ -140,14 +178,14 @@ export function CourseForm({ course, existing = [], onSaved, onDeleted, onCancel
           onRemove={() => setBanner({ reference: '', preview: '' })}
         />
       </div>
-      <label className="adm-field"><span>Mô tả khóa học</span><textarea className="adm-textarea adm-course-form__description" maxLength={2000} value={description} onChange={(event) => setDescription(event.target.value)} /></label>
+      <AdminField label="Mô tả khóa học" {...form.field('description')}><textarea className="adm-textarea adm-course-form__description" maxLength={2000} value={description} onChange={(event) => setDescription(event.target.value)} /></AdminField>
       <div className="adm-course-form__sale">
         <AdminSwitch checked={free} onChange={setFree}>Khóa học miễn phí cho mọi người</AdminSwitch>
         {free ? <p className="adm-muted">Khóa miễn phí không có giá mở khóa: học viên học được mọi bài mà không cần mua hay Premium.</p> : null}
         {!free ? <fieldset className="adm-author-fields adm-course-form__prices">
           <legend>Giá mở khóa kỹ năng (Points)</legend>
-          {TOPIC_SKILLS.map((skill) => <label className="adm-field" key={skill}><span>{SKILL_LABEL[skill]}</span><input className="adm-input" type="number" min={1} step={1} inputMode="numeric" value={skillPrices[skill] ?? ''} onChange={(event) => setSkillPrices((current) => ({ ...current, [skill]: event.target.value }))} /></label>)}
-          <label className="adm-field"><span>Gói kết hợp</span><input className="adm-input" type="number" min={1} step={1} inputMode="numeric" value={comboPrice} onChange={(event) => setComboPrice(event.target.value)} /></label>
+          {PRICE_FIELDS.map(({ skill, name: field }) => <AdminField key={skill} label={SKILL_LABEL[skill]} {...form.field(field)}><input className="adm-input" type="number" min={1} step={1} inputMode="numeric" value={skillPrices[skill] ?? ''} onChange={(event) => setSkillPrices((current) => ({ ...current, [skill]: event.target.value }))} /></AdminField>)}
+          <AdminField label="Gói kết hợp" {...form.field('combo')}><input className="adm-input" type="number" min={1} step={1} inputMode="numeric" value={comboPrice} onChange={(event) => setComboPrice(event.target.value)} /></AdminField>
           <p className="adm-muted adm-course-form__prices-note">Để trống thì kỹ năng đó không bán riêng. Gói kết hợp không thấp hơn giá cao nhất và không cao hơn tổng các giá.</p>
         </fieldset> : null}
       </div>

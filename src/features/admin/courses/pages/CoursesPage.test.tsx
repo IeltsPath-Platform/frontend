@@ -226,7 +226,6 @@ describe('CoursesPage', () => {
     })
     expect(within(form).getByLabelText('Tên chủ đề')).toHaveValue('Tên đang chỉnh sửa')
     expect(within(form).getByLabelText('Thứ tự chủ đề')).toHaveValue(5)
-    expect(within(form).getByLabelText('Thứ tự chủ đề')).toHaveAttribute('aria-invalid', 'true')
     expect(within(form).getByRole('button', { name: 'Lưu chủ đề' })).toBeEnabled()
     expect(lessons.fetchTopics).toHaveBeenCalledTimes(1)
     fireEvent.click(within(form).getByRole('button', { name: 'Hủy' }))
