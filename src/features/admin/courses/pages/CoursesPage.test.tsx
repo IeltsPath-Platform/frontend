@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { HttpError } from '@/lib/httpClient'
 import { CoursesPage } from './CoursesPage'
 
-const { api, lessons, media } = vi.hoisted(() => ({ api: { fetchCourses: vi.fn(), createCourse: vi.fn(), updateCourse: vi.fn(), createTopic: vi.fn(), updateTopic: vi.fn(), reorderTopics: vi.fn() }, lessons: { fetchTopics: vi.fn(), fetchLessons: vi.fn() }, media: { uploadAdminImage: vi.fn() } }))
+const { api, lessons, media } = vi.hoisted(() => ({ api: { fetchCourses: vi.fn(), createCourse: vi.fn(), updateCourse: vi.fn(), deleteCourse: vi.fn(), createTopic: vi.fn(), updateTopic: vi.fn(), reorderTopics: vi.fn() }, lessons: { fetchTopics: vi.fn(), fetchLessons: vi.fn() }, media: { uploadAdminImage: vi.fn() } }))
 vi.mock('../api/courseApi', () => api)
 vi.mock('../../lessons/api/lessonApi', () => lessons)
 vi.mock('../../media/api/mediaUploadApi', () => media)
@@ -69,7 +69,33 @@ describe('CoursesPage', () => {
     await waitFor(() => expect(media.uploadAdminImage).toHaveBeenCalledWith('/api/content/admin/media/image', file))
     fireEvent.change(within(form).getByLabelText('Mô tả khóa học'), { target: { value: 'Lộ trình nền tảng.' } })
     fireEvent.submit(form)
-    await waitFor(() => expect(api.createCourse).toHaveBeenCalledWith({ code: 'INTENSIVE_70', name: 'Intensive 7.0', bandLevel: 7, coverImageUrl: 'content-image/author-1/cover.png', description: 'Lộ trình nền tảng.', free: false, bannerImageUrl: null, skillUnlockPoints: {}, comboUnlockPoints: null }))
+    await waitFor(() => expect(api.createCourse).toHaveBeenCalledWith({ code: 'INTENSIVE_70', name: 'Intensive 7.0', bandLevel: 7, coverImageUrl: 'content-image/author-1/cover.png', description: 'Lộ trình nền tảng.', status: 'INACTIVE', free: false, bannerImageUrl: null, skillUnlockPoints: {}, comboUnlockPoints: null }))
+  })
+  it('selects the course that was just created once the list has reloaded', async () => {
+    const created = { ...course, id: 'c2', code: 'INTENSIVE_70', name: 'Intensive 7.0', bandLevel: 7 }
+    api.createCourse.mockResolvedValue(created)
+    show()
+    await screen.findByRole('heading', { name: 'Nền tảng 5.5' })
+    api.fetchCourses.mockResolvedValue([course, created])
+    fireEvent.click(screen.getByRole('button', { name: 'Tạo khóa học' }))
+    const form = screen.getByRole('form', { name: 'Tạo khóa học' })
+    fireEvent.change(within(form).getByLabelText('Mã khóa học'), { target: { value: 'INTENSIVE_70' } })
+    fireEvent.change(within(form).getByLabelText('Tên khóa học'), { target: { value: 'Intensive 7.0' } })
+    fireEvent.change(within(form).getByLabelText('Band khóa học'), { target: { value: '7' } })
+    fireEvent.submit(form)
+    expect(await screen.findByRole('heading', { name: 'Intensive 7.0' })).toBeInTheDocument()
+  })
+  it('refuses a band another course holds before asking the server', async () => {
+    show()
+    await screen.findByRole('heading', { name: 'Nền tảng 5.5' })
+    fireEvent.click(screen.getByRole('button', { name: 'Tạo khóa học' }))
+    const form = screen.getByRole('form', { name: 'Tạo khóa học' })
+    fireEvent.change(within(form).getByLabelText('Mã khóa học'), { target: { value: 'OTHER' } })
+    fireEvent.change(within(form).getByLabelText('Tên khóa học'), { target: { value: 'Other' } })
+    fireEvent.change(within(form).getByLabelText('Band khóa học'), { target: { value: '5.5' } })
+    fireEvent.submit(form)
+    expect(await screen.findByRole('alert')).toHaveTextContent('Band 5.5 đã có khóa học "Nền tảng 5.5"')
+    expect(api.createCourse).not.toHaveBeenCalled()
   })
   it('updates course status without sending its code', async () => {
     show()
@@ -79,6 +105,20 @@ describe('CoursesPage', () => {
     fireEvent.change(within(form).getByLabelText('Mô tả khóa học'), { target: { value: 'Mô tả mới' } })
     fireEvent.submit(form)
     await waitFor(() => expect(api.updateCourse).toHaveBeenCalledWith('c1', { name: course.name, bandLevel: 5.5, status: 'INACTIVE', coverImageUrl: null, description: 'Mô tả mới', skillUnlockPoints: {}, comboUnlockPoints: null, free: false, bannerImageUrl: null }))
+  })
+  it('deletes a course from its edit drawer, closes the drawer and reloads the list', async () => {
+    const other = { ...course, id: 'c2', code: 'INTENSIVE_70', name: 'Intensive 7.0', bandLevel: 7 }
+    api.fetchCourses.mockResolvedValue([course, other])
+    api.deleteCourse.mockResolvedValue(undefined)
+    show()
+    fireEvent.click(await screen.findByRole('button', { name: 'Sửa khóa học' }))
+    api.fetchCourses.mockResolvedValue([other])
+    fireEvent.click(within(screen.getByRole('form', { name: 'Sửa khóa học' })).getByRole('button', { name: 'Xóa khóa học' }))
+    fireEvent.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Xóa khóa học' }))
+    await waitFor(() => expect(api.deleteCourse).toHaveBeenCalledExactlyOnceWith('c1'))
+    expect(await screen.findByRole('heading', { name: 'Intensive 7.0' })).toBeInTheDocument()
+    expect(screen.queryByRole('form', { name: 'Sửa khóa học' })).not.toBeInTheDocument()
+    expect(api.fetchCourses).toHaveBeenCalledTimes(2)
   })
   it('blocks a reversed band range', async () => {
     show()

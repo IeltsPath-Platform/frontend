@@ -11,6 +11,10 @@ export async function createCourse(body: CourseCreate) {
 export async function updateCourse(id: string, body: CourseUpdate) {
   return courseSchema.parse(await apiRequest<unknown>(`/api/content/admin/courses/${id}`, { auth: true, method: 'PUT', body }))
 }
+/** Deletes a course that holds nothing yet; the server refuses (409) when it still has topics or tests. */
+export async function deleteCourse(id: string) {
+  await apiRequest<unknown>(`/api/content/admin/courses/${id}`, { auth: true, method: 'DELETE' })
+}
 export async function createTopic(body: TopicCreate) {
   return topicSchema.parse(await apiRequest<unknown>('/api/content/admin/topics', { auth: true, method: 'POST', body }))
 }

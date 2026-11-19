@@ -19,6 +19,8 @@ export function CoursesPage() {
   const topics = useAdminResource('author-course-topics', fetchTopics)
   const panelId = useId()
   const [selection, setSelection] = useState('')
+  /** The course just created: it becomes the selected tab once the reloaded list holds it. */
+  const [created, setCreated] = useState('')
   const [editing, setEditing] = useState(false)
   const [creating, setCreating] = useState(false)
   const [addingTopic, setAddingTopic] = useState(false)
@@ -29,13 +31,14 @@ export function CoursesPage() {
   if (topics.status === 'success' && topics.data !== shownTopics) setShownTopics(topics.data)
   const currentCourses = courses.status === 'success' ? courses.data : shownCourses
   const currentTopics = topics.status === 'success' ? topics.data : shownTopics
+  if (created && currentCourses?.some((item) => item.id === created)) { setSelection(created); setCreated('') }
   const selectedId = selection || currentCourses?.[0]?.id || UNASSIGNED_TAB
   const course = currentCourses?.find((item) => item.id === selectedId)
   const rows = (currentTopics ?? []).filter((item) => selectedId === UNASSIGNED_TAB ? !item.courseId : item.courseId === selectedId)
   function select(id: string) { setSelection(id); setEditing(false); setAddingTopic(false); setActionError(null) }
   return <AdminPage title="Khóa học & chủ đề" subtitle="Quản lý khóa theo band, tổ chức chủ đề và mở danh sách bài học của từng chủ đề." plain actions={<button className="adm-btn adm-btn--primary" type="button" onClick={() => setCreating(true)}>Tạo khóa học</button>}>
     {creating ? <AdminDrawer title="Tạo khóa học" onClose={() => setCreating(false)}>
-      {(close) => <CourseForm onCancel={close} onSaved={() => { courses.reload(); close() }} />}
+      {(close) => <CourseForm existing={currentCourses ?? []} onCancel={close} onSaved={(saved) => { setCreated(saved.id); courses.reload(); close() }} />}
     </AdminDrawer> : null}
     {courses.status === 'loading' ? <AdminLoading label="Đang tải khóa học…" /> : null}
     {courses.status === 'error' ? <AdminError message={courses.error!} onRetry={courses.reload} /> : null}
@@ -60,7 +63,7 @@ export function CoursesPage() {
       </section>
       <div aria-labelledby={`course-tab-${selectedId}`} className="adm-course-panel" id={panelId} role="tabpanel">
         {editing && course ? <AdminDrawer title="Sửa khóa học" description={course.code} onClose={() => setEditing(false)}>
-          {(close) => <CourseForm key={course.id} course={course} onCancel={close} onSaved={() => { courses.reload(); close() }} />}
+          {(close) => <CourseForm key={course.id} course={course} existing={currentCourses ?? []} onCancel={close} onSaved={() => { courses.reload(); close() }} onDeleted={() => { setSelection(''); courses.reload(); close() }} />}
         </AdminDrawer> : null}
         {topics.status === 'loading' ? <AdminLoading label="Đang tải chủ đề…" /> : null}
         {topics.status === 'error' ? <AdminError message={topics.error!} onRetry={topics.reload} /> : null}

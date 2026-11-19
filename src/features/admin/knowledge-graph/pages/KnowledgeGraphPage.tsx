@@ -4,6 +4,7 @@ import { useAuthSession } from '@/features/auth/authSession'
 import { hasAnyRole } from '@/features/auth/staffRoles'
 import { useAdminSearch } from '../../adminSearch'
 import { AdminEmpty, AdminError, AdminLoading } from '../../components/AdminState'
+import { AdminSwitch } from '../../components/AdminSwitch'
 import { useToast } from '@/components/toast/toastContext'
 import { adminErrorMessage } from '../../lib/adminErrors'
 import { useAdminConfirm } from '../../lib/useAdminConfirm'
@@ -187,16 +188,8 @@ export function KnowledgeGraphPage() {
             ))}
           </select>
         </label>
-        {canSeeInactive ? (
-          <label className="adm-check">
-            <input checked={includeInactive} onChange={(event) => setIncludeInactive(event.target.checked)} type="checkbox" />
-            Hiện KP chưa kích hoạt
-          </label>
-        ) : null}
-        <label className="adm-check">
-          <input checked={onlyFlagged} onChange={(event) => setOnlyFlagged(event.target.checked)} type="checkbox" />
-          Chỉ KP có cảnh báo
-        </label>
+        {canSeeInactive ? <AdminSwitch checked={includeInactive} onChange={setIncludeInactive}>Hiện KP chưa kích hoạt</AdminSwitch> : null}
+        <AdminSwitch checked={onlyFlagged} onChange={setOnlyFlagged}>Chỉ KP có cảnh báo</AdminSwitch>
       </div>
 
       {health.status === 'success' && health.data ? <HealthSummary health={health.data} /> : null}

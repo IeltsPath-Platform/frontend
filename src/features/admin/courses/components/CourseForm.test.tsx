@@ -1,9 +1,10 @@
-import { fireEvent, render, screen, waitFor } from '@/test/render'
+import { fireEvent, render, screen, waitFor, within } from '@/test/render'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { HttpError } from '@/lib/httpClient'
 import { CourseForm } from './CourseForm'
 
 const { api, media } = vi.hoisted(() => ({
-  api: { createCourse: vi.fn(), updateCourse: vi.fn() },
+  api: { createCourse: vi.fn(), updateCourse: vi.fn(), deleteCourse: vi.fn() },
   media: { uploadAdminImage: vi.fn() },
 }))
 vi.mock('../api/courseApi', () => api)
@@ -162,5 +163,103 @@ describe('CourseForm unlock pricing', () => {
     fireEvent.submit(screen.getByRole('form'))
 
     await waitFor(() => expect(api.updateCourse).toHaveBeenCalledWith(course.id, expect.objectContaining({ coverImageUrl: null })))
+  })
+})
+
+describe('CourseForm status and duplicates', () => {
+  const other = { ...course, id: 'course-2', code: 'B2', name: 'Band 6', bandLevel: 6 }
+  function fill(code: string, name: string, band: string) {
+    fireEvent.change(screen.getByLabelText('Mã khóa học'), { target: { value: code } })
+    fireEvent.change(screen.getByLabelText('Tên khóa học'), { target: { value: name } })
+    fireEvent.change(screen.getByLabelText('Band khóa học'), { target: { value: band } })
+  }
+  beforeEach(() => { api.createCourse.mockReset(); api.updateCourse.mockReset() })
+
+  it('creates a course inactive, and active only when the author says so', async () => {
+    api.createCourse.mockResolvedValue(course)
+    const saved = vi.fn()
+    render(<CourseForm onSaved={saved} />)
+    expect(screen.getByLabelText('Trạng thái khóa học')).toHaveValue('INACTIVE')
+    fill('NEW_1', 'New one', '7')
+    fireEvent.submit(screen.getByRole('form'))
+    await waitFor(() => expect(api.createCourse).toHaveBeenCalledWith(expect.objectContaining({ code: 'NEW_1', status: 'INACTIVE' })))
+    await waitFor(() => expect(saved).toHaveBeenCalledWith(course))
+
+    fireEvent.change(screen.getByLabelText('Trạng thái khóa học'), { target: { value: 'ACTIVE' } })
+    fireEvent.submit(screen.getByRole('form'))
+    await waitFor(() => expect(api.createCourse).toHaveBeenLastCalledWith(expect.objectContaining({ status: 'ACTIVE' })))
+  })
+
+  it('names the course that already holds the code or the band, and sends nothing', async () => {
+    render(<CourseForm existing={[course, other]} onSaved={vi.fn()} />)
+    fill('B2', 'Again', '7')
+    fireEvent.submit(screen.getByRole('form'))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Mã khóa học "B2" đã được dùng')
+
+    fill('FRESH', 'Fresh', '6')
+    fireEvent.submit(screen.getByRole('form'))
+    expect(await screen.findByText('Band 6.0 đã có khóa học "Band 6". Mỗi band chỉ có một khóa học.')).toBeInTheDocument()
+    expect(api.createCourse).not.toHaveBeenCalled()
+  })
+
+  it('lets an edited course keep its own band', async () => {
+    api.updateCourse.mockResolvedValue(course)
+    render(<CourseForm course={course} existing={[course, other]} onSaved={vi.fn()} />)
+    fireEvent.submit(screen.getByRole('form'))
+    await waitFor(() => expect(api.updateCourse).toHaveBeenCalledOnce())
+  })
+
+  it('shows the server refusal to repeat a band in Vietnamese', async () => {
+    api.createCourse.mockRejectedValue(new HttpError(409, "Course with bandLevel '7.0' already exists"))
+    render(<CourseForm onSaved={vi.fn()} />)
+    fill('NEW_7', 'New seven', '7')
+    fireEvent.submit(screen.getByRole('form'))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Band 7.0 đã có khóa học. Mỗi band chỉ có một khóa học.')
+  })
+})
+
+describe('CourseForm delete', () => {
+  beforeEach(() => { api.deleteCourse.mockReset() })
+
+  it('offers deleting only when editing a course and the page can handle it', () => {
+    const { unmount } = render(<CourseForm course={course} onDeleted={vi.fn()} onSaved={vi.fn()} />)
+    expect(screen.getByRole('button', { name: 'Xóa khóa học' })).toBeInTheDocument()
+    unmount()
+    render(<CourseForm onDeleted={vi.fn()} onSaved={vi.fn()} />)
+    expect(screen.queryByRole('button', { name: 'Xóa khóa học' })).not.toBeInTheDocument()
+  })
+
+  it('deletes only after the popup is confirmed', async () => {
+    api.deleteCourse.mockResolvedValue(undefined)
+    const deleted = vi.fn()
+    render(<CourseForm course={course} onDeleted={deleted} onSaved={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Xóa khóa học' }))
+    const popup = await screen.findByRole('alertdialog')
+    expect(popup).toHaveTextContent('Xóa khóa học?')
+    expect(popup).toHaveTextContent('Band 5')
+    expect(api.deleteCourse).not.toHaveBeenCalled()
+    fireEvent.click(within(popup).getByRole('button', { name: 'Xóa khóa học' }))
+    await waitFor(() => expect(api.deleteCourse).toHaveBeenCalledExactlyOnceWith('course-1'))
+    await waitFor(() => expect(deleted).toHaveBeenCalledOnce())
+  })
+
+  it('keeps the course when the popup is declined', async () => {
+    const deleted = vi.fn()
+    render(<CourseForm course={course} onDeleted={deleted} onSaved={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Xóa khóa học' }))
+    fireEvent.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Hủy' }))
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument())
+    expect(api.deleteCourse).not.toHaveBeenCalled()
+    expect(deleted).not.toHaveBeenCalled()
+  })
+
+  it('tells the author to stop the course when the server says it still holds content', async () => {
+    api.deleteCourse.mockRejectedValue(new HttpError(409, 'Course course-1 still has topics', null, 'COURSE_NOT_EMPTY'))
+    const deleted = vi.fn()
+    render(<CourseForm course={course} onDeleted={deleted} onSaved={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Xóa khóa học' }))
+    fireEvent.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Xóa khóa học' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('không xóa được')
+    expect(deleted).not.toHaveBeenCalled()
   })
 })

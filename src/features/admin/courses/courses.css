@@ -1,13 +1,36 @@
 .adm-author-fields { min-width: 0; border: 0; padding: 0; margin: 0; }
 .adm-author-fields .adm-input, .adm-author-fields .adm-select, .adm-author-fields .adm-textarea { font-size: 1rem; }
-/* The course form uses the width of the wide side panel: short fields in a row, the two images side by side. */
-.adm-course-form__basics { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr) minmax(0, .6fr); column-gap: 14px; }
-.adm-course-form__images { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 14px; align-items: start; margin-bottom: 14px; }
-.adm-course-form__prices { display: grid; grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr)); column-gap: 14px; margin-bottom: 14px; }
-.adm-course-form__prices > legend { grid-column: 1 / -1; padding: 0; font-weight: 700; }
-.adm-course-form__prices-note { grid-column: 1 / -1; margin: 0; font-size: .85rem; }
-@media (max-width: 820px) {
+/*
+ * The course form uses the width of the side panel. Code, name, band and status share the first row. The two images
+ * share the next one: the columns are split 1 : 1.8 so the 16:9 cover and the 16:5 banner come out the same height and
+ * read as one band. Price fields sit in one panel with the free switch, since a free course has none.
+ */
+.adm-course-form__basics { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) minmax(7.5rem, .7fr) minmax(10rem, .9fr); column-gap: 14px; }
+.adm-course-form__basics > .adm-field > span { white-space: nowrap; }
+.adm-course-form__images { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.8fr); column-gap: 14px; align-items: end; margin-bottom: 14px; }
+.adm-course-form__description { min-height: 96px; }
+.adm-course-form__sale { display: grid; gap: 10px; margin-bottom: 14px; padding: 10px 14px 14px; background: var(--adm-surface-2); border: 1px solid var(--adm-border); border-radius: var(--adm-radius); }
+.adm-course-form__sale > .adm-switch, .adm-course-form__sale > p { margin: 0; }
+.adm-course-form__prices { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); column-gap: 12px; width: 100%; }
+.adm-course-form__prices > legend { grid-column: 1 / -1; padding: 0; margin-bottom: 8px; font-weight: 700; }
+.adm-course-form__prices .adm-field { margin-bottom: 0; }
+.adm-course-form__prices .adm-input { background: var(--adm-surface); }
+.adm-course-form__prices-note { grid-column: 1 / -1; margin: 10px 0 0; font-size: .85rem; }
+/* Last in the footer, set apart from the cancel and save buttons so it is not hit by mistake. */
+.adm-form-footer > .adm-course-form__delete { margin-left: 18px; background: var(--adm-danger); border-color: var(--adm-danger); color: #fff; }
+.adm-form-footer > .adm-course-form__delete:hover:not(:disabled) { background: #a82424; border-color: #a82424; color: #fff; }
+/* The side panel is 760px wide on a desktop and the whole screen below that, so the form only gets tight on a small screen. */
+@media (max-width: 760px) {
+  .adm-course-form__basics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
   .adm-course-form__basics, .adm-course-form__images { grid-template-columns: minmax(0, 1fr); }
+  .adm-course-image--cover { max-width: 28rem; }
+  .adm-course-form__images { row-gap: 14px; }
+  .adm-course-form__prices { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 10px; }
+}
+@media (max-width: 400px) {
+  .adm-course-form__prices { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 /* One course image: a box in the shape the image will have, to pick or drop a file into; once there is an image, the same box shows it. */
