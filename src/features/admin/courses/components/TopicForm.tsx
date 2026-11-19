@@ -9,6 +9,8 @@ import { useAdminError } from '../../lib/useAdminError'
 /**
  * A new topic is always top level, and the parent field shows only for a topic that already has one, so it can be moved
  * back to the top. The learner's path lists every topic flat, so nesting is not offered for new topics.
+ * A new topic belongs to the course the page is showing (`courseId`, none on the unassigned tab); only an existing
+ * topic offers a choice of course, to move it.
  */
 export function TopicForm({ topic, parentId, courseId, courses, topics, onSaved, onCancel }: {
   topic?: TopicOption; parentId: string | null; courseId: string | null; courses: Course[]; topics: TopicOption[]; onSaved: () => void; onCancel: () => void
@@ -59,7 +61,7 @@ export function TopicForm({ topic, parentId, courseId, courses, topics, onSaved,
       <label className="adm-field"><span>Mã chủ đề</span><input className="adm-input" required maxLength={100} disabled={!!topic} value={code} onChange={(event) => setCode(event.target.value)} /></label>
       <label className="adm-field"><span>Tên chủ đề</span><input className="adm-input" required maxLength={255} value={name} onChange={(event) => setName(event.target.value)} /></label>
       <label className="adm-field"><span>Mô tả chủ đề</span><textarea className="adm-textarea" maxLength={2000} value={description} onChange={(event) => setDescription(event.target.value)} /></label>
-      <label className="adm-field"><span>Thuộc khóa học</span><select className="adm-select" value={course} onChange={(event) => setCourse(event.target.value)}>{!topic?.courseId ? <option value="">Chưa gán khóa</option> : null}{courses.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+      {topic ? <label className="adm-field"><span>Thuộc khóa học</span><select className="adm-select" value={course} onChange={(event) => setCourse(event.target.value)}>{!topic.courseId ? <option value="">Chưa gán khóa</option> : null}{courses.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label> : null}
       {topic?.parentTopicId ? <label className="adm-field"><span>Chủ đề cha</span><select className="adm-select" value={parent} onChange={(event) => { setParent(event.target.value); setOrderError(null) }}><option value="">Không có (cấp đầu)</option>{topics.filter((item) => !excluded.has(item.id)).map((item) => <option key={item.id} value={item.id}>{item.code} · {item.name}</option>)}</select></label> : null}
       <label className="adm-field"><span>Kỹ năng</span><select className="adm-select" value={skill} onChange={(event) => setSkill(event.target.value)}>{!topic?.skill ? <option value="">Chưa chọn</option> : null}{TOPIC_SKILLS.map((item) => <option key={item} value={item}>{SKILL_LABEL[item]}</option>)}</select></label>
       <div className="adm-filters"><label className="adm-field"><span>Band thấp nhất</span><input className="adm-input" type="number" min={0} max={9} step={0.5} value={min} onChange={(event) => setMin(event.target.value)} /></label><label className="adm-field"><span>Band cao nhất</span><input className="adm-input" type="number" min={0} max={9} step={0.5} value={max} onChange={(event) => setMax(event.target.value)} /></label></div>

@@ -25,7 +25,7 @@ function show(editing = false) {
 function fill(editing = false) {
   if (!editing) fireEvent.change(screen.getByLabelText('Mã chủ đề'), { target: { value: 'NEW_TOPIC' } })
   fireEvent.change(screen.getByLabelText('Tên chủ đề'), { target: { value: body.name } })
-  fireEvent.change(screen.getByLabelText('Thuộc khóa học'), { target: { value: body.courseId } })
+  if (editing) fireEvent.change(screen.getByLabelText('Thuộc khóa học'), { target: { value: body.courseId } })
   fireEvent.change(screen.getByLabelText('Kỹ năng'), { target: { value: body.skill } })
   fireEvent.change(screen.getByLabelText('Band thấp nhất'), { target: { value: String(body.bandMin) } })
   fireEvent.change(screen.getByLabelText('Band cao nhất'), { target: { value: String(body.bandMax) } })
@@ -35,7 +35,7 @@ function fill(editing = false) {
 function expectRetained(editing = false) {
   expect(screen.getByLabelText('Mã chủ đề')).toHaveValue(editing ? topic.code : 'NEW_TOPIC')
   expect(screen.getByLabelText('Tên chủ đề')).toHaveValue(body.name)
-  expect(screen.getByLabelText('Thuộc khóa học')).toHaveValue(body.courseId)
+  if (editing) expect(screen.getByLabelText('Thuộc khóa học')).toHaveValue(body.courseId)
   expect(screen.getByLabelText('Kỹ năng')).toHaveValue(body.skill)
   expect(screen.getByLabelText('Band thấp nhất')).toHaveValue(body.bandMin)
   expect(screen.getByLabelText('Band cao nhất')).toHaveValue(body.bandMax)
@@ -65,7 +65,7 @@ describe('TopicForm order conflicts', () => {
       expect(api.updateTopic).toHaveBeenCalledExactlyOnceWith(topic.id, { ...body, status: 'INACTIVE' })
       expect(api.createTopic).not.toHaveBeenCalled()
     } else {
-      expect(api.createTopic).toHaveBeenCalledExactlyOnceWith({ ...body, code: 'NEW_TOPIC' })
+      expect(api.createTopic).toHaveBeenCalledExactlyOnceWith({ ...body, courseId: courses[0]!.id, code: 'NEW_TOPIC' })
       expect(api.updateTopic).not.toHaveBeenCalled()
     }
     expect(saved).not.toHaveBeenCalled()
@@ -125,6 +125,32 @@ describe('TopicForm order conflicts', () => {
     expect(api.createTopic).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ code: 'NEW_TOPIC', parentTopicId: null }))
   })
 
+  it('creates a topic in the course being shown without offering another course', async () => {
+    api.createTopic.mockResolvedValue(topic)
+    const saved = vi.fn()
+    render(<TopicForm parentId={null} courseId={courses[1]!.id} courses={courses} topics={[]} onSaved={saved} onCancel={vi.fn()} />)
+    expect(screen.queryByLabelText('Thuộc khóa học')).not.toBeInTheDocument()
+    fill()
+    fireEvent.submit(screen.getByRole('form'))
+    await waitFor(() => expect(saved).toHaveBeenCalledTimes(1))
+    expect(api.createTopic).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ code: 'NEW_TOPIC', courseId: courses[1]!.id }))
+  })
+
+  it('creates a topic with no course on the tab of topics without one', async () => {
+    api.createTopic.mockResolvedValue(topic)
+    const saved = vi.fn()
+    render(<TopicForm parentId={null} courseId={null} courses={courses} topics={[]} onSaved={saved} onCancel={vi.fn()} />)
+    fill()
+    fireEvent.submit(screen.getByRole('form'))
+    await waitFor(() => expect(saved).toHaveBeenCalledTimes(1))
+    expect(api.createTopic).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ courseId: null }))
+  })
+
+  it('offers a choice of course only for an existing topic, to move it', () => {
+    show(true)
+    expect(screen.getByLabelText('Thuộc khóa học')).toHaveValue(topic.courseId)
+  })
+
   it('still shows the parent of a topic that has one, so it can be moved back to the top level', async () => {
     api.updateTopic.mockRejectedValueOnce(conflict()).mockResolvedValue(legacyChild)
     const saved = vi.fn()
@@ -168,7 +194,7 @@ describe('TopicForm descriptions', () => {
     fill()
     fireEvent.change(screen.getByLabelText('Mô tả chủ đề'), { target: { value: '  Mô tả bài học  ' } })
     fireEvent.submit(screen.getByRole('form'))
-    await waitFor(() => expect(api.createTopic).toHaveBeenCalledWith({ ...body, code: 'NEW_TOPIC', description: 'Mô tả bài học' }))
+    await waitFor(() => expect(api.createTopic).toHaveBeenCalledWith({ ...body, courseId: courses[0]!.id, code: 'NEW_TOPIC', description: 'Mô tả bài học' }))
     expect(saved).toHaveBeenCalledOnce()
   })
 })
