@@ -202,6 +202,9 @@ function ReviewView({ review, onAdvance, onReload, reviewOrigin }: {
         <DiagnosisPanel onChanged={onReload} review={review} />
       ) : null}
       {status === 'PENDING' && review.state === 'WAITING_ON_PREREQUISITES' ? <WaitingPanel review={review} /> : null}
+      {status === 'SKIPPED' && review.diagnosticSessionId ? (
+        <DiagnosisPanel onChanged={onReload} review={review} rootSkipped />
+      ) : null}
 
       {review.theory.length > 0 ? (
         <section className="lp-theory" aria-labelledby="lp-theory-title">

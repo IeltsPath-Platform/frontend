@@ -28,9 +28,14 @@ function probeStatusText(probe: DiagnosticProbeSummary): string {
 
 /**
  * The probes a review opened on its prerequisites. The learner answers them, or skips the rest once at least one is
- * answered; the review gives no set until the diagnosis is concluded.
+ * answered; the review gives no set until the diagnosis is concluded. When the review was skipped because no unseen
+ * set was left, the probes stay open as an optional check and nothing is shown once the diagnosis has concluded.
  */
-export function DiagnosisPanel({ review, onChanged }: { review: ReviewDetail; onChanged: () => void }) {
+export function DiagnosisPanel({ review, onChanged, rootSkipped = false }: {
+  review: ReviewDetail
+  onChanged: () => void
+  rootSkipped?: boolean
+}) {
   const sessionId = review.diagnosticSessionId ?? ''
   const diagnosis = useApiResource(`diagnostic:${sessionId}`, () => learningApi.getDiagnostic(sessionId))
   const { confirm, confirmDialog } = useConfirmDialog()
@@ -49,6 +54,7 @@ export function DiagnosisPanel({ review, onChanged }: { review: ReviewDetail; on
   }
   if (!diagnosis.data) return null
   const data = diagnosis.data
+  if (rootSkipped && data.status !== 'PROBING') return null
   const canSkip = data.probes.some((probe) => probe.status === 'ANSWERED')
   const hasOpenProbe = data.probes.some((probe) => probe.status === 'OPEN')
 
@@ -63,6 +69,7 @@ export function DiagnosisPanel({ review, onChanged }: { review: ReviewDetail; on
     setSkipError(null)
     try {
       await learningApi.skipDiagnostic(sessionId)
+      diagnosis.reload()
       onChanged()
     } catch (reason) {
       const error = toApiError(reason)
@@ -78,10 +85,17 @@ export function DiagnosisPanel({ review, onChanged }: { review: ReviewDetail; on
   return (
     <section aria-labelledby="lp-diagnosis-title" className="lp-diagnosis">
       <h2 id="lp-diagnosis-title"><SearchCheck aria-hidden="true" size={20} />Kiểm tra kiến thức nền</h2>
-      <p>
-        Bạn chưa đạt bài ôn này hai lần. Hãy làm các bài kiểm tra ngắn dưới đây để tìm ra kiến thức nền còn hổng; bài ôn
-        sẽ tiếp tục sau đó.
-      </p>
+      {rootSkipped ? (
+        <p>
+          Bài ôn này đã được bỏ qua vì chưa có bộ câu hỏi mới. Bạn vẫn có thể làm các bài kiểm tra ngắn dưới đây để tìm ra
+          kiến thức nền còn hổng.
+        </p>
+      ) : (
+        <p>
+          Bạn chưa đạt bài ôn này hai lần. Hãy làm các bài kiểm tra ngắn dưới đây để tìm ra kiến thức nền còn hổng; bài ôn
+          sẽ tiếp tục sau đó.
+        </p>
+      )}
       <ul className="lp-diagnosis__probes">
         {data.probes.map((probe) => (
           <li className={`lp-diagnosis__probe is-${probe.status.toLowerCase()}`} key={probe.probeId}>

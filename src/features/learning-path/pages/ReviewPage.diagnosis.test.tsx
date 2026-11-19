@@ -120,6 +120,40 @@ describe('ReviewPage prerequisite diagnosis', () => {
     expect(screen.getByRole('link', { name: /Làm bài ôn/ })).toHaveAttribute('href', '/learn/reviews/rev-gap')
   })
 
+  it('keeps the probes open as an optional check when the review was skipped for lack of a set', async () => {
+    vi.mocked(learningApi.getDiagnostic).mockResolvedValue(diagnostic(['OPEN', 'OPEN']))
+    renderReview({ ...base, status: 'SKIPPED', state: 'ACTIVE', diagnosticSessionId: 'session-1' })
+
+    expect(await screen.findByRole('heading', { name: 'Kiểm tra kiến thức nền' })).toBeInTheDocument()
+    expect(screen.getByText(/chưa có bộ câu hỏi mới/)).toBeInTheDocument()
+    expect(screen.getAllByRole('link', { name: /Làm bài/ })[0])
+      .toHaveAttribute('href', '/learn/reviews/rev-1/diagnostics/session-1/probes/probe-1')
+    expect(screen.getByRole('heading', { name: 'Đã bỏ qua bài ôn' })).toBeInTheDocument()
+  })
+
+  it('drops the probes of a skipped review once the learner skips the rest of the diagnosis', async () => {
+    const concluded: Diagnostic = { ...diagnostic(['ANSWERED', 'OPEN']), status: 'CONCLUDED' }
+    vi.mocked(learningApi.getDiagnostic)
+      .mockResolvedValueOnce(diagnostic(['ANSWERED', 'OPEN']))
+      .mockResolvedValue(concluded)
+    vi.mocked(learningApi.skipDiagnostic).mockResolvedValue(concluded)
+    renderReview({ ...base, status: 'SKIPPED', state: 'ACTIVE', diagnosticSessionId: 'session-1' })
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Bỏ qua kiểm tra' }))
+    await userEvent.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Bỏ qua' }))
+
+    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Kiểm tra kiến thức nền' })).not.toBeInTheDocument())
+  })
+
+  it('shows no diagnosis block for a skipped review whose diagnosis has concluded', async () => {
+    vi.mocked(learningApi.getDiagnostic).mockResolvedValue({ ...diagnostic(['ANSWERED']), status: 'CONCLUDED' })
+    renderReview({ ...base, status: 'SKIPPED', state: 'ACTIVE', diagnosticSessionId: 'session-1' })
+
+    await screen.findByRole('heading', { name: 'Đã bỏ qua bài ôn' })
+    await waitFor(() => expect(learningApi.getDiagnostic).toHaveBeenCalled())
+    expect(screen.queryByRole('heading', { name: 'Kiểm tra kiến thức nền' })).not.toBeInTheDocument()
+  })
+
   it('shows no diagnosis block for an ordinary review', async () => {
     renderReview({ ...base, state: 'ACTIVE' })
 
