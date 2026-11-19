@@ -66,7 +66,6 @@
 .adm-draft-table { background: var(--adm-surface); }
 .adm-draft-table .adm-table td, .adm-draft-table .adm-table th { padding: 14px 16px; vertical-align: middle; }
 .adm-draft-name { color: var(--adm-text); font-weight: 600; overflow-wrap: anywhere; text-decoration: none; }
-.adm-draft-name:hover { color: var(--adm-accent); text-decoration: underline; }
 .adm-draft-failure { margin: 4px 0 0; color: var(--adm-danger); font-size: .85rem; }
 .adm-draft-time { white-space: nowrap; font-variant-numeric: tabular-nums; }
 .adm-draft-pager { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }

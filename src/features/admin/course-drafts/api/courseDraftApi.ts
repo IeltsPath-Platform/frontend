@@ -26,6 +26,11 @@ export async function saveCourseDraft(id: string, structure: CourseStructure) {
   return courseDraftSchema.parse(await apiRequest<unknown>(draftPath(id), { auth: true, method: 'PUT', body: { structure: courseStructureSchema.parse(structure) } }))
 }
 
+/** Deletes the draft for good. The server refuses an approved, queued or generating one. */
+export async function deleteCourseDraft(id: string) {
+  await apiRequest<unknown>(draftPath(id), { auth: true, method: 'DELETE' })
+}
+
 export async function analyzeCourseDraft(id: string, signal?: AbortSignal) {
   return courseAnalysisSchema.parse(await apiRequest<unknown>(`${draftPath(id)}/analysis`, { auth: true, signal }))
 }

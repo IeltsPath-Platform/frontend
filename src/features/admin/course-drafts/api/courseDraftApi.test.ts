@@ -3,7 +3,7 @@ import { ZodError } from 'zod'
 import { API_BASE_URL } from '@/lib/env'
 import { clearAccessToken, setAccessToken } from '@/lib/httpClient'
 import { courseStructureSchema, type CourseStructure } from '../types'
-import { analyzeCourseDraft, approveCourseDraft, createCourseDraft, getCourseDraft, listCourseDrafts, saveCourseDraft } from './courseDraftApi'
+import { analyzeCourseDraft, approveCourseDraft, createCourseDraft, deleteCourseDraft, getCourseDraft, listCourseDrafts, saveCourseDraft } from './courseDraftApi'
 
 const id = '00000000-0000-4000-8000-000000000001'
 const kp = '00000000-0000-4000-8000-000000000002'
@@ -89,6 +89,17 @@ describe('course draft API', () => {
     const response = { ...analysis, valid: true, errors: [], warnings: [{ code: 'FUTURE_WARNING', subject: null, related: null }], gaps: [], coverage: { expected: 0, covered: 0 } }
     respond(response)
     await expect(analyzeCourseDraft(id)).resolves.toEqual(response)
+  })
+
+  it('deletes a draft with no body and accepts the empty answer', async () => {
+    fetchMock.mockResolvedValue(new Response(null, { status: 204 }))
+    await expect(deleteCourseDraft(id)).resolves.toBeUndefined()
+    expectRequest(`${base}/${id}`, 'DELETE')
+  })
+
+  it('refuses to delete a draft whose id is not a UUID before any request', async () => {
+    await expect(deleteCourseDraft('not-a-uuid')).rejects.toBeInstanceOf(ZodError)
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 
   it('approves with no body and parses all created IDs', async () => {

@@ -54,6 +54,68 @@ describe('course draft pages through HTTP', () => {
     await waitFor(() => expect(Object.fromEntries(requests.at(-1)!.query)).toEqual({ kind: 'COURSE', status: 'FAILED', page: '0', size: '20' }))
   })
 
+  it('opens a draft from the row menu, and offers editing only while it waits for review', async () => {
+    const approved = makeCourseDraft({ id: '20000000-0000-4000-8000-000000000001', status: 'APPROVED' })
+    backend(({ path, method }) => {
+      if (path === '/api/content/admin/ai-drafts') return json([makeCourseDraft(), approved])
+      if (path === `/api/content/admin/ai-drafts/${draftId}`) return json(makeCourseDraft())
+      if (path === `${base}/${draftId}/analysis`) return json(makeAnalysis())
+      throw new Error(`Unexpected ${method} ${path}`)
+    })
+    show()
+    fireEvent.click(await screen.findByRole('button', { name: 'Hành động của bản nháp 2' }))
+    expect(screen.getByRole('menuitem', { name: 'Xem chi tiết' })).toBeEnabled()
+    expect(screen.getByRole('menuitem', { name: 'Sửa' })).toBeDisabled()
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Hành động của bản nháp 1' }))
+    expect(screen.getByRole('menuitem', { name: 'Sửa' })).toBeEnabled()
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Xem chi tiết' }))
+    expect(await screen.findByRole('heading', { name: 'Bản nháp khóa học' })).toBeInTheDocument()
+    expect(screen.getByTestId('location')).toHaveTextContent(`/content-author/course-drafts/${draftId}`)
+    // Let the detail page finish loading, or its last request outlives the test and disturbs the next one.
+    await waitFor(() => expect(requests.some((request) => request.path === `${base}/${draftId}/analysis`)).toBe(true), { timeout: 3000 })
+  })
+
+  it('deletes a draft after confirmation and reloads the list, and never offers deleting an approved one', async () => {
+    const approved = makeCourseDraft({ id: '20000000-0000-4000-8000-000000000001', status: 'APPROVED' })
+    let remaining = [makeCourseDraft(), approved]
+    backend(({ path, method }) => {
+      if (path === '/api/content/admin/ai-drafts') return json(remaining)
+      if (path === `${base}/${draftId}` && method === 'DELETE') { remaining = [approved]; return json(null, 204) }
+      throw new Error(`Unexpected ${method} ${path}`)
+    })
+    show()
+    fireEvent.click(await screen.findByRole('button', { name: 'Hành động của bản nháp 2' }))
+    expect(screen.getByRole('menuitem', { name: 'Xóa' })).toBeDisabled()
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Hành động của bản nháp 1' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Xóa' }))
+    expect(requests.some((request) => request.method === 'DELETE')).toBe(false)
+    fireEvent.click(await screen.findByRole('button', { name: 'Xóa bản nháp' }, { timeout: 3000 }))
+
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Hành động của bản nháp 2' })).not.toBeInTheDocument(), { timeout: 3000 })
+    expect(requests.filter((request) => request.method === 'DELETE')).toEqual([{ path: `${base}/${draftId}`, query: new URLSearchParams(), method: 'DELETE', body: undefined }])
+    expect(screen.getByText('Đã xóa bản nháp khóa học.')).toBeInTheDocument()
+  })
+
+  it('keeps the list and shows the error when the server refuses the delete', async () => {
+    backend(({ path, method }) => {
+      if (path === '/api/content/admin/ai-drafts') return json([makeCourseDraft()])
+      if (path === `${base}/${draftId}` && method === 'DELETE') return json({ message: 'Draft is APPROVED, it cannot be deleted' }, 400)
+      throw new Error(`Unexpected ${method} ${path}`)
+    })
+    show()
+    fireEvent.click(await screen.findByRole('button', { name: 'Hành động của bản nháp 1' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Xóa' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Xóa bản nháp' }, { timeout: 3000 }))
+
+    await waitFor(() => expect(requests.some((request) => request.method === 'DELETE')).toBe(true), { timeout: 3000 })
+    expect(await screen.findByRole('button', { name: 'Hành động của bản nháp 1' })).toBeEnabled()
+    expect(screen.queryByText('Đã xóa bản nháp khóa học.')).not.toBeInTheDocument()
+  })
+
   it('creates a handwritten draft with an empty request and navigates without spending AI quota', async () => {
     backend(({ path, method }) => {
       if (path === '/api/content/admin/ai-drafts') return json([])
