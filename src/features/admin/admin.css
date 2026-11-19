@@ -133,6 +133,13 @@
 .adm-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
 .adm-field > span { font-size: .85rem; font-weight: 600; color: var(--adm-muted); }
 .adm-drawer__body .adm-field > span { font-size: 1rem; font-weight: 700; color: var(--adm-text); }
+/* A field drawn by AdminField: its label is an element of its own, and an error shows in red under the input. */
+.adm-field > .adm-field__label { font-size: .85rem; font-weight: 600; color: var(--adm-muted); }
+.adm-drawer__body .adm-field > .adm-field__label { font-size: 1rem; font-weight: 700; color: var(--adm-text); }
+.adm-modal--wide .adm-field > .adm-field__label { font-size: 1rem; font-weight: 700; color: var(--adm-text); }
+.adm-field__error { margin: 0; font-size: .85rem; line-height: 1.35; color: var(--adm-danger); }
+.adm-field.is-invalid .adm-input, .adm-field.is-invalid .adm-select, .adm-field.is-invalid .adm-textarea { border-color: var(--adm-danger); }
+.adm-field.is-invalid .adm-input:focus-visible, .adm-field.is-invalid .adm-select:focus-visible, .adm-field.is-invalid .adm-textarea:focus-visible { outline-color: var(--adm-danger); border-color: var(--adm-danger); }
 /* Red asterisk after the title of a required field; drawn by CSS so it stays out of the accessible name (the input itself carries `required`). */
 .adm-required::after { content: "*"; margin-left: 4px; color: var(--adm-danger); }
 /* A Markdown field: the text area, and a button that opens a preview of it in a dialog as the learner reads it. */
