@@ -218,6 +218,68 @@ describe('CourseForm status and duplicates', () => {
   })
 })
 
+describe('CourseForm field errors', () => {
+  function fill(code: string, name: string, band: string) {
+    fireEvent.change(screen.getByLabelText('Mã khóa học'), { target: { value: code } })
+    fireEvent.change(screen.getByLabelText('Tên khóa học'), { target: { value: name } })
+    fireEvent.change(screen.getByLabelText('Band khóa học'), { target: { value: band } })
+  }
+  beforeEach(() => { api.createCourse.mockReset(); api.updateCourse.mockReset() })
+
+  it('marks code, name and band as required while creating, and does not ask for the code of an existing course', () => {
+    const { container, unmount } = render(<CourseForm onSaved={vi.fn()} />)
+    expect(['Mã khóa học', 'Tên khóa học', 'Band khóa học'].map((label) => screen.getByLabelText(label).getAttribute('aria-required'))).toEqual(['true', 'true', 'true'])
+    expect(screen.getByLabelText('Mô tả khóa học')).not.toHaveAttribute('aria-required')
+    expect(container.querySelectorAll('.adm-required')).toHaveLength(3)
+    unmount()
+    render(<CourseForm course={course} onSaved={vi.fn()} />)
+    expect(screen.getByLabelText('Mã khóa học')).not.toHaveAttribute('aria-required')
+  })
+
+  it('sent empty, shows what is missing under each field and sends nothing', () => {
+    render(<CourseForm onSaved={vi.fn()} />)
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    fireEvent.submit(screen.getByRole('form'))
+    expect(screen.getAllByRole('alert').map((alert) => alert.textContent)).toEqual([
+      'Mã khóa học không được để trống.', 'Tên khóa học không được để trống.', 'Band khóa học không được để trống.',
+    ])
+    expect(screen.getByLabelText('Mã khóa học')).toHaveAttribute('aria-invalid', 'true')
+    expect(screen.getByLabelText('Mã khóa học')).toHaveFocus()
+    expect(api.createCourse).not.toHaveBeenCalled()
+  })
+
+  it('says a band outside the half steps is wrong, and takes the message away once it is fixed', () => {
+    render(<CourseForm onSaved={vi.fn()} />)
+    fireEvent.submit(screen.getByRole('form'))
+    fireEvent.change(screen.getByLabelText('Band khóa học'), { target: { value: '5.3' } })
+    expect(screen.getByLabelText('Band khóa học')).toHaveAccessibleDescription('Band khóa học phải từ 0 đến 9, bước 0,5.')
+    fireEvent.change(screen.getByLabelText('Band khóa học'), { target: { value: '5.5' } })
+    expect(screen.getByLabelText('Band khóa học')).not.toHaveAttribute('aria-invalid')
+  })
+
+  it('puts a price error under the price it is about, and the combo error under the combo', () => {
+    render(<CourseForm onSaved={vi.fn()} />)
+    fill('NEW', 'New', '7')
+    fireEvent.change(screen.getByLabelText('Nghe'), { target: { value: '0' } })
+    fireEvent.change(screen.getByLabelText('Đọc'), { target: { value: '90' } })
+    fireEvent.change(screen.getByLabelText('Gói kết hợp'), { target: { value: '50' } })
+    fireEvent.submit(screen.getByRole('form'))
+    expect(screen.getByLabelText('Nghe')).toHaveAccessibleDescription('Giá mở khóa Nghe phải là số nguyên dương.')
+    expect(screen.getByLabelText('Gói kết hợp')).toHaveAccessibleDescription('Giá gói kết hợp không được thấp hơn giá kỹ năng cao nhất.')
+    expect(api.createCourse).not.toHaveBeenCalled()
+  })
+
+  it('does not check the prices of a free course', async () => {
+    api.createCourse.mockResolvedValue(course)
+    render(<CourseForm onSaved={vi.fn()} />)
+    fill('NEW', 'New', '7')
+    fireEvent.change(screen.getByLabelText('Nghe'), { target: { value: '0' } })
+    fireEvent.click(screen.getByRole('switch', { name: 'Khóa học miễn phí cho mọi người' }))
+    fireEvent.submit(screen.getByRole('form'))
+    await waitFor(() => expect(api.createCourse).toHaveBeenCalledOnce())
+  })
+})
+
 describe('CourseForm delete', () => {
   beforeEach(() => { api.deleteCourse.mockReset() })
 

@@ -46,7 +46,7 @@ function expectRetained(editing = false) {
 describe('TopicForm order conflicts', () => {
   beforeEach(() => { api.createTopic.mockReset(); api.updateTopic.mockReset() })
 
-  it.each([false, true])('retains every controlled field and associates the server error with the order field (editing=%s)', async (editing) => {
+  it.each([false, true])('retains every controlled field and shows the server refusal as a message, not on the order field (editing=%s)', async (editing) => {
     api.createTopic.mockRejectedValue(conflict())
     api.updateTopic.mockRejectedValue(conflict())
     const saved = show(editing)
@@ -55,10 +55,8 @@ describe('TopicForm order conflicts', () => {
     fireEvent.submit(screen.getByRole('form'))
     const alert = await screen.findByRole('alert')
     expect(alert.textContent).toBe(message)
-    expect(order).toHaveAttribute('aria-invalid', 'true')
-    expect(order).toHaveAttribute('aria-describedby', alert.id)
-    expect(alert.id).not.toBe('')
-    expect(order.parentElement?.parentElement).toContainElement(alert)
+    expect(order).not.toHaveAttribute('aria-invalid')
+    expect(order.closest('.adm-field')).not.toContainElement(alert)
     expectRetained(editing)
     expect(screen.getByRole('button', { name: 'Lưu chủ đề' })).toBeEnabled()
     if (editing) {
@@ -71,7 +69,7 @@ describe('TopicForm order conflicts', () => {
     expect(saved).not.toHaveBeenCalled()
   })
 
-  it('clears the order error when corrected and retries only after an explicit submission', async () => {
+  it('retries after a server refusal only on an explicit submission', async () => {
     api.updateTopic.mockRejectedValueOnce(conflict()).mockResolvedValue(topic)
     const saved = show(true)
     fill(true)
@@ -79,9 +77,6 @@ describe('TopicForm order conflicts', () => {
     await screen.findByRole('alert')
     const order = screen.getByLabelText('Thứ tự chủ đề')
     fireEvent.change(order, { target: { value: '5' } })
-    expect(order).not.toHaveAttribute('aria-invalid', 'true')
-    expect(order).not.toHaveAttribute('aria-describedby')
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     expect(api.updateTopic).toHaveBeenCalledTimes(1)
     expect(saved).not.toHaveBeenCalled()
     fireEvent.submit(screen.getByRole('form'))
@@ -160,10 +155,8 @@ describe('TopicForm order conflicts', () => {
     fireEvent.change(screen.getByLabelText('Thứ tự chủ đề'), { target: { value: '4' } })
     fireEvent.submit(screen.getByRole('form'))
     await screen.findByRole('alert')
-    // A stale sibling conflict goes away once the parent changes, without submitting by itself.
+    // Moving the topic to the top level does not submit by itself.
     fireEvent.change(select, { target: { value: '' } })
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
-    expect(screen.getByLabelText('Thứ tự chủ đề')).not.toHaveAttribute('aria-invalid', 'true')
     expect(api.updateTopic).toHaveBeenCalledTimes(1)
     fireEvent.submit(screen.getByRole('form'))
     await waitFor(() => expect(saved).toHaveBeenCalledTimes(1))
@@ -184,6 +177,51 @@ describe('TopicForm order conflicts', () => {
     })
     expect(api.createTopic).not.toHaveBeenCalled()
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+})
+
+describe('TopicForm field errors', () => {
+  beforeEach(() => { api.createTopic.mockReset(); api.updateTopic.mockReset() })
+
+  it('marks code and name as required, and the skill only for a topic of a course', () => {
+    const { container, unmount } = render(<TopicForm parentId={null} courseId={courses[0]!.id} courses={courses} topics={[]} onSaved={vi.fn()} onCancel={vi.fn()} />)
+    expect(screen.getByLabelText('Mã chủ đề')).toHaveAttribute('aria-required', 'true')
+    expect(screen.getByLabelText('Tên chủ đề')).toHaveAttribute('aria-required', 'true')
+    expect(screen.getByLabelText('Kỹ năng')).toHaveAttribute('aria-required', 'true')
+    expect(container.querySelectorAll('.adm-required').length).toBeGreaterThanOrEqual(3)
+    unmount()
+    render(<TopicForm parentId={null} courseId={null} courses={courses} topics={[]} onSaved={vi.fn()} onCancel={vi.fn()} />)
+    expect(screen.getByLabelText('Kỹ năng')).not.toHaveAttribute('aria-required')
+  })
+
+  it('sent empty, shows each missing field under it and sends nothing', () => {
+    render(<TopicForm parentId={null} courseId={courses[0]!.id} courses={courses} topics={[]} onSaved={vi.fn()} onCancel={vi.fn()} />)
+    fireEvent.submit(screen.getByRole('form'))
+    expect(screen.getAllByRole('alert').map((alert) => alert.textContent)).toEqual([
+      'Mã chủ đề không được để trống.', 'Tên chủ đề không được để trống.', 'Chọn kỹ năng cho chủ đề thuộc khóa học.',
+    ])
+    expect(screen.getByLabelText('Mã chủ đề')).toHaveFocus()
+    expect(api.createTopic).not.toHaveBeenCalled()
+  })
+
+  it('refuses a lowest band above the highest, under the lowest band', () => {
+    render(<TopicForm parentId={null} courseId={null} courses={courses} topics={[]} onSaved={vi.fn()} onCancel={vi.fn()} />)
+    fireEvent.change(screen.getByLabelText('Mã chủ đề'), { target: { value: 'T' } })
+    fireEvent.change(screen.getByLabelText('Tên chủ đề'), { target: { value: 'T' } })
+    fireEvent.change(screen.getByLabelText('Band thấp nhất'), { target: { value: '7' } })
+    fireEvent.change(screen.getByLabelText('Band cao nhất'), { target: { value: '5' } })
+    fireEvent.submit(screen.getByRole('form'))
+    expect(screen.getByLabelText('Band thấp nhất')).toHaveAccessibleDescription('Band thấp nhất phải nhỏ hơn hoặc bằng band cao nhất.')
+    expect(api.createTopic).not.toHaveBeenCalled()
+  })
+
+  it('refuses a negative or fractional order under the order field', () => {
+    render(<TopicForm parentId={null} courseId={null} courses={courses} topics={[]} onSaved={vi.fn()} onCancel={vi.fn()} />)
+    fireEvent.change(screen.getByLabelText('Mã chủ đề'), { target: { value: 'T' } })
+    fireEvent.change(screen.getByLabelText('Tên chủ đề'), { target: { value: 'T' } })
+    fireEvent.change(screen.getByLabelText('Thứ tự chủ đề'), { target: { value: '-1' } })
+    fireEvent.submit(screen.getByRole('form'))
+    expect(screen.getByLabelText('Thứ tự chủ đề')).toHaveAccessibleDescription('Thứ tự chủ đề phải là số nguyên không âm.')
   })
 })
 
