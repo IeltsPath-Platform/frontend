@@ -21,8 +21,6 @@ import { PackagesPage } from './packages/pages/PackagesPage'
 import { PackageEditorPage } from './packages/pages/PackageEditorPage'
 import { AiDraftsPage } from './ai-drafts/pages/AiDraftsPage'
 import { AiDraftDetailPage } from './ai-drafts/pages/AiDraftDetailPage'
-import { CourseDraftsPage } from './course-drafts/pages/CourseDraftsPage'
-import { CourseDraftDetailPage } from './course-drafts/pages/CourseDraftDetailPage'
 import { CourseImportPage } from './course-import/pages/CourseImportPage'
 import { WorkQueuePage } from './work-queue/pages/WorkQueuePage'
 import { ExaminerReviewPage } from './examiner-review/pages/ExaminerReviewPage'
@@ -102,10 +100,6 @@ export function AdminRoutes({ area = 'admin' }: { area?: StaffArea }) {
           <Route element={<Outlet />} path="packages">
             <Route element={<PackagesPage />} index />
             <Route element={<PackageEditorPage />} path=":packageId" />
-          </Route>
-          <Route element={<Outlet />} path="course-drafts">
-            <Route element={<CourseDraftsPage />} index />
-            <Route element={<CourseDraftDetailPage />} path=":draftId" />
           </Route>
           <Route element={<AdminVocabularyPage />} path="vocabulary" />
           <Route element={<CourseImportPage />} path="course-import" />
