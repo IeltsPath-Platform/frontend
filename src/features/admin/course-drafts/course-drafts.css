@@ -86,8 +86,6 @@
 .adm-draft-state, .adm-draft-actions p { margin: 0; }
 .adm-draft-saved { color: var(--adm-muted); font-size: .88rem; font-weight: 600; }
 .adm-draft-confirm { display: grid; gap: 8px; margin-top: 10px; }
-.adm-draft-reject { display: grid; gap: 10px; padding-top: 12px; border-top: 1px solid var(--adm-border); }
-.adm-draft-reject .adm-field { margin: 0; }
 @media (min-width: 1100px) {
   .adm-draft-detail { grid-template-columns: minmax(0, 1fr) 340px; }
   .adm-draft-side { position: sticky; top: 12px; max-height: calc(100dvh - 24px); overflow-y: auto; }
