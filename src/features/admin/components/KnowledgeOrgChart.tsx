@@ -1,187 +1,227 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode, type Ref } from 'react'
-import { Maximize2, ZoomIn, ZoomOut } from 'lucide-react'
+import { createContext, memo, useCallback, useContext, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react'
+import {
+  Controls, Position, ReactFlow, getSmoothStepPath, useReactFlow, useStore, useStoreApi,
+  type Edge, type EdgeProps, type FitViewOptions, type Node, type NodeMouseHandler, type NodeProps,
+} from '@xyflow/react'
+import '@xyflow/react/dist/style.css'
 import type { KnowledgeTreeRow } from '../course-drafts/lib/courseKnowledgeTree'
-import { ZOOM_HOME, ZOOM_STEPS, type ChartZoom } from '../lib/chartZoom'
+import { BOX_HEIGHT, BOX_WIDTH, ORG_ROOT_ID, ROOT_HEIGHT, ROOT_WIDTH, layoutOrgChart } from '../lib/orgChartLayout'
 import './knowledge-org-chart.css'
 
-/** Zoom out, back to 100%, zoom in; and, when `onFit` is given, a button that makes the chart fit its frame. */
-export function ChartZoomControls({ zoom, onFit }: { zoom: ChartZoom; onFit?: () => void }) {
-  const { step, setStep } = zoom
-  return <div aria-label="Thu phóng sơ đồ" className="adm-kp-chart__zoom" role="group">
-    <button aria-label="Thu nhỏ" className="adm-btn adm-btn--small adm-btn--icon" disabled={step === 0} onClick={() => setStep(step - 1)} title="Thu nhỏ" type="button"><ZoomOut aria-hidden="true" size={16} /></button>
-    <button aria-label={`Đặt lại về 100% (đang ${Math.round(zoom.zoom * 100)}%)`} className="adm-btn adm-btn--small adm-kp-chart__zoom-value" disabled={step === ZOOM_HOME} onClick={() => setStep(ZOOM_HOME)} type="button">{Math.round(zoom.zoom * 100)}%</button>
-    <button aria-label="Phóng to" className="adm-btn adm-btn--small adm-btn--icon" disabled={step === ZOOM_STEPS.length - 1} onClick={() => setStep(step + 1)} title="Phóng to" type="button"><ZoomIn aria-hidden="true" size={16} /></button>
-    {onFit ? <button aria-label="Vừa khung" className="adm-btn adm-btn--small adm-btn--icon" onClick={onFit} title="Vừa khung" type="button"><Maximize2 aria-hidden="true" size={16} /></button> : null}
-  </div>
-}
-
-/** How far from the edge of a row a cross link runs in the gap between rows, and how far a bracket stands off a column. */
-const GAP_RUN = 11
-const SIDE_RUN = 12
-/** Size of the arrowhead at the end of a cross link, in pixels. */
-const ARROW_LENGTH = 9
-const ARROW_WIDTH = 5
-
-/** A point that serves a second point besides the one it hangs beneath: a line from the first to the second. */
-interface Link { key: string; from: string; to: string }
-/** `start` is where the line leaves the point that is needed; `arrow` is the head where it reaches the point that needs it. */
-interface DrawnLink { key: string; from: string; to: string; tone: number; path: string; arrow: string; start: [number, number] }
-/** Cross links take turns among this many colours, so lines that meet or cross can still be told apart. */
-const LINK_TONES = 3
-interface Box { x: number; y: number; width: number; height: number }
-
-/** Every cross link of the tree. */
-function crossLinks(rows: readonly KnowledgeTreeRow[]): Link[] {
-  return rows.flatMap((row) => [
-    ...row.alsoFor.map((other) => ({ key: `${row.node.id}>${other.id}`, from: row.node.id, to: other.id })),
-    ...crossLinks(row.children),
-  ])
-}
-
-/** Where an element sits inside `tree`, read from the layout alone so the zoom of the chart does not change it. */
-function placeIn(element: HTMLElement, tree: HTMLElement) {
-  let x = 0
-  let y = 0
-  for (let current: HTMLElement | null = element; current && current !== tree; current = current.offsetParent as HTMLElement | null) {
-    x += current.offsetLeft
-    y += current.offsetTop
-  }
-  return { x, y, width: element.offsetWidth, height: element.offsetHeight }
-}
-
-/**
- * A straight-edged line from a point to a second point that also needs it, as an SVG path. Rows of boxes sit at the
- * same heights across the chart, so a line can run in the gap between two rows without touching a box:
- * - in the same column, a bracket beside the column, from the side of one box to the side of the other;
- * - when the second point is above, up into the gap above the point, across to the other column, and up to it;
- * - otherwise (the same row, or lower), down into the gap below the lower of the two, across, and up to the second point.
- * The line ends with an arrowhead on the point that needs the other one.
- */
-function routeBetween(shared: Box, other: Box): Pick<DrawnLink, 'path' | 'arrow' | 'start'> {
-  const sharedX = shared.x + shared.width / 2
-  const otherX = other.x + other.width / 2
-  const points: Array<[number, number]> = []
-  const bracket = Math.abs(sharedX - otherX) < shared.width / 2
-  if (bracket) {
-    const edge = Math.max(shared.x + shared.width, other.x + other.width) + SIDE_RUN
-    points.push([shared.x + shared.width, shared.y + shared.height / 2], [edge, shared.y + shared.height / 2], [edge, other.y + other.height / 2], [other.x + other.width, other.y + other.height / 2])
-  } else if (other.y + other.height <= shared.y - 2) {
-    const run = shared.y - GAP_RUN
-    points.push([sharedX, shared.y], [sharedX, run], [otherX, run], [otherX, other.y + other.height])
-  } else {
-    const run = Math.max(shared.y + shared.height, other.y + other.height) + GAP_RUN
-    points.push([sharedX, shared.y + shared.height], [sharedX, run], [otherX, run], [otherX, other.y + other.height])
-  }
-  const [tipX, tipY] = points[points.length - 1]!
-  // A bracket ends going left into the side of the box; every other route ends going up into its bottom edge.
-  const arrow = bracket
-    ? `M ${tipX} ${tipY} L ${tipX + ARROW_LENGTH} ${tipY - ARROW_WIDTH} L ${tipX + ARROW_LENGTH} ${tipY + ARROW_WIDTH} Z`
-    : `M ${tipX} ${tipY} L ${tipX - ARROW_WIDTH} ${tipY + ARROW_LENGTH} L ${tipX + ARROW_WIDTH} ${tipY + ARROW_LENGTH} Z`
-  return { path: points.map(([x, y], index) => `${index === 0 ? 'M' : 'L'} ${x} ${y}`).join(' '), arrow, start: points[0]! }
-}
-
-/** What a box must carry so the chart can measure it and light its links when it is hovered or focused. */
+/** What a box must carry so the chart can light the links of the point under the pointer or the keyboard. */
 export interface ChartBoxProps {
   className: string
-  ref: (element: HTMLElement | null) => void
   onMouseEnter: () => void
   onMouseLeave: () => void
   onFocus: () => void
   onBlur: () => void
 }
 
+type PointNode = Node<{ row: KnowledgeTreeRow }, 'point'>
+type RootNode = Node<Record<string, never>, 'root'>
+type OrgNode = PointNode | RootNode
+type BranchEdge = Edge<Record<string, never>, 'branch'>
+type LinkState = 'quiet' | 'active' | 'dim'
+type LinkEdge = Edge<{ tone: number; state: LinkState; markerId: string }, 'link'>
+
+/** Cross links take turns among this many colours, so lines that meet or cross can still be told apart. */
+const LINK_TONES = 3
+/** Where a line meets a box. A handle is given to React Flow up front (a box that already has its size is not measured). */
+const end = (id: string, type: 'source' | 'target', position: Position, x: number, y: number) => ({ id, type, position, x, y, width: 1, height: 1 }) as const
+const POINT_ENDS = [
+  end('up', 'target', Position.Top, BOX_WIDTH / 2 - 0.5, 0),
+  end('down', 'source', Position.Bottom, BOX_WIDTH / 2 - 0.5, BOX_HEIGHT - 1),
+  end('out-left', 'source', Position.Left, 0, BOX_HEIGHT / 2 - 0.5),
+  end('out-right', 'source', Position.Right, BOX_WIDTH - 1, BOX_HEIGHT / 2 - 0.5),
+  end('in-left', 'target', Position.Left, 0, BOX_HEIGHT / 2 - 0.5),
+  end('in-right', 'target', Position.Right, BOX_WIDTH - 1, BOX_HEIGHT / 2 - 0.5),
+]
+const ROOT_ENDS = [end('down', 'source', Position.Bottom, ROOT_WIDTH / 2 - 0.5, ROOT_HEIGHT - 1)]
+/** Nothing here is dragged, connected, selected or deleted by React Flow: the chart only reads. */
+const READ_ONLY = { draggable: false, selectable: false, focusable: false, connectable: false, deletable: false } as const
+
+const FIT: FitViewOptions = { padding: 0.04, minZoom: 0.4, maxZoom: 1, duration: 0 }
+const ARIA_LABELS = {
+  'controls.ariaLabel': 'Điều khiển sơ đồ',
+  'controls.zoomIn.ariaLabel': 'Phóng to',
+  'controls.zoomOut.ariaLabel': 'Thu nhỏ',
+  'controls.fitView.ariaLabel': 'Vừa khung',
+} as const
+
+interface OrgChartContext {
+  root: ReactNode
+  renderBox: (row: KnowledgeTreeRow, box: ChartBoxProps) => ReactNode
+  hover: (id: string | null) => void
+}
+const OrgChartScope = createContext<OrgChartContext>({ root: null, renderBox: () => null, hover: () => undefined })
+
+/** One point, drawn by the caller. The box props light the point's links; the size is the layout's, so the box must match it. */
+const PointView = memo(function PointView({ data }: NodeProps<PointNode>) {
+  const { renderBox, hover } = useContext(OrgChartScope)
+  const id = data.row.node.id
+  const box: ChartBoxProps = {
+    className: 'adm-kp-chart__box',
+    onMouseEnter: () => hover(id), onMouseLeave: () => hover(null), onFocus: () => hover(id), onBlur: () => hover(null),
+  }
+  return renderBox(data.row, box)
+})
+
+const RootView = memo(function RootView() {
+  const { root } = useContext(OrgChartScope)
+  return <div className="adm-kp-chart__root">{root}</div>
+})
+
+const nodeTypes = { point: PointView, root: RootView }
+
+/** A plain line from a point to what it needs taught first. */
+function BranchView({ sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition }: EdgeProps<BranchEdge>) {
+  const [path] = getSmoothStepPath({ sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition, borderRadius: 7 })
+  return <path className="adm-kp-chart__branch" d={path} />
+}
+
+/** A point that serves a second point too: a line with a dot where it leaves the first and an arrow where it reaches the second. */
+function LinkView({ sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, data }: EdgeProps<LinkEdge>) {
+  const [path] = getSmoothStepPath({ sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition, borderRadius: 6, offset: 14 })
+  const tone = data?.tone ?? 0
+  const state = data?.state ?? 'quiet'
+  return <g className={`adm-kp-chart__link adm-kp-chart__link--${tone}${state === 'active' ? ' is-active' : state === 'dim' ? ' is-dim' : ''}`}>
+    <path className="adm-kp-chart__line" d={path} markerEnd={`url(#${data?.markerId}-${tone})`} />
+    <circle cx={sourceX} cy={sourceY} r={3.5} />
+  </g>
+}
+const edgeTypes = { branch: BranchView, link: LinkView }
+
+/** Fits the whole chart into the frame when it first appears, when the frame changes size, and when `again` changes. */
+function FitToFrame({ again }: { again: unknown }) {
+  const { fitView } = useReactFlow()
+  const size = useStore((state) => `${state.width}x${state.height}`)
+  useEffect(() => { void fitView(FIT) }, [fitView, size, again])
+  return null
+}
+
+/** Brings the highlighted point into view when it is outside the frame (it may have been picked from elsewhere). */
+function Reveal({ id, places }: { id: string | null; places: ReadonlyMap<string, { x: number; y: number }> }) {
+  const store = useStoreApi()
+  const { setCenter } = useReactFlow()
+  const latest = useRef(places)
+  useEffect(() => { latest.current = places })
+  useEffect(() => {
+    const spot = id ? latest.current.get(id) : undefined
+    if (!spot) return
+    const { transform: [tx, ty, zoom], width, height } = store.getState()
+    if (width === 0 || height === 0) return
+    const left = spot.x * zoom + tx
+    const top = spot.y * zoom + ty
+    if (left < 0 || top < 0 || left + BOX_WIDTH * zoom > width || top + BOX_HEIGHT * zoom > height) {
+      void setCenter(spot.x + BOX_WIDTH / 2, spot.y + BOX_HEIGHT / 2, { zoom, duration: 0 })
+    }
+  }, [id, setCenter, store])
+  return null
+}
+
 /**
- * A prerequisite tree drawn as an organisation chart. One large box at the top (`root`); from it a line runs to each
- * root row, and beneath a row are the rows it needs taught first, joined by lines, as deep as they go.
+ * A prerequisite tree drawn as an organisation chart on React Flow. One large box at the top (`root`); from it a line runs to
+ * each goal, and beneath a point are the points it needs taught first, as deep as they go. {@link layoutOrgChart} decides where
+ * every box goes; React Flow draws the boxes and lines and gives the frame its panning and zoom (the buttons, a pinch, or the
+ * wheel with Ctrl held: the page keeps scrolling with the wheel).
  *
- * Every point is drawn once, beneath the first point that needs it. A point that other points need too is joined to each
- * of them by a straight-edged line that runs behind the boxes, so the chart shows every link without drawing the point
- * twice. A box is drawn by `renderBox`, which must spread the given props on its one element: the chart measures that
- * element to route the links, and lights the links of the box under the pointer, or of `highlightId` when none is.
+ * Every point is drawn once, beneath the first point that needs it. A point that other points need too is joined to each of
+ * them by a coloured line (a dot where it leaves the first point, an arrow where it reaches the second), so the chart shows
+ * every link without drawing the point twice. The lines of the point under the pointer, or of `highlightId` when none is, stand
+ * out and the others fade. A box is drawn by `renderBox`, which must spread the given props on its one element and match the
+ * layout's box size.
  */
-export function KnowledgeOrgChart({ rows, zoom, label, root, renderBox, highlightId = null, onSize, containerRef }: {
+export function KnowledgeOrgChart({ rows, label, root, renderBox, highlightId = null, fitAgain }: {
   rows: readonly KnowledgeTreeRow[]
-  zoom: number
   label: string
   /** The inside of the large box at the top. */
   root: ReactNode
   renderBox: (row: KnowledgeTreeRow, box: ChartBoxProps) => ReactNode
   highlightId?: string | null
-  /** Told the size of the chart before zoom, each time it changes. */
-  onSize?: (size: { width: number; height: number }) => void
-  /** The element that holds the chart, for a caller that scrolls it or fits the chart to it. */
-  containerRef?: Ref<HTMLDivElement>
+  /** Fits the chart to its frame again whenever this value changes (when it is folded or opened as a whole, say). */
+  fitAgain?: unknown
 }) {
-  const links = useMemo(() => crossLinks(rows), [rows])
-  // The chart may be mounted inside a portal after its parent first renders, so it is held in state: the measuring below
-  // runs when the element appears.
-  const [tree, setTree] = useState<HTMLDivElement | null>(null)
-  // The boxes by point, filled as they mount. A map held in state, not a ref: nothing reads it while drawing.
-  const [boxes] = useState(() => new Map<string, HTMLElement>())
-  // The chart's size before zoom, to size the frame that scrolls; and the cross links, measured from the real boxes.
-  const [size, setSize] = useState<{ width: number; height: number } | null>(null)
-  const [drawn, setDrawn] = useState<DrawnLink[]>([])
-  // The point under the pointer or the keyboard: its cross links stand out and the others fade.
+  const layout = useMemo(() => layoutOrgChart(rows), [rows])
   const [hovered, setHovered] = useState<string | null>(null)
   const active = hovered ?? highlightId
+  const markerId = useId()
 
-  const measure = useCallback(() => {
-    if (!tree) return
-    const next = { width: tree.offsetWidth, height: tree.offsetHeight }
-    setSize(next)
-    onSize?.(next)
-    const lines: DrawnLink[] = []
-    for (const [index, link] of links.entries()) {
-      const shared = boxes.get(link.from)
-      const dependent = boxes.get(link.to)
-      if (!shared || !dependent) continue
-      lines.push({ key: link.key, from: link.from, to: link.to, tone: index % LINK_TONES, ...routeBetween(placeIn(shared, tree), placeIn(dependent, tree)) })
-    }
-    setDrawn(lines)
-  }, [boxes, links, onSize, tree])
-  // A ResizeObserver reports the first size as soon as it starts watching, before the next paint, so this measures once
-  // the chart is laid out and again whenever its size changes.
-  useEffect(() => {
-    if (!tree || typeof ResizeObserver === 'undefined') return
-    const watch = new ResizeObserver(measure)
-    watch.observe(tree)
-    return () => watch.disconnect()
-  }, [measure, tree])
+  const nodes = useMemo<OrgNode[]>(() => [
+    { id: ORG_ROOT_ID, type: 'root', position: layout.root, width: ROOT_WIDTH, height: ROOT_HEIGHT, handles: [...ROOT_ENDS], data: {}, ...READ_ONLY },
+    ...layout.rows.map((placed): PointNode => ({
+      id: placed.id, type: 'point', position: { x: placed.x, y: placed.y }, width: BOX_WIDTH, height: BOX_HEIGHT,
+      handles: [...POINT_ENDS], data: { row: placed.row }, ...READ_ONLY,
+    })),
+  ], [layout])
 
-  /** A plain function, not a component, so a box keeps its focus when the chart is drawn again. */
-  function renderBranch(lines: readonly KnowledgeTreeRow[]) {
-    return <ul>{lines.map((row) => {
-      const id = row.node.id
-      const box: ChartBoxProps = {
-        className: 'adm-kp-chart__box',
-        ref: (element) => { if (element) boxes.set(id, element); else boxes.delete(id) },
-        onMouseEnter: () => setHovered(id),
-        onMouseLeave: () => setHovered(null),
-        onFocus: () => setHovered(id),
-        onBlur: () => setHovered(null),
-      }
-      return <li key={id}>
-        {renderBox(row, box)}
-        {row.children.length ? renderBranch(row.children) : null}
-      </li>
-    })}</ul>
-  }
+  const edges = useMemo<Array<BranchEdge | LinkEdge>>(() => {
+    const at = new Map(layout.rows.map((placed) => [placed.id, placed]))
+    const branches = layout.rows.map((placed): BranchEdge => ({
+      id: `branch-${placed.parent}>${placed.id}`, type: 'branch', source: placed.parent, target: placed.id,
+      sourceHandle: 'down', targetHandle: 'up', selectable: false, focusable: false, data: {},
+    }))
+    const links = layout.crossLinks.flatMap((link, index): LinkEdge[] => {
+      const from = at.get(link.from)
+      const to = at.get(link.to)
+      if (!from || !to) return []
+      // A point set directly over (or under) the other is joined by a bracket on its right; otherwise the line leaves the side
+      // that faces the other point.
+      const bracket = Math.abs(from.x - to.x) < BOX_WIDTH / 2
+      const toTheRight = to.x >= from.x
+      const state: LinkState = active === null ? 'quiet' : link.from === active || link.to === active ? 'active' : 'dim'
+      return [{
+        id: `link-${link.key}`, type: 'link', source: link.from, target: link.to, selectable: false, focusable: false,
+        sourceHandle: bracket || toTheRight ? 'out-right' : 'out-left', targetHandle: bracket ? 'in-right' : toTheRight ? 'in-left' : 'in-right',
+        zIndex: state === 'active' ? 10 : 0, data: { tone: index % LINK_TONES, state, markerId },
+      }]
+    })
+    return [...branches, ...links]
+  }, [layout, active, markerId])
 
-  return <div aria-label={label} className="adm-kp-chart" ref={containerRef} role="group">
-    <div className="adm-kp-chart__frame" style={size ? { width: size.width * zoom, height: size.height * zoom } : undefined}>
-      <div className="adm-kp-chart__tree" ref={setTree} style={{ transform: `scale(${zoom})` }}>
-        <svg aria-hidden="true" className="adm-kp-chart__links">
-          {drawn.map((link) => <g className={`adm-kp-chart__link adm-kp-chart__link--${link.tone}${active ? (link.from === active || link.to === active ? ' is-active' : ' is-dim') : ''}`} key={link.key}>
-            <path className="adm-kp-chart__line" d={link.path} />
-            <circle cx={link.start[0]} cy={link.start[1]} r={3.5} />
-            <path d={link.arrow} />
-          </g>)}
-        </svg>
-        <ul><li>
-          <div className="adm-kp-chart__root">{root}</div>
-          {renderBranch(rows)}
-        </li></ul>
-      </div>
-    </div>
+  const scope = useMemo<OrgChartContext>(() => ({ root, renderBox, hover: setHovered }), [root, renderBox])
+  const places = useMemo(() => new Map(layout.rows.map((placed) => [placed.id, { x: placed.x, y: placed.y }])), [layout])
+  // React Flow gives a box the pointer only once something listens for it; the boxes light their own links through their props.
+  const ignore = useCallback<NodeMouseHandler<OrgNode>>(() => undefined, [])
+
+  return <div aria-label={label} className="adm-kp-chart" role="group">
+    {/* The arrowheads the lines point with: defined here once, outside React Flow's own layers, so they never pan or zoom. */}
+    <svg aria-hidden="true" className="adm-kp-chart__defs" focusable="false">
+      <defs>{Array.from({ length: LINK_TONES }, (_, tone) => <marker id={`${markerId}-${tone}`} key={tone} markerHeight="9" markerWidth="9" orient="auto" refX="8" refY="4.5">
+        <path className={`adm-kp-chart__arrow adm-kp-chart__arrow--${tone}`} d="M 0 0 L 9 4.5 L 0 9 Z" />
+      </marker>)}</defs>
+    </svg>
+    <OrgChartScope.Provider value={scope}>
+      <ReactFlow<OrgNode, BranchEdge | LinkEdge>
+        ariaLabelConfig={ARIA_LABELS}
+        deleteKeyCode={null}
+        disableKeyboardA11y
+        edges={edges}
+        edgesFocusable={false}
+        edgeTypes={edgeTypes}
+        elementsSelectable={false}
+        fitView
+        fitViewOptions={FIT}
+        maxZoom={2}
+        minZoom={0.2}
+        multiSelectionKeyCode={null}
+        nodes={nodes}
+        nodesConnectable={false}
+        nodesDraggable={false}
+        nodesFocusable={false}
+        nodeTypes={nodeTypes}
+        onNodeClick={ignore}
+        onNodeMouseEnter={ignore}
+        onNodeMouseLeave={ignore}
+        preventScrolling={false}
+        selectionKeyCode={null}
+        translateExtent={[[-40, -40], [layout.width + 40, layout.height + 40]]}
+        zoomOnDoubleClick={false}
+        zoomOnScroll={false}
+      >
+        <Controls orientation="horizontal" position="top-right" showInteractive={false} />
+        <FitToFrame again={fitAgain} />
+        <Reveal id={highlightId} places={places} />
+      </ReactFlow>
+    </OrgChartScope.Provider>
   </div>
 }

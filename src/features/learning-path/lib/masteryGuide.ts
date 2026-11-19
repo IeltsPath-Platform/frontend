@@ -42,6 +42,11 @@ export function reviewPath(reviewId: string): string {
   return `/learn/reviews/${reviewId}`
 }
 
+/** One probe of the prerequisite diagnosis a review opened; the review is the page the learner comes back to. */
+export function diagnosticProbePath(reviewId: string, sessionId: string, probeId: string): string {
+  return `/learn/reviews/${reviewId}/diagnostics/${sessionId}/probes/${probeId}`
+}
+
 export interface DueLabel {
   text: string
   /** Due now or already late: the row is drawn with urgency. */

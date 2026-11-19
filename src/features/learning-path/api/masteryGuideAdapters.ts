@@ -1,5 +1,6 @@
 import type {
   BasketOptionalItem,
+  BasketReason,
   BasketRequiredItem,
   MasteryTier,
   ReviewBasket,
@@ -44,7 +45,7 @@ export type BasketOptionalDto = {
   tier: MasteryTier
   mastery: number
   dueAt?: string | null
-  reason: 'CONSOLIDATE' | 'DUE' | 'WRITING_CRITERION' | 'SPEAKING_CRITERION' | 'ERROR_PATTERN' | 'PRACTICE'
+  reason: BasketReason
   hasUnrevealedSet: boolean
   reviewId?: string | null
   errorTrap?: ErrorHintDto | null

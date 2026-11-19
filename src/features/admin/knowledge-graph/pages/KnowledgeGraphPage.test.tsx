@@ -142,7 +142,7 @@ describe('KnowledgeGraphPage', () => {
     expect(screen.queryByRole('complementary')).not.toBeInTheDocument()
   })
 
-  it('folds a branch of the chart, zooms it and fits it to its frame', async () => {
+  it('folds a branch of the chart and opens them all again, with the zoom and fit buttons of React Flow', async () => {
     renderPage()
     fireEvent.click(await screen.findByRole('button', { name: 'Xem sơ đồ Reading' }))
     const popup = await screen.findByRole('dialog', { name: 'Sơ đồ Reading' })
@@ -155,7 +155,6 @@ describe('KnowledgeGraphPage', () => {
 
     fireEvent.click(within(popup).getByRole('button', { name: 'Phóng to' }))
     fireEvent.click(within(popup).getByRole('button', { name: 'Thu nhỏ' }))
-    expect(within(popup).getByRole('button', { name: /^Đặt lại về 100%/ })).toBeInTheDocument()
     expect(within(popup).getByRole('button', { name: 'Vừa khung' })).toBeInTheDocument()
   })
 

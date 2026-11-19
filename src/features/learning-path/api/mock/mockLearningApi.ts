@@ -135,6 +135,19 @@ export function createMockLearningApi({ storage = null, latencyMs = 0, now = () 
       stage: 'PRACTICE',
       results: [],
     }),
+    // The mock reviews never open a prerequisite diagnosis.
+    getDiagnostic: async () => {
+      throw new ApiError(404, 'NOT_FOUND', 'Mock learning không có chẩn đoán kiến thức nền.')
+    },
+    getDiagnosticProbe: async () => {
+      throw new ApiError(404, 'NOT_FOUND', 'Mock learning không có chẩn đoán kiến thức nền.')
+    },
+    submitDiagnosticProbe: async () => {
+      throw new ApiError(404, 'NOT_FOUND', 'Mock learning không có chẩn đoán kiến thức nền.')
+    },
+    skipDiagnostic: async () => {
+      throw new ApiError(404, 'NOT_FOUND', 'Mock learning không có chẩn đoán kiến thức nền.')
+    },
     createTestAssignment: (topicId) => respond((s) => tests.createTestAssignment(s, topicId)),
     createCourseTestAssignment: (courseId) => respond((s) => tests.createCourseTestAssignment(s, courseId)),
     // The mock course has no practice-test milestones.
