@@ -205,5 +205,6 @@ export function submitReview(state: MockState, reviewId: string, request: Review
     resumeLessonId: review.resumeLessonId,
     topicId: review.topicId,
     gamification: null,
+    blocking: review.blocking !== false,
   }
 }
