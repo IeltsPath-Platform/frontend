@@ -26,7 +26,9 @@ import type {
   EssayGrade,
   LessonPracticeSets,
   PlacementResult,
-  PlacementTest,
+  PlacementAssignment,
+  PlacementOptions,
+  PlacementPool,
   PracticeAttemptReview,
   PracticeAttemptView,
   PracticeEssayRequest,
@@ -54,7 +56,9 @@ import type { LessonResourcesResponse } from '~types/lesson'
 
 /** Every method rejects with `ApiError` on failure. */
 export interface LearningApi {
-  getPlacementTest(): Promise<PlacementTest>
+  getPlacementOptions(): Promise<PlacementOptions>
+  assignPlacementTest(pool: PlacementPool): Promise<PlacementAssignment>
+  releasePlacementAssignment(assignmentId: string): Promise<void>
   /** Replaces the learner's active study goal with the placement survey answers. */
   saveLearningGoal(request: LearningGoalRequest): Promise<void>
   /** `null` when the learner has no active goal. */
@@ -166,6 +170,7 @@ export interface LearningApi {
   /** A practice test whose status is `AVAILABLE` or `DONE`; a retake keeps the first result for the score. */
   createPracticeTestAssignment(courseId: string, packageId: string): Promise<TestAssignment>
   createAttempt(request: StartAttemptRequest): Promise<AssessmentAttempt>
+  cancelAttempt(attemptId: string): Promise<void>
   getAttemptStructure(attemptId: string): Promise<AttemptStructure>
   saveItemResponse(attemptId: string, itemId: string, request: SaveItemResponseRequest): Promise<AttemptItemResponse>
   submitAttempt(attemptId: string): Promise<AssessmentAttempt>

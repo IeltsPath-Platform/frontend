@@ -32,7 +32,7 @@ export function makePackage(versions: PackageVersion[] = [published, draft]): Co
   return {
     id: packageId, code: 'READING-PRACTICE-1', title: 'Reading practice', packageType: 'PRACTICE_SET',
     accessLevel: 'FREE', status: 'PUBLISHED', currentPublishedVersionId: publishedId,
-    lessonId: null, topicId: null, courseId: null, sourceCode: null, createdAt: '2026-10-23T00:00:00Z',
+    lessonId: null, topicId: null, courseId: null, sourceCode: null, placementPool: null, createdAt: '2026-10-23T00:00:00Z',
     updatedAt: '2026-10-23T00:00:00Z', versions,
   }
 }
@@ -41,7 +41,7 @@ export function makeCatalogPackage(overrides: Partial<PackageListItem> = {}): Pa
   return {
     id: pkg.id, code: pkg.code, title: pkg.title, packageType: pkg.packageType, accessLevel: pkg.accessLevel,
     status: pkg.status, currentPublishedVersionId: pkg.currentPublishedVersionId, lessonId: pkg.lessonId,
-    topicId: pkg.topicId, courseId: pkg.courseId, sourceCode: pkg.sourceCode,
+    topicId: pkg.topicId, courseId: pkg.courseId, sourceCode: pkg.sourceCode, placementPool: pkg.placementPool,
     createdAt: pkg.createdAt, updatedAt: pkg.updatedAt, latestVersionNumber: 2, hasDraft: true, ...overrides,
   }
 }

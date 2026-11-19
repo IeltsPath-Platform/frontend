@@ -13,6 +13,7 @@ import { ApiErrorState, CourseCatalogSkeleton, EmptyState } from '../components/
 import { COURSE_SKILLS } from '../lib/courseSkills'
 import { timeAgo } from '../lib/relativeTime'
 import { useApiResource } from '../lib/useApiResource'
+import { PlacementRetakeEntry } from '../placement/PlacementRetakeEntry'
 
 type CourseFilter = 'ALL' | 'RECOMMENDED' | 'IN_PROGRESS' | 'PASSED'
 
@@ -60,6 +61,7 @@ export function CourseListPage() {
           <PlacementSpotlight />
         )
       ) : null}
+      {courses.status === 'success' ? <PlacementRetakeEntry /> : null}
 
       <SuggestionStrip />
 

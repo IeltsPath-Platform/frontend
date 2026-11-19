@@ -7,7 +7,7 @@ const MD5_ID = 'c4ca4238-a0b9-2382-0dcc-509a6f75849b'
 const item = {
   id: MD5_ID, code: 'DEMO-REVIEW-1', title: 'Demo', packageType: 'PRACTICE_SET', accessLevel: 'FREE', status: 'PUBLISHED',
   currentPublishedVersionId: 'c81e728d-9d4c-2f63-6f06-7f89cc14862c', lessonId: MD5_ID, topicId: null, courseId: null,
-  sourceCode: null, createdAt: '2026-10-20T14:16:13.483776Z', updatedAt: '2026-10-20T14:16:13.483776Z',
+  sourceCode: null, placementPool: null, createdAt: '2026-10-20T14:16:13.483776Z', updatedAt: '2026-10-20T14:16:13.483776Z',
   latestVersionNumber: 1, hasDraft: false,
 }
 

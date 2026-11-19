@@ -5,12 +5,13 @@ import { ToastProvider } from '@/components/toast/ToastProvider'
 import type { CourseSummary } from '~types/learningPath'
 import { CourseListPage } from './CourseListPage'
 
-const { listCourses, getSuggestions } = vi.hoisted(() => ({
+const { listCourses, getSuggestions, getPlacementOptions } = vi.hoisted(() => ({
   listCourses: vi.fn(),
   getSuggestions: vi.fn(),
+  getPlacementOptions: vi.fn(),
 }))
 
-vi.mock('../api', () => ({ learningApi: { listCourses, getSuggestions } }))
+vi.mock('../api', () => ({ learningApi: { listCourses, getSuggestions, getPlacementOptions } }))
 
 function course(overrides: Partial<CourseSummary> = {}): CourseSummary {
   return {
@@ -41,6 +42,7 @@ describe('CourseListPage lesson progress', () => {
     listCourses.mockReset()
     getSuggestions.mockReset()
     getSuggestions.mockResolvedValue([])
+    getPlacementOptions.mockReset().mockResolvedValue({ pools: [], limitPer24h: 3, retakesLeft: 2, nextRetakeAt: null, hasPlacement: false, currentBand: null, openAssignment: null })
   })
 
   it('shows the fixed four skills and the lessons they add up to instead of a topic count', async () => {
@@ -107,5 +109,21 @@ describe('CourseListPage lesson progress', () => {
     const bar = await renderCourse(course({ totalLessons: 0, completedLessons: 0, passedTopicCount: 2, lastStudiedAt: null }))
     expect(document.querySelector('.lp-tile__facts')).toHaveTextContent(/^4 kỹ năng$/)
     expect(bar).toHaveAttribute('value', '29')
+  })
+
+  it('keeps the placement spotlight and adds a retake link beside it for a placed learner', async () => {
+    getPlacementOptions.mockResolvedValue({ pools: [], limitPer24h: 3, retakesLeft: 2, nextRetakeAt: null, hasPlacement: true, currentBand: 5, openAssignment: null })
+    listCourses.mockResolvedValue([course({ completedLessons: 0, lastStudiedAt: null })])
+    render(<MemoryRouter><ToastProvider><CourseListPage /></ToastProvider></MemoryRouter>)
+    expect(await screen.findByRole('heading', { name: 'Làm test đầu vào để biết band hiện tại' })).toBeInTheDocument()
+    expect(await screen.findByRole('link', { name: /Làm lại bài test đầu vào.*còn 2 lượt/i })).toHaveAttribute('href', '/learn/placement')
+  })
+
+  it('keeps the original placement spotlight for learners without a placement', async () => {
+    listCourses.mockResolvedValue([course({ completedLessons: 0, lastStudiedAt: null })])
+    render(<MemoryRouter><ToastProvider><CourseListPage /></ToastProvider></MemoryRouter>)
+    expect(await screen.findByRole('heading', { name: 'Làm test đầu vào để biết band hiện tại' })).toBeInTheDocument()
+    expect(await screen.findByRole('link', { name: 'Làm test đầu vào' })).toHaveAttribute('href', '/learn/placement')
+    expect(screen.queryByRole('link', { name: /Làm lại bài test đầu vào/ })).not.toBeInTheDocument()
   })
 })
