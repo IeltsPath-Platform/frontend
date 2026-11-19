@@ -5,14 +5,12 @@ import { AdminError, AdminLoading } from '../../components/AdminState'
 import { AdminPage } from '../../pages/AdminPage'
 import { useAdminResource } from '../../lib/useAdminResource'
 import { rejectAiDraft } from '../../ai-drafts/api/aiDraftApi'
-import { DRAFT_STATUS_LABEL, aiDraftFailure, draftBadgeClass, draftIsRunning } from '../../ai-drafts/lib/aiDraftLabels'
-import { useDraftPolling } from '../../ai-drafts/lib/useDraftPolling'
+import { DRAFT_STATUS_LABEL, aiDraftFailure, draftBadgeClass } from '../../ai-drafts/lib/aiDraftLabels'
 import { QUESTION_DRAFTS_ENABLED } from '../../ai-drafts/draftFlags'
 import { fetchKnowledgeTree } from '../../knowledge-graph/api/knowledgeGraphApi'
 import { analyzeCourseDraft, approveCourseDraft, getCourseDraft, saveCourseDraft } from '../api/courseDraftApi'
 import { CourseStructureEditor } from '../components/CourseStructureEditor'
 import { CourseAnalysisPanel } from '../components/CourseAnalysisPanel'
-import { CourseDraftProgress } from '../components/CourseDraftProgress'
 import { courseDraftError } from '../lib/courseDraftLabels'
 import type { CourseApproval, CourseDraft, CourseStructure } from '../types'
 import '../course-drafts.css'
@@ -39,7 +37,6 @@ function CourseDetail({ id }: { id: string }) {
   }
   const draft = resource.status === 'success' ? resource.data : loaded
   const ready = draft?.status === 'READY'
-  useDraftPolling(resource.status === 'success' && !!draft && draftIsRunning(draft.status), resource.refresh)
   // Names for the knowledge points the analysis mentions by id; without them the panel shows the ids.
   const knowledge = useAdminResource('course-analysis-names', (signal) => fetchKnowledgeTree({}, signal))
   const names = new Map((knowledge.data?.nodes ?? []).map((node) => [node.id, { code: node.code, name: node.name }]))
@@ -116,7 +113,7 @@ function CourseDetail({ id }: { id: string }) {
     {draft ? <div className="adm-course-workspace">
       {draft.status === 'FAILED' ? <p className="adm-alert adm-alert--error" role="alert">{aiDraftFailure(draft.errorCode)}</p> : null}
       {notice ? <p className="adm-alert" role="status">{notice}</p> : null}
-      {draftIsRunning(draft.status) ? <CourseDraftProgress createdAt={draft.createdAt} request={draft.request} status={draft.status} /> : <div className="adm-draft-detail">
+      <div className="adm-draft-detail">
         <div className="adm-draft-main">
           {structure ? <CourseStructureEditor value={structure} onChange={edit} disabled={locked} /> : <div className="adm-block"><p className="adm-muted">Bản nháp chưa có cấu trúc để soạn.</p></div>}
         </div>
@@ -134,7 +131,7 @@ function CourseDetail({ id }: { id: string }) {
           {ready ? <section aria-label="Kiểm tra bản nháp">{analysis.status === 'loading' ? <div className="adm-block"><AdminLoading /></div> : analysis.status === 'error' ? <div className="adm-block"><AdminError message={analysis.error!} onRetry={analysis.reload} /></div> : analysis.data ? <CourseAnalysisPanel analysis={analysis.data} names={names} unmatchedTopics={draft.result?.unmatchedTopics} warnings={draft.result?.warnings} questionDraftsEnabled={QUESTION_DRAFTS_ENABLED} /> : null}</section> : null}
           {approved ? <section className="adm-block"><h2>Đã tạo khóa học (chưa kích hoạt)</h2><Link to="/content-author/courses">Mở Khóa học &amp; chủ đề</Link><p>Khóa học và chủ đề: Chưa kích hoạt. Bài học và đề cuối: Nháp.</p><ul>{approved.finalTestPackageIds.map((packageId) => <li key={packageId}><Link to={`/content-author/packages/${packageId}`}>Hoàn thiện đề cuối {packageId}</Link></li>)}</ul></section> : null}
         </aside>
-      </div>}
+      </div>
     </div> : null}
   </AdminPage>
 }

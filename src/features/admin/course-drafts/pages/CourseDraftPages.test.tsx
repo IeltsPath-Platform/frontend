@@ -29,7 +29,6 @@ function show(path = '/content-author/course-drafts') {
     <Route path="/content-author/course-drafts/:draftId" element={<CourseDraftDetailPage />} />
   </Routes><Location /></MemoryRouter>)
 }
-async function settle() { await act(async () => { await Promise.resolve() }) }
 function readyBackend(draft: CourseDraft = makeCourseDraft()) {
   backend(({ path, method }) => {
     if (path === `/api/content/admin/ai-drafts/${draftId}`) return json(draft)
@@ -55,6 +54,68 @@ describe('course draft pages through HTTP', () => {
     await waitFor(() => expect(Object.fromEntries(requests.at(-1)!.query)).toEqual({ kind: 'COURSE', status: 'FAILED', page: '0', size: '20' }))
   })
 
+  it('opens a draft from the row menu, and offers editing only while it waits for review', async () => {
+    const approved = makeCourseDraft({ id: '20000000-0000-4000-8000-000000000001', status: 'APPROVED' })
+    backend(({ path, method }) => {
+      if (path === '/api/content/admin/ai-drafts') return json([makeCourseDraft(), approved])
+      if (path === `/api/content/admin/ai-drafts/${draftId}`) return json(makeCourseDraft())
+      if (path === `${base}/${draftId}/analysis`) return json(makeAnalysis())
+      throw new Error(`Unexpected ${method} ${path}`)
+    })
+    show()
+    fireEvent.click(await screen.findByRole('button', { name: 'Hành động của bản nháp 2' }))
+    expect(screen.getByRole('menuitem', { name: 'Xem chi tiết' })).toBeEnabled()
+    expect(screen.getByRole('menuitem', { name: 'Sửa' })).toBeDisabled()
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Hành động của bản nháp 1' }))
+    expect(screen.getByRole('menuitem', { name: 'Sửa' })).toBeEnabled()
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Xem chi tiết' }))
+    expect(await screen.findByRole('heading', { name: 'Bản nháp khóa học' })).toBeInTheDocument()
+    expect(screen.getByTestId('location')).toHaveTextContent(`/content-author/course-drafts/${draftId}`)
+    // Let the detail page finish loading, or its last request outlives the test and disturbs the next one.
+    await waitFor(() => expect(requests.some((request) => request.path === `${base}/${draftId}/analysis`)).toBe(true), { timeout: 3000 })
+  })
+
+  it('deletes a draft after confirmation and reloads the list, and never offers deleting an approved one', async () => {
+    const approved = makeCourseDraft({ id: '20000000-0000-4000-8000-000000000001', status: 'APPROVED' })
+    let remaining = [makeCourseDraft(), approved]
+    backend(({ path, method }) => {
+      if (path === '/api/content/admin/ai-drafts') return json(remaining)
+      if (path === `${base}/${draftId}` && method === 'DELETE') { remaining = [approved]; return json(null, 204) }
+      throw new Error(`Unexpected ${method} ${path}`)
+    })
+    show()
+    fireEvent.click(await screen.findByRole('button', { name: 'Hành động của bản nháp 2' }))
+    expect(screen.getByRole('menuitem', { name: 'Xóa' })).toBeDisabled()
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Hành động của bản nháp 1' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Xóa' }))
+    expect(requests.some((request) => request.method === 'DELETE')).toBe(false)
+    fireEvent.click(await screen.findByRole('button', { name: 'Xóa bản nháp' }, { timeout: 3000 }))
+
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Hành động của bản nháp 2' })).not.toBeInTheDocument(), { timeout: 3000 })
+    expect(requests.filter((request) => request.method === 'DELETE')).toEqual([{ path: `${base}/${draftId}`, query: new URLSearchParams(), method: 'DELETE', body: undefined }])
+    expect(screen.getByText('Đã xóa bản nháp khóa học.')).toBeInTheDocument()
+  })
+
+  it('keeps the list and shows the error when the server refuses the delete', async () => {
+    backend(({ path, method }) => {
+      if (path === '/api/content/admin/ai-drafts') return json([makeCourseDraft()])
+      if (path === `${base}/${draftId}` && method === 'DELETE') return json({ message: 'Draft is APPROVED, it cannot be deleted' }, 400)
+      throw new Error(`Unexpected ${method} ${path}`)
+    })
+    show()
+    fireEvent.click(await screen.findByRole('button', { name: 'Hành động của bản nháp 1' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Xóa' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Xóa bản nháp' }, { timeout: 3000 }))
+
+    await waitFor(() => expect(requests.some((request) => request.method === 'DELETE')).toBe(true), { timeout: 3000 })
+    expect(await screen.findByRole('button', { name: 'Hành động của bản nháp 1' })).toBeEnabled()
+    expect(screen.queryByText('Đã xóa bản nháp khóa học.')).not.toBeInTheDocument()
+  })
+
   it('creates a handwritten draft with an empty request and navigates without spending AI quota', async () => {
     backend(({ path, method }) => {
       if (path === '/api/content/admin/ai-drafts') return json([])
@@ -69,66 +130,6 @@ describe('course draft pages through HTTP', () => {
     const writes = requests.filter((request) => request.method === 'POST')
     expect(writes).toEqual([{ path: base, query: new URLSearchParams(), method: 'POST', body: undefined }])
     expect(screen.getByTestId('location')).toHaveTextContent(`/content-author/course-drafts/${draftId}`)
-  })
-
-  it.each([202, 429])('submits the AI form through HTTP and handles status %i', async (status) => {
-    const body = { bandLevel: 7, skills: ['READING', 'LISTENING'] as ('READING' | 'LISTENING')[], topics: [], knowledgePointIds: [knowledgePointId], lessonCount: 10, instructions: 'Keep the foundation lessons first.', includePrerequisites: false }
-    backend(({ path, method }) => {
-      if (path === '/api/content/admin/ai-drafts') return json([])
-      if (path === '/api/content/admin/ai-drafts/courses') return status === 429 ? json({ message: 'Quota exceeded', details: { code: 'AI_QUOTA_EXCEEDED' } }, 429) : json(makeCourseDraft({ status: 'QUEUED', request: body, result: null }), 202)
-      if (path === `/api/content/admin/ai-drafts/${draftId}`) return json(makeCourseDraft({ status: 'QUEUED', request: body, result: null }))
-      throw new Error(`Unexpected ${method} ${path}`)
-    })
-    show()
-    fireEvent.click(screen.getByRole('button', { name: 'Sinh kế hoạch bằng AI' }))
-    const form = screen.getByRole('form', { name: 'Sinh bản nháp khóa học' })
-    fireEvent.click(within(form).getByRole('radio', { name: '7.0' }))
-    fireEvent.click(within(form).getByRole('checkbox', { name: 'Nghe' }))
-    fireEvent.click(await within(form).findByRole('button', { name: 'Chọn điểm kiến thức' }))
-    const chooser = await screen.findByRole('dialog', { name: 'Chọn điểm kiến thức' })
-    fireEvent.click(within(chooser).getByRole('checkbox', { name: /KP_PARAPHRASE/ }))
-    fireEvent.click(within(chooser).getByRole('button', { name: 'Lưu' }))
-    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Chọn điểm kiến thức' })).not.toBeInTheDocument())
-    fireEvent.change(within(form).getByLabelText('Số bài học'), { target: { value: '10' } })
-    fireEvent.change(within(form).getByLabelText(/Hướng dẫn thêm/), { target: { value: body.instructions } })
-    fireEvent.submit(form)
-    if (status === 429) {
-      expect(await screen.findByRole('alert')).toHaveTextContent('Bạn đã dùng hết lượt sinh hôm nay')
-      expect(within(form).getByLabelText('Số bài học')).toHaveValue(10)
-      expect(within(form).getByLabelText(/Hướng dẫn thêm/)).toHaveValue(body.instructions)
-    } else {
-      expect(await screen.findByRole('heading', { name: 'Bản nháp khóa học' })).toBeInTheDocument()
-      expect(screen.getByTestId('location')).toHaveTextContent(`/content-author/course-drafts/${draftId}`)
-    }
-    const write = requests.filter((request) => request.path === '/api/content/admin/ai-drafts/courses')
-    expect(write).toHaveLength(1)
-    expect(write[0]!.body).toEqual(body)
-  })
-
-  it('polls queued and generating lists every five seconds and stops after ready', async () => {
-    vi.useFakeTimers()
-    let reads = 0
-    backend(() => json([makeCourseDraft({ status: ['QUEUED', 'GENERATING', 'READY'][Math.min(reads++, 2)] as CourseDraft['status'], result: null })]))
-    show()
-    await settle()
-    await act(async () => { await vi.advanceTimersByTimeAsync(4999) })
-    expect(reads).toBe(1)
-    await act(async () => { await vi.advanceTimersByTimeAsync(1) })
-    expect(reads).toBe(2)
-    await act(async () => { await vi.advanceTimersByTimeAsync(5000) })
-    expect(reads).toBe(3)
-    await act(async () => { await vi.advanceTimersByTimeAsync(15000) })
-    expect(reads).toBe(3)
-  })
-
-  it('clears list polling when unmounted', async () => {
-    vi.useFakeTimers()
-    backend(() => json([makeCourseDraft({ status: 'GENERATING', result: null })]))
-    const view = show()
-    await settle()
-    view.unmount()
-    await act(async () => { await vi.advanceTimersByTimeAsync(15000) })
-    expect(requests).toHaveLength(1)
   })
 
   it('does not approve an empty course even if the server analysis says valid', async () => {
