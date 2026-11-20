@@ -19,6 +19,8 @@ type GameSettingsFormProps = {
   onChange: (value: CreateRoomInput) => void
   disabled?: boolean
   editing?: boolean
+  /** Shown in red under the number of words, once the form was sent. */
+  wordLimitError?: string | null
 }
 
 export function GameSettingsForm({
@@ -26,6 +28,7 @@ export function GameSettingsForm({
   onChange,
   disabled = false,
   editing = false,
+  wordLimitError,
 }: GameSettingsFormProps) {
   return (
     <div className="game-settings-fields">
@@ -93,14 +96,16 @@ export function GameSettingsForm({
       )}
       {value.playMode === 'FINITE' ? (
         <div className="game-field">
-          <label htmlFor="game-word-limit">Số từ · Tối thiểu 5</label>
+          <label htmlFor="game-word-limit" className="is-required">Số từ · Tối thiểu 5</label>
           <Input
             id="game-word-limit"
             type="number"
             min={5}
             max={2147483647}
             step={1}
-            required
+            aria-required
+            aria-invalid={wordLimitError ? true : undefined}
+            aria-describedby={wordLimitError ? 'game-word-limit-error' : undefined}
             value={value.wordLimit ?? ''}
             disabled={disabled}
             className="min-h-11"
@@ -112,6 +117,7 @@ export function GameSettingsForm({
               })
             }
           />
+          {wordLimitError ? <p id="game-word-limit-error" role="alert" className="game-field-error">{wordLimitError}</p> : null}
         </div>
       ) : (
         <p className="game-note">
@@ -148,17 +154,20 @@ type RocketSettingsFormProps = {
   value: RocketRoomSettings
   onChange: (value: RocketRoomSettings) => void
   disabled?: boolean
+  /** Shown in red under the number of questions, once the form was sent. */
+  questionCountError?: string | null
 }
 
 export function RocketSettingsForm({
   value,
   onChange,
   disabled = false,
+  questionCountError,
 }: RocketSettingsFormProps) {
   return (
     <div className="game-settings-fields">
       <div className="game-field">
-        <label htmlFor="rocket-question-count">
+        <label htmlFor="rocket-question-count" className="is-required">
           Số câu · {ROCKET_QUESTION_RANGE.min} đến {ROCKET_QUESTION_RANGE.max}
         </label>
         <Input
@@ -167,7 +176,9 @@ export function RocketSettingsForm({
           min={ROCKET_QUESTION_RANGE.min}
           max={ROCKET_QUESTION_RANGE.max}
           step={1}
-          required
+          aria-required
+          aria-invalid={questionCountError ? true : undefined}
+          aria-describedby={questionCountError ? 'rocket-question-count-error' : undefined}
           value={value.questionCount ?? ''}
           disabled={disabled}
           className="min-h-11"
@@ -179,6 +190,7 @@ export function RocketSettingsForm({
             })
           }
         />
+        {questionCountError ? <p id="rocket-question-count-error" role="alert" className="game-field-error">{questionCountError}</p> : null}
       </div>
       <div className="game-field">
         <label htmlFor="rocket-lives">Số mạng cho mỗi người</label>

@@ -90,7 +90,7 @@ export function KeyActivationDialog({ product, isLoggedIn, client, onClose, onAc
         ) : (
           <form className="space-y-4" onSubmit={handleSubmit} aria-busy={pending}>
             <div className="space-y-2">
-              <label htmlFor="activation-key" className="text-sm font-semibold">Mã Activation Key</label>
+              <label htmlFor="activation-key" className="text-sm font-semibold after:ml-1 after:text-destructive after:content-['*']">Mã Activation Key</label>
               <Input ref={inputRef} id="activation-key" name="activation-key" value={rawKey}
                 className="min-h-11 font-mono" placeholder="IP-XXXX-XXXX-XXXX"
                 autoComplete="off" autoCapitalize="characters" spellCheck={false}
