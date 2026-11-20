@@ -10,6 +10,7 @@ vi.mock('./knowledge-graph/pages/KnowledgeGraphPage', () => ({ KnowledgeGraphPag
 vi.mock('./packages/api/packageApi', async (original) => ({ ...await original<typeof import('./packages/api/packageApi')>(), listPackages: vi.fn().mockResolvedValue([]) }))
 vi.mock('./ai-drafts/api/aiDraftApi', async (original) => ({ ...await original<typeof import('./ai-drafts/api/aiDraftApi')>(), fetchAiDrafts: vi.fn().mockResolvedValue([]) }))
 vi.mock('./courses/api/courseApi', async (original) => ({ ...await original<typeof import('./courses/api/courseApi')>(), fetchCourses: vi.fn().mockResolvedValue([]) }))
+vi.mock('./code-settings/pages/CodeSettingsPage', () => ({ CodeSettingsPage: () => <h1>Thiết lập chung các tham số</h1> }))
 vi.mock('./lessons/api/lessonApi', async (original) => ({ ...await original<typeof import('./lessons/api/lessonApi')>(), fetchTopics: vi.fn().mockResolvedValue([]) }))
 
 vi.mock('@/features/community/components/NotificationBell', () => ({
@@ -247,6 +248,16 @@ describe('AdminRoutes', () => {
     expect(screen.getByRole('heading', { name: 'Tổng quan nội dung' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Khóa học & chủ đề' })).toHaveAttribute('href', '/content-author/courses')
     expect(screen.getByTestId('location').textContent).toBe('/content-author')
+  })
+
+  it('opens code settings for content authors only', () => {
+    auth.mockReturnValue(session(['CONTENT_AUTHOR']))
+    renderAt('/content-author/settings')
+    expect(screen.getByRole('heading', { name: 'Thiết lập chung các tham số' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Thiết lập tham số' })).toHaveAttribute('href', '/content-author/settings')
+    auth.mockReturnValue(session(['ADMIN']))
+    renderAt('/content-author/settings')
+    expect(screen.getByRole('heading', { name: 'Bạn không có quyền truy cập' })).toBeInTheDocument()
   })
 
   it('opens question generation for an author and lists it in the menu', () => {

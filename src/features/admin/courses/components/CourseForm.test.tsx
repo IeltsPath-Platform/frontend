@@ -3,12 +3,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { HttpError } from '@/lib/httpClient'
 import { CourseForm } from './CourseForm'
 
-const { api, media } = vi.hoisted(() => ({
+const { api, media, codes } = vi.hoisted(() => ({
   api: { createCourse: vi.fn(), updateCourse: vi.fn(), deleteCourse: vi.fn() },
   media: { uploadAdminImage: vi.fn() },
+  codes: { fetchCodeSettings: vi.fn(), fetchCodeSuggestion: vi.fn() },
 }))
 vi.mock('../api/courseApi', () => api)
 vi.mock('../../media/api/mediaUploadApi', () => media)
+vi.mock('../../code-settings/api/codeSettingsApi', () => codes)
 
 const course = {
   id: 'course-1', code: 'B1', name: 'Band 5', bandLevel: 5, coverImageUrl: null, description: null,
@@ -17,7 +19,11 @@ const course = {
 }
 
 describe('CourseForm unlock pricing', () => {
-  beforeEach(() => { api.createCourse.mockReset(); api.updateCourse.mockReset(); media.uploadAdminImage.mockReset() })
+  beforeEach(() => {
+    api.createCourse.mockReset(); api.updateCourse.mockReset(); media.uploadAdminImage.mockReset()
+    codes.fetchCodeSettings.mockReset().mockResolvedValue([])
+    codes.fetchCodeSuggestion.mockReset()
+  })
 
   it('saves server-editable skill and combo prices', async () => {
     api.updateCourse.mockResolvedValue(course)
@@ -67,6 +73,77 @@ describe('CourseForm unlock pricing', () => {
     await waitFor(() => expect(api.createCourse).toHaveBeenCalledWith(expect.objectContaining({
       code: 'IELTS_9', skillUnlockPoints: { READING: 40, WRITING: 30 }, comboUnlockPoints: 60, free: false,
     })))
+  })
+
+  it('fills a suggestion, preserves a manually typed code when the band changes, and ignores the old suggestion', async () => {
+    codes.fetchCodeSettings.mockResolvedValue([{ kind: 'COURSE', applied: true, pattern: 'COURSE_{SEQ:3}', startNumber: 1, editable: true }])
+    codes.fetchCodeSuggestion.mockResolvedValueOnce({ code: 'COURSE_001', applied: true, editable: true })
+      .mockResolvedValueOnce({ code: 'COURSE_002', applied: true, editable: true })
+    render(<CourseForm onSaved={vi.fn()} />)
+    const code = screen.getByLabelText('Mã khóa học')
+    await waitFor(() => expect(code).toHaveValue('COURSE_001'))
+    fireEvent.change(code, { target: { value: 'MY_CODE' } })
+    fireEvent.change(screen.getByLabelText('Band khóa học'), { target: { value: '6' } })
+    await waitFor(() => expect(codes.fetchCodeSuggestion).toHaveBeenCalledTimes(2))
+    expect(code).toHaveValue('MY_CODE')
+  })
+
+  it('discards a suggestion response from the previous band after the context changes', async () => {
+    codes.fetchCodeSettings.mockResolvedValue([{ kind: 'COURSE', applied: true, pattern: 'COURSE_{BAND}', startNumber: 1, editable: true }])
+    let finishOld!: (value: { code: string; applied: boolean; editable: boolean }) => void
+    const oldResponse = new Promise<{ code: string; applied: boolean; editable: boolean }>((resolve) => { finishOld = resolve })
+    codes.fetchCodeSuggestion.mockImplementation((band: string) => band === ''
+      ? oldResponse
+      : Promise.resolve({ code: 'COURSE_6_0', applied: true, editable: true }))
+    render(<CourseForm onSaved={vi.fn()} />)
+    const code = screen.getByLabelText('Mã khóa học')
+    await waitFor(() => expect(codes.fetchCodeSuggestion).toHaveBeenCalledTimes(1))
+    fireEvent.change(screen.getByLabelText('Band khóa học'), { target: { value: '6' } })
+    await waitFor(() => expect(code).toHaveValue('COURSE_6_0'))
+    finishOld({ code: 'COURSE_STALE', applied: true, editable: true })
+    await waitFor(() => expect(code).toHaveValue('COURSE_6_0'))
+  })
+
+  it('disables a locked generated code and omits it from the create request', async () => {
+    codes.fetchCodeSettings.mockResolvedValue([{ kind: 'COURSE', applied: true, pattern: 'COURSE_{SEQ:3}', startNumber: 1, editable: false }])
+    codes.fetchCodeSuggestion.mockResolvedValue({ code: 'COURSE_001', applied: true, editable: false })
+    api.createCourse.mockResolvedValue(course)
+    render(<CourseForm onSaved={vi.fn()} />)
+    const code = screen.getByLabelText('Mã khóa học')
+    await waitFor(() => expect(code).toHaveValue('COURSE_001'))
+    expect(code).toBeDisabled()
+    fireEvent.change(screen.getByLabelText('Tên khóa học'), { target: { value: 'Course' } })
+    fireEvent.change(screen.getByLabelText('Band khóa học'), { target: { value: '5' } })
+    fireEvent.submit(screen.getByRole('form'))
+    await waitFor(() => expect(api.createCourse).toHaveBeenCalledOnce())
+    expect(api.createCourse.mock.calls[0]?.[0]).not.toHaveProperty('code')
+  })
+
+  it('does not require a code when automatic coding is applied', async () => {
+    codes.fetchCodeSettings.mockResolvedValue([{ kind: 'COURSE', applied: true, pattern: 'COURSE_{SEQ:3}', startNumber: 1, editable: true }])
+    codes.fetchCodeSuggestion.mockResolvedValue({ code: '', applied: true, editable: true })
+    api.createCourse.mockResolvedValue(course)
+    render(<CourseForm onSaved={vi.fn()} />)
+    const code = screen.getByLabelText('Mã khóa học')
+    await waitFor(() => expect(code).not.toHaveAttribute('aria-required'))
+    fireEvent.change(screen.getByLabelText('Tên khóa học'), { target: { value: 'Course' } })
+    fireEvent.change(screen.getByLabelText('Band khóa học'), { target: { value: '5' } })
+    fireEvent.submit(screen.getByRole('form'))
+    await waitFor(() => expect(api.createCourse).toHaveBeenCalledWith(expect.objectContaining({ code: '' })))
+  })
+
+  it('keeps manual code entry available when the suggestion endpoint fails', async () => {
+    codes.fetchCodeSettings.mockResolvedValue([{ kind: 'COURSE', applied: true, pattern: 'COURSE_{SEQ:3}', startNumber: 1, editable: true }])
+    codes.fetchCodeSuggestion.mockRejectedValue(new HttpError(404, 'missing'))
+    render(<CourseForm onSaved={vi.fn()} />)
+    const code = screen.getByLabelText('Mã khóa học')
+    await waitFor(() => expect(codes.fetchCodeSuggestion).toHaveBeenCalled())
+    expect(code).toBeEnabled()
+    fireEvent.change(code, { target: { value: 'MANUAL' } })
+    fireEvent.change(screen.getByLabelText('Tên khóa học'), { target: { value: 'Course' } })
+    fireEvent.change(screen.getByLabelText('Band khóa học'), { target: { value: '5' } })
+    fireEvent.submit(screen.getByRole('form'))
+    await waitFor(() => expect(api.createCourse).toHaveBeenCalledWith(expect.objectContaining({ code: 'MANUAL' })))
   })
 
   it('keeps the banner and the cover as two separate images', async () => {

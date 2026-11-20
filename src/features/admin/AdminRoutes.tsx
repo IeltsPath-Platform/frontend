@@ -34,6 +34,7 @@ import { WritingQueuePage } from '@/features/examiner/grading/pages/WritingQueue
 import { AiEvaluationPage } from './ai-evaluation/pages/AiEvaluationPage'
 import { EvaluationRunPage } from './ai-evaluation/pages/EvaluationRunPage'
 import { AdminVocabularyPage } from './vocabulary/pages/AdminVocabularyPage'
+import { CodeSettingsPage } from './code-settings/pages/CodeSettingsPage'
 
 /** A route is open only to the roles its menu item lists. */
 function Guard({ path, children }: { path: string; children: ReactNode }) {
@@ -91,6 +92,7 @@ export function AdminRoutes({ area = 'admin' }: { area?: StaffArea }) {
         </> : isAuthorArea ? <>
           <Route element={<LegacyContentRedirect />} path="content" />
           <Route element={<CoursesPage />} path="courses" />
+          <Route element={<CodeSettingsPage />} path="settings" />
           <Route element={<RubricsPage />} path="rubrics" />
           <Route element={<ErrorTypesPage />} path="error-types" />
           <Route element={<Outlet />} path="ai-drafts">
