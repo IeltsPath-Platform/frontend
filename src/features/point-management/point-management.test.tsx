@@ -105,7 +105,7 @@ describe('sale manager screens', () => {
     expect(summary.getByText(/Không liên quan gói Premium/)).toBeInTheDocument()
   })
 
-  it('rejects a quantity over 1.000 with the retry banner, then creates the batch after confirmation', async () => {
+  it('rejects a quantity over 1.000 under the input, then creates the batch after confirmation', async () => {
     const user = userEvent.setup()
     renderAt('/point-management/sale-manager/batches/new')
     const quantity = screen.getByLabelText('Số lượng key')
@@ -113,7 +113,7 @@ describe('sale manager screens', () => {
     await user.clear(quantity)
     await user.type(quantity, '1500')
     await user.click(screen.getByRole('button', { name: 'Xem lại & tạo' }))
-    expect(screen.getByRole('alert')).toHaveTextContent('Không tạo được đợt key')
+    expect(screen.getByRole('alert')).toHaveTextContent('Số lượng key phải từ 1 đến 1.000.')
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 
     await user.clear(quantity)

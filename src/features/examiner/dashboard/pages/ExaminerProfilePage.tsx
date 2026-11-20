@@ -1,6 +1,10 @@
-import { useRef, useState, type FormEvent } from 'react'
+import { useMemo, useRef, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { Plus, Trash2 } from 'lucide-react'
+import { z } from 'zod'
+import { AdminField } from '@/features/admin/components/AdminField'
+import { requiredText } from '@/lib/validation/fields'
+import { useFormErrors } from '@/lib/validation/useFormErrors'
 import { AdminError, AdminLoading } from '@/features/admin/components/AdminState'
 import { adminErrorMessage } from '@/features/admin/lib/adminErrors'
 import { useAdminResource } from '@/features/admin/lib/useAdminResource'
@@ -15,6 +19,20 @@ interface CertificateRow { key: number; name: string; issuer: string; year: stri
 
 const YEAR_MIN = 1950
 const YEAR_MAX = 2100
+
+/** A name for every row, and a year in range when one is given. The row's fields are named c<key>_name and c<key>_year. */
+function certificatesSchema(rows: readonly CertificateRow[]) {
+  const shape: Record<string, z.ZodType> = {}
+  rows.forEach((row, index) => {
+    const label = `Chứng chỉ ${index + 1}`
+    shape[`c${row.key}_name`] = requiredText(`Tên ${label.toLowerCase()}`, 150)
+    shape[`c${row.key}_year`] = z.string().refine((value) => {
+      const text = value.trim()
+      return text === '' || (/^\d+$/.test(text) && Number(text) >= YEAR_MIN && Number(text) <= YEAR_MAX)
+    }, `Năm của ${label.toLowerCase()} phải từ ${YEAR_MIN} đến ${YEAR_MAX}.`)
+  })
+  return z.object(shape)
+}
 
 /** The form rows back into what the server takes: blank optional fields become null. Returns the first problem instead when a row is wrong. */
 function toInput(band: string, accepting: boolean, rows: readonly CertificateRow[]): { input: ProfileInput } | { problem: string } {
@@ -44,14 +62,20 @@ function ProfileForm({ profile, onSaved }: { profile: Profile; onSaved: (saved: 
   })))
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null)
+  const rowKeys = rows.map((row) => row.key).join(',')
+  // The fields follow the rows' keys; the values come in through the second argument of useFormErrors.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const schema = useMemo(() => certificatesSchema(rows), [rowKeys])
+  const form = useFormErrors(schema, Object.fromEntries(rows.flatMap((row) => [[`c${row.key}_name`, row.name], [`c${row.key}_year`, row.year]])))
 
   const change = (key: number, field: keyof Omit<CertificateRow, 'key'>, value: string) =>
     setRows((current) => current.map((row) => (row.key === key ? { ...row, [field]: value } : row)))
 
   async function submit(event: FormEvent) {
     event.preventDefault()
+    if (!form.validate()) return
     const result = toInput(band, accepting, rows)
-    if ('problem' in result) { setMessage({ tone: 'error', text: result.problem }); return }
+    if ('problem' in result) return
     setSaving(true)
     setMessage(null)
     try {
@@ -85,18 +109,16 @@ function ProfileForm({ profile, onSaved }: { profile: Profile; onSaved: (saved: 
         {rows.map((row, index) => (
           <div aria-label={`Chứng chỉ ${index + 1}`} className="ex-cert" key={row.key} role="group">
             <div className="ex-cert__grid">
-              <label className="adm-field">
-                <span>Tên chứng chỉ</span>
+              <AdminField label="Tên chứng chỉ" {...form.field(`c${row.key}_name`)}>
                 <input className="adm-input" maxLength={150} onChange={(event) => change(row.key, 'name', event.target.value)} value={row.name} />
-              </label>
+              </AdminField>
               <label className="adm-field">
                 <span>Nơi cấp</span>
                 <input className="adm-input" maxLength={150} onChange={(event) => change(row.key, 'issuer', event.target.value)} value={row.issuer} />
               </label>
-              <label className="adm-field">
-                <span>Năm</span>
+              <AdminField label="Năm" {...form.field(`c${row.key}_year`)}>
                 <input className="adm-input" inputMode="numeric" max={YEAR_MAX} min={YEAR_MIN} onChange={(event) => change(row.key, 'year', event.target.value)} type="number" value={row.year} />
-              </label>
+              </AdminField>
               <label className="adm-field">
                 <span>Điểm</span>
                 <input className="adm-input" maxLength={20} onChange={(event) => change(row.key, 'score', event.target.value)} value={row.score} />
