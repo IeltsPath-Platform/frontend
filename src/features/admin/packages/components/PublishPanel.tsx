@@ -1,5 +1,8 @@
-import { useState, type FormEvent } from 'react'
+import { useMemo, useState, type FormEvent } from 'react'
+import { z } from 'zod'
+import { AdminField } from '../../components/AdminField'
 import { useAdminConfirm } from '../../lib/useAdminConfirm'
+import { useFormErrors } from '@/lib/validation/useFormErrors'
 import { AdminError, AdminLoading } from '../../components/AdminState'
 import { useAdminResource } from '../../lib/useAdminResource'
 import { cancelSchedule, listSchedules, publishVersion, scheduleVersion } from '../api/packageApi'
@@ -19,6 +22,13 @@ export function PublishPanel({ packageId, version, packageType, disabled, onMuta
   const scheduledAt = current?.publishAt ?? version.publishAt
   const lastError = current?.lastPublishError ?? version.lastPublishError
   const locked = disabled || schedules.status !== 'success'
+  const schema = useMemo(() => z.object({ publishAt: z.string().superRefine((value, ctx) => {
+    if (value === '') { ctx.addIssue({ code: 'custom', message: 'Thời gian xuất bản không được để trống.' }); return }
+    const time = new Date(value).getTime()
+    // eslint-disable-next-line react-hooks/purity -- "in the future" is judged against the moment of the check, by design
+    if (!Number.isFinite(time) || time <= Date.now()) ctx.addIssue({ code: 'custom', message: 'Chọn thời gian xuất bản ở tương lai.' })
+  }) }), [])
+  const form = useFormErrors(schema, { publishAt })
   async function publish() {
     const finalTest = packageType === 'TOPIC_TEST' || packageType === 'COURSE_TEST'
     if (locked || version.status !== 'DRAFT') return
@@ -34,8 +44,8 @@ export function PublishPanel({ packageId, version, packageType, disabled, onMuta
   async function schedule(event: FormEvent) {
     event.preventDefault()
     if (locked || version.status !== 'DRAFT') return
+    if (!form.validate()) return
     const time = new Date(publishAt)
-    if (!publishAt || !Number.isFinite(time.getTime()) || time.getTime() <= Date.now()) { setError('Chọn thời gian xuất bản ở tương lai.'); return }
     setError(null)
     if (await onMutate(() => scheduleVersion(packageId, version.id, time.toISOString()), 'Đã lên lịch xuất bản.')) schedules.reload()
   }
@@ -49,7 +59,7 @@ export function PublishPanel({ packageId, version, packageType, disabled, onMuta
     {version.status === 'DRAFT' ? <>
       <button className="adm-btn adm-btn--primary" type="button" disabled={locked} onClick={publish}>Xuất bản ngay</button>
       <form noValidate onSubmit={(event) => void schedule(event)} aria-label="Lên lịch xuất bản">
-        <label className="adm-field"><span>Thời gian xuất bản (giờ địa phương)</span><input className="adm-input" type="datetime-local" value={publishAt} disabled={locked} onChange={(event) => setPublishAt(event.target.value)} /></label>
+        <AdminField label="Thời gian xuất bản (giờ địa phương)" {...form.field('publishAt')} required><input className="adm-input" type="datetime-local" value={publishAt} disabled={locked} onChange={(event) => setPublishAt(event.target.value)} /></AdminField>
         <div className="adm-package-actions"><button className="adm-btn" type="submit" disabled={locked}>Lên lịch</button>{scheduledAt ? <button className="adm-btn" type="button" disabled={locked} onClick={() => void onMutate(() => cancelSchedule(packageId, version.id), 'Đã hủy lịch xuất bản.').then((ok) => { if (ok) schedules.reload() })}>Hủy lịch</button> : null}</div>
       </form>
     </> : null}

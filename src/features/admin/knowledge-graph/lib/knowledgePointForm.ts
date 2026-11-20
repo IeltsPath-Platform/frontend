@@ -60,7 +60,8 @@ export function formOf(point: KnowledgePoint): KnowledgePointForm {
 }
 
 /** The code format of the API: a prefix letter, the band it starts at, then the name in capitals. */
-const CODE_PATTERN = /^[RLWGVS](55|60|65|70)_[A-Z0-9_]{2,60}$/
+export const CODE_PATTERN = /^[RLWGVS](55|60|65|70)_[A-Z0-9_]{2,60}$/
+export const CODE_PATTERN_MESSAGE = 'Mã phải có dạng R55_EXAMPLE: một chữ R, L, W, G, V hoặc S, rồi 55, 60, 65 hoặc 70, rồi tên viết hoa.'
 
 /** What is wrong with the form, in words for the author; null when it can be saved. */
 export function formProblem(form: KnowledgePointForm): string | null {

@@ -1,6 +1,9 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { ArrowDown, ArrowUp, Trash2 } from 'lucide-react'
+import { z } from 'zod'
+import { AdminField } from '../../components/AdminField'
 import { useAdminConfirm } from '../../lib/useAdminConfirm'
+import { useFormErrors } from '@/lib/validation/useFormErrors'
 import { QuestionChooser } from '../../lessons/components/QuestionChooser'
 import { addSectionQuestion, removeSectionQuestion, reorderSectionQuestions } from '../api/packageApi'
 import type { PackageSection, PackageType } from '../types'
@@ -21,6 +24,16 @@ export function SectionQuestionsEditor({ packageId, versionId, section, packageT
   const purpose = packageType === 'MOCK_TEST' || packageType === 'PRACTICE_TEST' ? 'EXAM' : packageType === 'PLACEMENT_TEST' ? 'PLACEMENT' : 'LEARNING'
   const locked = disabled || pending
   const questions = [...section.questions].sort((left, right) => left.sortOrder - right.sortOrder || left.id.localeCompare(right.id))
+  const taken = section.questions.map((question) => question.questionVersionId).join(',')
+  const schema = useMemo(() => z.object({ picked: z.array(z.string()), maxScore: z.string() }).superRefine((value, ctx) => {
+    if (value.picked.length !== 1) ctx.addIssue({ code: 'custom', path: ['picked'], message: 'Chọn đúng một câu hỏi để thêm vào phần.' })
+    else if (taken.split(',').includes(value.picked[0]!)) ctx.addIssue({ code: 'custom', path: ['picked'], message: 'Câu này đã có trong phần. Chọn câu khác.' })
+    const score = Number(value.maxScore)
+    if (value.maxScore.trim() === '') ctx.addIssue({ code: 'custom', path: ['maxScore'], message: 'Điểm tối đa không được để trống.' })
+    else if (!Number.isFinite(score) || score <= 0) ctx.addIssue({ code: 'custom', path: ['maxScore'], message: 'Điểm tối đa phải là số lớn hơn 0.' })
+  }), [taken])
+  const form = useFormErrors(schema, { picked: selected, maxScore })
+  const pickedError = form.field('picked').error
 
   async function mutate(action: () => Promise<unknown>, message: string, after?: () => void) {
     if (locked) return
@@ -33,10 +46,8 @@ export function SectionQuestionsEditor({ packageId, versionId, section, packageT
   function add(event: FormEvent) {
     event.preventDefault()
     if (locked) return
-    if (selected.length !== 1) { setError('Chọn đúng một câu hỏi để thêm vào phần.'); return }
-    if (questions.some((question) => question.questionVersionId === selected[0])) { setError('Câu này đã có trong phần. Chọn câu khác.'); return }
+    if (!form.validate()) return
     const score = Number(maxScore)
-    if (!Number.isFinite(score) || score <= 0) { setError('Điểm tối đa phải là số lớn hơn 0.'); return }
     void mutate(() => addSectionQuestion(packageId, versionId, section.id, { questionVersionId: selected[0]!, maxScore: score }), 'Đã thêm câu hỏi.', () => { setSelected([]); setChoosing(false) })
   }
 
@@ -77,7 +88,8 @@ export function SectionQuestionsEditor({ packageId, versionId, section, packageT
       <fieldset className="adm-package-fields" disabled={locked}>
         <p className="adm-muted">Chọn một câu đã xuất bản có mục đích {purpose}. Thêm câu lần lượt để kiểm tra điểm và thứ tự.</p>
         <QuestionChooser purpose={purpose} value={selected} known={section.questions} onChange={(next) => setSelected(next.length ? [next.at(-1)!] : [])} />
-        <label className="adm-field"><span>Điểm tối đa</span><input className="adm-input" type="number" min={0.01} step="any" value={maxScore} onChange={(event) => setMaxScore(event.target.value)} /></label>
+        {pickedError ? <p className="adm-field__error" role="alert">{pickedError}</p> : null}
+        <AdminField label="Điểm tối đa" {...form.field('maxScore')} required><input className="adm-input" type="number" min={0.01} step="any" value={maxScore} onChange={(event) => setMaxScore(event.target.value)} /></AdminField>
         <div className="adm-package-actions"><button className="adm-btn adm-btn--primary" type="submit">Thêm câu đã chọn</button><button className="adm-btn" type="button" onClick={() => setChoosing(false)}>Đóng chọn câu</button></div>
       </fieldset>
     </form>}

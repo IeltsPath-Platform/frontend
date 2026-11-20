@@ -162,7 +162,7 @@ describe('TopicLessonsDrawer', () => {
     show()
     fireEvent.click(await screen.findByRole('button', { name: /Bài học mới/ }))
     fireEvent.click(screen.getByRole('button', { name: 'Tạo bài học nháp' }))
-    expect(await screen.findByRole('alert')).toHaveTextContent('Cần nhập mã và tiêu đề bài học.')
+    expect((await screen.findAllByRole('alert')).map((alert) => alert.textContent)).toEqual(['Mã bài học không được để trống.', 'Tiêu đề bài học không được để trống.'])
     expect(api.createLesson).not.toHaveBeenCalled()
   })
 

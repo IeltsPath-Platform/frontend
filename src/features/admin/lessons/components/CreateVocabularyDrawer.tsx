@@ -1,6 +1,10 @@
 import { useState, type FormEvent } from 'react'
 import { X } from 'lucide-react'
+import { z } from 'zod'
+import { AdminField } from '../../components/AdminField'
 import { AdminDrawer } from '../../components/AdminLayer'
+import { requiredChoice, requiredText } from '@/lib/validation/fields'
+import { useFormErrors } from '@/lib/validation/useFormErrors'
 import { adminErrorMessage } from '../../lib/adminErrors'
 import { useAdminErrorToast } from '../../lib/useAdminError'
 import { PART_OF_SPEECH_LABELS } from '../../course-drafts/lib/courseDraftLabels'
@@ -10,6 +14,13 @@ import { addVocabularySense, createVocabularyItem, uploadVocabularyPronunciation
 
 const POS_OPTIONS = Object.entries(PART_OF_SPEECH_LABELS).map(([value, label]) => ({ value, label }))
 const SENSE_IMAGE_ENDPOINT = '/api/content/admin/vocabulary/sense-images'
+
+const wordSchema = z.object({
+  lemma: requiredText('Từ', 255),
+  partOfSpeech: requiredChoice('loại từ'),
+  vietnameseMeaning: requiredText('Nghĩa tiếng Việt', 5000),
+  exampleSentence: requiredText('Câu ví dụ', 5000),
+})
 
 /** The library refuses a word it already has (the message names it in English); show that in Vietnamese instead. */
 function creationErrorMessage(reason: unknown, lemma: string): string {
@@ -112,6 +123,7 @@ function CreateVocabularyForm({ initialLemma, onCreated, onClose }: {
   const [saving, setSaving] = useState(false)
   const fail = useAdminErrorToast()
   const locked = saved !== null
+  const errors = useFormErrors(wordSchema, { lemma, partOfSpeech, vietnameseMeaning, exampleSentence })
 
   async function uploadImage(file: File) {
     setUploadingImage((count) => count + 1)
@@ -138,10 +150,7 @@ function CreateVocabularyForm({ initialLemma, onCreated, onClose }: {
 
   async function submit(event: FormEvent) {
     event.preventDefault()
-    if (!lemma.trim() || !partOfSpeech || !vietnameseMeaning.trim() || !exampleSentence.trim()) {
-      fail('Cần nhập từ, loại từ, nghĩa tiếng Việt và câu ví dụ.')
-      return
-    }
+    if (!errors.validate()) return
     if (uploadingImage > 0) {
       fail('Chờ tải ảnh xong rồi mới lưu.')
       return
@@ -177,10 +186,9 @@ function CreateVocabularyForm({ initialLemma, onCreated, onClose }: {
       {/* One fieldset around the fields: the drawer's CSS stretches a form's lone fieldset, so the free space goes above the buttons. */}
       <fieldset className="ls-create-vocab">
         <div className="adm-filters">
-          <label className="adm-field">
-            <span>Từ<span aria-hidden="true" className="adm-required" /></span>
-            <input aria-required="true" className="adm-input" disabled={locked} onChange={(event) => setLemma(event.target.value)} value={lemma} />
-          </label>
+          <AdminField label="Từ" {...errors.field('lemma')}>
+            <input className="adm-input" disabled={locked} onChange={(event) => setLemma(event.target.value)} value={lemma} />
+          </AdminField>
           <label className="adm-field">
             <span>IPA</span>
             <input className="adm-input" disabled={locked} onChange={(event) => setIpa(event.target.value)} value={ipa} />
@@ -204,19 +212,17 @@ function CreateVocabularyForm({ initialLemma, onCreated, onClose }: {
             url={ukUrl}
           />
         </div>
-        <ChoiceChips label="Loại từ" onChange={setPartOfSpeech} options={POS_OPTIONS} required value={partOfSpeech} />
-        <label className="adm-field">
-          <span>Nghĩa tiếng Việt<span aria-hidden="true" className="adm-required" /></span>
-          <input aria-required="true" className="adm-input" onChange={(event) => setVietnameseMeaning(event.target.value)} value={vietnameseMeaning} />
-        </label>
+        <ChoiceChips error={errors.field('partOfSpeech').error} label="Loại từ" onChange={setPartOfSpeech} options={POS_OPTIONS} required value={partOfSpeech} />
+        <AdminField label="Nghĩa tiếng Việt" {...errors.field('vietnameseMeaning')}>
+          <input className="adm-input" onChange={(event) => setVietnameseMeaning(event.target.value)} value={vietnameseMeaning} />
+        </AdminField>
         <label className="adm-field">
           <span>Nghĩa tiếng Anh</span>
           <textarea className="adm-textarea" onChange={(event) => setEnglishDefinition(event.target.value)} value={englishDefinition} />
         </label>
-        <label className="adm-field">
-          <span>Câu ví dụ<span aria-hidden="true" className="adm-required" /></span>
-          <textarea aria-required="true" className="adm-textarea" onChange={(event) => setExampleSentence(event.target.value)} value={exampleSentence} />
-        </label>
+        <AdminField label="Câu ví dụ" {...errors.field('exampleSentence')}>
+          <textarea className="adm-textarea" onChange={(event) => setExampleSentence(event.target.value)} value={exampleSentence} />
+        </AdminField>
         <ImageField disabled={locked} onClear={() => setImage(null)} onPick={(file) => void uploadImage(file)} url={image} />
       </fieldset>
       <div className="adm-form-footer">

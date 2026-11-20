@@ -1,6 +1,10 @@
-import { useId, useState, type FormEvent } from 'react'
+import { useMemo, useState, type FormEvent } from 'react'
 import { ArrowDown, ArrowUp, ExternalLink, FileText, Pencil, Plus, Trash2 } from 'lucide-react'
+import { z } from 'zod'
+import { AdminField } from '../../components/AdminField'
 import { AdminModal } from '../../components/AdminLayer'
+import { requiredText } from '@/lib/validation/fields'
+import { useFormErrors } from '@/lib/validation/useFormErrors'
 import { AdminRowMenu } from '../../components/AdminRowMenu'
 import { useAdminConfirm } from '../../lib/useAdminConfirm'
 import { AdminError, AdminLoading } from '../../components/AdminState'
@@ -15,6 +19,20 @@ import '../../course-drafts/course-drafts.css'
 
 function httpsUrl(value: string) {
   try { return new URL(value).protocol === 'https:' } catch { return false }
+}
+
+/** The title always; the link of a slide or an older document; the PDF of a new document. */
+function resourceSchema(label: string, needsFile: boolean, needsUrl: boolean) {
+  const shape: Record<string, z.ZodType> = { title: requiredText(`Tiêu đề ${label}`, 255) }
+  if (needsUrl) {
+    shape.url = requiredText(`URL ${label}`, 2000).refine((value) => httpsUrl(value.trim()), 'Nhập đường dẫn HTTPS hợp lệ.')
+  }
+  if (needsFile) {
+    shape.file = z.string().min(1, 'Chọn tệp PDF.').superRefine((value, ctx) => {
+      if (value.startsWith('!')) ctx.addIssue({ code: 'custom', message: value.slice(1) })
+    })
+  }
+  return z.object(shape)
 }
 
 /** What the form hands back: a title with a link, or a title with the PDF to upload, or just a new title for a stored file. */
@@ -35,17 +53,17 @@ function ResourceForm({ item, type, busy, onSave, onCancel }: {
   onSave: (draft: ResourceDraft) => Promise<boolean>
   onCancel: () => void
 }) {
-  const id = useId()
   const [title, setTitle] = useState(item?.title ?? '')
   const [url, setUrl] = useState(item?.url ?? '')
   const [file, setFile] = useState<File | null>(null)
-  const [submitted, setSubmitted] = useState(false)
   const label = type === 'SLIDE' ? 'slide' : 'tài liệu'
   const storedFile = Boolean(item?.fileKey)
   const needsFile = type === 'DOCUMENT' && !item
   const needsUrl = !needsFile && !storedFile
-  const invalidUrl = needsUrl && (submitted || url.length > 0) && !httpsUrl(url.trim())
-  const fileProblem = needsFile ? (file ? documentFileProblem(file) : submitted ? 'Chọn tệp PDF.' : null) : null
+  const schema = useMemo(() => resourceSchema(label, needsFile, needsUrl), [label, needsFile, needsUrl])
+  // The file is checked outside the schema; what it says (nothing, or the problem) is what the schema reads.
+  const fileProblem = file ? documentFileProblem(file) : null
+  const errors = useFormErrors(schema, { title, url, file: file ? (fileProblem ? `!${fileProblem}` : 'ok') : '' })
 
   function pick(chosen: File | null) {
     setFile(chosen)
@@ -55,42 +73,27 @@ function ResourceForm({ item, type, busy, onSave, onCancel }: {
 
   async function submit(event: FormEvent) {
     event.preventDefault()
-    setSubmitted(true)
-    if (busy || !title.trim() || title.trim().length > 255) return
-    if (needsFile) {
-      if (!file || documentFileProblem(file)) return
-      await onSave({ title: title.trim(), file })
-    } else if (needsUrl) {
-      if (!httpsUrl(url.trim()) || url.trim().length > 2000) return
-      await onSave({ title: title.trim(), url: url.trim() })
-    } else {
-      await onSave({ title: title.trim() })
-    }
+    if (busy || !errors.validate()) return
+    if (needsFile && file) await onSave({ title: title.trim(), file })
+    else if (needsUrl) await onSave({ title: title.trim(), url: url.trim() })
+    else await onSave({ title: title.trim() })
   }
 
   return (
     <form aria-label={`${item ? 'Sửa' : 'Thêm'} ${label}`} noValidate onSubmit={(event) => void submit(event)}>
       <fieldset className="adm-resource-fields" disabled={busy}>
-        <label className="adm-field">
-          <span>Tiêu đề {label}<span aria-hidden="true" className="adm-required" /></span>
-          <input className="adm-input" maxLength={255} required value={title} onChange={(event) => setTitle(event.target.value)} aria-invalid={submitted && !title.trim()} />
-          {submitted && !title.trim() ? <small role="alert">Nhập tiêu đề.</small> : null}
-        </label>
+        <AdminField label={`Tiêu đề ${label}`} {...errors.field('title')}>
+          <input className="adm-input" maxLength={255} value={title} onChange={(event) => setTitle(event.target.value)} />
+        </AdminField>
         {needsFile ? (
-          <label className="adm-field">
-            <span>Tệp PDF<span aria-hidden="true" className="adm-required" /></span>
-            <input accept="application/pdf,.pdf" aria-describedby={`${id}-file-hint`} aria-invalid={Boolean(fileProblem)} aria-label="Tệp PDF" className="adm-input" type="file"
-              onChange={(event) => pick(event.target.files?.[0] ?? null)} />
-            <small id={`${id}-file-hint`}>Chỉ nhận PDF, tối đa 20 MB. Học viên chỉ tải được khi đã vào được bài học.</small>
-            {fileProblem ? <small role="alert">{fileProblem}</small> : null}
-          </label>
+          <AdminField label="Tệp PDF" {...errors.field('file')}>
+            <input accept="application/pdf,.pdf" className="adm-input" type="file" onChange={(event) => pick(event.target.files?.[0] ?? null)} />
+          </AdminField>
         ) : null}
         {needsUrl ? (
-          <label className="adm-field">
-            <span>URL {label}<span aria-hidden="true" className="adm-required" /></span>
-            <input className="adm-input" type="url" maxLength={2000} required value={url} onChange={(event) => setUrl(event.target.value)} aria-invalid={invalidUrl} aria-describedby={invalidUrl ? `${id}-url-error` : undefined} />
-            {invalidUrl ? <small id={`${id}-url-error`} role="alert">Nhập đường dẫn HTTPS hợp lệ.</small> : null}
-          </label>
+          <AdminField label={`URL ${label}`} {...errors.field('url')}>
+            <input className="adm-input" type="url" maxLength={2000} value={url} onChange={(event) => setUrl(event.target.value)} />
+          </AdminField>
         ) : null}
         {storedFile ? <p className="adm-muted">Tệp PDF đã tải lên. Muốn đổi tệp, hãy xóa tài liệu này và thêm tài liệu mới.</p> : null}
         <div className="adm-form-footer">

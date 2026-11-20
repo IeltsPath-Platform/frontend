@@ -1,20 +1,24 @@
 import { useState, type FormEvent } from 'react'
+import { z } from 'zod'
+import { AdminField } from '../../components/AdminField'
 import { createLesson } from '../api/lessonApi'
 import { lessonErrorText } from '../lib/lessonErrors'
 import { useAdminError } from '../../lib/useAdminError'
+import { requiredText } from '@/lib/validation/fields'
+import { useFormErrors } from '@/lib/validation/useFormErrors'
+
+const schema = z.object({ code: requiredText('Mã bài học', 100), title: requiredText('Tiêu đề bài học', 255) })
 
 export function NewLessonForm({ topicId, onCreated, onCancel }: { topicId: string; onCreated: () => void; onCancel: () => void }) {
   const [code, setCode] = useState('')
   const [title, setTitle] = useState('')
   const [, setError] = useAdminError()
   const [saving, setSaving] = useState(false)
+  const form = useFormErrors(schema, { code, title })
 
   async function submit(event: FormEvent) {
     event.preventDefault()
-    if (!code.trim() || !title.trim()) {
-      setError('Cần nhập mã và tiêu đề bài học.')
-      return
-    }
+    if (!form.validate()) return
     setSaving(true)
     setError(null)
     try {
@@ -29,14 +33,12 @@ export function NewLessonForm({ topicId, onCreated, onCancel }: { topicId: strin
   return (
     <form aria-label="Bài học mới" noValidate onSubmit={(event) => void submit(event)}>
       <div className="adm-filters">
-        <label className="adm-field">
-          <span>Mã bài học</span>
-          <input autoFocus className="adm-input" onChange={(event) => setCode(event.target.value)} value={code} />
-        </label>
-        <label className="adm-field ls-grow">
-          <span>Tiêu đề</span>
-          <input className="adm-input" onChange={(event) => setTitle(event.target.value)} value={title} />
-        </label>
+        <AdminField label="Mã bài học" {...form.field('code')}>
+          <input autoFocus className="adm-input" maxLength={100} onChange={(event) => setCode(event.target.value)} value={code} />
+        </AdminField>
+        <AdminField className="ls-grow" label="Tiêu đề" {...form.field('title')}>
+          <input className="adm-input" maxLength={255} onChange={(event) => setTitle(event.target.value)} value={title} />
+        </AdminField>
       </div>
       <div className="adm-form-footer">
         <button className="adm-btn" disabled={saving} onClick={onCancel} type="button">Hủy</button>

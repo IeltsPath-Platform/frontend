@@ -24,6 +24,11 @@ function isBand(value: string) {
   return value.trim() !== '' && Number.isFinite(number) && number >= 0 && number <= 9 && Number.isInteger(number * 2)
 }
 
+/** A choice that must be made from a list: empty is refused with Chọn <label>.. */
+export function requiredChoice(label: string) {
+  return z.string({ error: `Chọn ${label}.` }).min(1, `Chọn ${label}.`)
+}
+
 /** An IELTS band written in the input: 0 to 9 in steps of 0.5. Empty is refused unless `optional`. */
 export function bandText(label: string, options: { optional?: boolean } = {}) {
   return z.string({ error: `${label} không được để trống.` }).superRefine((value, ctx) => {

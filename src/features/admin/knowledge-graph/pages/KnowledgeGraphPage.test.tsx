@@ -310,7 +310,10 @@ describe('KnowledgeGraphPage', () => {
     await within(drawer).findByLabelText('Mã')
 
     fireEvent.click(within(drawer).getByRole('button', { name: 'Lưu' }))
-    expect(await screen.findByText(/Cần nhập mã, tên, chủ đề, loại, kiểu học, can-do/)).toBeInTheDocument()
+    expect((await within(drawer).findAllByRole('alert')).map((alert) => alert.textContent)).toEqual([
+      'Mã không được để trống.', 'Tên không được để trống.', 'Chọn chủ đề.', 'Chọn loại.', 'Chọn kiểu học.', 'Can-do không được để trống.',
+    ])
+    expect(within(drawer).getByLabelText('Mã')).toHaveFocus()
     expect(points.createKnowledgePoint).not.toHaveBeenCalled()
 
     fireEvent.change(within(drawer).getByLabelText('Mã'), { target: { value: 'bad code' } })

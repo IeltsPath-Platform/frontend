@@ -63,7 +63,7 @@ describe('PackageCreateForm', () => {
     render(<PackageCreateForm onCreated={vi.fn()} onCancel={vi.fn()} />)
     titleAndCode()
     submit()
-    expect(await screen.findByRole('alert')).toHaveTextContent('Chọn khóa học')
+    expect((await screen.findAllByRole('alert')).map((alert) => alert.textContent)).toEqual(['Chọn khóa học.', 'Chọn chủ đề.', 'Chọn bài học.'])
     expect(api.createPackage).not.toHaveBeenCalled()
     await screen.findByRole('option', { name: 'COURSE · Khóa đọc' })
     fireEvent.change(screen.getByLabelText('Khóa học'), { target: { value: courseId } })

@@ -16,6 +16,9 @@ const active: Rubric = {
 }
 const draft = { ...active, version: 2, status: 'DRAFT' as const }
 function show() { return render(<MemoryRouter initialEntries={['/content-author/rubrics?task=TASK_2']}><RubricsPage /></MemoryRouter>) }
+// The editor has dozens of labelled fields and jsdom finds a field by its label slowly, so a test that edits it needs time.
+vi.setConfig({ testTimeout: 30_000 })
+
 describe('RubricsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -157,7 +160,7 @@ describe('RubricsPage', () => {
     show()
     fireEvent.click(await screen.findByRole('button', { name: 'Tạo bản nháp từ bản đang dùng' }))
     fireEvent.submit(screen.getByRole('form', { name: 'Soạn rubric' }))
-    expect(await screen.findByRole('alert')).toHaveTextContent('mỗi tiêu chí cần ít nhất một band không trùng')
+    expect(await screen.findByRole('alert')).toHaveTextContent('Mỗi tiêu chí cần ít nhất một band.')
     expect(api.createRubric).not.toHaveBeenCalled()
   })
   it('blocks duplicate bands inside a criterion', async () => {

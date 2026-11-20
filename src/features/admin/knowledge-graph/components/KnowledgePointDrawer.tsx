@@ -1,6 +1,10 @@
 import { useState, type FormEvent } from 'react'
+import { z } from 'zod'
 import { useToast } from '@/components/toast/toastContext'
+import { AdminField } from '../../components/AdminField'
 import { AdminDrawer } from '../../components/AdminLayer'
+import { requiredChoice, requiredText } from '@/lib/validation/fields'
+import { useFormErrors } from '@/lib/validation/useFormErrors'
 import { AdminError, AdminLoading } from '../../components/AdminState'
 import { adminErrorMessage } from '../../lib/adminErrors'
 import { useAdminError } from '../../lib/useAdminError'
@@ -10,7 +14,7 @@ import {
   createKnowledgePoint, fetchKnowledgePoints, fetchPrerequisites, replacePrerequisites, updateKnowledgePoint,
 } from '../api/knowledgePointApi'
 import {
-  CEFR_OPTIONS, EMPTY_FORM, KIND_OPTIONS, LEARNING_TYPE_OPTIONS, SKILL_OPTIONS, formOf, formProblem, requestOf,
+  CEFR_OPTIONS, CODE_PATTERN, CODE_PATTERN_MESSAGE, EMPTY_FORM, KIND_OPTIONS, LEARNING_TYPE_OPTIONS, SKILL_OPTIONS, formOf, requestOf,
   type KnowledgePointForm,
 } from '../lib/knowledgePointForm'
 import type { KnowledgePoint, TreeNode } from '../types'
@@ -24,6 +28,15 @@ interface Loaded {
 }
 
 const sameIds = (a: readonly string[], b: readonly string[]) => a.length === b.length && a.every((id) => b.includes(id))
+
+const pointSchema = z.object({
+  code: requiredText('Mã', 100).regex(CODE_PATTERN, CODE_PATTERN_MESSAGE),
+  name: requiredText('Tên', 255),
+  topicId: requiredChoice('chủ đề'),
+  kind: requiredChoice('loại'),
+  learningType: requiredChoice('kiểu học'),
+  canDo: z.string({ error: 'Can-do không được để trống.' }).trim().min(1, 'Can-do không được để trống.'),
+})
 
 function Form({ point, loaded, topics, onSaved, onClose }: {
   point: KnowledgePoint | null
@@ -40,11 +53,11 @@ function Form({ point, loaded, topics, onSaved, onClose }: {
   const set = <K extends keyof KnowledgePointForm>(field: K) => (value: KnowledgePointForm[K]) => setForm((current) => ({ ...current, [field]: value }))
   const text = (field: keyof KnowledgePointForm) => ({ onChange: (event: { target: { value: string } }) => set(field)(event.target.value), value: form[field] })
   const candidates = loaded.points.filter((item) => item.id !== point?.id)
+  const errors = useFormErrors(pointSchema, { code: form.code, name: form.name, topicId: form.topicId, kind: form.kind, learningType: form.learningType, canDo: form.canDo })
 
   async function submit(event: FormEvent) {
     event.preventDefault()
-    const problem = formProblem(form)
-    if (problem) { setError(problem); return }
+    if (!errors.validate()) return
     setSaving(true)
     setError(null)
     let id = point?.id
@@ -72,30 +85,26 @@ function Form({ point, loaded, topics, onSaved, onClose }: {
   return (
     <form aria-label={point ? `Sửa ${point.code}` : 'Điểm kiến thức mới'} noValidate onSubmit={(event) => void submit(event)}>
       <div className="adm-filters">
-        <label className="adm-field">
-          <span>Mã<span aria-hidden="true" className="adm-required" /></span>
-          <input aria-required="true" className="adm-input" placeholder="R55_SCANNING" {...text('code')} />
-        </label>
-        <label className="adm-field kg-grow">
-          <span>Tên<span aria-hidden="true" className="adm-required" /></span>
-          <input aria-required="true" className="adm-input" {...text('name')} />
-        </label>
+        <AdminField label="Mã" {...errors.field('code')}>
+          <input className="adm-input" placeholder="R55_SCANNING" {...text('code')} />
+        </AdminField>
+        <AdminField className="kg-grow" label="Tên" {...errors.field('name')}>
+          <input className="adm-input" {...text('name')} />
+        </AdminField>
       </div>
-      <label className="adm-field">
-        <span>Chủ đề<span aria-hidden="true" className="adm-required" /></span>
-        <select aria-required="true" className="adm-select" {...text('topicId')}>
+      <AdminField label="Chủ đề" {...errors.field('topicId')}>
+        <select className="adm-select" {...text('topicId')}>
           <option value="">Chọn chủ đề</option>
           {topics.map((topic) => <option key={topic.id} value={topic.id}>{topic.name} ({topic.code})</option>)}
         </select>
-      </label>
+      </AdminField>
       <ChoiceChips clearable label="Kỹ năng" onChange={set('skill')} options={SKILL_OPTIONS} value={form.skill} />
-      <ChoiceChips label="Loại" onChange={set('kind')} options={KIND_OPTIONS} required value={form.kind} />
-      <ChoiceChips label="Kiểu học" onChange={set('learningType')} options={LEARNING_TYPE_OPTIONS} required value={form.learningType} />
+      <ChoiceChips error={errors.field('kind').error} label="Loại" onChange={set('kind')} options={KIND_OPTIONS} required value={form.kind} />
+      <ChoiceChips error={errors.field('learningType').error} label="Kiểu học" onChange={set('learningType')} options={LEARNING_TYPE_OPTIONS} required value={form.learningType} />
       <ChoiceChips clearable label="Cấp CEFR" onChange={set('cefrLevel')} options={CEFR_OPTIONS} value={form.cefrLevel} />
-      <label className="adm-field">
-        <span>Can-do<span aria-hidden="true" className="adm-required" /></span>
-        <textarea aria-required="true" className="adm-textarea kg-textarea" {...text('canDo')} />
-      </label>
+      <AdminField label="Can-do" {...errors.field('canDo')}>
+        <textarea className="adm-textarea kg-textarea" {...text('canDo')} />
+      </AdminField>
       <label className="adm-field">
         <span>Trong phạm vi</span>
         <textarea className="adm-textarea kg-textarea" {...text('scopeIn')} />

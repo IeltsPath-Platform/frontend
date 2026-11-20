@@ -4,12 +4,12 @@ import { section, sectionRequest } from '../testFixtures'
 import { SectionEditor } from './SectionEditor'
 
 describe('SectionEditor', () => {
-  it.each(['', '   ', 'x'.repeat(256)])('rejects invalid titles before saving', (title) => {
+  it.each([['', 'Tiêu đề phần không được để trống.'], ['   ', 'Tiêu đề phần không được để trống.'], ['x'.repeat(256), 'Tiêu đề phần tối đa 255 ký tự.']])('rejects invalid titles before saving', (title, message) => {
     const save = vi.fn().mockResolvedValue(undefined)
     render(<SectionEditor sortOrder={1} busy={false} onSave={save} onCancel={vi.fn()} />)
     fireEvent.change(screen.getByLabelText('Tiêu đề phần'), { target: { value: title } })
     fireEvent.submit(screen.getByRole('form'))
-    expect(screen.getByRole('alert')).toHaveTextContent('Nhập tiêu đề phần, tối đa 255 ký tự.')
+    expect(screen.getByLabelText('Tiêu đề phần')).toHaveAccessibleDescription(message)
     expect(save).not.toHaveBeenCalled()
   })
   it.each(['0', '-1', '0.001', '40000000'])('rejects an invalid minute duration %s', (minutes) => {
