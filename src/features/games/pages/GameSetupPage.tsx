@@ -25,6 +25,7 @@ import { gameName, playPath, setupPath, type GameType } from '../lib/gameRoutes'
 import {
   ROCKET_ROOM_DEFAULTS,
   rocketQuestionCountError,
+  wordLimitError,
   type RocketRoomSettings,
 } from '../lib/rocketRoomSettings'
 import '../games-room.css'
@@ -64,6 +65,10 @@ function SetupContent({ gameType }: { gameType: GameType }) {
   )
   const [pending, setPending] = useState(false)
   const [error, setError] = useState('')
+  const [tried, setTried] = useState(false)
+  // A number that is not valid is refused under its input once the form was sent.
+  const countError = rocket ? rocketQuestionCountError(rocketValue.questionCount) : null
+  const limitError = !rocket && value.playMode === 'FINITE' ? wordLimitError(value.wordLimit) : null
   const submitting = useRef(false)
   const pendingSoloRoom = useRef<GameRoom | null>(null)
   const lifetime = useRef<AbortController | null>(null)
@@ -79,27 +84,8 @@ function SetupContent({ gameType }: { gameType: GameType }) {
   /** checkActive=false only after the user chose to leave their previous room. */
   async function submit(checkActive: boolean) {
     if (submitting.current || wordError) return
-    const countError = rocket
-      ? rocketQuestionCountError(rocketValue.questionCount)
-      : null
-    if (countError) {
-      setError(countError)
-      return
-    }
-    if (
-      !rocket &&
-      value.playMode === 'FINITE' &&
-      (!Number.isInteger(value.wordLimit) ||
-        (value.wordLimit ?? 0) < 5 ||
-        (value.wordLimit ?? 0) > 2147483647)
-    ) {
-      setError(
-        (value.wordLimit ?? 0) > 2147483647
-          ? 'Số từ vượt quá giới hạn cho phép.'
-          : 'Vui lòng nhập số từ là số nguyên từ 5 trở lên.',
-      )
-      return
-    }
+    setTried(true)
+    if (countError || limitError) return
     submitting.current = true
     const signal = lifetime.current?.signal
     setPending(true)
@@ -259,12 +245,14 @@ function SetupContent({ gameType }: { gameType: GameType }) {
                 value={rocketValue}
                 onChange={setRocketValue}
                 disabled={pending}
+                questionCountError={tried ? countError : null}
               />
             ) : (
               <GameSettingsForm
                 value={{ ...value, playerMode }}
                 onChange={setValue}
                 disabled={pending}
+                wordLimitError={tried ? limitError : null}
               />
             )}
             <WordFilterFields

@@ -13,6 +13,22 @@ export interface FieldState {
 }
 
 /**
+ * The first message of every field the schema refuses, by field name. For a form that is not held in React state (one
+ * that reads its inputs from `FormData`), where `useFormErrors` does not fit.
+ */
+export function collectErrors(schema: FormSchema, values: Record<string, unknown>): Record<string, string> {
+  const result = schema.safeParse(values)
+  const found: Record<string, string> = {}
+  if (!result.success) {
+    for (const issue of result.error.issues) {
+      const name = String(issue.path[0] ?? '')
+      if (!(name in found)) found[name] = issue.message
+    }
+  }
+  return found
+}
+
+/**
  * The validation of a form whose state lives in `useState`. Give it the schema and the current values: the errors are
  * worked out from them on every render, one message per field (the first problem the schema finds). An error shows
  * under its field after the form was sent or the field was left, and goes away as soon as the value is fixed.
@@ -27,17 +43,7 @@ export function useFormErrors(schema: FormSchema, values: Record<string, unknown
   const [focusRequest, setFocusRequest] = useState(0)
 
   const key = JSON.stringify(values)
-  const errors = useMemo(() => {
-    const result = schema.safeParse(JSON.parse(key) as Record<string, unknown>)
-    const found: Record<string, string> = {}
-    if (!result.success) {
-      for (const issue of result.error.issues) {
-        const name = String(issue.path[0] ?? '')
-        if (!(name in found)) found[name] = issue.message
-      }
-    }
-    return found
-  }, [schema, key])
+  const errors = useMemo(() => collectErrors(schema, JSON.parse(key) as Record<string, unknown>), [schema, key])
 
   useEffect(() => {
     if (focusRequest === 0) return

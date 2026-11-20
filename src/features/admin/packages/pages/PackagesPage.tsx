@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { z } from 'zod'
+import { AdminField } from '../../components/AdminField'
 import { AdminDrawer } from '../../components/AdminLayer'
 import { AdminEmpty, AdminError, AdminLoading } from '../../components/AdminState'
 import { fetchCourses } from '../../courses/api/courseApi'
@@ -14,7 +15,6 @@ import { PACKAGE_STATUS_LABEL, PACKAGE_TYPE_LABEL } from '../lib/packageLabels'
 import { PACKAGE_TYPES, placementPoolSchema, type PackageFilters } from '../types'
 import { placementPoolLabel } from '@/features/learning-path/placement/placementPools'
 import '../packages.css'
-import { useAdminError } from '../../lib/useAdminError'
 
 export function PackagesPage() {
   const [search, setSearch] = useSearchParams()
@@ -27,7 +27,8 @@ export function PackagesPage() {
   const [text, setText] = useState('')
   const [query, setQuery] = useState('')
   const [id, setId] = useState('')
-  const [, setError] = useAdminError()
+  const [idSent, setIdSent] = useState(false)
+  const idError = id.trim() === '' ? 'ID gói không được để trống.' : !z.guid().safeParse(id.trim()).success ? 'Nhập ID gói hợp lệ (UUID).' : undefined
   const navigate = useNavigate()
   useEffect(() => { const timer = window.setTimeout(() => setQuery(text.trim()), 300); return () => window.clearTimeout(timer) }, [text])
   const courses = useAdminResource('package-filter-courses', fetchCourses)
@@ -39,8 +40,9 @@ export function PackagesPage() {
   const creating = search.has('create')
   function open(event: FormEvent) {
     event.preventDefault()
+    setIdSent(true)
     const parsed = z.guid().safeParse(id.trim())
-    if (!parsed.success) { setError('Nhập ID gói hợp lệ (UUID).'); return }
+    if (!parsed.success) return
     navigate(`/content-author/packages/${parsed.data}`)
   }
   return <AdminPage title="Đề & gói câu hỏi" subtitle="Tạo gói đề, soạn các phiên bản và xuất bản khi nội dung đã sẵn sàng." actions={<button className="adm-btn adm-btn--primary" type="button" disabled={creating} onClick={() => setSearch((previous) => { const next = new URLSearchParams(previous); next.set('create', 'PRACTICE_SET'); return next })}>Gói mới</button>}>
@@ -69,7 +71,7 @@ export function PackagesPage() {
       </tr>)}</tbody></table></div> : null}
       <details><summary>Mở trực tiếp bằng ID</summary><form className="adm-card" aria-label="Mở gói có sẵn" noValidate onSubmit={open}>
         <h2>Mở gói có sẵn</h2>
-        <label className="adm-field"><span>ID gói (UUID)</span><input className="adm-input" value={id} onChange={(event) => setId(event.target.value)} required autoCapitalize="none" spellCheck={false} /></label>
+        <AdminField label="ID gói (UUID)" required error={idSent ? idError : undefined}><input className="adm-input" value={id} onChange={(event) => setId(event.target.value)} autoCapitalize="none" spellCheck={false} /></AdminField>
         <button className="adm-btn adm-btn--primary" type="submit">Mở gói</button>
       </form></details>
     </div>

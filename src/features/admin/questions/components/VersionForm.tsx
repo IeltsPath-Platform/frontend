@@ -1,10 +1,16 @@
-import { useState, type FormEvent } from 'react'
+import { Fragment, useMemo, useState, type FormEvent } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
+import { z } from 'zod'
+import { AdminField } from '../../components/AdminField'
+import { positiveIntegerText, requiredText } from '@/lib/validation/fields'
+import { useFormErrors } from '@/lib/validation/useFormErrors'
 import {
+  MAX_CHART_FACTS_CHARS,
   MAX_HINT_CHARS,
   PASS_BANDS,
   answerShapeOf,
   buildVersionRequest,
+  type AnswerShape,
   initialFormState,
   type VersionFormState,
 } from '../lib/versionForm'
@@ -12,7 +18,52 @@ import { questionErrorText } from '../lib/labels'
 import { DIFFICULTIES, type VersionRequest } from '../types'
 import { DIFFICULTY_LABEL } from '../lib/labels'
 import { KnowledgePointPicker } from './KnowledgePointPicker'
-import { useAdminError, useAdminErrorToast } from '../../lib/useAdminError'
+import { useAdminError } from '../../lib/useAdminError'
+
+/**
+ * What the author must fill in for the answer shape. An unused option row (no content) is simply left out; the used
+ * rows need a key each, different from the others, at least two of them, and one of them marked correct. The option
+ * fields are named `o<i>_key` and `o<i>_content`; the group messages sit on `options` and `correctKey`.
+ */
+function versionSchema(shape: AnswerShape, optionCount: number, essayTask: 'TASK_1' | 'TASK_2') {
+  const fields: Record<string, z.ZodType> = {
+    versionNumber: positiveIntegerText('Số phiên bản'),
+    stem: requiredText('Nội dung câu hỏi', 50000),
+    hint: z.string().max(MAX_HINT_CHARS, `Gợi ý tối đa ${MAX_HINT_CHARS} ký tự.`),
+    options: z.unknown(),
+    correctKey: z.string(),
+    accepted: z.string(),
+    maxWords: z.string(),
+    minWords: z.string(),
+    passBand: z.string(),
+    chartFacts: z.string(),
+  }
+  for (let i = 0; i < optionCount; i += 1) { fields[`o${i}_key`] = z.string(); fields[`o${i}_content`] = z.string() }
+  if (shape === 'FILL') {
+    fields.accepted = z.string({ error: 'Nhập ít nhất một đáp án được chấp nhận.' }).refine((value) => value.split('\n').some((line) => line.trim() !== ''), 'Nhập ít nhất một đáp án được chấp nhận.')
+    fields.maxWords = positiveIntegerText('Giới hạn số từ', { optional: true })
+  }
+  if (shape === 'ESSAY') {
+    fields.minWords = positiveIntegerText('Số từ tối thiểu')
+    fields.passBand = z.string().refine((value) => { const band = Number(value); return value.trim() !== '' && band >= 4 && band <= 9 && Number.isInteger(band * 2) }, 'Band đạt phải từ 4,0 đến 9,0, mỗi bước 0,5.')
+    if (essayTask === 'TASK_1') fields.chartFacts = requiredText('Số liệu biểu đồ', MAX_CHART_FACTS_CHARS)
+  }
+  return z.object(fields).superRefine((values, ctx) => {
+    if (shape !== 'CHOICE') return
+    const used: Array<{ index: number; key: string }> = []
+    for (let i = 0; i < optionCount; i += 1) {
+      if (String(values[`o${i}_content`] ?? '').trim() === '') continue
+      const key = String(values[`o${i}_key`] ?? '').trim()
+      used.push({ index: i, key })
+      if (key === '') ctx.addIssue({ code: 'custom', path: [`o${i}_key`], message: `Mã lựa chọn ${i + 1} không được để trống.` })
+    }
+    used.forEach(({ index, key }, position) => {
+      if (key !== '' && used.findIndex((other) => other.key === key) !== position) ctx.addIssue({ code: 'custom', path: [`o${index}_key`], message: `Mã lựa chọn ${index + 1} bị trùng.` })
+    })
+    if (used.length < 2) ctx.addIssue({ code: 'custom', path: ['options'], message: 'Nhập nội dung cho ít nhất 2 lựa chọn.' })
+    if (!used.some((option) => option.key === String(values.correctKey ?? '').trim())) ctx.addIssue({ code: 'custom', path: ['correctKey'], message: 'Chọn đáp án đúng trong các lựa chọn.' })
+  })
+}
 
 export interface VersionFormProps {
   questionType: string
@@ -27,10 +78,18 @@ export interface VersionFormProps {
 export function VersionForm({ questionType, nextVersionNumber, onSubmit, onCancel, initialState }: VersionFormProps) {
   const [form, setForm] = useState<VersionFormState>(() => initialState ?? initialFormState(questionType, nextVersionNumber))
   const [, setServerError] = useAdminError()
-  const fail = useAdminErrorToast()
   const [saving, setSaving] = useState(false)
   const shape = answerShapeOf(questionType)
   const fixedOptions = questionType === 'TRUE_FALSE_NOT_GIVEN'
+  const schema = useMemo(() => versionSchema(shape, form.options.length, form.essayTask), [shape, form.options.length, form.essayTask])
+  const errors = useFormErrors(schema, {
+    versionNumber: String(form.versionNumber), stem: form.stem, hint: form.hint, correctKey: form.correctKey,
+    accepted: form.accepted, maxWords: form.maxWords, minWords: form.minWords, passBand: form.passBand, chartFacts: form.chartFacts,
+    options: form.options,
+    ...Object.fromEntries(form.options.flatMap((option, index) => [[`o${index}_key`, option.key], [`o${index}_content`, option.content]])),
+  })
+  const optionsError = errors.field('options').error
+  const correctError = errors.field('correctKey').error
 
   const patch = (changes: Partial<VersionFormState>) => setForm((current) => ({ ...current, ...changes }))
   const patchOption = (index: number, changes: Partial<VersionFormState['options'][number]>) =>
@@ -38,11 +97,9 @@ export function VersionForm({ questionType, nextVersionNumber, onSubmit, onCance
 
   async function submit(event: FormEvent) {
     event.preventDefault()
+    if (!errors.validate()) return
     const result = buildVersionRequest(questionType, form)
-    if (!result.ok) {
-      fail(['Chưa lưu được:', ...result.problems].join('\n'))
-      return
-    }
+    if (!result.ok) return
     setServerError(null)
     setSaving(true)
     try {
@@ -58,20 +115,19 @@ export function VersionForm({ questionType, nextVersionNumber, onSubmit, onCance
     <form aria-label="Phiên bản mới" className="qb-form" noValidate onSubmit={(event) => void submit(event)}>
 
 
-      <label className="adm-field">
-        <span>Số phiên bản</span>
+      <AdminField label="Số phiên bản" {...errors.field('versionNumber')}>
         <input className="adm-input" min={1} onChange={(event) => patch({ versionNumber: Number(event.target.value) })} type="number" value={form.versionNumber} />
-      </label>
-      <label className="adm-field">
-        <span>Nội dung câu hỏi</span>
+      </AdminField>
+      <AdminField label="Nội dung câu hỏi" {...errors.field('stem')}>
         <textarea className="adm-textarea" onChange={(event) => patch({ stem: event.target.value })} value={form.stem} />
-      </label>
+      </AdminField>
 
       {shape === 'CHOICE' ? (
         <fieldset className="qb-options">
           <legend>Các lựa chọn (chọn nút tròn cho đáp án đúng)</legend>
           {form.options.map((option, index) => (
-            <div className="qb-option" key={index}>
+            <Fragment key={index}>
+            <div className="qb-option">
               <input
                 aria-label={`Đáp án đúng là lựa chọn ${index + 1}`}
                 checked={option.key !== '' && form.correctKey === option.key}
@@ -81,7 +137,9 @@ export function VersionForm({ questionType, nextVersionNumber, onSubmit, onCance
                 type="radio"
               />
               <input
+                aria-invalid={errors.field(`o${index}_key`).error ? true : undefined}
                 aria-label={`Mã lựa chọn ${index + 1}`}
+                onBlur={errors.field(`o${index}_key`).onTouch}
                 className="adm-input qb-option__key"
                 disabled={fixedOptions}
                 onChange={(event) => patchOption(index, { key: event.target.value })}
@@ -105,25 +163,27 @@ export function VersionForm({ questionType, nextVersionNumber, onSubmit, onCance
                 </button>
               ) : null}
             </div>
+            {errors.field(`o${index}_key`).error ? <p className="adm-field__error" role="alert">{errors.field(`o${index}_key`).error}</p> : null}
+            </Fragment>
           ))}
           {!fixedOptions ? (
             <button className="adm-btn adm-btn--small" onClick={() => patch({ options: [...form.options, { key: '', content: '' }] })} type="button">
               <Plus aria-hidden="true" size={14} /> Thêm lựa chọn
             </button>
           ) : null}
+          {optionsError ? <p className="adm-field__error" role="alert">{optionsError}</p> : null}
+          {correctError ? <p className="adm-field__error" role="alert">{correctError}</p> : null}
         </fieldset>
       ) : null}
 
       {shape === 'FILL' ? (
         <>
-          <label className="adm-field">
-            <span>Đáp án được chấp nhận (mỗi dòng một đáp án)</span>
+          <AdminField label="Đáp án được chấp nhận (mỗi dòng một đáp án)" {...errors.field('accepted')}>
             <textarea className="adm-textarea" onChange={(event) => patch({ accepted: event.target.value })} value={form.accepted} />
-          </label>
-          <label className="adm-field">
-            <span>Giới hạn số từ (không bắt buộc)</span>
+          </AdminField>
+          <AdminField label="Giới hạn số từ (không bắt buộc)" {...errors.field('maxWords')}>
             <input className="adm-input" inputMode="numeric" onChange={(event) => patch({ maxWords: event.target.value })} value={form.maxWords} />
-          </label>
+          </AdminField>
         </>
       ) : null}
 
@@ -136,10 +196,9 @@ export function VersionForm({ questionType, nextVersionNumber, onSubmit, onCance
               <option value="TASK_1">Task 1</option>
             </select>
           </label>
-          <label className="adm-field">
-            <span>Số từ tối thiểu</span>
+          <AdminField label="Số từ tối thiểu" {...errors.field('minWords')}>
             <input className="adm-input" inputMode="numeric" onChange={(event) => patch({ minWords: event.target.value })} value={form.minWords} />
-          </label>
+          </AdminField>
           <label className="adm-field">
             <span>Band đạt</span>
             <select className="adm-select" onChange={(event) => patch({ passBand: event.target.value })} value={form.passBand}>
@@ -147,11 +206,9 @@ export function VersionForm({ questionType, nextVersionNumber, onSubmit, onCance
             </select>
           </label>
           {form.essayTask === 'TASK_1' ? (
-            <label className="adm-field">
-              <span>Số liệu và đặc điểm chính của biểu đồ (AI chấm đọc phần này thay cho ảnh)</span>
+            <AdminField label="Số liệu và đặc điểm chính của biểu đồ (AI chấm đọc phần này thay cho ảnh)" {...errors.field('chartFacts')}>
               <textarea className="adm-textarea" onChange={(event) => patch({ chartFacts: event.target.value })} value={form.chartFacts} />
-              <small className="adm-muted">Ảnh biểu đồ gắn vào phiên bản bằng API asset, chưa có trong màn này.</small>
-            </label>
+            </AdminField>
           ) : null}
         </>
       ) : null}
@@ -171,10 +228,9 @@ export function VersionForm({ questionType, nextVersionNumber, onSubmit, onCance
         <span>Giải thích</span>
         <textarea className="adm-textarea" onChange={(event) => patch({ explanation: event.target.value })} value={form.explanation} />
       </label>
-      <label className="adm-field">
-        <span>Gợi ý (tối đa {MAX_HINT_CHARS} ký tự)</span>
+      <AdminField label={`Gợi ý (tối đa ${MAX_HINT_CHARS} ký tự)`} {...errors.field('hint')}>
         <textarea className="adm-textarea" onChange={(event) => patch({ hint: event.target.value })} value={form.hint} />
-      </label>
+      </AdminField>
 
       <div className="adm-field">
         <span>Knowledge point liên quan</span>

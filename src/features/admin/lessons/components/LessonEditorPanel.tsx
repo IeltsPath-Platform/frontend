@@ -1,6 +1,10 @@
 import { useId, useState, type FormEvent } from 'react'
 import { ArrowDown, ArrowUp, BookA, ChevronDown, Eye, FileText, Image as ImageIcon, ListChecks, Pencil, Plus, Trash2 } from 'lucide-react'
+import { z } from 'zod'
+import { AdminField } from '../../components/AdminField'
 import { AdminDrawer } from '../../components/AdminLayer'
+import { positiveIntegerText } from '@/lib/validation/fields'
+import { useFormErrors } from '@/lib/validation/useFormErrors'
 import { useAdminConfirm } from '../../lib/useAdminConfirm'
 import { MarkdownField } from '../../components/MarkdownField'
 import { STATUS_LABEL } from '../../questions/lib/labels'
@@ -37,6 +41,11 @@ const BLOCK_ICON = { TEXT: FileText, ASSET: ImageIcon, VOCABULARY: BookA, EXERCI
 
 const sameIds = (left: readonly string[], right: readonly string[]) => left.length === right.length && left.every((id, index) => id === right[index])
 
+const infoSchema = z.object({
+  title: z.string({ error: 'Tiêu đề không được để trống.' }).trim().min(1, 'Tiêu đề không được để trống.'),
+  minutes: positiveIntegerText('Số phút ước tính', { optional: true }),
+})
+
 /**
  * The lesson's own fields and its knowledge points, saved together with one button. The slides, documents and blocks
  * below are saved from their own popups, as each one is added or changed.
@@ -54,20 +63,14 @@ function InfoForm({ lesson, formId, saving, onSavingChange, onSaved }: {
   const [minutes, setMinutes] = useState(lesson.estimatedMinutes?.toString() ?? '')
   const [knowledgePointIds, setKnowledgePointIds] = useState(lesson.knowledgePointIds)
   const [, setError] = useAdminError()
+  const form = useFormErrors(infoSchema, { title, minutes })
 
   async function submit(event: FormEvent) {
     event.preventDefault()
     // The knowledge picker draws its own popup in a portal, so a submit from inside it reaches this form too.
     if (event.target !== event.currentTarget || saving) return
-    if (!title.trim()) {
-      setError('Tiêu đề không được để trống.')
-      return
-    }
+    if (!form.validate()) return
     const parsed = minutes.trim() === '' ? null : Number(minutes)
-    if (parsed !== null && (!Number.isInteger(parsed) || parsed <= 0)) {
-      setError('Số phút phải là số nguyên dương.')
-      return
-    }
     onSavingChange(true)
     setError(null)
     try {
@@ -95,14 +98,12 @@ function InfoForm({ lesson, formId, saving, onSavingChange, onSaved }: {
     <form aria-label="Thông tin bài học" className="adm-sec" id={formId} noValidate onSubmit={(event) => void submit(event)}>
       <div className="adm-sec__head"><h3 className="adm-sec__title">Thông tin bài học</h3></div>
       <div className="ls-grid">
-        <label className="adm-field">
-          <span>Tiêu đề<span aria-hidden="true" className="adm-required" /></span>
+        <AdminField label="Tiêu đề" {...form.field('title')}>
           <input className="adm-input" onChange={(event) => setTitle(event.target.value)} value={title} />
-        </label>
-        <label className="adm-field">
-          <span>Số phút ước tính</span>
+        </AdminField>
+        <AdminField label="Số phút ước tính" {...form.field('minutes')}>
           <input className="adm-input" inputMode="numeric" onChange={(event) => setMinutes(event.target.value)} value={minutes} />
-        </label>
+        </AdminField>
       </div>
       <MarkdownField label="Tóm tắt chi tiết (Markdown)" onChange={setMarkdown} textareaClassName="adm-textarea ls-textarea" value={markdown} />
       <section aria-label="Knowledge point của bài">

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { AdminField } from '../../components/AdminField'
 import { AdminPage } from '../../pages/AdminPage'
 import { downloadCourseTemplate, importCourse, validateCourseImport } from '../api/courseImportApi'
 import { importError, importFailureReport, importIssueLabel } from '../lib/importLabels'
@@ -21,10 +22,13 @@ export function CourseImportPage() {
   const locked = busy || downloading
   function selectFile(value: File | null) {
     setFile(value); setValidatedFile(null); setReport(null); setSuccess(null); setError(null)
-    if (value && value.size > IMPORT_MAX_BYTES) setError('File lớn hơn 5 MB')
-    else if (value && (!value.size || !/\.xlsx$/i.test(value.name))) setError('Chọn file Excel .xlsx có dữ liệu')
   }
-  const usable = !!file && file.size > 0 && file.size <= IMPORT_MAX_BYTES && /\.xlsx$/i.test(file.name)
+  // A file that cannot be imported is refused under the input as soon as it is chosen.
+  const fileError = !file ? undefined
+    : file.size > IMPORT_MAX_BYTES ? 'File lớn hơn 5 MB.'
+    : !file.size || !/\.xlsx$/i.test(file.name) ? 'Chọn file Excel .xlsx có dữ liệu.'
+    : undefined
+  const usable = !!file && !fileError
   async function validate() {
     if (!file || !usable || locked) return
     setBusy(true); setError(null); setSuccess(null); setValidatedFile(null)
@@ -51,7 +55,7 @@ export function CourseImportPage() {
     finally { setDownloading(false) }
   }
   return <AdminPage title="Nhập khóa học từ Excel" subtitle="Kiểm tra file trước khi ghi. Khóa học được tạo chưa kích hoạt; nội dung vẫn ở trạng thái Nháp.">
-    <div className="adm-import-workspace"><section className="adm-card"><label className="adm-field"><span>File Excel (.xlsx, tối đa 5 MB)</span><input className="adm-input" type="file" accept=".xlsx" disabled={locked} onChange={(event) => selectFile(event.target.files?.[0] ?? null)} /></label><div className="adm-import-actions"><button className="adm-btn" type="button" disabled={locked} onClick={() => void download()}>{downloading ? 'Đang tải template…' : 'Tải template'}</button><button className="adm-btn" type="button" disabled={locked || !usable} onClick={() => void validate()}>Kiểm tra</button><button className="adm-btn adm-btn--primary" type="button" disabled={locked || !report?.valid || !!report.errors.length || file !== validatedFile || !!success} onClick={() => void submit()}>Import</button></div><p className="adm-muted">Dữ liệu bắt đầu ở dòng 3. Cảnh báo không chặn import. Dòng 0 là vấn đề của cả file.</p>{locked ? <p role="status">Đang xử lý…</p> : null}</section>
+    <div className="adm-import-workspace"><section className="adm-card"><AdminField label="File Excel (.xlsx, tối đa 5 MB)" error={fileError} required><input className="adm-input" type="file" accept=".xlsx" disabled={locked} onChange={(event) => selectFile(event.target.files?.[0] ?? null)} /></AdminField><div className="adm-import-actions"><button className="adm-btn" type="button" disabled={locked} onClick={() => void download()}>{downloading ? 'Đang tải template…' : 'Tải template'}</button><button className="adm-btn" type="button" disabled={locked || !usable} onClick={() => void validate()}>Kiểm tra</button><button className="adm-btn adm-btn--primary" type="button" disabled={locked || !report?.valid || !!report.errors.length || file !== validatedFile || !!success} onClick={() => void submit()}>Import</button></div><p className="adm-muted">Dữ liệu bắt đầu ở dòng 3. Cảnh báo không chặn import. Dòng 0 là vấn đề của cả file.</p>{locked ? <p role="status">Đang xử lý…</p> : null}</section>
       {report ? <><p role="status">{report.valid && !report.errors.length ? 'File hợp lệ, có thể import.' : 'File chưa hợp lệ.'}</p>{report.summary ? <p>Sẽ tạo {report.summary.topics} chủ đề, {report.summary.lessons} bài học, {report.summary.questions} câu hỏi và {report.summary.packages} gói bài.</p> : null}<Issues title="Lỗi" issues={report.errors} /><Issues title="Cảnh báo" issues={report.warnings} /></> : null}
       {success ? <section className="adm-card"><h2>Đã tạo khóa học (chưa kích hoạt)</h2><p>Bài học, câu hỏi và gói bài ở trạng thái Nháp.</p><Link to="/content-author/courses">Mở Khóa học &amp; chủ đề</Link><ul>{success.packageIds.map((id) => <li key={id}><Link to={`/content-author/packages/${id}`}>Hoàn thiện gói bài {id}</Link></li>)}</ul><Issues title="Cảnh báo sau import" issues={success.warnings} /></section> : null}
     </div>

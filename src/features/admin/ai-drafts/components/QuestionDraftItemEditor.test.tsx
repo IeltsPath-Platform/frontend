@@ -48,7 +48,7 @@ describe('QuestionDraftItemEditor', () => {
     render(<QuestionDraftItemEditor item={makeItem(0)} index={0} disabled={false} onSave={onSave} onCancel={vi.fn()} />)
     fireEvent.change(screen.getByLabelText('Mã lựa chọn 2'), { target: { value: 'A' } })
     fireEvent.submit(screen.getByRole('form'))
-    expect(screen.getByRole('alert')).toHaveTextContent('Cần 2–6 lựa chọn')
+    expect(screen.getByRole('alert')).toHaveTextContent('Mã lựa chọn 2 bị trùng.')
     expect(onSave).not.toHaveBeenCalled()
   })
 

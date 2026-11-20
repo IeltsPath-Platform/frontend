@@ -332,13 +332,13 @@ describe('ExaminerProfilePage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Thêm chứng chỉ' }))
     save()
-    expect(await screen.findByRole('alert')).toHaveTextContent('Chứng chỉ 2: nhập tên chứng chỉ')
+    expect(await screen.findByRole('alert')).toHaveTextContent('Tên chứng chỉ 2 không được để trống.')
 
     const second = screen.getByRole('group', { name: 'Chứng chỉ 2' })
     fireEvent.change(within(second).getByLabelText('Tên chứng chỉ'), { target: { value: 'CELTA' } })
     fireEvent.change(within(second).getByLabelText('Năm'), { target: { value: '1900' } })
     save()
-    expect(await screen.findByRole('alert')).toHaveTextContent('Chứng chỉ 2: năm phải từ 1950 đến 2100')
+    expect(await screen.findByRole('alert')).toHaveTextContent('Năm của chứng chỉ 2 phải từ 1950 đến 2100.')
     expect(puts()).toHaveLength(0)
   })
 

@@ -24,6 +24,7 @@ export function WeeklyGoalCard({ initialGoal, onGoalUpdated }: WeeklyGoalCardPro
   const [isEditing, setIsEditing] = useState(false)
   const [targetInput, setTargetInput] = useState<string>(String(initialGoal?.target ?? 120))
   const [updating, setUpdating] = useState(false)
+  const [targetError, setTargetError] = useState('')
 
   // Sync if prop changes
   if (initialGoal && !goal) {
@@ -38,13 +39,10 @@ export function WeeklyGoalCard({ initialGoal, onGoalUpdated }: WeeklyGoalCardPro
   const handleSaveTarget = async () => {
     const num = parseInt(targetInput, 10)
     if (isNaN(num) || num < 10 || num > 1000) {
-      toast({
-        title: 'Mục tiêu không hợp lệ',
-        description: 'Mục tiêu từ vựng hàng tuần phải nằm trong khoảng từ 10 đến 1000 từ.',
-        tone: 'error',
-      })
+      setTargetError('Mục tiêu từ vựng hàng tuần phải từ 10 đến 1000 từ.')
       return
     }
+    setTargetError('')
 
     setUpdating(true)
     try {
@@ -96,7 +94,9 @@ export function WeeklyGoalCard({ initialGoal, onGoalUpdated }: WeeklyGoalCardPro
               min={10}
               max={1000}
               value={targetInput}
-              onChange={(e) => setTargetInput(e.target.value)}
+              onChange={(e) => { setTargetInput(e.target.value); if (targetError) setTargetError('') }}
+              aria-invalid={targetError ? true : undefined}
+              aria-describedby={targetError ? 'weekly-goal-error' : undefined}
               style={{
                 width: '70px',
                 padding: '0.2rem 0.4rem',
@@ -129,6 +129,7 @@ export function WeeklyGoalCard({ initialGoal, onGoalUpdated }: WeeklyGoalCardPro
               type="button"
               onClick={() => {
                 setIsEditing(false)
+                setTargetError('')
                 setTargetInput(String(target))
               }}
               style={{
@@ -172,6 +173,8 @@ export function WeeklyGoalCard({ initialGoal, onGoalUpdated }: WeeklyGoalCardPro
           </button>
         )}
       </div>
+
+      {targetError ? <p id="weekly-goal-error" role="alert" style={{ margin: 0, color: '#dc2626', fontSize: '0.78rem', fontWeight: 600 }}>{targetError}</p> : null}
 
       {/* Progress bar */}
       <div>

@@ -75,13 +75,13 @@ describe('AiEvaluationPage', () => {
     fireEvent.change(screen.getByLabelText('Task bài chuẩn'), { target: { value: 'TASK_1' } })
     fireEvent.change(screen.getByLabelText('Đề bài'), { target: { value: 'Describe the chart.' } })
     fireEvent.change(screen.getByLabelText('Bài viết chuẩn'), { target: { value: 'The chart shows...' } })
-    fireEvent.change(screen.getByLabelText('Số liệu biểu đồ (bắt buộc)'), { target: { value: '   ' } })
+    fireEvent.change(screen.getByLabelText('Số liệu biểu đồ'), { target: { value: '   ' } })
 
     fireEvent.click(screen.getByRole('button', { name: 'Lưu bài chuẩn' }))
-    expect(await screen.findByRole('alert')).toHaveTextContent('Task 1 cần số liệu biểu đồ')
+    expect(await screen.findByRole('alert')).toHaveTextContent('Số liệu biểu đồ không được để trống.')
     expect(calls.some((call) => call.method === 'POST')).toBe(false)
 
-    fireEvent.change(screen.getByLabelText('Số liệu biểu đồ (bắt buộc)'), { target: { value: 'Sales rose from 10 to 30.' } })
+    fireEvent.change(screen.getByLabelText('Số liệu biểu đồ'), { target: { value: 'Sales rose from 10 to 30.' } })
     fireEvent.click(screen.getByRole('button', { name: 'Lưu bài chuẩn' }))
 
     await waitFor(() => expect(calls.some((call) => call.method === 'POST')).toBe(true))

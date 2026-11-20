@@ -13,20 +13,22 @@ const phoneRegex = /^$|^(\+?84|0)(3|5|7|8|9)[0-9]{8}$/
 const personalInfoSchema = z.object({
   displayName: z
     .string()
-    .min(1, 'Tên hiển thị không được để trống')
-    .max(100, 'Tên hiển thị không được vượt quá 100 ký tự'),
+    .trim()
+    .min(1, 'Tên hiển thị không được để trống.')
+    .max(100, 'Tên hiển thị tối đa 100 ký tự.'),
   fullName: z
     .string()
-    .min(1, 'Họ và tên không được để trống')
-    .max(150, 'Họ và tên không được vượt quá 150 ký tự'),
+    .trim()
+    .min(1, 'Họ và tên không được để trống.')
+    .max(150, 'Họ và tên tối đa 150 ký tự.'),
   phoneNumber: z
     .string()
     .refine((val) => phoneRegex.test(val.trim()), {
-      message: 'Số điện thoại không đúng định dạng Việt Nam (ví dụ 0912345678 hoặc +84912345678)',
+      message: 'Số điện thoại không đúng định dạng Việt Nam (ví dụ 0912345678 hoặc +84912345678).',
     }),
   bio: z
     .string()
-    .max(1000, 'Tiểu sử không được vượt quá 1000 ký tự'),
+    .max(1000, 'Tiểu sử tối đa 1000 ký tự.'),
   timezone: z.string().max(50, 'Múi giờ không hợp lệ'),
 })
 

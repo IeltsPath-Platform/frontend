@@ -203,15 +203,47 @@ describe('AuthPage modal & SiteNavbar integration', () => {
     fireEvent.change(screen.getByLabelText('Xác nhận mật khẩu'), { target: { value: '12345' } })
     fireEvent.click(screen.getByRole('button', { name: /Tạo tài khoản/i }))
 
-    expect(screen.getByRole('status')).toHaveTextContent(PASSWORD_LENGTH_MESSAGE)
+    expect(screen.getByRole('alert')).toHaveTextContent(PASSWORD_LENGTH_MESSAGE)
     expect(registerWithPasswordMock).not.toHaveBeenCalled()
 
     fireEvent.change(screen.getByLabelText('Mật khẩu'), { target: { value: 'validpass123' } })
     fireEvent.change(screen.getByLabelText('Xác nhận mật khẩu'), { target: { value: 'different123' } })
     fireEvent.click(screen.getByRole('button', { name: /Tạo tài khoản/i }))
 
-    expect(screen.getByRole('status')).toHaveTextContent(PASSWORD_MISMATCH_MESSAGE)
+    expect(screen.getByRole('alert')).toHaveTextContent(PASSWORD_MISMATCH_MESSAGE)
     expect(registerWithPasswordMock).not.toHaveBeenCalled()
+  })
+
+  it('shows a message under each empty field on sign-in and clears it once the field is filled', async () => {
+    render(
+      <MemoryRouter initialEntries={['/login']}>
+        <Routes>
+          <Route path="/login" element={<AuthPage mode="sign-in" />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /^Đăng nhập$/ }))
+    const alerts = await screen.findAllByRole('alert')
+    expect(alerts.map((alert) => alert.textContent)).toEqual([
+      'Email hoặc số điện thoại không được để trống.',
+      'Mật khẩu không được để trống.',
+    ])
+    expect(screen.getByLabelText('Mật khẩu')).toHaveAttribute('aria-invalid', 'true')
+  })
+
+  it('refuses an invalid email on forgot-password under the input', async () => {
+    render(
+      <MemoryRouter initialEntries={['/forgot-password']}>
+        <Routes>
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'khong-phai-email' } })
+    fireEvent.click(screen.getByRole('button', { name: /Gửi email đặt lại/ }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Email không hợp lệ.')
   })
 
   it('closes the login pop-up and opens the ForgotPasswordPage pop-up when clicking Quên mật khẩu?', async () => {

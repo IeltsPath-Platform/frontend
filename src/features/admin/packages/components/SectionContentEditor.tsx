@@ -1,8 +1,14 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { z } from 'zod'
+import { AdminField } from '../../components/AdminField'
 import { useAdminConfirm } from '../../lib/useAdminConfirm'
+import { requiredText } from '@/lib/validation/fields'
+import { useFormErrors } from '@/lib/validation/useFormErrors'
 import { deleteAudio, deletePassage, updateAudio, updatePassage, uploadAudio } from '../api/packageApi'
 import type { AudioUpload, PackageSection } from '../types'
 import { useAdminError } from '../../lib/useAdminError'
+
+const MAX_AUDIO_BYTES = 25 * 1024 * 1024
 
 function safeMediaUrl(value: string | null | undefined): string | undefined {
   if (!value) return undefined
@@ -31,6 +37,18 @@ export function SectionContentEditor({ packageId, versionId, section, disabled, 
     return () => { mounted.current = false; generation.current += 1 }
   }, [section.id, versionId])
   const locked = disabled || pending
+  const passageSchema = useMemo(() => z.object({ passage: requiredText('Nội dung đoạn văn', 50000) }), [])
+  const passageForm = useFormErrors(passageSchema, { passage })
+  const audioSchema = useMemo(() => z.object({ reference: z.string(), duration: z.string() }).superRefine((value, ctx) => {
+    const key = value.reference.trim()
+    if (key === '') ctx.addIssue({ code: 'custom', path: ['reference'], message: 'Tải file audio lên hoặc nhập key audio có sẵn.' })
+    else if (key.includes('..') || key.startsWith('/') || key.includes('\\') || key.includes('://')) ctx.addIssue({ code: 'custom', path: ['reference'], message: 'Key audio không hợp lệ: không dùng URL hoặc đường dẫn có “..”.' })
+    const seconds = Number(value.duration)
+    if (value.duration.trim() === '') ctx.addIssue({ code: 'custom', path: ['duration'], message: 'Thời lượng audio không được để trống.' })
+    else if (!Number.isInteger(seconds) || seconds < 1 || seconds > 7200) ctx.addIssue({ code: 'custom', path: ['duration'], message: 'Thời lượng audio phải là số nguyên từ 1 đến 7.200 giây.' })
+  }), [])
+  const audioForm = useFormErrors(audioSchema, { reference, duration })
+  const fileError = file ? file.size === 0 ? 'Tệp audio đang rỗng. Chọn tệp khác.' : file.size > MAX_AUDIO_BYTES ? 'File lớn hơn 25 MiB. Chọn tệp nhỏ hơn.' : undefined : undefined
   const currentAudio = safeMediaUrl(section.audio?.mediaUrl)
   const uploadedUrl = safeMediaUrl(uploaded?.value.mediaUrl)
 
@@ -45,23 +63,20 @@ export function SectionContentEditor({ packageId, versionId, section, disabled, 
   function savePassage(event: FormEvent) {
     event.preventDefault()
     if (locked) return
-    if (!passage.trim() || passage.length > 50000) { setError('Nhập đoạn văn từ 1 đến 50.000 ký tự.'); return }
+    if (!passageForm.validate()) return
     void mutate(() => updatePassage(packageId, versionId, section.id, { text: passage }), 'Đã lưu đoạn văn.')
   }
 
   function saveAudio(event: FormEvent) {
     event.preventDefault()
     if (locked) return
+    if (!audioForm.validate()) return
     const seconds = Number(duration)
-    if (!reference.trim() || reference.includes('..') || reference.startsWith('/') || reference.includes('\\') || reference.includes('://')) { setError('Nhập key audio hợp lệ, không dùng URL hoặc đường dẫn có “..”.'); return }
-    if (!Number.isInteger(seconds) || seconds < 1 || seconds > 7200) { setError('Thời lượng audio phải là số nguyên từ 1 đến 7.200 giây.'); return }
     void mutate(() => updateAudio(packageId, versionId, section.id, { mediaReference: reference.trim(), durationSeconds: seconds, transcript: transcript || null }), 'Đã lưu audio.', () => setUploaded(null))
   }
 
   async function upload() {
-    if (locked || !file) return
-    if (file.size === 0) { setError('Tệp audio đang rỗng. Chọn tệp khác.'); return }
-    if (file.size > 25 * 1024 * 1024) { setError('File lớn hơn 25 MiB. Chọn tệp nhỏ hơn.'); return }
+    if (locked || !file || fileError) return
     const currentGeneration = ++generation.current
     setPending(true); setError(null)
     let result: AudioUpload | null = null
@@ -82,7 +97,7 @@ export function SectionContentEditor({ packageId, versionId, section, disabled, 
     <form aria-label={`Đoạn văn của ${section.title}`} noValidate onSubmit={savePassage}>
       <h4>Đoạn văn</h4>
       <fieldset className="adm-package-fields" disabled={locked}>
-        <label className="adm-field"><span>Nội dung đoạn văn</span><textarea className="adm-textarea" maxLength={50000} value={passage} onChange={(event) => setPassage(event.target.value)} /></label>
+        <AdminField label="Nội dung đoạn văn" {...passageForm.field('passage')}><textarea className="adm-textarea" maxLength={50000} value={passage} onChange={(event) => setPassage(event.target.value)} /></AdminField>
         <p className="adm-muted">{passage.length.toLocaleString('vi-VN')}/50.000 ký tự</p>
         <div className="adm-package-actions"><button className="adm-btn" type="submit">Lưu đoạn văn</button><button className="adm-btn adm-btn--danger" type="button" disabled={!section.passage} onClick={() => void (async () => {
           if (locked) return
@@ -100,13 +115,13 @@ export function SectionContentEditor({ packageId, versionId, section, disabled, 
       <h4>Audio</h4>
       {currentAudio ? <audio controls preload="metadata" src={currentAudio} aria-label={`Nghe audio của ${section.title}`} /> : section.audio ? <p className="adm-muted">Audio chưa có địa chỉ phát hợp lệ. Kiểm tra cấu hình media trước khi xuất bản.</p> : null}
       <fieldset className="adm-package-fields" disabled={locked}>
-        <label className="adm-field"><span>File audio</span><input className="adm-input" type="file" accept="audio/mpeg,audio/mp4,audio/wav,audio/ogg,.mp3,.m4a,.wav,.ogg" onChange={(event) => { setFile(event.target.files?.[0] ?? null); setError(null) }} /></label>
+        <AdminField label="File audio" error={fileError}><input className="adm-input" type="file" accept="audio/mpeg,audio/mp4,audio/wav,audio/ogg,.mp3,.m4a,.wav,.ogg" onChange={(event) => { setFile(event.target.files?.[0] ?? null); setError(null) }} /></AdminField>
         <p className="adm-muted">MP3, M4A, WAV hoặc OGG, tối đa 25 MiB. Tải tệp trước, sau đó lưu để gắn audio vào phần.</p>
-        <button className="adm-btn" type="button" disabled={!file} onClick={() => void upload()}>{pending ? 'Đang xử lý…' : 'Tải file audio'}</button>
+        <button className="adm-btn" type="button" disabled={!file || !!fileError} onClick={() => void upload()}>{pending ? 'Đang xử lý…' : 'Tải file audio'}</button>
         {uploaded ? <p role="status">Đã tải tệp. {uploadedUrl ? 'Đang đọc thời lượng; bạn có thể nhập tay nếu không đọc được.' : 'Không đọc được địa chỉ phát. Nhập thời lượng bên dưới.'}</p> : null}
-        <label className="adm-field"><span>Thời lượng audio (giây)</span><input className="adm-input" required type="number" min={1} max={7200} step={1} value={duration} onChange={(event) => { manualDuration.current = true; setDuration(event.target.value) }} /></label>
+        <AdminField label="Thời lượng audio (giây)" {...audioForm.field('duration')} required><input className="adm-input" type="number" min={1} max={7200} step={1} value={duration} onChange={(event) => { manualDuration.current = true; setDuration(event.target.value) }} /></AdminField>
         <label className="adm-field"><span>Transcript (tùy chọn)</span><textarea className="adm-textarea" value={transcript} onChange={(event) => setTranscript(event.target.value)} /></label>
-        <details><summary>Dùng file có sẵn</summary><label className="adm-field"><span>Key audio</span><input className="adm-input" value={reference} onChange={(event) => { generation.current += 1; setUploaded(null); setReference(event.target.value) }} /></label><p className="adm-muted">Nhập key tệp đã lưu, ví dụ listening/demo/ls1.mp3, và thời lượng ở trên.</p></details>
+        <details open={audioForm.field('reference').error ? true : undefined}><summary>Dùng file có sẵn</summary><AdminField label="Key audio" {...audioForm.field('reference')}><input className="adm-input" value={reference} onChange={(event) => { generation.current += 1; setUploaded(null); setReference(event.target.value) }} /></AdminField><p className="adm-muted">Nhập key tệp đã lưu, ví dụ listening/demo/ls1.mp3, và thời lượng ở trên.</p></details>
         <div className="adm-package-actions"><button className="adm-btn" type="submit">Lưu audio</button><button className="adm-btn adm-btn--danger" type="button" disabled={!section.audio} onClick={() => void (async () => {
           if (locked) return
           if (!(await confirm({
