@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { z } from 'zod'
 import type { TopicOption } from '../../lessons/types'
 import { createTopic, updateTopic } from '../api/courseApi'
@@ -8,14 +8,15 @@ import { topicError } from '../lib/topicHelpers'
 import { useAdminError } from '../../lib/useAdminError'
 import { bandText, nonNegativeIntegerText, optionalText, requiredText } from '@/lib/validation/fields'
 import { useFormErrors } from '@/lib/validation/useFormErrors'
+import { fetchCodeSettings, fetchCodeSuggestion } from '../../code-settings/api/codeSettingsApi'
 
 /**
  * What each field of the topic form needs. A topic that belongs to a course must have a skill; the lowest band may not
  * be above the highest. Errors are shown under the field they are about.
  */
-function topicSchema(belongsToCourse: boolean) {
+function topicSchema(belongsToCourse: boolean, codeRequired: boolean) {
   return z.object({
-    code: requiredText('Mã chủ đề', 100),
+    code: codeRequired ? requiredText('Mã chủ đề', 100) : optionalText('Mã chủ đề', 100),
     name: requiredText('Tên chủ đề', 255),
     description: optionalText('Mô tả chủ đề', 2000),
     skill: z.string(),
@@ -42,6 +43,8 @@ export function TopicForm({ topic, parentId, courseId, courses, topics, onSaved,
   topic?: TopicOption; parentId: string | null; courseId: string | null; courses: Course[]; topics: TopicOption[]; onSaved: () => void; onCancel: () => void
 }) {
   const [code, setCode] = useState(topic?.code ?? '')
+  const manualCode = useRef(false)
+  const [codePolicy, setCodePolicy] = useState<{ applied: boolean; editable: boolean; pattern: string } | null>(null)
   const [name, setName] = useState(topic?.name ?? '')
   const [description, setDescription] = useState(topic?.description ?? '')
   const [parent, setParent] = useState(topic?.parentTopicId ?? parentId ?? '')
@@ -53,8 +56,34 @@ export function TopicForm({ topic, parentId, courseId, courses, topics, onSaved,
   const [status, setStatus] = useState(topic?.status ?? 'ACTIVE')
   const [, setError] = useAdminError()
   const [saving, setSaving] = useState(false)
-  const schema = useMemo(() => topicSchema(course !== ''), [course])
+  const schema = useMemo(() => topicSchema(course !== '', !codePolicy?.applied), [course, codePolicy?.applied])
   const form = useFormErrors(schema, { code, name, description, skill, min, max, order })
+  useEffect(() => {
+    if (topic) return
+    const controller = new AbortController()
+    void (async () => {
+      try {
+        const settings = await fetchCodeSettings(controller.signal)
+        const setting = settings.find((item) => item.kind === 'TOPIC')
+        if (!setting) { setCodePolicy({ applied: false, editable: true, pattern: '' }); return }
+        setCodePolicy({ applied: setting.applied, editable: setting.editable, pattern: setting.pattern })
+        if (!setting.applied || !course || (setting.pattern.includes('{SKILL}') && !skill)) {
+          if (!manualCode.current) setCode('')
+          return
+        }
+        const suggestion = await fetchCodeSuggestion({ kind: 'TOPIC', courseId: course, skill: skill || undefined }, controller.signal)
+        if (controller.signal.aborted) return
+        setCodePolicy({ applied: suggestion.applied, editable: suggestion.editable, pattern: setting.pattern })
+        if (!manualCode.current) setCode(suggestion.code)
+      } catch {
+        if (!controller.signal.aborted) {
+          setCodePolicy({ applied: false, editable: true, pattern: '' })
+          if (!manualCode.current) setCode('')
+        }
+      }
+    })()
+    return () => controller.abort()
+  }, [topic, course, skill])
   const excluded = new Set(topic ? [topic.id] : [])
   for (let changed = true; changed;) {
     changed = false
@@ -69,7 +98,7 @@ export function TopicForm({ topic, parentId, courseId, courses, topics, onSaved,
     setError(null)
     try {
       if (topic) await updateTopic(topic.id, { ...body, status: status as Course['status'] })
-      else await createTopic({ ...body, code: code.trim() })
+      else await createTopic({ ...body, ...(codePolicy?.applied && !codePolicy.editable ? {} : { code: code.trim() }) })
       onSaved()
     } catch (reason) {
       setError(topicError(reason))
@@ -77,12 +106,12 @@ export function TopicForm({ topic, parentId, courseId, courses, topics, onSaved,
   }
   return <form aria-label={topic ? 'Sửa chủ đề' : 'Tạo chủ đề'} noValidate onSubmit={(event) => void submit(event)}>
     <fieldset className="adm-author-fields" disabled={saving}>
-      <AdminField label="Mã chủ đề" {...form.field('code')} required={!topic}><input className="adm-input" maxLength={100} disabled={!!topic} value={code} onChange={(event) => setCode(event.target.value)} /></AdminField>
       <AdminField label="Tên chủ đề" {...form.field('name')}><input className="adm-input" maxLength={255} value={name} onChange={(event) => setName(event.target.value)} /></AdminField>
       <AdminField label="Mô tả chủ đề" {...form.field('description')}><textarea className="adm-textarea" maxLength={2000} value={description} onChange={(event) => setDescription(event.target.value)} /></AdminField>
       {topic ? <label className="adm-field"><span>Thuộc khóa học</span><select className="adm-select" value={course} onChange={(event) => setCourse(event.target.value)}>{!topic.courseId ? <option value="">Chưa gán khóa</option> : null}{courses.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label> : null}
       {topic?.parentTopicId ? <label className="adm-field"><span>Chủ đề cha</span><select className="adm-select" value={parent} onChange={(event) => setParent(event.target.value)}><option value="">Không có (cấp đầu)</option>{topics.filter((item) => !excluded.has(item.id)).map((item) => <option key={item.id} value={item.id}>{item.code} · {item.name}</option>)}</select></label> : null}
       <AdminField label="Kỹ năng" {...form.field('skill')} required={course !== ''}><select className="adm-select" value={skill} onChange={(event) => setSkill(event.target.value)}>{!topic?.skill ? <option value="">Chưa chọn</option> : null}{TOPIC_SKILLS.map((item) => <option key={item} value={item}>{SKILL_LABEL[item]}</option>)}</select></AdminField>
+      <AdminField label="Mã chủ đề" {...form.field('code')} required={!topic && !codePolicy?.applied}><input className="adm-input" maxLength={100} disabled={!!topic || (!!codePolicy?.applied && !codePolicy.editable)} value={code} onChange={(event) => { manualCode.current = true; setCode(event.target.value) }} /></AdminField>
       <div className="adm-filters">
         <AdminField label="Band thấp nhất" {...form.field('min')}><input className="adm-input" type="number" min={0} max={9} step={0.5} value={min} onChange={(event) => setMin(event.target.value)} /></AdminField>
         <AdminField label="Band cao nhất" {...form.field('max')}><input className="adm-input" type="number" min={0} max={9} step={0.5} value={max} onChange={(event) => setMax(event.target.value)} /></AdminField>

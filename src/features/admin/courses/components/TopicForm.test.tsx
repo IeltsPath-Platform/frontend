@@ -4,8 +4,9 @@ import { HttpError } from '@/lib/httpClient'
 import type { TopicOption } from '../../lessons/types'
 import { TopicForm } from './TopicForm'
 
-const { api } = vi.hoisted(() => ({ api: { createTopic: vi.fn(), updateTopic: vi.fn() } }))
+const { api, codes } = vi.hoisted(() => ({ api: { createTopic: vi.fn(), updateTopic: vi.fn() }, codes: { fetchCodeSettings: vi.fn(), fetchCodeSuggestion: vi.fn() } }))
 vi.mock('../api/courseApi', () => api)
+vi.mock('../../code-settings/api/codeSettingsApi', () => codes)
 
 const message = 'Thứ tự 4 đã có chủ đề khác cùng cấp'
 const conflict = () => new HttpError(409, message, { message, details: { code: 'SORT_ORDER_TAKEN' } })
@@ -44,7 +45,11 @@ function expectRetained(editing = false) {
 }
 
 describe('TopicForm order conflicts', () => {
-  beforeEach(() => { api.createTopic.mockReset(); api.updateTopic.mockReset() })
+  beforeEach(() => {
+    api.createTopic.mockReset(); api.updateTopic.mockReset()
+    codes.fetchCodeSettings.mockReset().mockResolvedValue([])
+    codes.fetchCodeSuggestion.mockReset().mockResolvedValue({ code: '', applied: true, editable: true })
+  })
 
   it.each([false, true])('retains every controlled field and shows the server refusal as a message, not on the order field (editing=%s)', async (editing) => {
     api.createTopic.mockRejectedValue(conflict())
@@ -178,6 +183,50 @@ describe('TopicForm order conflicts', () => {
     expect(api.createTopic).not.toHaveBeenCalled()
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
+
+  it('suggests a scoped code after course and skill context is ready', async () => {
+    codes.fetchCodeSettings.mockResolvedValue([{ kind: 'TOPIC', applied: true, pattern: '{COURSE}_{SKILL}_T{SEQ:2}', startNumber: 1, editable: true }])
+    codes.fetchCodeSuggestion.mockResolvedValue({ code: 'FIRST_R_T01', applied: true, editable: true })
+    show()
+    fireEvent.change(screen.getByLabelText('Kỹ năng'), { target: { value: 'READING' } })
+    await waitFor(() => expect(codes.fetchCodeSuggestion).toHaveBeenCalledWith({ kind: 'TOPIC', courseId: courses[0]!.id, skill: 'READING' }, expect.any(AbortSignal)))
+    await waitFor(() => expect(screen.getByLabelText('Mã chủ đề')).toHaveValue('FIRST_R_T01'))
+    expect(screen.getByLabelText('Kỹ năng').compareDocumentPosition(screen.getByLabelText('Mã chủ đề')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('preserves a manually entered topic code when suggestion context changes', async () => {
+    codes.fetchCodeSettings.mockResolvedValue([{ kind: 'TOPIC', applied: true, pattern: '{COURSE}_T{SEQ:2}', startNumber: 1, editable: true }])
+    codes.fetchCodeSuggestion.mockResolvedValue({ code: 'FIRST_T01', applied: true, editable: true })
+    show()
+    await waitFor(() => expect(codes.fetchCodeSuggestion).toHaveBeenCalled())
+    const code = screen.getByLabelText('Mã chủ đề')
+    fireEvent.change(code, { target: { value: 'MY_CODE' } })
+    fireEvent.change(screen.getByLabelText('Kỹ năng'), { target: { value: 'READING' } })
+    await waitFor(() => expect(codes.fetchCodeSuggestion).toHaveBeenCalledTimes(2))
+    expect(code).toHaveValue('MY_CODE')
+  })
+
+  it('locks the code input and omits the code from create when editing is disabled', async () => {
+    codes.fetchCodeSettings.mockResolvedValue([{ kind: 'TOPIC', applied: true, pattern: '{COURSE}_T{SEQ:2}', startNumber: 1, editable: false }])
+    codes.fetchCodeSuggestion.mockResolvedValue({ code: 'FIRST_T01', applied: true, editable: false })
+    const saved = show()
+    await waitFor(() => expect(screen.getByLabelText('Mã chủ đề')).toBeDisabled())
+    fill()
+    fireEvent.submit(screen.getByRole('form'))
+    await waitFor(() => expect(api.createTopic).toHaveBeenCalled())
+    expect(api.createTopic.mock.calls[0]![0]).not.toHaveProperty('code')
+    expect(saved).toHaveBeenCalledOnce()
+  })
+
+  it('allows manual entry when settings or suggestion cannot be loaded', async () => {
+    codes.fetchCodeSettings.mockRejectedValue(new Error('offline'))
+    const saved = show()
+    await waitFor(() => expect(screen.getByLabelText('Mã chủ đề')).toBeEnabled())
+    fill()
+    fireEvent.submit(screen.getByRole('form'))
+    await waitFor(() => expect(saved).toHaveBeenCalledOnce())
+    expect(api.createTopic.mock.calls[0]![0]).toHaveProperty('code', 'NEW_TOPIC')
+  })
 })
 
 describe('TopicForm field errors', () => {
@@ -198,9 +247,9 @@ describe('TopicForm field errors', () => {
     render(<TopicForm parentId={null} courseId={courses[0]!.id} courses={courses} topics={[]} onSaved={vi.fn()} onCancel={vi.fn()} />)
     fireEvent.submit(screen.getByRole('form'))
     expect(screen.getAllByRole('alert').map((alert) => alert.textContent)).toEqual([
-      'Mã chủ đề không được để trống.', 'Tên chủ đề không được để trống.', 'Chọn kỹ năng cho chủ đề thuộc khóa học.',
+      'Tên chủ đề không được để trống.', 'Chọn kỹ năng cho chủ đề thuộc khóa học.', 'Mã chủ đề không được để trống.',
     ])
-    expect(screen.getByLabelText('Mã chủ đề')).toHaveFocus()
+    expect(screen.getByLabelText('Tên chủ đề')).toHaveFocus()
     expect(api.createTopic).not.toHaveBeenCalled()
   })
 

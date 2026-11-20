@@ -59,4 +59,16 @@ describe('CodeSettingsPage', () => {
     fireEvent.click(within(editor).getByRole('button', { name: 'Từ khóa dùng được' }))
     expect(screen.getByRole('dialog', { name: 'Từ khóa dùng được' })).toHaveTextContent('{BAND}')
   })
+
+  it('shows a topic editor and its context keywords when the server connects topics', async () => {
+    api.fetchCodeSettings.mockResolvedValue([courseSetting, { kind: 'TOPIC', applied: false, pattern: '{COURSE}_T{SEQ:2}', startNumber: 1, editable: true }])
+    render(<CodeSettingsPage />)
+    const heading = await screen.findByText('2. Thiết lập bộ mã Chủ đề tự sinh')
+    const editor = heading.closest('details')!
+    expect(within(editor).getAllByRole('switch')).toHaveLength(2)
+    expect(within(editor).getByRole('form', { name: 'Thiết lập bộ mã Chủ đề' })).toBeInTheDocument()
+    fireEvent.click(within(editor).getByRole('button', { name: 'Từ khóa dùng được' }))
+    expect(screen.getByRole('dialog', { name: 'Từ khóa dùng được' })).toHaveTextContent('{COURSE}')
+    expect(screen.getByRole('dialog', { name: 'Từ khóa dùng được' })).toHaveTextContent('{SKILL}')
+  })
 })

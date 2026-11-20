@@ -40,7 +40,8 @@ function CodeSettingEditor({ index, setting, onChange }: { index: number; settin
   const [saving, setSaving] = useState(false)
   const [, setError] = useAdminError()
   const { toast } = useToast()
-  const form = useFormErrors(codeSettingsSchema, { pattern: setting.pattern, startNumber: setting.startNumber })
+  const form = useFormErrors(codeSettingsSchema(setting.kind), { pattern: setting.pattern, startNumber: setting.startNumber })
+  const kindName = setting.kind === 'COURSE' ? 'Khóa học' : 'Chủ đề'
 
   async function save(event: FormEvent) {
     event.preventDefault()
@@ -62,8 +63,8 @@ function CodeSettingEditor({ index, setting, onChange }: { index: number; settin
   }
 
   return <details className="adm-block adm-code-settings" open>
-    <summary className="adm-code-settings__heading">{index}. Thiết lập bộ mã Khóa học tự sinh</summary>
-    <form aria-label="Thiết lập bộ mã Khóa học" className="adm-code-settings__form" noValidate onSubmit={(event) => void save(event)}>
+    <summary className="adm-code-settings__heading">{index}. Thiết lập bộ mã {kindName} tự sinh</summary>
+    <form aria-label={`Thiết lập bộ mã ${kindName}`} className="adm-code-settings__form" noValidate onSubmit={(event) => void save(event)}>
       <div className="adm-code-settings__row">
         <AdminSwitch checked={setting.applied} onChange={(applied) => onChange({ ...setting, applied })}>Có áp dụng</AdminSwitch>
       </div>
@@ -88,8 +89,7 @@ function CodeSettingEditor({ index, setting, onChange }: { index: number; settin
     {helpOpen ? <AdminModal title="Từ khóa dùng được" onClose={() => setHelpOpen(false)}>
       <ul className="adm-code-settings__tokens">
         <li><code>{'{SEQ}'}</code>, <code>{'{SEQ:n}'}</code>: số thứ tự; <code>n</code> là số chữ số tối thiểu.</li>
-        <li><code>{'{BAND}'}</code>: band khóa học, ví dụ 6.0 thành 6_0.</li>
-        <li><code>{'{YYYY}'}</code>: năm hiện tại.</li>
+        {setting.kind === 'COURSE' ? <><li><code>{'{BAND}'}</code>: band khóa học, ví dụ 6 hoặc 6.0 thành 6_0.</li><li><code>{'{YYYY}'}</code>: năm hiện tại.</li></> : <><li><code>{'{COURSE}'}</code>: mã khóa học đã chọn.</li><li><code>{'{SKILL}'}</code>: L, R, W hoặc S theo kỹ năng.</li></>}
       </ul>
     </AdminModal> : null}
   </details>
