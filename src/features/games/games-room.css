@@ -386,6 +386,16 @@
 .game-field p {
   font-size: 0.83rem;
 }
+.game-field > label.is-required::after {
+  content: '*';
+  margin-left: 3px;
+  color: #dc2626;
+  font-weight: 700;
+}
+.game-field .game-field-error {
+  color: #dc2626;
+  font-weight: 600;
+}
 .game-radio-options {
   display: flex;
   flex-wrap: wrap;
