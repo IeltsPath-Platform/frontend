@@ -1,5 +1,7 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { z } from 'zod'
+import { useFormErrors } from '@/lib/validation/useFormErrors'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { KIND_LABEL } from '../data/selectors'
 import { createBatch, nextBatchCode, usePointState } from '../data/store'
@@ -11,6 +13,15 @@ import { productBenefit, productGrant } from '../shared/product-text'
 const MAX_KEYS = 1000
 const QUICK_QUANTITIES = [100, 500, 1000]
 const MONTHS = Array.from({ length: 12 }, (_, index) => index + 1)
+
+/** The number of keys must be 1 to the limit; the expiry date is needed unless the keys never expire. */
+function batchSchema(noExpiry: boolean) {
+  return z.object({
+    quantity: z.string({ error: 'Số lượng key không được để trống.' }).refine((value) => value.trim() !== '', 'Số lượng key không được để trống.')
+      .refine((value) => value.trim() === '' || (parseQuantity(value) >= 1 && parseQuantity(value) <= MAX_KEYS), `Số lượng key phải từ 1 đến ${formatNumber(MAX_KEYS)}.`),
+    expiresAt: noExpiry ? z.string() : z.string({ error: 'Hạn dùng của key không được để trống.' }).min(1, 'Hạn dùng của key không được để trống.'),
+  })
+}
 
 function parseQuantity(text: string): number {
   return Number(text.replace(/\D/g, ''))
@@ -31,13 +42,15 @@ export function CreateBatchPage() {
   const [expiresAt, setExpiresAt] = useState(defaultExpiresAt)
   const [noExpiry, setNoExpiry] = useState(false)
   const [period, setPeriod] = useState(defaultPeriod)
-  const [problems, setProblems] = useState<string[]>([])
   const [confirming, setConfirming] = useState(false)
   const [checked, setChecked] = useState(false)
   const [submitted, setSubmitted] = useState(false)
 
   const quantity = parseQuantity(quantityText)
-  const quantityInvalid = quantity < 1 || quantity > MAX_KEYS
+  const schema = useMemo(() => batchSchema(noExpiry), [noExpiry])
+  const form = useFormErrors(schema, { quantity: quantityText, expiresAt })
+  const quantityError = form.field('quantity').error
+  const expiryError = form.field('expiresAt').error
   const product = products.find((item) => item.id === productId)
   const batchCode = nextBatchCode(batches, period.year, period.month)
   const years = [period.year - 1, period.year, period.year + 1]
@@ -45,14 +58,9 @@ export function CreateBatchPage() {
   const expiryText = noExpiry ? 'Không giới hạn' : formatDate(expiresAt || null)
 
   function review() {
-    const found: string[] = []
-    if (quantityInvalid) found.push('số lượng ngoài 1–1.000')
-    if (!noExpiry && !expiresAt) found.push('chưa chọn hạn dùng')
-    setProblems(found)
-    if (found.length === 0) {
-      setChecked(false)
-      setConfirming(true)
-    }
+    if (!form.validate()) return
+    setChecked(false)
+    setConfirming(true)
   }
 
   function confirm() {
@@ -72,16 +80,6 @@ export function CreateBatchPage() {
           <p>Tạo tối đa 1.000 key trong một lần bấm. Tất cả key được tạo cùng lúc, hoặc không có key nào được tạo.</p>
         </div>
       </section>
-
-      {problems.length > 0 ? (
-        <div className="pm-alert" role="alert">
-          <p>
-            <strong>Không tạo được đợt key.</strong> Chưa có key nào được tạo, bạn có thể sửa và bấm Tạo lại.
-            {' '}Nguyên nhân: {problems.join('; ')}.
-          </p>
-          <button className="adm-btn adm-btn--primary" onClick={review} type="button">Tạo lại</button>
-        </div>
-      ) : null}
 
       <div className="pm-form-grid">
         <section aria-label="Thông tin đợt key" className="adm-content">
@@ -106,12 +104,15 @@ export function CreateBatchPage() {
           </div>
 
           <div className="pm-step">
-            <h2><span className="pm-step__no">2</span>Số lượng key</h2>
+            <h2><span className="pm-step__no">2</span>Số lượng key<span aria-hidden="true" className="adm-required" /></h2>
             <div className="pm-inline">
               <input
                 aria-label="Số lượng key"
-                aria-invalid={problems.length > 0 && quantityInvalid}
-                className={`adm-input pm-wide${problems.length > 0 && quantityInvalid ? ' pm-input-warn' : ''}`}
+                aria-describedby={quantityError ? 'batch-quantity-error' : undefined}
+                aria-invalid={quantityError ? true : undefined}
+                aria-required
+                className={`adm-input pm-wide${quantityError ? ' pm-input-warn' : ''}`}
+                onBlur={form.field('quantity').onTouch}
                 inputMode="numeric"
                 onChange={(event) => {
                   const digits = event.target.value.replace(/\D/g, '')
@@ -130,18 +131,20 @@ export function CreateBatchPage() {
                 </button>
               ))}
             </div>
+            {quantityError ? <p className="adm-field__error" id="batch-quantity-error" role="alert">{quantityError}</p> : null}
             <p className="pm-note">Tối đa 1.000 key mỗi lần tạo. Cần nhiều hơn thì tạo thêm một đợt nữa.</p>
           </div>
 
           <div className="pm-step">
-            <h2><span className="pm-step__no">3</span>Hạn dùng của key</h2>
+            <h2><span className="pm-step__no">3</span>Hạn dùng của key{noExpiry ? null : <span aria-hidden="true" className="adm-required" />}</h2>
             <div className="pm-inline">
-              <input aria-label="Hạn dùng của key" className="adm-input pm-wide" disabled={noExpiry} onChange={(event) => setExpiresAt(event.target.value)} type="date" value={expiresAt} />
+              <input aria-describedby={expiryError ? 'batch-expiry-error' : undefined} aria-invalid={expiryError ? true : undefined} aria-label="Hạn dùng của key" aria-required={!noExpiry} className="adm-input pm-wide" disabled={noExpiry} onBlur={form.field('expiresAt').onTouch} onChange={(event) => setExpiresAt(event.target.value)} type="date" value={expiresAt} />
               <label className="adm-check">
                 <input checked={noExpiry} onChange={(event) => setNoExpiry(event.target.checked)} type="checkbox" />
                 Không giới hạn hạn dùng
               </label>
             </div>
+            {expiryError ? <p className="adm-field__error" id="batch-expiry-error" role="alert">{expiryError}</p> : null}
             <p className="pm-note">Key quá hạn không kích hoạt được. Hạn tính theo ngày tạo đợt, không tính từ lúc cấp cho học viên.</p>
           </div>
 

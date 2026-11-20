@@ -24,6 +24,7 @@ import {
 import {
   ROCKET_ROOM_DEFAULTS,
   rocketQuestionCountError,
+  wordLimitError,
   type RocketRoomSettings,
 } from '../lib/rocketRoomSettings'
 
@@ -66,6 +67,10 @@ export function RoomSettingsDialog({
   )
   const [pending, setPending] = useState(false)
   const [error, setError] = useState('')
+  const [tried, setTried] = useState(false)
+  // A number that is not valid is refused under its input once the form was sent.
+  const countError = rocket ? rocketQuestionCountError(rocketValue.questionCount) : null
+  const limitError = !rocket && value.playMode === 'FINITE' ? wordLimitError(value.wordLimit) : null
   const saving = useRef(false)
   return (
     <Dialog
@@ -89,27 +94,8 @@ export function RoomSettingsDialog({
           onSubmit={async (event) => {
             event.preventDefault()
             if (saving.current || wordError) return
-            const countError = rocket
-              ? rocketQuestionCountError(rocketValue.questionCount)
-              : null
-            if (countError) {
-              setError(countError)
-              return
-            }
-            if (
-              !rocket &&
-              value.playMode === 'FINITE' &&
-              (!Number.isInteger(value.wordLimit) ||
-                (value.wordLimit ?? 0) < 5 ||
-                (value.wordLimit ?? 0) > 2147483647)
-            ) {
-              setError(
-                (value.wordLimit ?? 0) > 2147483647
-                  ? 'Số từ vượt quá giới hạn cho phép.'
-                  : 'Vui lòng nhập số từ là số nguyên từ 5 trở lên.',
-              )
-              return
-            }
+            setTried(true)
+            if (countError || limitError) return
             saving.current = true
             setPending(true)
             setError('')
@@ -145,6 +131,7 @@ export function RoomSettingsDialog({
               value={rocketValue}
               onChange={setRocketValue}
               disabled={pending}
+              questionCountError={tried ? countError : null}
             />
           ) : (
             <GameSettingsForm
@@ -152,6 +139,7 @@ export function RoomSettingsDialog({
               onChange={setValue}
               disabled={pending}
               editing
+              wordLimitError={tried ? limitError : null}
             />
           )}
           <WordFilterFields

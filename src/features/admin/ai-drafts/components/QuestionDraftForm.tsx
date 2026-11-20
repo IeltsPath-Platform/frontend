@@ -1,4 +1,8 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { z } from 'zod'
+import { AdminField } from '../../components/AdminField'
+import { requiredChoice, positiveIntegerText } from '@/lib/validation/fields'
+import { useFormErrors } from '@/lib/validation/useFormErrors'
 import { KnowledgePointPicker } from '../../questions/components/KnowledgePointPicker'
 import { DIFFICULTY_LABEL, TYPE_LABEL } from '../../questions/lib/labels'
 import { requestQuestionDraft } from '../api/aiDraftApi'
@@ -8,6 +12,11 @@ import {
   questionGenerationRequestSchema, type QuestionDraft, type QuestionGenerationRequest,
 } from '../types'
 import { useAdminError } from '../../lib/useAdminError'
+
+const draftSchema = z.object({
+  knowledgePointId: requiredChoice('điểm kiến thức'),
+  count: positiveIntegerText('Số câu').refine((value) => !/^\d+$/.test(value.trim()) || Number(value) <= QUESTION_DRAFT_MAX_ITEMS, `Số câu tối đa ${QUESTION_DRAFT_MAX_ITEMS}.`),
+})
 
 export function QuestionDraftForm({ initialKnowledgePointId, onCreated, onCancel }: {
   initialKnowledgePointId?: string; onCreated: (draft: QuestionDraft) => void; onCancel: () => void
@@ -20,6 +29,8 @@ export function QuestionDraftForm({ initialKnowledgePointId, onCreated, onCancel
   const [pending, setPending] = useState(false)
   const [, setError] = useAdminError()
   const mounted = useRef(true)
+  const form = useFormErrors(draftSchema, { knowledgePointId: knowledgePointId ?? '', count })
+  const pointError = form.field('knowledgePointId').error
 
   useEffect(() => {
     mounted.current = true
@@ -29,18 +40,12 @@ export function QuestionDraftForm({ initialKnowledgePointId, onCreated, onCancel
   async function submit(event: FormEvent) {
     event.preventDefault()
     if (pending) return
+    if (!form.validate()) return
     const parsed = questionGenerationRequestSchema.safeParse({
       knowledgePointId: knowledgePointId ?? '', questionType, count: Number(count), difficulty,
       ...(instructions ? { instructions } : {}),
     })
-    if (!parsed.success) {
-      const field = parsed.error.issues[0]?.path[0]
-      setError(field === 'knowledgePointId' ? 'Chọn một điểm kiến thức đang dùng để tạo câu hỏi.'
-        : field === 'count' ? `Nhập số câu là số nguyên từ 1 đến ${QUESTION_DRAFT_MAX_ITEMS}.`
-        : field === 'instructions' ? 'Hướng dẫn thêm không được vượt quá 500 ký tự.'
-        : 'Chọn dạng câu hỏi và độ khó hợp lệ.')
-      return
-    }
+    if (!parsed.success) return
     setPending(true)
     setError(null)
     try {
@@ -60,9 +65,10 @@ export function QuestionDraftForm({ initialKnowledgePointId, onCreated, onCancel
         <p className="adm-muted">Mỗi yêu cầu dùng một điểm kiến thức. Chọn điểm khác để thay thế.</p>
         <KnowledgePointPicker value={knowledgePointId ? [{ knowledgePointId, weight: 1 }] : []} onChange={(next) => setKnowledgePointId(next.at(-1)?.knowledgePointId ?? null)} />
         {knowledgePointId ? <button className="adm-btn" type="button" onClick={() => setKnowledgePointId(null)}>Gỡ điểm kiến thức</button> : null}
+        {pointError ? <p className="adm-field__error" role="alert">{pointError}</p> : null}
       </section>
       <label className="adm-field"><span>Dạng câu hỏi</span><select className="adm-select" required value={questionType} onChange={(event) => setQuestionType(event.target.value as QuestionGenerationRequest['questionType'])}>{QUESTION_DRAFT_TYPES.map((value) => <option key={value} value={value}>{TYPE_LABEL[value]}</option>)}</select></label>
-      <label className="adm-field"><span>Số câu</span><input className="adm-input" type="number" required min={1} max={QUESTION_DRAFT_MAX_ITEMS} step={1} value={count} onChange={(event) => setCount(event.target.value)} /></label>
+      <AdminField label="Số câu" {...form.field('count')}><input className="adm-input" type="number" min={1} max={QUESTION_DRAFT_MAX_ITEMS} step={1} value={count} onChange={(event) => setCount(event.target.value)} /></AdminField>
       <label className="adm-field"><span>Độ khó</span><select className="adm-select" required value={difficulty} onChange={(event) => setDifficulty(event.target.value as QuestionGenerationRequest['difficulty'])}>{QUESTION_DIFFICULTIES.map((value) => <option key={value} value={value}>{DIFFICULTY_LABEL[value]}</option>)}</select></label>
       <label className="adm-field"><span>Hướng dẫn thêm (tùy chọn)</span><textarea className="adm-textarea" maxLength={500} value={instructions} onChange={(event) => setInstructions(event.target.value)} /><span className="adm-muted adm-draft-counter">{instructions.length}/500 ký tự</span></label>
       <p className="adm-muted">Duyệt câu hỏi chỉ tạo nội dung nháp. Bạn cần xuất bản riêng trong ngân hàng câu hỏi trước khi dùng cho học viên.</p>

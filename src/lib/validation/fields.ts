@@ -24,6 +24,14 @@ function isBand(value: string) {
   return value.trim() !== '' && Number.isFinite(number) && number >= 0 && number <= 9 && Number.isInteger(number * 2)
 }
 
+/** An email address, trimmed. Empty is refused with its own message, then the format is checked. */
+export function emailText(label = 'Email') {
+  return z.string({ error: `${label} không được để trống.` })
+    .trim()
+    .min(1, `${label} không được để trống.`)
+    .pipe(z.email({ error: `${label} không hợp lệ.` }))
+}
+
 /** A choice that must be made from a list: empty is refused with Chọn <label>.. */
 export function requiredChoice(label: string) {
   return z.string({ error: `Chọn ${label}.` }).min(1, `Chọn ${label}.`)

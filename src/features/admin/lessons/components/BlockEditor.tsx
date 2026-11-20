@@ -5,11 +5,12 @@ import { buildBlockRequest, initialBlockState, type BlockFormState } from '../li
 import { BLOCK_LABEL } from '../lib/blockLabels'
 import { lessonErrorText } from '../lib/lessonErrors'
 import type { BlockRequest, BlockType, LessonBlock } from '../types'
+import { AdminField } from '../../components/AdminField'
 import { MarkdownField } from '../../components/MarkdownField'
 import { LessonKnowledgeField } from './LessonKnowledgeField'
 import { QuestionChooser } from './QuestionChooser'
 import { VocabularySensePicker } from './VocabularySensePicker'
-import { useAdminError, useAdminErrorToast } from '../../lib/useAdminError'
+import { useAdminError } from '../../lib/useAdminError'
 
 export interface BlockEditorProps {
   blockType: BlockType
@@ -24,17 +25,19 @@ export function BlockEditor({ blockType, block, onSave, onCancel }: BlockEditorP
   const { roles } = useAuthSession()
   const canCreateWords = hasAnyRole(roles, ['CONTENT_AUTHOR'])
   const [, setServerError] = useAdminError()
-  const fail = useAdminErrorToast()
   const [saving, setSaving] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
   const patch = (changes: Partial<BlockFormState>) => setState((current) => ({ ...current, ...changes }))
+  // What is wrong with the block, if anything: one message, under the content of this kind of block, after a send attempt.
+  const built = buildBlockRequest(state)
+  const problem = submitted && !built.ok ? built.problems[0] : undefined
+  const problemText = problem ? <p className="adm-field__error" role="alert">{problem}</p> : null
 
   async function submit(event: FormEvent) {
     event.preventDefault()
-    const result = buildBlockRequest(state)
-    if (!result.ok) {
-      fail(result.problems.join('\n'))
-      return
-    }
+    setSubmitted(true)
+    const result = built
+    if (!result.ok) return
     setServerError(null)
     setSaving(true)
     try {
@@ -52,23 +55,29 @@ export function BlockEditor({ blockType, block, onSave, onCancel }: BlockEditorP
       {blockType === 'TEXT' ? (
         <>
           <MarkdownField label="Nội dung (Markdown)" onChange={(textContent) => patch({ textContent })} textareaClassName="adm-textarea ls-textarea" value={state.textContent} />
+          {problemText}
           <LessonKnowledgeField onChange={(knowledgePointIds) => patch({ knowledgePointIds })} title="Knowledge point mà block này dạy" value={state.knowledgePointIds} />
         </>
       ) : null}
 
       {blockType === 'ASSET' ? (
-        <label className="adm-field">
-          <span>Mã asset (UUID)</span>
+        <AdminField label="Mã asset (UUID)" error={problem} required>
           <input className="adm-input" onChange={(event) => patch({ assetId: event.target.value })} value={state.assetId} />
-        </label>
+        </AdminField>
       ) : null}
 
       {blockType === 'VOCABULARY' ? (
-        <VocabularySensePicker canCreate={canCreateWords} onChange={(senseIds) => patch({ senseIds })} value={state.senseIds} />
+        <>
+          <VocabularySensePicker canCreate={canCreateWords} onChange={(senseIds) => patch({ senseIds })} value={state.senseIds} />
+          {problemText}
+        </>
       ) : null}
 
       {blockType === 'EXERCISE' ? (
-        <QuestionChooser known={block?.questions ?? []} onChange={(questionVersionIds) => patch({ questionVersionIds })} value={state.questionVersionIds} />
+        <>
+          <QuestionChooser known={block?.questions ?? []} onChange={(questionVersionIds) => patch({ questionVersionIds })} value={state.questionVersionIds} />
+          {problemText}
+        </>
       ) : null}
 
       <div className="adm-form-footer">
