@@ -53,7 +53,22 @@ function obj(value: unknown): Obj { return value && typeof value === 'object' &&
 function list(value: unknown): unknown[] { return Array.isArray(value) ? value : [] }
 function text(value: unknown): string { return typeof value === 'string' ? value : '' }
 function num(value: unknown): number | null { return typeof value === 'number' && Number.isFinite(value) ? value : null }
-function texts(value: unknown): string[] { return list(value).map(text).filter((item) => item !== '') }
+
+/** An error code written inside a sentence, with the bracket, dash or colon that sets it off: "SPK_PLURAL_ENDING — thiếu ...". */
+const ERROR_CODE = /[([]?\bSPK_[A-Z0-9_]+\b[)\]]?(?:\s*[:—–-]+)?\s*/g
+
+/**
+ * Feedback text without error codes. The codes belong to the list of errors and mean nothing to the learner, but feedback
+ * stored earlier sometimes starts a weakness with one. A line that started with a code begins with a capital letter again.
+ */
+export function withoutCodes(value: string): string {
+  if (!value.includes('SPK_')) return value
+  return value.replace(ERROR_CODE, '').trim().replace(/^\p{Ll}/gmu, (letter) => letter.toUpperCase())
+}
+
+/** Free text written for the learner: a string, without error codes. */
+function prose(value: unknown): string { return withoutCodes(text(value)) }
+function texts(value: unknown): string[] { return list(value).map(prose).filter((item) => item !== '') }
 
 /** The strict IPA letters the speech service uses, written as a learner's dictionary writes them (the English r is /r/, not /ɹ/). */
 const DICTIONARY_FORM: Record<string, string> = { 'ɹ': 'r', 'ɚ': 'ər', 'ɝ': 'ɜr', 'ɡ': 'g' }
@@ -83,17 +98,17 @@ export function parseSpeakingResult(display: unknown): SpeakingResultView {
       code: text(item.code),
       name: text(item.name) || text(item.code),
       band: num(item.band),
-      comment: text(item.comment),
+      comment: prose(item.comment),
       strengths: texts(item.strengths),
       weaknesses: texts(item.weaknesses),
       evidence: list(item.evidence).map(obj).filter((entry) => text(entry.quote) !== '')
-        .map((entry) => ({ quote: text(entry.quote), note: text(entry.note) })),
+        .map((entry) => ({ quote: text(entry.quote), note: prose(entry.note) })),
       limited: item.limited === true,
     })),
-    summary: text(root.summary),
+    summary: prose(root.summary),
     focus: texts(root.focus),
     partNotes: list(root.partNotes).map(obj).filter((item) => num(item.partNo) !== null && text(item.note) !== '')
-      .map((item) => ({ partNo: num(item.partNo) as number, note: text(item.note) })),
+      .map((item) => ({ partNo: num(item.partNo) as number, note: prose(item.note) })),
     bandLimits: list(root.bandLimits).map(obj).map((item) => text(item.message)).filter((item) => item !== ''),
     transcripts: list(root.transcripts).map(obj).map((item) => ({
       partNo: num(item.partNo) ?? 0, questionNo: num(item.questionNo) ?? 0,
@@ -102,9 +117,9 @@ export function parseSpeakingResult(display: unknown): SpeakingResultView {
     transcriptWarning: quality.warning === true ? text(quality.message) : '',
     errors: list(root.errors).map(obj).filter((item) => text(item.excerpt) !== '').map((item) => ({
       name: text(item.name) || text(item.code), partNo: num(item.partNo),
-      excerpt: text(item.excerpt), suggestion: text(item.suggestion),
+      excerpt: text(item.excerpt), suggestion: prose(item.suggestion),
     })),
-    personalNote: text(personal.note),
+    personalNote: prose(personal.note),
     studyPlan: texts(personal.studyPlan),
     metrics: {
       accuracy: num(pronunciation.accuracy), fluency: num(pronunciation.fluency), pronunciation: num(pronunciation.pronunciation),

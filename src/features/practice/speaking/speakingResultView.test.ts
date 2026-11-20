@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { averageBand, bandComment, groupErrors, learnerIpa, parseSpeakingResult, summaryLine, weakestCriteria, weakestCriterion } from './speakingResultView'
+import { averageBand, bandComment, groupErrors, learnerIpa, parseSpeakingResult, summaryLine, weakestCriteria, weakestCriterion, withoutCodes } from './speakingResultView'
 
 describe('parseSpeakingResult', () => {
   it('reads a partly filled or wrongly typed result without throwing', () => {
@@ -13,6 +13,22 @@ describe('parseSpeakingResult', () => {
     expect(view.errors).toEqual([{ name: 'SPK_X', partNo: 2, excerpt: 'hello', suggestion: '' }])
     expect(view.weakWords).toEqual([])
     expect(view.label).toBe('Điểm ước lượng để luyện tập')
+  })
+
+  it('drops an error code written inside the feedback and keeps the sentence', () => {
+    const view = parseSpeakingResult({
+      criteria: [{
+        code: 'LR', band: 5, comment: 'Đoạn một.\n\nSPK_L1_TRANSLATION - dịch từng chữ.',
+        strengths: ['Có collocation tốt'],
+        weaknesses: ['SPK_REPAIR_FAILURE — khi không tìm được từ, thí sinh bỏ lửng', 'Thiếu đuôi số nhiều (SPK_PLURAL_ENDING) ở 2 chỗ', 'Không có mã'],
+      }],
+      summary: 'SPK_WORD_FORM: sai dạng từ ở 3 chỗ',
+    })
+
+    expect(view.criteria[0].weaknesses).toEqual(['Khi không tìm được từ, thí sinh bỏ lửng', 'Thiếu đuôi số nhiều ở 2 chỗ', 'Không có mã'])
+    expect(view.criteria[0].comment).toBe('Đoạn một.\n\nDịch từng chữ.')
+    expect(view.summary).toBe('Sai dạng từ ở 3 chỗ')
+    expect(withoutCodes('Không có mã nào')).toBe('Không có mã nào')
   })
 
   it('tolerates a missing result altogether', () => {
