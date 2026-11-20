@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { HttpError } from '@/lib/httpClient'
 import { getSpeakingSubmission, settleSpeakingSubmission } from './speakingPracticeApi'
 import type { SpeakingSubmission } from './speakingPracticeApi'
+import { finishSpeakingTiming, markSpeakingGradeReady, noteSpeakingPoll } from './speakingTiming'
 
 /** A grade usually lands within the first half minute, so the first polls are quick and a long wait is checked less often. */
 const POLL_STEPS_MS = [4000, 4000, 4000, 4000, 4000, 8000, 8000, 8000, 15000]
@@ -41,6 +42,7 @@ export function useSpeakingSubmissionResult(submissionId: string): SpeakingSubmi
       try {
         const settled = await settleSpeakingSubmission(submissionId)
         if (!stopped) { setSubmission(settled); setShort(false); setError('') }
+        if (settled.status === 'GRADED') finishSpeakingTiming(submissionId)
       } catch (cause) {
         if (stopped) return
         if (cause instanceof HttpError && cause.status === 402) { blocked.current = true; setShort(true) }
@@ -57,6 +59,9 @@ export function useSpeakingSubmissionResult(submissionId: string): SpeakingSubmi
         if (stopped) return
         setSubmission(next)
         setError('')
+        noteSpeakingPoll(submissionId)
+        if (next.status === 'PAYMENT_PENDING' || next.status === 'GRADED') markSpeakingGradeReady(submissionId)
+        if (next.status === 'GRADED') finishSpeakingTiming(submissionId)
         if (next.status === 'PAYMENT_PENDING') void settle()
         // A grade waiting for a top-up does not change by itself, so polling stops until the learner retries.
         if (!TERMINAL.has(next.status) && !blocked.current) timer = window.setTimeout(load, pollDelay(polls++))

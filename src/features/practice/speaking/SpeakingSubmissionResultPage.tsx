@@ -1,12 +1,14 @@
 import { Link, useParams } from 'react-router-dom'
-import { AlertTriangle, CheckCircle2, ChevronDown, Info, Mic, Quote, TrendingUp, X } from 'lucide-react'
-import { useState } from 'react'
+import { AlertTriangle, CheckCircle2, ChevronDown, Info, Lightbulb, Mic, Quote, Target, TrendingUp, X } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import { KeyActivationDialog } from '@/features/home/components/KeyActivationDialog'
 import type { ActivationProduct } from '@/features/home/pricingData'
 import { BandLimitNotice } from '@/features/practice/components/BandLimitNotice'
 import { useWritingWallet } from '@/features/practice/writing/useWritingWallet'
 import { PremiumPlansDialog } from './PremiumPlansDialog'
 import { PronunciationBreakdown } from './PronunciationBreakdown'
+import { commentBlocks, splitComment, type CommentBlock } from './speakingCommentBlocks'
+import { parseWeakness, type WeaknessToken } from './speakingWeakness'
 import { SpeakingWaitingPanel } from './SpeakingWaitingPanel'
 import { useSpeakingSubmissionResult } from './useSpeakingSubmissionResult'
 import {
@@ -21,6 +23,84 @@ const CATALOG_PATH = '/practice-tests?skill=speaking'
 const WORKING = new Set(['UPLOADING', 'QUEUED', 'ANALYZING', 'GRADING', 'PAYMENT_PENDING', 'FAILED_RETRYABLE'])
 
 function formatBand(band: number | null) { return band === null ? '—' : band.toFixed(1) }
+
+/** Words in order: plain words as they are, quoted words as chips (the tone says whether they are the wrong or the corrected ones). */
+function Tokens({ tokens, tone }: { tokens: WeaknessToken[]; tone: 'wrong' | 'fix' | 'plain' }) {
+  return <>{tokens.map((token, index) => token.kind === 'quote'
+    ? <span key={index} className={`sres-chip sres-chip--${tone}`}>{token.text}</span>
+    : <span key={index}>{token.text}</span>)}</>
+}
+
+/**
+ * One weakness as a card: the kind of mistake as a title, the wrong words and the corrected words as chips, and the rule in a
+ * box of its own. A weakness written without the labels (see parseWeakness) still gets the card and shows what it has.
+ * The grader lists the weaknesses by what they cost the band, so the first one is marked as the one to fix first.
+ */
+function WeaknessItem({ text, position, first }: { text: string; position: number; first: boolean }) {
+  const view = parseWeakness(text)
+  const lead = view.title !== ''
+  const hasFix = view.fix.length > 0 || view.rule.length > 0 || view.practice.length > 0
+  const head = <>
+    <p className="sres-weak__title">
+      <span className="sres-weak__no" aria-hidden="true">{position}</span>
+      {lead ? <strong>{view.title}</strong> : <span className="sres-weak__lead"><Tokens tokens={view.body} tone="wrong" /></span>}
+      {first && <em className="sres-badge sres-badge--warn">Sửa trước</em>}
+      {hasFix && <ChevronDown className="sres-weak__chevron" size={16} aria-hidden="true" />}
+    </p>
+    {lead && view.body.length > 0 && <p className="sres-weak__body"><Tokens tokens={view.body} tone="wrong" /></p>}
+  </>
+  if (!hasFix) return <li className="sres-weak">{head}</li>
+  // With several weaknesses the page would be long, so each shows its title and the wrong words and opens for the fix, the
+  // rule and the exercise; the first, the one to fix first, is open on arrival.
+  return <li className="sres-weak">
+    <details open={first || undefined}>
+      <summary>{head}</summary>
+      <div className="sres-weak__more">
+        {view.fix.length > 0 && <p className="sres-weak__row">
+          <b className="sres-weak__label sres-weak__label--fix"><CheckCircle2 size={13} aria-hidden="true" /> Sửa</b>
+          <Tokens tokens={view.fix} tone="fix" />
+        </p>}
+        {view.rule.length > 0 && <p className="sres-weak__rule">
+          <b className="sres-weak__label"><Lightbulb size={13} aria-hidden="true" /> Quy tắc</b>
+          <Tokens tokens={view.rule} tone="plain" />
+        </p>}
+        {view.practice.length > 0 && <p className="sres-weak__rule sres-weak__rule--practice">
+          <b className="sres-weak__label"><TrendingUp size={13} aria-hidden="true" /> Luyện</b>
+          <Tokens tokens={view.practice} tone="plain" />
+        </p>}
+      </div>
+    </details>
+  </li>
+}
+
+/** Paragraphs and numbered lists, as commentBlocks cut them. */
+function Blocks({ blocks, className }: { blocks: CommentBlock[]; className: string }) {
+  return <div className={`${className} sres-text`}>
+    {blocks.map((block, index) => block.kind === 'p'
+      ? <p key={index}>{block.text}</p>
+      : <ol key={index}>{block.items.map((item, position) => <li key={position}>{item}</li>)}</ol>)}
+  </div>
+}
+
+/** Feedback text as paragraphs and numbered lists instead of one block of text (see commentBlocks). */
+function FormattedText({ text, className }: { text: string; className: string }) {
+  return <Blocks blocks={commentBlocks(text)} className={className} />
+}
+
+/** What holds the learner at this band, then what to do to reach the next one in a box of its own (see splitComment). */
+function CriterionComment({ comment }: { comment: string }) {
+  const { diagnosis, next } = splitComment(comment)
+  return <>
+    {diagnosis.length > 0 && <section className="sres-diag">
+      <h4><Info size={15} aria-hidden="true" /> Điều đang giữ bạn ở band này</h4>
+      <Blocks blocks={diagnosis} className="sres-acc__comment" />
+    </section>}
+    {next && <section className="sres-next">
+      <h4><Target size={15} aria-hidden="true" /> Để lên band {next.band}</h4>
+      <Blocks blocks={next.blocks} className="sres-acc__comment" />
+    </section>}
+  </>
+}
 
 function Notice({ tone, icon, title, children }: { tone: 'wait' | 'warn' | 'stop'; icon: React.ReactNode; title: string; children?: React.ReactNode }) {
   return <section className={`sres-notice sres-notice--${tone}`} role={tone === 'wait' ? 'status' : 'alert'}>
@@ -48,7 +128,7 @@ function CriteriaCard({ view }: { view: SpeakingResultView }) {
       <i className="sres-bar"><u style={{ width: `${((item.band ?? 0) / 9) * 100}%` }} /></i>
       <b>{formatBand(item.band)}</b>
     </div>)}
-    {view.summary && <p className="sres-summary">{view.summary}</p>}
+    {view.summary && <FormattedText text={view.summary} className="sres-summary" />}
   </section>
 }
 
@@ -56,15 +136,17 @@ function NextSteps({ view }: { view: SpeakingResultView }) {
   if (view.focus.length === 0 && !view.personalNote && view.studyPlan.length === 0) return null
   return <section className="sres-card sres-next" aria-label="Gợi ý cải thiện">
     <header><h2>Nên làm gì tiếp theo</h2></header>
-    {view.personalNote && <p className="sres-summary">{view.personalNote}</p>}
-    {view.focus.length > 0 && <>
-      <h3 className="sres-steps__label">Trọng tâm cải thiện</h3>
-      <ul className="sres-steps">{view.focus.map((item, index) => <li key={index}>{item}</li>)}</ul>
-    </>}
-    {view.studyPlan.length > 0 && <>
-      <h3 className="sres-steps__label sres-steps__label--plan">Kế hoạch luyện tập</h3>
-      <ul className="sres-steps sres-steps--plan">{view.studyPlan.map((item, index) => <li key={index}>{item}</li>)}</ul>
-    </>}
+    {view.personalNote && <FormattedText text={view.personalNote} className="sres-summary" />}
+    <div className="sres-steps__cols">
+      {view.focus.length > 0 && <div className="sres-steps__group">
+        <h3 className="sres-steps__label">Trọng tâm cải thiện</h3>
+        <ul className="sres-steps">{view.focus.map((item, index) => <li key={index}>{item}</li>)}</ul>
+      </div>}
+      {view.studyPlan.length > 0 && <div className="sres-steps__group">
+        <h3 className="sres-steps__label sres-steps__label--plan">Kế hoạch luyện tập</h3>
+        <ul className="sres-steps sres-steps--plan">{view.studyPlan.map((item, index) => <li key={index}>{item}</li>)}</ul>
+      </div>}
+    </div>
   </section>
 }
 /** The three speech scores of the Pronunciation bar, which has no model groups of its own to fill its panel. */
@@ -77,6 +159,14 @@ type ScoreTile = { label: string; value: string }
 function CriteriaAccordion({ criteria, tiles }: { criteria: ResultCriterion[]; tiles: ScoreTile[] }) {
   const worst = weakestCriteria(criteria)
   const [open, setOpen] = useState<string | null>(worst[0]?.code ?? criteria[0]?.code ?? null)
+  const clicked = useRef(false)
+  // Opening a criterion closes the one that was open, and that one may be above it and long: the bar the learner pressed
+  // jumps up (or down) out of view. After a press the opened bar is brought to the top of the screen so its text is read from the start.
+  useEffect(() => {
+    if (!clicked.current || open === null) return
+    const reduced = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    document.getElementById(`sres-bar-${open}`)?.scrollIntoView?.({ block: 'start', behavior: reduced ? 'auto' : 'smooth' })
+  }, [open])
   return <div className="sres-acc">
     <p className="sres-acc__hint">Bấm vào từng tiêu chí để xem chi tiết</p>
     {criteria.map((item) => {
@@ -87,7 +177,7 @@ function CriteriaAccordion({ criteria, tiles }: { criteria: ResultCriterion[]; t
       return <article key={item.code} className={`sres-acc__item${isWorst ? ' is-worst' : ''}${isOpen ? ' is-open' : ''}`}>
         <h3>
           <button type="button" id={`sres-bar-${item.code}`} aria-expanded={isOpen} aria-controls={`sres-panel-${item.code}`}
-            onClick={() => setOpen(isOpen ? null : item.code)}>
+            onClick={() => { clicked.current = true; setOpen(isOpen ? null : item.code) }}>
             <span className="sres-acc__band" aria-label={`Band ${formatBand(item.band)}`}>{formatBand(item.band)}</span>
             <span className="sres-acc__head">
               <span className="sres-acc__name">{item.name}<small>{item.code}</small>
@@ -103,14 +193,15 @@ function CriteriaAccordion({ criteria, tiles }: { criteria: ResultCriterion[]; t
         {isOpen && <div id={`sres-panel-${item.code}`} role="region" aria-labelledby={`sres-bar-${item.code}`}
           className={`sres-acc__panel${item.evidence.length === 0 ? ' is-single' : ''}`}>
           <div className="sres-acc__col">
-            {item.comment && <p className="sres-acc__comment">{item.comment}</p>}
+            {item.comment && <CriterionComment comment={item.comment} />}
             {item.strengths.length > 0 && <section className="sres-group sres-group--good">
-              <h4><CheckCircle2 size={15} aria-hidden="true" /> Điểm tốt</h4>
+              <h4><CheckCircle2 size={15} aria-hidden="true" /> Điểm tốt <span className="sres-count">{item.strengths.length}</span></h4>
               <ul aria-label="Điểm tốt">{item.strengths.map((point, index) => <li key={index}>{point}</li>)}</ul>
             </section>}
             {item.weaknesses.length > 0 && <section className="sres-group sres-group--bad">
-              <h4><TrendingUp size={15} aria-hidden="true" /> Cần cải thiện</h4>
-              <ul aria-label="Cần cải thiện">{item.weaknesses.map((point, index) => <li key={index}>{point}</li>)}</ul>
+              <h4><TrendingUp size={15} aria-hidden="true" /> Cần cải thiện <span className="sres-count">{item.weaknesses.length}</span></h4>
+              <ul aria-label="Cần cải thiện">{item.weaknesses.map((point, index) =>
+                <WeaknessItem key={index} text={point} position={index + 1} first={index === 0 && item.weaknesses.length > 1} />)}</ul>
             </section>}
             {!hasSides && !item.comment && <p className="sres-acc__comment sres-muted">Chưa có nhận xét chi tiết cho tiêu chí này.</p>}
           </div>
