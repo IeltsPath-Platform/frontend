@@ -1147,10 +1147,7 @@ export function CommunityPage() {
           onSubmit={(event) => {
             event.preventDefault()
             const reason = reportReason.trim()
-            if (!reason) {
-              setReportMessage('Hãy nhập lý do báo cáo.')
-              return
-            }
+            if (!reason) return
             if (!reportTarget) return
             void communityApi
               .reportContent(reportTarget.type, reportTarget.id, reason)

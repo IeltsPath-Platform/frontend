@@ -12,7 +12,8 @@ interface InputFieldProps extends Omit<ComponentPropsWithoutRef<typeof Input>, '
   type: 'email' | 'password' | 'text'
   hint?: string
   icon?: InputFieldIcon
-  requiredMark?: boolean
+  /** The message to show in red under the input; the input is marked invalid while it is set. */
+  error?: string
 }
 
 function PadlockIcon() {
@@ -46,23 +47,20 @@ export function InputField({
   type,
   hint,
   icon,
-  requiredMark = false,
+  error,
   ...inputProps
 }: InputFieldProps) {
   const [isPasswordVisible, setPasswordVisible] = useState(false)
   const isPassword = type === 'password'
   const inputType = isPassword && isPasswordVisible ? 'text' : type
   const hintId = hint ? `${id}-hint` : undefined
+  const errorId = error ? `${id}-error` : undefined
 
   return (
     <div className="auth-input-field">
-      <label htmlFor={id} className="auth-input-label">
+      {/* The red star of a required input is drawn by CSS, so it is not part of the label's name. */}
+      <label htmlFor={id} className={`auth-input-label${inputProps.required ? ' is-required' : ''}`}>
         <span key={label} className="auth-input-label-text">{label}</span>
-        {requiredMark ? (
-          <span className="auth-input-required is-visible" aria-hidden="true">
-            {' *'}
-          </span>
-        ) : null}
       </label>
       <div className={`auth-input-control${icon ? ' auth-input-control--with-icon' : ''}`}>
         {icon ? (
@@ -77,7 +75,7 @@ export function InputField({
             )}
           </span>
         ) : null}
-        <Input id={id} name={name} type={inputType} aria-describedby={hintId} {...inputProps} />
+        <Input id={id} name={name} type={inputType} aria-describedby={errorId ?? hintId} aria-invalid={error ? true : undefined} {...inputProps} />
         {isPassword && (
           <Button
             type="button"
@@ -91,6 +89,7 @@ export function InputField({
           </Button>
         )}
       </div>
+      {error ? <p className="auth-input-error" id={errorId} role="alert">{error}</p> : null}
       {hint && <small id={hintId}>{hint}</small>}
     </div>
   )

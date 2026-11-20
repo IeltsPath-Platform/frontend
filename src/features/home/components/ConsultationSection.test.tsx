@@ -13,7 +13,7 @@ describe('ConsultationSection', () => {
     render(<ConsultationSection />)
     fireEvent.click(screen.getByRole('button', { name: 'Gửi yêu cầu' }))
 
-    expect(screen.getByRole('status')).toHaveTextContent('Vui lòng nhập họ và tên.')
+    expect(screen.getAllByRole('alert').map((alert) => alert.textContent)).toEqual(['Họ và tên không được để trống.', 'Số điện thoại không được để trống.'])
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
@@ -21,7 +21,7 @@ describe('ConsultationSection', () => {
     render(<ConsultationSection />)
     fillAndSubmit('Nguyễn Văn A', '12345')
 
-    expect(screen.getByRole('status')).toHaveTextContent('Số điện thoại không hợp lệ')
+    expect(screen.getByRole('alert')).toHaveTextContent('Số điện thoại không hợp lệ')
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 

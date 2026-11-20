@@ -1,7 +1,10 @@
 import { ArrowRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { useState, type FormEvent } from 'react'
+import { useMemo, useState, type FormEvent } from 'react'
+import { z } from 'zod'
 import { Button } from '@/components/ui/button'
+import { emailText, requiredText } from '@/lib/validation/fields'
+import { useFormDataErrors } from '@/lib/validation/useFormDataErrors'
 import {
   isPasswordLengthValid,
   PASSWORD_LENGTH_MESSAGE,
@@ -31,6 +34,21 @@ interface AuthFormProps {
   onForgotPasswordClick?: () => void
 }
 
+/** What each mode asks for. Fields are read by their 
+ame from the form. */
+function authSchema(mode: AuthMode) {
+  const password = z.string({ error: 'Mật khẩu không được để trống.' }).min(1, 'Mật khẩu không được để trống.')
+  if (mode === 'sign-in') return z.object({ email: requiredText('Email hoặc số điện thoại', 255), password })
+  return z.object({
+    fullName: requiredText('Họ và tên', 255),
+    email: emailText('Email'),
+    password: password.refine(isPasswordLengthValid, PASSWORD_LENGTH_MESSAGE),
+    confirmPassword: z.string({ error: 'Xác nhận mật khẩu không được để trống.' }).min(1, 'Xác nhận mật khẩu không được để trống.'),
+  }).superRefine((values, ctx) => {
+    if (values.confirmPassword !== '' && values.password !== values.confirmPassword) ctx.addIssue({ code: 'custom', path: ['confirmPassword'], message: PASSWORD_MISMATCH_MESSAGE })
+  })
+}
+
 const AUTH_MODAL_COPY: Record<AuthMode, { submitLabel: string }> = {
   'sign-in': { submitLabel: 'Đăng nhập' },
   'sign-up': { submitLabel: 'Tạo tài khoản' },
@@ -49,63 +67,43 @@ export function AuthForm({
   const copy = AUTH_MODAL_COPY[mode]
   const isSignUp = mode === 'sign-up'
   const passwordAutocomplete = mode === 'sign-in' ? 'current-password' : 'new-password'
-  const [validationState, setValidationState] = useState<{ mode: AuthMode; message: string; shake: boolean }>({
-    mode,
-    message: '',
-    shake: false,
-  })
-  const clientMessage = validationState.mode === mode ? validationState.message : ''
-  const shakeActive = validationState.mode === mode && validationState.shake
+  const [shake, setShake] = useState<{ mode: AuthMode; active: boolean }>({ mode, active: false })
+  const shakeActive = shake.mode === mode && shake.active
+  const schema = useMemo(() => authSchema(mode), [mode])
+  const form = useFormDataErrors(schema)
+  const errors = form.errors
 
-  function triggerValidationError(message: string) {
-    setValidationState({ mode, message, shake: false })
+  function triggerShake() {
+    setShake({ mode, active: false })
     if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
-      window.requestAnimationFrame(() => setValidationState({ mode, message, shake: true }))
+      window.requestAnimationFrame(() => setShake({ mode, active: true }))
     } else {
-      setValidationState({ mode, message, shake: true })
+      setShake({ mode, active: true })
     }
   }
 
   function handleModeSwitch(targetMode: AuthMode) {
     if (targetMode === mode) return
-    setValidationState({ mode: targetMode, message: '', shake: false })
+    form.reset()
+    setShake({ mode: targetMode, active: false })
     onModeChange?.(targetMode)
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    setValidationState({ mode, message: '', shake: false })
+    if (!form.validate(event.currentTarget)) {
+      triggerShake()
+      return
+    }
     const formData = new FormData(event.currentTarget)
-    const email = formData.get('email')
-    const password = formData.get('password')
-    const fullName = formData.get('fullName')
-    const confirmPassword = formData.get('confirmPassword')
-
-    if (typeof email !== 'string' || typeof password !== 'string' || !email.trim() || !password) {
-      triggerValidationError('Vui lòng điền đầy đủ thông tin bắt buộc.')
-      return
-    }
-
+    const email = String(formData.get('email')).trim()
+    const password = String(formData.get('password'))
     if (mode === 'sign-up') {
-      if (typeof fullName !== 'string' || !fullName.trim()) {
-        triggerValidationError('Vui lòng nhập họ và tên của bạn.')
-        return
-      }
-      if (!isPasswordLengthValid(password)) {
-        triggerValidationError(PASSWORD_LENGTH_MESSAGE)
-        return
-      }
-      if (typeof confirmPassword !== 'string' || password !== confirmPassword) {
-        triggerValidationError(PASSWORD_MISMATCH_MESSAGE)
-        return
-      }
-      onSubmit({ email: email.trim(), password, fullName: fullName.trim() })
+      onSubmit({ email, password, fullName: String(formData.get('fullName')).trim() })
       return
     }
-
-    onSubmit({ email: email.trim(), password })
+    onSubmit({ email, password })
   }
-
   return (
     <section
       className={`auth-form-panel auth-modal-form-card${shakeActive ? ' auth-form-panel--shake' : ''}`}
@@ -114,7 +112,7 @@ export function AuthForm({
       data-direction={transitionDirection}
       onAnimationEnd={(event) => {
         if (event.animationName === 'auth-modal-shake') {
-          setValidationState((prev) => ({ ...prev, shake: false }))
+          setShake((prev) => ({ ...prev, active: false }))
         }
       }}
     >
@@ -168,7 +166,7 @@ export function AuthForm({
       </div>
 
       <div className="auth-match-move-stage" data-mode={mode} data-direction={transitionDirection}>
-        <form className="auth-form" noValidate onSubmit={handleSubmit}>
+        <form className="auth-form" noValidate onInput={form.onInput} onSubmit={handleSubmit}>
           <div className="auth-fields auth-fields--match-move">
             {/* Slot 1: Họ và tên (Match & Move right-to-left / left-to-right + expand/collapse) */}
             <div
@@ -180,7 +178,6 @@ export function AuthForm({
                   id="auth-fullName"
                   name="fullName"
                   label="Họ và tên"
-                  requiredMark
                   icon="user"
                   type="text"
                   autoComplete="name"
@@ -188,6 +185,7 @@ export function AuthForm({
                   disabled={!isSignUp}
                   tabIndex={isSignUp ? undefined : -1}
                   placeholder="Nhập họ và tên của bạn"
+                  error={errors.fullName}
                 />
               </div>
             </div>
@@ -198,7 +196,6 @@ export function AuthForm({
                 id="auth-email"
                 name="email"
                 label={isSignUp ? 'Email' : 'Email hoặc số điện thoại'}
-                requiredMark={isSignUp}
                 icon={isSignUp ? 'mail' : 'user'}
                 type="email"
                 autoComplete="username"
@@ -206,6 +203,7 @@ export function AuthForm({
                 inputMode="email"
                 required
                 placeholder={isSignUp ? 'Nhập email của bạn' : 'Nhập email hoặc số điện thoại'}
+                error={errors.email}
               />
             </div>
 
@@ -222,6 +220,7 @@ export function AuthForm({
                 minLength={isSignUp ? PASSWORD_MIN_LENGTH : undefined}
                 maxLength={isSignUp ? PASSWORD_MAX_LENGTH : undefined}
                 placeholder="Nhập mật khẩu"
+                error={errors.password}
               />
             </div>
 
@@ -244,6 +243,7 @@ export function AuthForm({
                   minLength={PASSWORD_MIN_LENGTH}
                   maxLength={PASSWORD_MAX_LENGTH}
                   placeholder="Nhập lại mật khẩu"
+                  error={errors.confirmPassword}
                 />
               </div>
             </div>
@@ -293,13 +293,7 @@ export function AuthForm({
             />
           </div>
 
-          {clientMessage ? (
-            <p className="auth-status auth-status--error" role="status" aria-live="polite">
-              {clientMessage}
-            </p>
-          ) : (
-            <p className="auth-status" role="status" aria-live="polite" />
-          )}
+          <p className="auth-status" role="status" aria-live="polite" />
         </form>
       </div>
     </section>

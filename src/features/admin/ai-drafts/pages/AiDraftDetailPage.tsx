@@ -89,7 +89,6 @@ function DraftDetail({ draftId }: { draftId: string }) {
     void review(() => approveQuestionDraft(draftId, { itemIndexes: selected }), `Đã duyệt ${selected.length} câu hỏi. Các câu được tạo ở trạng thái Nháp và cần xuất bản riêng.`)
   }
   function reject() {
-    if (note.length > 1000) { setError('Ghi chú tối đa 1000 ký tự.'); return }
     void review(() => rejectAiDraft(draftId, { note }), 'Đã từ chối bản nháp.')
   }
   return <AdminPage actions={<Link className="adm-btn" to="/content-author/ai-drafts">Danh sách bản nháp</Link>} plain subtitle={draftId} title="Bản nháp câu hỏi">

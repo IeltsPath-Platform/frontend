@@ -19,5 +19,11 @@ export function rocketQuestionCountError(count: number | null) {
     (count ?? 0) >= ROCKET_QUESTION_RANGE.min &&
     (count ?? 0) <= ROCKET_QUESTION_RANGE.max
     ? null
-    : `Vui lòng nhập số câu là số nguyên từ ${ROCKET_QUESTION_RANGE.min} đến ${ROCKET_QUESTION_RANGE.max}.`
+    : `Số câu phải là số nguyên từ ${ROCKET_QUESTION_RANGE.min} đến ${ROCKET_QUESTION_RANGE.max}.`
+}
+
+/** Error text for the number of words of a limited solo or room game, or null when it is valid (5 or more). */
+export function wordLimitError(wordLimit: number | null) {
+  if (wordLimit !== null && wordLimit > 2147483647) return 'Số từ vượt quá giới hạn cho phép.'
+  return Number.isInteger(wordLimit) && (wordLimit ?? 0) >= 5 ? null : 'Số từ phải là số nguyên từ 5 trở lên.'
 }

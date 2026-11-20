@@ -1,4 +1,4 @@
-import type { FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
 export interface ReportDialogProps {
@@ -18,6 +18,19 @@ export function ReportDialog({
   onSubmit,
   onClose,
 }: ReportDialogProps) {
+  // The reason is refused under its box once the author tried to send it empty for this target.
+  const [triedFor, setTriedFor] = useState<string | null>(null)
+  const reasonError = target && triedFor === target.id && !reason.trim() ? 'Lý do báo cáo không được để trống.' : undefined
+
+  function handleSubmit(event: FormEvent) {
+    event.preventDefault()
+    if (!reason.trim()) {
+      setTriedFor(target?.id ?? null)
+      return
+    }
+    onSubmit(event)
+  }
+
   return (
     <Dialog open={Boolean(target)} onOpenChange={(open) => { if (!open) onClose() }}>
       <DialogContent className="community-report-dialog">
@@ -26,17 +39,20 @@ export function ReportDialog({
           <DialogDescription>Mỗi người chỉ báo cáo một nội dung một lần.</DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={onSubmit} className="community-report-form">
-          <label htmlFor="report-reason">Lý do báo cáo</label>
+        <form noValidate onSubmit={handleSubmit} className="community-report-form">
+          <label htmlFor="report-reason" className="after:ml-1 after:text-red-600 after:content-['*']">Lý do báo cáo</label>
           <textarea
             id="report-reason"
             value={reason}
             onChange={(event) => onChangeReason(event.target.value)}
             maxLength={1000}
-            required
+            aria-required
+            aria-invalid={reasonError ? true : undefined}
+            aria-describedby={reasonError ? 'report-reason-error' : undefined}
             rows={4}
             placeholder="Mô tả lý do bạn báo cáo nội dung này (ví dụ: spam, ngôn ngữ không phù hợp...)"
           />
+          {reasonError ? <p id="report-reason-error" role="alert" className="community-report-status-msg">{reasonError}</p> : null}
           <p className="community-report-char-count">{reason.trim().length}/1000</p>
 
           {message && <p role="status" className="community-report-status-msg">{message}</p>}

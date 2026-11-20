@@ -16,12 +16,12 @@ import { authApi } from '@/features/auth/api/authApi'
 
 const changePasswordSchema = z
   .object({
-    currentPassword: z.string().min(1, 'Vui lòng nhập mật khẩu hiện tại'),
+    currentPassword: z.string().min(1, 'Mật khẩu hiện tại không được để trống.'),
     newPassword: z
       .string()
       .min(PASSWORD_MIN_LENGTH, PASSWORD_LENGTH_MESSAGE)
       .max(PASSWORD_MAX_LENGTH, PASSWORD_LENGTH_MESSAGE),
-    confirmPassword: z.string().min(1, 'Vui lòng xác nhận mật khẩu mới'),
+    confirmPassword: z.string().min(1, 'Xác nhận mật khẩu không được để trống.'),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
     message: PASSWORD_MISMATCH_MESSAGE,

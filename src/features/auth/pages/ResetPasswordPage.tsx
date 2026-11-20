@@ -1,10 +1,13 @@
 import { ArrowLeft, ArrowRight, X } from 'lucide-react'
 import { Dialog as DialogPrimitive } from 'radix-ui'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { z } from 'zod'
 import { Link, useNavigate, useNavigationType, useSearchParams } from 'react-router-dom'
 import authOwlSignIn from '@/assets/owl/auth-owl-signin.png'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/components/toast/toastContext'
+import { requiredText } from '@/lib/validation/fields'
+import { useFormDataErrors } from '@/lib/validation/useFormDataErrors'
 import { authApi } from '../api/authApi'
 import { InputField } from '../components/InputField'
 import {
@@ -18,6 +21,14 @@ import {
   PASSWORD_MISMATCH_MESSAGE,
 } from '../lib/passwordRules'
 import '../auth.css'
+
+const resetSchema = z.object({
+  token: requiredText('Mã đặt lại', 500),
+  newPassword: z.string({ error: 'Mật khẩu mới không được để trống.' }).min(1, 'Mật khẩu mới không được để trống.').refine(isPasswordLengthValid, PASSWORD_LENGTH_MESSAGE),
+  confirmPassword: z.string({ error: 'Xác nhận mật khẩu không được để trống.' }).min(1, 'Xác nhận mật khẩu không được để trống.'),
+}).superRefine((values, ctx) => {
+  if (values.confirmPassword !== '' && values.newPassword !== values.confirmPassword) ctx.addIssue({ code: 'custom', path: ['confirmPassword'], message: PASSWORD_MISMATCH_MESSAGE })
+})
 
 export interface ResetPasswordPageProps {
   open?: boolean
@@ -41,8 +52,9 @@ export function ResetPasswordPage({ open = true, onOpenChange }: ResetPasswordPa
     window.history.replaceState(window.history.state, '', url)
   }, [tokenFromUrl])
 
-  // Field validation stays under the form; the submit result is announced as a toast.
-  const [validationMessage, setValidationMessage] = useState('')
+  // Field validation shows under each input; the submit result is announced as a toast.
+  const form = useFormDataErrors(resetSchema)
+  const errors = form.errors
   const [shake, setShake] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const redirectTimer = useRef<number | null>(null)
@@ -63,8 +75,7 @@ export function ResetPasswordPage({ open = true, onOpenChange }: ResetPasswordPa
     navigate('/home', { replace: true })
   }
 
-  function showValidation(message: string) {
-    setValidationMessage(message)
+  function shakeForm() {
     setShake(false)
     if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
       window.requestAnimationFrame(() => setShake(true))
@@ -75,26 +86,15 @@ export function ResetPasswordPage({ open = true, onOpenChange }: ResetPasswordPa
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (!form.validate(event.currentTarget)) {
+      shakeForm()
+      return
+    }
     const formData = new FormData(event.currentTarget)
     const token = String(formData.get('token') ?? '').trim()
     const newPassword = String(formData.get('newPassword') ?? '')
-    const confirmPassword = String(formData.get('confirmPassword') ?? '')
-
-    if (!token || !newPassword) {
-      showValidation('Vui lòng nhập mã đặt lại và mật khẩu mới.')
-      return
-    }
-    if (!isPasswordLengthValid(newPassword)) {
-      showValidation(PASSWORD_LENGTH_MESSAGE)
-      return
-    }
-    if (newPassword !== confirmPassword) {
-      showValidation(PASSWORD_MISMATCH_MESSAGE)
-      return
-    }
 
     setSubmitting(true)
-    setValidationMessage('')
     try {
       const result = await authApi.resetPassword({ token, newPassword })
       toast({ title: result.message || 'Đặt lại mật khẩu thành công. Đang chuyển tới đăng nhập…', tone: 'success' })
@@ -183,26 +183,25 @@ export function ResetPasswordPage({ open = true, onOpenChange }: ResetPasswordPa
                   </header>
 
                   <div className="auth-match-move-stage" data-direction="none">
-                    <form className="auth-form" noValidate onSubmit={handleSubmit}>
+                    <form className="auth-form" noValidate onInput={form.onInput} onSubmit={handleSubmit}>
                       <div className="auth-fields">
                         {tokenFromUrl && <input type="hidden" name="token" value={tokenFromUrl} />}
                         {!tokenFromUrl && <InputField
                           id="reset-token"
                           name="token"
                           label="Mã đặt lại"
-                          requiredMark
                           icon="mail"
                           type="text"
                           autoComplete="one-time-code"
                           required
                           placeholder="Dán mã từ email"
+                          error={errors.token}
                           disabled={submitting}
                         />}
                         <InputField
                           id="reset-new-password"
                           name="newPassword"
                           label="Mật khẩu mới"
-                          requiredMark
                           icon="lock"
                           type="password"
                           autoComplete="new-password"
@@ -211,13 +210,13 @@ export function ResetPasswordPage({ open = true, onOpenChange }: ResetPasswordPa
                           maxLength={PASSWORD_MAX_LENGTH}
                           placeholder={PASSWORD_LENGTH_PLACEHOLDER}
                           hint={PASSWORD_LENGTH_HINT}
+                          error={errors.newPassword}
                           disabled={submitting}
                         />
                         <InputField
                           id="reset-confirm-password"
                           name="confirmPassword"
                           label="Xác nhận mật khẩu"
-                          requiredMark
                           icon="lock"
                           type="password"
                           autoComplete="new-password"
@@ -225,6 +224,7 @@ export function ResetPasswordPage({ open = true, onOpenChange }: ResetPasswordPa
                           minLength={PASSWORD_MIN_LENGTH}
                           maxLength={PASSWORD_MAX_LENGTH}
                           placeholder="Nhập lại mật khẩu mới"
+                          error={errors.confirmPassword}
                           disabled={submitting}
                         />
                       </div>
@@ -234,11 +234,7 @@ export function ResetPasswordPage({ open = true, onOpenChange }: ResetPasswordPa
                         {!submitting ? <ArrowRight className="auth-submit-arrow" aria-hidden="true" size={18} strokeWidth={2.25} /> : null}
                       </Button>
 
-                      {validationMessage ? (
-                        <p className="auth-status auth-status--error" role="status" aria-live="polite">{validationMessage}</p>
-                      ) : (
-                        <p className="auth-status" role="status" aria-live="polite" />
-                      )}
+                      <p className="auth-status" role="status" aria-live="polite" />
                     </form>
                   </div>
                 </div>

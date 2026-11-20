@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
+import { z } from 'zod'
 import { ImagePlus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { requiredText } from '@/lib/validation/fields'
+import { useFormErrors } from '@/lib/validation/useFormErrors'
 import { legacyImageToFile, readFlashcardImage, saveFlashcard } from '../lib/flashcardStorage'
 import { flashcardApi } from '@/features/flashcards/api/flashcardApi'
 import type { PracticeFlashcard } from '@/types/practice'
@@ -16,6 +19,8 @@ interface FlashcardDialogProps {
   onSaved: () => void
 }
 
+const flashcardSchema = z.object({ word: requiredText('Từ / cụm từ', 200), meaning: requiredText('Nghĩa / định nghĩa', 2000) })
+
 export function FlashcardDialog({ text, testId, card, onClose, onSaved }: FlashcardDialogProps) {
   const [word, setWord] = useState(card?.word ?? text.slice(0, 200))
   const [meaning, setMeaning] = useState(card?.meaning ?? '')
@@ -27,6 +32,9 @@ export function FlashcardDialog({ text, testId, card, onClose, onSaved }: Flashc
   const [reading, setReading] = useState(false)
   const fileInput = useRef<HTMLInputElement>(null)
   const request = useRef(0)
+  const form = useFormErrors(flashcardSchema, { word, meaning })
+  const wordError = form.field('word').error
+  const meaningError = form.field('meaning').error
 
   useEffect(() => () => { request.current += 1 }, [])
 
@@ -47,10 +55,10 @@ export function FlashcardDialog({ text, testId, card, onClose, onSaved }: Flashc
     <Dialog open onOpenChange={(open) => { if (!open) onClose() }}>
       <DialogContent className="flashcard-dialog">
         <DialogHeader><DialogTitle>{card ? 'Chỉnh sửa' : 'Tạo'} Flashcard</DialogTitle><DialogDescription>Lưu từ vựng và ảnh minh họa trên trình duyệt này. Chưa đồng bộ tài khoản.</DialogDescription></DialogHeader>
-        <form className="flashcard-form" onSubmit={(event) => {
+        <form className="flashcard-form" noValidate onSubmit={(event) => {
           event.preventDefault()
           if (reading) return
-          if (!word.trim() || !meaning.trim()) { setError('Nhập từ vựng và nghĩa trước khi lưu.'); return }
+          if (!form.validate()) return
           if (imageError) return
           void (async () => {
             setReading(true)
@@ -66,8 +74,10 @@ export function FlashcardDialog({ text, testId, card, onClose, onSaved }: Flashc
             } finally { setReading(false) }
           })()
         }}>
-          <label htmlFor="flash-word">Từ / cụm từ *</label><Input id="flash-word" required maxLength={200} value={word} onChange={(event) => setWord(event.target.value)} />
-          <label htmlFor="flash-meaning">Nghĩa / định nghĩa *</label><Textarea id="flash-meaning" required maxLength={2000} rows={2} value={meaning} onChange={(event) => setMeaning(event.target.value)} placeholder="Nhập nghĩa để ghi nhớ" />
+          <label htmlFor="flash-word">Từ / cụm từ *</label><Input id="flash-word" aria-required aria-invalid={wordError ? true : undefined} aria-describedby={wordError ? 'flash-word-error' : undefined} onBlur={form.field('word').onTouch} maxLength={200} value={word} onChange={(event) => setWord(event.target.value)} />
+          {wordError ? <p id="flash-word-error" role="alert" className="practice-form-error">{wordError}</p> : null}
+          <label htmlFor="flash-meaning">Nghĩa / định nghĩa *</label><Textarea id="flash-meaning" aria-required aria-invalid={meaningError ? true : undefined} aria-describedby={meaningError ? 'flash-meaning-error' : undefined} onBlur={form.field('meaning').onTouch} maxLength={2000} rows={2} value={meaning} onChange={(event) => setMeaning(event.target.value)} placeholder="Nhập nghĩa để ghi nhớ" />
+          {meaningError ? <p id="flash-meaning-error" role="alert" className="practice-form-error">{meaningError}</p> : null}
           <label htmlFor="flash-example">Ví dụ / ngữ cảnh</label><Textarea id="flash-example" maxLength={5000} rows={2} value={example} onChange={(event) => setExample(event.target.value)} />
           <div className="flash-image-field"><span>Ảnh minh họa</span><input ref={fileInput} className="sr-only" tabIndex={-1} type="file" accept="image/png,image/jpeg,image/webp" aria-label="Chọn ảnh minh họa" onChange={(event) => { void upload(event.target.files?.[0]); event.target.value = '' }} />
             <Button type="button" variant="outline" disabled={reading} onClick={() => fileInput.current?.click()} aria-describedby="flash-image-help"><ImagePlus />{reading ? 'Đang đọc ảnh…' : image ? 'Đổi ảnh minh họa' : 'Thêm ảnh minh họa'}</Button>
