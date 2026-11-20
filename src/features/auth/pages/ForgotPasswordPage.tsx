@@ -7,9 +7,14 @@ import authOwlSignUp from '@/assets/owl/auth-owl-signup.png'
 import { Button } from '@/components/ui/button'
 import { HttpError } from '@/lib/httpClient'
 import { useToast } from '@/components/toast/toastContext'
+import { z } from 'zod'
+import { emailText } from '@/lib/validation/fields'
+import { collectErrors } from '@/lib/validation/useFormErrors'
 import { authApi } from '../api/authApi'
 import { InputField } from '../components/InputField'
 import '../auth.css'
+
+const emailSchema = z.object({ email: emailText('Email') })
 
 export interface ForgotPasswordPageProps {
   open?: boolean
@@ -56,6 +61,11 @@ export function ForgotPasswordPage({ open = true, onOpenChange }: ForgotPassword
     }
   }
 
+  /** The email is refused under its input once the form was sent, and judged again as it is edited. */
+  function emailProblem(value: unknown): string {
+    return collectErrors(emailSchema, { email: value }).email ?? ''
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setValidationError('')
@@ -63,12 +73,13 @@ export function ForgotPasswordPage({ open = true, onOpenChange }: ForgotPassword
 
     const formData = new FormData(event.currentTarget)
     const email = formData.get('email')
-    if (typeof email !== 'string' || !email.trim()) {
-      triggerValidationError('Vui lòng nhập địa chỉ email đã đăng ký.')
+    const problem = emailProblem(email)
+    if (problem) {
+      triggerValidationError(problem)
       return
     }
 
-    const normalizedEmail = email.trim()
+    const normalizedEmail = String(email).trim()
     setSubmitting(true)
     try {
       const result = await authApi.forgotPassword(normalizedEmail)
@@ -241,7 +252,6 @@ export function ForgotPasswordPage({ open = true, onOpenChange }: ForgotPassword
                             id="forgot-email"
                             name="email"
                             label="Email"
-                            requiredMark
                             icon="mail"
                             type="email"
                             autoComplete="username"
@@ -250,6 +260,8 @@ export function ForgotPasswordPage({ open = true, onOpenChange }: ForgotPassword
                             required
                             placeholder="Nhập email của bạn"
                             disabled={submitting}
+                            error={validationError || undefined}
+                            onChange={(event) => { if (validationError) setValidationError(emailProblem(event.target.value)) }}
                           />
                         </div>
                       </div>
@@ -278,13 +290,7 @@ export function ForgotPasswordPage({ open = true, onOpenChange }: ForgotPassword
                         )}
                       </div>
 
-                      {validationError ? (
-                        <p className="auth-status auth-status--error" role="status" aria-live="polite">
-                          {validationError}
-                        </p>
-                      ) : (
-                        <p className="auth-status" role="status" aria-live="polite" />
-                      )}
+                      <p className="auth-status" role="status" aria-live="polite" />
                     </form>
                   </div>
                 </div>
