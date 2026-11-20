@@ -5,6 +5,9 @@ import { clearAccessToken, setAccessToken } from '@/lib/httpClient'
 import { SubmissionHistoryPage } from './SubmissionHistoryPage'
 
 vi.mock('@/components/SiteNavbar', () => ({ SiteNavbar: () => null }))
+// The page reads topic names through the learning API. Without a configured API base URL (a machine with no .env file, such
+// as the CI runner) the app picks the in-browser mock instead of the fetch calls this test answers, so the choice is fixed here.
+vi.mock('@/lib/env', async (importOriginal) => ({ ...(await importOriginal<typeof import('@/lib/env')>()), USE_MOCK_LEARNING: false }))
 
 const id = (n: number) => `50000000-0000-4000-8000-${String(n).padStart(12, '0')}`
 const entry = (n: number, overrides = {}) => ({
