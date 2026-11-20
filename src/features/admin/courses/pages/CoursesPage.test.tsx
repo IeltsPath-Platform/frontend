@@ -5,10 +5,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { HttpError } from '@/lib/httpClient'
 import { CoursesPage } from './CoursesPage'
 
-const { api, lessons, media } = vi.hoisted(() => ({ api: { fetchCourses: vi.fn(), createCourse: vi.fn(), updateCourse: vi.fn(), deleteCourse: vi.fn(), createTopic: vi.fn(), updateTopic: vi.fn(), reorderTopics: vi.fn() }, lessons: { fetchTopics: vi.fn(), fetchLessons: vi.fn() }, media: { uploadAdminImage: vi.fn() } }))
+const { api, lessons, media, codes } = vi.hoisted(() => ({ api: { fetchCourses: vi.fn(), createCourse: vi.fn(), updateCourse: vi.fn(), deleteCourse: vi.fn(), createTopic: vi.fn(), updateTopic: vi.fn(), reorderTopics: vi.fn() }, lessons: { fetchTopics: vi.fn(), fetchLessons: vi.fn() }, media: { uploadAdminImage: vi.fn() }, codes: { fetchCodeSettings: vi.fn(), fetchCodeSuggestion: vi.fn() } }))
 vi.mock('../api/courseApi', () => api)
 vi.mock('../../lessons/api/lessonApi', () => lessons)
 vi.mock('../../media/api/mediaUploadApi', () => media)
+vi.mock('../../code-settings/api/codeSettingsApi', () => codes)
 const course = { id: 'c1', code: 'FOUNDATION', name: 'Nền tảng 5.5', bandLevel: 5.5, coverImageUrl: null, description: null, status: 'ACTIVE', createdAt: '', updatedAt: '' }
 const topics = [
   { id: 't1', code: 'WRITING', name: 'Viết học thuật', parentTopicId: null, courseId: 'c1', sortOrder: 1, status: 'ACTIVE', skill: 'WRITING', bandMin: 5, bandMax: 6 },
@@ -27,6 +28,8 @@ describe('CoursesPage', () => {
     api.updateTopic.mockReset()
     api.reorderTopics.mockReset()
     media.uploadAdminImage.mockReset()
+    codes.fetchCodeSettings.mockReset().mockResolvedValue([])
+    codes.fetchCodeSuggestion.mockReset()
     api.reorderTopics.mockResolvedValue(undefined)
     api.fetchCourses.mockResolvedValue([course])
     lessons.fetchTopics.mockResolvedValue(topics)

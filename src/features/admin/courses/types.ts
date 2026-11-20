@@ -20,7 +20,7 @@ export const topicSchema = z.object({
 })
 export type Course = z.infer<typeof courseSchema>
 /** status left out creates the course active; an author still building one creates it inactive. */
-export type CourseCreate = Pick<Course, 'code' | 'name' | 'bandLevel' | 'coverImageUrl' | 'bannerImageUrl' | 'description' | 'free' | 'skillUnlockPoints' | 'comboUnlockPoints'> & { status?: Course['status'] }
+export type CourseCreate = Omit<Pick<Course, 'code' | 'name' | 'bandLevel' | 'coverImageUrl' | 'bannerImageUrl' | 'description' | 'free' | 'skillUnlockPoints' | 'comboUnlockPoints'>, 'code'> & { code?: string; status?: Course['status'] }
 export type CourseUpdate = Pick<Course, 'name' | 'bandLevel' | 'status' | 'coverImageUrl' | 'bannerImageUrl' | 'description' | 'skillUnlockPoints' | 'comboUnlockPoints' | 'free'>
 export type TopicCreate = Pick<z.infer<typeof topicSchema>, 'code' | 'name' | 'description' | 'parentTopicId' | 'sortOrder' | 'bandMin' | 'bandMax' | 'skill' | 'courseId'>
 export type TopicUpdate = Omit<TopicCreate, 'code'> & { status: Course['status'] }
