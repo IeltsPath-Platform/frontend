@@ -110,14 +110,17 @@ describe('QuestionDetailPage', () => {
     expect(await screen.findByText('Đã lưu phiên bản 3 ở trạng thái nháp.')).toBeInTheDocument()
   })
 
-  it('lists the form problems instead of sending an incomplete version', async () => {
+  it('shows each form problem under its field instead of sending an incomplete version', async () => {
     renderPage()
     fireEvent.click(await screen.findByRole('button', { name: /Thêm phiên bản/ }))
     fireEvent.click(screen.getByRole('button', { name: 'Lưu bản nháp' }))
 
-    const alert = await screen.findByRole('alert')
-    expect(alert).toHaveTextContent('Cần nhập nội dung câu hỏi.')
-    expect(alert).toHaveTextContent('Cần chọn đáp án đúng')
+    const alerts = await screen.findAllByRole('alert')
+    expect(alerts.map((alert) => alert.textContent)).toEqual([
+      'Nội dung câu hỏi không được để trống.',
+      'Nhập nội dung cho ít nhất 2 lựa chọn.',
+      'Chọn đáp án đúng trong các lựa chọn.',
+    ])
     expect(api.addQuestionVersion).not.toHaveBeenCalled()
   })
 

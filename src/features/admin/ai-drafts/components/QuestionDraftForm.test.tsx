@@ -41,7 +41,7 @@ describe('QuestionDraftForm', () => {
     render(<QuestionDraftForm onCreated={vi.fn()} onCancel={vi.fn()} />)
     const form = screen.getByRole('form', { name: 'Tạo bản nháp câu hỏi' })
     fireEvent.submit(form)
-    expect(await screen.findByRole('alert')).toHaveTextContent('Chọn một điểm kiến thức')
+    expect(await screen.findByRole('alert')).toHaveTextContent('Chọn điểm kiến thức.')
     expect(api.requestQuestionDraft).not.toHaveBeenCalled()
     fireEvent.click(await screen.findByRole('checkbox', { name: /KP_ONE/ }))
     fireEvent.click(screen.getByRole('checkbox', { name: /KP_TWO/ }))
@@ -51,11 +51,11 @@ describe('QuestionDraftForm', () => {
     await waitFor(() => expect(api.requestQuestionDraft).toHaveBeenCalledWith(expect.objectContaining({ knowledgePointId: secondId })))
   })
 
-  it.each(['0', '21', '1.5'])('rejects invalid question count %s', async (count) => {
+  it.each([['0', 'Số câu phải là số nguyên dương.'], ['1.5', 'Số câu phải là số nguyên dương.'], ['21', 'Số câu tối đa 20.']])('rejects invalid question count %s', async (count, message) => {
     render(<QuestionDraftForm initialKnowledgePointId={firstId} onCreated={vi.fn()} onCancel={vi.fn()} />)
     fireEvent.change(screen.getByLabelText('Số câu'), { target: { value: count } })
     fireEvent.submit(screen.getByRole('form', { name: 'Tạo bản nháp câu hỏi' }))
-    expect(await screen.findByRole('alert')).toHaveTextContent('số nguyên từ 1 đến 20')
+    expect(await screen.findByRole('alert')).toHaveTextContent(message)
     expect(api.requestQuestionDraft).not.toHaveBeenCalled()
   })
 

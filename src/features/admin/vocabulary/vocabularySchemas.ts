@@ -5,7 +5,8 @@ export const adminItemSchema = z.object({
   ipaUs: z.string().max(100).nullable().optional(),
   audioUkReference: z.string().max(500).nullable().optional(),
   audioUsReference: z.string().max(500).nullable().optional(),
-  frequencyRank: z.coerce.number().int().min(1).max(100000).nullable().optional(),
+  // An input that was typed in and then cleared is an empty text: that means "no rank", not zero.
+  frequencyRank: z.preprocess((value) => (value === '' ? null : value), z.coerce.number().int().min(1).max(100000).nullable().optional()),
   academicWordList: z.boolean().nullable().optional(),
   wordFamily: z.string().max(500).nullable().optional(),
 })

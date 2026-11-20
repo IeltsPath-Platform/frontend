@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, type FieldValues, type Resolver } from 'react-hook-form'
 import {
   BookOpen,
   Search,
@@ -36,8 +36,25 @@ import {
 } from '../vocabularySchemas'
 import '../../admin.css'
 import { Loading } from '@/components/loading/Loading'
+import type { ZodType } from 'zod'
+import { createZodResolver } from '@/lib/zodResolver'
 
 type AdminVocabTab = 'ITEMS' | 'TOPICS' | 'SETS'
+
+/** The form's own payload type is looser than what its schema produces, so the resolver is typed by the form. */
+function resolverFor<T extends FieldValues>(schema: ZodType): Resolver<T> {
+  return createZodResolver(schema as ZodType<FieldValues>) as unknown as Resolver<T>
+}
+
+/** The red message of one field, shown under it after the form was sent and again as the field is edited. */
+function FieldError({ error }: { error?: { message?: string } }) {
+  return error?.message ? <p className="adm-field__error" role="alert">{error.message}</p> : null
+}
+
+/** The red star after the label of a required field. */
+function Required() {
+  return <span aria-hidden="true" className="adm-required" />
+}
 
 export function AdminVocabularyPage() {
   const { toast } = useToast()
@@ -55,6 +72,7 @@ export function AdminVocabularyPage() {
 
   // Item form
   const itemForm = useForm<AdminItemPayload>({
+    resolver: resolverFor<AdminItemPayload>(adminItemSchema),
     defaultValues: {
       ipaUk: '',
       ipaUs: '',
@@ -68,6 +86,7 @@ export function AdminVocabularyPage() {
 
   // Sense form
   const senseForm = useForm<AdminSensePayload>({
+    resolver: resolverFor<AdminSensePayload>(adminSenseSchema),
     defaultValues: {
       cefrLevel: 'B1',
       topicId: '',
@@ -149,14 +168,8 @@ export function AdminVocabularyPage() {
 
   const handleSaveItem = async (values: AdminItemPayload) => {
     if (!selectedItemDetail) return
-    const parse = adminItemSchema.safeParse(values)
-    if (!parse.success) {
-      toast({ title: 'Dữ liệu không hợp lệ', description: parse.error.issues[0]?.message, tone: 'error' })
-      return
-    }
-
     try {
-      await notebookApi.updateAdminItem(selectedItemDetail.id, parse.data)
+      await notebookApi.updateAdminItem(selectedItemDetail.id, values)
       toast({ title: 'Thành công', description: 'Đã cập nhật thông tin từ vựng.', tone: 'success' })
       handleSelectItem(selectedItemDetail.id)
     } catch {
@@ -166,14 +179,8 @@ export function AdminVocabularyPage() {
 
   const handleSaveSense = async (values: AdminSensePayload) => {
     if (!editingSenseId) return
-    const parse = adminSenseSchema.safeParse(values)
-    if (!parse.success) {
-      toast({ title: 'Dữ liệu không hợp lệ', description: parse.error.issues[0]?.message, tone: 'error' })
-      return
-    }
-
     try {
-      await notebookApi.updateAdminSense(editingSenseId, parse.data)
+      await notebookApi.updateAdminSense(editingSenseId, values)
       toast({ title: 'Thành công', description: 'Đã cập nhật thông tin nghĩa của từ.', tone: 'success' })
       if (selectedItemDetail) handleSelectItem(selectedItemDetail.id)
     } catch {
@@ -192,6 +199,7 @@ export function AdminVocabularyPage() {
   const [uploadingTopicCover, setUploadingTopicCover] = useState(false)
 
   const topicForm = useForm<AdminTopicPayload>({
+    resolver: resolverFor<AdminTopicPayload>(adminTopicSchema),
     defaultValues: {
       slug: '',
       name: '',
@@ -269,18 +277,12 @@ export function AdminVocabularyPage() {
   }
 
   const handleSaveTopic = async (values: AdminTopicPayload) => {
-    const parse = adminTopicSchema.safeParse(values)
-    if (!parse.success) {
-      toast({ title: 'Dữ liệu không hợp lệ', description: parse.error.issues[0]?.message, tone: 'error' })
-      return
-    }
-
     try {
       if (editingTopicId) {
-        await notebookApi.updateAdminTopic(editingTopicId, parse.data)
+        await notebookApi.updateAdminTopic(editingTopicId, values)
         toast({ title: 'Thành công', description: 'Đã cập nhật chủ đề.', tone: 'success' })
       } else {
-        await notebookApi.createAdminTopic(parse.data)
+        await notebookApi.createAdminTopic(values)
         toast({ title: 'Thành công', description: 'Đã tạo chủ đề mới.', tone: 'success' })
       }
       setIsTopicModalOpen(false)
@@ -317,6 +319,7 @@ export function AdminVocabularyPage() {
   const [loadingReorder, setLoadingReorder] = useState(false)
 
   const setForm = useForm<AdminSetPayload>({
+    resolver: resolverFor<AdminSetPayload>(adminSetSchema),
     defaultValues: {
       title: '',
       description: '',
@@ -400,18 +403,12 @@ export function AdminVocabularyPage() {
   }
 
   const handleSaveSet = async (values: AdminSetPayload) => {
-    const parse = adminSetSchema.safeParse(values)
-    if (!parse.success) {
-      toast({ title: 'Dữ liệu không hợp lệ', description: parse.error.issues[0]?.message, tone: 'error' })
-      return
-    }
-
     try {
       if (editingSetId) {
-        await notebookApi.updateAdminSet(editingSetId, parse.data)
+        await notebookApi.updateAdminSet(editingSetId, values)
         toast({ title: 'Thành công', description: 'Đã cập nhật bộ từ vựng.', tone: 'success' })
       } else {
-        await notebookApi.createAdminSet(parse.data)
+        await notebookApi.createAdminSet(values)
         toast({ title: 'Thành công', description: 'Đã tạo bộ từ mới.', tone: 'success' })
       }
       setIsSetModalOpen(false)
@@ -643,6 +640,7 @@ export function AdminVocabularyPage() {
                         {...itemForm.register('ipaUk')}
                         style={{ width: '100%', padding: '0.4rem 0.65rem', borderRadius: '0.4rem', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
                       />
+<FieldError error={itemForm.formState.errors.ipaUk} />
                     </div>
 
                     <div>
@@ -655,6 +653,7 @@ export function AdminVocabularyPage() {
                         {...itemForm.register('ipaUs')}
                         style={{ width: '100%', padding: '0.4rem 0.65rem', borderRadius: '0.4rem', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
                       />
+<FieldError error={itemForm.formState.errors.ipaUs} />
                     </div>
 
                     <div>
@@ -667,6 +666,7 @@ export function AdminVocabularyPage() {
                         {...itemForm.register('audioUkReference')}
                         style={{ width: '100%', padding: '0.4rem 0.65rem', borderRadius: '0.4rem', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
                       />
+<FieldError error={itemForm.formState.errors.audioUkReference} />
                     </div>
 
                     <div>
@@ -679,6 +679,7 @@ export function AdminVocabularyPage() {
                         {...itemForm.register('audioUsReference')}
                         style={{ width: '100%', padding: '0.4rem 0.65rem', borderRadius: '0.4rem', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
                       />
+<FieldError error={itemForm.formState.errors.audioUsReference} />
                     </div>
 
                     <div>
@@ -690,6 +691,7 @@ export function AdminVocabularyPage() {
                         {...itemForm.register('frequencyRank')}
                         style={{ width: '100%', padding: '0.4rem 0.65rem', borderRadius: '0.4rem', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
                       />
+<FieldError error={itemForm.formState.errors.frequencyRank} />
                     </div>
 
                     <div>
@@ -702,6 +704,7 @@ export function AdminVocabularyPage() {
                         placeholder="VD: decide, decisive, decisively"
                         style={{ width: '100%', padding: '0.4rem 0.65rem', borderRadius: '0.4rem', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
                       />
+<FieldError error={itemForm.formState.errors.wordFamily} />
                     </div>
 
                     <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
@@ -805,6 +808,7 @@ export function AdminVocabularyPage() {
                                 placeholder="Formal, Academic..."
                                 style={{ width: '100%', padding: '0.35rem', borderRadius: '0.4rem', border: '1px solid #cbd5e1' }}
                               />
+<FieldError error={senseForm.formState.errors.register} />
                             </div>
 
                             <div style={{ gridColumn: '1 / -1' }}>
@@ -814,6 +818,7 @@ export function AdminVocabularyPage() {
                                 {...senseForm.register('grammarNote')}
                                 style={{ width: '100%', padding: '0.35rem', borderRadius: '0.4rem', border: '1px solid #cbd5e1' }}
                               />
+<FieldError error={senseForm.formState.errors.grammarNote} />
                             </div>
 
                             <div style={{ gridColumn: '1 / -1' }}>
@@ -823,6 +828,7 @@ export function AdminVocabularyPage() {
                                 {...senseForm.register('exampleTranslation')}
                                 style={{ width: '100%', padding: '0.35rem', borderRadius: '0.4rem', border: '1px solid #cbd5e1' }}
                               />
+<FieldError error={senseForm.formState.errors.exampleTranslation} />
                             </div>
 
                             <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
@@ -1052,16 +1058,19 @@ export function AdminVocabularyPage() {
 
             <form onSubmit={topicForm.handleSubmit(handleSaveTopic)} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.2rem' }}>Tên tiếng Việt</label>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.2rem' }}>Tên tiếng Việt<Required /></label>
                 <input type="text" {...topicForm.register('nameVi')} placeholder="VD: Môi trường" style={{ width: '100%', padding: '0.45rem', borderRadius: '0.4rem', border: '1px solid #cbd5e1' }} />
+<FieldError error={topicForm.formState.errors.nameVi} />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.2rem' }}>Tên tiếng Anh</label>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.2rem' }}>Tên tiếng Anh<Required /></label>
                 <input type="text" {...topicForm.register('name')} placeholder="VD: Environment" style={{ width: '100%', padding: '0.45rem', borderRadius: '0.4rem', border: '1px solid #cbd5e1' }} />
+<FieldError error={topicForm.formState.errors.name} />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.2rem' }}>Slug (URL identifier)</label>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.2rem' }}>Slug (URL identifier)<Required /></label>
                 <input type="text" {...topicForm.register('slug')} placeholder="VD: environment" style={{ width: '100%', padding: '0.45rem', borderRadius: '0.4rem', border: '1px solid #cbd5e1' }} />
+<FieldError error={topicForm.formState.errors.slug} />
               </div>
               <div>
                 <label htmlFor="topic-cover" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.2rem' }}>Ảnh bìa chủ đề</label>
@@ -1072,6 +1081,7 @@ export function AdminVocabularyPage() {
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.2rem' }}>Thứ tự hiển thị</label>
                 <input type="number" {...topicForm.register('sortOrder')} style={{ width: '100%', padding: '0.45rem', borderRadius: '0.4rem', border: '1px solid #cbd5e1' }} />
+<FieldError error={topicForm.formState.errors.sortOrder} />
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '0.5rem' }}>
@@ -1102,12 +1112,14 @@ export function AdminVocabularyPage() {
 
             <form onSubmit={setForm.handleSubmit(handleSaveSet)} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.2rem' }}>Tiêu đề bộ từ</label>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.2rem' }}>Tiêu đề bộ từ<Required /></label>
                 <input type="text" {...setForm.register('title')} placeholder="VD: Từ vựng Band 6.5 - 7.5" style={{ width: '100%', padding: '0.45rem', borderRadius: '0.4rem', border: '1px solid #cbd5e1' }} />
+<FieldError error={setForm.formState.errors.title} />
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.2rem' }}>Mô tả</label>
                 <textarea {...setForm.register('description')} rows={3} style={{ width: '100%', padding: '0.45rem', borderRadius: '0.4rem', border: '1px solid #cbd5e1' }} />
+<FieldError error={setForm.formState.errors.description} />
               </div>
               <div>
                 <label htmlFor="set-cover" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.2rem' }}>Ảnh bìa bộ từ</label>
@@ -1138,6 +1150,7 @@ export function AdminVocabularyPage() {
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.2rem' }}>Thứ tự hiển thị</label>
                 <input type="number" {...setForm.register('sortOrder')} style={{ width: '100%', padding: '0.45rem', borderRadius: '0.4rem', border: '1px solid #cbd5e1' }} />
+<FieldError error={setForm.formState.errors.sortOrder} />
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '0.5rem' }}>

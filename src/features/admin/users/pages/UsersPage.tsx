@@ -1,7 +1,11 @@
 ﻿import { useMemo, useState, type FormEvent } from 'react'
 import { Plus } from 'lucide-react'
+import { z } from 'zod'
 import { useAuthSession } from '@/features/auth/authSession'
+import { emailText, requiredText } from '@/lib/validation/fields'
+import { useFormErrors } from '@/lib/validation/useFormErrors'
 import { useAdminSearch } from '../../adminSearch'
+import { AdminField } from '../../components/AdminField'
 import { AdminDetails, AdminDrawer, AdminModal } from '../../components/AdminLayer'
 import { useAdminConfirm } from '../../lib/useAdminConfirm'
 import { AdminEmpty, AdminError, AdminLoading } from '../../components/AdminState'
@@ -19,6 +23,16 @@ import '../users.css'
 import { useAdminError } from '../../lib/useAdminError'
 
 const PAGE_SIZE = 25
+
+const createUserSchema = z.object({
+  email: emailText(),
+  fullName: requiredText('Họ tên', 255),
+  password: z.string({ error: 'Mật khẩu không được để trống.' })
+    .min(1, 'Mật khẩu không được để trống.')
+    .min(6, 'Mật khẩu có từ 6 đến 72 ký tự.')
+    .max(72, 'Mật khẩu có từ 6 đến 72 ký tự.'),
+})
+const profileSchema = z.object({ fullName: requiredText('Họ tên', 255) })
 
 function isCurrentUser(user: User, userId: string | null, email: string | null) {
   return userId ? user.id === userId : Boolean(email && user.email.toLowerCase() === email.toLowerCase())
@@ -72,10 +86,12 @@ function CreateUserForm({ onCreated, onCancel }: { onCreated: () => void; onCanc
   const [roles, setRoles] = useState<UserRole[]>(['CUSTOMER'])
   const [, setError] = useAdminError()
   const [saving, setSaving] = useState(false)
+  const form = useFormErrors(createUserSchema, { email, fullName, password })
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError(null)
+    if (!form.validate()) return
     setSaving(true)
     const input: CreateUserInput = { email: email.trim(), fullName: fullName.trim(), password, roles }
     if (phoneNumber.trim()) input.phoneNumber = phoneNumber.trim()
@@ -89,12 +105,12 @@ function CreateUserForm({ onCreated, onCancel }: { onCreated: () => void; onCanc
   }
 
   return (
-    <form aria-label="Tài khoản nhân sự mới" className="um-form" onSubmit={(event) => void submit(event)}>
+    <form aria-label="Tài khoản nhân sự mới" className="um-form" noValidate onSubmit={(event) => void submit(event)}>
       <div className="um-form-grid">
-        <label className="adm-field"><span>Email</span><input autoComplete="email" className="adm-input" onChange={(event) => setEmail(event.target.value)} required type="email" value={email} /></label>
-        <label className="adm-field"><span>Họ tên</span><input autoComplete="name" className="adm-input" onChange={(event) => setFullName(event.target.value)} required value={fullName} /></label>
+        <AdminField label="Email" {...form.field('email')}><input autoComplete="email" className="adm-input" onChange={(event) => setEmail(event.target.value)} type="email" value={email} /></AdminField>
+        <AdminField label="Họ tên" {...form.field('fullName')}><input autoComplete="name" className="adm-input" onChange={(event) => setFullName(event.target.value)} value={fullName} /></AdminField>
         <label className="adm-field"><span>Số điện thoại (không bắt buộc)</span><input autoComplete="tel" className="adm-input" onChange={(event) => setPhoneNumber(event.target.value)} type="tel" value={phoneNumber} /></label>
-        <label className="adm-field"><span>Mật khẩu tạm thời (6–72 ký tự)</span><input autoComplete="new-password" className="adm-input" minLength={6} maxLength={72} onChange={(event) => setPassword(event.target.value)} required type="password" value={password} /></label>
+        <AdminField label="Mật khẩu tạm thời (6–72 ký tự)" {...form.field('password')}><input autoComplete="new-password" className="adm-input" maxLength={72} onChange={(event) => setPassword(event.target.value)} type="password" value={password} /></AdminField>
       </div>
       <RoleChoices onChange={setRoles} value={roles} />
       <div className="adm-form-footer">
@@ -125,7 +141,7 @@ function UserEditor({ user, self, section, onSaved, onDeleted }: {
   const statusOptions: UserStatus[] = user.status === 'PENDING_VERIFY'
     ? ['PENDING_VERIFY', ...CHANGEABLE_USER_STATUSES]
     : [...CHANGEABLE_USER_STATUSES]
-
+  const profile = useFormErrors(profileSchema, { fullName })
 
   async function save(action: () => Promise<unknown>, refresh = true) {
     setSaving(true)
@@ -167,10 +183,10 @@ function UserEditor({ user, self, section, onSaved, onDeleted }: {
     <section aria-label={`Quản lý ${user.email}`} className="um-editor">
       {confirmDialog}
       {section === 'profile' ? <>
-        <form className="um-form-grid" onSubmit={(event) => { event.preventDefault(); void save(() => updateUser(user.id, { fullName: fullName.trim(), phoneNumber: phoneNumber.trim() || null })) }}>
-          <label className="adm-field"><span>Họ tên</span><input className="adm-input" onChange={(event) => setFullName(event.target.value)} required value={fullName} /></label>
+        <form className="um-form-grid" noValidate onSubmit={(event) => { event.preventDefault(); if (!profile.validate()) return; void save(() => updateUser(user.id, { fullName: fullName.trim(), phoneNumber: phoneNumber.trim() || null })) }}>
+          <AdminField label="Họ tên" {...profile.field('fullName')}><input className="adm-input" onChange={(event) => setFullName(event.target.value)} value={fullName} /></AdminField>
           <label className="adm-field"><span>Số điện thoại</span><input className="adm-input" onChange={(event) => setPhoneNumber(event.target.value)} type="tel" value={phoneNumber} /></label>
-          <button className="adm-btn adm-btn--primary" disabled={saving || !fullName.trim()} type="submit">Lưu thông tin</button>
+          <button className="adm-btn adm-btn--primary" disabled={saving} type="submit">Lưu thông tin</button>
         </form>
         <form className="um-actions um-editor-section" onSubmit={saveStatus}>
           <label className="adm-field"><span>Trạng thái</span><select className="adm-select" onChange={(event) => setStatus(event.target.value as UserStatus)} value={status}>
