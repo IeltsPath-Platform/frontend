@@ -1,4 +1,4 @@
-import { Activity, FileQuestion, Gauge, LayoutDashboard, Network, Server, Users, type LucideIcon } from 'lucide-react'
+import { Activity, FileQuestion, Gauge, LayoutDashboard, Network, Server, Settings, Users, type LucideIcon } from 'lucide-react'
 import { hasAnyRole, type StaffArea, type StaffRole } from '@/features/auth/staffRoles'
 import { BadgeCheck, Bug, ClipboardList, Library, ListTodo, Mic, PenLine, Scale, Sparkles, UserRound } from 'lucide-react'
 import { QUESTION_DRAFTS_ENABLED } from './ai-drafts/draftFlags'
@@ -36,6 +36,7 @@ export const ADMIN_MENU: readonly AdminMenuItem[] = [
   { path: '/examiner/profile', label: 'Hồ sơ của tôi', icon: UserRound, roles: ['EXAMINER'], offMenu: true },
   { path: '/examiner/knowledge-graph', label: 'Cây tri thức', icon: Network, roles: ['EXAMINER'] },
   { path: '/content-author', label: 'Tổng quan nội dung', icon: LayoutDashboard, roles: ['CONTENT_AUTHOR'] },
+  { path: '/content-author/settings', label: 'Thiết lập tham số', icon: Settings, roles: ['CONTENT_AUTHOR'] },
   { path: '/content-author/courses', label: 'Khóa học & chủ đề', icon: Library, roles: ['CONTENT_AUTHOR'], group: 'curriculum' },
   { path: '/content-author/knowledge-graph', label: 'Cây tri thức', icon: Network, roles: ['CONTENT_AUTHOR'], group: 'curriculum' },
   { path: '/content-author/questions', label: 'Ngân hàng câu hỏi', icon: FileQuestion, roles: ['CONTENT_AUTHOR'], group: 'questions' },

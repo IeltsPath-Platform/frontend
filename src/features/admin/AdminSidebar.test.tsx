@@ -20,6 +20,7 @@ describe('AdminSidebar groups', () => {
     renderSidebar()
     expect(screen.getByRole('link', { name: 'Tổng quan nội dung' })).toHaveAttribute('href', '/content-author')
     expect(screen.getByRole('link', { name: 'Việc cần làm' })).toHaveAttribute('href', '/content-author/work-items')
+    expect(screen.getByRole('link', { name: 'Thiết lập tham số' })).toHaveAttribute('href', '/content-author/settings')
     for (const label of ['Chương trình học', 'Câu hỏi & đề', 'Chất lượng chấm']) {
       expect(screen.getByRole('button', { name: label })).toHaveAttribute('aria-expanded', 'false')
     }
