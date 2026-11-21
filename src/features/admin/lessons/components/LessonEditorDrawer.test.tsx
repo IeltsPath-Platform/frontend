@@ -91,9 +91,9 @@ describe('LessonEditorDrawer', () => {
     expect(within(picker).getByRole('region', { name: 'Cấp B1' })).toHaveTextContent('R55_SKIM')
     expect(within(picker).getByRole('region', { name: 'Chưa xếp cấp' })).toHaveTextContent('R55_SCAN')
     fireEvent.click(within(picker).getByRole('checkbox', { name: /R55_SKIM/ }))
-    fireEvent.click(within(picker).getByRole('button', { name: 'Lưu' }))
+    fireEvent.click(within(picker).getByRole('button', { name: 'Xong' }))
 
-    // The picker's own Lưu only confirms the choice; nothing is sent until the one Lưu of the form.
+    // The picker's own Xong only confirms the choice; nothing is sent until the one Lưu of the form.
     expect(api.setLessonKnowledgePoints).not.toHaveBeenCalled()
     fireEvent.click(screen.getByRole('button', { name: 'Lưu thông tin' }))
     await waitFor(() => expect(api.setLessonKnowledgePoints).toHaveBeenCalledWith('l1', ['kp1', 'kp2']))

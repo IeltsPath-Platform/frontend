@@ -10,7 +10,7 @@ import { AdminError, AdminLoading } from './AdminState'
  * per row and a count against the limit, and a button that opens the big picker. A chosen point that is no longer on
  * offer stays in the table, so nothing already attached is hidden.
  */
-export function KnowledgeSelectField({ title, value, onChange, knowledge, offered, scope, limit = 50, disabled = false }: {
+export function KnowledgeSelectField({ title, value, onChange, knowledge, offered, scope, skill, limit = 50, disabled = false }: {
   title: string
   value: readonly string[]
   onChange: (next: string[]) => void
@@ -19,6 +19,8 @@ export function KnowledgeSelectField({ title, value, onChange, knowledge, offere
   offered: readonly TreeNode[]
   /** The line under the picker's title that says what the list is limited to. */
   scope: string
+  /** The skill of the record the points are for; the picker opens on it. */
+  skill?: string | null
   limit?: number
   disabled?: boolean
 }) {
@@ -46,6 +48,6 @@ export function KnowledgeSelectField({ title, value, onChange, knowledge, offere
         })}</tbody>
       </table>
     </div> : null}
-    {open ? <CourseKnowledgeDialog description={scope} limit={limit} offered={offered} onChange={onChange} onClose={() => setOpen(false)} picked={value} /> : null}
+    {open ? <CourseKnowledgeDialog description={scope} limit={limit} skill={skill} offered={offered} onChange={onChange} onClose={() => setOpen(false)} picked={value} /> : null}
   </div>
 }

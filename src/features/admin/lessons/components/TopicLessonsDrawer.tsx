@@ -40,6 +40,7 @@ export function TopicLessonsDrawer({ topic, onClose }: { topic: TopicOption; onC
           lessonId={lesson.id}
           onClose={() => { setLesson(null); setListVersion((version) => version + 1) }}
           topicName={topic.name}
+          topicSkill={topic.skill}
         />
       ) : null}
     </>

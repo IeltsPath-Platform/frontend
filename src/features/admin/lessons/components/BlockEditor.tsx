@@ -18,9 +18,11 @@ export interface BlockEditorProps {
   block?: LessonBlock
   onSave: (body: BlockRequest) => Promise<void>
   onCancel: () => void
+  /** The skill of the topic the lesson is in, for the knowledge point picker. */
+  skill?: string | null
 }
 
-export function BlockEditor({ blockType, block, onSave, onCancel }: BlockEditorProps) {
+export function BlockEditor({ blockType, block, onSave, onCancel, skill }: BlockEditorProps) {
   const [state, setState] = useState<BlockFormState>(() => initialBlockState(blockType, block))
   const { roles } = useAuthSession()
   const canCreateWords = hasAnyRole(roles, ['CONTENT_AUTHOR'])
@@ -56,7 +58,7 @@ export function BlockEditor({ blockType, block, onSave, onCancel }: BlockEditorP
         <>
           <MarkdownField label="Nội dung (Markdown)" onChange={(textContent) => patch({ textContent })} textareaClassName="adm-textarea ls-textarea" value={state.textContent} />
           {problemText}
-          <LessonKnowledgeField onChange={(knowledgePointIds) => patch({ knowledgePointIds })} title="Knowledge point mà block này dạy" value={state.knowledgePointIds} />
+          <LessonKnowledgeField onChange={(knowledgePointIds) => patch({ knowledgePointIds })} skill={skill} title="Knowledge point mà block này dạy" value={state.knowledgePointIds} />
         </>
       ) : null}
 
