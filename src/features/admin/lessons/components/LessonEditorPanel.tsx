@@ -300,7 +300,7 @@ export function LessonEditorPanel({ lesson, reload, onClose }: { lesson: LessonE
         </AdminDrawer>
       ) : null}
 
-      {/* The one Lưu of the editor: it stays at the foot of the popup while the long editor scrolls, and saves the lesson information above. */}
+      {/* The one Lưu of the editor: it stays at the foot of the panel while the long editor scrolls, and saves the lesson information above. */}
       <div className="adm-form-footer">
         <button className="adm-btn" onClick={onClose} type="button">Đóng</button>
         <button aria-label="Lưu thông tin" className="adm-btn adm-btn--primary" disabled={infoSaving} form={infoFormId} type="submit">{infoSaving ? 'Đang lưu…' : 'Lưu'}</button>

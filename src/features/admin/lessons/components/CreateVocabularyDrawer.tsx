@@ -242,7 +242,7 @@ export function CreateVocabularyDrawer({ initialLemma, onCreated, onClose }: {
   onClose: () => void
 }) {
   return (
-    <AdminDrawer onClose={onClose} stacked title="Tạo từ vựng mới">
+    <AdminDrawer onClose={onClose} stacked top title="Tạo từ vựng mới">
       <CreateVocabularyForm initialLemma={initialLemma} onClose={onClose} onCreated={onCreated} />
     </AdminDrawer>
   )

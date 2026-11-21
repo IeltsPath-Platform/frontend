@@ -174,7 +174,7 @@ function ResourceList({ lessonId, type, items, reload, busy, clearError, run }: 
         </table>
       </div>
       {confirmDialog}
-      {adding ? <AdminModal title={`Thêm ${label.toLowerCase()}`} onClose={() => setAdding(false)} stacked>
+      {adding ? <AdminModal title={`Thêm ${label.toLowerCase()}`} onClose={() => setAdding(false)} stacked top>
         {(close) => <ResourceForm type={type} busy={busy} onCancel={close} onSave={async ({ title, url, file }) => {
           const saved = await run(async () => {
             const sortOrder = items.length ? Math.max(...items.map((item) => item.sortOrder)) + 1 : 0
@@ -191,7 +191,7 @@ function ResourceList({ lessonId, type, items, reload, busy, clearError, run }: 
           return saved
         }} />}
       </AdminModal> : null}
-      {editingItem ? <AdminModal title={`Sửa ${label.toLowerCase()}`} description={editingItem.title} onClose={() => setEditing(null)} stacked>
+      {editingItem ? <AdminModal title={`Sửa ${label.toLowerCase()}`} description={editingItem.title} onClose={() => setEditing(null)} stacked top>
         {(close) => <ResourceForm item={editingItem} type={type} busy={busy} onCancel={close} onSave={async ({ title, url }) => {
           const saved = await run(async () => {
             await updateLessonResource(lessonId, editingItem.id, { title, ...(url ? { url } : {}), sortOrder: editingItem.sortOrder })

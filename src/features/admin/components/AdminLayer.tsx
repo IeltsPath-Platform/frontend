@@ -44,12 +44,16 @@ function Layer({ children }: { children: ReactNode }) {
  * screen instead of closing, and a separate close button appears at the end of the header. `resetScrollKey` brings the
  * body back to the top whenever the screen changes.
  */
-export function AdminDrawer({ title, description, size = 'md', stacked = false, onClose, onBack, backLabel = 'Quay lại', resetScrollKey, children }: {
+export function AdminDrawer({ title, description, badge, size = 'md', stacked = false, top = false, onClose, onBack, backLabel = 'Quay lại', resetScrollKey, children }: {
   title: string
   description?: string
+  /** A status chip drawn beside the title. */
+  badge?: ReactNode
   size?: 'md' | 'lg' | 'xl'
   /** Opened from inside a popup or another drawer: it covers them. */
   stacked?: boolean
+  /** Above a stacked drawer and the popups opened from it: for a drawer opened from inside those (a form to create a record the popup is picking). */
+  top?: boolean
   onClose: () => void
   onBack?: () => void
   backLabel?: string
@@ -62,10 +66,10 @@ export function AdminDrawer({ title, description, size = 'md', stacked = false, 
   return (
     <Dialog.Root open onOpenChange={(open) => { if (!open) close() }}>
       <Layer>
-        <Dialog.Overlay className={`adm-layer__overlay${stacked ? ' adm-layer__overlay--drawer-stacked' : ''}${closing ? ' is-closing' : ''}`} />
+        <Dialog.Overlay className={`adm-layer__overlay${stacked ? ' adm-layer__overlay--drawer-stacked' : ''}${top ? ' adm-layer__overlay--drawer-top' : ''}${closing ? ' is-closing' : ''}`} />
         <Dialog.Content
           aria-describedby={undefined}
-          className={`adm-drawer adm-drawer--${size}${stacked ? ' adm-drawer--stacked' : ''}${closing ? ' is-closing' : ''}`}
+          className={`adm-drawer adm-drawer--${size}${stacked ? ' adm-drawer--stacked' : ''}${top ? ' adm-drawer--top' : ''}${closing ? ' is-closing' : ''}`}
           onInteractOutside={(event) => event.preventDefault()}
           onOpenAutoFocus={(event) => {
             // A form opens with the cursor in its first field rather than on the back arrow.
@@ -77,7 +81,7 @@ export function AdminDrawer({ title, description, size = 'md', stacked = false, 
           <header className="adm-drawer__header">
             <button aria-label={onBack ? backLabel : 'Đóng'} className="adm-drawer__back" onClick={onBack ?? close} type="button"><ArrowLeft aria-hidden="true" size={18} /></button>
             <div className="adm-drawer__heading">
-              <Dialog.Title className="adm-layer__title">{title}</Dialog.Title>
+              {badge ? <div className="adm-modal__titlerow"><Dialog.Title className="adm-layer__title">{title}</Dialog.Title>{badge}</div> : <Dialog.Title className="adm-layer__title">{title}</Dialog.Title>}
               {description ?<p className="adm-layer__description">{description}</p> : null}
             </div>
             {onBack ? <button aria-label="Đóng" className="adm-drawer__back adm-drawer__close" onClick={close} type="button"><X aria-hidden="true" size={18} /></button> : null}

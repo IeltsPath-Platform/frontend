@@ -166,18 +166,18 @@ describe('TopicLessonsDrawer', () => {
     expect(api.createLesson).not.toHaveBeenCalled()
   })
 
-  it('opens a lesson for editing in a popup above the drawer and comes back to the refreshed list', async () => {
+  it('opens a lesson for editing in a side panel above the drawer and comes back to the refreshed list', async () => {
     const onClose = show()
     await chooseFromRowMenu(1, 'Sửa Lesson one')
 
     const popup = screen.getByRole('dialog', { name: 'Lesson one' })
-    expect(popup).toHaveClass('adm-modal', 'adm-modal--wide', 'adm-modal--stacked')
+    expect(popup).toHaveClass('adm-drawer', 'adm-drawer--xl', 'adm-drawer--stacked')
     expect(await within(popup).findByRole('form', { name: 'Thông tin bài học' })).toBeInTheDocument()
     expect(within(popup).getByText('Intro text')).toBeInTheDocument()
     expect(api.fetchLesson).toHaveBeenCalledWith('l1', expect.anything())
 
-    // The popup has two Đóng buttons: the cross in its header and the one in the button bar at its foot.
-    fireEvent.click(within(popup.querySelector('.adm-modal__header') as HTMLElement).getByRole('button', { name: 'Đóng' }))
+    // The panel has two Đóng buttons: the arrow in its header and the one in the button bar at its foot.
+    fireEvent.click(within(popup.querySelector('.adm-drawer__header') as HTMLElement).getByRole('button', { name: 'Đóng' }))
     expect(await screen.findByRole('dialog', { name: 'Skimming' })).toBeInTheDocument()
     expect(screen.queryByRole('dialog', { name: 'Lesson one' })).not.toBeInTheDocument()
     expect(await screen.findByText('Lesson two')).toBeInTheDocument()
