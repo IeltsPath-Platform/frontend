@@ -5,8 +5,9 @@ import { AdminEmpty, AdminError, AdminLoading } from '../../components/AdminStat
 import { useAdminResource, type AdminResource } from '../../lib/useAdminResource'
 import { fetchKnowledgeTreeHealth } from '../../knowledge-graph/api/knowledgeGraphApi'
 import { AdminPage } from '../../pages/AdminPage'
-import { fetchAuthorWorkItems, fetchContentOverview, fetchQuestionStats } from '../api/overviewApi'
+import { fetchAuthorWorkItems, fetchContentOverview, fetchQuestionLabels, fetchQuestionStats } from '../api/overviewApi'
 import { AttentionBlock, type AttentionSource } from '../components/AttentionBlock'
+import { CoverageMatrix } from '../components/CoverageMatrix'
 import { BarList, ColumnChart, DonutChart, StackedBar } from '../components/OverviewCharts'
 import { OverviewKpis, type Kpi } from '../components/OverviewKpis'
 import {
@@ -14,7 +15,7 @@ import {
   correctRate, extremes, formatCount, percent,
 } from '../lib/overviewLabels'
 import { detailText, kindLabel, subjectText } from '../../work-queue/lib/workQueueLabels'
-import type { ContentOverview } from '../types'
+import type { ContentOverview, QuestionStat } from '../types'
 import '../overview.css'
 
 const MIN_ATTEMPTS = 20
@@ -95,12 +96,16 @@ function ContentCharts({ data }: { data: ContentOverview }) {
       ]
     : null
 
-  const lessons = data.lessons
-  const lessonSlices = lessons ? LESSON_STATUS_ROWS.map((row) => ({ ...row, value: lessons[row.key] ?? 0 })) : null
-  const lessonTotal = lessonSlices?.reduce((total, slice) => total + slice.value, 0) ?? 0
-  // With every lesson published a bar of one colour says nothing; the figure and a line are enough.
-  const onlyPublished = lessonTotal > 0 && (lessons?.PUBLISHED ?? 0) === lessonTotal
-  const drafts = data.draftQuestionVersions ?? null
+  // How many published questions each active point has: none, one, or two and more.
+  const coverage = data.coverage ?? null
+  const depthTotal = coverage?.reduce((total, cell) => total + cell.activeKnowledgePoints, 0) ?? 0
+  const depthNone = coverage?.reduce((total, cell) => total + cell.withoutPublishedQuestion, 0) ?? 0
+  const depthOne = coverage?.reduce((total, cell) => total + cell.withOnePublishedQuestion, 0) ?? 0
+  const depthSlices = [
+    { key: 'none', label: 'Chưa có câu hỏi', value: depthNone, color: 'var(--adm-danger)' },
+    { key: 'one', label: 'Chỉ có 1 câu', value: depthOne, color: 'var(--adm-warn)' },
+    { key: 'more', label: 'Từ 2 câu trở lên', value: Math.max(depthTotal - depthNone - depthOne, 0), color: 'var(--adm-ok)' },
+  ]
 
   return (
     <div className="ov-panels">
@@ -130,27 +135,88 @@ function ContentCharts({ data }: { data: ContentOverview }) {
       </Panel>
 
       <Panel
-        note={drafts !== null ? (
-          <Link className={drafts > 0 ? 'ov-note__link ov-note__link--warn' : 'ov-note__link'} to={QUESTIONS_DRAFT}>
-            {drafts > 0 ? <AlertTriangle aria-hidden="true" size={14} /> : <CheckCircle2 aria-hidden="true" size={14} />}
-            <span>Phiên bản câu hỏi chờ xuất bản</span>
-            <strong>{formatCount(drafts)}</strong>
-          </Link>
-        ) : undefined}
-        title="Bài học theo trạng thái"
+        note={coverage && depthOne > 0 ? <Link className="ov-note__link ov-note__link--warn" to={GRAPH}><AlertTriangle aria-hidden="true" size={14} /><span>KP mới có đúng 1 câu hỏi</span><strong>{formatCount(depthOne)}</strong></Link> : undefined}
+        title="Độ sâu câu hỏi"
       >
-        {lessonSlices ? (
-          <>
-            <p className="ov-figure"><Link to={COURSES}><strong>{formatCount(lessonTotal)}</strong> bài học</Link></p>
-            {onlyPublished ? (
-              <p className="ov-ok"><CheckCircle2 aria-hidden="true" size={16} />Tất cả đã xuất bản</p>
-            ) : (
-              <StackedBar slices={lessonSlices} summary={`Bài học theo trạng thái: ${lessonSlices.map((slice) => `${slice.label} ${slice.value}`).join(', ')}`} />
-            )}
-          </>
-        ) : unknown}
+        {coverage && depthTotal > 0
+          ? <StackedBar slices={depthSlices} summary={`Số câu hỏi đã xuất bản của mỗi KP: ${depthSlices.map((slice) => `${slice.label} ${slice.value}`).join(', ')}`} />
+          : unknown}
       </Panel>
     </div>
+  )
+}
+
+/** One kind of content on its way to learners: the bar of its statuses, or one line when everything is published. */
+function PipelineRow({ label, counts, to }: { label: string; counts: Record<string, number> | null | undefined; to?: string }) {
+  if (!counts) return null
+  const slices = LESSON_STATUS_ROWS.map((row) => ({ ...row, value: counts[row.key] ?? 0 }))
+  const total = slices.reduce((sum, slice) => sum + slice.value, 0)
+  const onlyPublished = total > 0 && (counts.PUBLISHED ?? 0) === total
+  return (
+    <div className="ov-panel">
+      <h3>{label}</h3>
+      <p className="ov-figure">{to ? <Link to={to}><strong>{formatCount(total)}</strong></Link> : <strong>{formatCount(total)}</strong>}</p>
+      {total === 0 ? <p className="adm-muted ov-unknown">Chưa có.</p> : onlyPublished ? (
+        <p className="ov-ok"><CheckCircle2 aria-hidden="true" size={16} />Tất cả đã xuất bản</p>
+      ) : (
+        <StackedBar slices={slices} summary={`${label} theo trạng thái: ${slices.map((slice) => `${slice.label} ${slice.value}`).join(', ')}`} />
+      )}
+    </div>
+  )
+}
+
+/** Lessons, question versions and packages by status, and the drafts left waiting too long. */
+function Pipeline({ data }: { data: ContentOverview }) {
+  const stale = data.staleDraftQuestionVersions ?? 0
+  return (
+    <>
+      <div className="ov-panels ov-panels--three">
+        <PipelineRow counts={data.lessons} label="Bài học" to={COURSES} />
+        <PipelineRow counts={data.questionVersions} label="Phiên bản câu hỏi" to={QUESTIONS} />
+        <PipelineRow counts={data.packages} label="Gói đề" to="/content-author/packages" />
+      </div>
+      {stale > 0 ? (
+        <p className="ov-stale">
+          <AlertTriangle aria-hidden="true" size={14} />
+          <Link to={QUESTIONS_DRAFT}>{formatCount(stale)} phiên bản câu hỏi nháp để quá {data.staleDraftAfterDays ?? 14} ngày chưa xuất bản</Link>
+        </p>
+      ) : null}
+    </>
+  )
+}
+
+/**
+ * The questions answered worst and best, each named by the start of its stem and linking to the question. A name that
+ * cannot be read leaves the short code, so the list never depends on the names arriving.
+ */
+function QuestionStatRows({ items }: { items: readonly QuestionStat[] }) {
+  const { hardest, easiest } = extremes(items, 3)
+  const ids = [...hardest, ...easiest].map((stat) => stat.questionVersionId)
+  const labels = useAdminResource(`overview|question-labels|${ids.join(',')}`, (signal) => fetchQuestionLabels(ids, signal))
+  const labelOf = new Map((labels.data ?? []).map((label) => [label.questionVersionId, label]))
+
+  const row = (stat: QuestionStat, tone: 'hard' | 'easy') => {
+    const label = labelOf.get(stat.questionVersionId)
+    return (
+      <li key={stat.questionVersionId}>
+        <span>
+          {label ? <Link to={`${QUESTIONS}/${label.questionId}`}>{label.label}</Link> : <code>{stat.questionVersionId.slice(0, 8)}</code>}
+          {stat.difficulty ? <span className="adm-muted"> gắn nhãn {stat.difficulty}</span> : null}
+        </span>
+        <span aria-hidden="true" className="ov-rate__track">
+          <span className={`ov-rate__fill ov-rate__fill--${tone}`} style={{ width: `${Math.round(correctRate(stat) * 100)}%` }} />
+        </span>
+        <span>{percent(correctRate(stat))} đúng · {stat.attempts} lượt</span>
+      </li>
+    )
+  }
+  return (
+    <>
+      <h3>Khó nhất</h3>
+      <ul className="ov-rates">{hardest.map((stat) => row(stat, 'hard'))}</ul>
+      {easiest.length > 0 ? (<><h3>Dễ nhất</h3><ul className="ov-rates">{easiest.map((stat) => row(stat, 'easy'))}</ul></>) : null}
+      <p className="adm-muted">Chỉ tính câu có ít nhất {MIN_ATTEMPTS} lượt làm đầu tiên.</p>
+    </>
   )
 }
 
@@ -209,6 +275,21 @@ export function OverviewPage() {
         {(data) => <ContentCharts data={data} />}
       </Block>
 
+      {/* Both blocks need numbers an older server does not send, so they stay out of the page until it does. */}
+      {overview.data?.coverage && overview.data.coverage.length > 0 ? (
+        <section aria-label="Phủ nội dung theo kỹ năng và cấp CEFR" className="adm-card ov-block">
+          <header className="ov-block__head"><h2>Phủ nội dung theo kỹ năng và cấp CEFR</h2></header>
+          <CoverageMatrix cells={overview.data.coverage} graphPath={GRAPH} />
+        </section>
+      ) : null}
+
+      {overview.data?.lessons || overview.data?.questionVersions || overview.data?.packages ? (
+        <section aria-label="Dòng chảy nội dung" className="adm-card ov-block">
+          <header className="ov-block__head"><h2>Dòng chảy nội dung</h2></header>
+          <Pipeline data={overview.data} />
+        </section>
+      ) : null}
+
       <div className="ov-grid">
         {/* A block with nothing to show leaves no empty card behind; a failed one still says so. */}
         {work.status === 'success' && (work.data?.length ?? 0) === 0 ? null : (
@@ -233,26 +314,7 @@ export function OverviewPage() {
 
         {stats.status === 'success' && (stats.data?.length ?? 0) === 0 ? null : (
           <Block resource={stats} title="Câu hỏi lệch độ khó" to={QUESTIONS} toLabel="Ngân hàng câu hỏi">
-            {(items) => {
-              const { hardest, easiest } = extremes(items, 3)
-              const row = (stat: (typeof items)[number], tone: 'hard' | 'easy') => (
-                <li key={stat.questionVersionId}>
-                  <span><code>{stat.questionVersionId.slice(0, 8)}</code> {stat.difficulty ? <span className="adm-muted">gắn nhãn {stat.difficulty}</span> : null}</span>
-                  <span aria-hidden="true" className="ov-rate__track">
-                    <span className={`ov-rate__fill ov-rate__fill--${tone}`} style={{ width: `${Math.round(correctRate(stat) * 100)}%` }} />
-                  </span>
-                  <span>{percent(correctRate(stat))} đúng · {stat.attempts} lượt</span>
-                </li>
-              )
-              return (
-                <>
-                  <h3>Khó nhất</h3>
-                  <ul className="ov-rates">{hardest.map((stat) => row(stat, 'hard'))}</ul>
-                  {easiest.length > 0 ? (<><h3>Dễ nhất</h3><ul className="ov-rates">{easiest.map((stat) => row(stat, 'easy'))}</ul></>) : null}
-                  <p className="adm-muted">Chỉ tính câu có ít nhất {MIN_ATTEMPTS} lượt làm đầu tiên.</p>
-                </>
-              )
-            }}
+            {(items) => <QuestionStatRows items={items} />}
           </Block>
         )}
       </div>
