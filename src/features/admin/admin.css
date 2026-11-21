@@ -216,8 +216,6 @@
 .adm-layer__overlay--drawer-top { z-index: 110; }
 .adm-drawer--top { z-index: 111; }
 /* A popup opened from inside a stacked drawer, such as a Markdown preview, sits above that drawer. */
-.adm-layer__overlay--top { z-index: 100; }
-.adm-modal--top { z-index: 101; }
 .adm-drawer__header { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-bottom: 1px solid var(--adm-border); }
 .adm-drawer__heading { flex: 1; min-width: 0; }
 .adm-drawer__heading .adm-layer__title { overflow-wrap: anywhere; }
@@ -247,6 +245,9 @@
 .adm-modal--lg .adm-modal__body { display: flex; flex-direction: column; overflow: hidden; padding: 0; }
 .adm-layer__overlay--stacked { z-index: 80; }
 .adm-modal--stacked { z-index: 81; }
+/* After the stacked rules on purpose: a popup that is both stacked and top must take the top level. */
+.adm-layer__overlay--top { z-index: 100; }
+.adm-modal--top { z-index: 101; }
 .adm-modal__header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--adm-border); }
 .adm-modal__heading { min-width: 0; }
 .adm-modal__titlerow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
