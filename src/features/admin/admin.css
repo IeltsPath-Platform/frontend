@@ -260,8 +260,9 @@
 @media (max-width: 480px) { .adm-details__row { grid-template-columns: 1fr; gap: 2px; } }
 
 /* The confirmation popup: a small centred panel above everything else, with the question and two buttons. */
-.adm-confirm__overlay { z-index: 80; }
-.adm-confirm { z-index: 81; display: grid; grid-template-columns: auto 1fr; align-items: start; gap: 8px 14px; width: min(460px, calc(100vw - 32px)); padding: 22px; }
+/* A question to answer sits above every drawer and popup, so it is never hidden behind the panel it was asked from. */
+.adm-confirm__overlay { z-index: 130; }
+.adm-confirm { z-index: 131; display: grid; grid-template-columns: auto 1fr; align-items: start; gap: 8px 14px; width: min(460px, calc(100vw - 32px)); padding: 22px; }
 .adm-confirm__icon { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; background: var(--adm-accent-soft); color: var(--adm-accent); }
 .adm-confirm__icon.is-danger { background: rgb(196 45 45 / 10%); color: var(--adm-danger); }
 .adm-confirm__text { display: grid; gap: 6px; min-width: 0; }

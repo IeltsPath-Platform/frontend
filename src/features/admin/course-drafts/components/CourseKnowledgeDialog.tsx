@@ -49,7 +49,7 @@ export function CourseKnowledgeDialog({ offered, picked, limit, description, onC
     onChange([...picked, ...ids.filter((id) => !picked.includes(id)).slice(0, limit - picked.length)])
   }
 
-  return <AdminModal title="Chọn điểm kiến thức" description={description} size="lg" stacked onClose={onClose}>
+  return <AdminModal title="Chọn điểm kiến thức" description={description} size="lg" stacked top onClose={onClose}>
     {(close) => <>
       <div className="adm-kp-dialog__bar">
         <label className="adm-kp-search">
