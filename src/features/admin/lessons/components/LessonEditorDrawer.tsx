@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { AdminModal } from '../../components/AdminLayer'
+import { AdminDrawer } from '../../components/AdminLayer'
 import { AdminError, AdminLoading } from '../../components/AdminState'
 import { useAdminResource } from '../../lib/useAdminResource'
 import { STATUS_LABEL, statusBadgeClass } from '../../questions/lib/labels'
@@ -8,10 +8,10 @@ import type { LessonEditor } from '../types'
 import { LessonEditorPanel } from './LessonEditorPanel'
 
 /**
- * The popup of one lesson. Its header carries what is true of the whole lesson: the status beside the title. Moving the
+ * The side panel of one lesson. Its header carries what is true of the whole lesson: the status beside the title. Moving the
  * lesson on (publish, archive) is done from its row menu in the list; the editor of its parts is the body.
  */
-export function LessonEditorModal({ lessonId, fallbackTitle, topicName, onClose }: {
+export function LessonEditorDrawer({ lessonId, fallbackTitle, topicName, onClose }: {
   lessonId: string
   /** Shown until the lesson has loaded, and kept if it cannot be loaded. */
   fallbackTitle: string
@@ -26,11 +26,11 @@ export function LessonEditorModal({ lessonId, fallbackTitle, topicName, onClose 
   const current = lesson.status === 'success' ? lesson.data : shown
 
   return (
-    <AdminModal
+    <AdminDrawer
       badge={current ? <span className={statusBadgeClass(current.status)}>{STATUS_LABEL[current.status]}</span> : null}
       description={current ? `${current.code} · ${topicName}` : topicName}
       onClose={onClose}
-      size="wide"
+      size="xl"
       stacked
       title={current?.title ?? fallbackTitle}
     >
@@ -39,6 +39,6 @@ export function LessonEditorModal({ lessonId, fallbackTitle, topicName, onClose 
         {lesson.status === 'error' ? <AdminError message={lesson.error ?? 'Không tải được bài học.'} onRetry={lesson.reload} /> : null}
         {current ? <LessonEditorPanel key={current.id} lesson={current} onClose={close} reload={lesson.reload} /> : null}
       </>}
-    </AdminModal>
+    </AdminDrawer>
   )
 }

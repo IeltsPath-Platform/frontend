@@ -29,6 +29,13 @@ describe('AdminDrawer', () => {
     expect(screen.getByRole('dialog', { name: 'Soạn' })).toHaveClass('adm-drawer--lg')
   })
 
+  it('draws a status chip beside the title, and sits above stacked layers when asked', () => {
+    render(<AdminDrawer badge={<span>Nháp</span>} stacked top title="Bài học" onClose={vi.fn()}>nội dung</AdminDrawer>)
+    const drawer = screen.getByRole('dialog', { name: 'Bài học' })
+    expect(drawer).toHaveClass('adm-drawer--stacked', 'adm-drawer--top')
+    expect(within(drawer.querySelector('.adm-drawer__header') as HTMLElement).getByText('Nháp')).toBeInTheDocument()
+  })
+
   it('closes from the back arrow, from Esc and from the close handed to its content', () => {
     const onClose = vi.fn()
     render(<AdminDrawer title="Tạo" onClose={onClose}>{(close) => <button onClick={close} type="button">Hủy</button>}</AdminDrawer>)

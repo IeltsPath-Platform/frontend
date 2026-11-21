@@ -152,7 +152,7 @@ export function VocabularyBlockTable({ lessonId, block, number, onChanged }: {
       )}
       {confirmDialog}
       {adding ? (
-        <AdminModal description={block ? `Block ${number}` : 'Từ vựng của bài học'} onClose={() => setAdding(false)} size="lg" stacked title="Thêm từ vựng">
+        <AdminModal description={block ? `Block ${number}` : 'Từ vựng của bài học'} onClose={() => setAdding(false)} size="lg" stacked top title="Thêm từ vựng">
           {(close) => <AddSensesForm busy={saving} initial={ids} onClose={close} onSave={saveSenses} />}
         </AdminModal>
       ) : null}
