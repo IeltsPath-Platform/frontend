@@ -84,7 +84,7 @@ function Form({ point, loaded, topics, onSaved, onClose }: {
 
   return (
     <form aria-label={point ? `Sửa ${point.code}` : 'Điểm kiến thức mới'} noValidate onSubmit={(event) => void submit(event)}>
-      <div className="adm-filters">
+      <div className="adm-filters adm-filters--fields">
         <AdminField label="Mã" {...errors.field('code')}>
           <input className="adm-input" placeholder="R55_SCANNING" {...text('code')} />
         </AdminField>

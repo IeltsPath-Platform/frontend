@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type DragEvent, type FormEvent } from 'react'
-import { ImageOff, ImagePlus, Loader2, RefreshCw, Trash2 } from 'lucide-react'
+import { Eye, ImageOff, ImagePlus, Loader2, Trash2 } from 'lucide-react'
 import { z } from 'zod'
+import { Image } from 'primereact/image'
 import { createCourse, deleteCourse, updateCourse } from '../api/courseApi'
 import { useAdminConfirm } from '../../lib/useAdminConfirm'
 import { AdminField } from '../../components/AdminField'
@@ -249,6 +250,7 @@ function CourseImageField({ label, noun, spec, shape, previewAlt, image, busy, o
   const [failedPreview, setFailedPreview] = useState<string | null>(null)
   const [dragging, setDragging] = useState(false)
   const preview = image.preview.trim()
+  const canShow = preview !== '' && failedPreview !== preview
 
   function drop(event: DragEvent) {
     event.preventDefault()
@@ -273,15 +275,14 @@ function CourseImageField({ label, noun, spec, shape, previewAlt, image, busy, o
     />
     {image.reference
       ? <>
+        {/* The picture fills the same box the empty state does, so choosing one never moves what is around it. */}
         <div className={`adm-course-image__frame adm-course-image__frame--${shape}`}>
-          {preview && failedPreview !== preview
-            ? <img alt={previewAlt} onError={() => setFailedPreview(preview)} src={preview} />
+          {canShow
+            // PrimeReact's Image draws the eye over the picture on hover and opens it large, with zoom and rotate.
+            ? <Image alt={previewAlt} className="adm-course-image__picture" imageClassName="adm-course-image__img" indicatorIcon={<Eye aria-hidden="true" size={22} />} preview pt={{ image: { onError: () => setFailedPreview(preview) } }} src={preview} />
             : <span className="adm-course-image__missing"><ImageOff aria-hidden="true" size={20} />Không xem được ảnh</span>}
           {busy ? <span className="adm-course-image__busy"><Loader2 aria-hidden="true" className="adm-spin" size={18} />Đang tải ảnh…</span> : null}
-        </div>
-        <div className="adm-course-image__actions">
-          <button aria-label={`Thay ${noun === 'banner' ? 'ảnh banner' : 'ảnh bìa'}`} className="adm-btn adm-course-image__action" disabled={busy} onClick={() => input.current?.click()} type="button"><RefreshCw aria-hidden="true" size={15} />Thay ảnh</button>
-          <button aria-label={`Xóa ${noun}`} className="adm-btn adm-btn--danger adm-course-image__action" disabled={busy} onClick={onRemove} type="button"><Trash2 aria-hidden="true" size={15} />Xóa</button>
+          <button aria-label={`Xóa ${noun}`} className="adm-course-image__remove" disabled={busy} onClick={onRemove} title="Xóa ảnh" type="button"><Trash2 aria-hidden="true" size={16} /></button>
         </div>
       </>
       : <button
