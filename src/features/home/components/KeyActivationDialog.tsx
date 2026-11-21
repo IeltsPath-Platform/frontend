@@ -4,10 +4,15 @@ import { Link } from 'react-router-dom'
 import { CheckCircle2, KeyRound, LoaderCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { z } from 'zod'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { collectErrors } from '@/lib/validation/useFormErrors'
 import { AccessApiError, normalizeActivationKey } from '../accessApi'
 import type { AccessClient, ActivationResult } from '../accessApi'
 import type { ActivationProduct } from '../pricingData'
+
+/** The server only asks for a key that is not blank. */
+const keySchema = z.object({ key: z.string({ error: 'Mã kích hoạt không được để trống.' }).trim().min(1, 'Mã kích hoạt không được để trống.') })
 
 interface KeyActivationDialogProps {
   product: ActivationProduct | null
@@ -20,7 +25,9 @@ interface KeyActivationDialogProps {
 
 export function KeyActivationDialog({ product, isLoggedIn, client, onClose, onActivated, returnFocus }: KeyActivationDialogProps) {
   const [rawKey, setRawKey] = useState('')
+  /** What the server said about the attempt, under the button; the problem with the typed key itself shows under its box. */
   const [error, setError] = useState('')
+  const [keyError, setKeyError] = useState('')
   const [pending, setPending] = useState(false)
   const [result, setResult] = useState<ActivationResult | null>(null)
   const attempt = useRef<{ rawKey: string; id: string } | null>(null)
@@ -32,8 +39,9 @@ export function KeyActivationDialog({ product, isLoggedIn, client, onClose, onAc
     event.preventDefault()
     if (submitting.current || !client || !isLoggedIn || result) return
     const normalizedKey = normalizeActivationKey(rawKey)
-    if (!normalizedKey) {
-      setError('Vui lòng nhập mã kích hoạt.')
+    const problem = collectErrors(keySchema, { key: normalizedKey }).key
+    if (problem) {
+      setKeyError(problem)
       inputRef.current?.focus()
       return
     }
@@ -41,6 +49,7 @@ export function KeyActivationDialog({ product, isLoggedIn, client, onClose, onAc
     submitting.current = true
     setPending(true)
     setError('')
+    setKeyError('')
     try {
       if (attempt.current?.rawKey !== normalizedKey) {
         attempt.current = { rawKey: normalizedKey, id: crypto.randomUUID() }
@@ -64,6 +73,7 @@ export function KeyActivationDialog({ product, isLoggedIn, client, onClose, onAc
     if (submitting.current) return
     setResult(null)
     setError('')
+    setKeyError('')
     onClose()
   }
 
@@ -94,9 +104,10 @@ export function KeyActivationDialog({ product, isLoggedIn, client, onClose, onAc
               <Input ref={inputRef} id="activation-key" name="activation-key" value={rawKey}
                 className="min-h-11 font-mono" placeholder="IP-XXXX-XXXX-XXXX"
                 autoComplete="off" autoCapitalize="characters" spellCheck={false}
-                disabled={!canActivate || pending} aria-invalid={!!error}
-                aria-describedby={`activation-key-help${error ? ' activation-key-error' : ''}`}
-                onChange={(event) => { setRawKey(event.target.value); setError('') }} />
+                disabled={!canActivate || pending} aria-invalid={!!(keyError || error)}
+                aria-describedby={`activation-key-help${keyError ? ' activation-key-field-error' : ''}${error ? ' activation-key-error' : ''}`}
+                onChange={(event) => { setRawKey(event.target.value); setError(''); if (keyError) setKeyError(collectErrors(keySchema, { key: normalizeActivationKey(event.target.value) }).key ?? '') }} />
+              {keyError ? <p id="activation-key-field-error" role="alert" className="text-sm text-destructive">{keyError}</p> : null}
               <p id="activation-key-help" className="text-sm text-muted-foreground">Nhập đầy đủ mã được cấp, bao gồm tiền tố IP- nếu có. Không cần thanh toán trực tiếp tại đây.</p>
             </div>
 
