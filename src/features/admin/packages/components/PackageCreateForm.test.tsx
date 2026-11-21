@@ -5,7 +5,9 @@ import { PackageCreateForm } from './PackageCreateForm'
 const api = vi.hoisted(() => ({ createPackage: vi.fn(), createDraftVersion: vi.fn(), listPracticeSources: vi.fn() }))
 const courses = vi.hoisted(() => ({ fetchCourses: vi.fn() }))
 const lessons = vi.hoisted(() => ({ fetchTopics: vi.fn(), fetchLessons: vi.fn() }))
+const codes = vi.hoisted(() => ({ fetchCodeSettings: vi.fn(), fetchCodeSuggestion: vi.fn() }))
 vi.mock('../api/packageApi', () => api)
+vi.mock('../../code-settings/api/codeSettingsApi', () => codes)
 vi.mock('../../courses/api/courseApi', () => courses)
 vi.mock('../../lessons/api/lessonApi', () => lessons)
 const courseId = '11111111-1111-4111-8111-111111111111'
@@ -22,6 +24,8 @@ function submit() { fireEvent.submit(screen.getByRole('form', { name: 'Tạo gó
 describe('PackageCreateForm', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    codes.fetchCodeSettings.mockResolvedValue([])
+    codes.fetchCodeSuggestion.mockResolvedValue({ code: '', applied: true, editable: true })
     api.createPackage.mockResolvedValue({ id: packageId })
     api.createDraftVersion.mockResolvedValue({ id: 'version' })
     api.listPracticeSources.mockResolvedValue([{ code: 'CAMBRIDGE', name: 'Cambridge' }])
@@ -125,5 +129,59 @@ describe('PackageCreateForm', () => {
     await act(async () => resolve({ id: packageId }))
     expect(api.createDraftVersion).toHaveBeenCalledWith(packageId, '{}')
     expect(onCreated).not.toHaveBeenCalled()
+  })
+})
+
+describe('PackageCreateForm code', () => {
+  const packageSetting = (editable = true) => ({ kind: 'PACKAGE', applied: true, pattern: '{COURSE}_{TYPE}{SEQ:2}', startNumber: 1, editable })
+  beforeEach(() => {
+    codes.fetchCodeSettings.mockResolvedValue([packageSetting()])
+    codes.fetchCodeSuggestion.mockResolvedValue({ code: 'COURSE_PS01', applied: true, editable: true })
+  })
+
+  it('asks for a code that matches what the package will belong to', async () => {
+    render(<PackageCreateForm initialType="TOPIC_TEST" onCreated={vi.fn()} onCancel={vi.fn()} />)
+    await waitFor(() => expect(screen.getByLabelText('Mã gói')).toHaveValue('COURSE_PS01'))
+    expect(codes.fetchCodeSuggestion).toHaveBeenLastCalledWith({ kind: 'PACKAGE', packageType: 'TOPIC_TEST' }, expect.any(AbortSignal))
+    await screen.findByRole('option', { name: 'COURSE · Khóa đọc' })
+    fireEvent.change(screen.getByLabelText('Khóa học'), { target: { value: courseId } })
+    fireEvent.change(screen.getByLabelText('Chủ đề'), { target: { value: topicId } })
+    await waitFor(() => expect(codes.fetchCodeSuggestion).toHaveBeenLastCalledWith({ kind: 'PACKAGE', packageType: 'TOPIC_TEST', topicId }, expect.any(AbortSignal)))
+  })
+
+  it('reads a course test by its course and a practice set by its lesson', async () => {
+    render(<PackageCreateForm initialType="COURSE_TEST" onCreated={vi.fn()} onCancel={vi.fn()} />)
+    await screen.findByRole('option', { name: 'COURSE · Khóa đọc' })
+    fireEvent.change(screen.getByLabelText('Khóa học'), { target: { value: courseId } })
+    await waitFor(() => expect(codes.fetchCodeSuggestion).toHaveBeenLastCalledWith({ kind: 'PACKAGE', packageType: 'COURSE_TEST', courseId }, expect.any(AbortSignal)))
+    fireEvent.change(screen.getByLabelText('Loại gói'), { target: { value: 'PRACTICE_SET' } })
+    fireEvent.change(screen.getByLabelText('Khóa học'), { target: { value: courseId } })
+    fireEvent.change(screen.getByLabelText('Chủ đề'), { target: { value: topicId } })
+    await screen.findByRole('option', { name: 'LESSON · Bài học đọc' })
+    fireEvent.change(screen.getByLabelText('Bài học'), { target: { value: lessonId } })
+    await waitFor(() => expect(codes.fetchCodeSuggestion).toHaveBeenLastCalledWith({ kind: 'PACKAGE', packageType: 'PRACTICE_SET', lessonId }, expect.any(AbortSignal)))
+  })
+
+  it('sends the generated code, and does not require one while it is generated', async () => {
+    render(<PackageCreateForm initialType="PLACEMENT_TEST" onCreated={vi.fn()} onCancel={vi.fn()} />)
+    await waitFor(() => expect(screen.getByLabelText('Mã gói')).toHaveValue('COURSE_PS01'))
+    expect(screen.getByLabelText('Mã gói')).not.toHaveAttribute('aria-required')
+    fireEvent.change(screen.getByLabelText('Tiêu đề gói'), { target: { value: 'Đề đầu vào' } })
+    fireEvent.change(screen.getByLabelText('Kho đề đầu vào'), { target: { value: 'BAND_0_3' } })
+    submit()
+    await waitFor(() => expect(api.createPackage).toHaveBeenCalled())
+    expect(api.createPackage.mock.calls[0]![0]).toMatchObject({ code: 'COURSE_PS01', packageType: 'PLACEMENT_TEST' })
+  })
+
+  it('locks the code and leaves it out of the request when the settings do not let it be changed', async () => {
+    codes.fetchCodeSettings.mockResolvedValue([packageSetting(false)])
+    codes.fetchCodeSuggestion.mockResolvedValue({ code: 'COURSE_PS01', applied: true, editable: false })
+    render(<PackageCreateForm initialType="PLACEMENT_TEST" onCreated={vi.fn()} onCancel={vi.fn()} />)
+    await waitFor(() => expect(screen.getByLabelText('Mã gói')).toBeDisabled())
+    fireEvent.change(screen.getByLabelText('Tiêu đề gói'), { target: { value: 'Đề đầu vào' } })
+    fireEvent.change(screen.getByLabelText('Kho đề đầu vào'), { target: { value: 'BAND_0_3' } })
+    submit()
+    await waitFor(() => expect(api.createPackage).toHaveBeenCalled())
+    expect(api.createPackage.mock.calls[0]![0]).not.toHaveProperty('code')
   })
 })

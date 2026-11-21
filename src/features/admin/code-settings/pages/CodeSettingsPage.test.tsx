@@ -71,4 +71,29 @@ describe('CodeSettingsPage', () => {
     expect(screen.getByRole('dialog', { name: 'Từ khóa dùng được' })).toHaveTextContent('{COURSE}')
     expect(screen.getByRole('dialog', { name: 'Từ khóa dùng được' })).toHaveTextContent('{SKILL}')
   })
+
+  it('shows the lesson and package editors with the keywords each of them accepts', async () => {
+    api.fetchCodeSettings.mockResolvedValue([
+      { kind: 'LESSON', applied: true, pattern: '{TOPIC}_L{SEQ:2}', startNumber: 1, editable: true },
+      { kind: 'PACKAGE', applied: true, pattern: '{COURSE}_{TYPE}{SEQ:2}', startNumber: 1, editable: true },
+    ])
+    render(<CodeSettingsPage />)
+    const lesson = (await screen.findByText('1. Thiết lập bộ mã Bài học tự sinh')).closest('details')!
+    fireEvent.click(within(lesson).getByRole('button', { name: 'Từ khóa dùng được' }))
+    expect(screen.getByRole('dialog', { name: 'Từ khóa dùng được' })).toHaveTextContent('{TOPIC}')
+    fireEvent.keyDown(document, { key: 'Escape' })
+    const pack = screen.getByText('2. Thiết lập bộ mã Gói đề tự sinh').closest('details')!
+    fireEvent.click(within(pack).getByRole('button', { name: 'Từ khóa dùng được' }))
+    expect(screen.getByRole('dialog', { name: 'Từ khóa dùng được' })).toHaveTextContent('{TYPE}')
+  })
+
+  it('refuses a keyword a kind does not accept, under the pattern', async () => {
+    api.fetchCodeSettings.mockResolvedValue([{ kind: 'LESSON', applied: true, pattern: '{TOPIC}_L{SEQ:2}', startNumber: 1, editable: true }])
+    render(<CodeSettingsPage />)
+    const editor = (await screen.findByText('1. Thiết lập bộ mã Bài học tự sinh')).closest('details')!
+    fireEvent.change(within(editor).getByLabelText('Cấu trúc bộ mã'), { target: { value: '{COURSE}_{SEQ}' } })
+    fireEvent.submit(within(editor).getByRole('form', { name: 'Thiết lập bộ mã Bài học' }))
+    expect(await within(editor).findByText('Chỉ dùng {SEQ}, {SEQ:n} và {TOPIC} cho mã bài học.')).toBeInTheDocument()
+    expect(api.updateCodeSettings).not.toHaveBeenCalled()
+  })
 })
