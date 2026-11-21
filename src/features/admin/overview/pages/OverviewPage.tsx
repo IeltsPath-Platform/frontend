@@ -6,7 +6,9 @@ import { useAdminResource, type AdminResource } from '../../lib/useAdminResource
 import { fetchKnowledgeTreeHealth } from '../../knowledge-graph/api/knowledgeGraphApi'
 import { AdminPage } from '../../pages/AdminPage'
 import { fetchAuthorWorkItems, fetchContentOverview, fetchQuestionStats } from '../api/overviewApi'
+import { AttentionBlock, type AttentionSource } from '../components/AttentionBlock'
 import { BarList, ColumnChart, DonutChart, StackedBar } from '../components/OverviewCharts'
+import { OverviewKpis, type Kpi } from '../components/OverviewKpis'
 import {
   CEFR_LEVELS, LESSON_STATUS_ROWS, SKILL_ROWS, WORK_STATUS_LABEL,
   correctRate, extremes, formatCount, percent,
@@ -18,8 +20,12 @@ import '../overview.css'
 const MIN_ATTEMPTS = 20
 
 const GRAPH = '/content-author/knowledge-graph'
+/** The graph with only the points that carry a warning (no link, or no CEFR level or can-do). */
+const GRAPH_FLAGGED = `${GRAPH}?flagged=1`
 const QUESTIONS = '/content-author/questions'
+const QUESTIONS_DRAFT = `${QUESTIONS}?status=DRAFT`
 const COURSES = '/content-author/courses'
+const WORK_ITEMS = '/content-author/work-items'
 
 /** One block of the page: its own loading, error and empty states, so a failing source never blanks the rest. */
 function Block<T>({ title, to, toLabel, resource, empty, children }: {
@@ -92,6 +98,8 @@ function ContentCharts({ data }: { data: ContentOverview }) {
   const lessons = data.lessons
   const lessonSlices = lessons ? LESSON_STATUS_ROWS.map((row) => ({ ...row, value: lessons[row.key] ?? 0 })) : null
   const lessonTotal = lessonSlices?.reduce((total, slice) => total + slice.value, 0) ?? 0
+  // With every lesson published a bar of one colour says nothing; the figure and a line are enough.
+  const onlyPublished = lessonTotal > 0 && (lessons?.PUBLISHED ?? 0) === lessonTotal
   const drafts = data.draftQuestionVersions ?? null
 
   return (
@@ -123,7 +131,7 @@ function ContentCharts({ data }: { data: ContentOverview }) {
 
       <Panel
         note={drafts !== null ? (
-          <Link className={drafts > 0 ? 'ov-note__link ov-note__link--warn' : 'ov-note__link'} to={QUESTIONS}>
+          <Link className={drafts > 0 ? 'ov-note__link ov-note__link--warn' : 'ov-note__link'} to={QUESTIONS_DRAFT}>
             {drafts > 0 ? <AlertTriangle aria-hidden="true" size={14} /> : <CheckCircle2 aria-hidden="true" size={14} />}
             <span>Phiên bản câu hỏi chờ xuất bản</span>
             <strong>{formatCount(drafts)}</strong>
@@ -134,30 +142,15 @@ function ContentCharts({ data }: { data: ContentOverview }) {
         {lessonSlices ? (
           <>
             <p className="ov-figure"><Link to={COURSES}><strong>{formatCount(lessonTotal)}</strong> bài học</Link></p>
-            <StackedBar slices={lessonSlices} summary={`Bài học theo trạng thái: ${lessonSlices.map((slice) => `${slice.label} ${slice.value}`).join(', ')}`} />
+            {onlyPublished ? (
+              <p className="ov-ok"><CheckCircle2 aria-hidden="true" size={16} />Tất cả đã xuất bản</p>
+            ) : (
+              <StackedBar slices={lessonSlices} summary={`Bài học theo trạng thái: ${lessonSlices.map((slice) => `${slice.label} ${slice.value}`).join(', ')}`} />
+            )}
           </>
         ) : unknown}
       </Panel>
     </div>
-  )
-}
-
-/** One check of the knowledge tree: how many points it flags, with a bar against all active points when known. */
-function HealthRow({ label, count, total }: { label: string; count: number; total: number | null }) {
-  const ok = count === 0
-  return (
-    <li className={ok ? 'ov-check' : 'ov-check ov-check--warn'}>
-      {ok ? <CheckCircle2 aria-label="Ổn" size={16} /> : <AlertTriangle aria-label="Cần xử lý" size={16} />}
-      <Link to={GRAPH}>
-        <strong>{count}</strong>
-        <span>{label}</span>
-      </Link>
-      {total && count > 0 ? (
-        <span aria-hidden="true" className="ov-check__track">
-          <span className="ov-check__fill" style={{ width: `${Math.min(100, (count / total) * 100)}%` }} />
-        </span>
-      ) : null}
-    </li>
   )
 }
 
@@ -167,71 +160,101 @@ export function OverviewPage() {
   const work = useAdminResource('overview|work-items', (signal) => fetchAuthorWorkItems(signal))
   const stats = useAdminResource('overview|question-stats', (signal) => fetchQuestionStats(MIN_ATTEMPTS, signal))
   const activeTotal = overview.data?.knowledgePoints?.byStatus?.ACTIVE ?? overview.data?.knowledgePoints?.total ?? null
+  const withoutQuestion = overview.data?.activeKnowledgePointsWithoutPublishedQuestion ?? null
+  const drafts = overview.data?.draftQuestionVersions ?? null
+  const publishedLessons = overview.data?.lessons?.PUBLISHED ?? null
+  const openWork = work.status === 'success' ? work.data?.length ?? 0 : null
+
+  const kpis: Kpi[] = [
+    { key: 'kp', label: 'KP đang hoạt động', value: activeTotal !== null ? formatCount(activeTotal) : null, to: GRAPH },
+    {
+      key: 'coverage',
+      label: 'KP có câu hỏi',
+      value: activeTotal && withoutQuestion !== null ? percent(Math.max(activeTotal - withoutQuestion, 0) / activeTotal) : null,
+      to: GRAPH,
+    },
+    { key: 'lessons', label: 'Bài học đã xuất bản', value: publishedLessons !== null ? formatCount(publishedLessons) : null, to: COURSES },
+    { key: 'drafts', label: 'Bản nháp chờ xuất bản', value: drafts !== null ? formatCount(drafts) : null, to: QUESTIONS_DRAFT, tone: drafts === null ? undefined : drafts > 0 ? 'warn' : 'ok' },
+    { key: 'work', label: 'Việc của R&D đang mở', value: openWork !== null ? formatCount(openWork) : null, to: WORK_ITEMS, tone: openWork === null ? undefined : openWork > 0 ? 'warn' : 'ok' },
+  ]
+
+  // The kinds of work, from the sources that know them; each source fails on its own.
+  const sources: AttentionSource[] = [
+    {
+      name: 'kết quả kiểm tra cây tri thức',
+      resource: health,
+      rows: health.data ? [
+        { key: 'missing', count: health.data.missingMetadataIds.length, label: 'KP thiếu CEFR hoặc can-do', to: GRAPH_FLAGGED, total: activeTotal },
+        { key: 'isolated', count: health.data.isolatedIds.length, label: 'KP cô lập, chưa nối với KP nào', to: GRAPH_FLAGGED, total: activeTotal },
+        { key: 'violations', count: health.data.levelViolations.length, label: 'Cạnh tiên quyết sai cấp độ', to: GRAPH },
+      ] : [],
+    },
+    {
+      name: 'số liệu nội dung',
+      resource: overview,
+      rows: overview.data ? [
+        { key: 'no-question', count: withoutQuestion ?? 0, label: 'KP chưa có câu hỏi đã xuất bản', to: GRAPH, total: activeTotal },
+        { key: 'drafts', count: drafts ?? 0, label: 'Phiên bản câu hỏi chờ xuất bản', to: QUESTIONS_DRAFT },
+      ] : [],
+    },
+  ]
 
   return (
     <AdminPage subtitle="Nội dung hiện có và việc cần làm của R&D." title="Tổng quan">
+      <OverviewKpis items={kpis} />
+
+      <AttentionBlock sources={sources} />
 
       <Block resource={overview} title="Nội dung" to={GRAPH} toLabel="Mở cây tri thức">
         {(data) => <ContentCharts data={data} />}
       </Block>
 
       <div className="ov-grid">
-        <Block resource={health} title="Sức khỏe cây tri thức" to={GRAPH} toLabel="Mở cây tri thức">
-          {(data) => (
-            <ul aria-label="Kết quả kiểm tra cây tri thức" className="ov-checks">
-              <HealthRow count={data.isolatedIds.length} label="KP cô lập" total={activeTotal} />
-              <HealthRow count={data.missingMetadataIds.length} label="KP thiếu CEFR hoặc can-do" total={activeTotal} />
-              <HealthRow count={data.levelViolations.length} label="Cạnh tiên quyết sai cấp độ" total={null} />
-            </ul>
-          )}
-        </Block>
+        {/* A block with nothing to show leaves no empty card behind; a failed one still says so. */}
+        {work.status === 'success' && (work.data?.length ?? 0) === 0 ? null : (
+          <Block resource={work} title="Việc cần làm của R&D">
+            {(items) => (
+              <ul className="ov-list">
+                {items.slice(0, 8).map((item) => (
+                  <li key={item.id}>
+                    <span>
+                      <strong>{kindLabel(item.kind)}</strong>
+                      <span className="adm-muted ov-detail"> {subjectText(item)}{detailText(item) ? ` · ${detailText(item)}` : ''}</span>
+                    </span>
+                    <span className="adm-badge">{WORK_STATUS_LABEL[item.status] ?? item.status}</span>
+                  </li>
+                ))}
+                {items.length > 8 ? <li className="adm-muted">Và {items.length - 8} việc nữa.</li> : null}
+                <li><Link to={WORK_ITEMS}>Xem tất cả</Link></li>
+              </ul>
+            )}
+          </Block>
+        )}
 
-        <Block
-          empty={(items) => items.length === 0}
-          resource={stats}
-          title="Câu hỏi lệch độ khó"
-          to={QUESTIONS}
-          toLabel="Ngân hàng câu hỏi"
-        >
-          {(items) => {
-            const { hardest, easiest } = extremes(items, 3)
-            const row = (stat: (typeof items)[number], tone: 'hard' | 'easy') => (
-              <li key={stat.questionVersionId}>
-                <span><code>{stat.questionVersionId.slice(0, 8)}</code> {stat.difficulty ? <span className="adm-muted">gắn nhãn {stat.difficulty}</span> : null}</span>
-                <span aria-hidden="true" className="ov-rate__track">
-                  <span className={`ov-rate__fill ov-rate__fill--${tone}`} style={{ width: `${Math.round(correctRate(stat) * 100)}%` }} />
-                </span>
-                <span>{percent(correctRate(stat))} đúng · {stat.attempts} lượt</span>
-              </li>
-            )
-            return (
-              <>
-                <h3>Khó nhất</h3>
-                <ul className="ov-rates">{hardest.map((stat) => row(stat, 'hard'))}</ul>
-                {easiest.length > 0 ? (<><h3>Dễ nhất</h3><ul className="ov-rates">{easiest.map((stat) => row(stat, 'easy'))}</ul></>) : null}
-                <p className="adm-muted">Chỉ tính câu có ít nhất {MIN_ATTEMPTS} lượt làm đầu tiên.</p>
-              </>
-            )
-          }}
-        </Block>
-
-        <Block empty={(items) => items.length === 0} resource={work} title="Việc cần làm của R&D">
-          {(items) => (
-            <ul className="ov-list">
-              {items.slice(0, 8).map((item) => (
-                <li key={item.id}>
-                  <span>
-                    <strong>{kindLabel(item.kind)}</strong>
-                    <span className="adm-muted ov-detail"> {subjectText(item)}{detailText(item) ? ` · ${detailText(item)}` : ''}</span>
+        {stats.status === 'success' && (stats.data?.length ?? 0) === 0 ? null : (
+          <Block resource={stats} title="Câu hỏi lệch độ khó" to={QUESTIONS} toLabel="Ngân hàng câu hỏi">
+            {(items) => {
+              const { hardest, easiest } = extremes(items, 3)
+              const row = (stat: (typeof items)[number], tone: 'hard' | 'easy') => (
+                <li key={stat.questionVersionId}>
+                  <span><code>{stat.questionVersionId.slice(0, 8)}</code> {stat.difficulty ? <span className="adm-muted">gắn nhãn {stat.difficulty}</span> : null}</span>
+                  <span aria-hidden="true" className="ov-rate__track">
+                    <span className={`ov-rate__fill ov-rate__fill--${tone}`} style={{ width: `${Math.round(correctRate(stat) * 100)}%` }} />
                   </span>
-                  <span className="adm-badge">{WORK_STATUS_LABEL[item.status] ?? item.status}</span>
+                  <span>{percent(correctRate(stat))} đúng · {stat.attempts} lượt</span>
                 </li>
-              ))}
-              {items.length > 8 ? <li className="adm-muted">Và {items.length - 8} việc nữa.</li> : null}
-              <li><Link to="/content-author/work-items">Xem tất cả</Link></li>
-            </ul>
-          )}
-        </Block>
+              )
+              return (
+                <>
+                  <h3>Khó nhất</h3>
+                  <ul className="ov-rates">{hardest.map((stat) => row(stat, 'hard'))}</ul>
+                  {easiest.length > 0 ? (<><h3>Dễ nhất</h3><ul className="ov-rates">{easiest.map((stat) => row(stat, 'easy'))}</ul></>) : null}
+                  <p className="adm-muted">Chỉ tính câu có ít nhất {MIN_ATTEMPTS} lượt làm đầu tiên.</p>
+                </>
+              )
+            }}
+          </Block>
+        )}
       </div>
     </AdminPage>
   )
