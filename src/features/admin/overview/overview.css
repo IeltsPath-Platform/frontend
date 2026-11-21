@@ -1,4 +1,4 @@
-.ov-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); align-items: start; margin-top: 14px; }
+.ov-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); align-items: start; }
 .ov-block__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
 .ov-block__head h2 { margin: 0; }
 .ov-block h3 { margin: 12px 0 6px; font-size: .85rem; color: var(--adm-muted); font-weight: 600; }
@@ -89,7 +89,7 @@
 }
 
 /* The few numbers an author checks first. */
-.ov-kpis { list-style: none; margin: 0 0 14px; padding: 0; display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+.ov-kpis { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
 .ov-kpi { display: grid; gap: 2px; padding: 12px 14px; border: 1px solid var(--adm-border); border-radius: 10px; background: var(--adm-surface, #fff); color: var(--adm-text); text-decoration: none; }
 .ov-kpi strong { font-size: 1.6rem; line-height: 1.15; font-variant-numeric: tabular-nums; }
 .ov-kpi span { font-size: .82rem; color: var(--adm-muted); }
@@ -98,17 +98,10 @@
 .ov-kpi--ok strong { color: var(--adm-ok); }
 
 /* Everything that needs doing, in one list; two columns when there is room. */
-.ov-block + .ov-block, .ov-kpis + .ov-block { margin-top: 14px; }
 .ov-attention { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px 28px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
 .ov-attention .ov-check a { align-items: baseline; }
 .ov-attention__go { margin-left: auto; font-size: .8rem; color: var(--adm-accent); }
 .ov-ok { display: flex; align-items: center; gap: 8px; margin: 0; font-size: .88rem; color: var(--adm-ok); }
-/* Content pipeline: three columns, not four. */
-@media (min-width: 1180px) {
-  .ov-panels--three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-}
-.ov-stale { display: flex; align-items: center; gap: 8px; margin: 14px 0 0; font-size: .85rem; color: var(--adm-warn); }
-.ov-stale a { color: inherit; }
 
 /* Coverage by skill and CEFR level: one cell per pair, tinted by how much of it has no question. */
 .ov-matrix { width: 100%; border-collapse: separate; border-spacing: 4px; font-size: .85rem; }

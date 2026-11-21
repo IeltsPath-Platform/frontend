@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { AlertTriangle, CheckCircle2 } from 'lucide-react'
+import { AlertTriangle } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { AdminEmpty, AdminError, AdminLoading } from '../../components/AdminState'
 import { useAdminResource, type AdminResource } from '../../lib/useAdminResource'
@@ -11,7 +11,7 @@ import { CoverageMatrix } from '../components/CoverageMatrix'
 import { BarList, ColumnChart, DonutChart, StackedBar } from '../components/OverviewCharts'
 import { OverviewKpis, type Kpi } from '../components/OverviewKpis'
 import {
-  CEFR_LEVELS, LESSON_STATUS_ROWS, SKILL_ROWS, WORK_STATUS_LABEL,
+  CEFR_LEVELS, SKILL_ROWS, WORK_STATUS_LABEL,
   correctRate, extremes, formatCount, percent,
 } from '../lib/overviewLabels'
 import { detailText, kindLabel, subjectText } from '../../work-queue/lib/workQueueLabels'
@@ -146,45 +146,6 @@ function ContentCharts({ data }: { data: ContentOverview }) {
   )
 }
 
-/** One kind of content on its way to learners: the bar of its statuses, or one line when everything is published. */
-function PipelineRow({ label, counts, to }: { label: string; counts: Record<string, number> | null | undefined; to?: string }) {
-  if (!counts) return null
-  const slices = LESSON_STATUS_ROWS.map((row) => ({ ...row, value: counts[row.key] ?? 0 }))
-  const total = slices.reduce((sum, slice) => sum + slice.value, 0)
-  const onlyPublished = total > 0 && (counts.PUBLISHED ?? 0) === total
-  return (
-    <div className="ov-panel">
-      <h3>{label}</h3>
-      <p className="ov-figure">{to ? <Link to={to}><strong>{formatCount(total)}</strong></Link> : <strong>{formatCount(total)}</strong>}</p>
-      {total === 0 ? <p className="adm-muted ov-unknown">Chưa có.</p> : onlyPublished ? (
-        <p className="ov-ok"><CheckCircle2 aria-hidden="true" size={16} />Tất cả đã xuất bản</p>
-      ) : (
-        <StackedBar slices={slices} summary={`${label} theo trạng thái: ${slices.map((slice) => `${slice.label} ${slice.value}`).join(', ')}`} />
-      )}
-    </div>
-  )
-}
-
-/** Lessons, question versions and packages by status, and the drafts left waiting too long. */
-function Pipeline({ data }: { data: ContentOverview }) {
-  const stale = data.staleDraftQuestionVersions ?? 0
-  return (
-    <>
-      <div className="ov-panels ov-panels--three">
-        <PipelineRow counts={data.lessons} label="Bài học" to={COURSES} />
-        <PipelineRow counts={data.questionVersions} label="Phiên bản câu hỏi" to={QUESTIONS} />
-        <PipelineRow counts={data.packages} label="Gói đề" to="/content-author/packages" />
-      </div>
-      {stale > 0 ? (
-        <p className="ov-stale">
-          <AlertTriangle aria-hidden="true" size={14} />
-          <Link to={QUESTIONS_DRAFT}>{formatCount(stale)} phiên bản câu hỏi nháp để quá {data.staleDraftAfterDays ?? 14} ngày chưa xuất bản</Link>
-        </p>
-      ) : null}
-    </>
-  )
-}
-
 /**
  * The questions answered worst and best, each named by the start of its stem and linking to the question. A name that
  * cannot be read leaves the short code, so the list never depends on the names arriving.
@@ -261,12 +222,13 @@ export function OverviewPage() {
       rows: overview.data ? [
         { key: 'no-question', count: withoutQuestion ?? 0, label: 'KP chưa có câu hỏi đã xuất bản', to: GRAPH, total: activeTotal },
         { key: 'drafts', count: drafts ?? 0, label: 'Phiên bản câu hỏi chờ xuất bản', to: QUESTIONS_DRAFT },
+        { key: 'stale-drafts', count: overview.data.staleDraftQuestionVersions ?? 0, label: `Bản nháp để quá ${overview.data.staleDraftAfterDays ?? 14} ngày chưa xuất bản`, to: QUESTIONS_DRAFT },
       ] : [],
     },
   ]
 
   return (
-    <AdminPage subtitle="Nội dung hiện có và việc cần làm của R&D." title="Tổng quan">
+    <AdminPage plain subtitle="Nội dung hiện có và việc cần làm của R&D." title="Tổng quan">
       <OverviewKpis items={kpis} />
 
       <AttentionBlock sources={sources} />
@@ -280,13 +242,6 @@ export function OverviewPage() {
         <section aria-label="Phủ nội dung theo kỹ năng và cấp CEFR" className="adm-card ov-block">
           <header className="ov-block__head"><h2>Phủ nội dung theo kỹ năng và cấp CEFR</h2></header>
           <CoverageMatrix cells={overview.data.coverage} graphPath={GRAPH} />
-        </section>
-      ) : null}
-
-      {overview.data?.lessons || overview.data?.questionVersions || overview.data?.packages ? (
-        <section aria-label="Dòng chảy nội dung" className="adm-card ov-block">
-          <header className="ov-block__head"><h2>Dòng chảy nội dung</h2></header>
-          <Pipeline data={overview.data} />
         </section>
       ) : null}
 

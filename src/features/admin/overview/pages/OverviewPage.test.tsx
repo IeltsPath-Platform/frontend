@@ -92,21 +92,6 @@ describe('OverviewPage', () => {
     expect(screen.getByText('97% đúng · 30 lượt')).toBeInTheDocument()
   })
 
-  it('draws no bar for lessons that are all published, and says so', async () => {
-    api.fetchContentOverview.mockResolvedValue({
-      knowledgePoints: { total: 10, byStatus: { ACTIVE: 10 } },
-      activeKnowledgePointsWithoutPublishedQuestion: 0,
-      draftQuestionVersions: 0,
-      lessons: { DRAFT: 0, PUBLISHED: 189, ARCHIVED: 0 },
-    })
-    renderPage()
-
-    const pipeline = await screen.findByRole('region', { name: 'Dòng chảy nội dung' })
-    expect(await within(pipeline).findByText('Tất cả đã xuất bản')).toBeInTheDocument()
-    expect(within(pipeline).getByRole('link', { name: '189' })).toBeInTheDocument()
-    expect(within(pipeline).queryByRole('img', { name: /Bài học theo trạng thái/ })).not.toBeInTheDocument()
-  })
-
   it('draws the skill and CEFR charts from the grouped counts', async () => {
     api.fetchContentOverview.mockResolvedValue({
       knowledgePoints: {
@@ -191,15 +176,20 @@ describe('OverviewPage', () => {
     expect(within(matrix).getByLabelText('Nghe A1: không có KP')).toHaveTextContent('·')
   })
 
-  it('follows the content through its statuses and warns about drafts left too long', async () => {
+  it('lists the drafts left too long among the things to do', async () => {
     renderPage()
 
-    const pipeline = await screen.findByRole('region', { name: 'Dòng chảy nội dung' })
-    expect(await within(pipeline).findByRole('img', { name: /Bài học theo trạng thái: Đã xuất bản 9, Bản nháp 2, Đã lưu trữ 0/ })).toBeInTheDocument()
-    expect(within(pipeline).getByRole('img', { name: /Phiên bản câu hỏi theo trạng thái: Đã xuất bản 30, Bản nháp 4/ })).toBeInTheDocument()
-    expect(within(pipeline).getByRole('img', { name: /Gói đề theo trạng thái: Đã xuất bản 6, Bản nháp 1/ })).toBeInTheDocument()
-    const stale = within(pipeline).getByRole('link', { name: '2 phiên bản câu hỏi nháp để quá 14 ngày chưa xuất bản' })
+    const attention = await screen.findByRole('region', { name: 'Cần xử lý ngay' })
+    const stale = await within(attention).findByRole('link', { name: /Bản nháp để quá 14 ngày chưa xuất bản/ })
+    expect(stale).toHaveTextContent('2')
     expect(stale).toHaveAttribute('href', '/content-author/questions?status=DRAFT')
+  })
+
+  it('does not draw a block for the content statuses', async () => {
+    renderPage()
+
+    await screen.findByRole('region', { name: 'Nội dung' })
+    expect(screen.queryByRole('region', { name: 'Dòng chảy nội dung' })).not.toBeInTheDocument()
   })
 
   it('names the hardest and easiest questions by their stem and links to them', async () => {
@@ -220,7 +210,7 @@ describe('OverviewPage', () => {
     expect(screen.getByText('13% đúng · 40 lượt')).toBeInTheDocument()
   })
 
-  it('leaves the coverage and pipeline blocks out while the server does not send their numbers', async () => {
+  it('leaves the coverage block out while the server does not send its numbers', async () => {
     api.fetchContentOverview.mockResolvedValue({
       knowledgePoints: { total: 70, byStatus: { ACTIVE: 57, INACTIVE: 13 } },
       activeKnowledgePointsWithoutPublishedQuestion: 12,
@@ -231,6 +221,5 @@ describe('OverviewPage', () => {
     await screen.findByRole('region', { name: 'Nội dung' })
     expect(await screen.findByText('57 KP đang hoạt động')).toBeInTheDocument()
     expect(screen.queryByRole('table')).not.toBeInTheDocument()
-    expect(screen.queryByRole('region', { name: 'Dòng chảy nội dung' })).not.toBeInTheDocument()
   })
 })

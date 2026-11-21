@@ -14,12 +14,6 @@ export const SKILL_ROWS: { key: string; label: string; color: string }[] = [
 /** CEFR levels low to high; `NONE` is the count of active points that have no level yet. */
 export const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const
 
-export const LESSON_STATUS_ROWS: { key: string; label: string; color: string }[] = [
-  { key: 'PUBLISHED', label: 'Đã xuất bản', color: 'var(--adm-ok)' },
-  { key: 'DRAFT', label: 'Bản nháp', color: 'var(--adm-warn)' },
-  { key: 'ARCHIVED', label: 'Đã lưu trữ', color: 'var(--adm-muted)' },
-]
-
 const numberFormat = new Intl.NumberFormat('vi-VN')
 export const formatCount = (value: number) => numberFormat.format(value)
 
