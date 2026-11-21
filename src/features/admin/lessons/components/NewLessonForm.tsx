@@ -32,7 +32,7 @@ export function NewLessonForm({ topicId, onCreated, onCancel }: { topicId: strin
 
   return (
     <form aria-label="Bài học mới" noValidate onSubmit={(event) => void submit(event)}>
-      <div className="adm-filters">
+      <div className="adm-filters adm-filters--fields">
         <AdminField label="Mã bài học" {...form.field('code')}>
           <input autoFocus className="adm-input" maxLength={100} onChange={(event) => setCode(event.target.value)} value={code} />
         </AdminField>

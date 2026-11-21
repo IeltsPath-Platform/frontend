@@ -6,13 +6,17 @@ import { AdminField } from '../../components/AdminField'
 import { SKILL_LABEL, TOPIC_SKILLS, type Course, type TopicCreate } from '../types'
 import { topicError } from '../lib/topicHelpers'
 import { useAdminError } from '../../lib/useAdminError'
-import { bandText, nonNegativeIntegerText, optionalText, requiredText } from '@/lib/validation/fields'
+import { optionalText, requiredText } from '@/lib/validation/fields'
+import { ChoiceChips } from '../../knowledge-graph/components/ChoiceChips'
 import { useFormErrors } from '@/lib/validation/useFormErrors'
 import { fetchCodeSettings, fetchCodeSuggestion } from '../../code-settings/api/codeSettingsApi'
 
+const SKILL_CHOICES = TOPIC_SKILLS.map((item) => ({ value: item, label: SKILL_LABEL[item] }))
+
 /**
- * What each field of the topic form needs. A topic that belongs to a course must have a skill; the lowest band may not
- * be above the highest. Errors are shown under the field they are about.
+ * What each field of the topic form needs. A topic that belongs to a course must have a skill. Errors are shown under the
+ * field they are about. The band range of a topic is not asked for: it only labels the topic in the tree, and an edit sends
+ * back the range the topic already has.
  */
 function topicSchema(belongsToCourse: boolean, codeRequired: boolean) {
   return z.object({
@@ -20,16 +24,8 @@ function topicSchema(belongsToCourse: boolean, codeRequired: boolean) {
     name: requiredText('Tên chủ đề', 255),
     description: optionalText('Mô tả chủ đề', 2000),
     skill: z.string(),
-    min: bandText('Band thấp nhất', { optional: true }),
-    max: bandText('Band cao nhất', { optional: true }),
-    order: nonNegativeIntegerText('Thứ tự chủ đề'),
   }).superRefine((value, ctx) => {
     if (belongsToCourse && value.skill === '') ctx.addIssue({ code: 'custom', path: ['skill'], message: 'Chọn kỹ năng cho chủ đề thuộc khóa học.' })
-    const low = Number(value.min)
-    const high = Number(value.max)
-    if (value.min.trim() !== '' && value.max.trim() !== '' && Number.isFinite(low) && Number.isFinite(high) && low > high) {
-      ctx.addIssue({ code: 'custom', path: ['min'], message: 'Band thấp nhất phải nhỏ hơn hoặc bằng band cao nhất.' })
-    }
   })
 }
 
@@ -50,14 +46,14 @@ export function TopicForm({ topic, parentId, courseId, courses, topics, onSaved,
   const [parent, setParent] = useState(topic?.parentTopicId ?? parentId ?? '')
   const [course, setCourse] = useState(topic?.courseId ?? courseId ?? '')
   const [skill, setSkill] = useState(topic?.skill ?? '')
-  const [min, setMin] = useState(topic?.bandMin?.toString() ?? '')
-  const [max, setMax] = useState(topic?.bandMax?.toString() ?? '')
-  const [order, setOrder] = useState(topic?.sortOrder.toString() ?? String(Math.max(-1, ...topics.filter((item) => (item.parentTopicId ?? null) === parentId).map((item) => item.sortOrder)) + 1))
+  // The position is not asked for: a new topic goes last among its siblings in the course, and the tree moves it up or down.
+  const sortOrder = topic?.sortOrder
+    ?? Math.max(-1, ...topics.filter((item) => (item.parentTopicId ?? null) === parentId && (item.courseId ?? '') === course).map((item) => item.sortOrder)) + 1
   const [status, setStatus] = useState(topic?.status ?? 'ACTIVE')
   const [, setError] = useAdminError()
   const [saving, setSaving] = useState(false)
   const schema = useMemo(() => topicSchema(course !== '', !codePolicy?.applied), [course, codePolicy?.applied])
-  const form = useFormErrors(schema, { code, name, description, skill, min, max, order })
+  const form = useFormErrors(schema, { code, name, description, skill })
   useEffect(() => {
     if (topic) return
     const controller = new AbortController()
@@ -93,7 +89,7 @@ export function TopicForm({ topic, parentId, courseId, courses, topics, onSaved,
     event.preventDefault()
     if (saving) return
     if (!form.validate()) return
-    const body: Omit<TopicCreate, 'code'> = { name: name.trim(), description: description.trim() || null, parentTopicId: parent || null, courseId: course || null, skill: skill as TopicCreate['skill'] || null, bandMin: min === '' ? null : Number(min), bandMax: max === '' ? null : Number(max), sortOrder: Number(order) }
+    const body: Omit<TopicCreate, 'code'> = { name: name.trim(), description: description.trim() || null, parentTopicId: parent || null, courseId: course || null, skill: skill as TopicCreate['skill'] || null, bandMin: topic?.bandMin ?? null, bandMax: topic?.bandMax ?? null, sortOrder }
     setSaving(true)
     setError(null)
     try {
@@ -106,17 +102,12 @@ export function TopicForm({ topic, parentId, courseId, courses, topics, onSaved,
   }
   return <form aria-label={topic ? 'Sửa chủ đề' : 'Tạo chủ đề'} noValidate onSubmit={(event) => void submit(event)}>
     <fieldset className="adm-author-fields" disabled={saving}>
+      <AdminField label="Mã chủ đề" {...form.field('code')} required={!topic && !codePolicy?.applied}><input className="adm-input" maxLength={100} disabled={!!topic || (!!codePolicy?.applied && !codePolicy.editable)} value={code} onChange={(event) => { manualCode.current = true; setCode(event.target.value) }} /></AdminField>
       <AdminField label="Tên chủ đề" {...form.field('name')}><input className="adm-input" maxLength={255} value={name} onChange={(event) => setName(event.target.value)} /></AdminField>
       <AdminField label="Mô tả chủ đề" {...form.field('description')}><textarea className="adm-textarea" maxLength={2000} value={description} onChange={(event) => setDescription(event.target.value)} /></AdminField>
       {topic ? <label className="adm-field"><span>Thuộc khóa học</span><select className="adm-select" value={course} onChange={(event) => setCourse(event.target.value)}>{!topic.courseId ? <option value="">Chưa gán khóa</option> : null}{courses.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label> : null}
       {topic?.parentTopicId ? <label className="adm-field"><span>Chủ đề cha</span><select className="adm-select" value={parent} onChange={(event) => setParent(event.target.value)}><option value="">Không có (cấp đầu)</option>{topics.filter((item) => !excluded.has(item.id)).map((item) => <option key={item.id} value={item.id}>{item.code} · {item.name}</option>)}</select></label> : null}
-      <AdminField label="Kỹ năng" {...form.field('skill')} required={course !== ''}><select className="adm-select" value={skill} onChange={(event) => setSkill(event.target.value)}>{!topic?.skill ? <option value="">Chưa chọn</option> : null}{TOPIC_SKILLS.map((item) => <option key={item} value={item}>{SKILL_LABEL[item]}</option>)}</select></AdminField>
-      <AdminField label="Mã chủ đề" {...form.field('code')} required={!topic && !codePolicy?.applied}><input className="adm-input" maxLength={100} disabled={!!topic || (!!codePolicy?.applied && !codePolicy.editable)} value={code} onChange={(event) => { manualCode.current = true; setCode(event.target.value) }} /></AdminField>
-      <div className="adm-filters">
-        <AdminField label="Band thấp nhất" {...form.field('min')}><input className="adm-input" type="number" min={0} max={9} step={0.5} value={min} onChange={(event) => setMin(event.target.value)} /></AdminField>
-        <AdminField label="Band cao nhất" {...form.field('max')}><input className="adm-input" type="number" min={0} max={9} step={0.5} value={max} onChange={(event) => setMax(event.target.value)} /></AdminField>
-      </div>
-      <AdminField label="Thứ tự chủ đề" {...form.field('order')}><input className="adm-input" type="number" min={0} step={1} value={order} onChange={(event) => setOrder(event.target.value)} /></AdminField>
+      <ChoiceChips clearable={course === '' && !topic?.skill} error={form.field('skill').error} label="Kỹ năng" onChange={setSkill} options={SKILL_CHOICES} required={course !== ''} value={skill} />
       {topic ? <label className="adm-field"><span>Trạng thái chủ đề</span><select className="adm-select" value={status} onChange={(event) => setStatus(event.target.value)}><option value="ACTIVE">Đang dùng</option><option value="INACTIVE">Ngừng dùng</option></select></label> : null}
       <div className="adm-form-footer"><button className="adm-btn" type="button" onClick={onCancel}>Hủy</button><button className="adm-btn adm-btn--primary" type="submit">{saving ? 'Đang lưu…' : 'Lưu chủ đề'}</button></div>
     </fieldset>

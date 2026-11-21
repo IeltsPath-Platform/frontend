@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@/test/render'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { HttpError } from '@/lib/httpClient'
 import type { TopicOption } from '../../lessons/types'
+import { SKILL_LABEL } from '../types'
 import { TopicForm } from './TopicForm'
 
 const { api, codes } = vi.hoisted(() => ({ api: { createTopic: vi.fn(), updateTopic: vi.fn() }, codes: { fetchCodeSettings: vi.fn(), fetchCodeSuggestion: vi.fn() } }))
@@ -17,7 +18,11 @@ const courses = [
 const topic: TopicOption = { id: 'topic-edit', code: 'ORIGINAL', name: 'Tên ban đầu', parentTopicId: null, courseId: courses[0]!.id, sortOrder: 1, status: 'ACTIVE', skill: 'WRITING', bandMin: 5, bandMax: 6 }
 const parent: TopicOption = { ...topic, id: 'parent', code: 'PARENT', name: 'Chủ đề cha', sortOrder: 2 }
 const legacyChild: TopicOption = { ...topic, id: 'legacy-child', code: 'LEGACY', name: 'Chủ đề con cũ', parentTopicId: parent.id, sortOrder: 3 }
-const body = { name: 'Tên đang chỉnh sửa', description: null, parentTopicId: null, courseId: courses[1]!.id, skill: 'READING', bandMin: 6.5, bandMax: 8, sortOrder: 4 }
+const body = { name: 'Tên đang chỉnh sửa', description: null, parentTopicId: null, courseId: courses[1]!.id, skill: 'READING' }
+// A new topic goes last among its siblings in the course; an edited one keeps the position it has.
+const createdBody = { ...body, bandMin: null, bandMax: null, sortOrder: 3 }
+const editedBody = { ...body, bandMin: topic.bandMin, bandMax: topic.bandMax, sortOrder: topic.sortOrder }
+const chooseSkill = (skill: keyof typeof SKILL_LABEL) => fireEvent.click(screen.getByRole('radio', { name: SKILL_LABEL[skill] }))
 function show(editing = false) {
   const saved = vi.fn()
   render(<TopicForm topic={editing ? topic : undefined} parentId={null} courseId={courses[0]!.id} courses={courses} topics={[parent, topic]} onSaved={saved} onCancel={vi.fn()} />)
@@ -27,20 +32,14 @@ function fill(editing = false) {
   if (!editing) fireEvent.change(screen.getByLabelText('Mã chủ đề'), { target: { value: 'NEW_TOPIC' } })
   fireEvent.change(screen.getByLabelText('Tên chủ đề'), { target: { value: body.name } })
   if (editing) fireEvent.change(screen.getByLabelText('Thuộc khóa học'), { target: { value: body.courseId } })
-  fireEvent.change(screen.getByLabelText('Kỹ năng'), { target: { value: body.skill } })
-  fireEvent.change(screen.getByLabelText('Band thấp nhất'), { target: { value: String(body.bandMin) } })
-  fireEvent.change(screen.getByLabelText('Band cao nhất'), { target: { value: String(body.bandMax) } })
-  fireEvent.change(screen.getByLabelText('Thứ tự chủ đề'), { target: { value: String(body.sortOrder) } })
+  chooseSkill('READING')
   if (editing) fireEvent.change(screen.getByLabelText('Trạng thái chủ đề'), { target: { value: 'INACTIVE' } })
 }
 function expectRetained(editing = false) {
   expect(screen.getByLabelText('Mã chủ đề')).toHaveValue(editing ? topic.code : 'NEW_TOPIC')
   expect(screen.getByLabelText('Tên chủ đề')).toHaveValue(body.name)
   if (editing) expect(screen.getByLabelText('Thuộc khóa học')).toHaveValue(body.courseId)
-  expect(screen.getByLabelText('Kỹ năng')).toHaveValue(body.skill)
-  expect(screen.getByLabelText('Band thấp nhất')).toHaveValue(body.bandMin)
-  expect(screen.getByLabelText('Band cao nhất')).toHaveValue(body.bandMax)
-  expect(screen.getByLabelText('Thứ tự chủ đề')).toHaveValue(body.sortOrder)
+  expect(screen.getByRole('radio', { name: SKILL_LABEL.READING })).toBeChecked()
   if (editing) expect(screen.getByLabelText('Trạng thái chủ đề')).toHaveValue('INACTIVE')
 }
 
@@ -51,24 +50,22 @@ describe('TopicForm order conflicts', () => {
     codes.fetchCodeSuggestion.mockReset().mockResolvedValue({ code: '', applied: true, editable: true })
   })
 
-  it.each([false, true])('retains every controlled field and shows the server refusal as a message, not on the order field (editing=%s)', async (editing) => {
+  it.each([false, true])('retains every controlled field and shows the server refusal as a message under no field (editing=%s)', async (editing) => {
     api.createTopic.mockRejectedValue(conflict())
     api.updateTopic.mockRejectedValue(conflict())
     const saved = show(editing)
     fill(editing)
-    const order = screen.getByLabelText('Thứ tự chủ đề')
     fireEvent.submit(screen.getByRole('form'))
     const alert = await screen.findByRole('alert')
     expect(alert.textContent).toBe(message)
-    expect(order).not.toHaveAttribute('aria-invalid')
-    expect(order.closest('.adm-field')).not.toContainElement(alert)
+    expect(alert.closest('.adm-field')).toBeNull()
     expectRetained(editing)
     expect(screen.getByRole('button', { name: 'Lưu chủ đề' })).toBeEnabled()
     if (editing) {
-      expect(api.updateTopic).toHaveBeenCalledExactlyOnceWith(topic.id, { ...body, status: 'INACTIVE' })
+      expect(api.updateTopic).toHaveBeenCalledExactlyOnceWith(topic.id, { ...editedBody, status: 'INACTIVE' })
       expect(api.createTopic).not.toHaveBeenCalled()
     } else {
-      expect(api.createTopic).toHaveBeenCalledExactlyOnceWith({ ...body, courseId: courses[0]!.id, code: 'NEW_TOPIC' })
+      expect(api.createTopic).toHaveBeenCalledExactlyOnceWith({ ...createdBody, courseId: courses[0]!.id, code: 'NEW_TOPIC' })
       expect(api.updateTopic).not.toHaveBeenCalled()
     }
     expect(saved).not.toHaveBeenCalled()
@@ -80,28 +77,24 @@ describe('TopicForm order conflicts', () => {
     fill(true)
     fireEvent.submit(screen.getByRole('form'))
     await screen.findByRole('alert')
-    const order = screen.getByLabelText('Thứ tự chủ đề')
-    fireEvent.change(order, { target: { value: '5' } })
+    fireEvent.change(screen.getByLabelText('Tên chủ đề'), { target: { value: 'Tên sửa lại' } })
     expect(api.updateTopic).toHaveBeenCalledTimes(1)
     expect(saved).not.toHaveBeenCalled()
     fireEvent.submit(screen.getByRole('form'))
     await waitFor(() => expect(saved).toHaveBeenCalledTimes(1))
-    expect(api.updateTopic).toHaveBeenNthCalledWith(2, topic.id, { ...body, sortOrder: 5, status: 'INACTIVE' })
+    expect(api.updateTopic).toHaveBeenNthCalledWith(2, topic.id, { ...editedBody, name: 'Tên sửa lại', status: 'INACTIVE' })
     expect(api.updateTopic).toHaveBeenCalledTimes(2)
     expect(api.createTopic).not.toHaveBeenCalled()
   })
 
-  it('keeps an unrelated skill lock error global without invalidating the order', async () => {
+  it('keeps an unrelated skill lock error global, under no field', async () => {
     api.updateTopic.mockRejectedValue(new HttpError(409, 'Skill locked', { details: { code: 'TOPIC_SKILL_LOCKED' } }))
     const saved = show(true)
     fill(true)
     fireEvent.submit(screen.getByRole('form'))
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent('Chủ đề đã có bài xuất bản, không đổi kỹ năng được')
-    const order = screen.getByLabelText('Thứ tự chủ đề')
-    expect(order).not.toHaveAttribute('aria-invalid', 'true')
-    expect(order).not.toHaveAttribute('aria-describedby')
-    expect(order.parentElement?.parentElement).not.toContainElement(alert)
+    expect(alert.closest('.adm-field')).toBeNull()
     expectRetained(true)
     expect(api.updateTopic).toHaveBeenCalledTimes(1)
     expect(api.createTopic).not.toHaveBeenCalled()
@@ -157,7 +150,6 @@ describe('TopicForm order conflicts', () => {
     render(<TopicForm topic={legacyChild} parentId={parent.id} courseId={courses[0]!.id} courses={courses} topics={[parent, legacyChild]} onSaved={saved} onCancel={vi.fn()} />)
     const select = screen.getByLabelText('Chủ đề cha')
     expect(select).toHaveValue(parent.id)
-    fireEvent.change(screen.getByLabelText('Thứ tự chủ đề'), { target: { value: '4' } })
     fireEvent.submit(screen.getByRole('form'))
     await screen.findByRole('alert')
     // Moving the topic to the top level does not submit by itself.
@@ -165,7 +157,7 @@ describe('TopicForm order conflicts', () => {
     expect(api.updateTopic).toHaveBeenCalledTimes(1)
     fireEvent.submit(screen.getByRole('form'))
     await waitFor(() => expect(saved).toHaveBeenCalledTimes(1))
-    expect(api.updateTopic).toHaveBeenNthCalledWith(2, legacyChild.id, expect.objectContaining({ parentTopicId: null, sortOrder: 4 }))
+    expect(api.updateTopic).toHaveBeenNthCalledWith(2, legacyChild.id, expect.objectContaining({ parentTopicId: null, sortOrder: legacyChild.sortOrder }))
   })
 
   it('sends a metadata edit with the unchanged parent and order even when displayed siblings are tied', async () => {
@@ -188,10 +180,11 @@ describe('TopicForm order conflicts', () => {
     codes.fetchCodeSettings.mockResolvedValue([{ kind: 'TOPIC', applied: true, pattern: '{COURSE}_{SKILL}_T{SEQ:2}', startNumber: 1, editable: true }])
     codes.fetchCodeSuggestion.mockResolvedValue({ code: 'FIRST_R_T01', applied: true, editable: true })
     show()
-    fireEvent.change(screen.getByLabelText('Kỹ năng'), { target: { value: 'READING' } })
+    chooseSkill('READING')
     await waitFor(() => expect(codes.fetchCodeSuggestion).toHaveBeenCalledWith({ kind: 'TOPIC', courseId: courses[0]!.id, skill: 'READING' }, expect.any(AbortSignal)))
     await waitFor(() => expect(screen.getByLabelText('Mã chủ đề')).toHaveValue('FIRST_R_T01'))
-    expect(screen.getByLabelText('Kỹ năng').compareDocumentPosition(screen.getByLabelText('Mã chủ đề')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    // The code is the first field of the form; it fills in once the skill it depends on is chosen.
+    expect(screen.getByLabelText('Mã chủ đề').compareDocumentPosition(screen.getByRole('group', { name: 'Kỹ năng' })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
   it('preserves a manually entered topic code when suggestion context changes', async () => {
@@ -201,7 +194,7 @@ describe('TopicForm order conflicts', () => {
     await waitFor(() => expect(codes.fetchCodeSuggestion).toHaveBeenCalled())
     const code = screen.getByLabelText('Mã chủ đề')
     fireEvent.change(code, { target: { value: 'MY_CODE' } })
-    fireEvent.change(screen.getByLabelText('Kỹ năng'), { target: { value: 'READING' } })
+    chooseSkill('READING')
     await waitFor(() => expect(codes.fetchCodeSuggestion).toHaveBeenCalledTimes(2))
     expect(code).toHaveValue('MY_CODE')
   })
@@ -236,41 +229,37 @@ describe('TopicForm field errors', () => {
     const { container, unmount } = render(<TopicForm parentId={null} courseId={courses[0]!.id} courses={courses} topics={[]} onSaved={vi.fn()} onCancel={vi.fn()} />)
     expect(screen.getByLabelText('Mã chủ đề')).toHaveAttribute('aria-required', 'true')
     expect(screen.getByLabelText('Tên chủ đề')).toHaveAttribute('aria-required', 'true')
-    expect(screen.getByLabelText('Kỹ năng')).toHaveAttribute('aria-required', 'true')
+    expect(screen.getByRole('group', { name: 'Kỹ năng' }).querySelector('.adm-required')).not.toBeNull()
     expect(container.querySelectorAll('.adm-required').length).toBeGreaterThanOrEqual(3)
     unmount()
     render(<TopicForm parentId={null} courseId={null} courses={courses} topics={[]} onSaved={vi.fn()} onCancel={vi.fn()} />)
-    expect(screen.getByLabelText('Kỹ năng')).not.toHaveAttribute('aria-required')
+    expect(screen.getByRole('group', { name: 'Kỹ năng' }).querySelector('.adm-required')).toBeNull()
   })
 
   it('sent empty, shows each missing field under it and sends nothing', () => {
     render(<TopicForm parentId={null} courseId={courses[0]!.id} courses={courses} topics={[]} onSaved={vi.fn()} onCancel={vi.fn()} />)
     fireEvent.submit(screen.getByRole('form'))
     expect(screen.getAllByRole('alert').map((alert) => alert.textContent)).toEqual([
-      'Tên chủ đề không được để trống.', 'Chọn kỹ năng cho chủ đề thuộc khóa học.', 'Mã chủ đề không được để trống.',
+      'Mã chủ đề không được để trống.', 'Tên chủ đề không được để trống.', 'Chọn kỹ năng cho chủ đề thuộc khóa học.',
     ])
-    expect(screen.getByLabelText('Tên chủ đề')).toHaveFocus()
+    expect(screen.getByLabelText('Mã chủ đề')).toHaveFocus()
     expect(api.createTopic).not.toHaveBeenCalled()
   })
 
-  it('refuses a lowest band above the highest, under the lowest band', () => {
+  it('does not ask for the band range, and sends none for a new topic', () => {
     render(<TopicForm parentId={null} courseId={null} courses={courses} topics={[]} onSaved={vi.fn()} onCancel={vi.fn()} />)
-    fireEvent.change(screen.getByLabelText('Mã chủ đề'), { target: { value: 'T' } })
-    fireEvent.change(screen.getByLabelText('Tên chủ đề'), { target: { value: 'T' } })
-    fireEvent.change(screen.getByLabelText('Band thấp nhất'), { target: { value: '7' } })
-    fireEvent.change(screen.getByLabelText('Band cao nhất'), { target: { value: '5' } })
-    fireEvent.submit(screen.getByRole('form'))
-    expect(screen.getByLabelText('Band thấp nhất')).toHaveAccessibleDescription('Band thấp nhất phải nhỏ hơn hoặc bằng band cao nhất.')
-    expect(api.createTopic).not.toHaveBeenCalled()
+    expect(screen.queryByLabelText('Band thấp nhất')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Band cao nhất')).not.toBeInTheDocument()
   })
 
-  it('refuses a negative or fractional order under the order field', () => {
-    render(<TopicForm parentId={null} courseId={null} courses={courses} topics={[]} onSaved={vi.fn()} onCancel={vi.fn()} />)
-    fireEvent.change(screen.getByLabelText('Mã chủ đề'), { target: { value: 'T' } })
-    fireEvent.change(screen.getByLabelText('Tên chủ đề'), { target: { value: 'T' } })
-    fireEvent.change(screen.getByLabelText('Thứ tự chủ đề'), { target: { value: '-1' } })
+  it('does not ask for the position, and puts a new topic last among its siblings in the course', async () => {
+    api.createTopic.mockResolvedValue(topic)
+    render(<TopicForm parentId={null} courseId={courses[0]!.id} courses={courses} topics={[parent, topic, { ...topic, id: 'other-course', courseId: courses[1]!.id, sortOrder: 40 }]} onSaved={vi.fn()} onCancel={vi.fn()} />)
+    expect(screen.queryByLabelText('Thứ tự chủ đề')).not.toBeInTheDocument()
+    fill()
     fireEvent.submit(screen.getByRole('form'))
-    expect(screen.getByLabelText('Thứ tự chủ đề')).toHaveAccessibleDescription('Thứ tự chủ đề phải là số nguyên không âm.')
+    await waitFor(() => expect(api.createTopic).toHaveBeenCalled())
+    expect(api.createTopic.mock.calls[0]![0]).toHaveProperty('sortOrder', 3)
   })
 })
 
@@ -281,7 +270,7 @@ describe('TopicForm descriptions', () => {
     fill()
     fireEvent.change(screen.getByLabelText('Mô tả chủ đề'), { target: { value: '  Mô tả bài học  ' } })
     fireEvent.submit(screen.getByRole('form'))
-    await waitFor(() => expect(api.createTopic).toHaveBeenCalledWith({ ...body, courseId: courses[0]!.id, code: 'NEW_TOPIC', description: 'Mô tả bài học' }))
+    await waitFor(() => expect(api.createTopic).toHaveBeenCalledWith({ ...createdBody, courseId: courses[0]!.id, code: 'NEW_TOPIC', description: 'Mô tả bài học' }))
     expect(saved).toHaveBeenCalledOnce()
   })
 })

@@ -164,7 +164,7 @@ describe('CourseForm unlock pricing', () => {
     })))
   })
 
-  it('offers a box to pick or drop an image while there is none, and replace and remove once there is', async () => {
+  it('offers a box to pick or drop an image while there is none, and view and remove once there is', async () => {
     api.updateCourse.mockResolvedValue(course)
     media.uploadAdminImage.mockResolvedValueOnce({
       mediaReference: 'content-image/author-1/cover.png',
@@ -173,7 +173,6 @@ describe('CourseForm unlock pricing', () => {
     })
     render(<CourseForm course={course} onSaved={vi.fn()} />)
     expect(screen.getByRole('button', { name: 'Chọn ảnh bìa khóa học' })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Thay ảnh bìa' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Xóa ảnh bìa' })).not.toBeInTheDocument()
 
     const file = new File(['png'], 'cover.png', { type: 'image/png' })
@@ -181,8 +180,11 @@ describe('CourseForm unlock pricing', () => {
     await screen.findByAltText('Xem trước ảnh bìa khóa học')
     expect(media.uploadAdminImage).toHaveBeenCalledWith('/api/content/admin/media/image', file)
     expect(screen.queryByRole('button', { name: 'Chọn ảnh bìa khóa học' })).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Thay ảnh bìa' })).toBeEnabled()
     expect(screen.getByRole('button', { name: 'Xóa ảnh bìa' })).toBeEnabled()
+    // The eye over the picture opens it large.
+    expect(screen.getAllByAltText('Xem trước ảnh bìa khóa học')).toHaveLength(1)
+    fireEvent.click(document.querySelector('.p-image-preview-indicator') as Element)
+    await waitFor(() => expect(document.querySelector('.p-image-mask img')).not.toBeNull())
     // The banner is a separate image and is still empty.
     expect(screen.getByRole('button', { name: 'Chọn banner khóa học' })).toBeInTheDocument()
   })

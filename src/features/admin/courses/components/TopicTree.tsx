@@ -8,7 +8,7 @@ import type { TopicOption } from '../../lessons/types'
 import { reorderTopics, updateTopic } from '../api/courseApi'
 import { SKILL_LABEL, type Course } from '../types'
 import { TopicForm } from './TopicForm'
-import { bandText, groupTopicsBySkill, swappedGroup, topicError, topicUpdate, type SkillGroup } from '../lib/topicHelpers'
+import { groupTopicsBySkill, swappedGroup, topicError, topicUpdate, type SkillGroup } from '../lib/topicHelpers'
 
 const SKILL_ICON = { LISTENING: Headphones, READING: BookOpenText, WRITING: PenLine, SPEAKING: Mic } as const
 const SKILL_NAME = { LISTENING: 'Listening', READING: 'Reading', WRITING: 'Writing', SPEAKING: 'Speaking' } as const
@@ -108,7 +108,6 @@ export function TopicTree({ topics, allTopics, courses, courseId, onSaved, onErr
             </div>
           </div>
           <div className="adm-topic-meta">
-            <span className="adm-topic-band">{bandText(topic.bandMin, topic.bandMax)}</span>
             <span className={`adm-badge ${active ? 'adm-badge--ok' : 'adm-badge--muted'}`}>{active ? 'Đang dùng' : 'Ngừng dùng'}</span>
           </div>
           <div className="adm-topic-actions">
@@ -191,7 +190,7 @@ function SkillGroupCard({ group, open, panelId, onToggle, children }: {
     </h3>
     {open ? <div className="adm-skill-group__panel" id={panelId}>
       <div className="adm-topic-table">
-        <div aria-hidden="true" className="adm-topic-head"><span>Chủ đề</span><span>Band</span><span>Trạng thái</span><span /></div>
+        <div aria-hidden="true" className="adm-topic-head"><span>Chủ đề</span><span>Trạng thái</span><span /></div>
         {children}
       </div>
     </div> : null}
