@@ -36,7 +36,6 @@ export const ADMIN_MENU: readonly AdminMenuItem[] = [
   { path: '/examiner/profile', label: 'Hồ sơ của tôi', icon: UserRound, roles: ['EXAMINER'], offMenu: true },
   { path: '/examiner/knowledge-graph', label: 'Cây tri thức', icon: Network, roles: ['EXAMINER'] },
   { path: '/content-author', label: 'Tổng quan nội dung', icon: LayoutDashboard, roles: ['CONTENT_AUTHOR'] },
-  { path: '/content-author/settings', label: 'Thiết lập tham số', icon: Settings, roles: ['CONTENT_AUTHOR'] },
   { path: '/content-author/courses', label: 'Khóa học & chủ đề', icon: Library, roles: ['CONTENT_AUTHOR'], group: 'curriculum' },
   { path: '/content-author/knowledge-graph', label: 'Cây tri thức', icon: Network, roles: ['CONTENT_AUTHOR'], group: 'curriculum' },
   { path: '/content-author/questions', label: 'Ngân hàng câu hỏi', icon: FileQuestion, roles: ['CONTENT_AUTHOR'], group: 'questions' },
@@ -47,6 +46,8 @@ export const ADMIN_MENU: readonly AdminMenuItem[] = [
   { path: '/content-author/rubrics', label: 'Rubric chấm Writing', icon: Scale, roles: ['CONTENT_AUTHOR'], group: 'grading' },
   { path: '/content-author/error-types', label: 'Mã lỗi', icon: Bug, roles: ['CONTENT_AUTHOR'], group: 'grading' },
   { path: '/content-author/ai-drafts', label: 'Sinh nội dung bằng AI', icon: Sparkles, roles: ['CONTENT_AUTHOR'], enabled: QUESTION_DRAFTS_ENABLED, group: 'questions' },
+  // Last: settings are rarely opened, so they sit at the bottom of the sidebar.
+  { path: '/content-author/settings', label: 'Thiết lập tham số', icon: Settings, roles: ['CONTENT_AUTHOR'] },
 ]
 
 export function menuFor(roles: readonly string[] | undefined, area?: StaffArea): AdminMenuItem[] {
