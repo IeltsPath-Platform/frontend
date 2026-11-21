@@ -32,6 +32,19 @@ export function emailText(label = 'Email') {
     .pipe(z.email({ error: `${label} không hợp lệ.` }))
 }
 
+/**
+ * A phone number as the server reads it: spaces, dots, dashes and brackets are ignored, what is left is 8 to 15 digits
+ * with an optional leading +, and the text typed is at most 30 characters. Empty is allowed.
+ */
+export function phoneText(label = 'Số điện thoại') {
+  return z.string().superRefine((value, ctx) => {
+    const text = value.trim()
+    if (text === '') return
+    if (text.length > 30) ctx.addIssue({ code: 'custom', message: `${label} tối đa 30 ký tự.` })
+    else if (!/^\+?[0-9]{8,15}$/.test(text.replace(/[\s.\-()]/g, ''))) ctx.addIssue({ code: 'custom', message: `${label} không hợp lệ. Nhập từ 8 đến 15 chữ số.` })
+  })
+}
+
 /** A choice that must be made from a list: empty is refused with Chọn <label>.. */
 export function requiredChoice(label: string) {
   return z.string({ error: `Chọn ${label}.` }).min(1, `Chọn ${label}.`)

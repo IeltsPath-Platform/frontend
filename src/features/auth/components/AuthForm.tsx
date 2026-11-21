@@ -34,13 +34,12 @@ interface AuthFormProps {
   onForgotPasswordClick?: () => void
 }
 
-/** What each mode asks for. Fields are read by their 
-ame from the form. */
+/** What each mode asks for. Fields are read by their name from the form. */
 function authSchema(mode: AuthMode) {
   const password = z.string({ error: 'Mật khẩu không được để trống.' }).min(1, 'Mật khẩu không được để trống.')
   if (mode === 'sign-in') return z.object({ email: requiredText('Email hoặc số điện thoại', 255), password })
   return z.object({
-    fullName: requiredText('Họ và tên', 255),
+    fullName: requiredText('Họ và tên', 150),
     email: emailText('Email'),
     password: password.refine(isPasswordLengthValid, PASSWORD_LENGTH_MESSAGE),
     confirmPassword: z.string({ error: 'Xác nhận mật khẩu không được để trống.' }).min(1, 'Xác nhận mật khẩu không được để trống.'),
