@@ -61,13 +61,14 @@ export function KnowledgeGraphPage() {
   // Only an author may write: the API refuses an admin who is not one.
   const canWrite = hasAnyRole(roles, ['CONTENT_AUTHOR'])
   const { query } = useAdminSearch()
-  const [skill, setSkill] = useState('')
+  const [searchParams] = useSearchParams()
+  // The overview links here with the filters already on: ?flagged=1 for the points with a warning, ?skill=READING for one skill.
+  const [skill, setSkill] = useState(() => (SKILL_OPTIONS.some((option) => option.value !== '' && option.value === searchParams.get('skill')) ? searchParams.get('skill')! : ''))
   const [courseId, setCourseId] = useState('')
   const [includeInactive, setIncludeInactive] = useState(false)
-  const [onlyFlagged, setOnlyFlagged] = useState(false)
+  const [onlyFlagged, setOnlyFlagged] = useState(() => searchParams.get('flagged') === '1')
   // The skill whose org chart is open in its popup, if any.
   const [chartSkill, setChartSkill] = useState<SkillKey | null>(null)
-  const [searchParams] = useSearchParams()
   const [selectedId, setSelectedId] = useState<string | null>(searchParams.get('kp'))
 
   const wantInactive = canSeeInactive && includeInactive

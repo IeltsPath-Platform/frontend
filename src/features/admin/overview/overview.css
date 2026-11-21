@@ -87,3 +87,20 @@
 @media (prefers-reduced-motion: reduce) {
   .ov-donut__arc, .ov-bars__fill, .ov-columns__bar, .ov-rate__fill { animation: none; }
 }
+
+/* The few numbers an author checks first. */
+.ov-kpis { list-style: none; margin: 0 0 14px; padding: 0; display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+.ov-kpi { display: grid; gap: 2px; padding: 12px 14px; border: 1px solid var(--adm-border); border-radius: 10px; background: var(--adm-surface, #fff); color: var(--adm-text); text-decoration: none; }
+.ov-kpi strong { font-size: 1.6rem; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.ov-kpi span { font-size: .82rem; color: var(--adm-muted); }
+.ov-kpi:hover { border-color: var(--adm-accent); }
+.ov-kpi--warn strong { color: var(--adm-warn); }
+.ov-kpi--ok strong { color: var(--adm-ok); }
+
+/* Everything that needs doing, in one list; two columns when there is room. */
+.ov-block + .ov-block, .ov-kpis + .ov-block { margin-top: 14px; }
+.ov-attention { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px 28px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+.ov-attention .ov-check a { align-items: baseline; }
+.ov-attention__go { margin-left: auto; font-size: .8rem; color: var(--adm-accent); }
+.ov-ok { display: flex; align-items: center; gap: 8px; margin: 0; font-size: .88rem; color: var(--adm-ok); }
+.ov-source-error { margin: 10px 0 0; font-size: .85rem; color: var(--adm-danger); }
