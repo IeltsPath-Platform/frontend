@@ -83,6 +83,7 @@ export function QuestionBankPage() {
   const { query } = useAdminSearch()
   const [skill, setSkill] = useState('')
   const [purpose, setPurpose] = useState('')
+  const [code, setCode] = useState('')
   const [searchParams] = useSearchParams()
   // The overview links here with a status already chosen, such as ?status=DRAFT.
   const [status, setStatus] = useState(() => (PUBLICATION_STATUSES.some((item) => item === searchParams.get('status')) ? searchParams.get('status')! : ''))
@@ -94,12 +95,12 @@ export function QuestionBankPage() {
   const { confirm, confirmDialog } = useAdminConfirm()
   const [, setActionError] = useAdminError()
 
-  const list = useAdminResource(`questions|${skill}|${purpose}|${status}|${page}`, (signal) =>
-    listQuestions({ skill, purpose, status, page, size: PAGE_SIZE }, signal))
+  const list = useAdminResource(`questions|${skill}|${purpose}|${status}|${code}|${page}`, (signal) =>
+    listQuestions({ skill, purpose, status, code, page, size: PAGE_SIZE }, signal))
 
   const text = query.trim().toLowerCase()
   const rows = (list.data?.content ?? []).filter((question) =>
-    !text || [question.id, TYPE_LABEL[question.questionType], question.questionType, question.skill]
+    !text || [question.code, question.id, TYPE_LABEL[question.questionType], question.questionType, question.skill]
       .some((value) => value?.toLowerCase().includes(text)))
 
   /** Soft delete: the question is archived, not removed, so it stays under the "Đã lưu trữ" status filter. */
@@ -147,7 +148,7 @@ export function QuestionBankPage() {
       {viewing ? <QuestionDetailModal onClose={() => setViewing(null)} question={viewing} /> : null}
 
       {editing ? <AdminDrawer
-        description={`Mã ${editing.id}`}
+        description={`Mã ${editing.code}`}
         onClose={() => setEditing(null)}
         size="lg"
         title="Cập nhật câu hỏi">
@@ -157,6 +158,10 @@ export function QuestionBankPage() {
       {confirmDialog}
 
       <div className="adm-filters">
+        <label className="adm-field">
+          <span>Mã câu hỏi</span>
+          <input className="adm-input" onChange={(event) => changeFilter(setCode, event.target.value)} type="search" value={code} />
+        </label>
         <label className="adm-field">
           <span>Kỹ năng</span>
           <select className="adm-select" onChange={(event) => changeFilter(setSkill, event.target.value)} value={skill}>
@@ -207,7 +212,7 @@ export function QuestionBankPage() {
                 {rows.map((question, index) => (
                   <tr key={question.id}>
                     <td className="adm-stt">{(list.data?.page ?? 0) * PAGE_SIZE + index + 1}</td>
-                    <td><code>{question.id.slice(0, 8)}…</code></td>
+                    <td><code>{question.code}</code></td>
                     <td>{TYPE_LABEL[question.questionType] ?? question.questionType}</td>
                     <td>{question.skill ? SKILL_LABEL[question.skill] ?? question.skill : '—'}</td>
                     <td>{question.purpose ? PURPOSE_LABEL[question.purpose] ?? question.purpose : '—'}</td>

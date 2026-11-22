@@ -2,13 +2,13 @@ import { z } from 'zod'
 import { apiRequest } from '@/lib/httpClient'
 
 export const codeSettingSchema = z.object({
-  kind: z.enum(['COURSE', 'TOPIC', 'LESSON', 'PACKAGE', 'KNOWLEDGE_POINT', 'ERROR_TYPE']),
+  kind: z.enum(['COURSE', 'TOPIC', 'LESSON', 'PACKAGE', 'KNOWLEDGE_POINT', 'ERROR_TYPE', 'QUESTION']),
   applied: z.boolean(),
   pattern: z.string(),
   startNumber: z.number().int().nonnegative(),
   editable: z.boolean(),
 })
-export type CodeKind = 'COURSE' | 'TOPIC' | 'LESSON' | 'PACKAGE' | 'KNOWLEDGE_POINT' | 'ERROR_TYPE'
+export type CodeKind = 'COURSE' | 'TOPIC' | 'LESSON' | 'PACKAGE' | 'KNOWLEDGE_POINT' | 'ERROR_TYPE' | 'QUESTION'
 export type CodeSetting = z.infer<typeof codeSettingSchema>
 
 const suggestionSchema = z.object({ code: z.string(), applied: z.boolean(), editable: z.boolean() })

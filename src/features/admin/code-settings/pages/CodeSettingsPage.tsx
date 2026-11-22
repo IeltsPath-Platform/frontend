@@ -16,7 +16,7 @@ import './code-settings.css'
 
 type Draft = Omit<CodeSetting, 'startNumber'> & { startNumber: string }
 
-const KIND_NAME: Record<CodeSetting['kind'], string> = { COURSE: 'Khóa học', TOPIC: 'Chủ đề', LESSON: 'Bài học', PACKAGE: 'Gói đề', KNOWLEDGE_POINT: 'Điểm kiến thức', ERROR_TYPE: 'Mã lỗi' }
+const KIND_NAME: Record<CodeSetting['kind'], string> = { COURSE: 'Khóa học', TOPIC: 'Chủ đề', LESSON: 'Bài học', PACKAGE: 'Gói đề', KNOWLEDGE_POINT: 'Điểm kiến thức', ERROR_TYPE: 'Mã lỗi', QUESTION: 'Câu hỏi' }
 
 /** The keywords besides the sequence number that each kind of code accepts, for the help beside the pattern. */
 const KEYWORD_HELP: Record<CodeSetting['kind'], Array<[string, string]>> = {
@@ -26,6 +26,7 @@ const KEYWORD_HELP: Record<CodeSetting['kind'], Array<[string, string]>> = {
   PACKAGE: [['{COURSE}', 'mã khóa học của gói. Gói không thuộc khóa nào dùng PKG_{TYPE}{SEQ:3}.'], ['{TYPE}', 'viết tắt loại gói: PS, TT, CT, PT, MT, PL, QZ hoặc LS.']],
   KNOWLEDGE_POINT: [['{PREFIX}', 'chữ đầu suy ra từ loại và kỹ năng.'], ['{LEVEL}', 'mức band 55, 60, 65 hoặc 70.'], ['{NAME}', 'tên điểm kiến thức đã chuẩn hóa.']],
   ERROR_TYPE: [['{NAME}', 'tên mã lỗi đã chuẩn hóa: chữ in hoa, bỏ dấu, nối bằng gạch dưới, tối đa 60 ký tự.']],
+  QUESTION: [],
 }
 
 function draftFrom(setting: CodeSetting): Draft { return { ...setting, startNumber: String(setting.startNumber) } }
@@ -62,10 +63,10 @@ function CodeSettingEditor({ index, setting, onChange }: { index: number; settin
     setError(null)
     try {
       const saved = await updateCodeSettings(setting.kind, {
-        applied: setting.applied,
+        applied: setting.kind === 'QUESTION' ? true : setting.applied,
         pattern: setting.pattern.trim(),
         startNumber: Number(setting.startNumber),
-        editable: setting.editable,
+        editable: setting.kind === 'QUESTION' ? false : setting.editable,
       })
       onChange(draftFrom(saved))
       toast({ title: 'Thành công', description: 'Đã lưu thiết lập bộ mã.', tone: 'success' })
@@ -78,7 +79,7 @@ function CodeSettingEditor({ index, setting, onChange }: { index: number; settin
     <summary className="adm-code-settings__heading">{index}. Thiết lập bộ mã {kindName} tự sinh</summary>
     <form aria-label={`Thiết lập bộ mã ${kindName}`} className="adm-code-settings__form" noValidate onSubmit={(event) => void save(event)}>
       <div className="adm-code-settings__row">
-        <AdminSwitch checked={setting.applied} onChange={(applied) => onChange({ ...setting, applied })}>Có áp dụng</AdminSwitch>
+        <AdminSwitch checked={setting.applied} disabled={setting.kind === 'QUESTION'} onChange={(applied) => onChange({ ...setting, applied })}>Có áp dụng</AdminSwitch>
       </div>
       <div className="adm-code-settings__row">
         <div className="adm-code-settings__pattern">
@@ -94,7 +95,7 @@ function CodeSettingEditor({ index, setting, onChange }: { index: number; settin
         </AdminField>
       </div>
       <div className="adm-code-settings__row">
-        <AdminSwitch checked={setting.editable} onChange={(editable) => onChange({ ...setting, editable })}>Cho phép hiệu chỉnh lại mã</AdminSwitch>
+        <AdminSwitch checked={setting.editable} disabled={setting.kind === 'QUESTION'} onChange={(editable) => onChange({ ...setting, editable })}>Cho phép hiệu chỉnh lại mã</AdminSwitch>
       </div>
       <div className="adm-form-footer"><button className="adm-btn adm-btn--primary" disabled={saving} type="submit">Lưu</button></div>
     </form>

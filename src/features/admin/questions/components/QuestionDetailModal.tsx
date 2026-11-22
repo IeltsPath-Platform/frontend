@@ -14,7 +14,7 @@ export function QuestionDetailModal({ question, onClose }: { question: Question;
   return (
     <AdminModal onClose={onClose} title="Chi tiết câu hỏi">
       <AdminDetails items={[
-        { label: 'Mã', value: <code>{question.id}</code> },
+        { label: 'Mã', value: <code>{question.code}</code> },
         { label: 'Dạng', value: TYPE_LABEL[question.questionType] ?? question.questionType },
         { label: 'Kỹ năng', value: question.skill ? SKILL_LABEL[question.skill] ?? question.skill : '—' },
         { label: 'Mục đích', value: question.purpose ? PURPOSE_LABEL[question.purpose] ?? question.purpose : '—' },

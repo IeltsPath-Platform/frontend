@@ -16,6 +16,7 @@ export type Difficulty = (typeof DIFFICULTIES)[number]
 /** Question list item and the header of a question (`backend/docs/contracts/question-publication-v1.md`). */
 export const questionSchema = z.object({
   id: z.string(),
+  code: z.string(),
   questionType: z.string(),
   skill: z.string().nullish(),
   accessLevel: z.string().nullish(),
@@ -84,6 +85,7 @@ export interface VersionRequest {
 }
 
 export interface QuestionFilters {
+  code?: string
   skill?: string
   purpose?: string
   status?: string

@@ -14,7 +14,7 @@ vi.mock('../../knowledge-graph/api/knowledgeGraphApi', () => graph)
 
 function detail(overrides: Partial<QuestionDetail> = {}): QuestionDetail {
   return {
-    id: 'q1', questionType: 'MULTIPLE_CHOICE', skill: 'READING', accessLevel: 'FREE', status: 'PUBLISHED',
+    id: 'q1', code: 'Q-000001', questionType: 'MULTIPLE_CHOICE', skill: 'READING', accessLevel: 'FREE', status: 'PUBLISHED',
     currentPublishedVersionId: 'v1', purpose: 'LEARNING',
     versions: [
       { id: 'v1', versionNumber: 1, stem: 'Old stem', status: 'PUBLISHED', difficulty: 'EASY', answerSpecJson: '{"type":"CHOICE","correct":"B"}',
@@ -47,6 +47,7 @@ describe('QuestionDetailPage', () => {
     renderPage()
 
     expect(await screen.findByRole('heading', { name: 'Trắc nghiệm' })).toBeInTheDocument()
+    expect(screen.getByText('Mã Q-000001')).toBeInTheDocument()
     const versions = screen.getAllByRole('article')
     expect(versions.map((item) => item.getAttribute('aria-label'))).toEqual(['Phiên bản 2', 'Phiên bản 1'])
     expect(within(versions[1]).getByText('Đang dùng')).toBeInTheDocument()

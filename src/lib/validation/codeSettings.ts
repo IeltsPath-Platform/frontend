@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { nonNegativeIntegerText } from './fields'
 
-type Kind = 'COURSE' | 'TOPIC' | 'LESSON' | 'PACKAGE' | 'KNOWLEDGE_POINT' | 'ERROR_TYPE'
+type Kind = 'COURSE' | 'TOPIC' | 'LESSON' | 'PACKAGE' | 'KNOWLEDGE_POINT' | 'ERROR_TYPE' | 'QUESTION'
 
 /** The keywords each kind of code accepts, as the server lists them, with the wording of the refusal. */
 const KEYWORDS: Record<Kind, { allowed: RegExp; refusal: string; keeps: string }> = {
@@ -11,6 +11,7 @@ const KEYWORDS: Record<Kind, { allowed: RegExp; refusal: string; keeps: string }
   PACKAGE: { allowed: /^(SEQ(?::\d{1,2})?|COURSE|TYPE)$/, refusal: 'Chỉ dùng {SEQ}, {SEQ:n}, {COURSE} và {TYPE} cho mã gói đề.', keeps: 'Cấu trúc mã gói đề cần có {SEQ} để tránh trùng mã.' },
   KNOWLEDGE_POINT: { allowed: /^(SEQ(?::\d{1,2})?|PREFIX|LEVEL|NAME)$/, refusal: 'Chỉ dùng {SEQ}, {SEQ:n}, {PREFIX}, {LEVEL} và {NAME} cho mã điểm kiến thức.', keeps: 'Cấu trúc mã điểm kiến thức cần có {SEQ} hoặc {NAME} để tạo mã có ý nghĩa.' },
   ERROR_TYPE: { allowed: /^NAME$/, refusal: 'Mã lỗi chỉ dùng được {NAME}.', keeps: 'Cấu trúc mã lỗi cần có {NAME}.' },
+  QUESTION: { allowed: /^SEQ(?::\d{1,2})?$/, refusal: 'Mã câu hỏi chỉ dùng được {SEQ} hoặc {SEQ:n}.', keeps: 'Cấu trúc mã câu hỏi cần có {SEQ} để tránh trùng mã.' },
 }
 
 function codePattern(kind: Kind) {
