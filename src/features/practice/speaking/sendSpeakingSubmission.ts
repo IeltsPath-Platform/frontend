@@ -3,6 +3,7 @@ import {
 } from './speakingPracticeApi'
 import type { SpeakingSubmission } from './speakingPracticeApi'
 import type { SavedRecording } from './speakingSession'
+import { beginSpeakingTiming, markSpeakingTiming, speakingTimingNow } from './speakingTiming'
 import { toWav16kMono, wavBytesFor } from './wavEncoder'
 
 /** An answer is too long to send: its WAV would pass the size the server accepts for one question. */
@@ -59,6 +60,7 @@ export async function sendSpeakingSubmission(input: {
   maxRecordingBytes: number
   onProgress?: (progress: SendProgress) => void
 }): Promise<SpeakingSubmission> {
+  const sentAt = speakingTimingNow()
   // An answer that cannot be stored is found before the submission is opened, not after the others were uploaded.
   for (const item of input.recordings) {
     if (wavBytesFor(item.recording.durationSeconds) > input.maxRecordingBytes) {
@@ -74,6 +76,7 @@ export async function sendSpeakingSubmission(input: {
     })
   const pending = submission.recordings.filter((recording) => !recording.uploaded)
   const total = submission.recordings.length
+  beginSpeakingTiming(submission.id, sentAt, total)
   let done = total - pending.length
   input.onProgress?.({ done, total })
 
@@ -87,5 +90,8 @@ export async function sendSpeakingSubmission(input: {
     done += 1
     input.onProgress?.({ done, total })
   }
-  return completeSpeakingSubmission(submission.id)
+  markSpeakingTiming(submission.id, 'uploaded')
+  const completed = await completeSpeakingSubmission(submission.id)
+  markSpeakingTiming(submission.id, 'completed')
+  return completed
 }

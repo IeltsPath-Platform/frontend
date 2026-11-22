@@ -191,6 +191,37 @@ describe('SpeakingSubmissionResultPage', () => {
     expect(screen.queryByText('Chưa dùng câu phức')).not.toBeInTheDocument()
   })
 
+  it('brings the pressed criterion to the top of the screen, and does not scroll on arrival', async () => {
+    const scrolled = vi.fn()
+    Element.prototype.scrollIntoView = scrolled
+    api.getSpeakingSubmission.mockResolvedValue(submission('GRADED', display))
+    renderPage()
+
+    await userEvent.click(await screen.findByRole('button', { name: /Fluency and coherence/ }))
+
+    expect(scrolled).toHaveBeenCalledTimes(1)
+    expect(scrolled.mock.contexts[0]).toBe(screen.getByRole('button', { name: /Fluency and coherence/ }))
+    expect(scrolled).toHaveBeenCalledWith(expect.objectContaining({ block: 'start' }))
+  })
+
+  it('opens only the first of several weaknesses that have a fix, and shows the fix and the rule when opened', async () => {
+    const weak = (name: string) => `${name} ở 2 chỗ: "he live", "he work". Sửa: "he lives", "he works". Quy tắc: thêm -s.`
+    api.getSpeakingSubmission.mockResolvedValue(submission('GRADED', {
+      ...display,
+      criteria: display.criteria.map((item: { code: string }) => (item.code === 'GRA' ? { ...item, weaknesses: [weak('Thiếu -s'), weak('Sai thì')] } : item)),
+    }))
+    renderPage()
+
+    const list = await screen.findByRole('list', { name: 'Cần cải thiện' })
+    const [first, second] = Array.from(list.querySelectorAll('details'))
+    expect(first).toHaveAttribute('open')
+    expect(second).not.toHaveAttribute('open')
+    expect(within(list).getByText('Sửa trước')).toBeInTheDocument()
+
+    await userEvent.click(within(second as HTMLElement).getByText(/^Sai thì/))
+    expect(second).toHaveAttribute('open')
+  })
+
   it('shows the three speech scores on the closed Pronunciation bar', async () => {
     api.getSpeakingSubmission.mockResolvedValue(submission('GRADED', display))
     renderPage()

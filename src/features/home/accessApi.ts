@@ -54,6 +54,11 @@ export class AccessApiError extends Error {
   }
 }
 
+/** A refusal (403) the learner can act on, by the server's own message; any other 403 gets the general sentence. */
+const FORBIDDEN_MESSAGES: Record<string, string> = {
+  'Vui lòng xác minh email trước khi nhập mã kích hoạt': 'Vui lòng xác minh email của tài khoản trước khi nhập mã kích hoạt.',
+}
+
 const KEY_ERROR_MESSAGES: Record<string, string> = {
   'Activation key has already been redeemed': 'Mã này đã được sử dụng.',
   'Activation key has expired': 'Mã kích hoạt đã hết hạn.',
@@ -63,7 +68,11 @@ const KEY_ERROR_MESSAGES: Record<string, string> = {
 
 async function getErrorMessage(response: Response, activating: boolean): Promise<string> {
   if (response.status === 401) return 'Phiên đăng nhập đã hết hạn hoặc chưa hợp lệ. Vui lòng đăng nhập lại.'
-  if (response.status === 403) return 'Tài khoản của bạn chưa được phép thực hiện thao tác này.'
+  if (response.status === 403) {
+    const body: unknown = await response.json().catch(() => null)
+    const error = z.object({ message: z.string() }).safeParse(body)
+    return (error.success && FORBIDDEN_MESSAGES[error.data.message]) || 'Tài khoản của bạn chưa được phép thực hiện thao tác này.'
+  }
   if (response.status === 429) return 'Bạn thao tác quá nhanh. Vui lòng chờ một chút rồi thử lại.'
   if (response.status >= 500) return 'Dịch vụ tạm thời gián đoạn. Vui lòng thử lại sau.'
 
