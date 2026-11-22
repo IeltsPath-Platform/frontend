@@ -13,7 +13,7 @@ export function BlockQuestionDetail({ questionId, questionVersionId, onClose }: 
   const detail = useAdminResource(`block-question|${questionId}`, (signal) => getQuestion(questionId, signal))
   const version = detail.data?.versions?.find((item) => item.id === questionVersionId)
   return (
-    <AdminModal onClose={onClose} stacked title="Chi tiết câu hỏi">
+    <AdminModal onClose={onClose} stacked top title="Chi tiết câu hỏi">
       {detail.status === 'loading' ? <AdminLoading label="Đang tải câu hỏi…" /> : null}
       {detail.status === 'error' ? <AdminError message={detail.error ?? 'Không tải được câu hỏi.'} onRetry={detail.reload} /> : null}
       {detail.status === 'success' && !version ? <p className="adm-muted">Không tìm thấy phiên bản câu hỏi của block.</p> : null}

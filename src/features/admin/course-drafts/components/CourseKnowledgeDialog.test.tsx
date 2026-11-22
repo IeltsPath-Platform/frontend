@@ -88,3 +88,51 @@ describe('CourseKnowledgeDialog', () => {
     expect(screen.getByRole('checkbox', { name: /KP_5/ })).not.toBeChecked()
   })
 })
+
+describe('CourseKnowledgeDialog for a skill', () => {
+  const skilled = (id: string, skill: string | null) => ({ ...node(id), skill })
+  const mixed = [skilled('1', 'LISTENING'), skilled('2', 'READING'), skilled('3', 'ALL'), skilled('4', null), skilled('5', 'WRITING')]
+  function ForSkill({ initial = [] }: { initial?: string[] }) {
+    const [picked, setPicked] = useState<string[]>(initial)
+    return <CourseKnowledgeDialog description="bài học" limit={5} offered={mixed} onChange={setPicked} onClose={() => undefined} picked={picked} skill="LISTENING" />
+  }
+
+  it('opens on the points of the lesson skill, the shared ones and the ones without a skill', () => {
+    render(<ForSkill />)
+    expect(screen.getByText('Point 1')).toBeInTheDocument()
+    expect(screen.getByText('Point 3')).toBeInTheDocument()
+    expect(screen.getByText('Point 4')).toBeInTheDocument()
+    expect(screen.queryByText('Point 2')).not.toBeInTheDocument()
+    expect(screen.queryByText('Point 5')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Tất cả/ })).toHaveTextContent('3')
+  })
+
+  it('shows every point when the switch is turned off, and goes back when it is turned on', () => {
+    render(<ForSkill />)
+    const only = screen.getByRole('switch', { name: 'Chỉ kỹ năng Nghe và Chung' })
+    fireEvent.click(only)
+    expect(screen.getByText('Point 2')).toBeInTheDocument()
+    expect(screen.getByText('Point 5')).toBeInTheDocument()
+    fireEvent.click(only)
+    expect(screen.queryByText('Point 2')).not.toBeInTheDocument()
+  })
+
+  it('keeps a point that is already picked on the list even when it is of another skill', () => {
+    render(<ForSkill initial={['5']} />)
+    expect(screen.getByText('Point 5')).toBeInTheDocument()
+    expect(screen.queryByText('Point 2')).not.toBeInTheDocument()
+  })
+
+  it('has no switch when no skill is given', () => {
+    render(<Harness limit={5} />)
+    expect(screen.queryByRole('switch')).not.toBeInTheDocument()
+  })
+
+  it('finds a point by what its can-do says, and closes with Xong', () => {
+    render(<ForSkill />)
+    fireEvent.change(screen.getByLabelText('Lọc điểm kiến thức'), { target: { value: 'can do 3' } })
+    expect(screen.getByText('Point 3')).toBeInTheDocument()
+    expect(screen.queryByText('Point 1')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Xong' })).toBeInTheDocument()
+  })
+})

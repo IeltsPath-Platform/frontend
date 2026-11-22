@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { ChevronDown, Search } from 'lucide-react'
 import { AdminModal } from '../../components/AdminLayer'
+import { AdminSwitch } from '../../components/AdminSwitch'
+import { SKILL_LABEL } from '../../courses/types'
 import { CEFR_LEVELS, type CefrLevel, type TreeNode } from '../../knowledge-graph/types'
 
 /** A point with no CEFR level is listed in a group of its own, after the levels, so it can still be chosen. */
@@ -13,18 +15,27 @@ const groupWords = (key: LevelKey) => (key === 'NONE' ? 'chưa xếp cấp' : `c
 /**
  * The big picker for the knowledge points of a course request: every point on offer at a glance, searchable, grouped by
  * level, ticked in place. `offered` is already narrowed to the band and skills and ordered highest level first.
+ *
+ * `skill` is the skill the record being edited teaches. Then the list opens on that skill and the points for every skill
+ * (and those without one), with a switch to see them all; a point already picked always stays on the list.
  */
-export function CourseKnowledgeDialog({ offered, picked, limit, description, onChange, onClose }: {
+export function CourseKnowledgeDialog({ offered: allOffered, picked, limit, description, skill, onChange, onClose }: {
   offered: readonly TreeNode[]; picked: readonly string[]; limit: number; description: string
+  skill?: string | null
   onChange: (next: string[]) => void; onClose: () => void
 }) {
   const [text, setText] = useState('')
   const [level, setLevel] = useState<LevelKey | 'ALL'>('ALL')
   const [folded, setFolded] = useState<readonly LevelKey[]>([])
+  const skillName = skill && skill !== 'ALL' ? SKILL_LABEL[skill as keyof typeof SKILL_LABEL] : undefined
+  const [onlySkill, setOnlySkill] = useState(skillName !== undefined)
+  const offered = skillName && onlySkill
+    ? allOffered.filter((node) => !node.skill || node.skill === 'ALL' || node.skill === skill || picked.includes(node.id))
+    : allOffered
   const levels: LevelKey[] = [...CEFR_LEVELS.filter((item) => offered.some((node) => node.cefrLevel === item)).reverse(), ...(offered.some((node) => !node.cefrLevel) ? (['NONE'] as const) : [])]
   const needle = text.trim().toLowerCase()
   const shown = offered.filter((node) => (level === 'ALL' || keyOf(node) === level)
-    && (!needle || node.code.toLowerCase().includes(needle) || node.name.toLowerCase().includes(needle)))
+    && (!needle || node.code.toLowerCase().includes(needle) || node.name.toLowerCase().includes(needle) || (node.canDo ?? '').toLowerCase().includes(needle)))
   const groups = levels.map((item) => ({ level: item, nodes: shown.filter((node) => keyOf(node) === item) })).filter((group) => group.nodes.length)
   const atLimit = picked.length >= limit
 
@@ -49,13 +60,14 @@ export function CourseKnowledgeDialog({ offered, picked, limit, description, onC
     onChange([...picked, ...ids.filter((id) => !picked.includes(id)).slice(0, limit - picked.length)])
   }
 
-  return <AdminModal title="Chọn điểm kiến thức" description={description} size="lg" stacked onClose={onClose}>
+  return <AdminModal title="Chọn điểm kiến thức" description={description} size="lg" stacked top onClose={onClose}>
     {(close) => <>
       <div className="adm-kp-dialog__bar">
         <label className="adm-kp-search">
           <Search aria-hidden="true" size={16} />
-          <input aria-label="Lọc điểm kiến thức" className="adm-input" onChange={(event) => setText(event.target.value)} placeholder="Tìm theo mã hoặc tên" type="search" value={text} />
+          <input aria-label="Lọc điểm kiến thức" className="adm-input" onChange={(event) => setText(event.target.value)} placeholder="Tìm theo mã, tên hoặc mô tả can-do" type="search" value={text} />
         </label>
+        {skillName ? <AdminSwitch checked={onlySkill} onChange={setOnlySkill}>Chỉ kỹ năng {skillName} và Chung</AdminSwitch> : null}
         <div aria-label="Lọc theo cấp độ" className="adm-kp-levels" role="group">
           <button aria-pressed={level === 'ALL'} className="adm-kp-level" onClick={() => setLevel('ALL')} type="button">Tất cả <span>{offered.length}</span></button>
           {levels.map((item) => <button aria-pressed={level === item} className="adm-kp-level" key={item} onClick={() => setLevel(item)} type="button">
@@ -95,7 +107,7 @@ export function CourseKnowledgeDialog({ offered, picked, limit, description, onC
         <div className="adm-kp-dialog__actions">
           <button className="adm-btn" disabled={atLimit || shown.every((node) => picked.includes(node.id))} onClick={selectAll} type="button">Chọn tất cả</button>
           <button className="adm-btn" disabled={!picked.length} onClick={() => onChange([])} type="button">Bỏ chọn tất cả</button>
-          <button className="adm-btn adm-btn--primary" onClick={close} type="button">Lưu</button>
+          <button className="adm-btn adm-btn--primary" onClick={close} type="button">Xong</button>
         </div>
       </footer>
     </>}

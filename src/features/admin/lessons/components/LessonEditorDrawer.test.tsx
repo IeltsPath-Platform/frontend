@@ -4,7 +4,7 @@ import { HttpError } from '@/lib/httpClient'
 import { answerConfirm } from '@/test/confirm'
 import type { VocabularySenseCard } from '@/features/learning-path/api/lessonVocabularyApi'
 import type { LessonEditor } from '../types'
-import { LessonEditorModal } from './LessonEditorModal'
+import { LessonEditorDrawer } from './LessonEditorDrawer'
 
 const { api, graph, questions, vocab } = vi.hoisted(() => ({
   api: {
@@ -35,11 +35,11 @@ function lesson(overrides: Partial<LessonEditor> = {}): LessonEditor {
 }
 
 function renderPage(onClose = vi.fn()) {
-  render(<LessonEditorModal fallbackTitle="Bài đang mở" lessonId="l1" onClose={onClose} topicName="Reading" />)
+  render(<LessonEditorDrawer fallbackTitle="Bài đang mở" lessonId="l1" onClose={onClose} topicName="Reading" />)
   return onClose
 }
 
-describe('LessonEditorModal', () => {
+describe('LessonEditorDrawer', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     api.fetchLesson.mockResolvedValue(lesson())
@@ -54,10 +54,10 @@ describe('LessonEditorModal', () => {
     renderPage()
 
     const popup = await screen.findByRole('dialog', { name: 'Skimming' })
-    const header = popup.querySelector('.adm-modal__header') as HTMLElement
+    const header = popup.querySelector('.adm-drawer__header') as HTMLElement
     expect(within(header).getByText('Nháp')).toBeInTheDocument()
     expect(within(header).getByText('L1 · Reading')).toBeInTheDocument()
-    expect(popup.querySelector('.adm-modal__body')).not.toHaveTextContent('Nháp')
+    expect(popup.querySelector('.adm-drawer__body')).not.toHaveTextContent('Nháp')
     expect(screen.queryByRole('button', { name: /Xuất bản|Lưu trữ/ })).not.toBeInTheDocument()
   })
 
@@ -91,9 +91,9 @@ describe('LessonEditorModal', () => {
     expect(within(picker).getByRole('region', { name: 'Cấp B1' })).toHaveTextContent('R55_SKIM')
     expect(within(picker).getByRole('region', { name: 'Chưa xếp cấp' })).toHaveTextContent('R55_SCAN')
     fireEvent.click(within(picker).getByRole('checkbox', { name: /R55_SKIM/ }))
-    fireEvent.click(within(picker).getByRole('button', { name: 'Lưu' }))
+    fireEvent.click(within(picker).getByRole('button', { name: 'Xong' }))
 
-    // The picker's own Lưu only confirms the choice; nothing is sent until the one Lưu of the form.
+    // The picker's own Xong only confirms the choice; nothing is sent until the one Lưu of the form.
     expect(api.setLessonKnowledgePoints).not.toHaveBeenCalled()
     fireEvent.click(screen.getByRole('button', { name: 'Lưu thông tin' }))
     await waitFor(() => expect(api.setLessonKnowledgePoints).toHaveBeenCalledWith('l1', ['kp1', 'kp2']))
@@ -174,12 +174,12 @@ describe('LessonEditorModal', () => {
     })
   })
 
-  it('has a single Lưu, in the button bar at the foot of the popup, next to a Đóng that closes it', async () => {
+  it('has a single Lưu, in the button bar at the foot of the panel, next to a Đóng that closes it', async () => {
     const onClose = renderPage()
     const popup = await screen.findByRole('dialog', { name: 'Skimming' })
     await screen.findByRole('form', { name: 'Thông tin bài học' })
 
-    const bar = popup.querySelector('.adm-modal__body > .adm-course-draft-lesson > .adm-form-footer') as HTMLElement
+    const bar = popup.querySelector('.adm-drawer__body > .adm-course-draft-lesson > .adm-form-footer') as HTMLElement
     expect(bar).not.toBeNull()
     expect(within(popup).getAllByRole('button', { name: /^Lưu/ })).toHaveLength(1)
     expect(within(bar).getByRole('button', { name: 'Lưu thông tin' })).toHaveAttribute('form', screen.getByRole('form', { name: 'Thông tin bài học' }).id)

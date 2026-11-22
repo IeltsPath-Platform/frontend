@@ -50,8 +50,10 @@ const infoSchema = z.object({
  * The lesson's own fields and its knowledge points, saved together with one button. The slides, documents and blocks
  * below are saved from their own popups, as each one is added or changed.
  */
-function InfoForm({ lesson, formId, saving, onSavingChange, onSaved }: {
+function InfoForm({ lesson, formId, saving, onSavingChange, onSaved, skill }: {
   lesson: LessonEditor
+  /** The skill of the topic: the knowledge point picker opens on it. */
+  skill?: string | null
   /** The Lưu button sits at the foot of the whole editor, outside this form, and submits it through this id. */
   formId: string
   saving: boolean
@@ -107,7 +109,7 @@ function InfoForm({ lesson, formId, saving, onSavingChange, onSaved }: {
       </div>
       <MarkdownField label="Tóm tắt chi tiết (Markdown)" onChange={setMarkdown} textareaClassName="adm-textarea ls-textarea" value={markdown} />
       <section aria-label="Knowledge point của bài">
-        <LessonKnowledgeField onChange={setKnowledgePointIds} title="Knowledge point của bài" value={knowledgePointIds} />
+        <LessonKnowledgeField onChange={setKnowledgePointIds} skill={skill} title="Knowledge point của bài" value={knowledgePointIds} />
       </section>
     </form>
   )
@@ -116,7 +118,7 @@ function InfoForm({ lesson, formId, saving, onSavingChange, onSaved }: {
 type Editing = { mode: 'new'; blockType: BlockType } | { mode: 'edit'; block: LessonBlock } | null
 
 /** The editor of one lesson: its details with their knowledge points (one Lưu, at the foot), then the slides, documents and blocks, each saved from its own popup. */
-export function LessonEditorPanel({ lesson, reload, onClose }: { lesson: LessonEditor; reload: () => void; onClose: () => void }) {
+export function LessonEditorPanel({ lesson, reload, onClose, skill }: { lesson: LessonEditor; reload: () => void; onClose: () => void; skill?: string | null }) {
   const { confirm, confirmDialog } = useAdminConfirm()
   const infoFormId = useId()
   const [infoSaving, setInfoSaving] = useState(false)
@@ -173,7 +175,7 @@ export function LessonEditorPanel({ lesson, reload, onClose }: { lesson: LessonE
       {confirmDialog}
       {exerciseLocked ? <div className="adm-alert" role="note">{EXERCISE_LOCK_NOTE}</div> : null}
 
-      <InfoForm formId={infoFormId} key={`info-${lesson.title}-${lesson.summary}-${lesson.estimatedMinutes}-${lesson.knowledgePointIds.join(',')}`} lesson={lesson} onSaved={reload} onSavingChange={setInfoSaving} saving={infoSaving} />
+      <InfoForm formId={infoFormId} key={`info-${lesson.title}-${lesson.summary}-${lesson.estimatedMinutes}-${lesson.knowledgePointIds.join(',')}`} lesson={lesson} onSaved={reload} onSavingChange={setInfoSaving} saving={infoSaving} skill={skill} />
       <LessonResourcesEditor key={lesson.id} lessonId={lesson.id} />
 
       {lesson.blocks.some((block) => block.blockType === 'VOCABULARY') ? lesson.blocks.map((block, index) => (
@@ -295,12 +297,13 @@ export function LessonEditorPanel({ lesson, reload, onClose }: { lesson: LessonE
               key={editing.mode === 'edit' ? editing.block.id : `new-${editing.blockType}`}
               onCancel={close}
               onSave={async (body) => { await saveBlock(body); close() }}
+              skill={skill}
             />
           )}
         </AdminDrawer>
       ) : null}
 
-      {/* The one Lưu of the editor: it stays at the foot of the popup while the long editor scrolls, and saves the lesson information above. */}
+      {/* The one Lưu of the editor: it stays at the foot of the panel while the long editor scrolls, and saves the lesson information above. */}
       <div className="adm-form-footer">
         <button className="adm-btn" onClick={onClose} type="button">Đóng</button>
         <button aria-label="Lưu thông tin" className="adm-btn adm-btn--primary" disabled={infoSaving} form={infoFormId} type="submit">{infoSaving ? 'Đang lưu…' : 'Lưu'}</button>

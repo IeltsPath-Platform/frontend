@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { AdminDrawer } from '../../components/AdminLayer'
 import type { TopicOption } from '../types'
-import { LessonEditorModal } from './LessonEditorModal'
+import { LessonEditorDrawer } from './LessonEditorDrawer'
 import { NewLessonForm } from './NewLessonForm'
 import { TopicLessonsPanel } from './TopicLessonsPanel'
 
@@ -35,11 +35,12 @@ export function TopicLessonsDrawer({ topic, onClose }: { topic: TopicOption; onC
           : <TopicLessonsPanel key={listVersion} onCreate={() => setView({ kind: 'create' })} onOpen={setLesson} topicId={topic.id} />}
       </AdminDrawer>
       {lesson ? (
-        <LessonEditorModal
+        <LessonEditorDrawer
           fallbackTitle={lesson.title}
           lessonId={lesson.id}
           onClose={() => { setLesson(null); setListVersion((version) => version + 1) }}
           topicName={topic.name}
+          topicSkill={topic.skill}
         />
       ) : null}
     </>

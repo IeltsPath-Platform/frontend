@@ -213,9 +213,9 @@
 /* A drawer opened from a popup (stacked modal at 81) must sit above it. */
 .adm-layer__overlay--drawer-stacked { z-index: 90; }
 .adm-drawer--stacked { z-index: 91; }
+.adm-layer__overlay--drawer-top { z-index: 110; }
+.adm-drawer--top { z-index: 111; }
 /* A popup opened from inside a stacked drawer, such as a Markdown preview, sits above that drawer. */
-.adm-layer__overlay--top { z-index: 100; }
-.adm-modal--top { z-index: 101; }
 .adm-drawer__header { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-bottom: 1px solid var(--adm-border); }
 .adm-drawer__heading { flex: 1; min-width: 0; }
 .adm-drawer__heading .adm-layer__title { overflow-wrap: anywhere; }
@@ -245,6 +245,9 @@
 .adm-modal--lg .adm-modal__body { display: flex; flex-direction: column; overflow: hidden; padding: 0; }
 .adm-layer__overlay--stacked { z-index: 80; }
 .adm-modal--stacked { z-index: 81; }
+/* After the stacked rules on purpose: a popup that is both stacked and top must take the top level. */
+.adm-layer__overlay--top { z-index: 100; }
+.adm-modal--top { z-index: 101; }
 .adm-modal__header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--adm-border); }
 .adm-modal__heading { min-width: 0; }
 .adm-modal__titlerow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
@@ -258,8 +261,9 @@
 @media (max-width: 480px) { .adm-details__row { grid-template-columns: 1fr; gap: 2px; } }
 
 /* The confirmation popup: a small centred panel above everything else, with the question and two buttons. */
-.adm-confirm__overlay { z-index: 80; }
-.adm-confirm { z-index: 81; display: grid; grid-template-columns: auto 1fr; align-items: start; gap: 8px 14px; width: min(460px, calc(100vw - 32px)); padding: 22px; }
+/* A question to answer sits above every drawer and popup, so it is never hidden behind the panel it was asked from. */
+.adm-confirm__overlay { z-index: 130; }
+.adm-confirm { z-index: 131; display: grid; grid-template-columns: auto 1fr; align-items: start; gap: 8px 14px; width: min(460px, calc(100vw - 32px)); padding: 22px; }
 .adm-confirm__icon { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; background: var(--adm-accent-soft); color: var(--adm-accent); }
 .adm-confirm__icon.is-danger { background: rgb(196 45 45 / 10%); color: var(--adm-danger); }
 .adm-confirm__text { display: grid; gap: 6px; min-width: 0; }
