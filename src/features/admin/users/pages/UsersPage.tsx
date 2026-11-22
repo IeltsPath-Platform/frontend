@@ -2,7 +2,7 @@
 import { Plus } from 'lucide-react'
 import { z } from 'zod'
 import { useAuthSession } from '@/features/auth/authSession'
-import { emailText, requiredText } from '@/lib/validation/fields'
+import { emailText, phoneText, requiredText } from '@/lib/validation/fields'
 import { useFormErrors } from '@/lib/validation/useFormErrors'
 import { useAdminSearch } from '../../adminSearch'
 import { AdminField } from '../../components/AdminField'
@@ -26,13 +26,14 @@ const PAGE_SIZE = 25
 
 const createUserSchema = z.object({
   email: emailText(),
-  fullName: requiredText('Họ tên', 255),
+  fullName: requiredText('Họ tên', 150),
+  phoneNumber: phoneText(),
   password: z.string({ error: 'Mật khẩu không được để trống.' })
     .min(1, 'Mật khẩu không được để trống.')
     .min(6, 'Mật khẩu có từ 6 đến 72 ký tự.')
     .max(72, 'Mật khẩu có từ 6 đến 72 ký tự.'),
 })
-const profileSchema = z.object({ fullName: requiredText('Họ tên', 255) })
+const profileSchema = z.object({ fullName: requiredText('Họ tên', 150), phoneNumber: phoneText() })
 
 function isCurrentUser(user: User, userId: string | null, email: string | null) {
   return userId ? user.id === userId : Boolean(email && user.email.toLowerCase() === email.toLowerCase())
@@ -86,7 +87,7 @@ function CreateUserForm({ onCreated, onCancel }: { onCreated: () => void; onCanc
   const [roles, setRoles] = useState<UserRole[]>(['CUSTOMER'])
   const [, setError] = useAdminError()
   const [saving, setSaving] = useState(false)
-  const form = useFormErrors(createUserSchema, { email, fullName, password })
+  const form = useFormErrors(createUserSchema, { email, fullName, phoneNumber, password })
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -109,7 +110,7 @@ function CreateUserForm({ onCreated, onCancel }: { onCreated: () => void; onCanc
       <div className="um-form-grid">
         <AdminField label="Email" {...form.field('email')}><input autoComplete="email" className="adm-input" onChange={(event) => setEmail(event.target.value)} type="email" value={email} /></AdminField>
         <AdminField label="Họ tên" {...form.field('fullName')}><input autoComplete="name" className="adm-input" onChange={(event) => setFullName(event.target.value)} value={fullName} /></AdminField>
-        <label className="adm-field"><span>Số điện thoại (không bắt buộc)</span><input autoComplete="tel" className="adm-input" onChange={(event) => setPhoneNumber(event.target.value)} type="tel" value={phoneNumber} /></label>
+        <AdminField label="Số điện thoại (không bắt buộc)" {...form.field('phoneNumber')}><input autoComplete="tel" className="adm-input" maxLength={30} onChange={(event) => setPhoneNumber(event.target.value)} type="tel" value={phoneNumber} /></AdminField>
         <AdminField label="Mật khẩu tạm thời (6–72 ký tự)" {...form.field('password')}><input autoComplete="new-password" className="adm-input" maxLength={72} onChange={(event) => setPassword(event.target.value)} type="password" value={password} /></AdminField>
       </div>
       <RoleChoices onChange={setRoles} value={roles} />
@@ -141,7 +142,7 @@ function UserEditor({ user, self, section, onSaved, onDeleted }: {
   const statusOptions: UserStatus[] = user.status === 'PENDING_VERIFY'
     ? ['PENDING_VERIFY', ...CHANGEABLE_USER_STATUSES]
     : [...CHANGEABLE_USER_STATUSES]
-  const profile = useFormErrors(profileSchema, { fullName })
+  const profile = useFormErrors(profileSchema, { fullName, phoneNumber })
 
   async function save(action: () => Promise<unknown>, refresh = true) {
     setSaving(true)
@@ -185,7 +186,7 @@ function UserEditor({ user, self, section, onSaved, onDeleted }: {
       {section === 'profile' ? <>
         <form className="um-form-grid" noValidate onSubmit={(event) => { event.preventDefault(); if (!profile.validate()) return; void save(() => updateUser(user.id, { fullName: fullName.trim(), phoneNumber: phoneNumber.trim() || null })) }}>
           <AdminField label="Họ tên" {...profile.field('fullName')}><input className="adm-input" onChange={(event) => setFullName(event.target.value)} value={fullName} /></AdminField>
-          <label className="adm-field"><span>Số điện thoại</span><input className="adm-input" onChange={(event) => setPhoneNumber(event.target.value)} type="tel" value={phoneNumber} /></label>
+          <AdminField label="Số điện thoại" {...profile.field('phoneNumber')}><input className="adm-input" maxLength={30} onChange={(event) => setPhoneNumber(event.target.value)} type="tel" value={phoneNumber} /></AdminField>
           <button className="adm-btn adm-btn--primary" disabled={saving} type="submit">Lưu thông tin</button>
         </form>
         <form className="um-actions um-editor-section" onSubmit={saveStatus}>

@@ -1,5 +1,10 @@
 import { useState, type FormEvent } from 'react'
+import { z } from 'zod'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { requiredText } from '@/lib/validation/fields'
+import { collectErrors } from '@/lib/validation/useFormErrors'
+
+const reportSchema = z.object({ reason: requiredText('Lý do báo cáo', 1000) })
 
 export interface ReportDialogProps {
   target: { type: 'POST' | 'COMMENT'; id: string } | null
@@ -20,11 +25,11 @@ export function ReportDialog({
 }: ReportDialogProps) {
   // The reason is refused under its box once the author tried to send it empty for this target.
   const [triedFor, setTriedFor] = useState<string | null>(null)
-  const reasonError = target && triedFor === target.id && !reason.trim() ? 'Lý do báo cáo không được để trống.' : undefined
+  const reasonError = target && triedFor === target.id ? collectErrors(reportSchema, { reason }).reason : undefined
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
-    if (!reason.trim()) {
+    if (Object.keys(collectErrors(reportSchema, { reason })).length > 0) {
       setTriedFor(target?.id ?? null)
       return
     }

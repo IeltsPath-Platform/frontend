@@ -15,7 +15,7 @@ const personalInfoSchema = z.object({
     .string()
     .trim()
     .min(1, 'Tên hiển thị không được để trống.')
-    .max(100, 'Tên hiển thị tối đa 100 ký tự.'),
+    .max(150, 'Tên hiển thị tối đa 150 ký tự.'),
   fullName: z
     .string()
     .trim()
