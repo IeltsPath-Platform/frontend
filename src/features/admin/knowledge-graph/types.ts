@@ -78,6 +78,11 @@ export interface KnowledgePointRequest {
   scopeOut: string
 }
 
+export interface CreateKnowledgePointRequest extends Omit<KnowledgePointRequest, 'code'> {
+  code?: string
+  codeLevel?: number
+}
+
 export type KnowledgePoint = z.infer<typeof knowledgePointSchema>
 export type TreeNode = z.infer<typeof treeNodeSchema>
 export type TreeEdge = z.infer<typeof treeEdgeSchema>

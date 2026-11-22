@@ -16,7 +16,7 @@ import './code-settings.css'
 
 type Draft = Omit<CodeSetting, 'startNumber'> & { startNumber: string }
 
-const KIND_NAME: Record<CodeSetting['kind'], string> = { COURSE: 'Khóa học', TOPIC: 'Chủ đề', LESSON: 'Bài học', PACKAGE: 'Gói đề' }
+const KIND_NAME: Record<CodeSetting['kind'], string> = { COURSE: 'Khóa học', TOPIC: 'Chủ đề', LESSON: 'Bài học', PACKAGE: 'Gói đề', KNOWLEDGE_POINT: 'Điểm kiến thức', ERROR_TYPE: 'Mã lỗi' }
 
 /** The keywords besides the sequence number that each kind of code accepts, for the help beside the pattern. */
 const KEYWORD_HELP: Record<CodeSetting['kind'], Array<[string, string]>> = {
@@ -24,6 +24,8 @@ const KEYWORD_HELP: Record<CodeSetting['kind'], Array<[string, string]>> = {
   TOPIC: [['{COURSE}', 'mã khóa học đã chọn.'], ['{SKILL}', 'L, R, W hoặc S theo kỹ năng.']],
   LESSON: [['{TOPIC}', 'mã chủ đề chứa bài học.']],
   PACKAGE: [['{COURSE}', 'mã khóa học của gói. Gói không thuộc khóa nào dùng PKG_{TYPE}{SEQ:3}.'], ['{TYPE}', 'viết tắt loại gói: PS, TT, CT, PT, MT, PL, QZ hoặc LS.']],
+  KNOWLEDGE_POINT: [['{PREFIX}', 'chữ đầu suy ra từ loại và kỹ năng.'], ['{LEVEL}', 'mức band 55, 60, 65 hoặc 70.'], ['{NAME}', 'tên điểm kiến thức đã chuẩn hóa.']],
+  ERROR_TYPE: [['{NAME}', 'tên mã lỗi đã chuẩn hóa: chữ in hoa, bỏ dấu, nối bằng gạch dưới, tối đa 60 ký tự.']],
 }
 
 function draftFrom(setting: CodeSetting): Draft { return { ...setting, startNumber: String(setting.startNumber) } }
@@ -98,7 +100,8 @@ function CodeSettingEditor({ index, setting, onChange }: { index: number; settin
     </form>
     {helpOpen ? <AdminModal title="Từ khóa dùng được" onClose={() => setHelpOpen(false)}>
       <ul className="adm-code-settings__tokens">
-        <li><code>{'{SEQ}'}</code>, <code>{'{SEQ:n}'}</code>: số thứ tự; <code>n</code> là số chữ số tối thiểu.</li>
+        {setting.kind === 'KNOWLEDGE_POINT' || setting.kind === 'ERROR_TYPE' ? null
+          : <li><code>{'{SEQ}'}</code>, <code>{'{SEQ:n}'}</code>: số thứ tự; <code>n</code> là số chữ số tối thiểu.</li>}
         {KEYWORD_HELP[setting.kind].map(([keyword, meaning]) => <li key={keyword}><code>{keyword}</code>: {meaning}</li>)}
       </ul>
     </AdminModal> : null}
