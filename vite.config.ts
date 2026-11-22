@@ -21,5 +21,7 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     include: ['src/**/*.test.{ts,tsx}'],
+    // Vitest swaps every stylesheet for an empty string; the layer order test needs the admin one as written.
+    css: { include: [/features\/admin\/admin\.css/] },
   },
 })
