@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Eye, Pencil, Plus, Trash2 } from 'lucide-react'
+import { useSearchParams } from 'react-router-dom'
 import { useToast } from '@/components/toast/toastContext'
 import { useAdminSearch } from '../../adminSearch'
 import { AdminDrawer } from '../../components/AdminLayer'
@@ -82,7 +83,9 @@ export function QuestionBankPage() {
   const { query } = useAdminSearch()
   const [skill, setSkill] = useState('')
   const [purpose, setPurpose] = useState('')
-  const [status, setStatus] = useState('')
+  const [searchParams] = useSearchParams()
+  // The overview links here with a status already chosen, such as ?status=DRAFT.
+  const [status, setStatus] = useState(() => (PUBLICATION_STATUSES.some((item) => item === searchParams.get('status')) ? searchParams.get('status')! : ''))
   const [page, setPage] = useState(0)
   const [creating, setCreating] = useState(false)
   const [viewing, setViewing] = useState<Question | null>(null)

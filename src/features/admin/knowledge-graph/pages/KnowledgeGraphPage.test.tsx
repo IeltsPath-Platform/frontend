@@ -233,6 +233,14 @@ describe('KnowledgeGraphPage', () => {
     expect(screen.queryByRole('region', { name: 'Bảng Reading' })).not.toBeInTheDocument()
   })
 
+  it('opens with the warning filter and the skill chosen in the link from the overview', async () => {
+    renderPage('', '/?flagged=1&skill=READING')
+
+    expect(await screen.findByLabelText('Chỉ KP có cảnh báo')).toBeChecked()
+    expect(screen.getByLabelText('Kỹ năng')).toHaveValue('READING')
+    expect(api.fetchKnowledgeTree).toHaveBeenCalledWith({ skill: 'READING', courseId: '', includeInactive: false }, expect.any(AbortSignal))
+  })
+
   it('says so when the search matches no point', async () => {
     renderPage('zzz')
 

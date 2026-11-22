@@ -1,4 +1,4 @@
-.ov-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); align-items: start; margin-top: 14px; }
+.ov-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); align-items: start; }
 .ov-block__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
 .ov-block__head h2 { margin: 0; }
 .ov-block h3 { margin: 12px 0 6px; font-size: .85rem; color: var(--adm-muted); font-weight: 600; }
@@ -87,3 +87,33 @@
 @media (prefers-reduced-motion: reduce) {
   .ov-donut__arc, .ov-bars__fill, .ov-columns__bar, .ov-rate__fill { animation: none; }
 }
+
+/* The few numbers an author checks first. */
+.ov-kpis { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+.ov-kpi { display: grid; gap: 2px; padding: 12px 14px; border: 1px solid var(--adm-border); border-radius: 10px; background: var(--adm-surface, #fff); color: var(--adm-text); text-decoration: none; }
+.ov-kpi strong { font-size: 1.6rem; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.ov-kpi span { font-size: .82rem; color: var(--adm-muted); }
+.ov-kpi:hover { border-color: var(--adm-accent); }
+.ov-kpi--warn strong { color: var(--adm-warn); }
+.ov-kpi--ok strong { color: var(--adm-ok); }
+
+/* Everything that needs doing, in one list; two columns when there is room. */
+.ov-attention { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px 28px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+.ov-attention .ov-check a { align-items: baseline; }
+.ov-attention__go { margin-left: auto; font-size: .8rem; color: var(--adm-accent); }
+.ov-ok { display: flex; align-items: center; gap: 8px; margin: 0; font-size: .88rem; color: var(--adm-ok); }
+
+/* Coverage by skill and CEFR level: one cell per pair, tinted by how much of it has no question. */
+.ov-matrix { width: 100%; border-collapse: separate; border-spacing: 4px; font-size: .85rem; }
+.ov-matrix caption { text-align: left; padding-bottom: 6px; font-size: .82rem; color: var(--adm-muted); }
+.ov-matrix thead th { font-weight: 600; font-size: .8rem; color: var(--adm-muted); }
+.ov-matrix tbody th { width: 6.5em; text-align: left; font-weight: 600; color: var(--adm-text); }
+.ov-cell { padding: 0; text-align: center; border-radius: 6px; font-variant-numeric: tabular-nums; }
+.ov-cell a { display: block; padding: 9px 4px; color: inherit; text-decoration: none; }
+.ov-cell a:hover { text-decoration: underline; }
+.ov-cell--empty { padding: 9px 4px; color: var(--adm-muted); background: var(--adm-bar); opacity: .6; }
+.ov-cell--ok { background: color-mix(in srgb, var(--adm-ok) 14%, transparent); color: var(--adm-ok); }
+.ov-cell--low { background: color-mix(in srgb, var(--adm-warn) 18%, transparent); }
+.ov-cell--high { background: color-mix(in srgb, var(--adm-danger) 22%, transparent); font-weight: 600; }
+
+.ov-source-error { margin: 10px 0 0; font-size: .85rem; color: var(--adm-danger); }

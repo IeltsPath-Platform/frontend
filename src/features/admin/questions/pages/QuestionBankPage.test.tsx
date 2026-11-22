@@ -37,9 +37,9 @@ function detail(): QuestionDetail {
   }
 }
 
-function renderPage(query = '') {
+function renderPage(query = '', path = '/content-author/questions') {
   return render(
-    <MemoryRouter initialEntries={['/content-author/questions']}>
+    <MemoryRouter initialEntries={[path]}>
       <AdminSearchContext.Provider value={{ query, setQuery: vi.fn() }}>
         <Routes>
           <Route element={<QuestionBankPage />} path="/content-author/questions" />
@@ -63,8 +63,19 @@ describe('QuestionBankPage', () => {
     graph.fetchKnowledgeTree.mockResolvedValue({ nodes: [], edges: [] })
   })
 
-  it('lists the questions with their type, skill, purpose and status', async () => {
-    renderPage()
+  it('opens with the status chosen in the link from the overview', async () => {
+    renderPage('', '/content-author/questions?status=DRAFT')
+
+    await waitFor(() => expect(api.listQuestions).toHaveBeenCalledWith(expect.objectContaining({ status: 'DRAFT' }), expect.any(AbortSignal)))
+  })
+
+  it('ignores a status in the link that does not exist', async () => {
+    renderPage('', '/content-author/questions?status=BOGUS')
+
+    await waitFor(() => expect(api.listQuestions).toHaveBeenCalledWith(expect.objectContaining({ status: '' }), expect.any(AbortSignal)))
+  })
+
+  it('lists the questions with their type, skill, purpose and status', async () => {    renderPage()
 
     const table = await screen.findByRole('table')
     expect(within(table).getByText('Trắc nghiệm')).toBeInTheDocument()
