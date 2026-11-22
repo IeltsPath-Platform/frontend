@@ -18,8 +18,8 @@ vi.mock('../../knowledge-graph/api/knowledgeGraphApi', () => graph)
 function page(overrides: Partial<QuestionPage> = {}): QuestionPage {
   return {
     content: [
-      { id: 'aaaaaaaa-1111', questionType: 'MULTIPLE_CHOICE', skill: 'READING', status: 'PUBLISHED', purpose: 'LEARNING', updatedAt: '2026-10-20T00:00:00Z' },
-      { id: 'bbbbbbbb-2222', questionType: 'ESSAY', skill: 'WRITING', status: 'DRAFT', purpose: 'EXAM', updatedAt: '2026-10-21T00:00:00Z' },
+      { id: 'aaaaaaaa-1111', code: 'Q-000001', questionType: 'MULTIPLE_CHOICE', skill: 'READING', status: 'PUBLISHED', purpose: 'LEARNING', updatedAt: '2026-10-20T00:00:00Z' },
+      { id: 'bbbbbbbb-2222', code: 'Q-000002', questionType: 'ESSAY', skill: 'WRITING', status: 'DRAFT', purpose: 'EXAM', updatedAt: '2026-10-21T00:00:00Z' },
     ],
     page: 0, size: 25, totalElements: 2, totalPages: 1,
     ...overrides,
@@ -83,8 +83,8 @@ describe('QuestionBankPage', () => {
     expect(within(table).getByText('Đã xuất bản')).toBeInTheDocument()
     expect(within(table).getByText('Nháp')).toBeInTheDocument()
     expect(api.listQuestions).toHaveBeenCalledWith(
-      { skill: '', purpose: '', status: '', page: 0, size: 25 }, expect.any(AbortSignal))
-    expect(screen.getByText('aaaaaaaa…')).toBeInTheDocument()
+      { skill: '', purpose: '', status: '', code: '', page: 0, size: 25 }, expect.any(AbortSignal))
+    expect(screen.getByText('Q-000001')).toBeInTheDocument()
     expect(screen.queryByRole('link')).not.toBeInTheDocument()
     expect(within(table).getByRole('columnheader', { name: 'Hành động' })).toBeInTheDocument()
   })
@@ -97,7 +97,7 @@ describe('QuestionBankPage', () => {
 
     const dialog = await screen.findByRole('dialog', { name: 'Chi tiết câu hỏi' })
     expect(await within(dialog).findByText('What is the main idea?')).toBeInTheDocument()
-    expect(within(dialog).getByText('aaaaaaaa-1111')).toBeInTheDocument()
+    expect(within(dialog).getByText('Q-000001')).toBeInTheDocument()
     expect(api.getQuestion).toHaveBeenCalledWith('aaaaaaaa-1111', expect.any(AbortSignal))
   })
 
@@ -148,7 +148,7 @@ describe('QuestionBankPage', () => {
 
   it('does not offer update or delete for an archived question', async () => {
     api.listQuestions.mockResolvedValue(page({
-      content: [{ id: 'cccccccc-3333', questionType: 'ESSAY', skill: 'WRITING', status: 'ARCHIVED', purpose: 'EXAM' }],
+      content: [{ id: 'cccccccc-3333', code: 'Q-000003', questionType: 'ESSAY', skill: 'WRITING', status: 'ARCHIVED', purpose: 'EXAM' }],
     }))
     renderPage()
     await screen.findByRole('table')
@@ -169,7 +169,17 @@ describe('QuestionBankPage', () => {
     fireEvent.change(screen.getByLabelText('Trạng thái'), { target: { value: 'DRAFT' } })
 
     await waitFor(() => expect(api.listQuestions).toHaveBeenLastCalledWith(
-      { skill: '', purpose: '', status: 'DRAFT', page: 0, size: 25 }, expect.any(AbortSignal)))
+      { skill: '', purpose: '', status: 'DRAFT', code: '', page: 0, size: 25 }, expect.any(AbortSignal)))
+  })
+
+  it('searches the question catalog by code through the API', async () => {
+    renderPage()
+    await screen.findByRole('table')
+
+    fireEvent.change(screen.getByLabelText('Mã câu hỏi'), { target: { value: 'Q-000034' } })
+
+    await waitFor(() => expect(api.listQuestions).toHaveBeenLastCalledWith(
+      { skill: '', purpose: '', status: '', code: 'Q-000034', page: 0, size: 25 }, expect.any(AbortSignal)))
   })
 
   it('filters the loaded page by the topbar search', async () => {
@@ -181,11 +191,12 @@ describe('QuestionBankPage', () => {
   })
 
   it('creates a question and opens it in the update drawer', async () => {
-    api.createQuestion.mockResolvedValue({ id: 'new-1', questionType: 'ESSAY', status: 'DRAFT' })
+    api.createQuestion.mockResolvedValue({ id: 'new-1', code: 'Q-000003', questionType: 'ESSAY', status: 'DRAFT' })
     renderPage()
     fireEvent.click(await screen.findByRole('button', { name: /Câu hỏi mới/ }))
     const drawer = screen.getByRole('dialog', { name: 'Câu hỏi mới' })
     expect(drawer).toHaveClass('adm-drawer')
+    expect(within(drawer).queryByLabelText('Mã')).not.toBeInTheDocument()
     fireEvent.change(within(drawer).getByLabelText('Dạng câu hỏi'), { target: { value: 'ESSAY' } })
     fireEvent.change(within(drawer).getByLabelText('Kỹ năng'), { target: { value: 'WRITING' } })
     fireEvent.click(within(drawer).getByRole('button', { name: 'Tạo và thêm phiên bản' }))

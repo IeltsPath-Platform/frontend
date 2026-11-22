@@ -64,7 +64,7 @@ export function QuestionDetailPage() {
           ) : null}
         </>
       }
-      subtitle={question ? `Mã ${question.id}` : undefined}
+      subtitle={question ? `Mã ${question.code}` : undefined}
       title={question ? TYPE_LABEL[question.questionType] ?? question.questionType : 'Câu hỏi'}
     >
       {detail.status === 'loading' ? <AdminLoading label="Đang tải câu hỏi…" /> : null}
@@ -82,7 +82,7 @@ export function QuestionDetailPage() {
           {notice ? <div className="adm-alert" role="status">{notice}</div> : null}
 
           {adding ? (
-            <AdminDrawer title="Phiên bản mới (nháp)" description={`Mã ${question.id}`} size="lg" onClose={() => setAdding(false)}>
+            <AdminDrawer title="Phiên bản mới (nháp)" description={`Mã ${question.code}`} size="lg" onClose={() => setAdding(false)}>
               {(close) => (
                 <VersionForm
                   nextVersionNumber={nextVersionNumber}

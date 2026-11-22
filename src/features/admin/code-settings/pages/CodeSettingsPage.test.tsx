@@ -121,4 +121,40 @@ describe('CodeSettingsPage', () => {
     expect(await within(editor).findByText('Cấu trúc mã điểm kiến thức cần có {SEQ} hoặc {NAME} để tạo mã có ý nghĩa.')).toBeInTheDocument()
     expect(api.updateCodeSettings).not.toHaveBeenCalled()
   })
+
+  it('shows the always-on, locked question code setting and lets authors edit its pattern and start number', async () => {
+    const questionSetting = { kind: 'QUESTION', applied: true, pattern: 'Q-{SEQ:6}', startNumber: 1, editable: false }
+    api.fetchCodeSettings.mockResolvedValue([questionSetting])
+    api.updateCodeSettings.mockResolvedValue({ ...questionSetting, pattern: 'Q-{SEQ:7}', startNumber: 4 })
+    render(<CodeSettingsPage />)
+
+    const editor = (await screen.findByText('1. Thiết lập bộ mã Câu hỏi tự sinh')).closest('details')!
+    const toggles = within(editor).getAllByRole('switch')
+    expect(toggles[0]).toBeChecked()
+    expect(toggles[0]).toBeDisabled()
+    expect(toggles[1]).not.toBeChecked()
+    expect(toggles[1]).toBeDisabled()
+    expect(within(editor).getByLabelText('Cấu trúc bộ mã')).toHaveValue('Q-{SEQ:6}')
+
+    fireEvent.change(within(editor).getByLabelText('Cấu trúc bộ mã'), { target: { value: 'Q-{SEQ:7}' } })
+    fireEvent.change(within(editor).getByLabelText('Số bắt đầu khởi tạo'), { target: { value: '4' } })
+    fireEvent.submit(within(editor).getByRole('form', { name: 'Thiết lập bộ mã Câu hỏi' }))
+
+    await waitFor(() => expect(api.updateCodeSettings).toHaveBeenCalledWith('QUESTION', {
+      applied: true, pattern: 'Q-{SEQ:7}', startNumber: 4, editable: false,
+    }))
+  })
+
+  it('accepts only sequence tokens in question code patterns', async () => {
+    api.fetchCodeSettings.mockResolvedValue([
+      { kind: 'QUESTION', applied: true, pattern: 'Q-{SEQ:6}', startNumber: 1, editable: false },
+    ])
+    render(<CodeSettingsPage />)
+    const editor = (await screen.findByText('1. Thiết lập bộ mã Câu hỏi tự sinh')).closest('details')!
+    fireEvent.change(within(editor).getByLabelText('Cấu trúc bộ mã'), { target: { value: 'Q-{NAME}' } })
+    fireEvent.submit(within(editor).getByRole('form', { name: 'Thiết lập bộ mã Câu hỏi' }))
+
+    expect(await within(editor).findByText('Mã câu hỏi chỉ dùng được {SEQ} hoặc {SEQ:n}.')).toBeInTheDocument()
+    expect(api.updateCodeSettings).not.toHaveBeenCalled()
+  })
 })
