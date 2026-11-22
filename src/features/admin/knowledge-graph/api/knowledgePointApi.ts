@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { apiRequest } from '@/lib/httpClient'
-import { knowledgePointSchema, type KnowledgePoint, type KnowledgePointRequest } from '../types'
+import { knowledgePointSchema, type CreateKnowledgePointRequest, type KnowledgePoint, type KnowledgePointRequest } from '../types'
 
 const BASE = '/api/content/knowledge-points'
 
@@ -14,7 +14,7 @@ export async function fetchPrerequisites(id: string, signal?: AbortSignal): Prom
   return z.array(knowledgePointSchema).parse(await apiRequest<unknown>(`${BASE}/${id}/prerequisites`, { auth: true, signal }))
 }
 
-export async function createKnowledgePoint(request: KnowledgePointRequest): Promise<KnowledgePoint> {
+export async function createKnowledgePoint(request: CreateKnowledgePointRequest): Promise<KnowledgePoint> {
   return knowledgePointSchema.parse(await apiRequest<unknown>(BASE, { method: 'POST', auth: true, body: request }))
 }
 

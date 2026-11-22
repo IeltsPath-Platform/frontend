@@ -96,4 +96,29 @@ describe('CodeSettingsPage', () => {
     expect(await within(editor).findByText('Chỉ dùng {SEQ}, {SEQ:n} và {TOPIC} cho mã bài học.')).toBeInTheDocument()
     expect(api.updateCodeSettings).not.toHaveBeenCalled()
   })
+
+  it('shows the knowledge point setting and its prefix, level, and name keywords', async () => {
+    api.fetchCodeSettings.mockResolvedValue([
+      { kind: 'KNOWLEDGE_POINT', applied: false, pattern: '{PREFIX}{LEVEL}_{NAME}', startNumber: 1, editable: true },
+    ])
+    render(<CodeSettingsPage />)
+    const heading = await screen.findByText('1. Thiết lập bộ mã Điểm kiến thức tự sinh')
+    const editor = heading.closest('details')!
+    fireEvent.click(within(editor).getByRole('button', { name: 'Từ khóa dùng được' }))
+    expect(screen.getByRole('dialog', { name: 'Từ khóa dùng được' })).toHaveTextContent('{PREFIX}')
+    expect(screen.getByRole('dialog', { name: 'Từ khóa dùng được' })).toHaveTextContent('{LEVEL}')
+    expect(screen.getByRole('dialog', { name: 'Từ khóa dùng được' })).toHaveTextContent('{NAME}')
+  })
+
+  it('validates knowledge point keywords and requires a sequence or name', async () => {
+    api.fetchCodeSettings.mockResolvedValue([
+      { kind: 'KNOWLEDGE_POINT', applied: true, pattern: '{PREFIX}{LEVEL}_{NAME}', startNumber: 1, editable: true },
+    ])
+    render(<CodeSettingsPage />)
+    const editor = (await screen.findByText('1. Thiết lập bộ mã Điểm kiến thức tự sinh')).closest('details')!
+    fireEvent.change(within(editor).getByLabelText('Cấu trúc bộ mã'), { target: { value: '{PREFIX}{LEVEL}' } })
+    fireEvent.submit(within(editor).getByRole('form', { name: 'Thiết lập bộ mã Điểm kiến thức' }))
+    expect(await within(editor).findByText('Cấu trúc mã điểm kiến thức cần có {SEQ} hoặc {NAME} để tạo mã có ý nghĩa.')).toBeInTheDocument()
+    expect(api.updateCodeSettings).not.toHaveBeenCalled()
+  })
 })

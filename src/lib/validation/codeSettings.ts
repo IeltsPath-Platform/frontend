@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { nonNegativeIntegerText } from './fields'
 
-type Kind = 'COURSE' | 'TOPIC' | 'LESSON' | 'PACKAGE'
+type Kind = 'COURSE' | 'TOPIC' | 'LESSON' | 'PACKAGE' | 'KNOWLEDGE_POINT'
 
 /** The keywords each kind of code accepts, as the server lists them, with the wording of the refusal. */
 const KEYWORDS: Record<Kind, { allowed: RegExp; refusal: string; keeps: string }> = {
@@ -9,6 +9,7 @@ const KEYWORDS: Record<Kind, { allowed: RegExp; refusal: string; keeps: string }
   TOPIC: { allowed: /^(SEQ(?::\d{1,2})?|COURSE|SKILL)$/, refusal: 'Chỉ dùng {SEQ}, {SEQ:n}, {COURSE} và {SKILL} cho mã chủ đề.', keeps: 'Cấu trúc mã chủ đề cần có {SEQ} để tránh trùng mã.' },
   LESSON: { allowed: /^(SEQ(?::\d{1,2})?|TOPIC)$/, refusal: 'Chỉ dùng {SEQ}, {SEQ:n} và {TOPIC} cho mã bài học.', keeps: 'Cấu trúc mã bài học cần có {SEQ} để tránh trùng mã.' },
   PACKAGE: { allowed: /^(SEQ(?::\d{1,2})?|COURSE|TYPE)$/, refusal: 'Chỉ dùng {SEQ}, {SEQ:n}, {COURSE} và {TYPE} cho mã gói đề.', keeps: 'Cấu trúc mã gói đề cần có {SEQ} để tránh trùng mã.' },
+  KNOWLEDGE_POINT: { allowed: /^(SEQ(?::\d{1,2})?|PREFIX|LEVEL|NAME)$/, refusal: 'Chỉ dùng {SEQ}, {SEQ:n}, {PREFIX}, {LEVEL} và {NAME} cho mã điểm kiến thức.', keeps: 'Cấu trúc mã điểm kiến thức cần có {SEQ} hoặc {NAME} để tạo mã có ý nghĩa.' },
 }
 
 function codePattern(kind: Kind) {
