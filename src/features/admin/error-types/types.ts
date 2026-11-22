@@ -7,5 +7,6 @@ export const errorTypeSchema = z.object({
 })
 export type ErrorType = z.infer<typeof errorTypeSchema>
 export type ErrorCategory = (typeof ERROR_CATEGORIES)[number]
-export type ErrorTypeCreate = Pick<ErrorType, 'code' | 'name' | 'category' | 'severity' | 'knowledgePointId' | 'fixHint'>
+/** `code` is left out when the server generates it from the name. */
+export type ErrorTypeCreate = Pick<ErrorType, 'name' | 'category' | 'severity' | 'knowledgePointId' | 'fixHint'> & Partial<Pick<ErrorType, 'code'>>
 export type ErrorTypeUpdate = Omit<ErrorTypeCreate, 'code'> & Partial<Pick<ErrorType, 'status' | 'reviewStatus'>>
