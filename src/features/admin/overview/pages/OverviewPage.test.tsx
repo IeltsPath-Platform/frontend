@@ -5,7 +5,7 @@ import { HttpError } from '@/lib/httpClient'
 import { OverviewPage } from './OverviewPage'
 
 const { api, graph } = vi.hoisted(() => ({
-  api: { fetchContentOverview: vi.fn(), fetchAuthorWorkItems: vi.fn(), fetchQuestionStats: vi.fn() },
+  api: { fetchContentOverview: vi.fn(), fetchAuthorWorkItems: vi.fn(), fetchQuestionStats: vi.fn(), fetchQuestionLabels: vi.fn() },
   graph: { fetchKnowledgeTreeHealth: vi.fn() },
 }))
 vi.mock('../api/overviewApi', () => api)
@@ -25,12 +25,25 @@ describe('OverviewPage', () => {
       activeKnowledgePointsWithoutPublishedQuestion: 12,
       draftQuestionVersions: 4,
       lessons: { DRAFT: 2, PUBLISHED: 9 },
+      coverage: [
+        { skill: 'READING', cefrLevel: 'B1', activeKnowledgePoints: 20, withoutPublishedQuestion: 12, withOnePublishedQuestion: 3 },
+        { skill: 'READING', cefrLevel: 'B2', activeKnowledgePoints: 17, withoutPublishedQuestion: 0, withOnePublishedQuestion: 2 },
+        { skill: 'SPEAKING', cefrLevel: 'C1', activeKnowledgePoints: 10, withoutPublishedQuestion: 4, withOnePublishedQuestion: 0 },
+        { skill: 'WRITING', cefrLevel: 'NONE', activeKnowledgePoints: 10, withoutPublishedQuestion: 3, withOnePublishedQuestion: 0 },
+      ],
+      questionVersions: { DRAFT: 4, PUBLISHED: 30, ARCHIVED: 0 },
+      packages: { DRAFT: 1, PUBLISHED: 6, ARCHIVED: 0 },
+      staleDraftQuestionVersions: 2,
+      staleDraftAfterDays: 14,
     })
     graph.fetchKnowledgeTreeHealth.mockResolvedValue({ isolatedIds: ['a', 'b'], missingMetadataIds: [], levelViolations: [] })
     api.fetchAuthorWorkItems.mockResolvedValue([
       { id: 'w1', queue: 'CONTENT_AUTHOR', kind: 'CONTENT_GAP', detail: '{"knowledgePointId":"kp1"}', status: 'OPEN', subject: { type: 'KNOWLEDGE_POINT', id: 'kp1', code: 'R55_SCAN', name: 'Scanning', occurrences: 3 } },
     ])
     api.fetchQuestionStats.mockResolvedValue([stat('aaaaaaaa-1', 40, 5), stat('bbbbbbbb-2', 30, 29), stat('cccccccc-3', 25, 12)])
+    api.fetchQuestionLabels.mockResolvedValue([
+      { questionVersionId: 'aaaaaaaa-1', questionId: 'q-1', label: 'Choose the correct heading for paragraph B', skill: 'READING', questionType: 'MULTIPLE_CHOICE' },
+    ])
   })
 
   it('opens on the few numbers that matter, each linking to the screen that owns it', async () => {
@@ -69,30 +82,14 @@ describe('OverviewPage', () => {
     expect(await within(content).findByText('57 KP đang hoạt động')).toHaveAttribute('href', '/content-author/knowledge-graph')
     expect(within(content).getByRole('img', { name: /45 trên 57 KP đang hoạt động đã có câu hỏi xuất bản; 12 KP chưa có/ })).toBeInTheDocument()
     expect(within(content).getAllByText('79%')).toHaveLength(2)
-    expect(within(content).getByText('Phiên bản câu hỏi chờ xuất bản').closest('a')).toHaveAttribute('href', '/content-author/questions?status=DRAFT')
-    expect(within(content).getByRole('img', { name: /Bài học theo trạng thái: Đã xuất bản 9, Bản nháp 2, Đã lưu trữ 0/ })).toBeInTheDocument()
-    expect(within(content).getByText('bài học').closest('a')).toHaveTextContent('11 bài học')
+    expect(within(content).getByRole('img', { name: /Số câu hỏi đã xuất bản của mỗi KP: Chưa có câu hỏi 19, Chỉ có 1 câu 5, Từ 2 câu trở lên 33/ })).toBeInTheDocument()
+    expect(within(content).getByText('KP mới có đúng 1 câu hỏi').closest('a')).toHaveTextContent('5')
 
     expect(await screen.findByText('KP thiếu bài luyện')).toBeInTheDocument()
     expect(screen.getByText(/Scanning · Hết bài ôn 3 lần/)).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Xem tất cả' })).toHaveAttribute('href', '/content-author/work-items')
     expect(await screen.findByText('13% đúng · 40 lượt')).toBeInTheDocument()
     expect(screen.getByText('97% đúng · 30 lượt')).toBeInTheDocument()
-  })
-
-  it('draws no bar for lessons that are all published, and says so', async () => {
-    api.fetchContentOverview.mockResolvedValue({
-      knowledgePoints: { total: 10, byStatus: { ACTIVE: 10 } },
-      activeKnowledgePointsWithoutPublishedQuestion: 0,
-      draftQuestionVersions: 0,
-      lessons: { DRAFT: 0, PUBLISHED: 189, ARCHIVED: 0 },
-    })
-    renderPage()
-
-    const content = await screen.findByRole('region', { name: 'Nội dung' })
-    expect(await within(content).findByText('Tất cả đã xuất bản')).toBeInTheDocument()
-    expect(within(content).getByText('bài học').closest('a')).toHaveTextContent('189 bài học')
-    expect(within(content).queryByRole('img', { name: /Bài học theo trạng thái/ })).not.toBeInTheDocument()
   })
 
   it('draws the skill and CEFR charts from the grouped counts', async () => {
@@ -164,5 +161,65 @@ describe('OverviewPage', () => {
     expect(screen.queryByRole('region', { name: 'Việc cần làm của R&D' })).not.toBeInTheDocument()
     expect(screen.queryByRole('region', { name: 'Câu hỏi lệch độ khó' })).not.toBeInTheDocument()
     expect(screen.queryByText('Chưa có gì cần xử lý')).not.toBeInTheDocument()
+  })
+  it('shows where the content is thin, skill by CEFR level, each cell opening the graph on its skill', async () => {
+    renderPage()
+
+    const matrix = await screen.findByRole('table', { name: /theo kỹ năng và cấp CEFR/ })
+    expect(within(matrix).getAllByRole('columnheader').map((header) => header.textContent)).toEqual(['A1', 'A2', 'B1', 'B2', 'C1', 'C2', 'Chưa gán'])
+    const cell = within(matrix).getByRole('link', { name: 'Đọc B1: 12 trên 20 KP chưa có câu hỏi, 3 KP chỉ có một câu' })
+    expect(cell).toHaveTextContent('12/20')
+    expect(cell).toHaveAttribute('href', '/content-author/knowledge-graph?skill=READING')
+    expect(cell.closest('td')).toHaveClass('ov-cell--high')
+    expect(within(matrix).getByRole('link', { name: /^Đọc B2: 0 trên 17/ }).closest('td')).toHaveClass('ov-cell--ok')
+    expect(within(matrix).getByRole('link', { name: /^Viết Chưa gán: 3 trên 10/ })).toBeInTheDocument()
+    expect(within(matrix).getByLabelText('Nghe A1: không có KP')).toHaveTextContent('·')
+  })
+
+  it('lists the drafts left too long among the things to do', async () => {
+    renderPage()
+
+    const attention = await screen.findByRole('region', { name: 'Cần xử lý ngay' })
+    const stale = await within(attention).findByRole('link', { name: /Bản nháp để quá 14 ngày chưa xuất bản/ })
+    expect(stale).toHaveTextContent('2')
+    expect(stale).toHaveAttribute('href', '/content-author/questions?status=DRAFT')
+  })
+
+  it('does not draw a block for the content statuses', async () => {
+    renderPage()
+
+    await screen.findByRole('region', { name: 'Nội dung' })
+    expect(screen.queryByRole('region', { name: 'Dòng chảy nội dung' })).not.toBeInTheDocument()
+  })
+
+  it('names the hardest and easiest questions by their stem and links to them', async () => {
+    renderPage()
+
+    const link = await screen.findByRole('link', { name: 'Choose the correct heading for paragraph B' })
+    expect(link).toHaveAttribute('href', '/content-author/questions/q-1')
+    expect(api.fetchQuestionLabels).toHaveBeenCalledWith(expect.arrayContaining(['aaaaaaaa-1', 'bbbbbbbb-2']), expect.any(AbortSignal))
+    // A question the server could not name keeps its short code.
+    expect(screen.getByText('bbbbbbbb')).toBeInTheDocument()
+  })
+
+  it('keeps the short code of every question when the names cannot be read', async () => {
+    api.fetchQuestionLabels.mockRejectedValue(new HttpError(503, 'Dịch vụ nội dung chưa sẵn sàng'))
+    renderPage()
+
+    expect(await screen.findByText('aaaaaaaa')).toBeInTheDocument()
+    expect(screen.getByText('13% đúng · 40 lượt')).toBeInTheDocument()
+  })
+
+  it('leaves the coverage block out while the server does not send its numbers', async () => {
+    api.fetchContentOverview.mockResolvedValue({
+      knowledgePoints: { total: 70, byStatus: { ACTIVE: 57, INACTIVE: 13 } },
+      activeKnowledgePointsWithoutPublishedQuestion: 12,
+      draftQuestionVersions: 4,
+    })
+    renderPage()
+
+    await screen.findByRole('region', { name: 'Nội dung' })
+    expect(await screen.findByText('57 KP đang hoạt động')).toBeInTheDocument()
+    expect(screen.queryByRole('table')).not.toBeInTheDocument()
   })
 })
