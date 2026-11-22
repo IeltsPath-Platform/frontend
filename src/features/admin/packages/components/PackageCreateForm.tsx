@@ -2,8 +2,10 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { z } from 'zod'
 import { AdminField } from '../../components/AdminField'
 import { AdminError, AdminLoading } from '../../components/AdminState'
-import { requiredText } from '@/lib/validation/fields'
+import { optionalText, requiredText } from '@/lib/validation/fields'
 import { useFormErrors } from '@/lib/validation/useFormErrors'
+import { fetchCodeSuggestion } from '../../code-settings/api/codeSettingsApi'
+import { useGeneratedCode } from '../../code-settings/lib/useGeneratedCode'
 import { fetchCourses } from '../../courses/api/courseApi'
 import { fetchLessons, fetchTopics } from '../../lessons/api/lessonApi'
 import { useAdminResource } from '../../lib/useAdminResource'
@@ -18,7 +20,6 @@ const CREATE_TYPES = ['PRACTICE_SET', 'PRACTICE_TEST', 'MOCK_TEST', 'PLACEMENT_T
 export function PackageCreateForm({ onCreated, onCancel, initialType }: {
   onCreated: (packageId: string) => void; onCancel: () => void; initialType?: string
 }) {
-  const [code, setCode] = useState('')
   const [title, setTitle] = useState('')
   const [type, setType] = useState<(typeof CREATE_TYPES)[number]>(CREATE_TYPES.find((value) => value === initialType) ?? 'PRACTICE_SET')
   const [access, setAccess] = useState<'FREE' | 'PREMIUM'>('FREE')
@@ -38,11 +39,23 @@ export function PackageCreateForm({ onCreated, onCancel, initialType }: {
   const sources = useAdminResource('package-create-sources', listPracticeSources)
   const needsCourse = type === 'PRACTICE_SET' || type === 'TOPIC_TEST' || type === 'COURSE_TEST'
   const needsTopic = type === 'PRACTICE_SET' || type === 'TOPIC_TEST'
+  // The code is generated from what the package will belong to, read the way the server reads the request below.
+  const suggestionContext = {
+    kind: 'PACKAGE' as const, packageType: type,
+    ...(type === 'COURSE_TEST' && courseId ? { courseId } : {}),
+    ...(type === 'TOPIC_TEST' && topicId ? { topicId } : {}),
+    ...(type === 'PRACTICE_SET' && lessonId ? { lessonId } : {}),
+  }
+  const generated = useGeneratedCode({
+    kind: 'PACKAGE', enabled: true, contextKey: JSON.stringify(suggestionContext),
+    suggest: (signal) => fetchCodeSuggestion(suggestionContext, signal),
+  })
+  const { code } = generated
   const availableTopics = useMemo(() => topics.data?.filter((topic) => topic.courseId === courseId) ?? [], [topics.data, courseId])
 
   // Which of the choices below the type asks for, and whether each one is a real entry of its loaded list.
   const schema = useMemo(() => z.object({
-    code: requiredText('Mã gói', 100),
+    code: generated.required ? requiredText('Mã gói', 100) : optionalText('Mã gói', 100),
     title: requiredText('Tiêu đề gói', 255),
     placementPool: z.string(),
     courseId: z.string(),
@@ -67,7 +80,7 @@ export function PackageCreateForm({ onCreated, onCancel, initialType }: {
     if (type === 'PRACTICE_TEST' && value.sourceCode && (sources.status !== 'success' || !sources.data?.some((source) => source.code === value.sourceCode))) {
       refuse('sourceCode', 'Chọn nguồn đề hợp lệ hoặc không dùng nguồn.')
     }
-  }), [type, needsCourse, needsTopic, courses.status, courses.data, topics.status, availableTopics, lessons.status, lessons.data, sources.status, sources.data])
+  }), [type, generated.required, needsCourse, needsTopic, courses.status, courses.data, topics.status, availableTopics, lessons.status, lessons.data, sources.status, sources.data])
   const form = useFormErrors(schema, { code, title, placementPool, courseId, topicId, lessonId, sourceCode })
 
   async function submit(event: FormEvent) {
@@ -75,7 +88,7 @@ export function PackageCreateForm({ onCreated, onCancel, initialType }: {
     if (pending || createdId) return
     if (!form.validate()) return
     const body: CreatePackageRequest = {
-      code: code.trim(), title: title.trim(), packageType: type, accessLevel: access,
+      ...(generated.codeToSend !== undefined ? { code: generated.codeToSend } : {}), title: title.trim(), packageType: type, accessLevel: access,
       lessonId: type === 'PRACTICE_SET' ? lessonId : null,
       topicId: type === 'TOPIC_TEST' ? topicId : null,
       courseId: type === 'COURSE_TEST' ? courseId : null,
@@ -99,7 +112,7 @@ export function PackageCreateForm({ onCreated, onCancel, initialType }: {
   return <form aria-label="Tạo gói câu hỏi" className="adm-package-create" noValidate onSubmit={(event) => void submit(event)}>
     {createdId && !pending ? <button className="adm-btn adm-btn--primary" type="button" onClick={() => onCreated(createdId)}>Mở gói đã tạo</button> : null}
     <fieldset className="adm-package-fields" disabled={pending || !!createdId}>
-      <AdminField label="Mã gói" {...form.field('code')}><input className="adm-input" maxLength={100} value={code} onChange={(event) => setCode(event.target.value)} /></AdminField>
+      <AdminField label="Mã gói" {...form.field('code')}><input className="adm-input" disabled={generated.locked} maxLength={100} value={code} onChange={(event) => generated.onType(event.target.value)} /></AdminField>
       <AdminField label="Tiêu đề gói" {...form.field('title')}><input className="adm-input" maxLength={255} value={title} onChange={(event) => setTitle(event.target.value)} /></AdminField>
       <label className="adm-field"><span>Loại gói</span><select className="adm-select" value={type} onChange={(event) => { setType(event.target.value as Exclude<PackageType, 'LESSON'>); setError(null) }}>{CREATE_TYPES.map((value) => <option key={value} value={value}>{PACKAGE_TYPE_LABEL[value]}</option>)}</select></label>
       <label className="adm-field"><span>Truy cập</span><select className="adm-select" value={access} onChange={(event) => setAccess(event.target.value as 'FREE' | 'PREMIUM')}><option value="FREE">Miễn phí</option><option value="PREMIUM">Premium</option></select></label>
