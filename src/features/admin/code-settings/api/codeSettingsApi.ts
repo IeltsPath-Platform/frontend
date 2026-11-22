@@ -2,18 +2,20 @@ import { z } from 'zod'
 import { apiRequest } from '@/lib/httpClient'
 
 export const codeSettingSchema = z.object({
-  kind: z.enum(['COURSE', 'TOPIC']),
+  kind: z.enum(['COURSE', 'TOPIC', 'LESSON', 'PACKAGE']),
   applied: z.boolean(),
   pattern: z.string(),
   startNumber: z.number().int().nonnegative(),
   editable: z.boolean(),
 })
-export type CodeKind = 'COURSE' | 'TOPIC'
+export type CodeKind = 'COURSE' | 'TOPIC' | 'LESSON' | 'PACKAGE'
 export type CodeSetting = z.infer<typeof codeSettingSchema>
 
 const suggestionSchema = z.object({ code: z.string(), applied: z.boolean(), editable: z.boolean() })
 export type CodeSuggestion = z.infer<typeof suggestionSchema>
-export type CodeSuggestionContext = { kind: CodeKind; band?: string; courseId?: string; skill?: string }
+export type CodeSuggestionContext = {
+  kind: CodeKind; band?: string; courseId?: string; skill?: string; topicId?: string; lessonId?: string; packageType?: string
+}
 
 export async function fetchCodeSettings(signal?: AbortSignal) {
   return z.array(codeSettingSchema).parse(await apiRequest<unknown>('/api/content/admin/code-settings', { auth: true, signal }))
@@ -31,5 +33,8 @@ export async function fetchCodeSuggestion(contextOrBand: CodeSuggestionContext |
   if (context.band?.trim()) params.set('band', context.band.trim())
   if (context.courseId) params.set('courseId', context.courseId)
   if (context.skill) params.set('skill', context.skill)
+  if (context.topicId) params.set('topicId', context.topicId)
+  if (context.lessonId) params.set('lessonId', context.lessonId)
+  if (context.packageType) params.set('packageType', context.packageType)
   return suggestionSchema.parse(await apiRequest<unknown>(`/api/content/admin/code-suggestion?${params}`, { auth: true, signal }))
 }

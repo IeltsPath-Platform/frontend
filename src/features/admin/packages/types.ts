@@ -50,7 +50,8 @@ export const packageFiltersSchema = z.object({
   topicId: z.guid().optional(), courseId: z.guid().optional(), q: z.string().optional(), placementPool: placementPoolSchema.optional(),
 })
 export const createPackageRequestSchema = z.object({
-  code: z.string().trim().min(1).max(100), title: z.string().trim().min(1).max(255),
+  /** Left out or blank when the server chooses the code. */
+  code: z.string().trim().max(100).optional(), title: z.string().trim().min(1).max(255),
   packageType: packageTypeSchema.exclude(['LESSON']), accessLevel: z.enum(['FREE', 'PREMIUM']).optional(),
   lessonId: z.guid().nullable().optional(), sourceCode: z.string().max(40).nullable().optional(),
   topicId: z.guid().nullable().optional(), courseId: z.guid().nullable().optional(), placementPool: placementPoolSchema.nullable().optional(),

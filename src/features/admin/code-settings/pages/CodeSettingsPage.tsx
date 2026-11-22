@@ -16,6 +16,16 @@ import './code-settings.css'
 
 type Draft = Omit<CodeSetting, 'startNumber'> & { startNumber: string }
 
+const KIND_NAME: Record<CodeSetting['kind'], string> = { COURSE: 'Khóa học', TOPIC: 'Chủ đề', LESSON: 'Bài học', PACKAGE: 'Gói đề' }
+
+/** The keywords besides the sequence number that each kind of code accepts, for the help beside the pattern. */
+const KEYWORD_HELP: Record<CodeSetting['kind'], Array<[string, string]>> = {
+  COURSE: [['{BAND}', 'band khóa học, ví dụ 6 hoặc 6.0 thành 6_0.'], ['{YYYY}', 'năm hiện tại.']],
+  TOPIC: [['{COURSE}', 'mã khóa học đã chọn.'], ['{SKILL}', 'L, R, W hoặc S theo kỹ năng.']],
+  LESSON: [['{TOPIC}', 'mã chủ đề chứa bài học.']],
+  PACKAGE: [['{COURSE}', 'mã khóa học của gói. Gói không thuộc khóa nào dùng PKG_{TYPE}{SEQ:3}.'], ['{TYPE}', 'viết tắt loại gói: PS, TT, CT, PT, MT, PL, QZ hoặc LS.']],
+}
+
 function draftFrom(setting: CodeSetting): Draft { return { ...setting, startNumber: String(setting.startNumber) } }
 
 export function CodeSettingsPage() {
@@ -41,7 +51,7 @@ function CodeSettingEditor({ index, setting, onChange }: { index: number; settin
   const [, setError] = useAdminError()
   const { toast } = useToast()
   const form = useFormErrors(codeSettingsSchema(setting.kind), { pattern: setting.pattern, startNumber: setting.startNumber })
-  const kindName = setting.kind === 'COURSE' ? 'Khóa học' : 'Chủ đề'
+  const kindName = KIND_NAME[setting.kind]
 
   async function save(event: FormEvent) {
     event.preventDefault()
@@ -89,7 +99,7 @@ function CodeSettingEditor({ index, setting, onChange }: { index: number; settin
     {helpOpen ? <AdminModal title="Từ khóa dùng được" onClose={() => setHelpOpen(false)}>
       <ul className="adm-code-settings__tokens">
         <li><code>{'{SEQ}'}</code>, <code>{'{SEQ:n}'}</code>: số thứ tự; <code>n</code> là số chữ số tối thiểu.</li>
-        {setting.kind === 'COURSE' ? <><li><code>{'{BAND}'}</code>: band khóa học, ví dụ 6 hoặc 6.0 thành 6_0.</li><li><code>{'{YYYY}'}</code>: năm hiện tại.</li></> : <><li><code>{'{COURSE}'}</code>: mã khóa học đã chọn.</li><li><code>{'{SKILL}'}</code>: L, R, W hoặc S theo kỹ năng.</li></>}
+        {KEYWORD_HELP[setting.kind].map(([keyword, meaning]) => <li key={keyword}><code>{keyword}</code>: {meaning}</li>)}
       </ul>
     </AdminModal> : null}
   </details>

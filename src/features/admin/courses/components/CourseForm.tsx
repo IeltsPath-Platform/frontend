@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState, type DragEvent, type FormEvent } from 'react'
-import { ImageOff, ImagePlus, Loader2, RefreshCw, Trash2 } from 'lucide-react'
+import { useMemo, useRef, useState, type DragEvent, type FormEvent } from 'react'
+import { Eye, ImageOff, ImagePlus, Loader2, Trash2 } from 'lucide-react'
 import { z } from 'zod'
+import { Image } from 'primereact/image'
 import { createCourse, deleteCourse, updateCourse } from '../api/courseApi'
 import { useAdminConfirm } from '../../lib/useAdminConfirm'
 import { AdminField } from '../../components/AdminField'
@@ -14,7 +15,8 @@ import { useAdminError } from '../../lib/useAdminError'
 import { TOPIC_SKILLS, SKILL_LABEL } from '../types'
 import type { TopicSkill } from '../types'
 import { uploadAdminImage } from '../../media/api/mediaUploadApi'
-import { fetchCodeSettings, fetchCodeSuggestion } from '../../code-settings/api/codeSettingsApi'
+import { fetchCodeSuggestion } from '../../code-settings/api/codeSettingsApi'
+import { useGeneratedCode } from '../../code-settings/lib/useGeneratedCode'
 
 /** An uploaded image: the reference that is saved, and the address the preview shows. */
 interface CourseImage { reference: string; preview: string }
@@ -71,9 +73,6 @@ export function CourseForm({ course, existing = NO_COURSES, onSaved, onDeleted, 
   onDeleted?: () => void
   onCancel?: () => void
 }) {
-  const [code, setCode] = useState(course?.code ?? '')
-  const manualCode = useRef(false)
-  const [codePolicy, setCodePolicy] = useState<{ applied: boolean; editable: boolean } | null>(null)
   const [name, setName] = useState(course?.name ?? '')
   const [band, setBand] = useState(course?.bandLevel.toString() ?? '')
   const [status, setStatus] = useState<Course['status']>(course?.status ?? 'INACTIVE')
@@ -90,32 +89,12 @@ export function CourseForm({ course, existing = NO_COURSES, onSaved, onDeleted, 
   const [uploading, setUploading] = useState<ImageSlot | null>(null)
   const [, setError] = useAdminError()
   const { confirm, confirmDialog } = useAdminConfirm()
-  useEffect(() => {
-    if (course) return
-    const controller = new AbortController()
-    if (!manualCode.current) setCode('')
-    void (async () => {
-      try {
-        const settings = await fetchCodeSettings(controller.signal)
-        const setting = settings.find((item) => item.kind === 'COURSE')
-        if (!setting) { if (!controller.signal.aborted) setCodePolicy({ applied: false, editable: true }); return }
-        if (!setting.applied) { if (!controller.signal.aborted) setCodePolicy({ applied: false, editable: setting.editable }); return }
-        setCodePolicy({ applied: true, editable: setting.editable })
-        try {
-          const suggestion = await fetchCodeSuggestion(band, controller.signal)
-          if (controller.signal.aborted) return
-          setCodePolicy({ applied: suggestion.applied, editable: suggestion.editable })
-          if (!manualCode.current) setCode(suggestion.code)
-        } catch {
-          if (!controller.signal.aborted) setCodePolicy({ applied: true, editable: true })
-        }
-      } catch {
-        if (!controller.signal.aborted) setCodePolicy(null)
-      }
-    })()
-    return () => controller.abort()
-  }, [course, band])
-  const codeRequired = !course && !codePolicy?.applied
+  const generated = useGeneratedCode({
+    kind: 'COURSE', enabled: !course, initial: course?.code ?? '', contextKey: band,
+    suggest: (signal) => fetchCodeSuggestion(band, signal),
+  })
+  const { code } = generated
+  const codeRequired = generated.required
   const schema = useMemo(() => courseSchema(existing, course, codeRequired), [existing, course, codeRequired])
   // A free course sells nothing, so whatever was typed into the price fields is neither checked nor sent.
   const form = useFormErrors(schema, {
@@ -170,7 +149,7 @@ export function CourseForm({ course, existing = NO_COURSES, onSaved, onDeleted, 
       }
       const saved = course
         ? await updateCourse(course.id, { name: name.trim(), bandLevel: Number(band), status, ...content, skillUnlockPoints: parsedPrices, comboUnlockPoints: combo, free })
-        : await createCourse({ ...(codePolicy?.applied && !codePolicy.editable ? {} : { code: code.trim() }), name: name.trim(), bandLevel: Number(band), status, ...content, skillUnlockPoints: parsedPrices, comboUnlockPoints: combo, free })
+        : await createCourse({ ...(generated.codeToSend !== undefined ? { code: generated.codeToSend } : {}), name: name.trim(), bandLevel: Number(band), status, ...content, skillUnlockPoints: parsedPrices, comboUnlockPoints: combo, free })
       onSaved(saved)
     } catch (reason) { setError(courseErrorMessage(reason)) } finally { setSaving(false) }
   }
@@ -178,7 +157,7 @@ export function CourseForm({ course, existing = NO_COURSES, onSaved, onDeleted, 
   return <form aria-label={course ? 'Sửa khóa học' : 'Tạo khóa học'} className="adm-course-form" noValidate onSubmit={(event) => void submit(event)}>
     <fieldset className="adm-author-fields" disabled={saving || uploading !== null}>
       <div className="adm-course-form__basics">
-        <AdminField label="Mã khóa học" {...form.field('code')} required={codeRequired}><input className="adm-input" maxLength={100} disabled={!!course || (!!codePolicy?.applied && !codePolicy.editable)} value={code} onChange={(event) => { manualCode.current = true; setCode(event.target.value) }} /></AdminField>
+        <AdminField label="Mã khóa học" {...form.field('code')} required={codeRequired}><input className="adm-input" maxLength={100} disabled={!!course || generated.locked} value={code} onChange={(event) => generated.onType(event.target.value)} /></AdminField>
         <AdminField label="Tên khóa học" {...form.field('name')}><input className="adm-input" maxLength={255} value={name} onChange={(event) => setName(event.target.value)} /></AdminField>
         <AdminField label="Band khóa học" {...form.field('band')}><input className="adm-input" type="number" min={0} max={9} step={0.5} value={band} onChange={(event) => setBand(event.target.value)} /></AdminField>
         <label className="adm-field"><span>Trạng thái khóa học</span><select className="adm-select" value={status} onChange={(event) => setStatus(event.target.value as Course['status'])}><option value="ACTIVE">Đang dùng</option><option value="INACTIVE">{course ? 'Ngừng dùng' : 'Chưa kích hoạt'}</option></select></label>
@@ -249,6 +228,7 @@ function CourseImageField({ label, noun, spec, shape, previewAlt, image, busy, o
   const [failedPreview, setFailedPreview] = useState<string | null>(null)
   const [dragging, setDragging] = useState(false)
   const preview = image.preview.trim()
+  const canShow = preview !== '' && failedPreview !== preview
 
   function drop(event: DragEvent) {
     event.preventDefault()
@@ -273,15 +253,14 @@ function CourseImageField({ label, noun, spec, shape, previewAlt, image, busy, o
     />
     {image.reference
       ? <>
+        {/* The picture fills the same box the empty state does, so choosing one never moves what is around it. */}
         <div className={`adm-course-image__frame adm-course-image__frame--${shape}`}>
-          {preview && failedPreview !== preview
-            ? <img alt={previewAlt} onError={() => setFailedPreview(preview)} src={preview} />
+          {canShow
+            // PrimeReact's Image draws the eye over the picture on hover and opens it large, with zoom and rotate.
+            ? <Image alt={previewAlt} className="adm-course-image__picture" imageClassName="adm-course-image__img" indicatorIcon={<Eye aria-hidden="true" size={22} />} preview pt={{ image: { onError: () => setFailedPreview(preview) } }} src={preview} />
             : <span className="adm-course-image__missing"><ImageOff aria-hidden="true" size={20} />Không xem được ảnh</span>}
           {busy ? <span className="adm-course-image__busy"><Loader2 aria-hidden="true" className="adm-spin" size={18} />Đang tải ảnh…</span> : null}
-        </div>
-        <div className="adm-course-image__actions">
-          <button aria-label={`Thay ${noun === 'banner' ? 'ảnh banner' : 'ảnh bìa'}`} className="adm-btn adm-course-image__action" disabled={busy} onClick={() => input.current?.click()} type="button"><RefreshCw aria-hidden="true" size={15} />Thay ảnh</button>
-          <button aria-label={`Xóa ${noun}`} className="adm-btn adm-btn--danger adm-course-image__action" disabled={busy} onClick={onRemove} type="button"><Trash2 aria-hidden="true" size={15} />Xóa</button>
+          <button aria-label={`Xóa ${noun}`} className="adm-course-image__remove" disabled={busy} onClick={onRemove} title="Xóa ảnh" type="button"><Trash2 aria-hidden="true" size={16} /></button>
         </div>
       </>
       : <button

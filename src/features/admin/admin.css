@@ -155,6 +155,8 @@
 .adm-textarea { min-height: 120px; resize: vertical; }
 .adm-filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin-bottom: 16px; }
 .adm-filters .adm-field { margin: 0; min-width: 150px; }
+/* Inputs of a form side by side: they line up by their labels, so an error under one does not push the other down. */
+.adm-filters--fields { align-items: flex-start; }
 .adm-check { display: inline-flex; align-items: center; gap: 8px; min-height: 38px; }
 /* On/off setting (AdminSwitch): a checkbox with the switch role, drawn as a track and a thumb. */
 .adm-switch { position: relative; display: inline-flex; align-items: center; gap: 10px; min-height: 38px; cursor: pointer; }

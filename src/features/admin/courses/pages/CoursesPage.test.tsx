@@ -123,21 +123,19 @@ describe('CoursesPage', () => {
     expect(screen.queryByRole('form', { name: 'Sửa khóa học' })).not.toBeInTheDocument()
     expect(api.fetchCourses).toHaveBeenCalledTimes(2)
   })
-  it('blocks a reversed band range', async () => {
+  it('does not ask for the band range of a topic', async () => {
     show()
     await pick('Diễn đạt lại', 'Sửa chủ đề')
     const form = screen.getByRole('form', { name: 'Sửa chủ đề' })
-    fireEvent.change(within(form).getByLabelText('Band thấp nhất'), { target: { value: '8' } })
-    fireEvent.submit(form)
-    expect(screen.getByRole('alert')).toHaveTextContent('Band thấp nhất phải nhỏ hơn hoặc bằng band cao nhất.')
-    expect(api.updateTopic).not.toHaveBeenCalled()
+    expect(within(form).queryByLabelText('Band thấp nhất')).not.toBeInTheDocument()
+    expect(within(form).queryByLabelText('Band cao nhất')).not.toBeInTheDocument()
   })
   it('shows the skill lock error in Vietnamese', async () => {
     api.updateTopic.mockRejectedValue(new HttpError(409, 'Skill locked', { details: { code: 'TOPIC_SKILL_LOCKED' } }))
     show()
     await pick('Diễn đạt lại', 'Sửa chủ đề')
     const form = screen.getByRole('form', { name: 'Sửa chủ đề' })
-    fireEvent.change(within(form).getByLabelText('Kỹ năng'), { target: { value: 'READING' } })
+    fireEvent.click(within(form).getByRole('radio', { name: 'Đọc' }))
     fireEvent.submit(form)
     expect(await screen.findByRole('alert')).toHaveTextContent('Chủ đề đã có bài xuất bản, không đổi kỹ năng được')
   })
@@ -148,7 +146,7 @@ describe('CoursesPage', () => {
     expect(within(form).queryByLabelText('Chủ đề cha')).not.toBeInTheDocument()
     fireEvent.change(within(form).getByLabelText('Mã chủ đề'), { target: { value: 'ESSAY' } })
     fireEvent.change(within(form).getByLabelText('Tên chủ đề'), { target: { value: 'Viết bài luận' } })
-    fireEvent.change(within(form).getByLabelText('Kỹ năng'), { target: { value: 'WRITING' } })
+    fireEvent.click(within(form).getByRole('radio', { name: 'Viết' }))
     fireEvent.submit(form)
     await waitFor(() => expect(api.createTopic).toHaveBeenCalledWith(expect.objectContaining({ parentTopicId: null, courseId: 'c1', code: 'ESSAY', skill: 'WRITING', sortOrder: 2 })))
   })
@@ -212,7 +210,7 @@ describe('CoursesPage', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: 'Thao tác với Diễn đạt lại' })).toBeEnabled())
   })
 
-  it('preserves an edited order when the server reports a sibling conflict without normalizing or retrying', async () => {
+  it('keeps the edited fields and the position when the server reports a sibling conflict, without normalizing or retrying', async () => {
     lessons.fetchTopics.mockResolvedValue([topics[0], { ...topics[1]!, sortOrder: 4 }, { ...topics[2]!, sortOrder: 4 }])
     const message = 'Thứ tự 5 đã có chủ đề khác cùng cấp'
     api.updateTopic.mockRejectedValue(new HttpError(409, message, { message, details: { code: 'SORT_ORDER_TAKEN' } }))
@@ -220,15 +218,14 @@ describe('CoursesPage', () => {
     await pick('Diễn đạt lại', 'Sửa chủ đề')
     const form = screen.getByRole('form', { name: 'Sửa chủ đề' })
     fireEvent.change(within(form).getByLabelText('Tên chủ đề'), { target: { value: 'Tên đang chỉnh sửa' } })
-    fireEvent.change(within(form).getByLabelText('Thứ tự chủ đề'), { target: { value: '5' } })
     fireEvent.submit(form)
     expect((await screen.findByRole('alert')).textContent).toBe(message)
     expect(api.updateTopic).toHaveBeenCalledExactlyOnceWith('t2', {
       name: 'Tên đang chỉnh sửa', description: null, parentTopicId: 't1', courseId: 'c1', skill: 'WRITING',
-      bandMin: 5, bandMax: 6, sortOrder: 5, status: 'ACTIVE',
+      bandMin: 5, bandMax: 6, sortOrder: 4, status: 'ACTIVE',
     })
     expect(within(form).getByLabelText('Tên chủ đề')).toHaveValue('Tên đang chỉnh sửa')
-    expect(within(form).getByLabelText('Thứ tự chủ đề')).toHaveValue(5)
+    expect(within(form).queryByLabelText('Thứ tự chủ đề')).not.toBeInTheDocument()
     expect(within(form).getByRole('button', { name: 'Lưu chủ đề' })).toBeEnabled()
     expect(lessons.fetchTopics).toHaveBeenCalledTimes(1)
     fireEvent.click(within(form).getByRole('button', { name: 'Hủy' }))
@@ -289,14 +286,14 @@ describe('CoursesPage', () => {
     expect(screen.getByRole('button', { name: 'Thao tác với Diễn đạt lại' })).toBeEnabled()
   })
 
-  it('shows the skill, the band range in words and the status of every topic', async () => {
+  it('shows the skill and the status of every topic, and no band range', async () => {
     show()
     const parent = await screen.findByRole('article', { name: 'Viết học thuật' })
     expect(parent).toHaveTextContent('Viết')
-    expect(parent).toHaveTextContent('5.0 – 6.0')
+    expect(parent).not.toHaveTextContent('5.0 – 6.0')
     expect(parent).toHaveTextContent('2 chủ đề con')
     expect(parent).toHaveTextContent('Đang dùng')
-    expect(screen.getByRole('article', { name: 'Liên kết câu' })).toHaveTextContent('Mọi band')
+    expect(screen.getByRole('article', { name: 'Liên kết câu' })).not.toHaveTextContent('Mọi band')
   })
 
   it('collapses and expands one branch, with no collapse-all button', async () => {

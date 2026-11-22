@@ -142,7 +142,8 @@ export interface LessonMetaRequest {
 }
 
 export interface NewLessonRequest extends LessonMetaRequest {
-  code: string
+  /** Left out when the server chooses the code. */
+  code?: string
 }
 
 export const lessonResourceSchema = z.object({
