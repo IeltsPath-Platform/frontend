@@ -10,9 +10,10 @@ describe('adminMenu', () => {
 
   it('shows content authors their content screens', () => {
     expect(menuFor(['CONTENT_AUTHOR']).map((item) => item.path)).toEqual([
-      '/content-author', '/content-author/settings', '/content-author/courses', '/content-author/knowledge-graph', '/content-author/questions', '/content-author/packages', '/content-author/course-import',
+      '/content-author', '/content-author/courses', '/content-author/knowledge-graph', '/content-author/questions', '/content-author/packages', '/content-author/course-import',
       '/content-author/work-items', '/content-author/ai-evaluation',
       '/content-author/rubrics', '/content-author/error-types', '/content-author/ai-drafts',
+      '/content-author/settings',
     ])
   })
 
