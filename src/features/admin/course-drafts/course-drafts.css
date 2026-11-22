@@ -121,7 +121,8 @@
 .adm-kp-level span { color: var(--adm-muted); font-size: .78rem; font-variant-numeric: tabular-nums; }
 .adm-kp-level[aria-pressed='true'] { background: var(--adm-accent-strong); border-color: var(--adm-accent-strong); color: #fff; }
 .adm-kp-level[aria-pressed='true'] span { color: rgb(255 255 255 / 80%); }
-.adm-kp-dialog__list { flex: 1; min-height: 0; overflow-y: auto; padding: 4px 20px 16px; }
+/* No padding above the list: a group heading sticks to its top edge, and anything above the heading would show the cards scrolling past. */
+.adm-kp-dialog__list { flex: 1; min-height: 0; overflow-y: auto; padding: 0 20px 16px; }
 .adm-kp-dialog__empty { padding: 28px 0; text-align: center; }
 .adm-kp-group__head { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: 10px; padding: 14px 0 8px; background: var(--adm-surface); }
 .adm-kp-group__head input { flex: none; width: 18px; height: 18px; margin: 0; cursor: pointer; }
