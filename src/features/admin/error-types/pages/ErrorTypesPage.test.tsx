@@ -3,9 +3,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { HttpError } from '@/lib/httpClient'
 import { ErrorTypesPage } from './ErrorTypesPage'
 
-const { api, graph } = vi.hoisted(() => ({ api: { fetchErrorTypes: vi.fn(), createErrorType: vi.fn(), updateErrorType: vi.fn() }, graph: { fetchKnowledgeTree: vi.fn() } }))
+const { api, graph, codes } = vi.hoisted(() => ({
+  api: { fetchErrorTypes: vi.fn(), createErrorType: vi.fn(), updateErrorType: vi.fn() },
+  graph: { fetchKnowledgeTree: vi.fn() },
+  codes: { fetchCodeSettings: vi.fn(), fetchCodeSuggestion: vi.fn() },
+}))
 vi.mock('../api/errorTypeApi', () => api)
 vi.mock('../../knowledge-graph/api/knowledgeGraphApi', () => graph)
+vi.mock('../../code-settings/api/codeSettingsApi', () => codes)
 const spelling = { id: 'e1', code: 'SPELLING', name: 'Sai chính tả', category: 'SPELLING_NUMBER', severity: 1, knowledgePointId: 'kp1', fixHint: 'Đọc lại từng từ.', status: 'ACTIVE', reviewStatus: 'DRAFT' }
 const grammar = { ...spelling, id: 'e2', code: 'TENSE', name: 'Sai thì', category: 'GRAMMAR', severity: 2, knowledgePointId: null, reviewStatus: 'APPROVED' }
 
@@ -16,6 +21,8 @@ describe('ErrorTypesPage', () => {
     api.createErrorType.mockResolvedValue(spelling)
     api.updateErrorType.mockResolvedValue(spelling)
     graph.fetchKnowledgeTree.mockResolvedValue({ nodes: [{ id: 'kp1', code: 'SPELLING_KP', name: 'Chính tả', kind: 'STRATEGY', status: 'ACTIVE' }], edges: [] })
+    codes.fetchCodeSettings.mockResolvedValue([{ kind: 'ERROR_TYPE', applied: false, pattern: '{NAME}', startNumber: 1, editable: true }])
+    codes.fetchCodeSuggestion.mockResolvedValue({ code: '', applied: false, editable: true })
   })
   it('shows the spelling and number category, severity and linked knowledge point name', async () => {
     render(<ErrorTypesPage />)
@@ -86,6 +93,52 @@ describe('ErrorTypesPage', () => {
     fireEvent.submit(form)
     expect(await screen.findByText(/Mã bắt đầu bằng chữ in hoa/)).toBeInTheDocument()
     expect(api.createErrorType).not.toHaveBeenCalled()
+  })
+  describe('with generated codes', () => {
+    const generate = (editable: boolean) => {
+      codes.fetchCodeSettings.mockResolvedValue([{ kind: 'ERROR_TYPE', applied: true, pattern: '{NAME}', startNumber: 1, editable }])
+      codes.fetchCodeSuggestion.mockResolvedValue({ code: 'LOI_MOI', applied: true, editable })
+    }
+    const fillAndSubmit = async (form: HTMLElement) => {
+      fireEvent.change(within(form).getByLabelText('Tên mã lỗi'), { target: { value: 'Lỗi mới' } })
+      fireEvent.change(within(form).getByLabelText('Gợi ý sửa'), { target: { value: 'Kiểm tra cấu trúc câu.' } })
+      await waitFor(() => expect(within(form).getByLabelText('Mã lỗi')).toHaveValue('LOI_MOI'))
+      fireEvent.submit(form)
+    }
+
+    it('fills the code from the name and sends it', async () => {
+      generate(true)
+      render(<ErrorTypesPage />)
+      fireEvent.click(screen.getByRole('button', { name: 'Tạo mã lỗi' }))
+      const form = screen.getByRole('form', { name: 'Tạo mã lỗi' })
+      await fillAndSubmit(form)
+      await waitFor(() => expect(codes.fetchCodeSuggestion).toHaveBeenCalledWith(expect.objectContaining({ kind: 'ERROR_TYPE', name: 'Lỗi mới' }), expect.anything()))
+      await waitFor(() => expect(api.createErrorType).toHaveBeenCalledWith(expect.objectContaining({ code: 'LOI_MOI', name: 'Lỗi mới' })))
+    })
+
+    it('locks the field and leaves the code to the server when it is not editable', async () => {
+      generate(false)
+      render(<ErrorTypesPage />)
+      fireEvent.click(screen.getByRole('button', { name: 'Tạo mã lỗi' }))
+      const form = screen.getByRole('form', { name: 'Tạo mã lỗi' })
+      await fillAndSubmit(form)
+      expect(within(form).getByLabelText('Mã lỗi')).toBeDisabled()
+      await waitFor(() => expect(api.createErrorType).toHaveBeenCalled())
+      expect(api.createErrorType.mock.calls[0]![0]).not.toHaveProperty('code')
+    })
+
+    it('does not ask for a typed code, but still needs a name', async () => {
+      generate(true)
+      render(<ErrorTypesPage />)
+      fireEvent.click(screen.getByRole('button', { name: 'Tạo mã lỗi' }))
+      const form = screen.getByRole('form', { name: 'Tạo mã lỗi' })
+      fireEvent.submit(form)
+      await waitFor(() => expect(form.querySelectorAll('.adm-field__error').length).toBeGreaterThan(0))
+      const shown = [...form.querySelectorAll('.adm-field__error')].map((node) => node.textContent ?? '')
+      expect(shown.some((text) => text.includes('Tên mã lỗi'))).toBe(true)
+      expect(shown.some((text) => text.includes('Mã lỗi không'))).toBe(false)
+      expect(api.createErrorType).not.toHaveBeenCalled()
+    })
   })
   it('opens create and edit in a side drawer and closes it with Hủy', async () => {
     render(<ErrorTypesPage />)
