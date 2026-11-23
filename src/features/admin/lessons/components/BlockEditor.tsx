@@ -77,7 +77,7 @@ export function BlockEditor({ blockType, block, onSave, onCancel, skill }: Block
 
       {blockType === 'EXERCISE' ? (
         <>
-          <QuestionChooser known={block?.questions ?? []} onChange={(questionVersionIds) => patch({ questionVersionIds })} value={state.questionVersionIds} />
+          <QuestionChooser blockId={block?.id} defaultSkill={skill} includeOwnershipPreview known={block?.questions ?? []} onChange={(questionVersionIds) => patch({ questionVersionIds })} value={state.questionVersionIds} />
           {problemText}
         </>
       ) : null}

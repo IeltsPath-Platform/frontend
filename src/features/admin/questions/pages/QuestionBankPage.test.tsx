@@ -7,7 +7,7 @@ import { QuestionBankPage } from './QuestionBankPage'
 
 const { api, graph } = vi.hoisted(() => ({
   api: {
-    listQuestions: vi.fn(), createQuestion: vi.fn(), getQuestion: vi.fn(), archiveQuestion: vi.fn(),
+    listQuestions: vi.fn(), createQuestion: vi.fn(), getQuestion: vi.fn(), archiveQuestion: vi.fn(), listVersionPassages: vi.fn(),
     addQuestionVersion: vi.fn(), publishQuestionVersion: vi.fn(), archiveQuestionVersion: vi.fn(),
   },
   graph: { fetchKnowledgeTree: vi.fn() },
@@ -60,6 +60,7 @@ describe('QuestionBankPage', () => {
     vi.clearAllMocks()
     api.listQuestions.mockResolvedValue(page())
     api.getQuestion.mockResolvedValue(detail())
+    api.listVersionPassages.mockResolvedValue([])
     graph.fetchKnowledgeTree.mockResolvedValue({ nodes: [], edges: [] })
   })
 
@@ -99,6 +100,39 @@ describe('QuestionBankPage', () => {
     expect(await within(dialog).findByText('What is the main idea?')).toBeInTheDocument()
     expect(within(dialog).getByText('Q-000001')).toBeInTheDocument()
     expect(api.getQuestion).toHaveBeenCalledWith('aaaaaaaa-1111', expect.any(AbortSignal))
+  })
+
+  it('shows the passage and the recording a question goes with, with the transcript and a link to play', async () => {
+    api.listVersionPassages.mockResolvedValue([
+      { assetId: 'p1', type: 'PASSAGE', text: 'A. The council met in autumn.', source: 'LESSON', sourceName: 'Reading lesson', mediaUrl: null, durationSeconds: null },
+      { assetId: 'a1', type: 'AUDIO', text: 'Speaker: good morning.', source: 'SECTION', sourceName: 'Listening section', mediaUrl: 'https://media.example/clip.mp3', durationSeconds: 95 },
+      { assetId: 'a2', type: 'AUDIO', text: null, source: 'DIRECT', sourceName: null, mediaUrl: null, durationSeconds: null },
+    ])
+    renderPage()
+    await screen.findByRole('table')
+
+    pickAction(1, 'Xem chi tiết')
+
+    const dialog = await screen.findByRole('dialog', { name: 'Chi tiết câu hỏi' })
+    const context = await within(dialog).findByRole('region', { name: 'Đoạn văn và bài nghe đi kèm' })
+    expect(api.listVersionPassages).toHaveBeenCalledWith('v1', expect.any(AbortSignal))
+    expect(within(context).getByText('A. The council met in autumn.')).toBeInTheDocument()
+    expect(within(context).getByText(/Đoạn văn · Trong bài học: Reading lesson/)).toBeInTheDocument()
+    expect(within(context).getByText(/Bài nghe · Trong phần thi: Listening section · 1:35/)).toBeInTheDocument()
+    expect(within(context).getByLabelText('Bài nghe: Trong phần thi: Listening section')).toHaveAttribute('src', 'https://media.example/clip.mp3')
+    expect(within(context).getByText('Speaker: good morning.')).toBeInTheDocument()
+    expect(within(context).getByText('Không tạo được liên kết nghe cho tệp này.')).toBeInTheDocument()
+  })
+
+  it('shows nothing extra when a question has no passage or recording', async () => {
+    renderPage()
+    await screen.findByRole('table')
+
+    pickAction(1, 'Xem chi tiết')
+
+    const dialog = await screen.findByRole('dialog', { name: 'Chi tiết câu hỏi' })
+    await within(dialog).findByText('What is the main idea?')
+    expect(within(dialog).queryByRole('region', { name: 'Đoạn văn và bài nghe đi kèm' })).not.toBeInTheDocument()
   })
 
   it('opens the update drawer with the latest version filled in and saves it as the next version', async () => {

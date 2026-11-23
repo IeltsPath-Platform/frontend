@@ -13,7 +13,7 @@ const { api, graph, questions, vocab } = vi.hoisted(() => ({
     createLessonResource: vi.fn(), updateLessonResource: vi.fn(), deleteLessonResource: vi.fn(),
   },
   graph: { fetchKnowledgeTree: vi.fn() },
-  questions: { listQuestions: vi.fn(), getQuestion: vi.fn() },
+  questions: { listQuestions: vi.fn(), getQuestion: vi.fn(), listVersionPassages: vi.fn().mockResolvedValue([]) },
   vocab: { getLessonVocabularySenses: vi.fn() },
 }))
 vi.mock('../api/lessonApi', () => api)

@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { apiRequest } from '@/lib/httpClient'
 import {
   AUDIO_CONTENT_TYPES, AUDIO_MAX_BYTES, addSectionQuestionRequestSchema, audioRequestSchema, audioUploadSchema,
-  contentPackageSchema, createPackageRequestSchema, packageFiltersSchema, packageListItemSchema, packagePreviewSchema,
+  contentPackageSchema, createPackageRequestSchema, packageFiltersSchema, packagePageSchema, packagePreviewSchema,
   packageSectionSchema, packageVersionSchema, passageRequestSchema, practiceSourceSchema, publicationScheduleSchema,
   publishedPackageSchema, sectionAudioSchema, sectionOrderSchema, sectionQuestionOrderSchema, sectionQuestionSchema, sectionRequestSchema,
   type AddSectionQuestionRequest, type AudioRequest, type CreatePackageRequest, type PackageFilters, type PassageRequest, type SectionRequest,
@@ -16,8 +16,8 @@ const sectionPath = (id: string, versionId: string, sectionId: string) => `${sec
 
 export async function listPackages(filters: PackageFilters = {}, signal?: AbortSignal) {
   const params = new URLSearchParams()
-  for (const [key, value] of Object.entries(packageFiltersSchema.parse(filters))) if (value !== undefined) params.set(key, value)
-  return z.array(packageListItemSchema).parse(await apiRequest<unknown>(`${BASE}${params.size ? `?${params}` : ''}`, { auth: true, signal }))
+  for (const [key, value] of Object.entries(packageFiltersSchema.parse(filters))) if (value !== undefined) params.set(key, String(value))
+  return packagePageSchema.parse(await apiRequest<unknown>(`${BASE}${params.size ? `?${params}` : ''}`, { auth: true, signal }))
 }
 
 export async function createPackage(body: CreatePackageRequest) {

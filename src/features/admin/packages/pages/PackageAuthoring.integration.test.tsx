@@ -3,7 +3,7 @@ import { answerConfirm } from '@/test/confirm'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { clearAccessToken, setAccessToken } from '@/lib/httpClient'
-import { courseId, draftId, makeCatalogPackage, makePackage, packageId, sectionId, sectionRequest, topicId } from '../testFixtures'
+import { courseId, draftId, makeCatalogPackage, makeCatalogPage, makePackage, packageId, sectionId, sectionRequest, topicId } from '../testFixtures'
 import { PackageEditorPage } from './PackageEditorPage'
 import { PackagesPage } from './PackagesPage'
 
@@ -63,7 +63,7 @@ describe('package authoring through HTTP', () => {
     pkg.status = 'DRAFT'
     pkg.currentPublishedVersionId = null
     backend(({ path, method, body }) => {
-      if (path === '/api/content/admin/packages' && method === 'GET') return json([makeCatalogPackage()])
+      if (path === '/api/content/admin/packages' && method === 'GET') return json(makeCatalogPage([makeCatalogPackage()]))
       if (path === '/api/content/courses') return json([{ id: courseId, code: 'FOUNDATION', name: 'Foundation course', bandLevel: 5.5, coverImageUrl: null, description: null, status: 'ACTIVE', createdAt: '', updatedAt: '' }])
       if (path === '/api/content/topics') return json([{ id: topicId, code: 'READING', name: 'Reading topic', courseId, children: [] }])
       if (path === '/api/content/practice-tests/sources' || path === `/api/content/admin/topics/${topicId}/lessons`) return json([])
@@ -100,7 +100,8 @@ describe('package authoring through HTTP', () => {
     expect(writes[0]!.path).toBe('/api/content/admin/packages')
     expect(writes[0]!.body).toEqual({ code: 'FINAL_HTTP', title: pkg.title, packageType, accessLevel: 'FREE', lessonId: null, sourceCode: null, topicId: packageType === 'TOPIC_TEST' ? topicId : null, courseId: packageType === 'COURSE_TEST' ? courseId : null })
     expect(writes[1]).toMatchObject({ path: `${base}/versions`, body: { rulesJson: '{}' } })
-    expect(screen.getByTestId('location')).toHaveTextContent(`/content-author/packages/${packageId}`)
+    // The new package opens in the side drawer over the catalog, addressed by ?package=.
+    expect(screen.getByTestId('location')).toHaveTextContent(`/content-author/packages?package=${packageId}`)
   })
 
   it('saves passage and audio, then adds, reorders and removes section questions through the real API client', async () => {
@@ -121,7 +122,7 @@ describe('package authoring through HTTP', () => {
       if (path === '/api/content/admin/questions' && method === 'GET') {
         expect(query.get('purpose')).toBe('EXAM')
         expect(query.get('status')).toBe('PUBLISHED')
-        return json({ content: [{ id: questionId, questionType: 'MULTIPLE_CHOICE', skill: 'READING', status: 'PUBLISHED', purpose: 'EXAM', currentPublishedVersionId: questionVersionId }], page: 0, size: 100, totalElements: 1, totalPages: 1 })
+        return json({ content: [{ id: questionId, code: 'Q-SECTION-1', questionType: 'MULTIPLE_CHOICE', skill: 'READING', status: 'PUBLISHED', purpose: 'EXAM', currentPublishedVersionId: questionVersionId }], page: 0, size: 25, totalElements: 1, totalPages: 1 })
       }
       if (path === `${sectionBase}/questions` && method === 'POST') {
         const linked = { id: linkId, questionVersionId, questionId, stem: 'A second question from the bank', purpose: 'EXAM', status: 'PUBLISHED', sortOrder: 2, maxScore: (body as { maxScore: number }).maxScore }
@@ -189,12 +190,14 @@ describe('package authoring through HTTP', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Xem trước' }))
     const preview = await screen.findByRole('region', { name: 'Xem trước gói' })
     expect(await within(preview).findByText('Preview question')).toBeInTheDocument()
-    expect(within(preview).getByText('Đáp án đúng: A')).not.toBeVisible()
-    fireEvent.click(within(preview).getByText('Đáp án và giải thích'))
     expect(within(preview).getByText('Đáp án đúng: A')).toBeVisible()
     expect(within(preview).getByText('Author explanation')).toBeVisible()
+    expect(within(preview).getByText('Correct option', { exact: false, selector: 'li' })).toHaveClass('is-correct')
+    expect(within(preview).getByText('Other option', { exact: false, selector: 'li' })).not.toHaveClass('is-correct')
+    expect(within(preview).getByText('Transcript: Author transcript')).not.toBeVisible()
+    fireEvent.click(within(preview).getByText('Transcript'))
     expect(within(preview).getByText('Transcript: Author transcript')).toBeVisible()
-    fireEvent.click(within(preview).getByRole('button', { name: 'Đóng xem trước' }))
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Xem trước gói' })).getByRole('button', { name: 'Đóng' }))
     const localTime = '2099-01-02T03:04'
     fireEvent.change(screen.getByLabelText('Thời gian xuất bản (giờ địa phương)'), { target: { value: localTime } })
     fireEvent.submit(screen.getByRole('form', { name: 'Lên lịch xuất bản' }))
@@ -289,8 +292,8 @@ describe('package authoring through HTTP', () => {
     expect(await within(preview).findByText('Choose the matching meaning')).toBeInTheDocument()
     const optionList = within(preview).getByText('First option', { exact: false, selector: 'li' }).closest('ul')!
     expect(within(optionList).getAllByRole('listitem').map((item) => item.textContent)).toEqual(['A. First option', 'B. Second option'])
-    fireEvent.click(within(preview).getByText('Đáp án và giải thích'))
     expect(within(preview).getByText('Đáp án đúng: A')).toBeVisible()
     expect(within(preview).getByText('The first option matches the passage.')).toBeVisible()
+    expect(within(optionList).getByText('First option', { exact: false, selector: 'li' })).toHaveClass('is-correct')
   })
 })

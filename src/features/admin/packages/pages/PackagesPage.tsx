@@ -1,20 +1,25 @@
-import { useEffect, useState, type FormEvent } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { z } from 'zod'
-import { AdminField } from '../../components/AdminField'
+import { Eye, Pencil } from 'lucide-react'
 import { AdminDrawer } from '../../components/AdminLayer'
 import { AdminEmpty, AdminError, AdminLoading } from '../../components/AdminState'
+import { AdminRowMenu } from '../../components/AdminRowMenu'
 import { fetchCourses } from '../../courses/api/courseApi'
 import { fetchLessons, fetchTopics } from '../../lessons/api/lessonApi'
 import { useAdminResource } from '../../lib/useAdminResource'
 import { AdminPage } from '../../pages/AdminPage'
 import { listPackages } from '../api/packageApi'
 import { PackageCreateForm } from '../components/PackageCreateForm'
+import { PackageEditorDrawer } from './PackageEditorPage'
+import { PackagePreviewDialog } from '../components/PackagePreviewDialog'
 import { PlacementPoolSummary } from '../components/PlacementPoolSummary'
 import { PACKAGE_STATUS_LABEL, PACKAGE_TYPE_LABEL } from '../lib/packageLabels'
 import { PACKAGE_TYPES, placementPoolSchema, type PackageFilters } from '../types'
 import { placementPoolLabel } from '@/features/learning-path/placement/placementPools'
 import '../packages.css'
+
+const PAGE_SIZE = 25
 
 export function PackagesPage() {
   const [search, setSearch] = useSearchParams()
@@ -24,31 +29,32 @@ export function PackagesPage() {
   const [courseId, setCourseId] = useState('')
   const [topicId, setTopicId] = useState('')
   const [lessonId, setLessonId] = useState('')
+  const [previewing, setPreviewing] = useState<{ id: string; title: string } | null>(null)
   const [text, setText] = useState('')
   const [query, setQuery] = useState('')
-  const [id, setId] = useState('')
-  const [idSent, setIdSent] = useState(false)
-  const idError = id.trim() === '' ? 'ID gói không được để trống.' : !z.guid().safeParse(id.trim()).success ? 'Nhập ID gói hợp lệ (UUID).' : undefined
-  const navigate = useNavigate()
   useEffect(() => { const timer = window.setTimeout(() => setQuery(text.trim()), 300); return () => window.clearTimeout(timer) }, [text])
   const courses = useAdminResource('package-filter-courses', fetchCourses)
   const topics = useAdminResource('package-filter-topics', fetchTopics)
   const lessons = useAdminResource(`package-filter-lessons:${topicId}`, (signal) => topicId ? fetchLessons(topicId, signal) : Promise.resolve([]))
   const parsedPool = placementPoolSchema.safeParse(placementPool)
   const filters: PackageFilters = { type: type as PackageFilters['type'] || undefined, status: status as PackageFilters['status'] || undefined, courseId: courseId || undefined, topicId: topicId || undefined, lessonId: lessonId || undefined, q: query || undefined, placementPool: type === 'PLACEMENT_TEST' && parsedPool.success ? parsedPool.data : undefined }
-  const packages = useAdminResource(`packages:${JSON.stringify(filters)}`, (signal) => listPackages(filters, signal))
+  // Any change of filter starts again from the first page: the page number only counts for the filters it was chosen under.
+  const filterKey = JSON.stringify(filters)
+  const [pageAt, setPageAt] = useState({ key: filterKey, page: 0 })
+  const page = pageAt.key === filterKey ? pageAt.page : 0
+  const packages = useAdminResource(`packages:${filterKey}:${page}`, (signal) => listPackages({ ...filters, page, size: PAGE_SIZE }, signal))
+  const totalPages = packages.data?.totalPages ?? 0
+  // A page past the last one (packages were removed meanwhile) falls back to the last page.
+  if (totalPages > 0 && page >= totalPages) setPageAt({ key: filterKey, page: totalPages - 1 })
+  const rows = packages.data?.content ?? []
   const creating = search.has('create')
-  function open(event: FormEvent) {
-    event.preventDefault()
-    setIdSent(true)
-    const parsed = z.guid().safeParse(id.trim())
-    if (!parsed.success) return
-    navigate(`/content-author/packages/${parsed.data}`)
-  }
+  // The package being edited sits in the address (?package=…), so a refresh or a shared link reopens the same drawer.
+  const editingId = z.guid().safeParse(search.get('package')).data
+  function closeEditor() { setSearch((previous) => { const next = new URLSearchParams(previous); next.delete('package'); next.delete('version'); return next }) }
   return <AdminPage title="Đề & gói câu hỏi" subtitle="Tạo gói đề, soạn các phiên bản và xuất bản khi nội dung đã sẵn sàng." actions={<button className="adm-btn adm-btn--primary" type="button" disabled={creating} onClick={() => setSearch((previous) => { const next = new URLSearchParams(previous); next.set('create', 'PRACTICE_SET'); return next })}>Gói mới</button>}>
     <div className="adm-package-workspace">
       {creating ? <AdminDrawer title="Gói mới" onClose={() => setSearch((previous) => { const next = new URLSearchParams(previous); next.delete('create'); return next })}>
-        {(close) => <PackageCreateForm initialType={search.get('create') ?? undefined} onCancel={close} onCreated={(packageId) => navigate(`/content-author/packages/${packageId}`)} />}
+        {(close) => <PackageCreateForm initialType={search.get('create') ?? undefined} onCancel={close} onCreated={(packageId) => setSearch((previous) => { const next = new URLSearchParams(previous); next.delete('create'); next.set('package', packageId); return next })} />}
       </AdminDrawer> : null}
       <section aria-label="Bộ lọc gói" className="adm-package-form-grid">
         <label className="adm-field"><span>Tìm mã hoặc tiêu đề</span><input className="adm-input" type="search" value={text} onChange={(event) => setText(event.target.value)} /></label>
@@ -65,15 +71,21 @@ export function PackagesPage() {
       {type === 'PLACEMENT_TEST' ? <PlacementPoolSummary /> : null}
       {packages.status === 'loading' ? <AdminLoading label="Đang tải gói đề…" /> : null}
       {packages.status === 'error' ? <AdminError message={packages.error!} onRetry={packages.reload} /> : null}
-      {packages.status === 'success' && !packages.data?.length ? <AdminEmpty title="Chưa có gói phù hợp">Đổi bộ lọc hoặc tạo gói mới.</AdminEmpty> : null}
-      {packages.data?.length ? <div className="adm-table-wrap"><table className="adm-table"><thead><tr><th className="adm-stt" scope="col">STT</th><th>Mã và tiêu đề</th><th>Loại</th><th>Kho</th><th>Truy cập</th><th>Trạng thái</th><th>Phiên bản</th><th>Cập nhật</th></tr></thead><tbody>{packages.data.map((pkg, index) => <tr key={pkg.id}>
-        <td className="adm-stt">{index + 1}</td><td><Link to={`/content-author/packages/${pkg.id}`}>{pkg.code} · {pkg.title}</Link></td><td>{PACKAGE_TYPE_LABEL[pkg.packageType]}</td><td>{pkg.packageType === 'PLACEMENT_TEST' ? placementPoolLabel(pkg.placementPool) : ''}</td><td>{pkg.accessLevel === 'FREE' ? 'Miễn phí' : 'Premium'}</td><td><span className="adm-badge">{PACKAGE_STATUS_LABEL[pkg.status]}</span></td><td>{pkg.latestVersionNumber ?? 'Chưa có'} {pkg.hasDraft ? <span className="adm-badge adm-badge--warn">Có bản nháp</span> : null}</td><td>{new Date(pkg.updatedAt).toLocaleString('vi-VN')}</td>
+      {packages.status === 'success' && !rows.length ? <AdminEmpty title="Chưa có gói phù hợp">Đổi bộ lọc hoặc tạo gói mới.</AdminEmpty> : null}
+      {rows.length ? <div className="adm-table-wrap"><table className="adm-table"><thead><tr><th className="adm-stt" scope="col">STT</th><th>Mã và tiêu đề</th><th>Loại</th><th>Kho</th><th>Truy cập</th><th>Trạng thái</th><th>Phiên bản</th><th>Cập nhật</th><th className="adm-col-actions" scope="col">Hành động</th></tr></thead><tbody>{rows.map((pkg, index) => <tr key={pkg.id}>
+        <td className="adm-stt">{page * PAGE_SIZE + index + 1}</td><td><Link to={{ search: `?package=${pkg.id}` }}>{pkg.code} · {pkg.title}</Link></td><td>{PACKAGE_TYPE_LABEL[pkg.packageType]}</td><td>{pkg.packageType === 'PLACEMENT_TEST' ? placementPoolLabel(pkg.placementPool) : ''}</td><td>{pkg.accessLevel === 'FREE' ? 'Miễn phí' : 'Premium'}</td><td><span className="adm-badge">{PACKAGE_STATUS_LABEL[pkg.status]}</span></td><td>{pkg.latestVersionNumber ?? 'Chưa có'} {pkg.hasDraft ? <span className="adm-badge adm-badge--warn">Có bản nháp</span> : null}</td><td>{new Date(pkg.updatedAt).toLocaleString('vi-VN')}</td>
+        <td className="adm-col-actions"><AdminRowMenu label={`Hành động của gói ${pkg.code}`} items={[
+          { key: 'edit', label: 'Chỉnh sửa', ariaLabel: `Chỉnh sửa gói ${pkg.code}`, icon: <Pencil aria-hidden="true" size={16} />, onSelect: () => setSearch((previous) => { const next = new URLSearchParams(previous); next.set('package', pkg.id); return next }) },
+          { key: 'detail', label: 'Chi tiết', ariaLabel: `Chi tiết gói ${pkg.code}`, icon: <Eye aria-hidden="true" size={16} />, onSelect: () => setPreviewing({ id: pkg.id, title: `${pkg.code} · ${pkg.title}` }) },
+        ]} /></td>
       </tr>)}</tbody></table></div> : null}
-      <details><summary>Mở trực tiếp bằng ID</summary><form className="adm-card" aria-label="Mở gói có sẵn" noValidate onSubmit={open}>
-        <h2>Mở gói có sẵn</h2>
-        <AdminField label="ID gói (UUID)" required error={idSent ? idError : undefined}><input className="adm-input" value={id} onChange={(event) => setId(event.target.value)} autoCapitalize="none" spellCheck={false} /></AdminField>
-        <button className="adm-btn adm-btn--primary" type="submit">Mở gói</button>
-      </form></details>
+      {editingId ? <PackageEditorDrawer packageId={editingId} onClose={closeEditor} /> : null}
+      {previewing ? <PackagePreviewDialog packageId={previewing.id} title={previewing.title} onClose={() => setPreviewing(null)} /> : null}
+      {rows.length ? <nav aria-label="Phân trang" className="adm-package-pager">
+        <button className="adm-btn adm-btn--small" disabled={page === 0} onClick={() => setPageAt({ key: filterKey, page: page - 1 })} type="button">Trang trước</button>
+        <span>Trang {page + 1} / {Math.max(1, totalPages)} · {packages.data?.totalElements ?? 0} gói</span>
+        <button className="adm-btn adm-btn--small" disabled={page + 1 >= totalPages} onClick={() => setPageAt({ key: filterKey, page: page + 1 })} type="button">Trang sau</button>
+      </nav> : null}
     </div>
   </AdminPage>
 }

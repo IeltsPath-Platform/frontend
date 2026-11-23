@@ -39,7 +39,7 @@ export function SectionEditor({ section, sortOrder, busy, onSave, onCancel }: {
     setError(null)
     await onSave(parsed.data)
   }
-  return <form aria-label={section ? `Sửa phần ${section.title}` : 'Thêm phần'} className="adm-card" noValidate onSubmit={(event) => void submit(event)}>
+  return <form aria-label={section ? `Sửa phần ${section.title}` : 'Thêm phần'} className="adm-pe-form" noValidate onSubmit={(event) => void submit(event)}>
     <h3>{section ? 'Sửa phần' : 'Thêm phần'}</h3>
     <fieldset className="adm-package-fields" disabled={busy}>
       <AdminField label="Tiêu đề phần" {...form.field('title')}><input className="adm-input" maxLength={255} value={title} onChange={(event) => setTitle(event.target.value)} /></AdminField>
@@ -49,7 +49,6 @@ export function SectionEditor({ section, sortOrder, busy, onSave, onCancel }: {
         <AdminField label="Thời gian (phút)" {...form.field('minutes')}><input className="adm-input" type="number" min={0} step="any" value={minutes} onChange={(event) => setMinutes(event.target.value)} /></AdminField>
       </div>
       <label className="adm-field"><span>Hướng dẫn</span><textarea className="adm-textarea" value={instructions} onChange={(event) => setInstructions(event.target.value)} /></label>
-      <p className="adm-muted">Dùng nút lên/xuống trong danh sách để đổi thứ tự phần.</p>
       <div className="adm-package-actions"><button className="adm-btn adm-btn--primary" type="submit">{busy ? 'Đang lưu…' : 'Lưu phần'}</button><button className="adm-btn" type="button" onClick={onCancel}>Hủy</button></div>
     </fieldset>
   </form>

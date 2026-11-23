@@ -22,3 +22,8 @@
 .qb-version__options { margin: 8px 0 8px 18px; padding: 0; }
 .qb-version details summary { cursor: pointer; color: var(--adm-accent); font-weight: 600; }
 @media (max-width: 560px) { .qb-option { grid-template-columns: 24px 70px 1fr; } .qb-option > button { grid-column: 1 / -1; } }
+.qb-context { display: grid; gap: 10px; margin-top: 18px; }
+.qb-context__item { display: grid; gap: 6px; padding: 10px 12px; border: 1px solid var(--adm-border); border-radius: 8px; background: var(--adm-bg); }
+.qb-context__source { margin: 0; color: var(--adm-muted); font-size: .85rem; }
+.qb-context__text { margin: 0; white-space: pre-wrap; max-height: 260px; overflow-y: auto; }
+.qb-context audio { width: 100%; }

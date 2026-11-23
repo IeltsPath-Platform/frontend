@@ -42,6 +42,22 @@ describe('PackageEditorPage', () => {
   })
   afterEach(() => vi.restoreAllMocks())
 
+  it('folds a section under its title, shows its facts as chips, and opens it again', async () => {
+    show()
+    const article = await screen.findByRole('article', { name: 'Reading One' })
+    expect(within(article).getByText(/\d+ câu/)).toBeInTheDocument()
+    const toggle = within(article).getByRole('button', { name: 'Thu gọn Reading One' })
+    expect(toggle).toHaveAttribute('aria-expanded', 'true')
+    expect(within(article).getByRole('region', { name: /^Câu hỏi của/ })).toBeVisible()
+    fireEvent.click(toggle)
+    expect(within(article).getByRole('button', { name: 'Mở Reading One' })).toHaveAttribute('aria-expanded', 'false')
+    expect(within(article).getByRole('region', { name: /^Câu hỏi của/, hidden: true })).not.toBeVisible()
+    // The tools of the section stay in reach while it is folded.
+    expect(within(article).getByRole('button', { name: 'Sửa Reading One' })).toBeVisible()
+    fireEvent.click(within(article).getByRole('button', { name: 'Mở Reading One' }))
+    expect(within(article).getByRole('region', { name: /^Câu hỏi của/ })).toBeVisible()
+  })
+
   it('selects the existing draft by default and puts its ID in the query', async () => {
     show('?view=sections')
     expect(await screen.findByRole('heading', { name: 'Bản 2 · Bản nháp' })).toBeInTheDocument()

@@ -24,6 +24,7 @@ import { BLOCK_TYPES, type BlockRequest, type BlockType, type LessonBlock, type 
 import '../../course-drafts/course-drafts.css'
 import '../lessons.css'
 import { useAdminError, useAdminErrorToast } from '../../lib/useAdminError'
+import { useToast } from '@/components/toast/toastContext'
 
 const EXERCISE_LOCK_NOTE =
   'Bài đã xuất bản: không đổi được bộ câu hỏi của block bài tập vì học viên đã có tiến độ theo block. Các block khác vẫn sửa được.'
@@ -65,6 +66,7 @@ function InfoForm({ lesson, formId, saving, onSavingChange, onSaved, skill }: {
   const [minutes, setMinutes] = useState(lesson.estimatedMinutes?.toString() ?? '')
   const [knowledgePointIds, setKnowledgePointIds] = useState(lesson.knowledgePointIds)
   const [, setError] = useAdminError()
+  const { toast } = useToast()
   const form = useFormErrors(infoSchema, { title, minutes })
 
   async function submit(event: FormEvent) {
@@ -93,6 +95,8 @@ function InfoForm({ lesson, formId, saving, onSavingChange, onSaved, skill }: {
       }
     }
     onSavingChange(false)
+    // The panel stays open so the author can keep editing; the toast is the only sign that the save went through.
+    toast({ title: 'Thành công', description: 'Đã lưu thông tin bài học.', tone: 'success' })
     onSaved()
   }
 
@@ -109,7 +113,7 @@ function InfoForm({ lesson, formId, saving, onSavingChange, onSaved, skill }: {
       </div>
       <MarkdownField label="Tóm tắt chi tiết (Markdown)" onChange={setMarkdown} textareaClassName="adm-textarea ls-textarea" value={markdown} />
       <section aria-label="Knowledge point của bài">
-        <LessonKnowledgeField onChange={setKnowledgePointIds} skill={skill} title="Knowledge point của bài" value={knowledgePointIds} />
+        <LessonKnowledgeField onChange={setKnowledgePointIds} skill={skill} title="Knowledge point của bài" value={knowledgePointIds} warnMissingPrerequisites />
       </section>
     </form>
   )

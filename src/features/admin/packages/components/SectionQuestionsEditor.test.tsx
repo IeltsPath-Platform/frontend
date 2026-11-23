@@ -19,7 +19,7 @@ const section: PackageSection = {
 const mutate = async (action: () => Promise<unknown>) => { await action(); return true }
 
 describe('SectionQuestionsEditor', () => {
-  beforeEach(() => { vi.clearAllMocks(); bank.listQuestions.mockResolvedValue({ content: [{ id: 'q3', currentPublishedVersionId: 'v3', questionType: 'MULTIPLE_CHOICE', skill: 'READING' }] }) })
+  beforeEach(() => { vi.clearAllMocks(); bank.listQuestions.mockResolvedValue({ content: [{ id: 'q3', code: 'Q-SECTION-3', currentPublishedVersionId: 'v3', questionType: 'MULTIPLE_CHOICE', skill: 'READING' }] }) })
   function show(packageType: PackageType = 'PRACTICE_SET', disabled = false) {
     return render(<SectionQuestionsEditor packageId="package" versionId="version" section={section} packageType={packageType} disabled={disabled} onSaved={vi.fn()} onMutate={mutate} />)
   }
@@ -30,6 +30,8 @@ describe('SectionQuestionsEditor', () => {
     show(type)
     fireEvent.click(screen.getByRole('button', { name: 'Thêm câu hỏi' }))
     await waitFor(() => expect(bank.listQuestions).toHaveBeenCalledWith(expect.objectContaining({ purpose, status: 'PUBLISHED' }), expect.any(AbortSignal)))
+    expect(bank.listQuestions.mock.lastCall?.[0]).not.toHaveProperty('include')
+    expect(screen.queryByRole('switch', { name: 'Chỉ hiện câu còn trống' })).not.toBeInTheDocument()
   })
 
   it('shows publication warnings and sends one atomic reorder of all section question row IDs', async () => {

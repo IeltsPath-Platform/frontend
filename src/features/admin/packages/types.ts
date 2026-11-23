@@ -34,6 +34,9 @@ export const publishedPackageSchema = z.object({
 export const packageListItemSchema = publishedPackageSchema.extend({
   topicId: z.guid().nullable(), courseId: z.guid().nullable(), latestVersionNumber: z.int().positive().nullable(), hasDraft: z.boolean(),
 })
+export const packagePageSchema = z.object({
+  content: z.array(packageListItemSchema), page: z.number(), size: z.number(), totalElements: z.number(), totalPages: z.number(),
+})
 export const contentPackageSchema = publishedPackageSchema.extend({
   topicId: z.guid().nullable(), courseId: z.guid().nullable(),
   versions: z.array(packageVersionSchema),
@@ -48,6 +51,7 @@ export const sectionOrderSchema = z.object({ sectionIds: z.array(z.guid()).refin
 export const packageFiltersSchema = z.object({
   type: packageTypeSchema.optional(), status: packageStatusSchema.optional(), lessonId: z.guid().optional(),
   topicId: z.guid().optional(), courseId: z.guid().optional(), q: z.string().optional(), placementPool: placementPoolSchema.optional(),
+  page: z.int().min(0).optional(), size: z.int().min(1).max(100).optional(),
 })
 export const createPackageRequestSchema = z.object({
   /** Left out or blank when the server chooses the code. */
@@ -109,6 +113,7 @@ export type SectionRequest = z.infer<typeof sectionRequestSchema>
 export type PackageType = z.infer<typeof packageTypeSchema>
 export type PackageFilters = z.infer<typeof packageFiltersSchema>
 export type PackageListItem = z.infer<typeof packageListItemSchema>
+export type PackagePage = z.infer<typeof packagePageSchema>
 export type CreatePackageRequest = z.infer<typeof createPackageRequestSchema>
 export type SectionQuestion = z.infer<typeof sectionQuestionSchema>
 export type AddSectionQuestionRequest = z.infer<typeof addSectionQuestionRequestSchema>

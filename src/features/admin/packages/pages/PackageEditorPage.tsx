@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
-import { ArrowDown, ArrowUp, Pencil, Plus, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, ChevronRight, Pencil, Plus, Trash2 } from 'lucide-react'
 import { z } from 'zod'
 import { useAdminConfirm } from '../../lib/useAdminConfirm'
+import { AdminDrawer, AdminModal } from '../../components/AdminLayer'
 import { AdminEmpty, AdminError, AdminLoading } from '../../components/AdminState'
 import { useAdminResource } from '../../lib/useAdminResource'
 import { AdminPage } from '../../pages/AdminPage'
@@ -17,7 +18,8 @@ import { PACKAGE_STATUS_LABEL, PACKAGE_TYPE_LABEL, SECTION_SKILL_LABEL, packageE
 import type { ContentPackage, PackageSection, SectionRequest } from '../types'
 import '../packages.css'
 
-function PackageEditor({ packageId }: { packageId: string }) {
+/** `onClose` shows the editor in a side drawer over the catalog instead of as a page of its own. */
+function PackageEditor({ packageId, onClose }: { packageId: string; onClose?: () => void }) {
   const resource = useAdminResource(`author-package:${packageId}`, (signal) => getPackage(packageId, signal))
   const [search, setSearch] = useSearchParams()
   const { confirm, confirmDialog } = useAdminConfirm()
@@ -28,6 +30,7 @@ function PackageEditor({ packageId }: { packageId: string }) {
   const [notice, setNotice] = useState<string | null>(null)
   const [previewOpen, setPreviewOpen] = useState(false)
   const [previewRevision, setPreviewRevision] = useState(0)
+  const [folded, setFolded] = useState<ReadonlySet<string>>(() => new Set())
   const active = useRef(true)
   useEffect(() => { active.current = true; return () => { active.current = false } }, [])
   if (resource.status === 'success' && resource.data !== shown) setShown(resource.data)
@@ -44,6 +47,10 @@ function PackageEditor({ packageId }: { packageId: string }) {
   if (editing && resource.status === 'success' && (editing.versionId !== selectedId || readOnly)) setEditing(null)
   const sections = [...(selected?.sections ?? [])].sort((a, b) => a.sortOrder - b.sortOrder || a.id.localeCompare(b.id))
 
+  const allFolded = sections.length > 0 && sections.every((section) => folded.has(section.id))
+  function toggleSection(id: string) {
+    setFolded((previous) => { const next = new Set(previous); if (!next.delete(id)) next.add(id); return next })
+  }
   function selectVersion(id: string) {
     if (locked || editing) return
     setError(null); setNotice(null)
@@ -88,14 +95,14 @@ function PackageEditor({ packageId }: { packageId: string }) {
     ;[ids[index], ids[other]] = [ids[other]!, ids[index]!]
     void mutate(() => reorderSections(packageId, selected.id, ids), 'Đã đổi thứ tự phần.')
   }
-  return <AdminPage title={pkg?.title ?? 'Soạn gói câu hỏi'} subtitle={pkg ? `${pkg.code} · ${PACKAGE_TYPE_LABEL[pkg.packageType]} · ${pkg.accessLevel === 'FREE' ? 'Miễn phí' : 'Premium'}` : undefined} actions={<Link className="adm-btn" to="/content-author/packages">Đề & gói câu hỏi</Link>}>
-    <div className="adm-package-workspace">
+  const subtitle = pkg ? `${pkg.code} · ${PACKAGE_TYPE_LABEL[pkg.packageType]} · ${pkg.accessLevel === 'FREE' ? 'Miễn phí' : 'Premium'}` : undefined
+  const body = <>
+    <div className="adm-package-workspace adm-pe">
       {confirmDialog}
       {resource.status === 'loading' ? <AdminLoading label="Đang tải gói…" /> : null}
       {resource.status === 'error' ? <AdminError message={resource.error!} onRetry={resource.reload} /> : null}
       {pkg ? <>
-        <div className="adm-package-actions"><span className="adm-badge">{PACKAGE_STATUS_LABEL[pkg.status]}</span><code>{pkg.code}</code></div>
-        <VersionPicker versions={pkg.versions} selectedId={selected?.id ?? ''} locked={locked || !!editing} onChange={selectVersion} onCreate={() => {
+        <VersionPicker status={PACKAGE_STATUS_LABEL[pkg.status]} versions={pkg.versions} selectedId={selected?.id ?? ''} locked={locked || !!editing} onChange={selectVersion} onCreate={() => {
           if (editing || pkg.versions.some((version) => version.status === 'DRAFT')) return
           void mutate(async () => {
             const draft = await createDraftVersion(packageId, '{}')
@@ -103,42 +110,74 @@ function PackageEditor({ packageId }: { packageId: string }) {
           }, 'Đã tạo bản nháp trống.')
         }} />
         {error ? <div className="adm-alert adm-alert--error" role="alert">{error}<div><button className="adm-btn" type="button" disabled={locked} onClick={resource.reload}>Tải lại gói</button></div></div> : null}
-        {notice ? <p role="status">{notice}</p> : null}
+        {notice ? <p className="adm-pe-notice" role="status">{notice}</p> : null}
         {!pkg.versions.length ? <AdminEmpty title="Gói chưa có phiên bản">Tạo bản nháp mới để thêm các phần.</AdminEmpty> : null}
         {requested && !selected && resource.status === 'success' ? <AdminError message="Không tìm thấy phiên bản đã chọn trong gói này. Chọn lại phiên bản bên trên." /> : null}
-        {selected ? <section aria-label={`Nội dung bản ${selected.versionNumber}`}>
-          <h2>Bản {selected.versionNumber} · {PACKAGE_STATUS_LABEL[selected.status]}</h2>
+        {selected ? <section aria-label={`Nội dung bản ${selected.versionNumber}`} className="adm-pe-content">
+          <h2 className="adm-pe-version">Bản {selected.versionNumber} · {PACKAGE_STATUS_LABEL[selected.status]}</h2>
           {readOnly ? <p className="adm-alert">Phiên bản này chỉ xem. Chọn hoặc tạo bản nháp để sửa.</p> : null}
-          <h3>Các phần ({sections.length})</h3>
+          <div className="adm-sec__head">
+            <h3 className="adm-sec__title">Các phần<span className="adm-count">{sections.length}</span></h3>
+            <div className="adm-pe-tools">
+              {sections.length > 1 ? <button className="adm-btn adm-btn--small adm-btn--noicon" type="button" onClick={() => setFolded(allFolded ? new Set() : new Set(sections.map((section) => section.id)))}>{allFolded ? 'Mở tất cả' : 'Thu gọn tất cả'}</button> : null}
+              {!readOnly ? <button className="adm-btn adm-btn--small" type="button" disabled={locked || !!editing} onClick={() => { setError(null); setNotice(null); setEditing({ id: 'new', versionId: selected.id }) }}><Plus size={14} aria-hidden="true" /> Thêm phần</button> : null}
+            </div>
+          </div>
+          {editing?.versionId === selected.id && editing.id === 'new' && !readOnly ? <SectionEditor sortOrder={Math.max(0, ...sections.map((section) => section.sortOrder)) + 1} busy={locked} onSave={(body) => save(body)} onCancel={() => { setEditing(null); setError(null) }} /> : null}
           {!sections.length ? <AdminEmpty title="Phiên bản chưa có phần nào">{readOnly ? 'Phiên bản này không có phần để hiển thị.' : 'Thêm phần đầu tiên để bắt đầu soạn đề.'}</AdminEmpty> : null}
-          {sections.map((section, index) => <article className="adm-package-section" aria-label={section.title} key={section.id}>
-            <h3>{section.title}</h3>
-            <p className="adm-muted">{section.skill ? SECTION_SKILL_LABEL[section.skill] : 'Chưa chọn kỹ năng'}{section.partNo ? ` · Phần ${section.partNo}` : ''}{section.timeLimitSeconds != null ? ` · ${section.timeLimitSeconds / 60} phút` : ''}</p>
-            {section.instructions ? <p className="adm-package-section__instructions">{section.instructions}</p> : null}
-            {!readOnly ? <div className="adm-package-actions">
-              <button className="adm-btn" type="button" disabled={locked || !!editing || index === 0} aria-label={`Đưa ${section.title} lên`} onClick={() => move(index, -1)}><ArrowUp size={16} aria-hidden="true" /></button>
-              <button className="adm-btn" type="button" disabled={locked || !!editing || index === sections.length - 1} aria-label={`Đưa ${section.title} xuống`} onClick={() => move(index, 1)}><ArrowDown size={16} aria-hidden="true" /></button>
-              <button className="adm-btn" type="button" disabled={locked || !!editing} onClick={() => { setError(null); setNotice(null); setEditing({ id: section.id, versionId: selected.id }) }} aria-label={`Sửa ${section.title}`}><Pencil size={16} aria-hidden="true" /> Sửa phần</button>
-              <button className="adm-btn adm-btn--danger" type="button" disabled={locked || !!editing} onClick={() => remove(section)} aria-label={`Xóa ${section.title}`}><Trash2 size={16} aria-hidden="true" /> Xóa phần</button>
-            </div> : null}
-            {editing?.versionId === selected.id && editing.id === section.id && !readOnly ? <SectionEditor section={section} sortOrder={section.sortOrder} busy={locked} onSave={(body) => save(body, section)} onCancel={() => { setEditing(null); setError(null) }} /> : null}
-            <SectionQuestionsEditor packageId={packageId} versionId={selected.id} section={section} packageType={pkg.packageType} disabled={locked || readOnly || !!editing} onSaved={() => {}} onMutate={mutateContent} />
-            <SectionContentEditor packageId={packageId} versionId={selected.id} section={section} disabled={locked || readOnly || !!editing} onSaved={() => {}} onMutate={mutateContent} />
-          </article>)}
-          {!readOnly ? <div className="adm-package-section">
-            <button className="adm-btn" type="button" disabled={locked || !!editing} onClick={() => { setError(null); setNotice(null); setEditing({ id: 'new', versionId: selected.id }) }}><Plus size={16} aria-hidden="true" /> Thêm phần</button>
-            {editing?.versionId === selected.id && editing.id === 'new' ? <SectionEditor sortOrder={Math.max(0, ...sections.map((section) => section.sortOrder)) + 1} busy={locked} onSave={(body) => save(body)} onCancel={() => { setEditing(null); setError(null) }} /> : null}
-          </div> : null}
+          <div className="adm-pe-sections">
+            {sections.map((section, index) => {
+              const isFolded = folded.has(section.id)
+              return <article className={`adm-pe-section${isFolded ? ' is-folded' : ''}`} aria-label={section.title} key={section.id}>
+                <header className="adm-pe-section__head">
+                  <button aria-expanded={!isFolded} aria-label={`${isFolded ? 'Mở' : 'Thu gọn'} ${section.title}`} className="adm-pe-section__toggle" type="button" onClick={() => toggleSection(section.id)}>
+                    <ChevronRight aria-hidden="true" className="adm-pe-section__chevron" size={18} />
+                    <span aria-hidden="true" className="adm-pe-section__no">{index + 1}</span>
+                    <span className="adm-pe-section__title">{section.title}</span>
+                  </button>
+                  <div className="adm-pe-section__meta">
+                    <span className="adm-pe-chip">{section.skill ? SECTION_SKILL_LABEL[section.skill] : 'Chưa chọn kỹ năng'}</span>
+                    {section.partNo ? <span className="adm-pe-chip">Phần {section.partNo}</span> : null}
+                    {section.timeLimitSeconds != null ? <span className="adm-pe-chip">{section.timeLimitSeconds / 60} phút</span> : null}
+                    <span className="adm-pe-chip adm-pe-chip--count">{section.questions.length} câu</span>
+                  </div>
+                  {!readOnly ? <div className="adm-pe-section__tools">
+                    <button className="adm-pe-icon" type="button" disabled={locked || !!editing || index === 0} aria-label={`Đưa ${section.title} lên`} onClick={() => move(index, -1)}><ArrowUp size={16} aria-hidden="true" /></button>
+                    <button className="adm-pe-icon" type="button" disabled={locked || !!editing || index === sections.length - 1} aria-label={`Đưa ${section.title} xuống`} onClick={() => move(index, 1)}><ArrowDown size={16} aria-hidden="true" /></button>
+                    <button className="adm-pe-icon" type="button" disabled={locked || !!editing} onClick={() => { setError(null); setNotice(null); setEditing({ id: section.id, versionId: selected.id }) }} aria-label={`Sửa ${section.title}`}><Pencil size={16} aria-hidden="true" /></button>
+                    <button className="adm-pe-icon adm-pe-icon--danger" type="button" disabled={locked || !!editing} onClick={() => remove(section)} aria-label={`Xóa ${section.title}`}><Trash2 size={16} aria-hidden="true" /></button>
+                  </div> : null}
+                </header>
+                <div className="adm-pe-section__body" hidden={isFolded}>
+                  {section.instructions ? <p className="adm-pe-section__instructions">{section.instructions}</p> : null}
+                  {editing?.versionId === selected.id && editing.id === section.id && !readOnly ? <SectionEditor section={section} sortOrder={section.sortOrder} busy={locked} onSave={(body) => save(body, section)} onCancel={() => { setEditing(null); setError(null) }} /> : null}
+                  <SectionQuestionsEditor packageId={packageId} versionId={selected.id} section={section} packageType={pkg.packageType} disabled={locked || readOnly || !!editing} onSaved={() => {}} onMutate={mutateContent} />
+                  <SectionContentEditor packageId={packageId} versionId={selected.id} section={section} disabled={locked || readOnly || !!editing} onSaved={() => {}} onMutate={mutateContent} />
+                </div>
+              </article>
+            })}
+          </div>
           <PublishPanel key={selected.id} packageId={packageId} version={selected} packageType={pkg.packageType} disabled={locked || !!editing} onMutate={mutateContent} onPreview={() => setPreviewOpen(true)} />
-          {previewOpen ? <PackagePreview key={`${selected.id}:${previewRevision}`} packageId={packageId} versionId={selected.id} onClose={() => setPreviewOpen(false)} /> : null}
+          {previewOpen ? <AdminModal onClose={() => setPreviewOpen(false)} size="wide" stacked title="Xem trước gói" description={pkg.title}>
+            {(close) => <PackagePreview embedded key={`${selected.id}:${previewRevision}`} packageId={packageId} versionId={selected.id} onClose={close} />}
+          </AdminModal> : null}
         </section> : null}
       </> : null}
     </div>
-  </AdminPage>
+  </>
+  if (onClose) {
+    return <AdminDrawer title={pkg?.title ?? 'Chỉnh sửa gói'} description={subtitle} size="xl" onClose={onClose}>{() => body}</AdminDrawer>
+  }
+  return <AdminPage title={pkg?.title ?? 'Soạn gói câu hỏi'} subtitle={subtitle} actions={<Link className="adm-btn" to="/content-author/packages">Đề & gói câu hỏi</Link>}>{body}</AdminPage>
 }
 
 export function PackageEditorPage() {
   const { packageId } = useParams<{ packageId: string }>()
   const parsed = z.guid().safeParse(packageId)
   return parsed.success ? <PackageEditor key={parsed.data} packageId={parsed.data} /> : <AdminPage title="Soạn gói câu hỏi"><AdminError message="ID gói không hợp lệ (cần UUID)." /><Link className="adm-btn" to="/content-author/packages">Đề & gói câu hỏi</Link></AdminPage>
+}
+
+/** The editor of one package in a side drawer, opened over the catalog. */
+export function PackageEditorDrawer({ packageId, onClose }: { packageId: string; onClose: () => void }) {
+  return <PackageEditor key={packageId} packageId={packageId} onClose={onClose} />
 }

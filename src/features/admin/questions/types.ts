@@ -25,6 +25,10 @@ export const questionSchema = z.object({
   createdAt: z.string().nullish(),
   updatedAt: z.string().nullish(),
   purpose: z.string().nullish(),
+  ownedElsewhere: z.boolean().nullish(),
+  stemExcerpt: z.string().nullish(),
+  knowledgePoints: z.array(z.object({ code: z.string(), name: z.string() })).nullish(),
+  knowledgePointTotal: z.number().nullish(),
 })
 
 export const questionPageSchema = z.object({
@@ -59,12 +63,18 @@ export const versionSchema = z.object({
 
 export const questionDetailSchema = questionSchema.extend({ versions: z.array(versionSchema).nullish() })
 
-/** A reading passage that goes with a question version; `source` says how it was found. */
+/**
+ * A reading passage or a recording that goes with a question version; `source` says how it was found. For a recording,
+ * `text` is its transcript (may be missing) and `mediaUrl` a playable link (missing when none could be made).
+ */
 export const questionPassageSchema = z.object({
   assetId: z.string(),
-  text: z.string(),
+  text: z.string().nullish(),
   source: z.enum(['DIRECT', 'LESSON', 'SECTION']),
   sourceName: z.string().nullish(),
+  type: z.enum(['PASSAGE', 'AUDIO']).default('PASSAGE'),
+  mediaUrl: z.string().nullish(),
+  durationSeconds: z.number().nullish(),
 })
 
 export type Question = z.infer<typeof questionSchema>
@@ -92,4 +102,7 @@ export interface QuestionFilters {
   knowledgePointId?: string
   page?: number
   size?: number
+  include?: string
+  exceptBlockId?: string
+  onlyFree?: boolean
 }
