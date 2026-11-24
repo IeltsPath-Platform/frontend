@@ -1,5 +1,6 @@
 import { apiDownload, apiRequest, HttpError } from '@/lib/httpClient'
-import { IMPORT_MAX_BYTES, importReportSchema, importSuccessSchema } from '../types'
+import { z } from 'zod'
+import { IMPORT_MAX_BYTES, importDraftSchema, importDraftSummarySchema, importReportSchema, importSuccessSchema, type ImportSheets } from '../types'
 
 const BASE = '/api/content/admin/course-import'
 function fileBody(file: File) {
@@ -13,4 +14,25 @@ export async function validateCourseImport(file: File) {
 }
 export async function importCourse(file: File) {
   return importSuccessSchema.parse(await apiRequest<unknown>(BASE, { auth: true, method: 'POST', body: fileBody(file) }))
+}
+
+const DRAFTS = `${BASE}/drafts`
+/** Keeps the checked file as a draft the author can open again. A file that cannot be read is refused with 422. */
+export async function createImportDraft(file: File) {
+  return importDraftSchema.parse(await apiRequest<unknown>(DRAFTS, { auth: true, method: 'POST', body: fileBody(file) }))
+}
+export async function listImportDrafts(signal?: AbortSignal) {
+  return z.array(importDraftSummarySchema).parse(await apiRequest<unknown>(DRAFTS, { auth: true, signal }))
+}
+export async function getImportDraft(id: string, signal?: AbortSignal) {
+  return importDraftSchema.parse(await apiRequest<unknown>(`${DRAFTS}/${id}`, { auth: true, signal }))
+}
+export async function saveImportDraft(id: string, sheets: ImportSheets) {
+  return importDraftSchema.parse(await apiRequest<unknown>(`${DRAFTS}/${id}`, { auth: true, method: 'PUT', body: { sheets } }))
+}
+export async function importDraftCourse(id: string) {
+  return importSuccessSchema.parse(await apiRequest<unknown>(`${DRAFTS}/${id}/import`, { auth: true, method: 'POST' }))
+}
+export async function deleteImportDraft(id: string) {
+  await apiRequest<unknown>(`${DRAFTS}/${id}`, { auth: true, method: 'DELETE' })
 }
