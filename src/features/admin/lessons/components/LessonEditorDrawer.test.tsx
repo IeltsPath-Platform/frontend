@@ -13,7 +13,7 @@ const { api, graph, questions, vocab } = vi.hoisted(() => ({
     fetchLessonResources: vi.fn(), createLessonResource: vi.fn(), updateLessonResource: vi.fn(), deleteLessonResource: vi.fn(),
   },
   graph: { fetchKnowledgeTree: vi.fn() },
-  questions: { listQuestions: vi.fn(), getQuestion: vi.fn() },
+  questions: { listQuestions: vi.fn(), getQuestion: vi.fn(), listVersionPassages: vi.fn().mockResolvedValue([]) },
   vocab: { getLessonVocabularySenses: vi.fn() },
 }))
 vi.mock('../api/lessonApi', () => api)
@@ -99,6 +99,30 @@ describe('LessonEditorDrawer', () => {
     await waitFor(() => expect(api.setLessonKnowledgePoints).toHaveBeenCalledWith('l1', ['kp1', 'kp2']))
     expect(api.updateLesson).toHaveBeenCalledTimes(1)
     expect(screen.queryByRole('button', { name: 'Lưu KP' })).not.toBeInTheDocument()
+  })
+
+  it('warns about missing direct prerequisites at lesson level and can add them without warning on a text block', async () => {
+    graph.fetchKnowledgeTree.mockResolvedValue({
+      nodes: [
+        { id: 'kp1', code: 'R55_SCAN', name: 'Scanning', kind: 'STRATEGY', status: 'ACTIVE' },
+        { id: 'kp2', code: 'R54_FIND', name: 'Finding details', kind: 'STRATEGY', status: 'ACTIVE' },
+      ],
+      edges: [{ from: 'kp2', to: 'kp1' }],
+    })
+    renderPage()
+
+    const section = await screen.findByRole('region', { name: 'Knowledge point của bài' })
+    const warning = await within(section).findByRole('note')
+    expect(warning).toHaveTextContent('R55_SCAN')
+    expect(warning).toHaveTextContent('R54_FIND')
+    expect(within(warning).getByTitle('Finding details')).toBeInTheDocument()
+    fireEvent.click(within(warning).getByRole('button', { name: 'Thêm tiên quyết' }))
+    expect(await within(section).findByText('R54_FIND')).toBeInTheDocument()
+    expect(within(section).queryByText('Thiếu điểm kiến thức tiên quyết:')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Sửa block 1' }))
+    const form = await screen.findByRole('form', { name: /Sửa block/ })
+    expect(within(form).queryByText('Thiếu điểm kiến thức tiên quyết:')).not.toBeInTheDocument()
   })
 
   it('removes a knowledge point from the table with its cross', async () => {
@@ -188,14 +212,17 @@ describe('LessonEditorDrawer', () => {
     await waitFor(() => expect(onClose).toHaveBeenCalled())
   })
 
-  it('saves only the lesson information, and reloads, when the knowledge points were not changed', async () => {
+  it('saves only the lesson information, reloads and says so, when the knowledge points were not changed', async () => {
     api.updateLesson.mockResolvedValue(undefined)
-    renderPage()
+    const onClose = renderPage()
     fireEvent.click(await screen.findByRole('button', { name: 'Lưu thông tin' }))
 
     await waitFor(() => expect(api.updateLesson).toHaveBeenCalledTimes(1))
     expect(api.setLessonKnowledgePoints).not.toHaveBeenCalled()
     await waitFor(() => expect(api.fetchLesson).toHaveBeenCalledTimes(2))
+    expect(await screen.findByText('Đã lưu thông tin bài học.')).toBeInTheDocument()
+    // The panel stays open: the author keeps editing and saves again.
+    expect(onClose).not.toHaveBeenCalled()
   })
 
   it('says the information was saved when only the knowledge points fail, and keeps the choice on screen', async () => {
@@ -207,6 +234,8 @@ describe('LessonEditorDrawer', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Lưu thông tin' }))
 
     expect(await screen.findByText(/Đã lưu thông tin bài, chưa lưu được điểm kiến thức/)).toBeInTheDocument()
+    // Only the information was stored, so the plain success message must not appear.
+    expect(screen.queryByText('Đã lưu thông tin bài học.')).not.toBeInTheDocument()
     expect(api.updateLesson).toHaveBeenCalledTimes(1)
     // No reload: it would put the points the author just removed back.
     expect(api.fetchLesson).toHaveBeenCalledTimes(1)
@@ -266,6 +295,14 @@ describe('LessonEditorDrawer', () => {
     expect(screen.getByRole('button', { name: 'Sửa block 2' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Xóa block 2' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Bài tập' })).toBeDisabled()
+  })
+
+  it('requests ownership and previews for the exercise block being edited', async () => {
+    renderPage()
+    fireEvent.click(await screen.findByRole('button', { name: 'Sửa block 2' }))
+    await waitFor(() => expect(questions.listQuestions).toHaveBeenCalledWith(
+      expect.objectContaining({ include: 'ownership,preview', exceptBlockId: 'b2' }), expect.any(AbortSignal),
+    ))
   })
 
   it('shows a load error with a retry', async () => {

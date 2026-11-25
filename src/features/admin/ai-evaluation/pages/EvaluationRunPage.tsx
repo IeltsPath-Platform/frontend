@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useToast } from '@/components/toast/toastContext'
 import { Link, useParams } from 'react-router-dom'
 import { z } from 'zod'
 import { AdminError, AdminLoading } from '../../components/AdminState'
@@ -17,12 +18,12 @@ function EvaluationRun({ id }: { id: string }) {
   const [confirming, setConfirming] = useState(false)
   const [busy, setBusy] = useState(false)
   const [, setError] = useAdminError()
-  const [notice, setNotice] = useState<string | null>(null)
+  const { toast } = useToast()
   const canActivate = run.status === 'success' && run.data?.status === 'DONE' && run.data.passed === true && !busy
   async function activate() {
     if (!canActivate) return
-    setBusy(true); setError(null); setNotice(null)
-    try { await activateEvaluation(id); setConfirming(false); setNotice('Đã kích hoạt bản chấm.'); run.reload() }
+    setBusy(true); setError(null)
+    try { await activateEvaluation(id); setConfirming(false); toast({ title: 'Thành công', description: 'Đã kích hoạt bản chấm.', tone: 'success' }); run.reload() }
     catch (reason) { setError(adminErrorCode(reason) === 'EVALUATION_NOT_PASSED' ? 'Lượt này chưa đạt nên không kích hoạt được.' : adminErrorMessage(reason)) }
     finally { setBusy(false) }
   }
@@ -35,7 +36,7 @@ function EvaluationRun({ id }: { id: string }) {
       <button className="adm-btn adm-btn--primary" type="button" disabled={!canActivate} onClick={() => setConfirming(true)}>Kích hoạt bản này</button>
       {confirming ? <div className="adm-alert" role="alert"><p>Từ lúc kích hoạt, mọi bài Writing của học viên (cả thi topic lẫn bài học) được chấm bằng bản này. Sửa rubric sau đó sẽ không tự áp dụng cho tới khi một lượt mới đạt và được kích hoạt.</p><button className="adm-btn adm-btn--primary" type="button" disabled={!canActivate} onClick={() => void activate()}>Xác nhận kích hoạt</button><button className="adm-btn" type="button" disabled={busy} onClick={() => setConfirming(false)}>Hủy kích hoạt</button></div> : null}
       {run.data.status === 'DONE' && !run.data.passed ? <p>Xem tiêu chí lệch nhiều nhất, sửa mô tả band ở <Link to="/content-author/rubrics">Rubric chấm Writing</Link> rồi chạy lại.</p> : null}
-    </> : null}{notice ? <p role="status">{notice} <Link to="/content-author/ai-evaluation">Xem bản đang sử dụng</Link></p> : null}
+    </> : null}
   </div></AdminPage>
 }
 export function EvaluationRunPage() { const { runId } = useParams<{ runId: string }>(); const id = z.guid().safeParse(runId); return id.success ? <EvaluationRun id={id.data} key={id.data} /> : <AdminPage title="Chi tiết lượt đánh giá"><AdminError message="ID lượt đánh giá không hợp lệ." /></AdminPage> }

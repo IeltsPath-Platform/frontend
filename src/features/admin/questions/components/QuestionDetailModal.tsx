@@ -4,12 +4,15 @@ import { useAdminResource } from '../../lib/useAdminResource'
 import { getQuestion } from '../api/questionApi'
 import { PURPOSE_LABEL, SKILL_LABEL, STATUS_LABEL, TYPE_LABEL, statusBadgeClass } from '../lib/labels'
 import type { Question } from '../types'
+import { QuestionContext } from './QuestionContext'
 import { VersionCard } from './VersionCard'
 
 /** Reads one question: its header from the list row, its versions from the server. */
 export function QuestionDetailModal({ question, onClose }: { question: Question; onClose: () => void }) {
   const detail = useAdminResource(`question|${question.id}`, (signal) => getQuestion(question.id, signal))
   const versions = [...(detail.data?.versions ?? [])].sort((a, b) => b.versionNumber - a.versionNumber)
+  // The context of the version learners see; a question that was never published shows its newest version's.
+  const contextVersionId = question.currentPublishedVersionId ?? versions[0]?.id
 
   return (
     <AdminModal onClose={onClose} title="Chi tiết câu hỏi">
@@ -27,6 +30,7 @@ export function QuestionDetailModal({ question, onClose }: { question: Question;
       {detail.status === 'error' ? <AdminError message={detail.error ?? 'Không tải được câu hỏi.'} onRetry={detail.reload} /> : null}
       {detail.status === 'success' ? (
         <>
+          {contextVersionId ? <QuestionContext versionId={contextVersionId} /> : null}
           <h3 className="qb-section-title">Các phiên bản</h3>
           <section aria-label="Các phiên bản" className="qb-versions">
             {versions.length === 0 ? <p className="adm-muted">Câu hỏi chưa có phiên bản nào.</p> : null}

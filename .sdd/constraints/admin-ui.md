@@ -36,7 +36,10 @@ Token nằm ở [`src/features/admin/admin.css`](../../src/features/admin/admin.
 
 ## 3. Bảng
 
-- Dùng `.adm-table` trong `.adm-table-wrap`. **Mọi bảng có cột STT đầu tiên** (`th.adm-stt` / `td.adm-stt`); bảng phân trang đánh số nối tiếp (`page * size + index + 1`).
+- Quyết định dùng cuộn vô hạn cho danh sách lớn được lưu tại [`global/admin-ui-infinite-scroll.md`](../global/admin-ui-infinite-scroll.md).
+- Danh sách lớn lấy từng trang ở máy chủ và tự tải tiếp gần cuối bằng `useInfiniteList` cùng `InfiniteSentinel`. `InfiniteCount` dính ở đầu danh sách, đầu bảng dính trong vùng cuộn, và STT tiếp tục qua các lần tải.
+- Khi tải thêm lỗi, giữ các dòng đã có và hiện nút “Thử lại” ngay ở cuối danh sách; thông báo dùng `role="status"`, không dùng toast. Danh sách ngắn cố định và cây dữ liệu giữ cách tải hiện có.
+- Dùng `.adm-table` trong `.adm-table-wrap`. **Mọi bảng có cột STT đầu tiên** (`th.adm-stt` / `td.adm-stt`); danh sách cuộn vô hạn tiếp tục số thứ tự qua các trang dữ liệu.
 - Hành động theo dòng nằm ở cột **"Hành động"** với nút "…" (`AdminRowMenu`): không viền, hiệu ứng rê và bấm, menu cố định trên mọi lớp. Nút chỉ-icon trong ô (xem 👁, gỡ ✕) giữ kiểu nhạt, rê mới có nền.
 - Bảng rỗng vẫn hiện đầu bảng và một dòng "Chưa … nào." (`.adm-kp-table__empty`).
 - Không in đoạn văn dài vào ô bảng. Hiện mã ngắn, loại, nhãn; nội dung đầy đủ xem bằng nút 👁 mở hộp chi tiết. Một dòng đề bài cắt bằng "…" thì được (bảng câu hỏi của khối bài tập: Đề bài, Loại; điểm kiến thức xem trong hộp chi tiết, vì cả khối thường trùng một điểm nên thêm cột chỉ lặp chữ). Ô nút thao tác phải là ô bảng thật, không đặt `display: flex` lên `td`, nếu không đường kẻ dòng bị lệch khi dòng cao lên; không dùng 8 ký tự đầu của id làm "mã" vì các bản ghi seed trùng nhau.

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@/test/render'
+﻿import { fireEvent, render, screen, waitFor, within } from '@/test/render'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AdminSearchContext } from '../../adminSearch'
@@ -7,7 +7,7 @@ import { QuestionBankPage } from './QuestionBankPage'
 
 const { api, graph } = vi.hoisted(() => ({
   api: {
-    listQuestions: vi.fn(), createQuestion: vi.fn(), getQuestion: vi.fn(), archiveQuestion: vi.fn(),
+    listQuestions: vi.fn(), createQuestion: vi.fn(), getQuestion: vi.fn(), archiveQuestion: vi.fn(), listVersionPassages: vi.fn(), listQuestionUsages: vi.fn(),
     addQuestionVersion: vi.fn(), publishQuestionVersion: vi.fn(), archiveQuestionVersion: vi.fn(),
   },
   graph: { fetchKnowledgeTree: vi.fn() },
@@ -60,6 +60,8 @@ describe('QuestionBankPage', () => {
     vi.clearAllMocks()
     api.listQuestions.mockResolvedValue(page())
     api.getQuestion.mockResolvedValue(detail())
+    api.listVersionPassages.mockResolvedValue([])
+    api.listQuestionUsages.mockResolvedValue([])
     graph.fetchKnowledgeTree.mockResolvedValue({ nodes: [], edges: [] })
   })
 
@@ -101,6 +103,39 @@ describe('QuestionBankPage', () => {
     expect(api.getQuestion).toHaveBeenCalledWith('aaaaaaaa-1111', expect.any(AbortSignal))
   })
 
+  it('shows the passage and the recording a question goes with, with the transcript and a link to play', async () => {
+    api.listVersionPassages.mockResolvedValue([
+      { assetId: 'p1', type: 'PASSAGE', text: 'A. The council met in autumn.', source: 'LESSON', sourceName: 'Reading lesson', mediaUrl: null, durationSeconds: null },
+      { assetId: 'a1', type: 'AUDIO', text: 'Speaker: good morning.', source: 'SECTION', sourceName: 'Listening section', mediaUrl: 'https://media.example/clip.mp3', durationSeconds: 95 },
+      { assetId: 'a2', type: 'AUDIO', text: null, source: 'DIRECT', sourceName: null, mediaUrl: null, durationSeconds: null },
+    ])
+    renderPage()
+    await screen.findByRole('table')
+
+    pickAction(1, 'Xem chi tiết')
+
+    const dialog = await screen.findByRole('dialog', { name: 'Chi tiết câu hỏi' })
+    const context = await within(dialog).findByRole('region', { name: 'Đoạn văn và bài nghe đi kèm' })
+    expect(api.listVersionPassages).toHaveBeenCalledWith('v1', expect.any(AbortSignal))
+    expect(within(context).getByText('A. The council met in autumn.')).toBeInTheDocument()
+    expect(within(context).getByText(/Đoạn văn · Trong bài học: Reading lesson/)).toBeInTheDocument()
+    expect(within(context).getByText(/Bài nghe · Trong phần thi: Listening section · 1:35/)).toBeInTheDocument()
+    expect(within(context).getByLabelText('Bài nghe: Trong phần thi: Listening section')).toHaveAttribute('src', 'https://media.example/clip.mp3')
+    expect(within(context).getByText('Speaker: good morning.')).toBeInTheDocument()
+    expect(within(context).getByText('Không tạo được liên kết nghe cho tệp này.')).toBeInTheDocument()
+  })
+
+  it('shows nothing extra when a question has no passage or recording', async () => {
+    renderPage()
+    await screen.findByRole('table')
+
+    pickAction(1, 'Xem chi tiết')
+
+    const dialog = await screen.findByRole('dialog', { name: 'Chi tiết câu hỏi' })
+    await within(dialog).findByText('What is the main idea?')
+    expect(within(dialog).queryByRole('region', { name: 'Đoạn văn và bài nghe đi kèm' })).not.toBeInTheDocument()
+  })
+
   it('opens the update drawer with the latest version filled in and saves it as the next version', async () => {
     api.addQuestionVersion.mockResolvedValue({ id: 'aaaaaaaa-1111', questionType: 'MULTIPLE_CHOICE', status: 'PUBLISHED' })
     renderPage()
@@ -110,17 +145,31 @@ describe('QuestionBankPage', () => {
 
     const drawer = await screen.findByRole('dialog', { name: 'Cập nhật câu hỏi' })
     expect(drawer).toHaveClass('adm-drawer')
-    const stem = await within(drawer).findByLabelText('Nội dung câu hỏi')
+    // The picked version shows locked, in the same fields; the new draft is the form that can be changed.
+    expect(within(await within(drawer).findByRole('form', { name: 'Nội dung phiên bản' })).getByLabelText('Nội dung câu hỏi')).toBeDisabled()
+    fireEvent.click(within(drawer).getByRole('button', { name: 'Tạo bản nháp' }))
+    const stem = await within(within(drawer).getByRole('form', { name: 'Phiên bản mới' })).findByLabelText('Nội dung câu hỏi')
     expect(stem).toHaveValue('What is the main idea?')
-    expect(within(drawer).getByLabelText('Số phiên bản')).toHaveValue(2)
+    expect(within(within(drawer).getByRole('form', { name: 'Phiên bản mới' })).getByLabelText('Số phiên bản')).toHaveValue(2)
 
     fireEvent.change(stem, { target: { value: 'What is the topic?' } })
     fireEvent.click(within(drawer).getByRole('button', { name: 'Lưu bản nháp' }))
 
     await waitFor(() => expect(api.addQuestionVersion).toHaveBeenCalledWith(
       'aaaaaaaa-1111', expect.objectContaining({ versionNumber: 2, stem: 'What is the topic?' })))
-    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Cập nhật câu hỏi' })).not.toBeInTheDocument())
+    // The drawer stays open on the new draft, so it can be published from there.
+    await waitFor(() => expect(within(drawer).getByRole('button', { name: 'Tạo bản nháp' })).toBeInTheDocument())
     await waitFor(() => expect(api.listQuestions).toHaveBeenCalledTimes(2))
+  })
+
+  it('opens the update drawer straight away when the address names a question to edit', async () => {
+    renderPage('', '/content-author/questions?edit=aaaaaaaa-1111')
+    const drawer = await screen.findByRole('dialog', { name: 'Cập nhật câu hỏi' })
+    expect(drawer).toHaveClass('adm-drawer')
+    expect(api.getQuestion).toHaveBeenCalledWith('aaaaaaaa-1111', expect.any(AbortSignal))
+    fireEvent.click(within(drawer).getByRole('button', { name: 'Đóng' }))
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Cập nhật câu hỏi' })).not.toBeInTheDocument())
+    expect(api.getQuestion).toHaveBeenCalledTimes(2)
   })
 
   it('soft-deletes a question after confirmation', async () => {
@@ -160,10 +209,10 @@ describe('QuestionBankPage', () => {
     expect(screen.getByRole('menuitem', { name: 'Xóa' })).toBeDisabled()
   })
 
-  it('sends a changed filter to the API and returns to the first page', async () => {
+  it('loads the next server page and resets the list when a filter changes', async () => {
     api.listQuestions.mockResolvedValue(page({ totalPages: 3, totalElements: 60 }))
     renderPage()
-    fireEvent.click(await screen.findByRole('button', { name: 'Trang sau' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Tải thêm' }))
     await waitFor(() => expect(api.listQuestions).toHaveBeenLastCalledWith(expect.objectContaining({ page: 1 }), expect.any(AbortSignal)))
 
     fireEvent.change(screen.getByLabelText('Trạng thái'), { target: { value: 'DRAFT' } })
@@ -182,12 +231,14 @@ describe('QuestionBankPage', () => {
       { skill: '', purpose: '', status: '', code: 'Q-000034', page: 0, size: 25 }, expect.any(AbortSignal)))
   })
 
-  it('filters the loaded page by the topbar search', async () => {
-    renderPage('essay')
-
-    const table = await screen.findByRole('table')
+  it('sends the topbar search to the server as a code filter without filtering rows in the browser', async () => {
+    renderPage('Q-000003')
+    await waitFor(() => expect(api.listQuestions).toHaveBeenLastCalledWith(
+      { skill: '', purpose: '', status: '', code: 'Q-000003', page: 0, size: 25 }, expect.any(AbortSignal)))
+    await waitFor(() => expect(screen.getByRole('table')).toHaveTextContent('Bài luận'))
+    const table = screen.getByRole('table')
     expect(within(table).getByText('Bài luận')).toBeInTheDocument()
-    expect(within(table).queryByText('Trắc nghiệm')).not.toBeInTheDocument()
+    expect(within(table).getByText('Trắc nghiệm')).toBeInTheDocument()
   })
 
   it('creates a question and opens it in the update drawer', async () => {

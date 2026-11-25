@@ -1,8 +1,8 @@
 import { useId, useState, type FormEvent } from 'react'
-import { ArrowDown, ArrowUp, BookA, ChevronDown, Eye, FileText, Image as ImageIcon, ListChecks, Pencil, Plus, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, BookA, ChevronDown, Eye, FileText, Image as ImageIcon, ListChecks, Pencil, Plus, Sparkles, Trash2 } from 'lucide-react'
 import { z } from 'zod'
 import { AdminField } from '../../components/AdminField'
-import { AdminDrawer } from '../../components/AdminLayer'
+import { AdminModal } from '../../components/AdminLayer'
 import { positiveIntegerText } from '@/lib/validation/fields'
 import { useFormErrors } from '@/lib/validation/useFormErrors'
 import { useAdminConfirm } from '../../lib/useAdminConfirm'
@@ -10,6 +10,7 @@ import { MarkdownField } from '../../components/MarkdownField'
 import { STATUS_LABEL } from '../../questions/lib/labels'
 import {
   addBlock, deleteBlock, reorderBlocks, setLessonKnowledgePoints, updateBlock, updateLesson,
+  publishLessonDraftQuestions,
 } from '../api/lessonApi'
 import { AssetBlockPreview } from '../components/AssetBlockPreview'
 import { BlockQuestionDetail } from '../components/BlockQuestionDetail'
@@ -24,6 +25,8 @@ import { BLOCK_TYPES, type BlockRequest, type BlockType, type LessonBlock, type 
 import '../../course-drafts/course-drafts.css'
 import '../lessons.css'
 import { useAdminError, useAdminErrorToast } from '../../lib/useAdminError'
+import { useToast } from '@/components/toast/toastContext'
+import { LessonQuestionRequestModal } from './LessonQuestionRequestModal'
 
 const EXERCISE_LOCK_NOTE =
   'Bài đã xuất bản: không đổi được bộ câu hỏi của block bài tập vì học viên đã có tiến độ theo block. Các block khác vẫn sửa được.'
@@ -65,6 +68,7 @@ function InfoForm({ lesson, formId, saving, onSavingChange, onSaved, skill }: {
   const [minutes, setMinutes] = useState(lesson.estimatedMinutes?.toString() ?? '')
   const [knowledgePointIds, setKnowledgePointIds] = useState(lesson.knowledgePointIds)
   const [, setError] = useAdminError()
+  const { toast } = useToast()
   const form = useFormErrors(infoSchema, { title, minutes })
 
   async function submit(event: FormEvent) {
@@ -93,6 +97,8 @@ function InfoForm({ lesson, formId, saving, onSavingChange, onSaved, skill }: {
       }
     }
     onSavingChange(false)
+    // The panel stays open so the author can keep editing; the toast is the only sign that the save went through.
+    toast({ title: 'Thành công', description: 'Đã lưu thông tin bài học.', tone: 'success' })
     onSaved()
   }
 
@@ -109,7 +115,7 @@ function InfoForm({ lesson, formId, saving, onSavingChange, onSaved, skill }: {
       </div>
       <MarkdownField label="Tóm tắt chi tiết (Markdown)" onChange={setMarkdown} textareaClassName="adm-textarea ls-textarea" value={markdown} />
       <section aria-label="Knowledge point của bài">
-        <LessonKnowledgeField onChange={setKnowledgePointIds} skill={skill} title="Knowledge point của bài" value={knowledgePointIds} />
+        <LessonKnowledgeField onChange={setKnowledgePointIds} skill={skill} title="Knowledge point của bài" value={knowledgePointIds} warnMissingPrerequisites />
       </section>
     </form>
   )
@@ -123,6 +129,7 @@ export function LessonEditorPanel({ lesson, reload, onClose, skill }: { lesson: 
   const infoFormId = useId()
   const [infoSaving, setInfoSaving] = useState(false)
   const [editing, setEditing] = useState<Editing>(null)
+  const [aiRequestBlockId, setAiRequestBlockId] = useState<string | null | undefined>(undefined)
   const [viewingQuestion, setViewingQuestion] = useState<{ questionId: string; questionVersionId: string } | null>(null)
   // Blocks folded to their header, by id; every block starts open.
   const [folded, setFolded] = useState<ReadonlySet<string>>(new Set())
@@ -130,6 +137,10 @@ export function LessonEditorPanel({ lesson, reload, onClose, skill }: { lesson: 
   const [busy, setBusy] = useState(false)
   const isDraft = lesson.status === 'DRAFT'
   const exerciseLocked = !isDraft
+  const aiRequestDisabledReason = exerciseLocked ? 'Bài học đã xuất bản.' : lesson.knowledgePointIds.length === 0 ? 'Bài học chưa có điểm kiến thức.' : undefined
+  const draftQuestionCount = lesson.blocks.filter((block) => block.blockType === 'EXERCISE')
+    .flatMap((block) => block.questions).filter((question) => question.status === 'DRAFT').length
+  const { toast } = useToast()
 
   async function run(action: () => Promise<void>) {
     setBusy(true)
@@ -188,6 +199,8 @@ export function LessonEditorPanel({ lesson, reload, onClose, skill }: { lesson: 
         <div className="adm-sec__head">
           <h3 className="adm-sec__title">Các block<span className="adm-count">{lesson.blocks.length}</span></h3>
           <div className="adm-sec__tools">
+            <button className="adm-btn adm-btn--small" title={aiRequestDisabledReason} type="button" disabled={busy || exerciseLocked || editing !== null || lesson.knowledgePointIds.length === 0} onClick={() => setAiRequestBlockId(null)}><Sparkles aria-hidden="true" size={14} /> Sinh câu hỏi bằng AI</button>
+            {draftQuestionCount > 0 ? <button className="adm-btn adm-btn--small adm-btn--primary" type="button" disabled={busy || exerciseLocked} onClick={() => void run(async () => { const count = await publishLessonDraftQuestions(lesson.id); toast({ title: 'Thành công', description: `Đã xuất bản ${count} câu nháp.`, tone: 'success' }) })}>Xuất bản {draftQuestionCount} câu nháp</button> : null}
             {/* Asset blocks are no longer created here: they pointed at a pasted asset id. Existing ones still show and can be removed. */}
             {BLOCK_TYPES.filter((type) => type !== 'VOCABULARY' && type !== 'ASSET').map((type) => (
               <button
@@ -217,6 +230,7 @@ export function LessonEditorPanel({ lesson, reload, onClose, skill }: { lesson: 
                   </button>
                 </h4>
                 <div className="adm-tcard__actions">
+                  {block.blockType === 'EXERCISE' ? <button aria-label={`Sinh câu hỏi bằng AI cho block ${index + 1}`} title={aiRequestDisabledReason} className="adm-icon-btn" type="button" disabled={busy || exerciseLocked || editing !== null || lesson.knowledgePointIds.length === 0} onClick={() => setAiRequestBlockId(block.id)}><Sparkles aria-hidden="true" size={16} /></button> : null}
                   <button aria-label={`Đưa block ${index + 1} lên`} className="adm-icon-btn" disabled={busy || index === 0} onClick={() => void moveBlock(block.id, -1)} type="button">
                     <ArrowUp aria-hidden="true" size={16} />
                   </button>
@@ -283,11 +297,12 @@ export function LessonEditorPanel({ lesson, reload, onClose, skill }: { lesson: 
       {viewingQuestion ? <BlockQuestionDetail {...viewingQuestion} onClose={() => setViewingQuestion(null)} /> : null}
 
       {editing ? (
-        <AdminDrawer
+        <AdminModal
           description={lesson.title}
           onClose={() => setEditing(null)}
-          size="lg"
+          size="wide"
           stacked
+          top
           title={editing.mode === 'edit' ? `Sửa block: ${BLOCK_LABEL[editing.block.blockType]}` : `Thêm block: ${BLOCK_LABEL[editing.blockType]}`}
         >
           {(close) => (
@@ -298,10 +313,13 @@ export function LessonEditorPanel({ lesson, reload, onClose, skill }: { lesson: 
               onCancel={close}
               onSave={async (body) => { await saveBlock(body); close() }}
               skill={skill}
+              lessonKnowledgePointIds={lesson.knowledgePointIds}
             />
           )}
-        </AdminDrawer>
+        </AdminModal>
       ) : null}
+
+      {aiRequestBlockId !== undefined ? <LessonQuestionRequestModal blockId={aiRequestBlockId ?? undefined} lesson={lesson} onClose={() => setAiRequestBlockId(undefined)} /> : null}
 
       {/* The one Lưu of the editor: it stays at the foot of the panel while the long editor scrolls, and saves the lesson information above. */}
       <div className="adm-form-footer">

@@ -1,4 +1,3 @@
-import { QUESTION_DRAFTS_ENABLED } from '../../ai-drafts/draftFlags'
 import type { WorkItem, WorkKind } from '../types'
 
 export const KIND_LABEL: Record<WorkKind, string> = {
@@ -82,16 +81,12 @@ export function detailText(item: WorkItem): string {
 
 export interface WorkLink { label: string; to: string }
 
-/** Where the author goes to deal with the item. Question generation is offered only once it is enabled. */
+/** Where the author goes to deal with the item. */
 export function workLinks(item: WorkItem): WorkLink[] {
   const subject = item.subject
   switch (item.kind) {
     case 'CONTENT_GAP': {
       const links: WorkLink[] = [{ label: 'Tạo gói luyện', to: '/content-author/packages?create=PRACTICE_SET' }]
-      const point = subject?.type === 'KNOWLEDGE_POINT' ? subject.id : item.subjectRef
-      if (QUESTION_DRAFTS_ENABLED && point) {
-        links.push({ label: 'Sinh câu cho KP này', to: `/content-author/ai-drafts?new=questions&knowledgePointId=${point}` })
-      }
       return links
     }
     case 'QUESTION_TOO_EASY':

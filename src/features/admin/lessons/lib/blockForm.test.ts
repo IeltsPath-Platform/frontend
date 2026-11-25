@@ -13,6 +13,13 @@ describe('buildBlockRequest', () => {
     expect(ok).toEqual({ ok: true, body: { blockType: 'TEXT', textContent: '# Skimming', knowledgePointIds: ['kp1'] } })
   })
 
+  it('keeps the knowledge points a TEXT block already has when only its text is changed', () => {
+    const block = { id: 'b1', blockType: 'TEXT', sortOrder: 1, textContent: 'Old text', assetId: null, vocabularySenseIds: [], questions: [], knowledgePointIds: ['kp1', 'kp2'] } as unknown as LessonBlock
+    const state = { ...initialBlockState('TEXT', block), textContent: 'New text' }
+    const result = buildBlockRequest(state)
+    expect(result).toEqual({ ok: true, body: { blockType: 'TEXT', textContent: 'New text', knowledgePointIds: ['kp1', 'kp2'] } })
+  })
+
   it('needs a valid asset id for an ASSET block', () => {
     expect(buildBlockRequest({ ...initialBlockState('ASSET'), assetId: 'not-a-uuid' }).ok).toBe(false)
     expect(buildBlockRequest({ ...initialBlockState('ASSET'), assetId: ` ${ASSET_ID} ` }))

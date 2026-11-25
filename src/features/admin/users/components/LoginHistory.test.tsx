@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import userEvent from '@testing-library/user-event'
-import { render, screen, within } from '@/test/render'
+import { render, screen, waitFor, within } from '@/test/render'
 import { HttpError } from '@/lib/httpClient'
 import { deviceLabel, loginResultLabel } from '../lib/loginHistoryLabels'
 import type { LoginHistoryPage } from '../loginHistoryTypes'
@@ -39,7 +39,7 @@ describe('LoginHistoryModal', () => {
     render(<LoginHistoryModal onClose={vi.fn()} user={USER} />)
 
     const table = await screen.findByRole('table', { name: 'Lịch sử đăng nhập' })
-    const rows = within(table).getAllByRole('row').slice(1)
+    const rows = within(table).getAllByRole('row').slice(1).filter((row) => !row.querySelector('.adm-infinite__sentinel'))
     expect(rows).toHaveLength(2)
     expect(within(rows[0]!).getByText('Thành công')).toBeInTheDocument()
     expect(screen.getByRole('columnheader', { name: 'Địa chỉ IP' })).toBeInTheDocument()
@@ -59,18 +59,17 @@ describe('LoginHistoryModal', () => {
     expect(screen.queryByRole('navigation', { name: 'Phân trang lịch sử đăng nhập' })).not.toBeInTheDocument()
   })
 
-  it('moves between pages and numbers rows across them', async () => {
+  it('loads the next server page and keeps numbering continuous', async () => {
     const attempt = (id: string) => ({ id, success: true, failureReason: null, ipAddress: '10.0.0.1', userAgent: null, createdAt: '2026-10-28T09:30:00' })
     history.listLoginHistory.mockImplementation((_id: string, pageIndex: number) =>
       Promise.resolve(page([attempt(`p${pageIndex}`)], 21, pageIndex)))
 
     render(<LoginHistoryModal onClose={vi.fn()} user={USER} />)
-    await screen.findByText('Trang 1 / 2 · 21 lượt')
-    await userEvent.click(screen.getByRole('button', { name: 'Trang sau' }))
+    await screen.findByRole('table')
+    await userEvent.click(await screen.findByRole('button', { name: 'Tải thêm' }))
 
-    expect(await screen.findByText('Trang 2 / 2 · 21 lượt')).toBeInTheDocument()
-    expect(history.listLoginHistory).toHaveBeenLastCalledWith('user-id', 1, 20, expect.any(AbortSignal))
-    expect(within(await screen.findByRole('table')).getByText('21')).toBeInTheDocument()
+    await waitFor(() => expect(history.listLoginHistory).toHaveBeenLastCalledWith('user-id', 1, 20, expect.any(AbortSignal)))
+    expect(within(await screen.findByRole('table')).getByText('2')).toBeInTheDocument()
   })
 
   it('offers a retry when loading fails', async () => {

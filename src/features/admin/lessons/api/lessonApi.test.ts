@@ -3,11 +3,22 @@ import { clearAccessToken, HttpError, setAccessToken } from '@/lib/httpClient'
 import { API_BASE_URL } from '@/lib/env'
 import { lessonResourceOrderSchema } from '../types'
 import { RESOURCE_REORDER_ENABLED } from '../lib/resource-reorder'
-import { findVocabularyByLemmas, reorderLessonResources, suggestVocabulary } from './lessonApi'
+import { findVocabularyByLemmas, publishLessonDraftQuestions, reorderLessonResources, suggestVocabulary } from './lessonApi'
 
 const lessonId = '00000000-0000-4000-8000-000000000001'
 const resourceIds = ['00000000-0000-4000-8000-000000000003', '00000000-0000-4000-8000-000000000002']
 const fetchMock = vi.fn<typeof fetch>()
+
+describe('publishLessonDraftQuestions', () => {
+  beforeEach(() => { fetchMock.mockReset(); vi.stubGlobal('fetch', fetchMock); setAccessToken('test-access-token') })
+  afterEach(() => { clearAccessToken(); vi.unstubAllGlobals() })
+
+  it('publishes all valid lesson draft questions and returns the count', async () => {
+    fetchMock.mockResolvedValue(new Response(JSON.stringify({ publishedCount: 4 })))
+    await expect(publishLessonDraftQuestions(lessonId)).resolves.toBe(4)
+    expect(fetchMock).toHaveBeenCalledWith(`${API_BASE_URL}/api/content/admin/lessons/${lessonId}/questions/publish-drafts`, expect.objectContaining({ method: 'POST' }))
+  })
+})
 
 describe('suggestVocabulary', () => {
   beforeEach(() => {

@@ -42,17 +42,11 @@
 }
 
 .um-actions,
-.um-pager,
 .um-badges {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.65rem;
-}
-
-.um-pager {
-  justify-content: space-between;
-  margin-block: 1rem;
 }
 
 .um-editor-heading h2,
@@ -93,7 +87,4 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .um-pager {
-    justify-content: center;
-  }
 }

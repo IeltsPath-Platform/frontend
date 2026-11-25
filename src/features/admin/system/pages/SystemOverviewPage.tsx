@@ -1,9 +1,9 @@
-﻿import type { ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { AdminEmpty, AdminError, AdminLoading } from '../../components/AdminState'
 import { useAdminResource, type AdminResource } from '../../lib/useAdminResource'
 import { AdminPage } from '../../pages/AdminPage'
-import { listUsers } from '../../users/api/userAdminApi'
+import { listAllUsers } from '../../users/api/userAdminApi'
 import { USER_ROLE_LABEL } from '../../users/lib/userLabels'
 import { ASSIGNABLE_USER_ROLES, type User, type UserRole } from '../../users/types'
 import { fetchActivityStats, fetchServiceSnapshot } from '../api/systemAdminApi'
@@ -65,7 +65,7 @@ function ActivitySummary({ stats }: { stats: ActivityStats }) {
 
 export function SystemOverviewPage() {
   const services = useAdminResource('system-overview|services', (signal) => fetchServiceSnapshot(signal))
-  const users = useAdminResource('system-overview|users', (signal) => listUsers(signal))
+  const users = useAdminResource('system-overview|users', (signal) => listAllUsers(signal))
   const activity = useAdminResource(`system-overview|activity|${recentRange.from}|${recentRange.to}`, (signal) => fetchActivityStats(recentRange, signal))
 
   return (

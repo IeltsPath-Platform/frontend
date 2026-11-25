@@ -68,6 +68,17 @@ describe('AiEvaluationPage', () => {
     await waitFor(() => expect(calls.at(-1)?.query.get('task')).toBe('TASK_1'))
   })
 
+  it('loads another page of gold essays when the list sentinel is reached', async () => {
+    backend(({ path, query }) => path.endsWith('/ai-gold-essays')
+      ? json({ content: [{ id: query.get('page') === '1' ? '20000000-0000-4000-8000-000000000002' : goldId, task: 'TASK_2', examinerBand: 6, source: 'MANUAL', essayPreview: query.get('page') === '1' ? 'Second essay' : 'First essay', createdAt: '2026-10-22T01:00:00Z' }], page: Number(query.get('page')), size: 20, totalElements: 21, totalPages: 2 })
+      : json(page([])))
+    show()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Tải thêm' }))
+    await waitFor(() => expect(calls.some((call) => call.path.endsWith('/ai-gold-essays') && call.query.get('page') === '1')).toBe(true))
+    expect(screen.getByText('Second essay')).toBeInTheDocument()
+  })
+
   it('needs chart facts for a Task 1 gold essay and sends the form as the contract describes', async () => {
     backend(({ path, method }) => method === 'POST' && path === `${base}/ai-gold-essays` ? json({ id: goldId }, 201) : json(page([])))
     show()

@@ -1,4 +1,4 @@
-﻿import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen, waitFor, within } from '@/test/render'
 import { answerConfirm } from '@/test/confirm'
 import userEvent from '@testing-library/user-event'
@@ -30,7 +30,12 @@ function fixture(id: string, email: string, role = 'CUSTOMER', status = 'ACTIVE'
 }
 
 function renderUsers(users: User[] = [fixture('self-id', 'admin@example.com', 'ADMIN'), fixture('user-id', 'user@example.com')]) {
-  api.listUsers.mockResolvedValue(users)
+  api.listUsers.mockImplementation(({ page, size, role, status, search: text }: { page: number; size: number; role?: string; status?: string; search?: string }) => {
+    const filtered = users.filter((user) => (!role || user.roles.some((item) => item.name === role))
+      && (!status || user.status === status)
+      && (!text || user.email.toLowerCase().includes(text.toLowerCase()) || user.fullName.toLowerCase().includes(text.toLowerCase())))
+    return Promise.resolve({ content: filtered.slice(page * size, (page + 1) * size), page, size, totalElements: filtered.length, totalPages: Math.ceil(filtered.length / size) })
+  })
   auth.mockReturnValue({ userId: 'self-id', email: 'admin@example.com' })
   return render(<MemoryRouter><UsersPage /></MemoryRouter>)
 }
@@ -60,15 +65,19 @@ describe('UsersPage', () => {
     await userEvent.selectOptions(screen.getByLabelText('Trạng thái'), 'LOCKED')
     expect(screen.getByText('user0@example.com')).toBeInTheDocument()
     expect(screen.queryByText('user1@example.com')).not.toBeInTheDocument()
+    await waitFor(() => expect(api.listUsers).toHaveBeenLastCalledWith(
+      expect.objectContaining({ role: 'CONTENT_AUTHOR', status: 'LOCKED', search: 'user0@example.com' }),
+      expect.any(AbortSignal),
+    ))
   })
 
-  it('paginates the unpaginated API response by 25 rows', async () => {
+  it('loads the next server page when the sentinel is reached', async () => {
     renderUsers(Array.from({ length: 26 }, (_, index) => fixture(`user-${index}`, `user${index}@example.com`)))
     expect(await screen.findByText('user24@example.com')).toBeInTheDocument()
     expect(screen.queryByText('user25@example.com')).not.toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: 'Trang sau' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Tải thêm' }))
     expect(screen.getByText('user25@example.com')).toBeInTheDocument()
-    expect(screen.getByText('Trang 2 / 2 · 26 người dùng')).toBeInTheDocument()
+    expect(screen.getByText(/Đang hiện 26 \/ 26 người dùng/)).toBeInTheDocument()
   })
 
   it('creates a user with the exact request body and blocks conflicting role choices', async () => {

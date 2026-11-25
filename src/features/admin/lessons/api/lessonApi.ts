@@ -124,6 +124,11 @@ export async function publishLesson(lessonId: string): Promise<void> {
   await write(`/lessons/${lessonId}/publish`, 'POST')
 }
 
+export async function publishLessonDraftQuestions(lessonId: string): Promise<number> {
+  const result = z.object({ publishedCount: z.number().int().nonnegative() }).parse(await write(`/lessons/${lessonId}/questions/publish-drafts`, 'POST'))
+  return result.publishedCount
+}
+
 export async function archiveLesson(lessonId: string): Promise<void> {
   await write(`/lessons/${lessonId}/archive`, 'POST')
 }

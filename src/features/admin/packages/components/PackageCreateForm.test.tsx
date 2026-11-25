@@ -56,7 +56,7 @@ describe('PackageCreateForm', () => {
     expect(screen.getByLabelText('Khóa học')).toBeInTheDocument()
     expect(screen.queryByLabelText('Chủ đề')).not.toBeInTheDocument()
     fireEvent.change(screen.getByLabelText('Loại gói'), { target: { value: 'PRACTICE_TEST' } })
-    expect(screen.getByLabelText('Nguồn đề (tùy chọn)')).toBeInTheDocument()
+    expect(screen.getByLabelText('Nguồn đề')).toBeInTheDocument()
     expect(screen.queryByLabelText('Kho đề đầu vào')).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Khóa học')).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Bài học')).not.toBeInTheDocument()
