@@ -8,7 +8,7 @@ const LABELS: Record<string, string> = {
   TOO_MANY_ROWS: 'File vượt 2000 dòng dữ liệu', CELL_TOO_LONG: 'Một ô vượt 20000 ký tự', SHEET_MISSING: 'Thiếu trang tính', COLUMN_MISSING: 'Thiếu cột',
   TEMPLATE_VERSION_MISMATCH: 'Template đã cũ, tải template mới', FORMULA_NOT_ALLOWED: 'File có công thức, hãy dán giá trị',
   REQUIRED: 'Thiếu thông tin bắt buộc', TOO_LONG: 'Nội dung vượt giới hạn', INVALID_VALUE: 'Giá trị không hợp lệ', DUPLICATE: 'Giá trị bị trùng',
-  CODE_CONFLICT: 'Mã, band hoặc thứ tự đã được sử dụng', UNKNOWN_REFERENCE: 'Tham chiếu không có trong file', UNKNOWN_KNOWLEDGE_POINT: 'Mã kiến thức không hoạt động',
+  CODE_CONFLICT: 'Mã, band hoặc thứ tự đã được sử dụng', MIXED_SKILLS: 'Gói bài chỉ được chứa câu hỏi cùng kỹ năng', UNKNOWN_REFERENCE: 'Tham chiếu không có trong file', UNKNOWN_KNOWLEDGE_POINT: 'Mã kiến thức không hoạt động',
   UNKNOWN_QUESTION_REF: 'Không tìm thấy câu hỏi tham chiếu', UNSUPPORTED_TYPE: 'Loại câu chưa hỗ trợ', NOT_ENOUGH_OPTIONS: 'Chưa đủ phương án',
   ANSWER_NOT_IN_OPTIONS: 'Đáp án không thuộc phương án', NO_ACCEPTED_ANSWER: 'Chưa có đáp án chấp nhận', NO_EXPLANATION: 'Thiếu giải thích',
   DIFFICULTY_REQUIRED: 'Thiếu độ khó', UNKNOWN_ERROR_CODE: 'Mã lỗi không được phép', PREREQUISITE_ORDER: 'Kiến thức nền phải ở bài trước',

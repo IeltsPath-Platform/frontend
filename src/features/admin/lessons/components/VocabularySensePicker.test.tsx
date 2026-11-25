@@ -49,6 +49,7 @@ describe('VocabularySensePicker search', () => {
     await advance(1)
     expect(api.searchVocabulary).toHaveBeenCalledExactlyOnceWith('climate', 0, expect.any(AbortSignal))
     expect(screen.getByText('climate')).toBeInTheDocument()
+    expect(screen.getByText('Đã có trong thư viện')).toBeInTheDocument()
 
     fireEvent.change(input, { target: { value: '' } })
     expect(screen.queryByText('climate')).not.toBeInTheDocument()

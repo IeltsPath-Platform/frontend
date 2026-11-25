@@ -12,7 +12,6 @@ describe('adminMenu', () => {
     expect(menuFor(['CONTENT_AUTHOR']).map((item) => item.path)).toEqual([
       '/content-author', '/content-author/courses', '/content-author/knowledge-graph', '/content-author/questions', '/content-author/packages',
       '/content-author/practice-tests', '/content-author/placement-tests', '/content-author/course-import',
-      '/content-author/work-items', '/content-author/ai-evaluation',
       '/content-author/rubrics', '/content-author/error-types', '/content-author/ai-drafts',
       '/content-author/settings',
     ])
@@ -47,9 +46,13 @@ describe('adminMenu', () => {
     for (const role of ['ADMIN', 'EXAMINER', 'CUSTOMER']) expect(menuFor([role]).some((item) => item.path.includes('/packages'))).toBe(false)
   })
 
-  it('shows the work queue, examiner review and AI evaluation only to content authors', () => {
-    const paths = ['/content-author/work-items', '/content-author/ai-evaluation', '/content-author/course-import']
-    const labels = ['Việc cần làm', 'Đánh giá AI chấm Writing', 'Nhập khóa học từ Excel']
+  it('shows course import only to content authors, and keeps the work queue and AI evaluation off the menu', () => {
+    expect(menuFor(['CONTENT_AUTHOR']).some((item) => item.path === '/content-author/work-items')).toBe(false)
+    expect(rolesFor('/content-author/work-items')).toEqual(['CONTENT_AUTHOR'])
+    expect(menuFor(['CONTENT_AUTHOR']).some((item) => item.path === '/content-author/ai-evaluation')).toBe(false)
+    expect(rolesFor('/content-author/ai-evaluation')).toEqual(['CONTENT_AUTHOR'])
+    const paths = ['/content-author/course-import']
+    const labels = ['Nhập khóa học từ Excel']
     paths.forEach((path, index) => {
       expect(menuFor(['CONTENT_AUTHOR']).find((item) => item.path === path)?.label).toBe(labels[index])
       expect(rolesFor(path)).toEqual(['CONTENT_AUTHOR'])
