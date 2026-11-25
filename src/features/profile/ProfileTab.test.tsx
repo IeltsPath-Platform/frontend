@@ -20,6 +20,7 @@ const { profileApiMock } = vi.hoisted(() => ({
     getOAuthIdentities: vi.fn(),
     unlinkOAuthIdentity: vi.fn(),
     listSessions: vi.fn(),
+    listSecurityEvents: vi.fn(),
     revokeSession: vi.fn(),
     revokeOtherSessions: vi.fn(),
     reauth: vi.fn(),
@@ -94,6 +95,7 @@ describe('ProfileTab', () => {
     profileApiMock.getGoals.mockResolvedValue([mockActiveGoal])
     profileApiMock.getOAuthIdentities.mockResolvedValue([])
     profileApiMock.listSessions.mockResolvedValue([])
+    profileApiMock.listSecurityEvents.mockResolvedValue([])
     profileApiMock.getStreak.mockResolvedValue(mockStreak)
   })
 

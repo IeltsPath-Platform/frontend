@@ -56,6 +56,24 @@ describe('profileApi security endpoints', () => {
     }))
   })
 
+  it('reads the first page of the user\'s own security events', async () => {
+    requestMock.mockResolvedValue({
+      items: [{ id: 'e1', eventType: 'PASSWORD_CHANGED', ipAddress: '203.0.113.x', userAgent: null, createdAt: '2026-11-25T10:00:00', detail: {} }],
+      page: 0, size: 50, total: 1,
+    })
+
+    const events = await profileApi.listSecurityEvents()
+
+    expect(requestMock).toHaveBeenCalledWith('/api/users/me/security-events?page=0', expect.objectContaining({ auth: true }))
+    expect(events).toEqual([expect.objectContaining({ id: 'e1', eventType: 'PASSWORD_CHANGED', ipAddress: '203.0.113.x' })])
+  })
+
+  it('rejects a security events response without items', async () => {
+    requestMock.mockResolvedValue({ page: 0 })
+
+    await expect(profileApi.listSecurityEvents()).rejects.toThrow()
+  })
+
   it('lists sessions and ends one or all other sessions', async () => {
     requestMock.mockResolvedValueOnce([{ sessionId: 'family-1', current: null, userAgent: 'Chrome' }])
     const sessions = await profileApi.listSessions()

@@ -81,6 +81,18 @@ export const profileSessionSchema = z.object({
 })
 export type ProfileSession = z.infer<typeof profileSessionSchema>
 
+/** One entry of the account's security history. The address arrives with its last segment already hidden. */
+export const securityEventSchema = z.object({
+  id: z.string(),
+  eventType: z.string(),
+  ipAddress: z.string().nullable().optional(),
+  userAgent: z.string().nullable().optional(),
+  createdAt: z.string().nullable().optional(),
+})
+export type SecurityEvent = z.infer<typeof securityEventSchema>
+
+const securityEventPageSchema = z.object({ items: z.array(securityEventSchema) })
+
 export const streakSchema = z.object({
   userId: z.string().optional(),
   currentDays: z.number().default(0),
@@ -285,6 +297,12 @@ export const profileApi = {
       method: 'DELETE',
       auth: true,
     })
+  },
+
+  /** The newest events of the signed-in user (the server returns up to 50). */
+  listSecurityEvents: async (): Promise<SecurityEvent[]> => {
+    const raw = await apiRequest('/api/users/me/security-events?page=0', { auth: true })
+    return securityEventPageSchema.parse(raw).items
   },
 
   getStreak: async (): Promise<StreakData> => {

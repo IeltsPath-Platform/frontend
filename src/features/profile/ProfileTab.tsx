@@ -7,6 +7,7 @@ import { PersonalInfoSection } from './components/PersonalInfoSection'
 import { EmailVerificationBanner } from './components/EmailVerificationBanner'
 import { PrivacySection } from './components/PrivacySection'
 import { SecuritySection } from './components/SecuritySection'
+import { SecurityActivitySection } from './components/SecurityActivitySection'
 import { SessionsSection } from './components/SessionsSection'
 import { ProfileSkeleton } from './components/ProfileSkeleton'
 import { ErrorBoundary } from '@/app/ErrorBoundary'
@@ -138,6 +139,10 @@ const ProfileTabContent: React.FC = () => {
 
       <motion.div variants={itemVariants}>
         <SessionsSection onShowToast={handleShowToast} />
+      </motion.div>
+
+      <motion.div variants={itemVariants}>
+        <SecurityActivitySection />
       </motion.div>
     </motion.div>
   )

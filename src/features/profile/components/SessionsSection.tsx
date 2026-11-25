@@ -4,18 +4,13 @@ import { Monitor } from 'lucide-react'
 import type { ProfileSession } from '../api/profileApi'
 import { useSessions } from '../hooks/useSessions'
 import { errorMessage } from '../lib/errorMessage'
+import { formatTime } from '../lib/formatTime'
 
 interface SessionsSectionProps {
   onShowToast: (message: string, tone?: 'success' | 'error' | 'info') => void
 }
 
 const UNKNOWN_DEVICE = 'Thiết bị không xác định'
-
-function formatTime(value: string | null | undefined): string {
-  if (!value) return ''
-  const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? '' : date.toLocaleString('vi-VN')
-}
 
 function SessionRow({ session, onRevoke, busy }: {
   session: ProfileSession
