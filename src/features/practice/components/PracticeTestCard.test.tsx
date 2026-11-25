@@ -17,6 +17,18 @@ const card: PracticeCard = {
 }
 
 describe('PracticeTestCard photo', () => {
+  it('marks a tagged test as Premium and shows a lock to a learner without Premium', () => {
+    const { getByText, getByLabelText, rerender, queryByLabelText } = render(
+      <PracticeTestCard card={{ ...card, requiredFeatureKey: 'PREMIUM_PRACTICE', isPremium: false }} onClick={vi.fn()} />,
+    )
+
+    expect(getByText('Premium')).toBeInTheDocument()
+    expect(getByLabelText('Cần Premium')).toBeInTheDocument()
+
+    rerender(<PracticeTestCard card={{ ...card, requiredFeatureKey: 'PREMIUM_PRACTICE', isPremium: true }} onClick={vi.fn()} />)
+    expect(queryByLabelText('Cần Premium')).not.toBeInTheDocument()
+  })
+
   it('shimmers and hides the photo until it has loaded, then shows it', () => {
     const { container } = render(<PracticeTestCard card={card} onClick={vi.fn()} />)
     const photo = container.querySelector('img.card-photo')!

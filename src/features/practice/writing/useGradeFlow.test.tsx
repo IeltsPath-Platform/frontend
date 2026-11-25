@@ -2,6 +2,7 @@
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { clearAccessToken, setAccessToken } from '@/lib/httpClient'
+import { ToastProvider } from '@/components/toast/ToastProvider'
 import type { WritingTask } from './writingApi'
 import { useGradeFlow } from './useGradeFlow'
 
@@ -69,10 +70,10 @@ function Harness({ essay }: { essay: string }) {
 }
 function Location() { const { pathname } = useLocation(); return <output data-testid="location">{pathname}</output> }
 function show(essay = ESSAY) {
-  return render(<MemoryRouter initialEntries={['/practice/writing/tasks/s']}><Routes>
+  return render(<ToastProvider><MemoryRouter initialEntries={['/practice/writing/tasks/s']}><Routes>
     <Route path="/practice/writing/tasks/s" element={<Harness essay={essay} />} />
     <Route path="/practice/writing/submissions/:id/result" element={<p>result page</p>} />
-  </Routes><Location /></MemoryRouter>)
+  </Routes><Location /></MemoryRouter></ToastProvider>)
 }
 const finish = async () => { fireEvent.click(screen.getByRole('button', { name: 'Hoàn thành' })); return screen.findByRole('dialog', { name: 'Chọn cách chấm bài' }) }
 const cardOf = (dialog: HTMLElement, name: string) => within(within(dialog).getByRole('region', { name }))
