@@ -26,7 +26,12 @@ export default function SlidePdfViewer({ url, title, onRefresh }: {
   useEffect(() => {
     const element = pageAreaRef.current
     if (!element) return
-    const measure = () => setPageWidth(Math.max(0, element.clientWidth - 32))
+    // A change of a pixel or less is a rounding or scrollbar wobble, not a resize: ignoring it stops the page from being
+    // drawn again and again when its own size feeds back into the measurement.
+    const measure = () => {
+      const next = Math.max(0, Math.floor(element.clientWidth) - 32)
+      setPageWidth((current) => (Math.abs(current - next) <= 1 ? current : next))
+    }
     measure()
     if (typeof ResizeObserver === 'undefined') {
       window.addEventListener('resize', measure)
@@ -142,6 +147,8 @@ export default function SlidePdfViewer({ url, title, onRefresh }: {
             <Page
               aria-label={`Trang ${pageNumber} trên ${numPages}`}
               pageNumber={pageNumber}
+              renderAnnotationLayer={false}
+              renderTextLayer={false}
               width={pageWidth ? pageWidth * scale : undefined}
             />
           </Document>

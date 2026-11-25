@@ -12,6 +12,8 @@ export const sectionAudioSchema = z.object({
 export const sectionQuestionSchema = z.object({
   id: z.guid(), questionVersionId: z.guid(), questionId: z.guid().nullable(), sortOrder: z.int(), maxScore: z.number(),
   stem: z.string().nullable(), status: z.string().nullable(), purpose: z.string().nullable(),
+  /** Number of the newest published version after the attached one; absent or null when there is none. */
+  newerVersionNumber: z.int().nullish(),
 })
 export const packageSectionSchema = z.object({
   id: z.guid(), title: z.string(), skill: sectionSkillSchema.nullable(), sortOrder: z.int(),

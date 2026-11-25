@@ -1,4 +1,4 @@
-import { z } from 'zod'
+﻿import { z } from 'zod'
 import { apiRequest } from '@/lib/httpClient'
 import {
   AUDIO_CONTENT_TYPES, AUDIO_MAX_BYTES, addSectionQuestionRequestSchema, audioRequestSchema, audioUploadSchema,
@@ -28,9 +28,10 @@ export async function getPackage(id: string, signal?: AbortSignal) {
   return contentPackageSchema.parse(await apiRequest<unknown>(packagePath(id), { auth: true, signal }))
 }
 
-export async function createDraftVersion(id: string, rulesJson = '{}') {
-  const rules = z.string().max(20000).refine((value) => { try { JSON.parse(value); return true } catch { return false } }).parse(rulesJson)
-  return packageVersionSchema.parse(await apiRequest<unknown>(`${packagePath(id)}/versions`, { auth: true, method: 'POST', body: { rulesJson: rules } }))
+/** Without `rulesJson` the server starts the draft as a copy of the version learners get (empty when there is none). */
+export async function createDraftVersion(id: string, rulesJson?: string) {
+  const rules = rulesJson === undefined ? undefined : z.string().max(20000).refine((value) => { try { JSON.parse(value); return true } catch { return false } }).parse(rulesJson)
+  return packageVersionSchema.parse(await apiRequest<unknown>(`${packagePath(id)}/versions`, { auth: true, method: 'POST', body: rules === undefined ? {} : { rulesJson: rules } }))
 }
 
 export async function addSection(id: string, versionId: string, body: SectionRequest) {
@@ -55,6 +56,11 @@ export async function addSectionQuestion(id: string, versionId: string, sectionI
 
 export async function removeSectionQuestion(id: string, versionId: string, sectionId: string, sectionQuestionId: string) {
   z.null().parse(await apiRequest<unknown>(`${sectionPath(id, versionId, sectionId)}/questions/${z.guid().parse(sectionQuestionId)}`, { auth: true, method: 'DELETE' }))
+}
+
+/** Moves a question of a draft section to the newest published version of the same question, in place. */
+export async function moveToNewerQuestionVersion(id: string, versionId: string, sectionId: string, sectionQuestionId: string) {
+  return sectionQuestionSchema.parse(await apiRequest<unknown>(`${sectionPath(id, versionId, sectionId)}/questions/${z.guid().parse(sectionQuestionId)}/newer-version`, { auth: true, method: 'PUT' }))
 }
 
 export async function reorderSectionQuestions(id: string, versionId: string, sectionId: string, sectionQuestionIds: string[]) {

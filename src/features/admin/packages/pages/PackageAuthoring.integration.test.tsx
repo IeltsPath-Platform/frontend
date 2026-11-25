@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@/test/render'
+﻿import { fireEvent, render, screen, waitFor, within } from '@/test/render'
 import { answerConfirm } from '@/test/confirm'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -20,6 +20,10 @@ function backend(respond: (request: Request) => Response | Promise<Response>) {
     requests.push(request)
     return respond(request)
   })
+}
+/** The sections sit in skill groups that start folded; the tests open them all first. */
+async function openGroups() {
+  for (const toggle of await screen.findAllByRole('button', { name: /^Mở nhóm / })) fireEvent.click(toggle)
 }
 function Location() { const { pathname, search } = useLocation(); return <output data-testid="location">{pathname}{search}</output> }
 function show(path = `/content-author/packages/${packageId}`) {
@@ -44,6 +48,7 @@ describe('package authoring through HTTP', () => {
       throw new Error(`Unexpected request ${method} ${path}`)
     })
     show()
+    await openGroups()
     fireEvent.click(await screen.findByRole('button', { name: 'Sửa Reading One' }))
     const form = screen.getByRole('form', { name: 'Sửa phần Reading One' })
     fireEvent.change(within(form).getByLabelText('Tiêu đề phần'), { target: { value: 'Revised via HTTP' } })
@@ -108,6 +113,7 @@ describe('package authoring through HTTP', () => {
     const pkg = structuredClone(makePackage())
     pkg.packageType = 'PRACTICE_TEST'
     const current = pkg.versions[1]!.sections[0]!
+    current.skill = null // a section with no skill chosen offers both the passage and the audio form
     const questionId = '00000000-0000-4000-8000-000000000030'
     const questionVersionId = '00000000-0000-4000-8000-000000000031'
     const linkId = '00000000-0000-4000-8000-000000000032'
@@ -115,6 +121,7 @@ describe('package authoring through HTTP', () => {
       if (path === base && method === 'GET') return json(pkg)
       if (path === `${base}/publication-schedules`) return json([])
       if (path === `${sectionBase}/passage` && method === 'PUT') { current.passage = (body as { text: string }).text; return json({ passage: current.passage }) }
+      if (path === '/api/content/admin/media/audio' && method === 'POST') return json({ mediaReference: 'listening/demo/ls1.mp3', mediaUrl: 'https://media.example/ls1.mp3', contentType: 'audio/mpeg', sizeBytes: 5 })
       if (path === `${sectionBase}/audio` && method === 'PUT') {
         current.audio = { assetId: sectionId, mediaUrl: 'https://media.example/test.mp3', ...(body as { mediaReference: string; durationSeconds: number; transcript: string | null }) }
         return json(current.audio)
@@ -138,24 +145,26 @@ describe('package authoring through HTTP', () => {
       throw new Error(`Unexpected request ${method} ${path}`)
     })
     show()
+    await openGroups()
+    fireEvent.click(await screen.findByRole('button', { name: 'Mở Reading One' }))
+    fireEvent.click(await screen.findByRole('button', { name: /^(Thêm|Sửa) đoạn văn$/ }))
     const passage = await screen.findByLabelText('Nội dung đoạn văn')
     fireEvent.change(passage, { target: { value: '  Passage saved through HTTP.  ' } })
     fireEvent.submit(screen.getByRole('form', { name: 'Đoạn văn của Reading One' }))
     await waitFor(() => expect(requests.filter((request) => request.path === base)).toHaveLength(2))
     expect(requests.find((request) => request.path === `${sectionBase}/passage`)!.body).toEqual({ text: '  Passage saved through HTTP.  ' })
-    fireEvent.click(screen.getByText('Dùng file có sẵn'))
-    fireEvent.change(screen.getByLabelText('Key audio'), { target: { value: 'listening/demo/ls1.mp3' } })
+    fireEvent.click(await screen.findByRole('button', { name: /^(Thêm|Sửa) audio$/ }))
+    fireEvent.change(await screen.findByLabelText('File audio'), { target: { files: [new File(['audio'], 'ls1.mp3', { type: 'audio/mpeg' })] } })
     fireEvent.change(screen.getByLabelText('Thời lượng audio (giây)'), { target: { value: '45' } })
     fireEvent.change(screen.getByLabelText('Transcript (tùy chọn)'), { target: { value: 'Author transcript' } })
     fireEvent.submit(screen.getByRole('form', { name: 'Audio của Reading One' }))
-    await waitFor(() => expect(requests.filter((request) => request.path === base)).toHaveLength(3))
+    await waitFor(() => expect(requests.some((request) => request.path === `${sectionBase}/audio`)).toBe(true))
     expect(requests.find((request) => request.path === `${sectionBase}/audio`)!.body).toEqual({ mediaReference: 'listening/demo/ls1.mp3', durationSeconds: 45, transcript: 'Author transcript' })
-    fireEvent.click(screen.getByRole('button', { name: 'Thêm câu hỏi' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Thêm câu hỏi' }))
     fireEvent.click(await screen.findByRole('checkbox'))
-    fireEvent.change(screen.getByLabelText('Điểm tối đa'), { target: { value: '2' } })
     fireEvent.submit(screen.getByRole('form', { name: 'Thêm câu hỏi vào Reading One' }))
     expect(await screen.findByText('A second question from the bank')).toBeInTheDocument()
-    expect(requests.find((request) => request.path === `${sectionBase}/questions` && request.method === 'POST')!.body).toEqual({ questionVersionId, maxScore: 2 })
+    expect(requests.find((request) => request.path === `${sectionBase}/questions` && request.method === 'POST')!.body).toEqual({ questionVersionId, maxScore: 1 })
     fireEvent.click(screen.getByRole('button', { name: 'Đưa câu 2 lên' }))
     await waitFor(() => expect(requests.filter((request) => request.path === `${sectionBase}/questions/order`)).toHaveLength(1))
     expect(requests.find((request) => request.path === `${sectionBase}/questions/order`)!.body).toEqual({ sectionQuestionIds: [linkId, current.questions.find((question) => question.id !== linkId)!.id] })
@@ -220,17 +229,23 @@ describe('package authoring through HTTP', () => {
   })
 
   it('translates storage upload failures and retains the selected audio file without attaching it', async () => {
+    const listening = structuredClone(makePackage())
+    listening.versions[1]!.sections[0]!.skill = 'LISTENING'
     backend(({ path, method }) => {
-      if (path === base && method === 'GET') return json(makePackage())
+      if (path === base && method === 'GET') return json(listening)
       if (path === `${base}/publication-schedules`) return json([])
       if (path === '/api/content/admin/media/audio' && method === 'POST') return json({ message: 'Storage disabled', details: { code: 'STORAGE_UNAVAILABLE' } }, 503)
       throw new Error(`Unexpected request ${method} ${path}`)
     })
     show()
+    await openGroups()
+    fireEvent.click(await screen.findByRole('button', { name: 'Mở Reading One' }))
+    fireEvent.click(await screen.findByRole('button', { name: /^(Thêm|Sửa) audio$/ }))
     const input = await screen.findByLabelText('File audio')
     const file = new File(['ID3-test-audio'], 'sample.mp3', { type: 'audio/mpeg' })
     fireEvent.change(input, { target: { files: [file] } })
-    fireEvent.click(screen.getByRole('button', { name: 'Tải file audio' }))
+    fireEvent.change(screen.getByLabelText('Thời lượng audio (giây)'), { target: { value: '30' } })
+    fireEvent.submit(screen.getByRole('form', { name: 'Audio của Reading One' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('Kho lưu trữ chưa sẵn sàng, thử lại sau')
     const upload = requests.find((request) => request.path === '/api/content/admin/media/audio')!
     expect(upload.options.body).toBeInstanceOf(FormData)
@@ -248,6 +263,7 @@ describe('package authoring through HTTP', () => {
       throw new Error(`Unexpected request ${method} ${path}`)
     })
     show()
+    await openGroups()
     await waitFor(() => expect(screen.getByRole('button', { name: 'Xuất bản ngay' })).toBeEnabled())
     expect(screen.getByText('Có câu đã thuộc một đề khác đã xuất bản')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Xuất bản ngay' }))

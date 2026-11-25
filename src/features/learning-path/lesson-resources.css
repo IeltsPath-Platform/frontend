@@ -290,6 +290,8 @@
 .lp-res-pdf-frame {
   max-height: min(78vh, 900px);
   overflow: auto;
+  /* Keep the width the same whether or not a scrollbar shows, so the page is not resized when it appears. */
+  scrollbar-gutter: stable;
   outline-offset: -3px;
   background: var(--lp-canvas);
 }

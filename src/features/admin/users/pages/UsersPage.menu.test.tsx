@@ -38,7 +38,7 @@ async function openMenu(email: string) {
 }
 
 function renderUsers(users: User[]) {
-  api.listUsers.mockResolvedValue(users)
+  api.listUsers.mockImplementation(({ page, size }: { page: number; size: number }) => Promise.resolve({ content: users.slice(page * size, (page + 1) * size), page, size, totalElements: users.length, totalPages: Math.ceil(users.length / size) }))
   auth.mockReturnValue({ userId: 'self-id', email: 'admin@example.com' })
   return render(<MemoryRouter><UsersPage /></MemoryRouter>)
 }

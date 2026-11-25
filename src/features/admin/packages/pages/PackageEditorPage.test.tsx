@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor, within } from '@/test/render'
+﻿import { act, fireEvent, render, screen, waitFor, within } from '@/test/render'
 import { answerConfirm } from '@/test/confirm'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -25,6 +25,10 @@ function deferred<T>() {
   const promise = new Promise<T>((done) => { resolve = done })
   return { promise, resolve }
 }
+/** The sections sit in skill groups that start folded; the tests open them all first. */
+async function openGroups() {
+  for (const toggle of await screen.findAllByRole('button', { name: /^Mở nhóm / })) fireEvent.click(toggle)
+}
 async function edit() {
   fireEvent.click(await screen.findByRole('button', { name: 'Sửa Reading One' }))
   return screen.getByRole('form', { name: 'Sửa phần Reading One' })
@@ -44,20 +48,37 @@ describe('PackageEditorPage', () => {
 
   it('folds a section under its title, shows its facts as chips, and opens it again', async () => {
     show()
+    await openGroups()
     const article = await screen.findByRole('article', { name: 'Reading One' })
     expect(within(article).getByText(/\d+ câu/)).toBeInTheDocument()
-    const toggle = within(article).getByRole('button', { name: 'Thu gọn Reading One' })
-    expect(toggle).toHaveAttribute('aria-expanded', 'true')
-    expect(within(article).getByRole('region', { name: /^Câu hỏi của/ })).toBeVisible()
-    fireEvent.click(toggle)
-    expect(within(article).getByRole('button', { name: 'Mở Reading One' })).toHaveAttribute('aria-expanded', 'false')
+    // Sections start folded.
+    const opener = within(article).getByRole('button', { name: 'Mở Reading One' })
+    expect(opener).toHaveAttribute('aria-expanded', 'false')
     expect(within(article).getByRole('region', { name: /^Câu hỏi của/, hidden: true })).not.toBeVisible()
     // The tools of the section stay in reach while it is folded.
     expect(within(article).getByRole('button', { name: 'Sửa Reading One' })).toBeVisible()
-    fireEvent.click(within(article).getByRole('button', { name: 'Mở Reading One' }))
+    fireEvent.click(opener)
     expect(within(article).getByRole('region', { name: /^Câu hỏi của/ })).toBeVisible()
+    fireEvent.click(within(article).getByRole('button', { name: 'Thu gọn Reading One' }))
+    expect(within(article).getByRole('region', { name: /^Câu hỏi của/, hidden: true })).not.toBeVisible()
   })
 
+  it('groups the sections by skill in exam order, folded, and moves a section only among its own skill', async () => {
+    const [a, b, c] = ['00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-0000000000a2', '00000000-0000-4000-8000-0000000000a3']
+    const make = (id: string, title: string, skill: 'LISTENING' | 'READING', sortOrder: number) => ({ ...section, id, title, skill, sortOrder, partNo: null, questions: [] })
+    api.getPackage.mockResolvedValue(makePackage([{ ...draft, sections: [make(a, 'Listen A', 'LISTENING', 1), make(b, 'Read B', 'READING', 2), make(c, 'Listen C', 'LISTENING', 3)] }]))
+    show()
+    const listening = await screen.findByRole('region', { name: 'Kỹ năng Nghe' })
+    expect(within(listening).getByText('2 phần')).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Kỹ năng Đọc' })).toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Kỹ năng Viết' })).not.toBeInTheDocument()
+    // The groups start folded, so no section is in reach yet.
+    expect(screen.queryByRole('button', { name: 'Sửa Listen A' })).not.toBeInTheDocument()
+    fireEvent.click(within(listening).getByRole('button', { name: 'Mở nhóm Nghe' }))
+    expect(within(listening).getByRole('button', { name: 'Đưa Listen A lên' })).toBeDisabled()
+    fireEvent.click(within(listening).getByRole('button', { name: 'Đưa Listen C lên' }))
+    await waitFor(() => expect(api.reorderSections).toHaveBeenCalledWith(packageId, draftId, [c, b, a]))
+  })
   it('selects the existing draft by default and puts its ID in the query', async () => {
     show('?view=sections')
     expect(await screen.findByRole('heading', { name: 'Bản 2 · Bản nháp' })).toBeInTheDocument()
@@ -66,15 +87,16 @@ describe('PackageEditorPage', () => {
     expect(screen.queryByRole('button', { name: 'Tạo bản nháp mới' })).not.toBeInTheDocument()
   })
   it('honors the requested published version and keeps it read only', async () => {
-    api.getPackage.mockResolvedValue(makePackage([{ ...published, sections: [section] }, draft]))
+    api.getPackage.mockResolvedValue(makePackage([{ ...published, sections: [{ ...section, skill: null }] }, draft]))
     show(`?version=${publishedId}`)
+    await openGroups()
     expect(await screen.findByRole('heading', { name: 'Bản 1 · Đã xuất bản' })).toBeInTheDocument()
     expect(screen.getByText(/Phiên bản này chỉ xem/)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Sửa Reading One' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Thêm phần' })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Mở Reading One' }))
     expect(screen.getByRole('button', { name: 'Thêm câu hỏi' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Lưu đoạn văn' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Lưu audio' })).toBeDisabled()
+    expect(screen.queryByRole('button', { name: /^(Thêm|Sửa) (đoạn văn|audio)$/ })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Xuất bản ngay' })).not.toBeInTheDocument()
     fireEvent.change(screen.getByLabelText('Chọn phiên bản'), { target: { value: draftId } })
     expect(screen.getByRole('heading', { name: 'Bản 2 · Bản nháp' })).toBeInTheDocument()
@@ -99,12 +121,13 @@ describe('PackageEditorPage', () => {
     expect(screen.getByLabelText('Chọn phiên bản')).toBeDisabled()
     fireEvent.click(screen.getByRole('button', { name: 'Tạo bản nháp mới' }))
     expect(await screen.findByText('Phiên bản chưa có phần nào')).toBeInTheDocument()
-    expect(api.createDraftVersion).toHaveBeenCalledExactlyOnceWith(packageId, '{}')
+    expect(api.createDraftVersion).toHaveBeenCalledExactlyOnceWith(packageId)
     expect(api.getPackage).toHaveBeenCalledTimes(2)
     await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(`view=sections&version=${draftId}`))
   })
   it('preserves every persisted section field, including exact seconds and cover, when saving', async () => {
     show()
+    await openGroups()
     const form = await edit()
     expect(within(form).getByLabelText('Thời gian (phút)')).toHaveValue(91 / 60)
     fireEvent.change(within(form).getByLabelText('Tiêu đề phần'), { target: { value: 'Revised Reading' } })
@@ -116,6 +139,7 @@ describe('PackageEditorPage', () => {
   it('preserves a negative stored sort order when saving section metadata', async () => {
     api.getPackage.mockResolvedValue(makePackage([{ ...draft, sections: [{ ...section, sortOrder: -1 }] }]))
     show()
+    await openGroups()
     const form = await edit()
     fireEvent.change(within(form).getByLabelText('Tiêu đề phần'), { target: { value: 'Renamed section' } })
     fireEvent.submit(form)
@@ -124,6 +148,7 @@ describe('PackageEditorPage', () => {
   it.each([0, -60])('preserves an unchanged stored duration of %i seconds during a metadata edit', async (timeLimitSeconds) => {
     api.getPackage.mockResolvedValue(makePackage([{ ...draft, sections: [{ ...section, timeLimitSeconds }] }]))
     show()
+    await openGroups()
     const form = await edit()
     fireEvent.change(within(form).getByLabelText('Tiêu đề phần'), { target: { value: 'Renamed section' } })
     fireEvent.submit(form)
@@ -140,6 +165,7 @@ describe('PackageEditorPage', () => {
   })
   it('creates a section with nullable optional fields and converts minutes to seconds', async () => {
     show()
+    await openGroups()
     fireEvent.click(await screen.findByRole('button', { name: 'Thêm phần' }))
     const form = screen.getByRole('form', { name: 'Thêm phần' })
     fireEvent.change(within(form).getByLabelText('Tiêu đề phần'), { target: { value: ' Listening ' } })
@@ -156,6 +182,7 @@ describe('PackageEditorPage', () => {
   it('retains unsaved form values after a draft conflict without retrying the write', async () => {
     api.updateSection.mockRejectedValue(new HttpError(400, 'Draft changed', { details: { code: 'VERSION_NOT_DRAFT' } }))
     show()
+    await openGroups()
     const form = await edit()
     fireEvent.change(within(form).getByLabelText('Tiêu đề phần'), { target: { value: 'Unsaved title' } })
     fireEvent.submit(form)
@@ -167,6 +194,7 @@ describe('PackageEditorPage', () => {
   })
   it('requires confirmation before deleting and reloads the package after deletion', async () => {
     show()
+    await openGroups()
     const button = await screen.findByRole('button', { name: 'Xóa Reading One' })
     fireEvent.click(button)
     const popup = await answerConfirm(false)
@@ -176,6 +204,9 @@ describe('PackageEditorPage', () => {
     await answerConfirm(true)
     await waitFor(() => expect(api.deleteSection).toHaveBeenCalledExactlyOnceWith(packageId, draftId, sectionId))
     await waitFor(() => expect(api.getPackage).toHaveBeenCalledTimes(2))
+    const successToast = await screen.findByText('Đã xóa phần.')
+    expect(successToast.closest('[role="status"]')).toHaveClass('toast--success')
+    expect(document.querySelector('.adm-package-workspace')?.textContent).not.toContain('Đã xóa phần.')
   })
   it('reorders the whole version with one API call and locks writes through the refresh', async () => {
     const initial = makePackage([{ ...draft, sections: [section, { ...section, id: nextSectionId, title: 'Reading Two', sortOrder: 8 }] }])
@@ -184,6 +215,7 @@ describe('PackageEditorPage', () => {
     api.getPackage.mockResolvedValueOnce(initial).mockReturnValueOnce(reload.promise)
     api.reorderSections.mockReturnValue(write.promise)
     show()
+    await openGroups()
     fireEvent.click(await screen.findByRole('button', { name: 'Đưa Reading One xuống' }))
     expect(api.reorderSections).toHaveBeenCalledExactlyOnceWith(packageId, draftId, [nextSectionId, sectionId])
     expect(api.updateSection).not.toHaveBeenCalled()
@@ -200,6 +232,7 @@ describe('PackageEditorPage', () => {
     const write = deferred<typeof section>()
     api.updateSection.mockReturnValue(write.promise)
     show()
+    await openGroups()
     const form = await edit()
     expect(screen.getByLabelText('Chọn phiên bản')).toBeDisabled()
     fireEvent.submit(form)
@@ -210,12 +243,15 @@ describe('PackageEditorPage', () => {
     await act(async () => write.resolve(section))
   })
   it('shows rich question metadata and enables section content authoring in a draft', async () => {
+    api.getPackage.mockResolvedValue(makePackage([published, { ...draft, sections: [{ ...section, skill: null }] }]))
     show()
+    await openGroups()
     const article = await screen.findByRole('article', { name: 'Reading One' })
+    fireEvent.click(within(article).getByRole('button', { name: 'Mở Reading One' }))
     expect(within(article).getByText(section.questions[0]!.stem!)).toBeInTheDocument()
     expect(within(article).getByRole('button', { name: 'Thêm câu hỏi' })).toBeEnabled()
-    expect(within(article).getByRole('button', { name: 'Lưu đoạn văn' })).toBeEnabled()
-    expect(within(article).getByRole('button', { name: 'Lưu audio' })).toBeEnabled()
+    expect(within(article).getByRole('button', { name: 'Thêm đoạn văn' })).toBeEnabled()
+    expect(within(article).getByRole('button', { name: 'Thêm audio' })).toBeEnabled()
     expect(within(article).queryByText(/Chờ backend/)).not.toBeInTheDocument()
   })
   it('retries a failed detail load without starting any writes', async () => {

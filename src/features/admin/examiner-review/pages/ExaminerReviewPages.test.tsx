@@ -60,6 +60,17 @@ describe('ExaminerReviewPage', () => {
     expect(rows[1]).toHaveTextContent('Quá 48 giờ')
   })
 
+  it('loads the next queue page when the sentinel is reached', async () => {
+    backend(({ path, query }) => path.endsWith('/queue')
+      ? json({ content: [entry({ id: query.get('page') === '1' ? otherJob : jobId, waitSeconds: query.get('page') === '1' ? 3600 : 7200 })], page: Number(query.get('page')), size: 20, totalElements: 21, totalPages: 2 })
+      : json(page([])))
+    show()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Tải thêm' }))
+    await waitFor(() => expect(calls.some((call) => call.path.endsWith('/queue') && call.query.get('page') === '1')).toBe(true))
+    expect(screen.getAllByRole('row').filter((row) => !row.querySelector('.adm-infinite__sentinel'))).toHaveLength(3)
+  })
+
   it('claims an essay and then opens the blind review screen', async () => {
     backend(({ path }) => path.endsWith('/claim') ? json(entry({ status: 'CLAIMED' })) : path.endsWith('/essay') ? json(essay) : json(page([entry()])))
     show()

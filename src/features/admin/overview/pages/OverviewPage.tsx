@@ -190,7 +190,7 @@ export function OverviewPage() {
   const withoutQuestion = overview.data?.activeKnowledgePointsWithoutPublishedQuestion ?? null
   const drafts = overview.data?.draftQuestionVersions ?? null
   const publishedLessons = overview.data?.lessons?.PUBLISHED ?? null
-  const openWork = work.status === 'success' ? work.data?.length ?? 0 : null
+  const openWork = work.status === 'success' ? work.data?.totalElements ?? 0 : null
 
   const kpis: Kpi[] = [
     { key: 'kp', label: 'KP đang hoạt động', value: activeTotal !== null ? formatCount(activeTotal) : null, to: GRAPH },
@@ -247,11 +247,11 @@ export function OverviewPage() {
 
       <div className="ov-grid">
         {/* A block with nothing to show leaves no empty card behind; a failed one still says so. */}
-        {work.status === 'success' && (work.data?.length ?? 0) === 0 ? null : (
+        {work.status === 'success' && (work.data?.totalElements ?? 0) === 0 ? null : (
           <Block resource={work} title="Việc cần làm của R&D">
-            {(items) => (
+            {(page) => (
               <ul className="ov-list">
-                {items.slice(0, 8).map((item) => (
+                {page.content.slice(0, 8).map((item) => (
                   <li key={item.id}>
                     <span>
                       <strong>{kindLabel(item.kind)}</strong>
@@ -260,7 +260,7 @@ export function OverviewPage() {
                     <span className="adm-badge">{WORK_STATUS_LABEL[item.status] ?? item.status}</span>
                   </li>
                 ))}
-                {items.length > 8 ? <li className="adm-muted">Và {items.length - 8} việc nữa.</li> : null}
+                {(page.totalElements ?? page.content.length) > Math.min(page.content.length, 8) ? <li className="adm-muted">Và {(page.totalElements ?? page.content.length) - Math.min(page.content.length, 8)} việc nữa.</li> : null}
                 <li><Link to={WORK_ITEMS}>Xem tất cả</Link></li>
               </ul>
             )}

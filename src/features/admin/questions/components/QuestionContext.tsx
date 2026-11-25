@@ -27,7 +27,7 @@ export function QuestionContext({ versionId }: { versionId: string }) {
       {items.map((item) => (
         <article className="qb-context__item" key={item.assetId}>
           <p className="qb-context__source">
-            {item.type === 'AUDIO' ? 'Bài nghe' : 'Đoạn văn'} · {sourceLabel(item)}
+            {item.type === 'AUDIO' ? 'Bài nghe' : item.type === 'IMAGE' ? 'Ảnh đề' : 'Đoạn văn'} · {sourceLabel(item)}
             {item.type === 'AUDIO' && item.durationSeconds ? ` · ${length(item.durationSeconds)}` : ''}
           </p>
           {item.type === 'AUDIO' ? (
@@ -41,7 +41,12 @@ export function QuestionContext({ versionId }: { versionId: string }) {
               <p className="qb-context__text">{item.text}</p>
             </details>
           ) : null}
-          {item.type !== 'AUDIO' && item.text ? <p className="qb-context__text">{item.text}</p> : null}
+          {item.type === 'IMAGE' ? (
+            item.mediaUrl
+              ? <img alt={item.text ?? 'Ảnh đề'} className="qb-context__image" src={item.mediaUrl} />
+              : <p className="adm-muted">Không tạo được liên kết xem ảnh này.</p>
+          ) : null}
+          {item.type === 'PASSAGE' && item.text ? <p className="qb-context__text">{item.text}</p> : null}
         </article>
       ))}
     </section>

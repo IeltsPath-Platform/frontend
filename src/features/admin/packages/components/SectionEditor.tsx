@@ -1,14 +1,17 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import { z } from 'zod'
 import { AdminField } from '../../components/AdminField'
-import { SECTION_SKILL_LABEL } from '../lib/packageLabels'
+import { SECTION_SKILL_LABEL, partLabel, partNumbers } from '../lib/packageLabels'
 import { sectionRequestSchema, type PackageSection, type SectionRequest } from '../types'
 import { useAdminError } from '../../lib/useAdminError'
 import { requiredText } from '@/lib/validation/fields'
 import { useFormErrors } from '@/lib/validation/useFormErrors'
 
-export function SectionEditor({ section, sortOrder, busy, onSave, onCancel }: {
-  section?: PackageSection; sortOrder: number; busy: boolean
+export function SectionEditor({ section, sortOrder, siblings, busy, onSave, onCancel }: {
+  section?: PackageSection; sortOrder: number
+  /** The other sections of this version: a part number can be used once per skill. */
+  siblings: readonly Pick<PackageSection, 'skill' | 'partNo'>[]
+  busy: boolean
   onSave: (body: SectionRequest) => Promise<void>; onCancel: () => void
 }) {
   const [title, setTitle] = useState(section?.title ?? '')
@@ -18,7 +21,10 @@ export function SectionEditor({ section, sortOrder, busy, onSave, onCancel }: {
   const [minutes, setMinutes] = useState(initialMinutes)
   const [instructions, setInstructions] = useState(section?.instructions ?? '')
   const [, setError] = useAdminError()
-  const schema = useMemo(() => z.object({ title: requiredText('Tiêu đề phần', 255), minutes: z.string() }).superRefine((value, ctx) => {
+  const takenKey = siblings.filter((sibling) => sibling.partNo != null && (sibling.skill ?? '') === skill).map((sibling) => sibling.partNo).sort().join(',')
+  const taken = useMemo(() => new Set(takenKey === '' ? [] : takenKey.split(',').map(Number)), [takenKey])
+  const schema = useMemo(() => z.object({ title: requiredText('Tiêu đề phần', 255), minutes: z.string(), partNo: z.string() }).superRefine((value, ctx) => {
+    if (value.partNo !== '' && taken.has(Number(value.partNo))) ctx.addIssue({ code: 'custom', path: ['partNo'], message: `Phần ${value.partNo} đã được dùng cho phần khác. Chọn số khác.` })
     if (section && value.minutes === initialMinutes) return // the time is kept as it was saved
     const text = value.minutes.trim()
     if (text === '') return
@@ -26,8 +32,8 @@ export function SectionEditor({ section, sortOrder, busy, onSave, onCancel }: {
     if (!Number.isFinite(Number(text)) || Number(text) <= 0 || !Number.isSafeInteger(seconds) || seconds < 1 || seconds > 2147483647) {
       ctx.addIssue({ code: 'custom', path: ['minutes'], message: 'Thời gian phải lớn hơn 0 và nằm trong giới hạn số giây hợp lệ.' })
     }
-  }), [section, initialMinutes])
-  const form = useFormErrors(schema, { title, minutes })
+  }), [section, initialMinutes, taken])
+  const form = useFormErrors(schema, { title, minutes, partNo })
   async function submit(event: FormEvent) {
     event.preventDefault()
     if (busy) return
@@ -40,12 +46,11 @@ export function SectionEditor({ section, sortOrder, busy, onSave, onCancel }: {
     await onSave(parsed.data)
   }
   return <form aria-label={section ? `Sửa phần ${section.title}` : 'Thêm phần'} className="adm-pe-form" noValidate onSubmit={(event) => void submit(event)}>
-    <h3>{section ? 'Sửa phần' : 'Thêm phần'}</h3>
     <fieldset className="adm-package-fields" disabled={busy}>
       <AdminField label="Tiêu đề phần" {...form.field('title')}><input className="adm-input" maxLength={255} value={title} onChange={(event) => setTitle(event.target.value)} /></AdminField>
       <div className="adm-package-form-grid">
-        <label className="adm-field"><span>Kỹ năng</span><select className="adm-select" value={skill} onChange={(event) => setSkill(event.target.value as typeof skill)}><option value="">Chưa chọn</option>{Object.entries(SECTION_SKILL_LABEL).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
-        <label className="adm-field"><span>Phần thi</span><select className="adm-select" value={partNo} onChange={(event) => setPartNo(event.target.value)}><option value="">Không chỉ định</option>{[1, 2, 3, 4].map((part) => <option key={part} value={part}>Phần {part}</option>)}</select></label>
+        <label className="adm-field"><span>Kỹ năng</span><select className="adm-select" value={skill} onChange={(event) => { const next = event.target.value as typeof skill; setSkill(next); if (partNo !== '' && !partNumbers(next).includes(Number(partNo))) setPartNo('') }}><option value="">Chưa chọn</option>{Object.entries(SECTION_SKILL_LABEL).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+        <AdminField label="Phần thi" {...form.field('partNo')}><select className="adm-select" value={partNo} onChange={(event) => setPartNo(event.target.value)}><option value="">Không chỉ định</option>{partNumbers(skill).map((part) => <option key={part} value={part} disabled={taken.has(part)}>{taken.has(part) ? `${partLabel(skill, part)} (đã dùng)` : partLabel(skill, part)}</option>)}</select></AdminField>
         <AdminField label="Thời gian (phút)" {...form.field('minutes')}><input className="adm-input" type="number" min={0} step="any" value={minutes} onChange={(event) => setMinutes(event.target.value)} /></AdminField>
       </div>
       <label className="adm-field"><span>Hướng dẫn</span><textarea className="adm-textarea" value={instructions} onChange={(event) => setInstructions(event.target.value)} /></label>

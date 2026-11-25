@@ -63,9 +63,14 @@ describe('package authoring API', () => {
     respond(body)
     await expect(getPackage(packageId)).rejects.toBeInstanceOf(ZodError)
   })
-  it('creates an empty draft with server-owned version numbering', async () => {
+  it('creates a draft with server-owned version numbering and leaves the rules to the server', async () => {
     respond({ ...draft, sections: [] }, 201)
     await expect(createDraftVersion(packageId)).resolves.toEqual({ ...draft, sections: [] })
+    request(`${base}/versions`, 'POST', {})
+  })
+  it('sends explicit rules when given', async () => {
+    respond({ ...draft, sections: [] }, 201)
+    await createDraftVersion(packageId, '{}')
     request(`${base}/versions`, 'POST', { rulesJson: '{}' })
   })
   it.each(['create', 'update'] as const)('sends every section field on %s', async (action) => {

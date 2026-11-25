@@ -64,15 +64,16 @@ export const versionSchema = z.object({
 export const questionDetailSchema = questionSchema.extend({ versions: z.array(versionSchema).nullish() })
 
 /**
- * A reading passage or a recording that goes with a question version; `source` says how it was found. For a recording,
- * `text` is its transcript (may be missing) and `mediaUrl` a playable link (missing when none could be made).
+ * A reading passage, a recording or a prompt image that goes with a question version; `source` says how it was found.
+ * For a recording, `text` is its transcript (may be missing) and `mediaUrl` a playable link (missing when none could
+ * be made). For an image, `text` is its description and `mediaUrl` the link that shows it.
  */
 export const questionPassageSchema = z.object({
   assetId: z.string(),
   text: z.string().nullish(),
   source: z.enum(['DIRECT', 'LESSON', 'SECTION']),
   sourceName: z.string().nullish(),
-  type: z.enum(['PASSAGE', 'AUDIO']).default('PASSAGE'),
+  type: z.enum(['PASSAGE', 'AUDIO', 'IMAGE']).default('PASSAGE'),
   mediaUrl: z.string().nullish(),
   durationSeconds: z.number().nullish(),
 })
@@ -100,9 +101,17 @@ export interface QuestionFilters {
   purpose?: string
   status?: string
   knowledgePointId?: string
+  knowledgePointIds?: string[]
   page?: number
   size?: number
   include?: string
   exceptBlockId?: string
   onlyFree?: boolean
 }
+
+/** One place a version of a question is held: a section of a package version, or an exercise block of a lesson. */
+export const questionUsageSchema = z.object({
+  kind: z.enum(['PACKAGE', 'LESSON']), targetId: z.string(), targetCode: z.string(), targetTitle: z.string(), location: z.string(),
+  targetVersionNumber: z.number().nullish(), targetStatus: z.string().nullish(), questionVersionId: z.string(), questionVersionNumber: z.number(),
+})
+export type QuestionUsage = z.infer<typeof questionUsageSchema>

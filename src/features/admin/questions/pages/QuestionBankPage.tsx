@@ -1,15 +1,16 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Eye, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import { useToast } from '@/components/toast/toastContext'
 import { useAdminSearch } from '../../adminSearch'
 import { AdminDrawer } from '../../components/AdminLayer'
+import { InfiniteCount, InfiniteSentinel } from '../../components/InfiniteSentinel'
 import { AdminRowMenu } from '../../components/AdminRowMenu'
 import { AdminEmpty, AdminError, AdminLoading } from '../../components/AdminState'
 import { useAdminConfirm } from '../../lib/useAdminConfirm'
-import { useAdminResource } from '../../lib/useAdminResource'
+import { useInfiniteList } from '../../lib/useInfiniteList'
 import { AdminPage } from '../../pages/AdminPage'
-import { archiveQuestion, createQuestion, listQuestions } from '../api/questionApi'
+import { archiveQuestion, createQuestion, getQuestion, listQuestions } from '../api/questionApi'
 import { QuestionDetailModal } from '../components/QuestionDetailModal'
 import { QuestionEditPanel } from '../components/QuestionEditPanel'
 import {
@@ -84,24 +85,40 @@ export function QuestionBankPage() {
   const [skill, setSkill] = useState('')
   const [purpose, setPurpose] = useState('')
   const [code, setCode] = useState('')
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   // The overview links here with a status already chosen, such as ?status=DRAFT.
   const [status, setStatus] = useState(() => (PUBLICATION_STATUSES.some((item) => item === searchParams.get('status')) ? searchParams.get('status')! : ''))
-  const [page, setPage] = useState(0)
+  const [debouncedCode, setDebouncedCode] = useState('')
   const [creating, setCreating] = useState(false)
   const [viewing, setViewing] = useState<Question | null>(null)
   const [editing, setEditing] = useState<Question | null>(null)
   const { toast } = useToast()
   const { confirm, confirmDialog } = useAdminConfirm()
   const [, setActionError] = useAdminError()
+  // A package links here with ?edit=<question id> to open the update drawer over the bank.
+  const editId = searchParams.get('edit')
+  useEffect(() => {
+    if (!editId) return
+    const controller = new AbortController()
+    getQuestion(editId, controller.signal).then(setEditing).catch((reason) => {
+      if (!controller.signal.aborted) setActionError(questionErrorText(reason))
+    })
+    return () => controller.abort()
+  }, [editId, setActionError])
+  function closeEditing() {
+    setEditing(null)
+    if (searchParams.has('edit')) setSearchParams((previous) => { const next = new URLSearchParams(previous); next.delete('edit'); return next }, { replace: true })
+  }
+  const searchCode = query.trim() || code.trim()
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedCode(searchCode), 300)
+    return () => window.clearTimeout(timer)
+  }, [searchCode])
 
-  const list = useAdminResource(`questions|${skill}|${purpose}|${status}|${code}|${page}`, (signal) =>
-    listQuestions({ skill, purpose, status, code, page, size: PAGE_SIZE }, signal))
-
-  const text = query.trim().toLowerCase()
-  const rows = (list.data?.content ?? []).filter((question) =>
-    !text || [question.code, question.id, TYPE_LABEL[question.questionType], question.questionType, question.skill]
-      .some((value) => value?.toLowerCase().includes(text)))
+  const filterKey = `questions|${skill}|${purpose}|${status}|${debouncedCode}`
+  const list = useInfiniteList(filterKey, (page, signal) =>
+    listQuestions({ skill, purpose, status, code: debouncedCode, page, size: PAGE_SIZE }, signal))
+  const rows = list.items
 
   /** Soft delete: the question is archived, not removed, so it stays under the "Đã lưu trữ" status filter. */
   async function remove(question: Question) {
@@ -122,8 +139,7 @@ export function QuestionBankPage() {
   }
 
   function changeFilter(setter: (value: string) => void, value: string) {
-    setter(value)
-    setPage(0)
+      setter(value)
   }
 
   return (
@@ -139,7 +155,7 @@ export function QuestionBankPage() {
       {creating ? <AdminDrawer title="Câu hỏi mới" onClose={() => setCreating(false)}>
         {(close) => (
           <CreateQuestionPanel
-            onCreated={(created) => { setCreating(false); setEditing(created); list.reload() }}
+            onCreated={(created) => { setCreating(false); setEditing(created); list.refresh() }}
             onDone={close}
           />
         )}
@@ -149,10 +165,10 @@ export function QuestionBankPage() {
 
       {editing ? <AdminDrawer
         description={`Mã ${editing.code}`}
-        onClose={() => setEditing(null)}
+        onClose={closeEditing}
         size="lg"
         title="Cập nhật câu hỏi">
-        {(close) => <QuestionEditPanel onChanged={list.refresh} onDone={close} question={editing} />}
+        {() => <QuestionEditPanel onChanged={list.refresh} question={editing} />}
       </AdminDrawer> : null}
 
       {confirmDialog}
@@ -185,16 +201,17 @@ export function QuestionBankPage() {
         </label>
       </div>
 
-      {list.status === 'loading' ? <AdminLoading label="Đang tải câu hỏi…" /> : null}
+      {list.status === 'loading' && rows.length === 0 ? <AdminLoading label="Đang tải câu hỏi…" /> : null}
       {list.status === 'error' ? <AdminError message={list.error ?? 'Không tải được câu hỏi.'} onRetry={list.reload} /> : null}
-      {list.status === 'success' && (list.data?.content.length ?? 0) === 0 ? (
+      {list.status === 'success' && rows.length === 0 ? (
         <AdminEmpty title="Chưa có câu hỏi nào">Thử bỏ bớt bộ lọc, hoặc tạo câu hỏi mới.</AdminEmpty>
       ) : null}
 
-      {list.status === 'success' && (list.data?.content.length ?? 0) > 0 ? (
+      {rows.length > 0 ? (
         <>
+          <InfiniteCount items={rows.length} noun="câu hỏi" total={list.total} />
           <div className="adm-table-wrap">
-            <table className="adm-table">
+            <table className="adm-table adm-table--sticky">
               <caption className="adm-sr-only">Danh sách câu hỏi</caption>
               <thead>
                 <tr>
@@ -211,7 +228,7 @@ export function QuestionBankPage() {
               <tbody>
                 {rows.map((question, index) => (
                   <tr key={question.id}>
-                    <td className="adm-stt">{(list.data?.page ?? 0) * PAGE_SIZE + index + 1}</td>
+                    <td className="adm-stt">{index + 1}</td>
                     <td><code>{question.code}</code></td>
                     <td>{TYPE_LABEL[question.questionType] ?? question.questionType}</td>
                     <td>{question.skill ? SKILL_LABEL[question.skill] ?? question.skill : '—'}</td>
@@ -219,7 +236,7 @@ export function QuestionBankPage() {
                     <td><span className={statusBadgeClass(question.status)}>{STATUS_LABEL[question.status]}</span></td>
                     <td>{question.updatedAt ? new Date(question.updatedAt).toLocaleDateString('vi-VN') : '—'}</td>
                     <td className="adm-col-actions">
-                      <AdminRowMenu label={`Hành động của câu hỏi ${(list.data?.page ?? 0) * PAGE_SIZE + index + 1}`} items={[
+                      <AdminRowMenu label={`Hành động của câu hỏi ${index + 1}`} items={[
                         { key: 'view', label: 'Xem chi tiết', icon: <Eye aria-hidden="true" size={16} />, onSelect: () => setViewing(question) },
                         { key: 'edit', label: 'Cập nhật', icon: <Pencil aria-hidden="true" size={16} />, disabled: question.status === 'ARCHIVED', onSelect: () => setEditing(question) },
                         { key: 'delete', label: 'Xóa', icon: <Trash2 aria-hidden="true" size={16} />, tone: 'danger', separatorBefore: true, disabled: question.status === 'ARCHIVED', onSelect: () => void remove(question) },
@@ -230,21 +247,9 @@ export function QuestionBankPage() {
               </tbody>
             </table>
           </div>
-          {text ? <p className="adm-muted">Ô tìm kiếm lọc trong trang hiện tại: {rows.length} kết quả.</p> : null}
-          <nav aria-label="Phân trang" className="qb-pager">
-            <button className="adm-btn adm-btn--small" disabled={page === 0} onClick={() => setPage(page - 1)} type="button">Trang trước</button>
-            <span>Trang {(list.data?.page ?? 0) + 1} / {Math.max(1, list.data?.totalPages ?? 1)} · {list.data?.totalElements ?? 0} câu hỏi</span>
-            <button
-              className="adm-btn adm-btn--small"
-              disabled={page + 1 >= (list.data?.totalPages ?? 1)}
-              onClick={() => setPage(page + 1)}
-              type="button"
-            >
-              Trang sau
-            </button>
-          </nav>
         </>
       ) : null}
+      <InfiniteSentinel hasMore={list.hasMore} itemCount={rows.length} loadingMore={list.loadingMore} moreError={list.moreError} noun="câu hỏi" onReachEnd={list.loadMore} onRetry={list.retryMore} resetKey={filterKey} />
     </AdminPage>
   )
 }

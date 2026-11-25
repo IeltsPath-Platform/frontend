@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState, type FormEvent } from 'react'
+﻿import { Fragment, useMemo, useState, type FormEvent } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
 import { z } from 'zod'
 import { AdminField } from '../../components/AdminField'
@@ -15,8 +15,7 @@ import {
   type VersionFormState,
 } from '../lib/versionForm'
 import { questionErrorText } from '../lib/labels'
-import { DIFFICULTIES, type VersionRequest } from '../types'
-import { DIFFICULTY_LABEL } from '../lib/labels'
+import type { VersionRequest } from '../types'
 import { KnowledgePointPicker } from './KnowledgePointPicker'
 import { useAdminError } from '../../lib/useAdminError'
 
@@ -72,10 +71,14 @@ export interface VersionFormProps {
   onCancel: () => void
   /** Starts the form from an existing version instead of an empty one. */
   initialState?: VersionFormState
+  /** Shows every field as it was saved, locked, with no way to change or submit it. */
+  readOnly?: boolean
+  /** The skill of the question; the knowledge point picker opens on its points. */
+  skill?: string | null
 }
 
 /** A new version of a question. The answer fields follow the question type; the version starts as a draft. */
-export function VersionForm({ questionType, nextVersionNumber, onSubmit, onCancel, initialState }: VersionFormProps) {
+export function VersionForm({ questionType, nextVersionNumber, onSubmit, onCancel, initialState, readOnly = false, skill }: VersionFormProps) {
   const [form, setForm] = useState<VersionFormState>(() => initialState ?? initialFormState(questionType, nextVersionNumber))
   const [, setServerError] = useAdminError()
   const [saving, setSaving] = useState(false)
@@ -112,7 +115,8 @@ export function VersionForm({ questionType, nextVersionNumber, onSubmit, onCance
   }
 
   return (
-    <form aria-label="Phiên bản mới" className="qb-form" noValidate onSubmit={(event) => void submit(event)}>
+    <form aria-label={readOnly ? 'Nội dung phiên bản' : 'Phiên bản mới'} className={readOnly ? 'qb-form qb-form--readonly' : 'qb-form'} noValidate onSubmit={(event) => void submit(event)}>
+    <fieldset className="qb-form__fields" disabled={readOnly}>
 
 
       <AdminField label="Số phiên bản" {...errors.field('versionNumber')}>
@@ -177,21 +181,16 @@ export function VersionForm({ questionType, nextVersionNumber, onSubmit, onCance
       ) : null}
 
       {shape === 'FILL' ? (
-        <>
-          <AdminField label="Đáp án được chấp nhận (mỗi dòng một đáp án)" {...errors.field('accepted')}>
-            <textarea className="adm-textarea" onChange={(event) => patch({ accepted: event.target.value })} value={form.accepted} />
-          </AdminField>
-          <AdminField label="Giới hạn số từ (không bắt buộc)" {...errors.field('maxWords')}>
-            <input className="adm-input" inputMode="numeric" onChange={(event) => patch({ maxWords: event.target.value })} value={form.maxWords} />
-          </AdminField>
-        </>
+        <AdminField label="Đáp án được chấp nhận (mỗi dòng một đáp án)" {...errors.field('accepted')}>
+          <textarea className="adm-textarea" onChange={(event) => patch({ accepted: event.target.value })} value={form.accepted} />
+        </AdminField>
       ) : null}
 
       {shape === 'ESSAY' ? (
         <>
           <label className="adm-field">
             <span>Dạng bài</span>
-            <select className="adm-select" onChange={(event) => patch({ essayTask: event.target.value as 'TASK_1' | 'TASK_2', minWords: event.target.value === 'TASK_1' ? '150' : '250' })} value={form.essayTask}>
+            <select className="adm-select" disabled={initialState !== undefined} onChange={(event) => patch({ essayTask: event.target.value as 'TASK_1' | 'TASK_2', minWords: event.target.value === 'TASK_1' ? '150' : '250' })} value={form.essayTask}>
               <option value="TASK_2">Task 2</option>
               <option value="TASK_1">Task 1</option>
             </select>
@@ -216,14 +215,6 @@ export function VersionForm({ questionType, nextVersionNumber, onSubmit, onCance
       {shape === 'NONE' ? (
         <p className="adm-muted">Dạng câu này chưa có đáp án chấm tự động theo hợp đồng hiện tại, nên không cần nhập đáp án.</p>
       ) : null}
-
-      <label className="adm-field">
-        <span>Độ khó (bắt buộc để xuất bản)</span>
-        <select className="adm-select" onChange={(event) => patch({ difficulty: event.target.value as VersionFormState['difficulty'] })} value={form.difficulty}>
-          <option value="">Chưa chọn</option>
-          {DIFFICULTIES.map((level) => <option key={level} value={level}>{DIFFICULTY_LABEL[level]}</option>)}
-        </select>
-      </label>
       <label className="adm-field">
         <span>Giải thích</span>
         <textarea className="adm-textarea" onChange={(event) => patch({ explanation: event.target.value })} value={form.explanation} />
@@ -233,14 +224,14 @@ export function VersionForm({ questionType, nextVersionNumber, onSubmit, onCance
       </AdminField>
 
       <div className="adm-field">
-        <span>Knowledge point liên quan</span>
-        <KnowledgePointPicker onChange={(next) => patch({ knowledgePoints: next })} value={form.knowledgePoints} />
+        <KnowledgePointPicker disabled={readOnly} onChange={(next) => patch({ knowledgePoints: next })} skill={skill} value={form.knowledgePoints} />
       </div>
 
-      <div className="adm-form-footer">
+      </fieldset>
+      {readOnly ? null : <div className="adm-form-footer">
         <button className="adm-btn" disabled={saving} onClick={onCancel} type="button">Hủy</button>
         <button className="adm-btn adm-btn--primary" disabled={saving} type="submit">{saving ? 'Đang lưu…' : 'Lưu bản nháp'}</button>
-      </div>
+      </div>}
     </form>
   )
 }
