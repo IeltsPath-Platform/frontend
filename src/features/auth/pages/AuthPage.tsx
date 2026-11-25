@@ -8,7 +8,7 @@ import { HttpError } from '@/lib/httpClient'
 import { useToast } from '@/components/toast/toastContext'
 import { AuthForm, type AuthMode, type AuthSubmitPayload } from '../components/AuthForm'
 import { loginWithGoogle, loginWithPassword, registerWithPassword } from '../authSession'
-import { mapAuthPasswordHttpError } from '../lib/passwordRules'
+import { isWeakPasswordError, mapAuthPasswordHttpError, weakPasswordMessage } from '../lib/passwordRules'
 import { signInDestination } from '../staffRoles'
 import '../auth.css'
 
@@ -54,6 +54,7 @@ export function AuthPage({
   const { toast } = useToast()
   const contentRef = useRef<HTMLDivElement>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [passwordServerError, setPasswordServerError] = useState<string | null>(null)
   const googleInFlight = useRef(false)
   const [transitionState, setTransitionState] = useState<{
     activeMode: AuthMode
@@ -113,6 +114,7 @@ export function AuthPage({
 
   async function handleSubmit(payload: AuthSubmitPayload) {
     setSubmitting(true)
+    setPasswordServerError(null)
     try {
       const user = currentMode === 'sign-up'
         ? await registerWithPassword({
@@ -130,6 +132,11 @@ export function AuthPage({
           : null,
       })
     } catch (error) {
+      // A weak new password is shown under its field, not as a toast.
+      if (currentMode === 'sign-up' && isWeakPasswordError(error)) {
+        setPasswordServerError(weakPasswordMessage(error))
+        return
+      }
       toast({
         title: currentMode === 'sign-up'
           ? mapAuthPasswordHttpError(error, 'Không thể đăng ký. Vui lòng thử lại.')
@@ -296,6 +303,7 @@ export function AuthPage({
                 onGoogleError={handleGoogleError}
                 onModeChange={handleSwitchMode}
                 onForgotPasswordClick={handleForgotPassword}
+                passwordError={passwordServerError}
               />
 
               <DialogPrimitive.Close asChild>

@@ -32,6 +32,8 @@ interface AuthFormProps {
   onGoogleError: (message: string) => void
   onModeChange?: (nextMode: AuthMode) => void
   onForgotPasswordClick?: () => void
+  /** Server refusal of the new password (for example a weak one), shown under the password field until the next send. */
+  passwordError?: string | null
 }
 
 /** What each mode asks for. Fields are read by their name from the form. */
@@ -62,6 +64,7 @@ export function AuthForm({
   onGoogleError,
   onModeChange,
   onForgotPasswordClick,
+  passwordError,
 }: AuthFormProps) {
   const copy = AUTH_MODAL_COPY[mode]
   const isSignUp = mode === 'sign-up'
@@ -219,7 +222,7 @@ export function AuthForm({
                 minLength={isSignUp ? PASSWORD_MIN_LENGTH : undefined}
                 maxLength={isSignUp ? PASSWORD_MAX_LENGTH : undefined}
                 placeholder="Nhập mật khẩu"
-                error={errors.password}
+                error={errors.password ?? passwordError ?? undefined}
               />
             </div>
 

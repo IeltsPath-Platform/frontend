@@ -8,6 +8,8 @@ import {
   PASSWORD_MAX_LENGTH,
   PASSWORD_MISMATCH_MESSAGE,
   PASSWORD_LENGTH_MESSAGE,
+  isWeakPasswordError,
+  weakPasswordMessage,
 } from '@/features/auth/lib/passwordRules'
 import { createZodResolver } from '@/lib/zodResolver'
 import { HttpError } from '@/lib/httpClient'
@@ -42,7 +44,7 @@ interface SecuritySectionProps {
 function calculatePasswordStrength(pass: string): { score: number; label: string; color: string } {
   if (!pass) return { score: 0, label: '', color: '' }
   let score = 0
-  if (pass.length >= 6) score += 1
+  if (pass.length >= PASSWORD_MIN_LENGTH) score += 1
   if (pass.length >= 10) score += 1
   if (/[0-9]/.test(pass)) score += 1
   if (/[A-Z]/.test(pass) || /[^A-Za-z0-9]/.test(pass)) score += 1
@@ -105,6 +107,7 @@ export const SecuritySection: React.FC<SecuritySectionProps> = ({
     handleSubmit,
     control,
     reset,
+    setError,
     formState: { errors },
   } = useForm<ChangePasswordFormData>({
     resolver: createZodResolver(changePasswordSchema),
@@ -128,6 +131,11 @@ export const SecuritySection: React.FC<SecuritySectionProps> = ({
       onShowToast('Đổi mật khẩu thành công!', 'success')
       setTimeout(() => setPassChangeSuccess(false), 2000)
     } catch (err) {
+      // A weak new password is shown under its field, not as a toast.
+      if (isWeakPasswordError(err)) {
+        setError('newPassword', { type: 'server', message: weakPasswordMessage(err) })
+        return
+      }
       if (err instanceof HttpError) {
         const body = err.body as { message?: string; detail?: string } | undefined
         if (err.status === 400 || err.status === 401) {
