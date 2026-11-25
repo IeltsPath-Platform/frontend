@@ -68,9 +68,7 @@
 .adm-draft-name { color: var(--adm-text); font-weight: 600; overflow-wrap: anywhere; text-decoration: none; }
 .adm-draft-failure { margin: 4px 0 0; color: var(--adm-danger); font-size: .85rem; }
 .adm-draft-time { white-space: nowrap; font-variant-numeric: tabular-nums; }
-.adm-draft-pager { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
-.adm-draft-pager .adm-btn { min-height: 40px; }
-@media (max-width: 560px) { .adm-draft-pager { justify-content: space-between; } .adm-draft-time { white-space: normal; } }
+@media (max-width: 560px) { .adm-draft-time { white-space: normal; } }
 
 /* Detail page: the structure is edited in the main column; status, actions and analysis stay in view beside it. */
 .adm-draft-detail { display: grid; gap: 12px; min-width: 0; align-items: start; }

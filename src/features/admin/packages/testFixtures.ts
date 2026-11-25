@@ -45,3 +45,10 @@ export function makeCatalogPackage(overrides: Partial<PackageListItem> = {}): Pa
     createdAt: pkg.createdAt, updatedAt: pkg.updatedAt, latestVersionNumber: 2, hasDraft: true, ...overrides,
   }
 }
+
+/** The page the package list answers with. `totalElements` defaults to the rows given. */
+export function makeCatalogPage(content: PackageListItem[], extra: { page?: number; size?: number; totalElements?: number; totalPages?: number } = {}) {
+  const size = extra.size ?? 25
+  const totalElements = extra.totalElements ?? content.length
+  return { content, page: extra.page ?? 0, size, totalElements, totalPages: extra.totalPages ?? Math.ceil(totalElements / size) }
+}

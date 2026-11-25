@@ -1,26 +1,26 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useAdminSearch } from '@/features/admin/adminSearch'
-import { batchCountsByCode, newestFirst } from '../data/selectors'
-import { usePointState } from '../data/store'
+import { useAdminResource } from '@/features/admin/lib/useAdminResource'
+import { loadProducts, managerApi } from '../api/pointApi'
 import { formatNumber } from '../shared/format'
+import { Pager } from '../shared/Pager'
+import { usePage } from '../shared/paging'
 import { MANAGER_BASE } from '../shared/point-menu'
 import { ProductPicker } from '../shared/ProductPicker'
+import { AsyncBlock } from '../shared/AsyncBlock'
 import { BatchTable } from './BatchTable'
+
+const PAGE_SIZE = 20
 
 /** Batches of one product at a time: each AI Points pack and each Premium pack is picked from a dropdown. */
 export function BatchListPage() {
-  const { batches, keys, products } = usePointState()
-  const { query } = useAdminSearch()
-  const [productId, setProductId] = useState(products[0]?.id ?? '')
-  const product = products.find((item) => item.id === productId)
-  const counts = useMemo(() => batchCountsByCode(keys), [keys])
-
-  const rows = useMemo(() => {
-    const needle = query.trim().toLowerCase()
-    return newestFirst(batches).filter((batch) => batch.productId === productId && (!needle || batch.code.toLowerCase().includes(needle)))
-  }, [batches, productId, query])
-  const totalKeys = rows.reduce((total, batch) => total + (counts.get(batch.code)?.quantity ?? 0), 0)
+  const products = useAdminResource('point-products', (signal) => loadProducts(signal))
+  const [productId, setProductId] = useState('')
+  const chosen = productId || products.data?.[0]?.id || ''
+  const product = products.data?.find((item) => item.id === chosen)
+  const [pageNumber, setPageNumber] = usePage(chosen)
+  const batches = useAdminResource(`point-batch-list:${chosen}:${pageNumber}`, (signal) => managerApi.listBatches(
+    { productId: chosen, page: pageNumber - 1, size: PAGE_SIZE }, signal))
 
   return (
     <>
@@ -34,19 +34,41 @@ export function BatchListPage() {
         </div>
       </section>
 
-      <ProductPicker onChange={setProductId} products={products} value={productId} />
-
-      <section aria-label={product?.name ?? 'Danh sách đợt key'} className="adm-card">
-        <div className="pm-card-head">
-          <h2>{product?.name}</h2>
-          <span className="pm-note">{rows.length} đợt · {formatNumber(totalKeys)} key</span>
-        </div>
-        {rows.length === 0 ? (
-          <div className="adm-state"><p>Chưa có đợt nào cho sản phẩm này.</p></div>
-        ) : (
-          <BatchTable batches={rows} counts={counts} products={products} showProduct={false} showProgress={false} />
+      <AsyncBlock resource={products} label="Đang tải sản phẩm">
+        {(list) => (
+          list.length === 0 ? (
+            <div className="adm-state"><p>Chưa có sản phẩm key nào.</p></div>
+          ) : (
+            <>
+              <ProductPicker onChange={(value) => { setProductId(value); setPageNumber(1) }} products={list} value={chosen} />
+              <section aria-label={product?.name ?? 'Danh sách đợt key'} className="adm-card">
+                <div className="pm-card-head">
+                  <h2>{product?.name}</h2>
+                  {batches.data ? <span className="pm-note">{formatNumber(batches.data.total)} đợt</span> : null}
+                </div>
+                <AsyncBlock resource={batches} label="Đang tải đợt key">
+                  {(page) => (
+                    page.items.length === 0 ? (
+                      <div className="adm-state"><p>Chưa có đợt nào cho sản phẩm này.</p></div>
+                    ) : (
+                      <>
+                        <BatchTable batches={page.items} showProduct={false} showProgress={false} />
+                        <Pager
+                          onPage={setPageNumber}
+                          page={pageNumber}
+                          pageCount={Math.max(1, Math.ceil(page.total / PAGE_SIZE))}
+                          shown={page.items.length}
+                          total={page.total}
+                        />
+                      </>
+                    )
+                  )}
+                </AsyncBlock>
+              </section>
+            </>
+          )
         )}
-      </section>
+      </AsyncBlock>
     </>
   )
 }

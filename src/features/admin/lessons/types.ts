@@ -132,6 +132,7 @@ export interface BlockRequest {
   vocabularySenseIds?: string[]
   questionVersionIds?: string[]
   knowledgePointIds?: string[]
+  expectedQuestionVersionIds?: string[]
 }
 
 export interface LessonMetaRequest {
@@ -173,7 +174,7 @@ export const lessonResourceOrderSchema = z.object({
   }),
 })
 export type LessonResourceType = z.infer<typeof lessonResourceTypeSchema>
-/** A link carries `url`; an uploaded document carries the `fileKey` its upload returned. Renaming a file sends neither. */
+/** A link carries `url`; an uploaded resource carries the `fileKey` its upload returned. Renaming a file sends neither. */
 export interface LessonResourceRequest {
   title: string
   sortOrder: number

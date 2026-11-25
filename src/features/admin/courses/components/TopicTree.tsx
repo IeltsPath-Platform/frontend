@@ -13,10 +13,13 @@ import { groupTopicsBySkill, swappedGroup, topicError, topicUpdate, type SkillGr
 const SKILL_ICON = { LISTENING: Headphones, READING: BookOpenText, WRITING: PenLine, SPEAKING: Mic } as const
 const SKILL_NAME = { LISTENING: 'Listening', READING: 'Reading', WRITING: 'Writing', SPEAKING: 'Speaking' } as const
 
-export function TopicTree({ topics, allTopics, courses, courseId, onSaved, onError, loading, creating, onCreateClosed }: {
+export function TopicTree({ topics, allTopics, courses, courseId, onSaved, onError, loading, creating, onCreateClosed, openLessonId, openTopicId, onDeepLinkClose }: {
   topics: TopicOption[]; allTopics: TopicOption[]; courses: Course[]; courseId: string | null; onSaved: () => void; onError: (message: string | null) => void; loading: boolean
   /** The page asks for a new topic from its header button; the form opens here, next to the other topic forms. */
   creating: boolean; onCreateClosed: () => void
+  openLessonId?: string
+  openTopicId?: string
+  onDeepLinkClose?: () => void
 }) {
   const [editing, setEditing] = useState<{ topic?: TopicOption } | null>(null)
   const [lessonsOf, setLessonsOf] = useState<TopicOption | null>(null)
@@ -26,6 +29,7 @@ export function TopicTree({ topics, allTopics, courses, courseId, onSaved, onErr
   /** Skill groups the author folded away; every group starts open. */
   const [foldedGroups, setFoldedGroups] = useState<ReadonlySet<string>>(new Set())
   const groupsId = useId()
+  const selectedTopic = lessonsOf ?? (openLessonId && openTopicId ? allTopics.find((item) => item.id === openTopicId) ?? null : null)
   const ids = new Set(topics.map((topic) => topic.id))
   const locked = busy || loading || !!editing || creating
   const groups = groupTopicsBySkill(topics.filter((topic) => !topic.parentTopicId || !ids.has(topic.parentTopicId)))
@@ -139,7 +143,7 @@ export function TopicTree({ topics, allTopics, courses, courseId, onSaved, onErr
   return <>
     {drawer()}
     {confirmDialog}
-    {lessonsOf ? <TopicLessonsDrawer topic={lessonsOf} onClose={() => setLessonsOf(null)} /> : null}
+    {selectedTopic ? <TopicLessonsDrawer topic={selectedTopic} openLessonId={openLessonId} onClose={() => { setLessonsOf(null); onDeepLinkClose?.() }} /> : null}
     <section aria-label="Danh sách chủ đề" className="adm-topic-section">
       {!topics.length
         ? <p className="adm-topic-empty">Khóa này chưa có chủ đề. Bấm “Thêm chủ đề” ở trên để bắt đầu.</p>

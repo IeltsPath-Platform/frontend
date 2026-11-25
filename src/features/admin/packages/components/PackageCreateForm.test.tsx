@@ -49,18 +49,28 @@ describe('PackageCreateForm', () => {
     expect(api.createDraftVersion.mock.invocationCallOrder[0]).toBeLessThan(onCreated.mock.invocationCallOrder[0]!)
   })
 
-  it('offers seven creatable types and switches bindings without offering LESSON', async () => {
+  it('offers the five general types, without LESSON and without the two types their own screens make', async () => {
     render(<PackageCreateForm initialType="COURSE_TEST" onCreated={vi.fn()} onCancel={vi.fn()} />)
-    expect(within(screen.getByLabelText('Loại gói')).getAllByRole('option')).toHaveLength(7)
+    const types = within(screen.getByLabelText('Loại gói')).getAllByRole('option')
+    expect(types).toHaveLength(5)
     expect(within(screen.getByLabelText('Loại gói')).queryByRole('option', { name: 'Bài học' })).not.toBeInTheDocument()
+    expect(within(screen.getByLabelText('Loại gói')).queryByRole('option', { name: 'Đề luyện tập' })).not.toBeInTheDocument()
+    expect(within(screen.getByLabelText('Loại gói')).queryByRole('option', { name: 'Kiểm tra đầu vào' })).not.toBeInTheDocument()
     expect(screen.getByLabelText('Khóa học')).toBeInTheDocument()
     expect(screen.queryByLabelText('Chủ đề')).not.toBeInTheDocument()
-    fireEvent.change(screen.getByLabelText('Loại gói'), { target: { value: 'PRACTICE_TEST' } })
-    expect(screen.getByLabelText('Nguồn đề (tùy chọn)')).toBeInTheDocument()
-    expect(screen.queryByLabelText('Kho đề đầu vào')).not.toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('Loại gói'), { target: { value: 'QUIZ' } })
     expect(screen.queryByLabelText('Khóa học')).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Bài học')).not.toBeInTheDocument()
-    await screen.findByRole('option', { name: 'Cambridge' })
+    expect(screen.queryByLabelText('Nguồn đề (tùy chọn)')).not.toBeInTheDocument()
+  })
+
+  it('makes only the type its screen owns and preselects the pool it was opened on', () => {
+    const { unmount } = render(<PackageCreateForm fixedType="PRACTICE_TEST" onCreated={vi.fn()} onCancel={vi.fn()} />)
+    expect(screen.getByLabelText('Loại gói')).toBeDisabled()
+    expect(within(screen.getByLabelText('Loại gói')).getAllByRole('option')).toHaveLength(1)
+    unmount()
+    render(<PackageCreateForm fixedType="PLACEMENT_TEST" initialPool="BAND_3_5" onCreated={vi.fn()} onCancel={vi.fn()} />)
+    expect(screen.getByLabelText('Kho đề đầu vào')).toHaveValue('BAND_3_5')
   })
 
   it('requires and submits the lesson binding for a practice set', async () => {
@@ -79,14 +89,14 @@ describe('PackageCreateForm', () => {
   })
 
   it('allows a practice test without an external source', async () => {
-    render(<PackageCreateForm initialType="PRACTICE_TEST" onCreated={vi.fn()} onCancel={vi.fn()} />)
+    render(<PackageCreateForm fixedType="PRACTICE_TEST" onCreated={vi.fn()} onCancel={vi.fn()} />)
     titleAndCode()
     submit()
     await waitFor(() => expect(api.createPackage).toHaveBeenCalledWith(expect.objectContaining({ sourceCode: null, lessonId: null, topicId: null, courseId: null })))
   })
 
   it('requires a placement pool and sends it when creating a placement test', async () => {
-    render(<PackageCreateForm initialType="PLACEMENT_TEST" onCreated={vi.fn()} onCancel={vi.fn()} />)
+    render(<PackageCreateForm fixedType="PLACEMENT_TEST" onCreated={vi.fn()} onCancel={vi.fn()} />)
     titleAndCode()
     submit()
     expect(await screen.findByRole('alert')).toHaveTextContent('Chọn kho đề đầu vào')
@@ -163,7 +173,7 @@ describe('PackageCreateForm code', () => {
   })
 
   it('sends the generated code, and does not require one while it is generated', async () => {
-    render(<PackageCreateForm initialType="PLACEMENT_TEST" onCreated={vi.fn()} onCancel={vi.fn()} />)
+    render(<PackageCreateForm fixedType="PLACEMENT_TEST" onCreated={vi.fn()} onCancel={vi.fn()} />)
     await waitFor(() => expect(screen.getByLabelText('Mã gói')).toHaveValue('COURSE_PS01'))
     expect(screen.getByLabelText('Mã gói')).not.toHaveAttribute('aria-required')
     fireEvent.change(screen.getByLabelText('Tiêu đề gói'), { target: { value: 'Đề đầu vào' } })
@@ -176,7 +186,7 @@ describe('PackageCreateForm code', () => {
   it('locks the code and leaves it out of the request when the settings do not let it be changed', async () => {
     codes.fetchCodeSettings.mockResolvedValue([packageSetting(false)])
     codes.fetchCodeSuggestion.mockResolvedValue({ code: 'COURSE_PS01', applied: true, editable: false })
-    render(<PackageCreateForm initialType="PLACEMENT_TEST" onCreated={vi.fn()} onCancel={vi.fn()} />)
+    render(<PackageCreateForm fixedType="PLACEMENT_TEST" onCreated={vi.fn()} onCancel={vi.fn()} />)
     await waitFor(() => expect(screen.getByLabelText('Mã gói')).toBeDisabled())
     fireEvent.change(screen.getByLabelText('Tiêu đề gói'), { target: { value: 'Đề đầu vào' } })
     fireEvent.change(screen.getByLabelText('Kho đề đầu vào'), { target: { value: 'BAND_0_3' } })

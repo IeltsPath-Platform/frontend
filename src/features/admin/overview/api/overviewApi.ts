@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { apiRequest } from '@/lib/httpClient'
+import type { PageResult } from '../../lib/useInfiniteList'
 import {
   contentOverviewSchema,
   questionLabelsSchema,
@@ -16,9 +17,10 @@ export async function fetchContentOverview(signal?: AbortSignal): Promise<Conten
 }
 
 /** The R&D queue only; finished items stay out of the list. */
-export async function fetchAuthorWorkItems(signal?: AbortSignal): Promise<WorkItem[]> {
-  const raw = await apiRequest<unknown>('/api/learning/admin/work-items?queue=CONTENT_AUTHOR', { auth: true, signal })
-  return z.array(workItemSchema).parse(raw).filter((item) => item.status !== 'DONE')
+export async function fetchAuthorWorkItems(signal?: AbortSignal): Promise<PageResult<WorkItem>> {
+  const params = new URLSearchParams({ queue: 'CONTENT_AUTHOR', status: 'ACTIVE', page: '0', size: '100' })
+  const pageSchema = z.object({ content: z.array(workItemSchema), page: z.number(), size: z.number(), totalElements: z.number(), totalPages: z.number() })
+  return pageSchema.parse(await apiRequest<unknown>(`/api/learning/admin/work-items?${params}`, { auth: true, signal }))
 }
 
 /** The start of the stem of each question version, so a list of statistics can name its questions. */

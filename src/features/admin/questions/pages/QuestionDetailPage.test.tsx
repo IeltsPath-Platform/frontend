@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@/test/render'
+﻿import { fireEvent, render, screen, waitFor, within } from '@/test/render'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { HttpError } from '@/lib/httpClient'
@@ -53,7 +53,6 @@ describe('QuestionDetailPage', () => {
     expect(within(versions[1]).getByText('Đang dùng')).toBeInTheDocument()
     expect(within(versions[1]).getByRole('button', { name: 'Lưu trữ' })).toBeInTheDocument()
     expect(within(versions[0]).getByRole('button', { name: 'Xuất bản' })).toBeInTheDocument()
-    expect(within(versions[0]).getByText('Chưa chọn độ khó')).toBeInTheDocument()
     expect(within(versions[1]).getByText('Đáp án đúng: B.')).toBeInTheDocument()
   })
 
@@ -94,8 +93,10 @@ describe('QuestionDetailPage', () => {
     fireEvent.change(screen.getByLabelText('Nội dung lựa chọn 1'), { target: { value: 'Trees' } })
     fireEvent.change(screen.getByLabelText('Nội dung lựa chọn 2'), { target: { value: 'Rivers' } })
     fireEvent.click(screen.getByLabelText('Đáp án đúng là lựa chọn 2'))
-    fireEvent.change(screen.getByLabelText('Độ khó (bắt buộc để xuất bản)'), { target: { value: 'MEDIUM' } })
-    fireEvent.click(await screen.findByLabelText(/R55_SCAN/))
+    fireEvent.click(await screen.findByRole('button', { name: 'Chọn điểm kiến thức' }))
+    const picker = await screen.findByRole('dialog', { name: 'Chọn điểm kiến thức' })
+    fireEvent.click(within(picker).getByRole('checkbox', { name: /R55_SCAN/ }))
+    fireEvent.click(within(picker).getByRole('button', { name: 'Xong' }))
     fireEvent.click(screen.getByRole('button', { name: 'Lưu bản nháp' }))
 
     await waitFor(() => expect(api.addQuestionVersion).toHaveBeenCalledTimes(1))

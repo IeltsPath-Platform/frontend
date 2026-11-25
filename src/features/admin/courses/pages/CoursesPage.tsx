@@ -1,9 +1,10 @@
-import { useId, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Pencil, Plus } from 'lucide-react'
 import { AdminDrawer } from '../../components/AdminLayer'
 import { AdminEmpty, AdminError, AdminLoading } from '../../components/AdminState'
 import { useAdminResource } from '../../lib/useAdminResource'
-import { fetchTopics } from '../../lessons/api/lessonApi'
+import { fetchLesson, fetchTopics } from '../../lessons/api/lessonApi'
 import { AdminPage } from '../../pages/AdminPage'
 import { fetchCourses } from '../api/courseApi'
 import { CourseForm } from '../components/CourseForm'
@@ -27,10 +28,25 @@ export function CoursesPage() {
   const [, setActionError] = useAdminError()
   const [shownCourses, setShownCourses] = useState<Course[] | null>(null)
   const [shownTopics, setShownTopics] = useState<TopicOption[] | null>(null)
+  const [deepLinkTopic, setDeepLinkTopic] = useState<string | null>(null)
+  const [params, setParams] = useSearchParams()
+  const lessonQuery = params.get('lesson')
   if (courses.status === 'success' && courses.data !== shownCourses) setShownCourses(courses.data)
   if (topics.status === 'success' && topics.data !== shownTopics) setShownTopics(topics.data)
   const currentCourses = courses.status === 'success' ? courses.data : shownCourses
   const currentTopics = topics.status === 'success' ? topics.data : shownTopics
+  useEffect(() => {
+    if (!lessonQuery || topics.status !== 'success' || deepLinkTopic) return
+    let active = true
+    void fetchLesson(lessonQuery).then((lesson) => {
+      if (!active) return
+      const topic = topics.data?.find((item) => item.id === lesson.topicId)
+      if (!topic) { setActionError('Không tìm thấy chủ đề của bài học.'); return }
+      setSelection(topic.courseId ?? UNASSIGNED_TAB)
+      setDeepLinkTopic(topic.id)
+    }).catch(() => { if (active) setActionError('Không tìm thấy bài học cần mở.') })
+    return () => { active = false }
+  }, [deepLinkTopic, lessonQuery, setActionError, topics.data, topics.status])
   if (created && currentCourses?.some((item) => item.id === created)) { setSelection(created); setCreated('') }
   const selectedId = selection || currentCourses?.[0]?.id || UNASSIGNED_TAB
   const course = currentCourses?.find((item) => item.id === selectedId)
@@ -67,7 +83,7 @@ export function CoursesPage() {
         </AdminDrawer> : null}
         {topics.status === 'loading' ? <AdminLoading label="Đang tải chủ đề…" /> : null}
         {topics.status === 'error' ? <AdminError message={topics.error!} onRetry={topics.reload} /> : null}
-        {currentTopics ? <TopicTree key={selectedId} topics={rows} allTopics={currentTopics} courses={currentCourses} courseId={selectedId === UNASSIGNED_TAB ? null : selectedId} onSaved={topics.reload} onError={setActionError} loading={topics.status !== 'success'} creating={addingTopic} onCreateClosed={() => setAddingTopic(false)} /> : null}
+        {currentTopics ? <TopicTree key={selectedId} topics={rows} allTopics={currentTopics} courses={currentCourses} courseId={selectedId === UNASSIGNED_TAB ? null : selectedId} onSaved={topics.reload} onError={setActionError} loading={topics.status !== 'success'} creating={addingTopic} onCreateClosed={() => setAddingTopic(false)} openLessonId={deepLinkTopic ? lessonQuery ?? undefined : undefined} openTopicId={deepLinkTopic ?? undefined} onDeepLinkClose={() => { setDeepLinkTopic(null); setParams((previous) => { const next = new URLSearchParams(previous); next.delete('lesson'); return next }) }} /> : null}
       </div>
     </> : null}
   </AdminPage>

@@ -1,6 +1,8 @@
+﻿import type { ReactNode } from 'react'
 import type { QuestionVersion } from '../types'
-import { describeAnswerSpec } from '../lib/versionForm'
-import { DIFFICULTY_LABEL, STATUS_LABEL, statusBadgeClass } from '../lib/labels'
+import { describeAnswerSpec, formStateFromVersion } from '../lib/versionForm'
+import { VersionForm } from './VersionForm'
+import { STATUS_LABEL, statusBadgeClass } from '../lib/labels'
 
 export interface VersionCardProps {
   version: QuestionVersion
@@ -11,19 +13,23 @@ export interface VersionCardProps {
   /** Without the handlers the card only shows the version, as in the detail dialog. */
   onPublish?: (version: QuestionVersion) => void
   onArchive?: (version: QuestionVersion) => void
+  /** Shown under the details, for what belongs to the version but is not part of it (the prompt image of a Writing task). */
+  extra?: ReactNode
+  /** Lists every field of the version, labelled and always visible, instead of the stem with a "Chi tiết" fold. */
+  full?: boolean
+  /** The type of the question, needed to lay out the answer fields of the full view. */
+  questionType?: string
+  /** The skill of the question, for the knowledge point field of the full view. */
+  skill?: string | null
 }
 
-export function VersionCard({ version, current, busy = false, defaultOpen = false, onPublish, onArchive }: VersionCardProps) {
+export function VersionCard({ version, current, busy = false, defaultOpen = false, onPublish, onArchive, extra, full = false, questionType, skill }: VersionCardProps) {
   const links = version.knowledgePoints ?? []
   return (
-    <article aria-label={`Phiên bản ${version.versionNumber}`} className="adm-card qb-version">
+    <article aria-label={`Phiên bản ${version.versionNumber}`} className={full ? 'qb-version qb-version--full' : 'adm-card qb-version'}>
       <header className="qb-version__head">
         <h3>Phiên bản {version.versionNumber}</h3>
-        <span className={statusBadgeClass(version.status)}>{STATUS_LABEL[version.status]}</span>
-        {current ? <span className="adm-badge adm-badge--ok">Đang dùng</span> : null}
-        <span className="adm-badge adm-badge--muted">
-          {version.difficulty ? DIFFICULTY_LABEL[version.difficulty] : 'Chưa chọn độ khó'}
-        </span>
+        {current ? <span className="adm-badge adm-badge--ok">Đang dùng</span> : <span className={statusBadgeClass(version.status)}>{STATUS_LABEL[version.status]}</span>}
         <span className="qb-version__actions">
           {version.status === 'DRAFT' && onPublish ? (
             <button className="adm-btn adm-btn--primary adm-btn--small" disabled={busy} onClick={() => onPublish(version)} type="button">
@@ -37,6 +43,7 @@ export function VersionCard({ version, current, busy = false, defaultOpen = fals
           ) : null}
         </span>
       </header>
+      {full && questionType ? <VersionForm initialState={formStateFromVersion(questionType, version, version.versionNumber)} nextVersionNumber={version.versionNumber} onCancel={() => undefined} onSubmit={async () => undefined} questionType={questionType} readOnly skill={skill} /> : <>
       <p className="qb-version__stem">{version.stem}</p>
       <details open={defaultOpen}>
         <summary>Chi tiết</summary>
@@ -52,6 +59,8 @@ export function VersionCard({ version, current, busy = false, defaultOpen = fals
         {version.hint ? <p><strong>Gợi ý:</strong> {version.hint}</p> : null}
         <p className="adm-muted">{links.length} KP liên quan</p>
       </details>
+      </>}
+      {extra}
     </article>
   )
 }

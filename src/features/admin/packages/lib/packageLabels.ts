@@ -7,6 +7,15 @@ export const PACKAGE_TYPE_LABEL: Record<ContentPackage['packageType'], string> =
 }
 export const PACKAGE_STATUS_LABEL = { DRAFT: 'Bản nháp', PUBLISHED: 'Đã xuất bản', ARCHIVED: 'Đã lưu trữ' }
 export const SECTION_SKILL_LABEL = { READING: 'Đọc', LISTENING: 'Nghe', WRITING: 'Viết', SPEAKING: 'Nói' }
+
+/** How many numbered parts an IELTS skill has: Listening 4, Reading 3, Writing 2 (tasks), Speaking 3. A skill not chosen yet offers 1..4. */
+const PART_COUNT: Record<string, number> = { LISTENING: 4, READING: 3, WRITING: 2, SPEAKING: 3 }
+export function partNumbers(skill: string | null | undefined): number[] {
+  return Array.from({ length: PART_COUNT[skill ?? ''] ?? 4 }, (_, index) => index + 1)
+}
+export function partLabel(skill: string | null | undefined, part: number): string {
+  return skill === 'WRITING' ? `Task ${part}` : `Phần ${part}`
+}
 const ERROR_LABEL: Record<string, string> = {
   QUESTION_ALREADY_USED: 'Có câu đã thuộc một đề khác đã xuất bản', QUESTION_PURPOSE_MISMATCH: 'Có câu sai mục đích với loại đề',
   INVALID_PACKAGE_LESSON: 'Bài học của bộ luyện tập không hợp lệ', INVALID_PACKAGE_TOPIC: 'Chủ đề không hợp lệ cho đề cuối', INVALID_PACKAGE_COURSE: 'Khóa học không hợp lệ cho đề cuối',

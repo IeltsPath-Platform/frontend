@@ -1,11 +1,22 @@
 ﻿import { z } from 'zod'
 import { apiRequest } from '@/lib/httpClient'
 import { userSchema, type CreateUserInput, type User, type UserStatus } from '../types'
+import type { PageResult } from '../../lib/useInfiniteList'
 
 const BASE = '/api/users'
 
-export async function listUsers(signal?: AbortSignal): Promise<User[]> {
-  return z.array(userSchema).parse(await apiRequest<unknown>(BASE, { auth: true, signal }))
+const userPageSchema = z.object({ content: z.array(userSchema), page: z.number(), size: z.number(), totalElements: z.number(), totalPages: z.number() })
+
+export async function listUsers(filter: { page: number; size: number; role?: string; status?: string; search?: string }, signal?: AbortSignal): Promise<PageResult<User>> {
+  const params = new URLSearchParams({ page: String(filter.page), size: String(filter.size) })
+  if (filter.role) params.set('role', filter.role)
+  if (filter.status) params.set('status', filter.status)
+  if (filter.search) params.set('search', filter.search)
+  return userPageSchema.parse(await apiRequest<unknown>(`${BASE}?${params}`, { auth: true, signal }))
+}
+
+export async function listAllUsers(signal?: AbortSignal): Promise<User[]> {
+  return z.array(userSchema).parse(await apiRequest<unknown>(`${BASE}/admin/all`, { auth: true, signal }))
 }
 
 export async function createUser(input: CreateUserInput): Promise<User> {

@@ -13,5 +13,7 @@ export function signInDestination(roles: readonly string[] | undefined, from?: s
   // Straight to each workspace's own overview: its root renders that page, and sign-in already navigates twice in a row.
   if (hasAnyRole(roles, ['CONTENT_AUTHOR'])) return '/content-author'
   if (hasAnyRole(roles, ['EXAMINER'])) return '/examiner'
+  if (hasAnyRole(roles, ['STAFF_MANAGER'])) return '/point-management/sale-manager/overview'
+  if (hasAnyRole(roles, ['SALES_STAFF'])) return '/point-management/sale/issue'
   return from || '/overview'
 }

@@ -1,9 +1,9 @@
-import type { KeyStatus } from '../data/types'
+import type { KeyState } from '../data/types'
 import { MANAGER_STATUS_LABEL, SALE_STATUS_LABEL, type ManagerStatus } from '../data/selectors'
 
 type Tone = 'ready' | 'given' | 'activated' | 'revoked' | 'expired'
 
-const SALE_TONE: Record<KeyStatus, Tone> = {
+const SALE_TONE: Record<KeyState, Tone> = {
   READY: 'ready',
   ISSUED: 'given',
   ACTIVATED: 'activated',
@@ -23,6 +23,6 @@ export function ManagerStatusBadge({ status }: { status: ManagerStatus }) {
   return <span className={`pm-badge pm-badge--${MANAGER_TONE[status]}`}>{MANAGER_STATUS_LABEL[status]}</span>
 }
 
-export function SaleStatusBadge({ status }: { status: KeyStatus }) {
+export function SaleStatusBadge({ status }: { status: KeyState }) {
   return <span className={`pm-badge pm-badge--${SALE_TONE[status]}`}>{SALE_STATUS_LABEL[status]}</span>
 }

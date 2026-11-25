@@ -4,24 +4,26 @@ import type { QuestionDraftItem } from '../types'
 import { QuestionDraftItems } from './QuestionDraftItems'
 
 const choice: QuestionDraftItem = {
+  itemId: '10000000-0000-4000-8000-000000000001',
   stem: 'Which statement matches the passage?', difficulty: 'MEDIUM', explanation: 'The first paragraph supports B.',
   options: [{ optionKey: 'B', content: 'The supported statement', sortOrder: 2 }, { optionKey: 'A', content: 'The incorrect statement', sortOrder: 1 }],
   answerSpec: { type: 'CHOICE', correct: 'B', distractors: { A: 'READING_INFERENCE' } },
 }
 const fill: QuestionDraftItem = {
+  itemId: '10000000-0000-4000-8000-000000000002',
   stem: 'Complete the answer.', difficulty: 'HARD', explanation: 'Both spellings are accepted.', options: [],
   answerSpec: { type: 'FILL', accepted: ['colour', 'color'], maxWords: 2 },
 }
 const actions = { onView: vi.fn(), onEdit: vi.fn(), onRemove: vi.fn() }
 
 describe('QuestionDraftItems', () => {
-  it('shows each question on one row with the key of its correct answer and its difficulty', () => {
+  it('shows each question on one row with the key of its correct answer', () => {
     render(<QuestionDraftItems items={[choice, fill]} selected={[]} disabled={false} onChange={vi.fn()} />)
     const table = screen.getByRole('table', { name: 'Câu hỏi sinh được' })
     const first = within(table).getAllByRole('row')[1]!
     expect(within(first).getByText('B')).toBeInTheDocument()
     expect(within(first).getByText('The supported statement')).toBeInTheDocument()
-    expect(within(first).getByText('Vừa')).toBeInTheDocument()
+    expect(within(first).queryByText('Vừa')).not.toBeInTheDocument()
     expect(within(first).getByText('Which statement matches the passage?')).toBeInTheDocument()
   })
 
@@ -32,19 +34,21 @@ describe('QuestionDraftItems', () => {
     expect(within(row).getByText('+1')).toBeInTheDocument()
   })
 
-  it('emits the original zero-based item indexes when selecting or deselecting', () => {
+  it('emits stable item ids when selecting or deselecting', () => {
     const onChange = vi.fn()
-    const { rerender } = render(<QuestionDraftItems items={[choice, fill, choice]} selected={[2]} disabled={false} onChange={onChange} />)
+    const third = { ...choice, itemId: '10000000-0000-4000-8000-000000000003' }
+    const items = [choice, fill, third]
+    const { rerender } = render(<QuestionDraftItems items={items} selected={[third.itemId]} disabled={false} onChange={onChange} />)
     fireEvent.click(screen.getByRole('checkbox', { name: 'Chọn câu 1 để duyệt' }))
-    expect(onChange).toHaveBeenLastCalledWith([0, 2])
-    rerender(<QuestionDraftItems items={[choice, fill, choice]} selected={[0, 2]} disabled={false} onChange={onChange} />)
+    expect(onChange).toHaveBeenLastCalledWith([third.itemId, choice.itemId])
+    rerender(<QuestionDraftItems items={items} selected={[third.itemId, choice.itemId]} disabled={false} onChange={onChange} />)
     fireEvent.click(screen.getByRole('checkbox', { name: 'Chọn câu 3 để duyệt' }))
-    expect(onChange).toHaveBeenLastCalledWith([0])
+    expect(onChange).toHaveBeenLastCalledWith([choice.itemId])
   })
 
   it('locks selection during review and renders content as plain text', () => {
     const onChange = vi.fn()
-    render(<QuestionDraftItems items={[{ ...choice, stem: '<img src=x onerror=alert(1)>' }]} selected={[0]} disabled onChange={onChange} />)
+    render(<QuestionDraftItems items={[{ ...choice, stem: '<img src=x onerror=alert(1)>' }]} selected={[choice.itemId]} disabled onChange={onChange} />)
     const checkbox = screen.getByRole('checkbox', { name: 'Chọn câu 1 để duyệt' })
     expect(checkbox).toBeChecked()
     expect(checkbox).toBeDisabled()

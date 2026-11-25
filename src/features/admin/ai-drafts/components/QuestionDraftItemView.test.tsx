@@ -4,11 +4,13 @@ import type { QuestionDraftItem } from '../types'
 import { QuestionDraftItemView } from './QuestionDraftItemView'
 
 const choice: QuestionDraftItem = {
+  itemId: '10000000-0000-4000-8000-000000000001',
   stem: 'Which statement matches the passage?', difficulty: 'MEDIUM', explanation: 'The first paragraph supports B.',
   options: [{ optionKey: 'B', content: 'The supported statement', sortOrder: 2 }, { optionKey: 'A', content: 'The incorrect statement', sortOrder: 1 }],
   answerSpec: { type: 'CHOICE', correct: 'B', distractors: { A: 'READING_INFERENCE' } },
 }
 const fill: QuestionDraftItem = {
+  itemId: '10000000-0000-4000-8000-000000000002',
   stem: 'Complete the answer.', difficulty: 'HARD', explanation: 'Both spellings are accepted.', options: [],
   answerSpec: { type: 'FILL', accepted: ['colour', 'color'], maxWords: 2 },
 }

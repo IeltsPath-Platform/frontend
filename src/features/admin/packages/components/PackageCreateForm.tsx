@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { z } from 'zod'
 import { AdminField } from '../../components/AdminField'
+import { AdminSwitch } from '../../components/AdminSwitch'
 import { AdminError, AdminLoading } from '../../components/AdminState'
 import { optionalText, requiredText } from '@/lib/validation/fields'
 import { useFormErrors } from '@/lib/validation/useFormErrors'
@@ -11,23 +12,28 @@ import { fetchLessons, fetchTopics } from '../../lessons/api/lessonApi'
 import { useAdminResource } from '../../lib/useAdminResource'
 import { createDraftVersion, createPackage, listPracticeSources } from '../api/packageApi'
 import { PACKAGE_TYPE_LABEL, packageError } from '../lib/packageLabels'
-import type { CreatePackageRequest, PackageType } from '../types'
+import type { CreatePackageRequest } from '../types'
 import type { PlacementPool } from '~types/learningPath'
 import { useAdminError } from '../../lib/useAdminError'
 
-const CREATE_TYPES = ['PRACTICE_SET', 'PRACTICE_TEST', 'MOCK_TEST', 'PLACEMENT_TEST', 'QUIZ', 'TOPIC_TEST', 'COURSE_TEST'] as const
+/** The types made in "Đề & gói câu hỏi". Practice tests and placement tests have their own screens (`fixedType`). */
+const CREATE_TYPES = ['PRACTICE_SET', 'MOCK_TEST', 'QUIZ', 'TOPIC_TEST', 'COURSE_TEST'] as const
+type CreateType = (typeof CREATE_TYPES)[number] | 'PRACTICE_TEST' | 'PLACEMENT_TEST'
 
-export function PackageCreateForm({ onCreated, onCancel, initialType }: {
+export function PackageCreateForm({ onCreated, onCancel, initialType, fixedType, initialPool }: {
   onCreated: (packageId: string) => void; onCancel: () => void; initialType?: string
+  /** Set by the screen that owns the type: the form makes only that type. */
+  fixedType?: 'PRACTICE_TEST' | 'PLACEMENT_TEST'
+  initialPool?: PlacementPool
 }) {
   const [title, setTitle] = useState('')
-  const [type, setType] = useState<(typeof CREATE_TYPES)[number]>(CREATE_TYPES.find((value) => value === initialType) ?? 'PRACTICE_SET')
+  const [type, setType] = useState<CreateType>(fixedType ?? (CREATE_TYPES.find((value) => value === initialType) ?? 'PRACTICE_SET'))
   const [access, setAccess] = useState<'FREE' | 'PREMIUM'>('FREE')
   const [courseId, setCourseId] = useState('')
   const [topicId, setTopicId] = useState('')
   const [lessonId, setLessonId] = useState('')
   const [sourceCode, setSourceCode] = useState('')
-  const [placementPool, setPlacementPool] = useState<PlacementPool | ''>('')
+  const [placementPool, setPlacementPool] = useState<PlacementPool | ''>(initialPool ?? '')
   const [pending, setPending] = useState(false)
   const [createdId, setCreatedId] = useState<string | null>(null)
   const [, setError] = useAdminError()
@@ -109,13 +115,17 @@ export function PackageCreateForm({ onCreated, onCancel, initialType }: {
     finally { if (mounted.current) setPending(false) }
   }
 
-  return <form aria-label="Tạo gói câu hỏi" className="adm-package-create" noValidate onSubmit={(event) => void submit(event)}>
+  return <form aria-label="Tạo gói câu hỏi" className="adm-package-create adm-pc" noValidate onSubmit={(event) => void submit(event)}>
     {createdId && !pending ? <button className="adm-btn adm-btn--primary" type="button" onClick={() => onCreated(createdId)}>Mở gói đã tạo</button> : null}
-    <fieldset className="adm-package-fields" disabled={pending || !!createdId}>
-      <AdminField label="Mã gói" {...form.field('code')}><input className="adm-input" disabled={generated.locked} maxLength={100} value={code} onChange={(event) => generated.onType(event.target.value)} /></AdminField>
+    <fieldset className="adm-package-fields adm-pc__fields" disabled={pending || !!createdId}>
+      <div className="adm-pc__row">
+        <label className="adm-field"><span>Loại gói</span><select className="adm-select" disabled={!!fixedType} value={type} onChange={(event) => { setType(event.target.value as CreateType); setError(null) }}>{(fixedType ? [fixedType] : CREATE_TYPES).map((value) => <option key={value} value={value}>{PACKAGE_TYPE_LABEL[value]}</option>)}</select></label>
+        <div className="adm-pc__switch"><AdminSwitch checked={access === 'FREE'} onChange={(free) => setAccess(free ? 'FREE' : 'PREMIUM')}>Miễn phí</AdminSwitch></div>
+      </div>
       <AdminField label="Tiêu đề gói" {...form.field('title')}><input className="adm-input" maxLength={255} value={title} onChange={(event) => setTitle(event.target.value)} /></AdminField>
-      <label className="adm-field"><span>Loại gói</span><select className="adm-select" value={type} onChange={(event) => { setType(event.target.value as Exclude<PackageType, 'LESSON'>); setError(null) }}>{CREATE_TYPES.map((value) => <option key={value} value={value}>{PACKAGE_TYPE_LABEL[value]}</option>)}</select></label>
-      <label className="adm-field"><span>Truy cập</span><select className="adm-select" value={access} onChange={(event) => setAccess(event.target.value as 'FREE' | 'PREMIUM')}><option value="FREE">Miễn phí</option><option value="PREMIUM">Premium</option></select></label>
+      <AdminField label="Mã gói" {...form.field('code')}><input className="adm-input" disabled={generated.locked} maxLength={100} value={code} onChange={(event) => generated.onType(event.target.value)} /></AdminField>
+      {type === 'PLACEMENT_TEST' || needsCourse || type === 'PRACTICE_TEST' ? <h3 className="adm-pc__heading">Gắn với</h3> : null}
+      <div className="adm-pc__group">
       {type === 'PLACEMENT_TEST' ? <AdminField label="Kho đề đầu vào" {...form.field('placementPool')} required><select className="adm-select" value={placementPool} onChange={(event) => setPlacementPool(event.target.value as PlacementPool | '')}><option value="">Chọn kho</option><option value="BAND_0_3">Band 0–3</option><option value="BAND_3_5">Band 3–5</option><option value="BAND_5_9">Band 5–9</option></select></AdminField> : null}
       {needsCourse ? <>
         {courses.status === 'loading' ? <AdminLoading label="Đang tải khóa học…" /> : null}
@@ -135,9 +145,10 @@ export function PackageCreateForm({ onCreated, onCancel, initialType }: {
       {type === 'PRACTICE_TEST' ? <>
         {sources.status === 'loading' ? <AdminLoading label="Đang tải nguồn đề…" /> : null}
         {sources.status === 'error' ? <AdminError message={sources.error!} onRetry={sources.reload} /> : null}
-        <AdminField label="Nguồn đề (tùy chọn)" {...form.field('sourceCode')}><select className="adm-select" value={sourceCode} onChange={(event) => setSourceCode(event.target.value)}><option value="">Không (đề kiểm tra nội bộ của khóa)</option>{sources.data?.map((source) => <option key={source.code} value={source.code}>{source.name}</option>)}</select></AdminField>
+        <AdminField label="Nguồn đề" {...form.field('sourceCode')}><select className="adm-select" value={sourceCode} onChange={(event) => setSourceCode(event.target.value)}><option value="">Không (đề kiểm tra nội bộ của khóa)</option>{sources.data?.map((source) => <option key={source.code} value={source.code}>{source.name}</option>)}</select></AdminField>
       </> : null}
-      <div className="adm-form-footer"><button className="adm-btn" type="button" onClick={onCancel}>Hủy</button><button className="adm-btn adm-btn--primary" type="submit">{pending ? 'Đang tạo gói…' : 'Tạo gói và bản nháp'}</button></div>
+      </div>
+      <div className="adm-form-footer"><button className="adm-btn" type="button" onClick={onCancel}>Đóng</button><button className="adm-btn adm-btn--primary" type="submit">{pending ? 'Đang tạo gói…' : 'Tạo gói và bản nháp'}</button></div>
     </fieldset>
   </form>
 }

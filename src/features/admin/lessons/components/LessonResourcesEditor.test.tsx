@@ -9,8 +9,8 @@ vi.mock('../api/lessonApi', () => api)
 const media = vi.hoisted(() => ({ uploadAdminDocument: vi.fn() }))
 vi.mock('../../media/api/mediaUploadApi', async (original) => ({ ...await original<typeof import('../../media/api/mediaUploadApi')>(), ...media }))
 const slides = [
-  { id: 's2', title: 'Slide sau', url: 'https://docs.google.com/presentation/d/second/embed', sortOrder: 7 },
-  { id: 's1', title: 'Slide đầu', url: 'https://docs.google.com/presentation/d/first/embed', sortOrder: 2 },
+  { id: 's2', title: 'Slide sau', url: 'https://storage.example/second.pdf', fileKey: 'lesson-document/u/second.pdf', sortOrder: 7 },
+  { id: 's1', title: 'Slide đầu', url: 'https://storage.example/first.pdf', fileKey: 'lesson-document/u/first.pdf', sortOrder: 2 },
 ]
 
 /** Opens the "…" menu of one row (`row` counts from 1 in the table of `kind`) and picks an action from it. */
@@ -28,36 +28,48 @@ describe('LessonResourcesEditor', () => {
     api.deleteLessonResource.mockResolvedValue(undefined)
   })
 
-  it('orders slides separately from documents and opens links in another tab', async () => {
+  it('orders slides separately from documents and opens their PDFs in another tab', async () => {
     render(<LessonResourcesEditor lessonId="l1" />)
     const list = await screen.findByRole('region', { name: 'Slide' })
-    expect(within(list).getAllByRole('link').map((link) => link.textContent?.trim())).toEqual([slides[1]!.url, slides[0]!.url])
+    expect(within(list).getAllByRole('link').map((link) => link.getAttribute('href'))).toEqual([slides[1]!.url, slides[0]!.url])
     expect(within(list).getAllByRole('link')[0]).toHaveAttribute('rel', 'noreferrer')
     expect(screen.getByRole('region', { name: 'Tài liệu' })).toHaveTextContent('Bài đọc')
   })
 
-  it('appends a slide after the largest existing sort order', async () => {
+  it('uploads a PDF before creating a slide after the largest existing sort order', async () => {
+    media.uploadAdminDocument.mockResolvedValue({ mediaReference: 'lesson-document/u/new.pdf', contentType: 'application/pdf', sizeBytes: 8 })
     render(<LessonResourcesEditor lessonId="l1" />)
     fireEvent.click(await screen.findByRole('button', { name: 'Thêm slide' }))
     const popup = screen.getByRole('dialog', { name: 'Thêm slide' })
     expect(popup).toHaveClass('adm-modal', 'adm-modal--stacked')
     const form = within(popup).getByRole('form', { name: 'Thêm slide' })
     fireEvent.change(within(form).getByLabelText('Tiêu đề slide'), { target: { value: 'Slide mới' } })
-    fireEvent.change(within(form).getByLabelText('URL slide'), { target: { value: 'https://example.org/slides' } })
+    expect(within(form).queryByLabelText('URL slide')).not.toBeInTheDocument()
+    const file = new File(['%PDF-1.7'], 'Slide-moi.pdf', { type: 'application/pdf' })
+    fireEvent.change(within(form).getByLabelText('Tệp PDF'), { target: { files: [file] } })
     fireEvent.submit(form)
-    await waitFor(() => expect(api.createLessonResource).toHaveBeenCalledWith('l1', { type: 'SLIDE', title: 'Slide mới', url: 'https://example.org/slides', sortOrder: 8 }))
+    await waitFor(() => expect(api.createLessonResource).toHaveBeenCalledWith('l1', { type: 'SLIDE', title: 'Slide mới', fileKey: 'lesson-document/u/new.pdf', sortOrder: 8 }))
+    expect(media.uploadAdminDocument).toHaveBeenCalledWith(file)
     await waitFor(() => expect(api.fetchLessonResources).toHaveBeenCalledTimes(2))
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
   })
 
-  it.each(['http://example.org/slides', 'không phải URL', 'javascript:alert(1)'])('rejects unsafe or invalid URL %s', async (url) => {
+  it('requires a PDF and shows file validation errors under the field', async () => {
     render(<LessonResourcesEditor lessonId="l1" />)
     fireEvent.click(await screen.findByRole('button', { name: 'Thêm slide' }))
     const form = screen.getByRole('form', { name: 'Thêm slide' })
     fireEvent.change(within(form).getByLabelText('Tiêu đề slide'), { target: { value: 'Slide mới' } })
-    fireEvent.change(within(form).getByLabelText('URL slide'), { target: { value: url } })
     fireEvent.submit(form)
-    expect(within(form).getByRole('alert')).toHaveTextContent('HTTPS')
+    expect(within(form).getByRole('alert')).toHaveTextContent('Chọn tệp PDF.')
+    fireEvent.change(within(form).getByLabelText('Tệp PDF'), { target: { files: [new File(['x'], 'anh.png', { type: 'image/png' })] } })
+    fireEvent.submit(form)
+    expect(within(form).getByRole('alert')).toHaveTextContent('Chỉ nhận tệp PDF.')
+    const big = new File(['x'], 'lon.pdf', { type: 'application/pdf' })
+    Object.defineProperty(big, 'size', { value: 21 * 1024 * 1024 })
+    fireEvent.change(within(form).getByLabelText('Tệp PDF'), { target: { files: [big] } })
+    fireEvent.submit(form)
+    expect(within(form).getByRole('alert')).toHaveTextContent('lớn hơn 20 MB')
+    expect(media.uploadAdminDocument).not.toHaveBeenCalled()
     expect(api.createLessonResource).not.toHaveBeenCalled()
   })
 
@@ -67,7 +79,7 @@ describe('LessonResourcesEditor', () => {
     const form = screen.getByRole('form', { name: 'Sửa slide' })
     fireEvent.change(within(form).getByLabelText('Tiêu đề slide'), { target: { value: 'Slide mở đầu' } })
     fireEvent.submit(form)
-    await waitFor(() => expect(api.updateLessonResource).toHaveBeenCalledWith('l1', 's1', { title: 'Slide mở đầu', url: slides[1]!.url, sortOrder: 2 }))
+    await waitFor(() => expect(api.updateLessonResource).toHaveBeenCalledWith('l1', 's1', { title: 'Slide mở đầu', sortOrder: 2 }))
   })
 
   it('only deletes after confirmation', async () => {

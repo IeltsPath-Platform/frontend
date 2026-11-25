@@ -1,4 +1,4 @@
-﻿import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { menuEntriesFor, menuFor } from './adminMenu'
 
 function summary(roles: string[]) {
@@ -11,7 +11,7 @@ describe('menuEntriesFor', () => {
     expect(summary(['CONTENT_AUTHOR'])).toEqual([
       'Tổng quan nội dung',
       { group: 'Chương trình học', items: ['Khóa học & chủ đề', 'Cây tri thức', 'Nhập khóa học từ Excel'] },
-      { group: 'Câu hỏi & đề', items: ['Ngân hàng câu hỏi', 'Đề & gói câu hỏi', 'Sinh nội dung bằng AI'] },
+      { group: 'Câu hỏi & đề', items: ['Ngân hàng câu hỏi', 'Đề & gói câu hỏi', 'Thư viện luyện đề', 'Đề đầu vào', 'Duyệt câu hỏi AI'] },
       { group: 'Chất lượng chấm', items: ['Rubric chấm Writing', 'Mã lỗi'] },
       'Thiết lập tham số',
     ])

@@ -7,8 +7,8 @@ vi.mock('../lib/resource-reorder', () => ({ RESOURCE_REORDER_ENABLED: true }))
 
 const lessonId = '00000000-0000-4000-8000-000000000001'
 const slides = [
-  { id: '00000000-0000-4000-8000-000000000003', title: 'Slide sau', url: 'https://example.org/second', sortOrder: 7 },
-  { id: '00000000-0000-4000-8000-000000000002', title: 'Slide đầu', url: 'https://example.org/first', sortOrder: 2 },
+  { id: '00000000-0000-4000-8000-000000000003', title: 'Slide sau', url: 'https://storage.example/second.pdf', fileKey: 'lesson-document/u/second.pdf', sortOrder: 7 },
+  { id: '00000000-0000-4000-8000-000000000002', title: 'Slide đầu', url: 'https://storage.example/first.pdf', fileKey: 'lesson-document/u/first.pdf', sortOrder: 2 },
 ]
 const documents = [
   { id: '00000000-0000-4000-8000-000000000004', title: 'Bài đọc đầu', url: 'https://example.org/reading.pdf', sortOrder: 0 },

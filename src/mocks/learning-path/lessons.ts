@@ -1,12 +1,9 @@
 import type { MockLesson } from './contentTypes'
 
-/** The public demo deck; every mock lesson shows it. */
-const DEMO_DECK = 'https://docs.google.com/presentation/d/1rky9iPmndXAGDhwcMSI8QM2jN1QaVyelycgAsloB7kM/edit'
-
 function lesson(base: Omit<MockLesson, 'slides' | 'documents'>): MockLesson {
   return {
     ...base,
-    slides: [{ id: `${base.id}-slide`, title: `Slide bài giảng: ${base.title}`, url: DEMO_DECK }],
+    slides: [],
     documents: [
       { id: `${base.id}-doc-1`, title: 'Tài liệu 1: Giáo trình', url: 'https://example.com/ieltspath/giao-trinh.pdf' },
       { id: `${base.id}-doc-2`, title: 'Tài liệu 2: Bài tập', url: 'https://example.com/ieltspath/bai-tap.pdf' },

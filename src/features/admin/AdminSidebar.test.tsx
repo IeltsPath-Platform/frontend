@@ -28,7 +28,7 @@ describe('AdminSidebar groups', () => {
   it('lists every screen of a group as a link inside its sub-menu', () => {
     renderSidebar()
     const links = within(flyout('Câu hỏi & đề')).getAllByRole('link').map((link) => link.getAttribute('href'))
-    expect(links).toEqual(['/content-author/questions', '/content-author/packages', '/content-author/ai-drafts'])
+    expect(links).toEqual(['/content-author/questions', '/content-author/packages', '/content-author/practice-tests', '/content-author/placement-tests', '/content-author/ai-drafts'])
     const curriculum = within(flyout('Chương trình học')).getAllByRole('link').map((link) => link.getAttribute('href'))
     expect(curriculum).toEqual(['/content-author/courses', '/content-author/knowledge-graph', '/content-author/course-import'])
   })

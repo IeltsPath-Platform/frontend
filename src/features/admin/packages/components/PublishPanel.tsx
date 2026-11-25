@@ -49,20 +49,25 @@ export function PublishPanel({ packageId, version, packageType, disabled, onMuta
     setError(null)
     if (await onMutate(() => scheduleVersion(packageId, version.id, time.toISOString()), 'Đã lên lịch xuất bản.')) schedules.reload()
   }
-  return <section className="adm-card adm-package-publish" aria-label="Xem trước và xuất bản"><h2>Xem trước và xuất bản</h2>
+  return <section className="adm-pe-publish" aria-label="Xem trước và xuất bản">
     {confirmDialog}
-    <button className="adm-btn" type="button" disabled={disabled} onClick={onPreview}>Xem trước</button>
+    <div className="adm-pe-publish__head">
+      <h3 className="adm-sec__title">Xuất bản</h3>
+      <div className="adm-pe-tools">
+        <button className="adm-btn adm-btn--small adm-btn--noicon" type="button" disabled={disabled} onClick={onPreview}>Xem trước</button>
+        {version.status === 'DRAFT' ? <button className="adm-btn adm-btn--small adm-btn--primary adm-btn--noicon" type="button" disabled={locked} onClick={publish}>Xuất bản ngay</button> : null}
+      </div>
+    </div>
     {schedules.status === 'loading' ? <AdminLoading label="Đang tải lịch xuất bản…" /> : null}
     {schedules.status === 'error' ? <AdminError message={schedules.error!} onRetry={schedules.reload} /> : null}
-    {scheduledAt ? <p>Đã lên lịch: {new Date(scheduledAt).toLocaleString('vi-VN')}</p> : null}
+    {scheduledAt ? <p className="adm-pe-publish__scheduled">Đã lên lịch: {new Date(scheduledAt).toLocaleString('vi-VN')}</p> : null}
     {lastError ? <p className="adm-alert" role="status">{publicationError(lastError)}</p> : null}
-    {version.status === 'DRAFT' ? <>
-      <button className="adm-btn adm-btn--primary" type="button" disabled={locked} onClick={publish}>Xuất bản ngay</button>
-      <form noValidate onSubmit={(event) => void schedule(event)} aria-label="Lên lịch xuất bản">
-        <AdminField label="Thời gian xuất bản (giờ địa phương)" {...form.field('publishAt')} required><input className="adm-input" type="datetime-local" value={publishAt} disabled={locked} onChange={(event) => setPublishAt(event.target.value)} /></AdminField>
-        <div className="adm-package-actions"><button className="adm-btn" type="submit" disabled={locked}>Lên lịch</button>{scheduledAt ? <button className="adm-btn" type="button" disabled={locked} onClick={() => void onMutate(() => cancelSchedule(packageId, version.id), 'Đã hủy lịch xuất bản.').then((ok) => { if (ok) schedules.reload() })}>Hủy lịch</button> : null}</div>
-      </form>
-    </> : null}
-    <p className="adm-muted">Gói tạo ở đây chưa có nhóm dạng đề nên không xuất hiện khi học viên lọc theo dạng đề.</p>
+    {version.status === 'DRAFT' ? <form className="adm-pe-schedule" noValidate onSubmit={(event) => void schedule(event)} aria-label="Lên lịch xuất bản">
+      <AdminField label="Thời gian xuất bản (giờ địa phương)" {...form.field('publishAt')} required><input className="adm-input" type="datetime-local" value={publishAt} disabled={locked} onChange={(event) => setPublishAt(event.target.value)} /></AdminField>
+      <div className="adm-pe-schedule__actions">
+        <button className="adm-btn adm-btn--small adm-btn--noicon" type="submit" disabled={locked}>Lên lịch</button>
+        {scheduledAt ? <button className="adm-btn adm-btn--small adm-btn--noicon" type="button" disabled={locked} onClick={() => void onMutate(() => cancelSchedule(packageId, version.id), 'Đã hủy lịch xuất bản.').then((ok) => { if (ok) schedules.reload() })}>Hủy lịch</button> : null}
+      </div>
+    </form> : null}
   </section>
 }

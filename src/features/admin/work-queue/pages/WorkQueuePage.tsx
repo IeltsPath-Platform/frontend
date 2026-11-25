@@ -6,7 +6,8 @@ import { AdminRowMenu, type RowMenuItem } from '../../components/AdminRowMenu'
 import { AdminEmpty, AdminError, AdminLoading } from '../../components/AdminState'
 import { adminErrorMessage } from '../../lib/adminErrors'
 import { useAdminError } from '../../lib/useAdminError'
-import { useAdminResource } from '../../lib/useAdminResource'
+import { InfiniteCount, InfiniteSentinel } from '../../components/InfiniteSentinel'
+import { useInfiniteList } from '../../lib/useInfiniteList'
 import { AdminPage } from '../../pages/AdminPage'
 import { listWorkItems, updateWorkItem } from '../api/workQueueApi'
 import { KIND_HELP, KIND_LABEL, STATUS_LABEL, detailText, subjectText, workLinks } from '../lib/workQueueLabels'
@@ -99,8 +100,9 @@ export function WorkQueuePage() {
   const [busy, setBusy] = useState(false)
   const [finishing, setFinishing] = useState<WorkItem | null>(null)
   const [, setError] = useAdminError()
-  const items = useAdminResource(`work-queue:${kind}:${status}`, (signal) =>
-    listWorkItems({ kind: kind || undefined, status: status === 'DONE' ? 'DONE' : undefined }, signal))
+  const filterKey = `work-queue:${kind}:${status}`
+  const items = useInfiniteList(filterKey, (page, signal) =>
+    listWorkItems({ kind: kind || undefined, status: status === 'ALL' ? undefined : status, page, size: 25 }, signal))
 
   /** Returns whether the change was saved, so a form can stay open when it was not. */
   async function update(id: string, change: WorkUpdate): Promise<boolean> {
@@ -109,7 +111,7 @@ export function WorkQueuePage() {
     setError(null)
     try {
       await updateWorkItem(id, change)
-      items.reload()
+      items.refresh()
       return true
     } catch (reason) {
       setError(adminErrorMessage(reason))
@@ -119,7 +121,7 @@ export function WorkQueuePage() {
     }
   }
 
-  const shown = (items.data ?? []).filter((item) => status !== 'ACTIVE' || item.status !== 'DONE')
+  const shown = items.items
   return (
     <AdminPage plain subtitle="Việc hệ thống tự phát hiện từ dữ liệu học viên." title="Việc cần làm">
       <section aria-label="Bộ lọc" className="adm-block">
@@ -143,12 +145,14 @@ export function WorkQueuePage() {
       <section aria-label="Danh sách việc" className="adm-block">
         <header className="adm-wq-head">
           <h2>Việc</h2>
-          {items.status === 'success' ? <span className="adm-badge">{shown.length}</span> : null}
+          {items.status === 'success' ? <span className="adm-badge">{items.total ?? shown.length}</span> : null}
         </header>
         {items.status === 'loading' ? <AdminLoading /> : null}
         {items.status === 'error' ? <AdminError message={items.error!} onRetry={items.reload} /> : null}
         {items.status === 'success' && shown.length === 0 ? <AdminEmpty title="Không có việc nào phù hợp" /> : null}
         {items.status === 'success' && shown.length > 0 ? (
+          <>
+          <InfiniteCount items={shown.length} total={items.total} noun="việc" />
           <div className="adm-table-wrap">
             <table aria-label="Danh sách việc cần làm" className="adm-table">
               <thead>
@@ -174,9 +178,11 @@ export function WorkQueuePage() {
                     onUpdate={(change) => void update(item.id, change)}
                   />
                 ))}
+                <InfiniteSentinel as="tr" colSpan={7} hasMore={items.hasMore} itemCount={shown.length} loadingMore={items.loadingMore} moreError={items.moreError} noun="việc" onReachEnd={items.loadMore} onRetry={items.retryMore} resetKey={filterKey} />
               </tbody>
             </table>
           </div>
+          </>
         ) : null}
       </section>
 

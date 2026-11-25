@@ -1,4 +1,4 @@
-﻿import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { menuFor, rolesFor } from './adminMenu'
 
 describe('adminMenu', () => {
@@ -10,7 +10,8 @@ describe('adminMenu', () => {
 
   it('shows content authors their content screens', () => {
     expect(menuFor(['CONTENT_AUTHOR']).map((item) => item.path)).toEqual([
-      '/content-author', '/content-author/courses', '/content-author/knowledge-graph', '/content-author/questions', '/content-author/packages', '/content-author/course-import',
+      '/content-author', '/content-author/courses', '/content-author/knowledge-graph', '/content-author/questions', '/content-author/packages',
+      '/content-author/practice-tests', '/content-author/placement-tests', '/content-author/course-import',
       '/content-author/rubrics', '/content-author/error-types', '/content-author/ai-drafts',
       '/content-author/settings',
     ])

@@ -12,7 +12,7 @@ type View = { kind: 'list' } | { kind: 'create' }
  * as a popup above the panel, so the list stays where it was. The back arrow steps from the new-lesson form to the list;
  * the list closes the panel.
  */
-export function TopicLessonsDrawer({ topic, onClose }: { topic: TopicOption; onClose: () => void }) {
+export function TopicLessonsDrawer({ topic, onClose, openLessonId }: { topic: TopicOption; onClose: () => void; openLessonId?: string }) {
   const [view, setView] = useState<View>({ kind: 'list' })
   const [lesson, setLesson] = useState<{ id: string; title: string } | null>(null)
   // The list loads again each time it comes back into view, so a change made in the editor or the form shows in it.
@@ -32,7 +32,7 @@ export function TopicLessonsDrawer({ topic, onClose }: { topic: TopicOption; onC
       >
         {creating
           ? <NewLessonForm onCancel={backToList} onCreated={backToList} topicId={topic.id} />
-          : <TopicLessonsPanel key={listVersion} onCreate={() => setView({ kind: 'create' })} onOpen={setLesson} topicId={topic.id} />}
+          : <TopicLessonsPanel key={listVersion} onCreate={() => setView({ kind: 'create' })} onOpen={setLesson} openLessonId={openLessonId} topicId={topic.id} />}
       </AdminDrawer>
       {lesson ? (
         <LessonEditorDrawer

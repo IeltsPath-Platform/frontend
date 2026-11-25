@@ -2,19 +2,25 @@ import { HttpError } from '@/lib/httpClient'
 import { adminErrorCode, adminErrorMessage } from '../../lib/adminErrors'
 import type { AiDraftStatus } from '../types'
 
-export const DRAFT_STATUS_LABEL: Record<AiDraftStatus, string> = {
-  QUEUED: 'Đang chờ', GENERATING: 'Đang sinh', READY: 'Chờ duyệt', FAILED: 'Lỗi', APPROVED: 'Đã duyệt', REJECTED: 'Đã từ chối',
+export const DRAFT_STATUS_LABEL: Record<string, string> = {
+  QUEUED: 'Đang chờ', GENERATING: 'Đang sinh', READY: 'Chờ duyệt', FAILED: 'Lỗi', APPROVED: 'Đã duyệt', REJECTED: 'Đã từ chối', EXPIRED: 'Đã hết hạn',
 }
 export const REJECTED_REASON_LABEL: Record<string, string> = {
   NOT_AN_OBJECT: 'Dữ liệu câu hỏi không đúng định dạng', BAD_STEM: 'Nội dung câu hỏi thiếu hoặc vượt giới hạn',
   NO_EXPLANATION: 'Thiếu giải thích', BAD_OPTIONS: 'Các lựa chọn không hợp lệ', CORRECT_NOT_AN_OPTION: 'Đáp án đúng không thuộc các lựa chọn',
   DISTRACTOR_NOT_A_WRONG_OPTION: 'Phương án nhiễu không hợp lệ', UNKNOWN_ERROR_CODE: 'Mã lỗi của phương án nhiễu không còn hoạt động',
   NO_ACCEPTED_ANSWER: 'Chưa có đáp án được chấp nhận', DUPLICATE_STEM: 'Nội dung câu hỏi trùng với câu đã có trong kiến thức hoặc bản nháp',
+  BAD_TFNG_OPTIONS: 'Câu Đúng/Sai/Không có thông tin thiếu lựa chọn hợp lệ', DUPLICATE_OPTIONS: 'Các lựa chọn bị trùng nhau',
+  ANSWER_TOO_LONG: 'Đáp án vượt quá số từ cho phép', ANSWER_NOT_IN_SOURCE: 'Đáp án không xuất hiện trong nguồn',
+  ANSWER_IN_STEM: 'Đáp án đã xuất hiện trong câu hỏi', BAD_BLANK: 'Câu điền từ cần đúng một chỗ trống',
+  COPIED_FROM_SOURCE: 'Câu hỏi chép quá dài từ nguồn', DUPLICATE_IN_SECTION: 'Câu hỏi trùng với câu trong phần',
+  DUPLICATE_IN_DRAFT: 'Câu hỏi trùng với câu khác trong lượt này', DUPLICATE_ANSWER: 'Đáp án bị lặp',
 }
 const FAILURE_LABEL: Record<string, string> = {
   NOT_CONFIGURED: 'Chưa cấu hình mô hình AI', INVALID_REPLY: 'AI trả kết quả không hợp lệ', FAILED: 'Gọi AI thất bại',
   TIMEOUT: 'AI trả lời quá lâu, chưa kịp xong. Hãy thử lại hoặc chọn ít điểm kiến thức hơn.',
   UNSUPPORTED_KIND: 'Loại bản nháp chưa được hỗ trợ', INTERNAL: 'Không xử lý được yêu cầu. Hãy gửi yêu cầu mới.',
+  NO_USABLE_ITEMS: 'AI chưa tạo được câu hỏi dùng được. Hãy thử yêu cầu khác.',
 }
 const HTTP_FAILURE = /^HTTP_(\d{3})$/
 export function aiDraftFailure(code: string | null) {
@@ -43,6 +49,7 @@ export function draftBadgeClass(status: AiDraftStatus) {
   if (status === 'FAILED') return 'adm-badge adm-badge--danger'
   if (status === 'APPROVED') return 'adm-badge adm-badge--ok'
   if (status === 'REJECTED') return 'adm-badge adm-badge--muted'
+  if (status === 'EXPIRED') return 'adm-badge adm-badge--muted'
   return 'adm-badge adm-badge--warn'
 }
 export function draftIsRunning(status: AiDraftStatus) { return status === 'QUEUED' || status === 'GENERATING' }

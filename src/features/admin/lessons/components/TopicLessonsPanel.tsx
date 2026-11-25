@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Archive, ArrowDown, ArrowUp, Pencil, Plus, Send } from 'lucide-react'
 import { AdminRowMenu } from '../../components/AdminRowMenu'
 import { AdminEmpty, AdminError, AdminLoading } from '../../components/AdminState'
@@ -13,16 +13,23 @@ import '../lessons.css'
 import { useAdminError } from '../../lib/useAdminError'
 
 /** The lessons of one topic, in teaching order, with their status. Opening one hands its id to the drawer. */
-export function TopicLessonsPanel({ topicId, onOpen, onCreate }: {
+export function TopicLessonsPanel({ topicId, onOpen, onCreate, openLessonId }: {
   topicId: string
   onOpen: (lesson: { id: string; title: string }) => void
   onCreate: () => void
+  openLessonId?: string
 }) {
   const lessons = useAdminResource(`lessons|${topicId}`, (signal) => fetchLessons(topicId, signal))
   const [busy, setBusy] = useState(false)
   const [, setActionError] = useAdminError()
   const { confirm, confirmDialog } = useAdminConfirm()
-  const rows = lessons.data ?? []
+  const rows = useMemo(() => lessons.data ?? [], [lessons.data])
+  const openedDeepLink = useRef(false)
+  useEffect(() => {
+    if (openedDeepLink.current || !openLessonId || lessons.status !== 'success') return
+    const target = rows.find((lesson) => lesson.id === openLessonId)
+    if (target) { openedDeepLink.current = true; onOpen({ id: target.id, title: target.title }) }
+  }, [lessons.status, onOpen, openLessonId, rows])
 
   /** Runs one write on the list, shows why it failed, and loads the list again either way. */
   async function change(action: () => Promise<unknown>) {
