@@ -59,12 +59,24 @@ const FORBIDDEN_MESSAGES: Record<string, string> = {
   'Vui lòng xác minh email trước khi nhập mã kích hoạt': 'Vui lòng xác minh email của tài khoản trước khi nhập mã kích hoạt.',
 }
 
+/** The stable codes the activation endpoint returns for a refused key; the server writes the sentence itself. */
+const KEY_CODE_MESSAGES: Record<string, string> = {
+  KEY_NOT_FOUND: 'Mã kích hoạt không hợp lệ. Vui lòng kiểm tra lại mã.',
+  KEY_ALREADY_REDEEMED: 'Mã này đã được sử dụng.',
+  KEY_EXPIRED: 'Mã kích hoạt đã hết hạn.',
+  KEY_REVOKED: 'Mã kích hoạt đã bị thu hồi.',
+}
+
+/** Sentences from servers that predate the codes above; kept so an older backend still reads well. */
 const KEY_ERROR_MESSAGES: Record<string, string> = {
   'Activation key has already been redeemed': 'Mã này đã được sử dụng.',
   'Activation key has expired': 'Mã kích hoạt đã hết hạn.',
   'Activation key has been revoked': 'Mã kích hoạt đã bị thu hồi.',
   'Mã kích hoạt không hợp lệ': 'Mã kích hoạt không hợp lệ. Vui lòng kiểm tra lại mã.',
 }
+
+/** A sentence written in Vietnamese reads as meant for the learner; an English one from an old path does not. */
+const VIETNAMESE_LETTER = /[ăâđêôơưáàảãạắằẳẵặấầẩẫậéèẻẽẹếềểễệíìỉĩịóòỏõọốồổỗộớờởỡợúùủũụứừửữựýỳỷỹỵ]/i
 
 async function getErrorMessage(response: Response, activating: boolean): Promise<string> {
   if (response.status === 401) return 'Phiên đăng nhập đã hết hạn hoặc chưa hợp lệ. Vui lòng đăng nhập lại.'
@@ -77,9 +89,11 @@ async function getErrorMessage(response: Response, activating: boolean): Promise
   if (response.status >= 500) return 'Dịch vụ tạm thời gián đoạn. Vui lòng thử lại sau.'
 
   const body: unknown = await response.json().catch(() => null)
-  const error = z.object({ message: z.string() }).safeParse(body)
-  if (activating && error.success && KEY_ERROR_MESSAGES[error.data.message]) {
-    return KEY_ERROR_MESSAGES[error.data.message]
+  const error = z.object({ message: z.string(), code: z.string().nullish() }).safeParse(body)
+  if (activating && error.success) {
+    const known = (error.data.code && KEY_CODE_MESSAGES[error.data.code]) || KEY_ERROR_MESSAGES[error.data.message]
+    if (known) return known
+    if (VIETNAMESE_LETTER.test(error.data.message)) return error.data.message
   }
   return activating
     ? 'Chưa thể kích hoạt mã. Vui lòng kiểm tra mã và thử lại.'

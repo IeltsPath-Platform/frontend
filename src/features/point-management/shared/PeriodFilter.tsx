@@ -1,12 +1,12 @@
 import { useId } from 'react'
-import type { RangeOption } from '../data/selectors'
+import type { Period } from '../data/selectors'
 
 /**
  * The time filter. It sits in one row above everything it scopes, never inside a chart card, so the chart, the
  * tables and the lists below always describe the same batches.
  */
 export function PeriodFilter({ options, value, onChange }: {
-  options: readonly RangeOption[]
+  options: readonly Period[]
   value: string
   onChange: (value: string) => void
 }) {

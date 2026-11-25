@@ -1,30 +1,35 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, Outlet, useLocation } from 'react-router-dom'
-import { ChevronDown, RotateCcw, Search, Users } from 'lucide-react'
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { ChevronDown, LogOut } from 'lucide-react'
 import brandLogo from '@/assets/brand-logo-white.webp'
 import { ErrorBoundary } from '@/app/ErrorBoundary'
 import { AdminSearchProvider } from '@/features/admin/AdminSearchProvider'
 import { AdminSidebar } from '@/features/admin/AdminSidebar'
 import { useAdminSearch } from '@/features/admin/adminSearch'
-import { resetPointState, usePointState } from '../data/store'
+import { logoutSession, useAuthSession } from '@/features/auth/authSession'
 import { MANAGER_BASE, MANAGER_MENU, SALE_BASE, SALE_MENU } from './point-menu'
 import '@/features/admin/admin.css'
 import '../point-management.css'
 
 export type PointArea = 'manager' | 'sale'
 
+const ROLE_LABEL: Record<PointArea, string> = {
+  manager: 'Quản lý bán hàng',
+  sale: 'Nhân viên sale',
+}
+
 function initialsOf(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean)
   return ((parts[0]?.[0] ?? '') + (parts.length > 1 ? (parts[parts.length - 1][0] ?? '') : '')).toUpperCase() || '?'
 }
 
-/** Same account button as the admin top bar; its menu switches between the two demo screens instead of signing out. */
+/** The signed-in account. Its menu has one action, signing out. */
 function AccountMenu({ area }: { area: PointArea }) {
-  const { manager, sales, currentSaleId } = usePointState()
+  const session = useAuthSession()
+  const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
-  const name = area === 'manager' ? manager.name : (sales.find((sale) => sale.id === currentSaleId)?.name ?? 'Sale')
-  const role = area === 'manager' ? manager.title : 'Sale'
+  const name = session.userName || 'Tài khoản'
 
   useEffect(() => {
     if (!open) return undefined
@@ -42,29 +47,26 @@ function AccountMenu({ area }: { area: PointArea }) {
     }
   }, [open])
 
-  const other = area === 'manager'
-    ? { to: `${SALE_BASE}/issue`, label: 'Xem màn Sale' }
-    : { to: `${MANAGER_BASE}/overview`, label: 'Xem màn Quản lý bán hàng' }
-
   return (
     <div className="adm-account" ref={rootRef}>
       <button aria-expanded={open} aria-haspopup="menu" className="adm-account__button" onClick={() => setOpen((current) => !current)} type="button">
         <span aria-hidden="true" className="adm-avatar">{initialsOf(name)}</span>
         <span className="adm-account__text">
           <strong>{name}</strong>
-          <small>{role}</small>
+          <small>{ROLE_LABEL[area]}</small>
         </span>
         <ChevronDown aria-hidden="true" size={16} />
       </button>
       {open ? (
         <div className="adm-menu" role="menu">
-          <Link className="adm-menu__item" onClick={() => setOpen(false)} role="menuitem" to={other.to}>
-            <Users aria-hidden="true" size={16} />
-            {other.label}
-          </Link>
-          <button className="adm-menu__item" onClick={() => { resetPointState(); setOpen(false) }} role="menuitem" type="button">
-            <RotateCcw aria-hidden="true" size={16} />
-            Đặt lại dữ liệu mẫu
+          <button
+            className="adm-menu__item"
+            onClick={() => { setOpen(false); void logoutSession().then(() => navigate('/login')) }}
+            role="menuitem"
+            type="button"
+          >
+            <LogOut aria-hidden="true" size={16} />
+            Đăng xuất
           </button>
         </div>
       ) : null}
@@ -82,7 +84,6 @@ function PointTopbar({ area }: { area: PointArea }) {
         <span className="adm-brand__label">{area === 'manager' ? 'SALES MANAGER' : 'SALE'}</span>
       </Link>
       <label className="adm-search">
-        <Search aria-hidden="true" size={16} />
         <span className="adm-sr-only">Tìm trong trang này</span>
         <input onChange={(event) => setQuery(event.target.value)} placeholder="Tìm trong trang này" type="search" value={query} />
       </label>
@@ -93,7 +94,7 @@ function PointTopbar({ area }: { area: PointArea }) {
   )
 }
 
-/** The demo's own frame: the admin top bar, search box and icon sidebar, with the key screens' menu. */
+/** The key screens' frame: the admin top bar, search box and icon sidebar, with the menu of this area. */
 export function PointLayout({ area }: { area: PointArea }) {
   const { pathname } = useLocation()
   return (
