@@ -946,6 +946,11 @@ export interface PlacementResult {
   partial: boolean
   /** In test order; empty from a backend that predates the report. */
   sections: PlacementReportSection[]
+  /** Feedback from the placement Speaking grader; absent when the recording was not graded. */
+  speakingFeedback?: {
+    summary: string | null
+    criteria: { code: string; band: number | null; comment: string | null }[]
+  } | null
 }
 
 export interface PlacementReportSection {

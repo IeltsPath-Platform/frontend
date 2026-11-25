@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { apiRequest } from '@/lib/httpClient'
+import { toWav16kMono } from '@/features/practice/speaking/wavEncoder'
 
 const MAX_RECORDING_BYTES = 5 * 1024 * 1024
 const MIME_TYPES = new Set(['audio/webm', 'audio/mp4', 'audio/ogg', 'audio/mpeg', 'audio/wav'])
@@ -20,16 +21,19 @@ function canonicalContentType(declared: string) {
 }
 
 export async function uploadSpeakingRecording(recording: Blob): Promise<SpeakingRecordingUpload> {
-  const contentType = canonicalContentType(recording.type)
-  if (!MIME_TYPES.has(contentType)
-    || (typeof MediaRecorder !== 'undefined' && !MediaRecorder.isTypeSupported(contentType))) {
+  const sourceType = canonicalContentType(recording.type)
+  if (!MIME_TYPES.has(sourceType)) throw new Error('Định dạng ghi âm này không hỗ trợ. Hãy thử lại trên trình duyệt khác.')
+  if (recording.size === 0) throw new Error('Bản ghi đang trống. Hãy ghi âm lại.')
+  const wav = await toWav16kMono(recording)
+  const contentType = canonicalContentType(wav.type)
+  if (contentType !== 'audio/wav') {
     throw new Error('Định dạng ghi âm này không hỗ trợ. Hãy thử lại trên trình duyệt khác.')
   }
-  if (recording.size === 0) throw new Error('Bản ghi đang trống. Hãy ghi âm lại.')
-  if (recording.size > MAX_RECORDING_BYTES) throw new Error('Bản ghi vượt quá giới hạn 5 MB. Hãy ghi âm lại ngắn hơn.')
+  if (wav.size === 0) throw new Error('Bản ghi đang trống. Hãy ghi âm lại.')
+  if (wav.size > MAX_RECORDING_BYTES) throw new Error('Bản ghi vượt quá giới hạn 5 MB. Hãy ghi âm lại ngắn hơn.')
 
   const form = new FormData()
-  form.append('file', recording, `speaking-recording.${EXTENSIONS[contentType]}`)
+  form.append('file', wav, `speaking-recording.${EXTENSIONS[contentType]}`)
   return uploadResponseSchema.parse(await apiRequest<unknown>('/api/assessments/speaking-recordings', {
     auth: true,
     method: 'POST',

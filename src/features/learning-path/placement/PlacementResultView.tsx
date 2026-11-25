@@ -191,7 +191,7 @@ export function PlacementResultView({ attemptId, onRetake }: { attemptId: string
                 }))
                 return <WritingReport band={band} key={skill} tasks={tasks} />
               }
-              return <SpeakingReport band={band} key={skill} />
+              return <SpeakingReport band={band} feedback={result.speakingFeedback ?? null} key={skill} />
             })}
           </div>
         )}

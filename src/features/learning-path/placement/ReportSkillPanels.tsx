@@ -134,26 +134,38 @@ function EssayBody({ essay }: { essay: PlacementReportEssay }) {
 }
 
 /** Speaking: general guidance until recordings are graded. */
-export function SpeakingReport({ band }: { band: number | null }) {
+export function SpeakingReport({ band, feedback }: { band: number | null; feedback?: { summary: string | null; criteria: { code: string; band: number | null; comment: string | null }[] } | null }) {
   return (
     <ReportPanel band={band} skill="SPEAKING" title="Speaking">
-      <p className="pl-report-notice"><Info aria-hidden="true" size={16} />
-        Hệ thống chưa chấm bản ghi Speaking. Band hiện là band tạm và nhận xét dưới đây là hướng dẫn chung theo từng tiêu chí, chưa dựa trên bài nói của bạn.
-      </p>
-      <div className="pl-report-table-wrap">
-        <table className="pl-report-table">
-          <thead><tr><th scope="col">Tiêu chí</th><th scope="col">Lưu ý</th><th scope="col">Nên luyện</th></tr></thead>
-          <tbody>
-            {SPEAKING_REVIEW.map((row) => (
-              <tr key={row.criterion}>
-                <th scope="row">{row.criterion}</th>
-                <td className="pl-report-comment">{row.comment}</td>
-                <td className="pl-report-comment">{row.study}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {feedback ? (
+        <>
+          {feedback.summary ? <><h4 className="pl-report-label">Nhận xét từ bài nói</h4><p className="pl-report-summary">{feedback.summary}</p></> : null}
+          <div className="pl-report-table-wrap">
+            <table className="pl-report-table">
+              <thead><tr><th scope="col">Tiêu chí</th><th scope="col">Band</th><th scope="col">Nhận xét</th></tr></thead>
+              <tbody>{feedback.criteria.map((criterion) => <tr key={criterion.code}>
+                <th scope="row">{criterion.code === 'FC' ? 'Fluency & Coherence' : criterion.code === 'LR' ? 'Lexical Resource' : criterion.code === 'GRA' ? 'Grammatical Range & Accuracy' : criterion.code === 'PR' ? 'Pronunciation' : criterion.code}</th>
+                <td>{criterion.band?.toFixed(1) ?? '–'}</td>
+                <td className="pl-report-comment">{criterion.comment ?? 'Chưa có nhận xét cho tiêu chí này.'}</td>
+              </tr>)}</tbody>
+            </table>
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="pl-report-notice"><Info aria-hidden="true" size={16} />
+            Hệ thống chưa chấm bản ghi Speaking. Band hiện là band tạm và nhận xét dưới đây là hướng dẫn chung theo từng tiêu chí, chưa dựa trên bài nói của bạn.
+          </p>
+          <div className="pl-report-table-wrap">
+            <table className="pl-report-table">
+              <thead><tr><th scope="col">Tiêu chí</th><th scope="col">Lưu ý</th><th scope="col">Nên luyện</th></tr></thead>
+              <tbody>{SPEAKING_REVIEW.map((row) => <tr key={row.criterion}>
+                <th scope="row">{row.criterion}</th><td className="pl-report-comment">{row.comment}</td><td className="pl-report-comment">{row.study}</td>
+              </tr>)}</tbody>
+            </table>
+          </div>
+        </>
+      )}
     </ReportPanel>
   )
 }
