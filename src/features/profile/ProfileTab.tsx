@@ -7,6 +7,7 @@ import { PersonalInfoSection } from './components/PersonalInfoSection'
 import { EmailVerificationBanner } from './components/EmailVerificationBanner'
 import { PrivacySection } from './components/PrivacySection'
 import { SecuritySection } from './components/SecuritySection'
+import { SessionsSection } from './components/SessionsSection'
 import { ProfileSkeleton } from './components/ProfileSkeleton'
 import { ErrorBoundary } from '@/app/ErrorBoundary'
 import { useToast } from '@/components/toast/toastContext'
@@ -28,6 +29,7 @@ const ProfileTabContent: React.FC = () => {
     updateVisibility,
     changePassword,
     unlinkOAuth,
+    setInitialPassword,
   } = useProfile()
 
   const { toast } = useToast()
@@ -126,12 +128,16 @@ const ProfileTabContent: React.FC = () => {
       <motion.div variants={itemVariants}>
         <SecuritySection
           oauthIdentities={oauthIdentities}
-          email={user?.email ?? ''}
           hasPassword={user?.hasPassword ?? true}
           onChangePassword={changePassword}
           onUnlinkOAuth={unlinkOAuth}
+          onSetInitialPassword={setInitialPassword}
           onShowToast={handleShowToast}
         />
+      </motion.div>
+
+      <motion.div variants={itemVariants}>
+        <SessionsSection onShowToast={handleShowToast} />
       </motion.div>
     </motion.div>
   )

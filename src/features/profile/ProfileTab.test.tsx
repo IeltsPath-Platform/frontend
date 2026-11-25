@@ -19,6 +19,11 @@ const { profileApiMock } = vi.hoisted(() => ({
     updateGoalStatus: vi.fn(),
     getOAuthIdentities: vi.fn(),
     unlinkOAuthIdentity: vi.fn(),
+    listSessions: vi.fn(),
+    revokeSession: vi.fn(),
+    revokeOtherSessions: vi.fn(),
+    reauth: vi.fn(),
+    setInitialPassword: vi.fn(),
     getStreak: vi.fn(),
   },
 }))
@@ -88,6 +93,7 @@ describe('ProfileTab', () => {
     profileApiMock.getActiveGoal.mockResolvedValue(mockActiveGoal)
     profileApiMock.getGoals.mockResolvedValue([mockActiveGoal])
     profileApiMock.getOAuthIdentities.mockResolvedValue([])
+    profileApiMock.listSessions.mockResolvedValue([])
     profileApiMock.getStreak.mockResolvedValue(mockStreak)
   })
 
@@ -165,7 +171,7 @@ describe('ProfileTab', () => {
 
     // Fill password form
     const currentPassInput = screen.getByPlaceholderText('Nhập mật khẩu hiện tại')
-    const newPassInput = screen.getByPlaceholderText('Từ 6 đến 72 ký tự')
+    const newPassInput = screen.getByPlaceholderText('Từ 8 đến 72 ký tự')
     const confirmPassInput = screen.getByPlaceholderText('Nhập lại mật khẩu mới')
 
     fireEvent.change(currentPassInput, { target: { value: 'wrongpass123' } })
