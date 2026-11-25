@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { ArrowRight, Clock3 } from 'lucide-react'
+import { ArrowRight, Clock3, Crown, Lock } from 'lucide-react'
 import type { PracticeCard } from '@/types/practice'
 
 interface PracticeTestCardProps {
@@ -52,6 +52,8 @@ export const PracticeTestCard: React.FC<PracticeTestCardProps> = ({
           )}
         </div>
         <div className="card-passage-pill">{card.passageBadge}</div>
+        {card.requiredFeatureKey && <span className="practice-premium-badge"><Crown size={14} aria-hidden="true" /> Premium</span>}
+        {card.requiredFeatureKey && !card.isPremium && <span className="practice-premium-lock" aria-label="Cần Premium"><Lock size={15} aria-hidden="true" /></span>}
       </div>
 
       <div className="card-body">

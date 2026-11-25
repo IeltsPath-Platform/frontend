@@ -32,6 +32,10 @@ import {
 } from '../lib/practiceSkillConfig'
 import type { PracticePart } from '../lib/practiceSkillConfig'
 import { StatusArt } from '@/components/StatusArt'
+import { useAuthSession } from '@/features/auth/authSession'
+import { PremiumUpgradeDialog } from '../components/PremiumUpgradeDialog'
+import { isEntitlementUnavailable, isPremiumRequired } from '../lib/premiumErrors'
+import { useToast } from '@/components/toast/toastContext'
 import '../reading/reading-practice.css'
 import '../practice-catalog-responsive.css'
 
@@ -83,6 +87,8 @@ export function PracticeCatalogPage({ onOpenTest }: PracticeCatalogPageProps) {
 }
 
 function PracticeCatalog({ skill, onOpenTest }: PracticeCatalogPageProps & { skill: SkillType }) {
+  const session = useAuthSession()
+  const { toast } = useToast()
   const navigate = useNavigate()
   const config = PRACTICE_SKILL_CONFIG[skill]
   const [searchParams] = useSearchParams()
@@ -113,6 +119,7 @@ function PracticeCatalog({ skill, onOpenTest }: PracticeCatalogPageProps & { ski
   const [starting, setStarting] = useState(false)
   const [startError, setStartError] = useState('')
   const [reload, setReload] = useState(0)
+  const [plansOpen, setPlansOpen] = useState(false)
 
   const { scope, partNo } = toScopeAndPart(part)
   const formatKey = selectedFormats.join(',')
@@ -205,7 +212,9 @@ function PracticeCatalog({ skill, onOpenTest }: PracticeCatalogPageProps & { ski
     formatLabels: card.formats.slice(0, 3).map(practiceFormatLabel),
     meta: `${card.questionCount} ${config.unit} · ${formatDuration(card.timeLimitSeconds)}`,
     questionsCount: card.questionCount,
-  })), [visibleCards, config, partNo, skill])
+    requiredFeatureKey: card.requiredFeatureKey,
+    isPremium: session.tier === 'PREMIUM',
+  })), [visibleCards, config, partNo, skill, session.tier])
 
   function selectPart(next: PracticePart) {
     setPart(next)
@@ -221,6 +230,10 @@ function PracticeCatalog({ skill, onOpenTest }: PracticeCatalogPageProps & { ski
     const found = visibleCards.find((item) => cardKey(item) === card.id)
     if (!found) return
     setStartError('')
+    if (tab !== 'completed' && found.requiredFeatureKey && session.tier !== 'PREMIUM') {
+      setPlansOpen(true)
+      return
+    }
     // A finished test asks what to do with it: see the result of its graded answer, or do it again.
     if (tab === 'completed') {
       setDoneError('')
@@ -298,6 +311,16 @@ function PracticeCatalog({ skill, onOpenTest }: PracticeCatalogPageProps & { ski
     void startReadingAttempt(card, mode, card.scope === 'PART' ? partNo : undefined).then((attempt) => {
       navigate(`/practice/${skill}/attempts/${attempt.id}?mode=${attempt.mode === 'TIMED' ? 'exam' : 'practice'}`)
     }).catch((reason: unknown) => {
+      if (isPremiumRequired(reason)) {
+        setPlansOpen(true)
+        setStarting(false)
+        return
+      }
+      if (isEntitlementUnavailable(reason)) {
+        toast({ title: reason.message, tone: 'error' })
+        setStarting(false)
+        return
+      }
       setStartError(errorMessage(reason))
       setStarting(false)
     })
@@ -444,6 +467,7 @@ function PracticeCatalog({ skill, onOpenTest }: PracticeCatalogPageProps & { ski
           onConfirmMode={(mode) => startTest(modeCard, mode)}
         />
       )}
+      <PremiumUpgradeDialog open={plansOpen} onClose={() => setPlansOpen(false)} />
     </div>
   )
 }

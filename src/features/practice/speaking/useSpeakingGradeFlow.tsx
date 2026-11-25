@@ -5,6 +5,9 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/compone
 import { KeyActivationDialog } from '@/features/home/components/KeyActivationDialog'
 import { POINT_PRODUCTS } from '@/features/home/pricingData'
 import { HttpError } from '@/lib/httpClient'
+import { isEntitlementUnavailable, isPremiumRequired } from '../lib/premiumErrors'
+import { useToast } from '@/components/toast/toastContext'
+import { PremiumUpgradeDialog } from '../components/PremiumUpgradeDialog'
 import { GradeMethodDialog } from '../writing/GradeMethodDialog'
 import { GradeConfirmDialog, NotEnoughPointsDialog } from '../writing/WritingParts'
 import type { GradeDialogCopy } from '../writing/WritingParts'
@@ -89,6 +92,8 @@ export function useSpeakingGradeFlow({ context, packageVersionId, partSectionIds
   const [popup, setPopup] = useState<Popup>(null)
   /** Set when the learner asks for the result: the page then shows it in place instead of leaving for another page. */
   const [viewingId, setViewingId] = useState<string | null>(null)
+  const [premiumRequired, setPremiumRequired] = useState(false)
+  const { toast } = useToast()
   const [checking, setChecking] = useState(false)
   const [activationOpen, setActivationOpen] = useState(false)
   const [access, setAccess] = useState<GradingAccess>({ balance: null, subscription: undefined })
@@ -149,6 +154,14 @@ export function useSpeakingGradeFlow({ context, packageVersionId, partSectionIds
         // The balance changed since it was read: show the figure the server judged by.
         void wallet.check().then((balance) => setAccess((current) => ({ ...current, balance })))
         setPopup('short')
+        return
+      }
+      if (isPremiumRequired(cause)) {
+        setPremiumRequired(true)
+        return
+      }
+      if (isEntitlementUnavailable(cause)) {
+        toast({ title: cause.message, tone: 'error' })
         return
       }
       setError(failureMessage(cause))
@@ -225,6 +238,7 @@ export function useSpeakingGradeFlow({ context, packageVersionId, partSectionIds
         }}
         returnFocus={() => undefined}
       />
+      <PremiumUpgradeDialog open={premiumRequired} onClose={() => setPremiumRequired(false)} />
     </>
   )
 

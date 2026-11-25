@@ -14,6 +14,9 @@ import type { RecordingToSend } from './sendSpeakingSubmission'
 import { clearSession, useSessionRecordings } from './speakingSession'
 import { useLeaveWarning } from './useLeaveWarning'
 import { useSpeakingGradeFlow } from './useSpeakingGradeFlow'
+import { isEntitlementUnavailable, isPremiumRequired } from '../lib/premiumErrors'
+import { PremiumUpgradeDialog } from '../components/PremiumUpgradeDialog'
+import { useToast } from '@/components/toast/toastContext'
 import '../skill-workspaces.css'
 import './speaking-workspace.css'
 import './speaking-review.css'
@@ -65,6 +68,12 @@ export function SpeakingReviewPage() {
   const navigate = useNavigate()
   const parts = (params.get('parts') ?? '').split(',').filter((id) => ID.test(id))
   const resource = useApiResource(`speaking-review:${packageVersionId}:${parts.join(',')}`, () => Promise.all(parts.map((id) => getSpeakingTask(packageVersionId, id))))
+  const [dismissedError, setDismissedError] = useState<unknown>(null)
+  const { toast } = useToast()
+  useEffect(() => {
+    if (resource.status !== 'error') return
+    if (!isPremiumRequired(resource.error) && isEntitlementUnavailable(resource.error)) toast({ title: resource.error.message, tone: 'error' })
+  }, [resource.status, resource.error, toast])
   const recordings = useSessionRecordings(packageVersionId)
   const player = useRecordingPlayer()
   useLeaveWarning(recordings.size > 0)
@@ -95,7 +104,8 @@ export function SpeakingReviewPage() {
   if (grading.viewingId) return <SpeakingResultScreen submissionId={grading.viewingId} />
   if (!packageVersionId || parts.length === 0) return <Navigate replace to={CATALOG_PATH} />
   if (resource.status === 'loading') return <PageSkeleton label="Đang tải bài của bạn…" variant="article" />
-  if (resource.status === 'error' && resource.error) return <ApiErrorState error={resource.error} onRetry={resource.reload} />
+  if (resource.status === 'error' && resource.error) return <><ApiErrorState error={resource.error} onRetry={resource.reload} />
+    <PremiumUpgradeDialog open={isPremiumRequired(resource.error) && dismissedError !== resource.error} onClose={() => setDismissedError(resource.error)} /></>
   if (!tasks) return null
 
   const lastTask = tasks[tasks.length - 1]

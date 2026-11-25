@@ -15,6 +15,7 @@ import { useExaminerSubmission } from './useExaminerSubmission'
 import { useWritingGrading } from './useWritingGrading'
 import { useWritingWallet } from './useWritingWallet'
 import type { GradingAccess } from './useWritingWallet'
+import { PremiumUpgradeDialog } from '../components/PremiumUpgradeDialog'
 
 type Popup = 'method' | 'confirm' | 'short' | 'examiner' | null
 
@@ -134,6 +135,7 @@ export function useGradeFlow({ task, mode, draftKey, essay, seconds, label, bene
         }}
         returnFocus={() => undefined}
       />
+      <PremiumUpgradeDialog open={grading.premiumRequired} onClose={grading.closePremiumRequired} />
     </>
   )
 

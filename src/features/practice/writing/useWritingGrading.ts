@@ -4,6 +4,8 @@ import { HttpError } from '@/lib/httpClient'
 import { getGradingTerms, submitFreeWriting } from './writingApi'
 import type { GradingTerms, WritingMode, WritingTask } from './writingApi'
 import { clearDraft, storeResultContext } from './writingText'
+import { isEntitlementUnavailable, isPremiumRequired } from '../lib/premiumErrors'
+import { useToast } from '@/components/toast/toastContext'
 
 const ERRORS: Record<string, string> = {
   ESSAY_EMPTY: 'Bài viết đang trống.',
@@ -30,10 +32,12 @@ export function useWritingGrading({ task, mode, draftKey, essay, seconds, retryP
   onPointsShort: () => void
 }) {
   const navigate = useNavigate()
+  const { toast } = useToast()
   const [terms, setTerms] = useState<GradingTerms | null>(null)
   const [termsLoading, setTermsLoading] = useState(true)
   const [grading, setGrading] = useState(false)
   const [error, setError] = useState('')
+  const [premiumRequired, setPremiumRequired] = useState(false)
   // One id per essay text: a resend of the same essay continues the same grading instead of paying twice.
   const request = useRef<{ essay: string; id: string } | null>(null)
 
@@ -68,10 +72,13 @@ export function useWritingGrading({ task, mode, draftKey, essay, seconds, retryP
       void navigate(`/practice/writing/submissions/${result.submissionId}/result`, { replace: true })
     } catch (cause) {
       if (cause instanceof HttpError && (cause.status === 402 || cause.code === 'INSUFFICIENT_POINTS')) onPointsShort()
+      else if (isPremiumRequired(cause)) setPremiumRequired(true)
+      else if (isEntitlementUnavailable(cause)) toast({ title: cause.message, tone: 'error' })
       else setError(cause instanceof HttpError ? ERRORS[cause.code ?? ''] ?? cause.message : 'Chưa chấm được bài. Hãy thử lại.')
       setGrading(false)
     }
   }
 
-  return { terms, termsLoading, reloadTerms, grading, error, clearError: () => setError(''), grade }
+  return { terms, termsLoading, reloadTerms, grading, error, premiumRequired,
+    closePremiumRequired: () => setPremiumRequired(false), clearError: () => setError(''), grade }
 }

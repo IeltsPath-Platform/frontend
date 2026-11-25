@@ -1,4 +1,4 @@
-import { Fragment } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ApiErrorState, PageSkeleton } from '@/features/learning-path/components/PageState'
 import { useApiResource } from '@/features/learning-path/lib/useApiResource'
@@ -7,6 +7,9 @@ import { getSpeakingTask } from './speakingApi'
 import { clearSession } from './speakingSession'
 import { StudyActivityTracker } from '@/features/study-time/StudyActivityTracker'
 import { usePracticeSession } from '@/features/study-time/usePracticeSession'
+import { isEntitlementUnavailable, isPremiumRequired } from '../lib/premiumErrors'
+import { PremiumUpgradeDialog } from '../components/PremiumUpgradeDialog'
+import { useToast } from '@/components/toast/toastContext'
 import '@/features/learning-path/learning-path.css'
 import '../reading/reading-practice.css'
 
@@ -19,11 +22,18 @@ export function SpeakingWorkspacePage() {
   const [params] = useSearchParams()
   const navigate = useNavigate()
   const resource = useApiResource(`speaking-task:${packageVersionId}:${sectionId}`, () => getSpeakingTask(packageVersionId, sectionId))
+  const [dismissedError, setDismissedError] = useState<unknown>(null)
+  const { toast } = useToast()
+  useEffect(() => {
+    if (resource.status !== 'error') return
+    if (!isPremiumRequired(resource.error) && isEntitlementUnavailable(resource.error)) toast({ title: resource.error.message, tone: 'error' })
+  }, [resource.status, resource.error, toast])
   const practiceSessionId = usePracticeSession('SPEAKING', resource.status === 'success' && !!resource.data)
 
   if (!packageVersionId || !sectionId) return <Navigate replace to={CATALOG_PATH} />
   if (resource.status === 'loading') return <PageSkeleton label="Đang tải đề Speaking…" variant="article" />
-  if (resource.status === 'error' && resource.error) return <ApiErrorState error={resource.error} onRetry={resource.reload} />
+  if (resource.status === 'error' && resource.error) return <><ApiErrorState error={resource.error} onRetry={resource.reload} />
+    <PremiumUpgradeDialog open={isPremiumRequired(resource.error) && dismissedError !== resource.error} onClose={() => setDismissedError(resource.error)} /></>
   const task = resource.data
   if (!task) return null
 
