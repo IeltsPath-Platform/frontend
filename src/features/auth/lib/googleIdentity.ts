@@ -3,7 +3,12 @@ export interface GoogleCredentialResponse {
 }
 
 interface GoogleIdentityApi {
-  initialize: (options: { client_id: string; callback: (response: GoogleCredentialResponse) => void }) => void
+  initialize: (options: {
+    client_id: string
+    /** Echoed back in the credential's `nonce` claim; the server accepts it once. */
+    nonce?: string
+    callback: (response: GoogleCredentialResponse) => void
+  }) => void
   renderButton: (element: HTMLElement, options: { theme: 'outline'; size: 'large'; text: 'continue_with'; width: number }) => void
   cancel: () => void
 }

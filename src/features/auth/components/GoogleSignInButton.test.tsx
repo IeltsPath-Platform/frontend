@@ -4,8 +4,10 @@ import type { GoogleCredentialResponse } from '../lib/googleIdentity'
 
 const clientId = vi.hoisted(() => ({ value: '' }))
 const loader = vi.hoisted(() => ({ promise: Promise.resolve() as Promise<void>, resolve: (() => undefined) as () => void }))
+const nonces = vi.hoisted(() => ({ googleNonce: vi.fn() }))
 vi.mock('@/lib/env', () => ({ get GOOGLE_CLIENT_ID() { return clientId.value } }))
 vi.mock('../lib/googleIdentity', () => ({ loadGoogleIdentityScript: () => loader.promise }))
+vi.mock('../api/authApi', () => ({ authApi: { googleNonce: nonces.googleNonce } }))
 
 import { GoogleSignInButton } from './GoogleSignInButton'
 
@@ -27,6 +29,32 @@ describe('GoogleSignInButton', () => {
     window.google = undefined
     loader.promise = Promise.resolve()
     loader.resolve = () => undefined
+    nonces.googleNonce.mockReset()
+    nonces.googleNonce.mockResolvedValue({ nonce: 'nonce-1', expiresInSeconds: 300 })
+  })
+
+  it('passes the server nonce to GIS and asks for a fresh one after each credential', async () => {
+    nonces.googleNonce.mockResolvedValueOnce({ nonce: 'nonce-1', expiresInSeconds: 300 })
+      .mockResolvedValueOnce({ nonce: 'nonce-2', expiresInSeconds: 300 })
+    const onCredential = vi.fn()
+    render(<GoogleSignInButton onCredential={onCredential} onError={vi.fn()} />)
+    window.google = { accounts: { id: { initialize, renderButton, cancel } } } as unknown as NonNullable<Window['google']>
+
+    await waitFor(() => expect(initialize).toHaveBeenLastCalledWith(expect.objectContaining({ nonce: 'nonce-1' })))
+    act(() => callback?.({ credential: 'first-token' }))
+
+    await waitFor(() => expect(initialize).toHaveBeenLastCalledWith(expect.objectContaining({ nonce: 'nonce-2' })))
+    expect(onCredential).toHaveBeenCalledWith('first-token')
+    expect(nonces.googleNonce).toHaveBeenCalledTimes(2)
+  })
+
+  it('still initializes GIS without a nonce when the server cannot issue one', async () => {
+    nonces.googleNonce.mockRejectedValue(new Error('unavailable'))
+    render(<GoogleSignInButton onCredential={vi.fn()} onError={vi.fn()} />)
+    window.google = { accounts: { id: { initialize, renderButton, cancel } } } as unknown as NonNullable<Window['google']>
+
+    await waitFor(() => expect(renderButton).toHaveBeenCalled())
+    expect(initialize.mock.calls[0][0].nonce).toBeUndefined()
   })
 
   it('does not render or load GIS when no client ID is configured', () => {

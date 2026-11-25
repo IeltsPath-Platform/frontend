@@ -8,6 +8,10 @@ export const authApi = {
   googleLogin: (idToken: string) =>
     apiRequest<AuthTokenResponse>('/auth/google', { method: 'POST', body: { idToken } }),
 
+  /** Single-use nonce the Google credential must carry; it expires after `expiresInSeconds`. */
+  googleNonce: () =>
+    apiRequest<{ nonce: string; expiresInSeconds: number }>('/auth/google/nonce', { method: 'POST', body: {} }),
+
   register: (body: { email: string; password: string; fullName: string; phoneNumber?: string }) =>
     apiRequest<UserResponse>('/api/users/register', { method: 'POST', body }),
 
