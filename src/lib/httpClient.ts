@@ -172,8 +172,10 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   return parse<T>(await requestResponse(path, options))
 }
 
-export async function apiDownload(path: string, options: { signal?: AbortSignal } = {}): Promise<Blob> {
-  const response = await requestResponse(path, { auth: true, signal: options.signal }, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+const SPREADSHEET_ACCEPT = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+
+export async function apiDownload(path: string, options: { signal?: AbortSignal; accept?: string } = {}): Promise<Blob> {
+  const response = await requestResponse(path, { auth: true, signal: options.signal }, options.accept ?? SPREADSHEET_ACCEPT)
   if (!response.ok) await parse<unknown>(response)
   return response.blob()
 }

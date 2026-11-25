@@ -1,5 +1,5 @@
-/** A key's state as the schema will hold it. Where it sits (kho chung / sale) comes from `saleId`. */
-export type KeyStatus = 'READY' | 'ISSUED' | 'ACTIVATED' | 'REVOKED' | 'EXPIRED'
+/** A key's state as the backend reports it. Where a READY key sits (shared pool or a sale) comes from `saleId`. */
+export type KeyState = 'READY' | 'ISSUED' | 'ACTIVATED' | 'REVOKED' | 'EXPIRED'
 
 /** AI Points keys top up a wallet; Premium keys add subscription days and human-grading credits. */
 export type ProductKind = 'POINTS' | 'PREMIUM'
@@ -25,45 +25,92 @@ export interface ChartRow {
   values: number[]
 }
 
-export interface Sale {
+/** `GET /api/access/key-products`, one catalogue entry as the access service returns it. */
+export interface KeyProductDto {
   id: string
   name: string
-  active: boolean
+  keyType: ProductKind
+  pointsAmount: number | null
+  premiumDays: number | null
+  humanGradingCredits: number | null
+  status: 'ACTIVE' | 'INACTIVE'
 }
 
-export interface Batch {
+export type StateCounts = Record<KeyState, number>
+
+export interface BatchDto {
   code: string
   label: string
   productId: string
+  productName: string
   quantity: number
-  /** Calendar day (YYYY-MM-DD) the keys stop being activatable, or null for no limit. */
-  expiresAt: string | null
+  /** Last day the keys can be activated (YYYY-MM-DD), or null for no limit. */
+  expiresOn: string | null
   createdAt: string
-  createdBy: string
+  byState: StateCounts
+  /** READY keys no sale holds yet: the manager's own stock of this batch. */
+  pool: number
 }
 
-export interface KeyRecord {
+export interface KeyDto {
   id: string
-  /** Full code; screens mask it except where the flow reveals it. */
-  code: string
-  batch: string
+  batchCode: string
   seq: number
   productId: string
-  /** null = still in the manager's shared pool (READY) or given out directly. */
+  productName: string
+  /** IP-****-****-ABCD: the full code is only given by the reveal endpoints. */
+  maskedCode: string
+  state: KeyState
   saleId: string | null
-  status: KeyStatus
-  expiresAt: string | null
   issuedAt: string | null
   activatedAt: string | null
+  revokedAt: string | null
+  expiresAt: string | null
   note: string | null
+  codeStored: boolean
 }
 
-export interface PointState {
-  manager: { name: string; title: string }
-  currentSaleId: string
-  defaultExpiresAt: string
-  products: Product[]
-  sales: Sale[]
-  batches: Batch[]
-  keys: KeyRecord[]
+export interface CountsDto {
+  key: string
+  label: string
+  byState: StateCounts
+}
+
+export interface OverviewDto {
+  byBatch: CountsDto[]
+  byProduct: CountsDto[]
+}
+
+export interface SaleDto {
+  id: string
+  displayName: string
+  active: boolean
+  held: number
+  issued: number
+  activated: number
+}
+
+export interface StockDto {
+  byProduct: CountsDto[]
+  byBatch: CountsDto[]
+}
+
+export interface PageDto<T> {
+  items: T[]
+  total: number
+  page: number
+  size: number
+}
+
+/** `changed` keys moved or removed; `skipped` asked-for keys left alone (not in a state that allows the action). */
+export interface ActionDto {
+  changed: number
+  skipped: number
+}
+
+export interface IssuedKeyDto {
+  keyId: string
+  code: string
+  batchCode: string
+  key: KeyDto
 }
