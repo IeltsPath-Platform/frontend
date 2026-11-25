@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Plus } from 'lucide-react'
 import { z } from 'zod'
 import { useAuthSession } from '@/features/auth/authSession'
+import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from '@/features/auth/lib/passwordRules'
 import { emailText, phoneText, requiredText } from '@/lib/validation/fields'
 import { useFormErrors } from '@/lib/validation/useFormErrors'
 import { useAdminSearch } from '../../adminSearch'
@@ -31,8 +32,8 @@ const createUserSchema = z.object({
   phoneNumber: phoneText(),
   password: z.string({ error: 'Mật khẩu không được để trống.' })
     .min(1, 'Mật khẩu không được để trống.')
-    .min(6, 'Mật khẩu có từ 6 đến 72 ký tự.')
-    .max(72, 'Mật khẩu có từ 6 đến 72 ký tự.'),
+    .min(PASSWORD_MIN_LENGTH, `Mật khẩu có từ ${PASSWORD_MIN_LENGTH} đến ${PASSWORD_MAX_LENGTH} ký tự.`)
+    .max(PASSWORD_MAX_LENGTH, `Mật khẩu có từ ${PASSWORD_MIN_LENGTH} đến ${PASSWORD_MAX_LENGTH} ký tự.`),
 })
 const profileSchema = z.object({ fullName: requiredText('Họ tên', 150), phoneNumber: phoneText() })
 

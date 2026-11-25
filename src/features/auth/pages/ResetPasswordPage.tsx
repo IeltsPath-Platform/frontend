@@ -12,6 +12,7 @@ import { authApi } from '../api/authApi'
 import { InputField } from '../components/InputField'
 import {
   isPasswordLengthValid,
+  isWeakPasswordError,
   mapAuthPasswordHttpError,
   PASSWORD_LENGTH_HINT,
   PASSWORD_LENGTH_MESSAGE,
@@ -19,6 +20,7 @@ import {
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
   PASSWORD_MISMATCH_MESSAGE,
+  weakPasswordMessage,
 } from '../lib/passwordRules'
 import '../auth.css'
 
@@ -57,6 +59,7 @@ export function ResetPasswordPage({ open = true, onOpenChange }: ResetPasswordPa
   const errors = form.errors
   const [shake, setShake] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [passwordServerError, setPasswordServerError] = useState<string | null>(null)
   const redirectTimer = useRef<number | null>(null)
 
   useEffect(() => () => {
@@ -95,11 +98,17 @@ export function ResetPasswordPage({ open = true, onOpenChange }: ResetPasswordPa
     const newPassword = String(formData.get('newPassword') ?? '')
 
     setSubmitting(true)
+    setPasswordServerError(null)
     try {
       const result = await authApi.resetPassword({ token, newPassword })
       toast({ title: result.message || 'Đặt lại mật khẩu thành công. Đang chuyển tới đăng nhập…', tone: 'success' })
       redirectTimer.current = window.setTimeout(() => navigate('/login', { replace: true }), 900)
     } catch (error) {
+      // A weak new password is shown under its field, not as a toast.
+      if (isWeakPasswordError(error)) {
+        setPasswordServerError(weakPasswordMessage(error))
+        return
+      }
       toast({
         title: mapAuthPasswordHttpError(error, 'Không đặt lại được mật khẩu. Kiểm tra mã và thử lại.'),
         tone: 'error',
@@ -210,7 +219,7 @@ export function ResetPasswordPage({ open = true, onOpenChange }: ResetPasswordPa
                           maxLength={PASSWORD_MAX_LENGTH}
                           placeholder={PASSWORD_LENGTH_PLACEHOLDER}
                           hint={PASSWORD_LENGTH_HINT}
-                          error={errors.newPassword}
+                          error={errors.newPassword ?? passwordServerError ?? undefined}
                           disabled={submitting}
                         />
                         <InputField

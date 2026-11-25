@@ -1,6 +1,10 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { GOOGLE_CLIENT_ID } from '@/lib/env'
+import { authApi } from '../api/authApi'
 import { loadGoogleIdentityScript } from '../lib/googleIdentity'
+
+/** A nonce is refreshed this long before the server says it expires. */
+const NONCE_REFRESH_MARGIN_MS = 30_000
 
 interface GoogleSignInButtonProps {
   onCredential: (idToken: string) => void
@@ -8,10 +12,29 @@ interface GoogleSignInButtonProps {
   disabled?: boolean
 }
 
+interface IssuedNonce {
+  nonce: string
+  expiresInSeconds: number
+}
+
+/**
+ * Asks the server for a nonce. While the server does not issue them (or is down) the button still works without one:
+ * the server decides whether a credential without a nonce is accepted.
+ */
+async function requestNonce(): Promise<IssuedNonce | null> {
+  try {
+    return await authApi.googleNonce()
+  } catch {
+    return null
+  }
+}
+
 export function GoogleSignInButton({ onCredential, onError, disabled = false }: GoogleSignInButtonProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const credentialRef = useRef(onCredential)
   const errorRef = useRef(onError)
+  // Bumped after each credential (a nonce is single-use) and before a nonce expires; each bump re-initializes GIS.
+  const [nonceRound, setNonceRound] = useState(0)
 
   useEffect(() => {
     credentialRef.current = onCredential
@@ -21,16 +44,27 @@ export function GoogleSignInButton({ onCredential, onError, disabled = false }: 
   useEffect(() => {
     if (!GOOGLE_CLIENT_ID || !containerRef.current) return
     let cancelled = false
+    let refreshTimer: number | undefined
     const container = containerRef.current
 
-    void loadGoogleIdentityScript().then(() => {
+    void Promise.all([loadGoogleIdentityScript(), requestNonce()]).then(([, issued]) => {
       if (cancelled || !container || !window.google) return
+      if (issued) {
+        refreshTimer = window.setTimeout(
+          () => setNonceRound((round) => round + 1),
+          Math.max(0, issued.expiresInSeconds * 1000 - NONCE_REFRESH_MARGIN_MS),
+        )
+      }
       window.google.accounts.id.initialize({
         client_id: GOOGLE_CLIENT_ID,
+        nonce: issued?.nonce,
         callback: (response) => {
-          if (response.credential) credentialRef.current(response.credential)
+          if (!response.credential) return
+          credentialRef.current(response.credential)
+          setNonceRound((round) => round + 1)
         },
       })
+      container.replaceChildren()
       window.google.accounts.id.renderButton(container, {
         theme: 'outline',
         size: 'large',
@@ -43,9 +77,10 @@ export function GoogleSignInButton({ onCredential, onError, disabled = false }: 
 
     return () => {
       cancelled = true
+      window.clearTimeout(refreshTimer)
       window.google?.accounts.id.cancel()
     }
-  }, [])
+  }, [nonceRound])
 
   if (!GOOGLE_CLIENT_ID) return null
 

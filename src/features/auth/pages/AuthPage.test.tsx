@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { SiteNavbar } from '@/components/SiteNavbar'
+import { HttpError } from '@/lib/httpClient'
 import { PASSWORD_LENGTH_MESSAGE, PASSWORD_MISMATCH_MESSAGE } from '../lib/passwordRules'
 import { AuthPage } from './AuthPage'
 import { ForgotPasswordPage } from './ForgotPasswordPage'
@@ -188,7 +189,7 @@ describe('AuthPage modal & SiteNavbar integration', () => {
     expect(await screen.findByRole('heading', { name: 'Trang chủ IELTS Space' })).toBeInTheDocument()
   })
 
-  it('validates password length (6–72 chars) and password confirmation match on sign-up', () => {
+  it('validates password length (8–72 chars) and password confirmation match on sign-up', () => {
     render(
       <MemoryRouter initialEntries={['/register']}>
         <Routes>
@@ -199,8 +200,8 @@ describe('AuthPage modal & SiteNavbar integration', () => {
 
     fireEvent.change(screen.getByLabelText(/Họ và tên/i), { target: { value: 'Nguyễn Văn A' } })
     fireEvent.change(screen.getByLabelText(/^Email/i), { target: { value: 'newuser@example.test' } })
-    fireEvent.change(screen.getByLabelText('Mật khẩu'), { target: { value: '12345' } })
-    fireEvent.change(screen.getByLabelText('Xác nhận mật khẩu'), { target: { value: '12345' } })
+    fireEvent.change(screen.getByLabelText('Mật khẩu'), { target: { value: '1234567' } })
+    fireEvent.change(screen.getByLabelText('Xác nhận mật khẩu'), { target: { value: '1234567' } })
     fireEvent.click(screen.getByRole('button', { name: /Tạo tài khoản/i }))
 
     expect(screen.getByRole('alert')).toHaveTextContent(PASSWORD_LENGTH_MESSAGE)
@@ -212,6 +213,30 @@ describe('AuthPage modal & SiteNavbar integration', () => {
 
     expect(screen.getByRole('alert')).toHaveTextContent(PASSWORD_MISMATCH_MESSAGE)
     expect(registerWithPasswordMock).not.toHaveBeenCalled()
+  })
+
+  it('shows the weak-password reasons under the password field, not as a toast', async () => {
+    registerWithPasswordMock.mockRejectedValueOnce(new HttpError(400, 'Mật khẩu chưa đủ mạnh.', {
+      code: 'WEAK_PASSWORD',
+      details: { reasons: 'TOO_COMMON,CONTAINS_ACCOUNT_INFO' },
+    }, 'WEAK_PASSWORD'))
+    render(
+      <MemoryRouter initialEntries={['/register']}>
+        <Routes>
+          <Route path="/register" element={<AuthPage mode="sign-up" />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    fireEvent.change(screen.getByLabelText(/Họ và tên/i), { target: { value: 'Nguyễn Văn A' } })
+    fireEvent.change(screen.getByLabelText(/^Email/i), { target: { value: 'newuser@example.test' } })
+    fireEvent.change(screen.getByLabelText('Mật khẩu'), { target: { value: 'Valid-pass-2026' } })
+    fireEvent.change(screen.getByLabelText('Xác nhận mật khẩu'), { target: { value: 'Valid-pass-2026' } })
+    fireEvent.click(screen.getByRole('button', { name: /Tạo tài khoản/i }))
+
+    expect(await screen.findByText(/quá phổ biến/)).toBeInTheDocument()
+    expect(screen.getByText(/không được chứa email/)).toBeInTheDocument()
+    expect(screen.getByLabelText('Mật khẩu')).toHaveAttribute('aria-invalid', 'true')
   })
 
   it('shows a message under each empty field on sign-in and clears it once the field is filled', async () => {

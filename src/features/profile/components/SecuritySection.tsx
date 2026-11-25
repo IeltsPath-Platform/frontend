@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 import { Shield, KeyRound, Eye, EyeOff, Check, AlertCircle, Loader2, Link2, Unlink } from 'lucide-react'
@@ -8,11 +8,15 @@ import {
   PASSWORD_MAX_LENGTH,
   PASSWORD_MISMATCH_MESSAGE,
   PASSWORD_LENGTH_MESSAGE,
+  PASSWORD_LENGTH_PLACEHOLDER,
+  isWeakPasswordError,
+  weakPasswordMessage,
 } from '@/features/auth/lib/passwordRules'
 import { createZodResolver } from '@/lib/zodResolver'
 import { HttpError } from '@/lib/httpClient'
 import { Button } from '@/components/ui/button'
-import { authApi } from '@/features/auth/api/authApi'
+import { InitialPasswordForm } from './InitialPasswordForm'
+import { ReauthUnlinkDialog } from './ReauthUnlinkDialog'
 
 const changePasswordSchema = z
   .object({
@@ -32,17 +36,18 @@ type ChangePasswordFormData = z.infer<typeof changePasswordSchema>
 
 interface SecuritySectionProps {
   oauthIdentities: OAuthIdentity[]
-  email: string
   hasPassword: boolean
   onChangePassword: (currentPassword: string, newPassword: string) => Promise<void>
-  onUnlinkOAuth: (provider: string) => Promise<void>
+  /** Receives the single-use token from the re-authentication step; the server checks it before unlinking. */
+  onUnlinkOAuth: (provider: string, reauthToken: string) => Promise<void>
+  onSetInitialPassword: (newPassword: string, reauthToken: string) => Promise<void>
   onShowToast: (message: string, tone?: 'success' | 'error' | 'info') => void
 }
 
 function calculatePasswordStrength(pass: string): { score: number; label: string; color: string } {
   if (!pass) return { score: 0, label: '', color: '' }
   let score = 0
-  if (pass.length >= 6) score += 1
+  if (pass.length >= PASSWORD_MIN_LENGTH) score += 1
   if (pass.length >= 10) score += 1
   if (/[0-9]/.test(pass)) score += 1
   if (/[A-Z]/.test(pass) || /[^A-Za-z0-9]/.test(pass)) score += 1
@@ -62,10 +67,10 @@ function calculatePasswordStrength(pass: string): { score: number; label: string
 
 export const SecuritySection: React.FC<SecuritySectionProps> = ({
   oauthIdentities,
-  email,
   hasPassword,
   onChangePassword,
   onUnlinkOAuth,
+  onSetInitialPassword,
   onShowToast,
 }) => {
   const [showCurrentPass, setShowCurrentPass] = useState(false)
@@ -75,27 +80,6 @@ export const SecuritySection: React.FC<SecuritySectionProps> = ({
   const [isChangingPass, setIsChangingPass] = useState(false)
   const [passChangeSuccess, setPassChangeSuccess] = useState(false)
   const [serverPassError, setServerPassError] = useState<string | null>(null)
-  const [resetCooldown, setResetCooldown] = useState(0)
-  const [requestingReset, setRequestingReset] = useState(false)
-
-  useEffect(() => {
-    if (!resetCooldown) return
-    const timer = window.setTimeout(() => setResetCooldown((seconds) => Math.max(0, seconds - 1)), 1000)
-    return () => window.clearTimeout(timer)
-  }, [resetCooldown])
-
-  async function handleRequestPasswordReset() {
-    setRequestingReset(true)
-    try {
-      const result = await authApi.forgotPassword(email)
-      setResetCooldown(60)
-      onShowToast(result.message || 'Nếu email tồn tại, hướng dẫn đặt lại sẽ được gửi tới hộp thư của bạn.', 'success')
-    } catch (error) {
-      onShowToast(error instanceof Error ? error.message : 'Không gửi được yêu cầu. Vui lòng thử lại.', 'error')
-    } finally {
-      setRequestingReset(false)
-    }
-  }
 
   const [unlinkingProvider, setUnlinkingProvider] = useState<string | null>(null)
   const [providerToUnlink, setProviderToUnlink] = useState<string | null>(null)
@@ -105,6 +89,7 @@ export const SecuritySection: React.FC<SecuritySectionProps> = ({
     handleSubmit,
     control,
     reset,
+    setError,
     formState: { errors },
   } = useForm<ChangePasswordFormData>({
     resolver: createZodResolver(changePasswordSchema),
@@ -128,6 +113,11 @@ export const SecuritySection: React.FC<SecuritySectionProps> = ({
       onShowToast('Đổi mật khẩu thành công!', 'success')
       setTimeout(() => setPassChangeSuccess(false), 2000)
     } catch (err) {
+      // A weak new password is shown under its field, not as a toast.
+      if (isWeakPasswordError(err)) {
+        setError('newPassword', { type: 'server', message: weakPasswordMessage(err) })
+        return
+      }
       if (err instanceof HttpError) {
         const body = err.body as { message?: string; detail?: string } | undefined
         if (err.status === 400 || err.status === 401) {
@@ -146,16 +136,15 @@ export const SecuritySection: React.FC<SecuritySectionProps> = ({
     }
   }
 
-  const handleConfirmUnlink = async () => {
+  // The dialog keeps itself open and shows the message when this rejects (for example REAUTH_REQUIRED).
+  const handleUnlinkConfirmed = async (reauthToken: string) => {
     if (!providerToUnlink) return
-    setUnlinkingProvider(providerToUnlink)
+    const provider = providerToUnlink
+    setUnlinkingProvider(provider)
     try {
-      await onUnlinkOAuth(providerToUnlink)
-      onShowToast(`Đã hủy liên kết tài khoản ${providerToUnlink}`, 'success')
+      await onUnlinkOAuth(provider, reauthToken)
+      onShowToast(`Đã hủy liên kết tài khoản ${provider}`, 'success')
       setProviderToUnlink(null)
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Hủy liên kết thất bại.'
-      onShowToast(msg, 'error')
     } finally {
       setUnlinkingProvider(null)
     }
@@ -234,7 +223,7 @@ export const SecuritySection: React.FC<SecuritySectionProps> = ({
                   type={showNewPass ? 'text' : 'password'}
                   {...register('newPassword')}
                   className={`profile-input ${errors.newPassword ? 'input-error' : ''}`}
-                  placeholder="Từ 6 đến 72 ký tự"
+                  placeholder={PASSWORD_LENGTH_PLACEHOLDER}
                   disabled={isChangingPass}
                 />
                 <button
@@ -322,13 +311,7 @@ export const SecuritySection: React.FC<SecuritySectionProps> = ({
               )}
             </Button>
           </form> : (
-            <div className="profile-password-form">
-              <p role="status">Tài khoản này chưa có mật khẩu. Gửi email để tạo mật khẩu đăng nhập.</p>
-              <Button type="button" onClick={() => void handleRequestPasswordReset()}
-                disabled={requestingReset || resetCooldown > 0} className="profile-change-pass-btn">
-                {requestingReset ? 'Đang gửi…' : resetCooldown > 0 ? `Gửi lại sau ${resetCooldown}s` : 'Gửi email đặt mật khẩu'}
-              </Button>
-            </div>
+            <InitialPasswordForm onSetInitialPassword={onSetInitialPassword} onShowToast={onShowToast} />
           )}
         </div>
 
@@ -414,39 +397,12 @@ export const SecuritySection: React.FC<SecuritySectionProps> = ({
 
       {/* Unlink Confirmation Modal */}
       {providerToUnlink && (
-        <div
-          className="profile-modal-backdrop"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="unlink-modal-title"
-        >
-          <div className="profile-confirm-card">
-            <h3 id="unlink-modal-title" className="profile-confirm-title">
-              Hủy liên kết tài khoản {providerToUnlink}?
-            </h3>
-            <p className="profile-confirm-desc">
-              Sau khi hủy liên kết, bạn sẽ không thể dùng tài khoản {providerToUnlink} này để đăng nhập trực tiếp. Hãy đảm bảo bạn nhớ mật khẩu tài khoản để đăng nhập lại.
-            </p>
-            <div className="profile-confirm-actions">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setProviderToUnlink(null)}
-                disabled={unlinkingProvider !== null}
-              >
-                Hủy
-              </Button>
-              <Button
-                type="button"
-                variant="destructive"
-                onClick={handleConfirmUnlink}
-                disabled={unlinkingProvider !== null}
-              >
-                {unlinkingProvider !== null ? 'Đang gỡ…' : 'Xác nhận gỡ'}
-              </Button>
-            </div>
-          </div>
-        </div>
+        <ReauthUnlinkDialog
+          provider={providerToUnlink}
+          hasPassword={hasPassword}
+          onConfirmed={handleUnlinkConfirmed}
+          onCancel={() => setProviderToUnlink(null)}
+        />
       )}
     </section>
   )

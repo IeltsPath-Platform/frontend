@@ -254,9 +254,22 @@ export function useProfile() {
     return updated
   }, [activeGoal])
 
-  const unlinkOAuth = useCallback(async (provider: string): Promise<void> => {
-    await profileApi.unlinkOAuthIdentity(provider)
+  const unlinkOAuth = useCallback(async (provider: string, reauthToken: string): Promise<void> => {
+    await profileApi.unlinkOAuthIdentity(provider, reauthToken)
     setOauthIdentities((prev) => prev.filter((item) => item.provider.toLowerCase() !== provider.toLowerCase()))
+  }, [])
+
+  const setInitialPassword = useCallback(async (newPassword: string, reauthToken: string): Promise<void> => {
+    try {
+      await profileApi.setInitialPassword(newPassword, reauthToken)
+    } catch (error) {
+      // The account already has a password (another tab, or it was set earlier): switch the section to change-password.
+      if (error instanceof HttpError && error.code === 'PASSWORD_ALREADY_SET') {
+        setUser((prev) => (prev ? { ...prev, hasPassword: true } : prev))
+      }
+      throw error
+    }
+    setUser((prev) => (prev ? { ...prev, hasPassword: true } : prev))
   }, [])
 
   return {
@@ -278,6 +291,7 @@ export function useProfile() {
     createGoal,
     updateGoalStatus,
     unlinkOAuth,
+    setInitialPassword,
   }
 }
 

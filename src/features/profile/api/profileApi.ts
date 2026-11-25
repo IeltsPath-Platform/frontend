@@ -59,6 +59,40 @@ export const oauthIdentitySchema = z.object({
 })
 export type OAuthIdentity = z.infer<typeof oauthIdentitySchema>
 
+/** Header that carries the single-use token from `POST /api/users/me/reauth`. */
+export const REAUTH_HEADER = 'X-Reauth-Token'
+
+export const reauthResponseSchema = z.object({
+  reauthToken: z.string(),
+  expiresInSeconds: z.number(),
+  method: z.enum(['PASSWORD', 'GOOGLE']),
+})
+export type ReauthResponse = z.infer<typeof reauthResponseSchema>
+export type ReauthRequest = { currentPassword: string } | { googleIdToken: string }
+
+/** `current` stays null until the server can tell which session made the request. */
+export const profileSessionSchema = z.object({
+  sessionId: z.string(),
+  startedAt: z.string().nullable().optional(),
+  lastUsedAt: z.string().nullable().optional(),
+  ipAddress: z.string().nullable().optional(),
+  userAgent: z.string().nullable().optional(),
+  current: z.boolean().nullable().optional(),
+})
+export type ProfileSession = z.infer<typeof profileSessionSchema>
+
+/** One entry of the account's security history. The address arrives with its last segment already hidden. */
+export const securityEventSchema = z.object({
+  id: z.string(),
+  eventType: z.string(),
+  ipAddress: z.string().nullable().optional(),
+  userAgent: z.string().nullable().optional(),
+  createdAt: z.string().nullable().optional(),
+})
+export type SecurityEvent = z.infer<typeof securityEventSchema>
+
+const securityEventPageSchema = z.object({ items: z.array(securityEventSchema) })
+
 export const streakSchema = z.object({
   userId: z.string().optional(),
   currentDays: z.number().default(0),
@@ -224,11 +258,51 @@ export const profileApi = {
     return z.array(oauthIdentitySchema).parse(raw)
   },
 
-  unlinkOAuthIdentity: async (provider: string): Promise<void> => {
+  unlinkOAuthIdentity: async (provider: string, reauthToken?: string): Promise<void> => {
     await apiRequest(`/api/users/me/oauth/${encodeURIComponent(provider)}`, {
       method: 'DELETE',
       auth: true,
+      headers: reauthToken ? { [REAUTH_HEADER]: reauthToken } : undefined,
     })
+  },
+
+  reauth: async (body: ReauthRequest): Promise<ReauthResponse> => {
+    const raw = await apiRequest('/api/users/me/reauth', { method: 'POST', auth: true, body })
+    return reauthResponseSchema.parse(raw)
+  },
+
+  setInitialPassword: async (newPassword: string, reauthToken: string): Promise<void> => {
+    await apiRequest('/api/users/me/password/initial', {
+      method: 'POST',
+      auth: true,
+      body: { newPassword },
+      headers: { [REAUTH_HEADER]: reauthToken },
+    })
+  },
+
+  listSessions: async (): Promise<ProfileSession[]> => {
+    const raw = await apiRequest('/api/users/me/sessions', { auth: true })
+    return z.array(profileSessionSchema).parse(raw)
+  },
+
+  revokeSession: async (sessionId: string): Promise<void> => {
+    await apiRequest(`/api/users/me/sessions/${encodeURIComponent(sessionId)}`, {
+      method: 'DELETE',
+      auth: true,
+    })
+  },
+
+  revokeOtherSessions: async (): Promise<void> => {
+    await apiRequest('/api/users/me/sessions?exceptCurrent=true', {
+      method: 'DELETE',
+      auth: true,
+    })
+  },
+
+  /** The newest events of the signed-in user (the server returns up to 50). */
+  listSecurityEvents: async (): Promise<SecurityEvent[]> => {
+    const raw = await apiRequest('/api/users/me/security-events?page=0', { auth: true })
+    return securityEventPageSchema.parse(raw).items
   },
 
   getStreak: async (): Promise<StreakData> => {
