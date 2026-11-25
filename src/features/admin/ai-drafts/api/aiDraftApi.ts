@@ -27,12 +27,16 @@ const ADMIN = '/api/content/admin/ai-drafts'
 export async function fetchAiDrafts(query: AiDraftQuery = {}, signal?: AbortSignal): Promise<AiDraft[]> {
   const parsed = aiDraftQuerySchema.parse(query)
   const params = new URLSearchParams()
-  if (parsed.kind !== undefined) params.set('kind', parsed.kind)
+  if (parsed.kind !== undefined) (Array.isArray(parsed.kind) ? parsed.kind : [parsed.kind]).forEach((kind) => params.append('kind', kind))
   if (parsed.status !== undefined) params.set('status', parsed.status)
   if (parsed.page !== undefined) params.set('page', String(parsed.page))
   if (parsed.size !== undefined) params.set('size', String(parsed.size))
   const suffix = params.size ? `?${params}` : ''
-  return aiDraftListSchema.parse(await apiRequest<unknown>(`${ADMIN}${suffix}`, { auth: true, signal }))
+  const response = await apiRequest<unknown>(`${ADMIN}${suffix}`, { auth: true, signal })
+  return z.array(z.unknown()).parse(response).flatMap((entry) => {
+    const draft = aiDraftListSchema.element.safeParse(entry)
+    return draft.success ? [draft.data] : []
+  })
 }
 
 export async function fetchAiDraft(id: string, signal?: AbortSignal): Promise<AiDraft> {
@@ -76,16 +80,18 @@ export async function approveQuestionDraft(id: string, body: ApproveQuestionDraf
   }))
 }
 
-export async function patchQuestionDraftItem(id: string, index: number, body: QuestionDraftItemPatch): Promise<QuestionDraft> {
+export async function patchQuestionDraftItem(id: string, itemId: string, revision: number, body: QuestionDraftItemPatch): Promise<QuestionDraft> {
   const draftId = z.guid().parse(id)
-  const itemIndex = z.int().nonnegative().max(2147483647).parse(index)
-  return questionDraftSchema.parse(await apiRequest<unknown>(`${ADMIN}/${draftId}/items/${itemIndex}`, {
+  return questionDraftSchema.parse(await apiRequest<unknown>(`${ADMIN}/${draftId}/items/${z.guid().parse(itemId)}?revision=${revision}`, {
     method: 'PATCH', auth: true, body: questionDraftItemPatchSchema.parse(body),
   }))
 }
 
-export async function deleteQuestionDraftItem(id: string, index: number): Promise<QuestionDraft> {
+export async function deleteQuestionDraftItem(id: string, itemId: string, revision: number): Promise<QuestionDraft> {
   const draftId = z.guid().parse(id)
-  const itemIndex = z.int().nonnegative().max(2147483647).parse(index)
-  return questionDraftSchema.parse(await apiRequest<unknown>(`${ADMIN}/${draftId}/items/${itemIndex}`, { method: 'DELETE', auth: true }))
+  return questionDraftSchema.parse(await apiRequest<unknown>(`${ADMIN}/${draftId}/items/${z.guid().parse(itemId)}?revision=${revision}`, { method: 'DELETE', auth: true }))
+}
+
+export async function fetchOpenLessonQuestionDraft(lessonId: string, signal?: AbortSignal): Promise<QuestionDraft> {
+  return questionDraftSchema.parse(await apiRequest<unknown>(`${ADMIN}/questions/open?lessonId=${z.guid().parse(lessonId)}`, { auth: true, signal }))
 }

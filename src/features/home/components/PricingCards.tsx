@@ -79,14 +79,16 @@ export function PricingCards({
             <div>
               <span className="home-plan-tag">PREMIUM ACCESS</span>
               <h3 id="home-premium-title">Gói Premium</h3>
-              <p>Mở khóa nội dung nâng cao và nhận lượt chấm Writing/Speaking từ giáo viên.</p>
+              <p>Luyện đề Premium, chấm Writing/Speaking bằng AI không tốn Point và nhờ giáo viên chấm không giới hạn lượt.</p>
             </div>
           </header>
 
           <ul className="home-combined-benefits">
-            <li><Check size={18} aria-hidden="true" /><span>Toàn bộ bài học, đề thi và tài liệu nâng cao</span></li>
+            <li><Check size={18} aria-hidden="true" /><span>Luyện các đề có dấu Premium ở cả bốn kỹ năng</span></li>
+            <li><Check size={18} aria-hidden="true" /><span>AI chấm Writing và Speaking không tốn Point, thêm lượt chấm mỗi ngày</span></li>
+            <li><Check size={18} aria-hidden="true" /><span>Nhờ giáo viên chấm Writing/Speaking không giới hạn lượt</span></li>
             <li><Check size={18} aria-hidden="true" /><span>Báo cáo phân tích tiến độ học tập nâng cao</span></li>
-            <li className="home-unavailable"><Minus size={18} aria-hidden="true" /><span>Không kèm AI Points; AI Grading vẫn trừ điểm trong Ví Point</span></li>
+            <li className="home-unavailable"><Minus size={18} aria-hidden="true" /><span>Không kèm AI Points và không mở khóa khóa học: mở khóa vẫn trừ điểm trong Ví Point</span></li>
           </ul>
 
           <div className="home-product-options" aria-label="Lựa chọn thời hạn Premium">

@@ -37,9 +37,9 @@ describe('OverviewPage', () => {
       staleDraftAfterDays: 14,
     })
     graph.fetchKnowledgeTreeHealth.mockResolvedValue({ isolatedIds: ['a', 'b'], missingMetadataIds: [], levelViolations: [] })
-    api.fetchAuthorWorkItems.mockResolvedValue([
+    api.fetchAuthorWorkItems.mockResolvedValue({ content: [
       { id: 'w1', queue: 'CONTENT_AUTHOR', kind: 'CONTENT_GAP', detail: '{"knowledgePointId":"kp1"}', status: 'OPEN', subject: { type: 'KNOWLEDGE_POINT', id: 'kp1', code: 'R55_SCAN', name: 'Scanning', occurrences: 3 } },
-    ])
+    ], page: 0, size: 100, totalElements: 1, totalPages: 1 })
     api.fetchQuestionStats.mockResolvedValue([stat('aaaaaaaa-1', 40, 5), stat('bbbbbbbb-2', 30, 29), stat('cccccccc-3', 25, 12)])
     api.fetchQuestionLabels.mockResolvedValue([
       { questionVersionId: 'aaaaaaaa-1', questionId: 'q-1', label: 'Choose the correct heading for paragraph B', skill: 'READING', questionType: 'MULTIPLE_CHOICE' },
@@ -152,7 +152,7 @@ describe('OverviewPage', () => {
       lessons: { PUBLISHED: 3 },
     })
     graph.fetchKnowledgeTreeHealth.mockResolvedValue({ isolatedIds: [], missingMetadataIds: [], levelViolations: [] })
-    api.fetchAuthorWorkItems.mockResolvedValue([])
+    api.fetchAuthorWorkItems.mockResolvedValue({ content: [], page: 0, size: 100, totalElements: 0, totalPages: 0 })
     api.fetchQuestionStats.mockResolvedValue([])
     renderPage()
 

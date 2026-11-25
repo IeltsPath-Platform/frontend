@@ -36,11 +36,16 @@ export function documentFileProblem(file: File): string | null {
   return null
 }
 
+/** A PDF of up to 20 MB can take longer than the default 30 s on a slow upload link; this matches the gateway's 120 s limit. */
+const DOCUMENT_UPLOAD_TIMEOUT_MS = 120_000
+
 /** Stores a PDF privately. The returned `mediaReference` is attached to a lesson document; it has no public link. */
 export async function uploadAdminDocument(file: File) {
   const body = new FormData()
   body.append('file', file)
-  return documentUploadSchema.parse(await apiRequest<unknown>('/api/content/admin/media/document', { auth: true, method: 'POST', body }))
+  return documentUploadSchema.parse(await apiRequest<unknown>('/api/content/admin/media/document', {
+    auth: true, method: 'POST', body, timeoutMs: DOCUMENT_UPLOAD_TIMEOUT_MS,
+  }))
 }
 
 const DOCUMENT_ERRORS: Record<string, string> = {

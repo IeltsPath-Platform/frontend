@@ -1,4 +1,4 @@
-import type { Difficulty, QuestionType, QuestionVersion, VersionRequest } from '../types'
+﻿import type { Difficulty, QuestionType, QuestionVersion, VersionRequest } from '../types'
 
 export interface VersionFormState {
   versionNumber: number
@@ -60,7 +60,7 @@ export function initialFormState(type: QuestionType | string, nextVersionNumber:
     minWords: '250',
     passBand: '6',
     chartFacts: '',
-    difficulty: '',
+    difficulty: 'MEDIUM',
     explanation: '',
     hint: '',
     knowledgePoints: [],
@@ -90,7 +90,7 @@ export function formStateFromVersion(type: QuestionType | string, version: Quest
     minWords: typeof spec.minWords === 'number' ? String(spec.minWords) : base.minWords,
     passBand: typeof spec.passBand === 'number' ? String(spec.passBand) : base.passBand,
     chartFacts: typeof spec.chartFacts === 'string' ? spec.chartFacts : '',
-    difficulty: version.difficulty ?? '',
+    difficulty: version.difficulty ?? 'MEDIUM',
     explanation: version.explanation ?? '',
     hint: version.hint ?? '',
     knowledgePoints: (version.knowledgePoints ?? []).map((link) => ({ knowledgePointId: link.knowledgePointId, weight: link.weight ?? 1 })),

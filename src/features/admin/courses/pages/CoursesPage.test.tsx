@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { HttpError } from '@/lib/httpClient'
 import { CoursesPage } from './CoursesPage'
 
-const { api, lessons, media, codes } = vi.hoisted(() => ({ api: { fetchCourses: vi.fn(), createCourse: vi.fn(), updateCourse: vi.fn(), deleteCourse: vi.fn(), createTopic: vi.fn(), updateTopic: vi.fn(), reorderTopics: vi.fn() }, lessons: { fetchTopics: vi.fn(), fetchLessons: vi.fn() }, media: { uploadAdminImage: vi.fn() }, codes: { fetchCodeSettings: vi.fn(), fetchCodeSuggestion: vi.fn() } }))
+const { api, lessons, media, codes } = vi.hoisted(() => ({ api: { fetchCourses: vi.fn(), createCourse: vi.fn(), updateCourse: vi.fn(), deleteCourse: vi.fn(), createTopic: vi.fn(), updateTopic: vi.fn(), reorderTopics: vi.fn() }, lessons: { fetchTopics: vi.fn(), fetchLessons: vi.fn(), fetchLesson: vi.fn() }, media: { uploadAdminImage: vi.fn() }, codes: { fetchCodeSettings: vi.fn(), fetchCodeSuggestion: vi.fn() } }))
 vi.mock('../api/courseApi', () => api)
 vi.mock('../../lessons/api/lessonApi', () => lessons)
 vi.mock('../../media/api/mediaUploadApi', () => media)
@@ -34,6 +34,7 @@ describe('CoursesPage', () => {
     api.fetchCourses.mockResolvedValue([course])
     lessons.fetchTopics.mockResolvedValue(topics)
     lessons.fetchLessons.mockResolvedValue([])
+    lessons.fetchLesson.mockResolvedValue({ id: 'l1', topicId: 't1', title: 'Viết mở bài' })
     api.createCourse.mockResolvedValue(course)
     media.uploadAdminImage.mockResolvedValue({ mediaReference: 'content-image/author-1/cover.png', mediaUrl: 'https://storage.example/content-image/author-1/cover.png', contentType: 'image/png', sizeBytes: 3 })
     api.updateCourse.mockResolvedValue(course)
@@ -59,6 +60,15 @@ describe('CoursesPage', () => {
     fireEvent.click(within(drawer).getByRole('button', { name: 'Đóng' }))
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(screen.getByRole('article', { name: 'Viết học thuật' })).toBeInTheDocument()
+  })
+
+  it('opens a lesson editor from its deep link', async () => {
+    lessons.fetchLessons.mockResolvedValue([{ id: 'l1', topicId: 't1', code: 'L1', title: 'Viết mở bài', summary: null, sortOrder: 1, status: 'DRAFT', estimatedMinutes: null, blockCount: 1, knowledgePointCount: 1 }])
+    lessons.fetchLesson.mockResolvedValueOnce({ id: 'l1', topicId: 't1', title: 'Viết mở bài' }).mockReturnValueOnce(new Promise(() => {}))
+    render(<MemoryRouter initialEntries={['/content-author/courses?lesson=l1']}><CoursesPage /></MemoryRouter>)
+    expect(await screen.findByRole('dialog', { name: 'Viết mở bài' })).toBeInTheDocument()
+    expect(lessons.fetchLesson).toHaveBeenCalledWith('l1')
+    expect(lessons.fetchLessons).toHaveBeenCalledWith('t1', expect.anything())
   })
   it('creates a course with a numeric band', async () => {
     show()

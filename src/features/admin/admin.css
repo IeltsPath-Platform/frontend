@@ -177,6 +177,16 @@
 .adm-badge--muted { color: var(--adm-muted); }
 
 .adm-table-wrap { overflow-x: auto; border: 1px solid var(--adm-border); border-radius: var(--adm-radius); }
+.adm-infinite { --adm-infinite-count-height: 38px; }
+.adm-infinite__count { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; min-height: var(--adm-infinite-count-height); padding: 8px 12px; border-bottom: 1px solid var(--adm-border); background: var(--adm-surface); color: var(--adm-muted); font-size: .84rem; font-weight: 600; }
+.adm-table--sticky thead th { position: sticky; top: var(--adm-infinite-count-height, 38px); z-index: 1; background: var(--adm-surface-2); }
+.adm-infinite__sentinel { display: flex; min-height: 1px; align-items: center; justify-content: center; gap: 10px; padding: 8px; color: var(--adm-muted); }
+.adm-infinite__sentinel:empty { padding: 0; }
+.adm-infinite__sentinel > .adm-state { flex-direction: row; padding: 4px; }
+.adm-infinite__message { display: flex; align-items: center; justify-content: center; gap: 10px; }
+.adm-infinite__sentinel .adm-btn { flex: none; }
+.adm-infinite__sentinel td { text-align: center; }
+.adm-infinite__sentinel[role="status"] { font-size: .86rem; }
 /* An actions column keeps its header on one line and takes only the width its button needs. */
 .adm-col-actions { width: 1%; white-space: nowrap; text-align: right; }
 .adm-table { width: 100%; border-collapse: collapse; font-size: .92rem; }

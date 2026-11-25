@@ -202,8 +202,6 @@
   color: var(--lp-primary);
 }
 .lp-res-frame {
-  aspect-ratio: 16 / 9;
-  overflow: hidden;
   border: 1px solid var(--lp-line);
   border-radius: 12px;
   background: var(--lp-canvas);
@@ -223,6 +221,113 @@
   color: var(--lp-muted);
 }
 .lp-res-fallback p {
+  margin: 0;
+}
+
+.lp-res-pdf-viewer {
+  overflow: hidden;
+  border: 1px solid var(--lp-line);
+  border-radius: 12px;
+  background: var(--lp-canvas);
+}
+.lp-res-pdf-toolbar,
+.lp-res-pdf-pages {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+}
+.lp-res-pdf-toolbar {
+  flex-wrap: wrap;
+  justify-content: space-between;
+  padding: .45rem .6rem;
+  border-bottom: 1px solid var(--lp-line);
+  background: var(--lp-surface);
+}
+.lp-res-pdf-control {
+  display: inline-grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 1px solid var(--lp-line);
+  border-radius: 9px;
+  background: var(--lp-surface);
+  color: var(--lp-ink);
+  cursor: pointer;
+}
+.lp-res-pdf-control:hover:not(:disabled) {
+  border-color: var(--lp-primary);
+  background: var(--lp-soft);
+  color: var(--lp-primary);
+}
+.lp-res-pdf-control:disabled {
+  cursor: not-allowed;
+  opacity: .5;
+}
+.lp-res-pdf-page-count {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  color: var(--lp-muted);
+  font-size: .85rem;
+}
+.lp-res-pdf-page-input {
+  width: 3.5rem;
+  min-height: 36px;
+  padding: .25rem;
+  border: 1px solid var(--lp-line);
+  border-radius: 8px;
+  background: var(--lp-surface);
+  color: var(--lp-ink);
+  font: inherit;
+  text-align: center;
+}
+.lp-res-pdf-zoom {
+  min-width: 3rem;
+  color: var(--lp-muted);
+  font-size: .8rem;
+  text-align: center;
+}
+.lp-res-pdf-frame {
+  max-height: min(78vh, 900px);
+  overflow: auto;
+  /* Keep the width the same whether or not a scrollbar shows, so the page is not resized when it appears. */
+  scrollbar-gutter: stable;
+  outline-offset: -3px;
+  background: var(--lp-canvas);
+}
+.lp-res-pdf-page-area {
+  display: flex;
+  min-height: 420px;
+  justify-content: center;
+  padding: 1rem;
+}
+.lp-res-pdf-page-area .react-pdf__Document {
+  max-width: 100%;
+}
+.lp-res-pdf-page-area .react-pdf__Page {
+  max-width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--lp-line);
+  border-radius: 4px;
+  background: var(--lp-surface);
+  box-shadow: var(--lp-shadow);
+}
+.lp-res-pdf-page-area canvas {
+  display: block;
+  max-width: 100%;
+  height: auto !important;
+}
+.lp-res-pdf-state {
+  display: flex;
+  min-height: 220px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .75rem;
+  color: var(--lp-muted);
+  text-align: center;
+}
+.lp-res-pdf-state p {
   margin: 0;
 }
 

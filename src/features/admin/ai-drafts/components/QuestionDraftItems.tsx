@@ -1,6 +1,5 @@
 import { Eye, Pencil, Trash2 } from 'lucide-react'
 import { AdminRowMenu, type RowMenuItem } from '../../components/AdminRowMenu'
-import { DIFFICULTY_LABEL } from '../../questions/lib/labels'
 import type { QuestionDraftItem } from '../types'
 
 export interface QuestionDraftItemActions {
@@ -25,15 +24,17 @@ function answerOf(item: QuestionDraftItem): { key: string | null; text: string; 
  */
 export function QuestionDraftItems({ items, selected, disabled, actions, onChange }: {
   items: readonly QuestionDraftItem[]
-  selected: number[]
+  selected: string[]
   disabled: boolean
   /** Without actions the table is read only, as it is once the draft has left the review. */
   actions?: QuestionDraftItemActions
-  onChange: (indexes: number[]) => void
+  onChange: (itemIds: string[]) => void
 }) {
   function toggle(index: number, checked: boolean) {
     if (disabled) return
-    onChange(checked ? [...selected.filter((value) => value !== index), index].sort((left, right) => left - right) : selected.filter((value) => value !== index))
+    const id = items[index]?.itemId
+    if (!id) return
+    onChange(checked ? [...selected.filter((value) => value !== id), id] : selected.filter((value) => value !== id))
   }
 
   function menuOf(index: number): RowMenuItem[] {
@@ -54,7 +55,6 @@ export function QuestionDraftItems({ items, selected, disabled, actions, onChang
           <th className="dr-col-pick" scope="col">Duyệt</th>
           <th scope="col">Câu hỏi</th>
           <th scope="col">Đáp án</th>
-          <th scope="col">Độ khó</th>
           {actions ? <th className="adm-col-actions" scope="col">Hành động</th> : null}
         </tr>
       </thead>
@@ -62,12 +62,12 @@ export function QuestionDraftItems({ items, selected, disabled, actions, onChang
         {items.map((item, index) => {
           const number = index + 1
           const answer = answerOf(item)
-          return <tr className={selected.includes(index) ? 'is-selected' : undefined} key={index}>
+          return <tr className={selected.includes(item.itemId) ? 'is-selected' : undefined} key={item.itemId}>
             <td className="adm-stt">{number}</td>
             <td>
               <input
                 aria-label={`Chọn câu ${number} để duyệt`}
-                checked={selected.includes(index)}
+                checked={selected.includes(item.itemId)}
                 disabled={disabled}
                 onChange={(event) => toggle(index, event.target.checked)}
                 type="checkbox"
@@ -81,7 +81,6 @@ export function QuestionDraftItems({ items, selected, disabled, actions, onChang
                 <span className="dr-answer__text">{answer.text || '—'}{answer.more ? <small className="adm-muted"> +{answer.more}</small> : null}</span>
               </span>
             </td>
-            <td><span className="adm-badge">{DIFFICULTY_LABEL[item.difficulty]}</span></td>
             {actions ? <td className="adm-col-actions"><AdminRowMenu items={menuOf(index)} label={`Hành động của câu ${number}`} /></td> : null}
           </tr>
         })}

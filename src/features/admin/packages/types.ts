@@ -12,6 +12,8 @@ export const sectionAudioSchema = z.object({
 export const sectionQuestionSchema = z.object({
   id: z.guid(), questionVersionId: z.guid(), questionId: z.guid().nullable(), sortOrder: z.int(), maxScore: z.number(),
   stem: z.string().nullable(), status: z.string().nullable(), purpose: z.string().nullable(),
+  /** Number of the newest published version after the attached one; absent or null when there is none. */
+  newerVersionNumber: z.int().nullish(),
 })
 export const packageSectionSchema = z.object({
   id: z.guid(), title: z.string(), skill: sectionSkillSchema.nullable(), sortOrder: z.int(),
@@ -41,6 +43,9 @@ export const packageListItemSchema = publishedPackageSchema.extend({
 export const packageStatsSchema = z.object({
   packageId: z.guid(), started: z.int().nonnegative(), submitted: z.int().nonnegative(), averageBand: z.number().nullable(),
 })
+export const packagePageSchema = z.object({
+  content: z.array(packageListItemSchema), page: z.number(), size: z.number(), totalElements: z.number(), totalPages: z.number(),
+})
 export const contentPackageSchema = publishedPackageSchema.extend({
   topicId: z.guid().nullable(), courseId: z.guid().nullable(),
   versions: z.array(packageVersionSchema),
@@ -56,6 +61,9 @@ export const packageFiltersSchema = z.object({
   type: packageTypeSchema.optional(), status: packageStatusSchema.optional(), lessonId: z.guid().optional(),
   topicId: z.guid().optional(), courseId: z.guid().optional(), q: z.string().optional(), placementPool: placementPoolSchema.optional(),
   accessLevel: z.enum(['FREE', 'PREMIUM']).optional(), skill: sectionSkillSchema.optional(),
+  /** Package types the list leaves out; the server applies it before paging, so counts and pages stay exact. */
+  excludeTypes: z.array(packageTypeSchema).optional(),
+  page: z.int().min(0).optional(), size: z.int().min(1).max(100).optional(),
 })
 /**
  * What an author changes on a package. A missing field is left as it is. A blank `sourceCode` takes a practice test
@@ -127,6 +135,7 @@ export type SectionRequest = z.infer<typeof sectionRequestSchema>
 export type PackageType = z.infer<typeof packageTypeSchema>
 export type PackageFilters = z.infer<typeof packageFiltersSchema>
 export type PackageListItem = z.infer<typeof packageListItemSchema>
+export type PackagePage = z.infer<typeof packagePageSchema>
 export type CreatePackageRequest = z.infer<typeof createPackageRequestSchema>
 export type SectionQuestion = z.infer<typeof sectionQuestionSchema>
 export type AddSectionQuestionRequest = z.infer<typeof addSectionQuestionRequestSchema>

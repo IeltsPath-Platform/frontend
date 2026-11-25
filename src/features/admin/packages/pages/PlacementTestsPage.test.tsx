@@ -1,11 +1,11 @@
 import { fireEvent, render, screen, waitFor, within } from '@/test/render'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { makeCatalogPackage } from '../testFixtures'
+import { makeCatalogPackage, makeCatalogPage } from '../testFixtures'
 import { PlacementTestsPage } from './PlacementTestsPage'
 
 const api = vi.hoisted(() => ({
-  listPackages: vi.fn(), listPracticeSources: vi.fn(), updatePackageInfo: vi.fn(), archivePackage: vi.fn(), restorePackage: vi.fn(),
+  listAllPackages: vi.fn(), listPackages: vi.fn(), listPracticeSources: vi.fn(), updatePackageInfo: vi.fn(), archivePackage: vi.fn(), restorePackage: vi.fn(),
   createPackage: vi.fn(), createDraftVersion: vi.fn(),
 }))
 const stats = vi.hoisted(() => ({ listPackageStats: vi.fn() }))
@@ -35,7 +35,12 @@ function editFromMenu(code: string, title: string) {
 
 describe('PlacementTestsPage', () => {
   beforeEach(() => {
-    api.listPackages.mockReset().mockResolvedValue([low, mid, high])
+    const tests = [low, mid, high]
+    api.listAllPackages.mockReset().mockResolvedValue(tests)
+    // The summary asks the server for the published count of each pool, one request per pool.
+    api.listPackages.mockReset().mockImplementation((filters) => Promise.resolve(makeCatalogPage([], {
+      size: 1, totalElements: tests.filter((test) => test.status === 'PUBLISHED' && test.placementPool === filters.placementPool).length,
+    })))
     api.listPracticeSources.mockReset().mockResolvedValue([])
     api.updatePackageInfo.mockReset().mockResolvedValue(mid)
     stats.listPackageStats.mockReset().mockResolvedValue([])
@@ -45,7 +50,8 @@ describe('PlacementTestsPage', () => {
     show()
 
     expect(await screen.findByRole('link', { name: /Entry low/ })).toBeInTheDocument()
-    expect(screen.getByText('Chưa có đề, học viên không chọn được kho này')).toBeInTheDocument()
+    // The counts come from one request per pool, so they arrive after the table.
+    expect(await screen.findByText('Chưa có đề, học viên không chọn được kho này')).toBeInTheDocument()
     expect(screen.getAllByText('Cần thêm đề: lượt thi lại sẽ lặp đề')).toHaveLength(2)
   })
 

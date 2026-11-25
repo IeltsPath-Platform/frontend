@@ -1,51 +1,16 @@
-import { Download, Maximize2, MonitorPlay } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
+import { Download } from 'lucide-react'
 import type { LessonSlideItem } from '~types/lesson'
 import { StatusArt } from '@/components/StatusArt'
 
-interface GoogleSlidesLinks {
-  embedUrl: string
-  downloadUrl: string
-}
+const SlidePdfViewer = lazy(() => import('./SlidePdfViewer'))
 
-/**
- * Accepts a shared deck link (/presentation/d/{id}/edit) or a "Publish to web" link (/presentation/d/e/{id}/pub).
- * Only a shared deck can be exported as PDF; a published one downloads from its original link.
- */
-function getGoogleSlidesLinks(url: string): GoogleSlidesLinks | null {
-  let parsed: URL
-  try {
-    parsed = new URL(url)
-  } catch {
-    return null
-  }
-  if (parsed.hostname !== 'docs.google.com') return null
-
-  const published = parsed.pathname.match(/^\/presentation\/d\/e\/([\w-]+)/)
-  if (published) {
-    return {
-      embedUrl: `https://docs.google.com/presentation/d/e/${published[1]}/embed?start=false&loop=false`,
-      downloadUrl: url,
-    }
-  }
-  const shared = parsed.pathname.match(/^\/presentation\/d\/([\w-]+)/)
-  if (shared) {
-    return {
-      embedUrl: `https://docs.google.com/presentation/d/${shared[1]}/embed?start=false&loop=false`,
-      downloadUrl: `https://docs.google.com/presentation/d/${shared[1]}/export/pdf`,
-    }
-  }
-  return null
-}
-
-export function LessonSlides({ slides }: { slides: readonly LessonSlideItem[] }) {
+export function LessonSlides({ slides, onRefresh }: { slides: readonly LessonSlideItem[]; onRefresh: () => void }) {
   const [activeIndex, setActiveIndex] = useState(0)
-  const frameRef = useRef<HTMLDivElement>(null)
 
   if (slides.length === 0) return <StatusArt compact kind="empty" title="Bài học này chưa có slide." />
 
   const active = slides[activeIndex] ?? slides[0]!
-  const google = getGoogleSlidesLinks(active.url)
 
   return (
     <div className="lp-res-slides">
@@ -58,6 +23,7 @@ export function LessonSlides({ slides }: { slides: readonly LessonSlideItem[] })
                 type="button"
                 role="tab"
                 aria-selected={index === activeIndex}
+                aria-label={`Slide ${index + 1}: ${slide.title}`}
                 className={`lp-res-tab${index === activeIndex ? ' is-active' : ''}`}
                 onClick={() => setActiveIndex(index)}
               >
@@ -67,41 +33,15 @@ export function LessonSlides({ slides }: { slides: readonly LessonSlideItem[] })
           </div>
         ) : <span className="lp-res-toolbar__title">{active.title}</span>}
         <div className="lp-res-actions">
-          <a className="lp-res-action" href={google?.downloadUrl ?? active.url} target="_blank" rel="noopener noreferrer">
+          <a aria-label={`Tải về ${active.title}`} className="lp-res-action" href={active.url} target="_blank" rel="noopener noreferrer">
             <Download aria-hidden="true" size={15} />
             Tải về
           </a>
-          {google ? (
-            <button
-              type="button"
-              className="lp-res-action"
-              onClick={() => { frameRef.current?.requestFullscreen().catch(() => undefined) }}
-            >
-              <Maximize2 aria-hidden="true" size={15} />
-              Mở rộng
-            </button>
-          ) : null}
         </div>
       </div>
-
-      <div className="lp-res-frame" ref={frameRef}>
-        {google ? (
-          <iframe
-            key={active.id}
-            className="lp-res-iframe"
-            src={google.embedUrl}
-            title={active.title}
-            allowFullScreen
-            sandbox="allow-scripts allow-same-origin allow-presentation allow-popups allow-popups-to-escape-sandbox"
-          />
-        ) : (
-          <div className="lp-res-fallback">
-            <MonitorPlay aria-hidden="true" size={36} />
-            <p>Slide này không nhúng trực tiếp được.</p>
-            <a className="lp-res-action" href={active.url} target="_blank" rel="noopener noreferrer">Mở trong tab mới</a>
-          </div>
-        )}
-      </div>
+      <Suspense fallback={<div className="lp-res-pdf-state" role="status">Đang tải trình xem PDF…</div>}>
+        <SlidePdfViewer key={`${active.id}:${active.url}`} url={active.url} title={active.title} onRefresh={onRefresh} />
+      </Suspense>
     </div>
   )
 }

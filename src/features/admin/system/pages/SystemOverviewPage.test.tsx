@@ -3,11 +3,11 @@ import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { SystemOverviewPage } from './SystemOverviewPage'
 
-const { fetchServiceSnapshot, fetchActivityStats, listUsers } = vi.hoisted(() => ({
-  fetchServiceSnapshot: vi.fn(), fetchActivityStats: vi.fn(), listUsers: vi.fn(),
+const { fetchServiceSnapshot, fetchActivityStats, listAllUsers } = vi.hoisted(() => ({
+  fetchServiceSnapshot: vi.fn(), fetchActivityStats: vi.fn(), listAllUsers: vi.fn(),
 }))
 vi.mock('../api/systemAdminApi', () => ({ fetchServiceSnapshot, fetchActivityStats }))
-vi.mock('../../users/api/userAdminApi', () => ({ listUsers }))
+vi.mock('../../users/api/userAdminApi', () => ({ listAllUsers }))
 
 const users = [{
   id: '1', email: 'admin@example.com', fullName: 'Admin', phoneNumber: null, status: 'LOCKED',
@@ -19,7 +19,7 @@ describe('SystemOverviewPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     fetchServiceSnapshot.mockRejectedValue(new Error('Service monitor is unavailable'))
-    listUsers.mockResolvedValue(users)
+    listAllUsers.mockResolvedValue(users)
     fetchActivityStats.mockResolvedValue({ from: '2026-10-01', to: '2026-10-07', daily: [{ day: '2026-10-07', dau: 5, wau: 12, mau: 20 }], retention: [] })
   })
 

@@ -21,7 +21,7 @@ function httpsUrl(value: string) {
   try { return new URL(value).protocol === 'https:' } catch { return false }
 }
 
-/** The title always; the link of a slide or an older document; the PDF of a new document. */
+/** The title always, the PDF for a new resource, or the link of an older document. */
 function resourceSchema(label: string, needsFile: boolean, needsUrl: boolean) {
   const shape: Record<string, z.ZodType> = { title: requiredText(`Tiêu đề ${label}`, 255) }
   if (needsUrl) {
@@ -43,8 +43,7 @@ interface ResourceDraft {
 }
 
 /**
- * A new document is a PDF the author uploads; a slide is a link, and so is an older document that was saved as one.
- * A stored file keeps its file, so only its title can change.
+ * A new slide or document is a PDF the author uploads. A stored file keeps its file, so only its title can change.
  */
 function ResourceForm({ item, type, busy, onSave, onCancel }: {
   item?: LessonResource
@@ -58,8 +57,8 @@ function ResourceForm({ item, type, busy, onSave, onCancel }: {
   const [file, setFile] = useState<File | null>(null)
   const label = type === 'SLIDE' ? 'slide' : 'tài liệu'
   const storedFile = Boolean(item?.fileKey)
-  const needsFile = type === 'DOCUMENT' && !item
-  const needsUrl = !needsFile && !storedFile
+  const needsFile = !item
+  const needsUrl = type === 'DOCUMENT' && Boolean(item) && !storedFile
   const schema = useMemo(() => resourceSchema(label, needsFile, needsUrl), [label, needsFile, needsUrl])
   // The file is checked outside the schema; what it says (nothing, or the problem) is what the schema reads.
   const fileProblem = file ? documentFileProblem(file) : null
@@ -67,7 +66,7 @@ function ResourceForm({ item, type, busy, onSave, onCancel }: {
 
   function pick(chosen: File | null) {
     setFile(chosen)
-    // A new document is named after its file until the author types a title of their own.
+    // A new resource is named after its file until the author types a title of their own.
     if (chosen && !title.trim()) setTitle(chosen.name.replace(/\.pdf$/i, '').slice(0, 255))
   }
 
@@ -95,7 +94,6 @@ function ResourceForm({ item, type, busy, onSave, onCancel }: {
             <input className="adm-input" type="url" maxLength={2000} value={url} onChange={(event) => setUrl(event.target.value)} />
           </AdminField>
         ) : null}
-        {storedFile ? <p className="adm-muted">Tệp PDF đã tải lên. Muốn đổi tệp, hãy xóa tài liệu này và thêm tài liệu mới.</p> : null}
         <div className="adm-form-footer">
           <button className="adm-btn" type="button" onClick={onCancel}>Đóng</button>
           <button className="adm-btn adm-btn--primary" type="submit">{busy ? (needsFile ? 'Đang tải lên…' : 'Đang lưu…') : 'Lưu'}</button>
@@ -149,12 +147,12 @@ function ResourceList({ lessonId, type, items, reload, busy, clearError, run }: 
       </div>
       <div className="adm-table-wrap adm-kp-table">
         <table aria-label={`${label} của bài`} className="adm-table">
-          <thead><tr><th className="adm-stt" scope="col">STT</th><th scope="col">Tiêu đề</th><th scope="col">{type === 'DOCUMENT' ? 'Tệp / đường dẫn' : 'Đường dẫn'}</th><th className="adm-col-actions" scope="col">Hành động</th></tr></thead>
+          <thead><tr><th className="adm-stt" scope="col">STT</th><th scope="col">Tiêu đề</th><th scope="col">{type === 'DOCUMENT' ? 'Tệp / đường dẫn' : 'Tệp'}</th><th className="adm-col-actions" scope="col">Hành động</th></tr></thead>
           <tbody>{ordered.length === 0 ? <tr><td className="adm-muted adm-kp-table__empty" colSpan={4}>Chưa có {label.toLowerCase()} nào.</td></tr> : ordered.map((item, index) => (
             <tr key={item.id}>
               <td className="adm-stt">{index + 1}</td>
               <td>{item.title}</td>
-              <td>{item.fileKey
+              <td>{type === 'SLIDE' || item.fileKey
                 ? <a aria-label={`Mở tệp PDF ${item.title}`} className="adm-link-out" href={item.url} rel="noreferrer" target="_blank"><FileText aria-hidden="true" size={14} />Tệp PDF<ExternalLink aria-hidden="true" size={13} /></a>
                 : httpsUrl(item.url)
                   ? <a className="adm-link-out" href={item.url} rel="noreferrer" target="_blank">{item.url}<ExternalLink aria-hidden="true" size={13} /></a>
@@ -179,7 +177,7 @@ function ResourceList({ lessonId, type, items, reload, busy, clearError, run }: 
           const saved = await run(async () => {
             const sortOrder = items.length ? Math.max(...items.map((item) => item.sortOrder)) + 1 : 0
             if (file) {
-              // The PDF goes up first; the document row only exists once its file is safely stored.
+              // The PDF goes up first; the resource row only exists once its file is safely stored.
               const uploaded = await uploadAdminDocument(file)
               await createLessonResource(lessonId, { type, title, fileKey: uploaded.mediaReference, sortOrder })
             } else {

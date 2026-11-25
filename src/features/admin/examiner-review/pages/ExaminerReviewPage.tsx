@@ -1,8 +1,10 @@
 import { useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { AdminEmpty, AdminError, AdminLoading } from '../../components/AdminState'
+import { InfiniteCount, InfiniteSentinel } from '../../components/InfiniteSentinel'
 import { adminErrorMessage } from '../../lib/adminErrors'
 import { useAdminResource } from '../../lib/useAdminResource'
+import { useInfiniteList } from '../../lib/useInfiniteList'
 import { AdminPage } from '../../pages/AdminPage'
 import { REVIEW_PAGE_SIZE, claimReview, listExaminerQuality, listMyReviews, listReviewQueue } from '../api/examinerReviewApi'
 import { QUALITY_NOTE, byDifference, percentText, shortId, sourceLabel, taskLabel, waitText } from '../lib/reviewLabels'
@@ -13,7 +15,7 @@ import { useAdminError } from '../../lib/useAdminError'
 type Tab = 'queue' | 'mine' | 'quality'
 const TAB_LABEL: Record<Tab, string> = { queue: 'Bài chờ chấm lại', mine: 'Bài tôi đang chấm', quality: 'Chất lượng giám khảo' }
 
-function QueueTable({ entries, action }: { entries: QueueEntry[]; action: (entry: QueueEntry) => ReactNode }) {
+function QueueTable({ entries, action, onEnd, hasMore, loadingMore, moreError, retry, resetKey }: { entries: QueueEntry[]; action: (entry: QueueEntry) => ReactNode; onEnd: () => void; hasMore: boolean; loadingMore: boolean; moreError: string | null; retry: () => void; resetKey: string }) {
   return (
     <div className="adm-table-wrap">
       <table className="adm-table">
@@ -28,19 +30,10 @@ function QueueTable({ entries, action }: { entries: QueueEntry[]; action: (entry
               <td>{action(entry)}</td>
             </tr>
           ))}
+          <tr><td colSpan={5}><InfiniteSentinel as="div" hasMore={hasMore} itemCount={entries.length} loadingMore={loadingMore} moreError={moreError} noun="bài" onReachEnd={onEnd} onRetry={retry} resetKey={resetKey} /></td></tr>
         </tbody>
       </table>
     </div>
-  )
-}
-
-function Pager({ page, total, onPage }: { page: number; total: number; onPage: (page: number) => void }) {
-  return (
-    <nav className="adm-er-actions" aria-label="Phân trang">
-      <button className="adm-btn" type="button" disabled={page === 0} onClick={() => onPage(page - 1)}>Trang trước</button>
-      <span>Trang {page + 1}</span>
-      <button className="adm-btn" type="button" disabled={(page + 1) * REVIEW_PAGE_SIZE >= total} onClick={() => onPage(page + 1)}>Trang sau</button>
-    </nav>
   )
 }
 
@@ -74,11 +67,14 @@ function Quality() {
 }
 
 function Queue({ mine }: { mine: boolean }) {
-  const [page, setPage] = useState(0)
   const [busy, setBusy] = useState<string | null>(null)
   const [, setError] = useAdminError()
   const navigate = useNavigate()
-  const list = useAdminResource(`examiner-review:${mine ? 'mine' : 'queue'}:${page}`, (signal) => (mine ? listMyReviews(page, signal) : listReviewQueue(page, signal)))
+  const key = `examiner-review:${mine ? 'mine' : 'queue'}`
+  const list = useInfiniteList(key, async (page, signal) => {
+    const result = mine ? await listMyReviews(page, signal) : await listReviewQueue(page, signal)
+    return { content: result.content, page: result.page, totalElements: result.totalElements, totalPages: Math.ceil(result.totalElements / REVIEW_PAGE_SIZE) }
+  })
 
   async function claim(entry: QueueEntry) {
     if (busy) return
@@ -93,20 +89,26 @@ function Queue({ mine }: { mine: boolean }) {
     }
   }
 
-  if (list.status === 'loading') return <AdminLoading />
+  if (list.status === 'loading' && list.items.length === 0) return <AdminLoading />
   if (list.status === 'error') return <AdminError message={list.error!} onRetry={list.reload} />
-  const data = list.data!
+  const entries = list.items
   return (
     <>
-      {data.content.length === 0 ? <AdminEmpty title={mine ? 'Bạn chưa nhận bài nào' : 'Chưa có bài chờ chấm lại'} /> : (
+      {list.status === 'success' && entries.length === 0 ? <AdminEmpty title={mine ? 'Bạn chưa nhận bài nào' : 'Chưa có bài chờ chấm lại'} /> : entries.length > 0 ? <>
+        <InfiniteCount items={entries.length} noun="bài" total={list.total} />
         <QueueTable
-          entries={data.content}
+          entries={entries}
+          hasMore={list.hasMore}
+          loadingMore={list.loadingMore}
+          moreError={list.moreError}
+          onEnd={list.loadMore}
+          retry={list.retryMore}
+          resetKey={key}
           action={(entry) => mine
             ? <Link className="adm-btn" to={`/content-author/examiner-review/${entry.id}`}>Chấm tiếp</Link>
             : <button className="adm-btn adm-btn--primary" type="button" disabled={busy !== null} onClick={() => void claim(entry)}>Nhận</button>}
         />
-      )}
-      <Pager page={page} total={data.totalElements} onPage={setPage} />
+      </> : null}
     </>
   )
 }

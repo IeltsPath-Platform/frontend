@@ -41,6 +41,8 @@ function getRoleLabel(roleName?: string): string {
       return 'Giám khảo'
     case 'SALES_STAFF':
       return 'Tư vấn viên'
+    case 'STAFF_MANAGER':
+      return 'Quản lý bán hàng'
     case 'CUSTOMER':
     default:
       return 'Học viên'

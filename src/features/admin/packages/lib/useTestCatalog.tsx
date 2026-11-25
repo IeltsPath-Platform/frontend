@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useAdminConfirm } from '../../lib/useAdminConfirm'
 import { useAdminErrorToast } from '../../lib/useAdminError'
 import { useAdminResource } from '../../lib/useAdminResource'
-import { archivePackage, listPackages, restorePackage } from '../api/packageApi'
+import { archivePackage, listAllPackages, restorePackage } from '../api/packageApi'
 import { listPackageStats } from '../api/packageStatsApi'
 import { packageError } from './packageLabels'
 import type { PackageListItem, PackageStats } from '../types'
@@ -20,7 +20,7 @@ export interface HideCopy {
  * still works and shows dashes.
  */
 export function useTestCatalog(type: 'PRACTICE_TEST' | 'PLACEMENT_TEST', hide: HideCopy) {
-  const tests = useAdminResource(`test-catalog:${type}`, (signal) => listPackages({ type }, signal))
+  const tests = useAdminResource(`test-catalog:${type}`, (signal) => listAllPackages({ type }, signal))
   const rows = useMemo(() => tests.data ?? [], [tests.data])
   const ids = rows.map((row) => row.id).join(',')
   const statsResource = useAdminResource(`test-catalog-stats:${type}:${ids}`,

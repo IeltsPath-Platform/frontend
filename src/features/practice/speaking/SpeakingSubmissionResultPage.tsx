@@ -5,7 +5,7 @@ import { KeyActivationDialog } from '@/features/home/components/KeyActivationDia
 import type { ActivationProduct } from '@/features/home/pricingData'
 import { BandLimitNotice } from '@/features/practice/components/BandLimitNotice'
 import { useWritingWallet } from '@/features/practice/writing/useWritingWallet'
-import { PremiumPlansDialog } from './PremiumPlansDialog'
+import { PremiumPlansDialog } from '../components/PremiumPlansDialog'
 import { PronunciationBreakdown } from './PronunciationBreakdown'
 import { commentBlocks, splitComment, type CommentBlock } from './speakingCommentBlocks'
 import { parseWeakness, type WeaknessToken } from './speakingWeakness'

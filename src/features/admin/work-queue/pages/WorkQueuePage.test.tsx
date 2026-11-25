@@ -27,7 +27,10 @@ function backend(list: unknown[], patch: () => Response = () => json({})) {
     const url = new URL(String(input))
     const call = { path: url.pathname, query: url.searchParams, method: options.method ?? 'GET', body: typeof options.body === 'string' ? JSON.parse(options.body) : options.body }
     calls.push(call)
-    return call.method === 'PATCH' ? patch() : json(list)
+    if (call.method === 'PATCH') return patch()
+    const status = call.query.get('status')
+    const filtered = (list as Array<{ status?: string }>).filter((work) => status === 'ACTIVE' ? work.status !== 'DONE' : !status || work.status === status)
+    return json({ content: filtered, page: Number(call.query.get('page') ?? 0), size: Number(call.query.get('size') ?? 25), totalElements: filtered.length, totalPages: Math.ceil(filtered.length / Number(call.query.get('size') ?? 25)) })
   })
 }
 function Where() {
@@ -53,13 +56,13 @@ describe('WorkQueuePage', () => {
 
     expect(await screen.findByText('Paraphrase')).toBeInTheDocument()
     expect(calls[0].query.get('queue')).toBe('CONTENT_AUTHOR')
-    expect(calls[0].query.has('status')).toBe(false)
+    expect(calls[0].query.get('status')).toBe('ACTIVE')
     const table = screen.getByRole('table', { name: 'Danh sách việc cần làm' })
     expect(within(row('Paraphrase')).getByText(/Hết bài ôn 5 lần/)).toBeInTheDocument()
     expect(within(row('Which statement is supported?')).getByText(/Đúng 97% trên 120 lượt/)).toBeInTheDocument()
     expect(within(row('Skimming → Scanning')).getByText(/30 lượt dò, KP nền đạt 90%, là gốc lỗi 5%/)).toBeInTheDocument()
     expect(within(table).queryByText('A hard one')).not.toBeInTheDocument()
-    expect(within(table).getAllByRole('row')).toHaveLength(4)
+    expect(within(table).getAllByRole('row').filter((workRow) => !workRow.classList.contains('adm-infinite__sentinel'))).toHaveLength(4)
   })
 
   it('puts no question mark or explanation text on the rows: the kind keeps its explanation as a tooltip', async () => {

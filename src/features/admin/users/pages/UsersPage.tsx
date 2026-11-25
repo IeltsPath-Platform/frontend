@@ -1,4 +1,4 @@
-﻿import { useMemo, useState, type FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { Plus } from 'lucide-react'
 import { z } from 'zod'
 import { useAuthSession } from '@/features/auth/authSession'
@@ -9,7 +9,6 @@ import { AdminField } from '../../components/AdminField'
 import { AdminDetails, AdminDrawer, AdminModal } from '../../components/AdminLayer'
 import { useAdminConfirm } from '../../lib/useAdminConfirm'
 import { AdminEmpty, AdminError, AdminLoading } from '../../components/AdminState'
-import { useAdminResource } from '../../lib/useAdminResource'
 import { AdminPage } from '../../pages/AdminPage'
 import { createUser, deleteUser, listUsers, updateUser, updateUserRoles, updateUserStatus } from '../api/userAdminApi'
 import { LoginHistoryModal } from '../components/LoginHistoryModal'
@@ -21,6 +20,8 @@ import { userAdminErrorText } from '../lib/userErrors'
 import { ASSIGNABLE_USER_ROLES, CHANGEABLE_USER_STATUSES, USER_STATUSES, type CreateUserInput, type User, type UserRole, type UserStatus } from '../types'
 import '../users.css'
 import { useAdminError } from '../../lib/useAdminError'
+import { InfiniteCount, InfiniteSentinel } from '../../components/InfiniteSentinel'
+import { useInfiniteList } from '../../lib/useInfiniteList'
 
 const PAGE_SIZE = 25
 
@@ -213,35 +214,25 @@ export function UsersPage() {
   const { userId, email } = useAuthSession()
   const [roleFilter, setRoleFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
-  const [page, setPage] = useState(0)
   const [creating, setCreating] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [editSection, setEditSection] = useState<EditorSection>('profile')
   const [viewingId, setViewingId] = useState<string | null>(null)
   const [historyId, setHistoryId] = useState<string | null>(null)
-  const list = useAdminResource('admin-users', (signal) => listUsers(signal))
-  const { toggleLock, lockDialog } = useUserLock(list.reload)
+  const search = query.trim()
+  const filterKey = `admin-users:${roleFilter}:${statusFilter}:${search}`
+  const list = useInfiniteList(filterKey, (page, signal) => listUsers({ page, size: PAGE_SIZE, role: roleFilter || undefined, status: statusFilter || undefined, search: search || undefined }, signal))
+  const { toggleLock, lockDialog } = useUserLock(list.refresh)
 
   function openEditor(id: string, section: EditorSection) {
     setEditSection(section)
     setSelectedId(id)
   }
 
-  const filtered = useMemo(() => {
-    const text = query.trim().toLowerCase()
-    return (list.data ?? []).filter((user) => {
-      const matchesText = !text || user.email.toLowerCase().includes(text) || user.fullName.toLowerCase().includes(text)
-      const matchesRole = !roleFilter || user.roles.some((role) => role.name === roleFilter)
-      const matchesStatus = !statusFilter || user.status === statusFilter
-      return matchesText && matchesRole && matchesStatus
-    })
-  }, [list.data, query, roleFilter, statusFilter])
-  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
-  const currentPage = Math.min(page, pageCount - 1)
-  const pageRows = filtered.slice(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE)
-  const selected = filtered.find((user) => user.id === selectedId) ?? null
-  const viewing = (list.data ?? []).find((user) => user.id === viewingId) ?? null
-  const historyUser = (list.data ?? []).find((user) => user.id === historyId) ?? null
+  const rows = list.items
+  const selected = rows.find((user) => user.id === selectedId) ?? null
+  const viewing = rows.find((user) => user.id === viewingId) ?? null
+  const historyUser = rows.find((user) => user.id === historyId) ?? null
 
   return (
     <AdminPage
@@ -250,25 +241,26 @@ export function UsersPage() {
       title="Người dùng"
     >
       {creating ? <AdminDrawer title="Tài khoản nhân sự mới" onClose={() => setCreating(false)}>
-        {(close) => <CreateUserForm onCancel={close} onCreated={() => { list.reload(); close() }} />}
+        {(close) => <CreateUserForm onCancel={close} onCreated={() => { list.refresh(); close() }} />}
       </AdminDrawer> : null}
       <div className="adm-filters um-filters">
-        <label className="adm-field"><span>Vai trò</span><select className="adm-select" onChange={(event) => { setPage(0); setRoleFilter(event.target.value) }} value={roleFilter}><option value="">Tất cả vai trò</option>{ASSIGNABLE_USER_ROLES.map((role) => <option key={role} value={role}>{USER_ROLE_LABEL[role]}</option>)}</select></label>
-        <label className="adm-field"><span>Trạng thái</span><select className="adm-select" onChange={(event) => { setPage(0); setStatusFilter(event.target.value) }} value={statusFilter}><option value="">Tất cả trạng thái</option>{USER_STATUSES.map((status) => <option key={status} value={status}>{USER_STATUS_LABEL[status]}</option>)}</select></label>
+        <label className="adm-field"><span>Vai trò</span><select className="adm-select" onChange={(event) => setRoleFilter(event.target.value)} value={roleFilter}><option value="">Tất cả vai trò</option>{ASSIGNABLE_USER_ROLES.map((role) => <option key={role} value={role}>{USER_ROLE_LABEL[role]}</option>)}</select></label>
+        <label className="adm-field"><span>Trạng thái</span><select className="adm-select" onChange={(event) => setStatusFilter(event.target.value)} value={statusFilter}><option value="">Tất cả trạng thái</option>{USER_STATUSES.map((status) => <option key={status} value={status}>{USER_STATUS_LABEL[status]}</option>)}</select></label>
       </div>
 
       {list.status === 'loading' ? <AdminLoading label="Đang tải người dùng…" /> : null}
       {list.status === 'error' ? <AdminError message={list.error ?? 'Không tải được người dùng.'} onRetry={list.reload} /> : null}
-      {list.status === 'success' && filtered.length === 0 ? <AdminEmpty title="Không tìm thấy người dùng">Thử đổi từ khóa hoặc bộ lọc.</AdminEmpty> : null}
-      {list.status === 'success' && filtered.length > 0 ? (
+      {list.status === 'success' && rows.length === 0 ? <AdminEmpty title="Không tìm thấy người dùng">Thử đổi từ khóa hoặc bộ lọc.</AdminEmpty> : null}
+      {list.status === 'success' && rows.length > 0 ? (
         <>
+          <InfiniteCount items={rows.length} total={list.total} noun="người dùng" />
           <div className="adm-table-wrap um-table-wrap">
             <table className="adm-table um-table">
               <caption className="adm-sr-only">Danh sách người dùng</caption>
               <thead><tr><th className="adm-stt" scope="col">STT</th><th scope="col">Email</th><th scope="col">Họ tên</th><th scope="col">Vai trò</th><th scope="col">Trạng thái</th><th scope="col">Ngày tạo</th><th className="um-col-actions" scope="col">Hành động</th></tr></thead>
-              <tbody>{pageRows.map((user, index) => (
+              <tbody>{rows.map((user, index) => (
                 <tr key={user.id}>
-                  <td className="adm-stt">{currentPage * PAGE_SIZE + index + 1}</td>
+                  <td className="adm-stt">{index + 1}</td>
                   <td><div className="um-user"><span aria-hidden="true" className={`um-avatar um-role--${(primaryRole(user.roles) ?? 'customer').toLowerCase()}`}>{(user.fullName || user.email).charAt(0)}</span>{user.email}</div></td>
                   <td>{user.fullName || '—'}</td>
                   <td><div className="um-badges">{user.roles.map((role) => <RoleBadge key={role.id} role={role.name} />)}</div></td>
@@ -284,17 +276,12 @@ export function UsersPage() {
                     user={user}
                   /></td>
                 </tr>
-              ))}</tbody>
+              ))}<InfiniteSentinel as="tr" colSpan={7} hasMore={list.hasMore} itemCount={rows.length} loadingMore={list.loadingMore} moreError={list.moreError} noun="người dùng" onReachEnd={list.loadMore} onRetry={list.retryMore} resetKey={filterKey} /></tbody>
             </table>
           </div>
-          <nav aria-label="Phân trang người dùng" className="um-pager">
-            <button className="adm-btn adm-btn--small" disabled={currentPage === 0} onClick={() => setPage(currentPage - 1)} type="button">Trang trước</button>
-            <span>Trang {currentPage + 1} / {pageCount} · {filtered.length} người dùng</span>
-            <button className="adm-btn adm-btn--small" disabled={currentPage + 1 >= pageCount} onClick={() => setPage(currentPage + 1)} type="button">Trang sau</button>
-          </nav>
           {lockDialog}
           {selected ? <AdminModal title={editSection === 'roles' ? 'Phân quyền' : selected.fullName || selected.email} description={selected.email} onClose={() => setSelectedId(null)}>
-            {(close) => <UserEditor key={`${selected.id}:${selected.updatedAt}:${editSection}`} section={editSection} onDeleted={() => { list.reload(); close() }} onSaved={() => { list.reload(); close() }} self={isCurrentUser(selected, userId, email)} user={selected} />}
+            {(close) => <UserEditor key={`${selected.id}:${selected.updatedAt}:${editSection}`} section={editSection} onDeleted={() => { list.refresh(); close() }} onSaved={() => { list.refresh(); close() }} self={isCurrentUser(selected, userId, email)} user={selected} />}
           </AdminModal> : null}
           {historyUser ? <LoginHistoryModal onClose={() => setHistoryId(null)} user={historyUser} /> : null}
           {viewing ? <AdminModal title={viewing.fullName || viewing.email} description={viewing.email} onClose={() => setViewingId(null)}>

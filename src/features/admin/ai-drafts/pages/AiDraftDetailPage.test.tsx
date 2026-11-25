@@ -4,11 +4,14 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { HttpError } from '@/lib/httpClient'
 import { draftId, makeDraft } from '../testFixtures'
-import type { QuestionDraft } from '../types'
+import type { AiDraft, QuestionDraft } from '../types'
 import { AiDraftDetailPage } from './AiDraftDetailPage'
 
 const api = vi.hoisted(() => ({ fetchAiDraft: vi.fn(), approveQuestionDraft: vi.fn(), rejectAiDraft: vi.fn(), patchQuestionDraftItem: vi.fn(), deleteQuestionDraftItem: vi.fn() }))
+const sectionApi = vi.hoisted(() => ({ getSectionQuestionDraft: vi.fn(), approveSectionQuestionDraft: vi.fn(), editSectionQuestionDraftItem: vi.fn(), rejectSectionQuestionDraft: vi.fn(), removeSectionQuestionDraftItem: vi.fn() }))
+const itemId = (index: number) => `10000000-0000-4000-8000-00000000000${index + 3}`
 vi.mock('../api/aiDraftApi', () => api)
+vi.mock('../../packages/api/sectionDraftApi', () => sectionApi)
 vi.mock('../draftFlags', () => ({ QUESTION_DRAFTS_ENABLED: true }))
 function show(id = draftId) {
   return render(<MemoryRouter initialEntries={[`/content-author/ai-drafts/${id}`]}><Routes><Route path="/content-author/ai-drafts/:draftId" element={<AiDraftDetailPage />} /></Routes></MemoryRouter>)
@@ -27,13 +30,14 @@ function choose(index: number, action: 'Xem' | 'Sửa' | 'Xóa') {
 describe('AiDraftDetailPage', () => {
   beforeEach(() => {
     Object.values(api).forEach((mock) => mock.mockReset())
+    Object.values(sectionApi).forEach((mock) => mock.mockReset())
     api.fetchAiDraft.mockResolvedValue(makeDraft())
     api.approveQuestionDraft.mockResolvedValue(makeDraft({ status: 'APPROVED' }))
     api.rejectAiDraft.mockResolvedValue(makeDraft({ status: 'REJECTED' }))
   })
   afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks() })
 
-  it('shows usable questions separately from rejected outputs and approves zero-based item indexes', async () => {
+  it('shows usable questions separately from rejected outputs and approves stable item ids', async () => {
     api.fetchAiDraft.mockResolvedValueOnce(makeDraft()).mockResolvedValue(makeDraft({ status: 'APPROVED' }))
     show()
     await select()
@@ -41,7 +45,7 @@ describe('AiDraftDetailPage', () => {
     expect(within(screen.getByRole('region', { name: 'Câu bị loại' })).getByText(/Câu đầu ra 5/)).toBeInTheDocument()
     expect(screen.queryByRole('textbox', { name: /stem|Nội dung câu/ })).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Duyệt các câu đã chọn (2)' }))
-    await waitFor(() => expect(api.approveQuestionDraft).toHaveBeenCalledExactlyOnceWith(draftId, { itemIndexes: [0, 2] }))
+    await waitFor(() => expect(api.approveQuestionDraft).toHaveBeenCalledExactlyOnceWith(draftId, { itemIds: [itemId(0), itemId(2)], revision: 0 }))
     await waitFor(() => expect(api.fetchAiDraft).toHaveBeenCalledTimes(2))
     expect(await screen.findByText('Đã duyệt')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Mở Ngân hàng câu hỏi' })).toHaveAttribute('href', '/content-author/questions')
@@ -128,7 +132,7 @@ describe('AiDraftDetailPage', () => {
     await settle()
     await act(async () => { await vi.advanceTimersByTimeAsync(5000) })
     expect(screen.getByRole('alert')).toHaveTextContent('Chưa cấu hình mô hình AI')
-    expect(screen.getByRole('link', { name: 'Gửi yêu cầu mới' })).toHaveAttribute('href', '/content-author/ai-drafts?new=questions')
+    expect(screen.queryByRole('link', { name: 'Gửi yêu cầu mới' })).not.toBeInTheDocument()
     await act(async () => { await vi.advanceTimersByTimeAsync(10000) })
     expect(api.fetchAiDraft).toHaveBeenCalledTimes(2)
     expect(api.approveQuestionDraft).not.toHaveBeenCalled()
@@ -147,12 +151,37 @@ describe('AiDraftDetailPage', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('ID bản nháp không hợp lệ')
     expect(api.fetchAiDraft).not.toHaveBeenCalled()
   })
-  it('refuses non-question detail responses', async () => {
+  it('reports unsupported draft kinds without crashing', async () => {
     api.fetchAiDraft.mockResolvedValue({ ...makeDraft(), kind: 'COURSE' })
     show()
-    expect(await screen.findByRole('alert')).toHaveTextContent('Trang này chỉ hỗ trợ bản nháp câu hỏi.')
+    expect(await screen.findByRole('alert')).toHaveTextContent('Loại bản nháp này chưa được hỗ trợ.')
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
     expect(api.approveQuestionDraft).not.toHaveBeenCalled()
+  })
+
+  it('reviews section question drafts through the shared draft review component', async () => {
+    const base = makeDraft()
+    const draft = { ...base, kind: 'SECTION_QUESTIONS', request: { ...base.request, packageId: draftId, versionId: itemId(0), sectionId: itemId(1) }, result: { ...base.result!, requested: 3 } } as unknown as AiDraft
+    const detail = { ...draft, sourceChanged: false, sectionState: 'OK' as const, origin: { type: 'SECTION', title: 'Phần Đọc · Đề luyện tập', packageId: draftId, versionId: itemId(0), sectionId: itemId(1), exists: true } }
+    api.fetchAiDraft.mockResolvedValue(draft)
+    sectionApi.getSectionQuestionDraft.mockResolvedValue(detail)
+    sectionApi.approveSectionQuestionDraft.mockResolvedValue(draft)
+    show()
+    fireEvent.click(await screen.findByRole('checkbox', { name: 'Chọn câu 1' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Thêm 1 câu vào phần' }))
+    await waitFor(() => expect(sectionApi.approveSectionQuestionDraft).toHaveBeenCalledWith(draftId, [itemId(0)], 0, false))
+  })
+
+  it('offers a new exercise block when the requested block was removed', async () => {
+    const lessonDraft = makeDraft({ request: { knowledgePointId: draftId, questionType: 'MULTIPLE_CHOICE', count: 3, lessonId: itemId(0), blockId: itemId(1) } })
+    api.fetchAiDraft.mockResolvedValue(lessonDraft)
+    api.approveQuestionDraft.mockRejectedValueOnce(new HttpError(409, 'Khối bài tập không còn tồn tại.', { details: { code: 'BLOCK_MISSING' } }))
+      .mockResolvedValue(makeDraft({ status: 'APPROVED' }))
+    show()
+    await select()
+    fireEvent.click(screen.getByRole('button', { name: 'Thêm 2 câu vào bài học' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Thêm vào khối bài tập mới' }))
+    await waitFor(() => expect(api.approveQuestionDraft).toHaveBeenLastCalledWith(draftId, { itemIds: [itemId(0), itemId(2)], revision: 0, createNewBlock: true }))
   })
   it('rejects malformed question results before exposing review actions', async () => {
     api.fetchAiDraft.mockResolvedValue({ ...makeDraft(), result: { items: [{ stem: 'Missing all other fields' }], rejected: [] } })
@@ -197,7 +226,7 @@ describe('AiDraftDetailPage', () => {
     const form = screen.getByRole('form', { name: 'Sửa câu 2' })
     fireEvent.change(within(form).getByLabelText('Nội dung câu hỏi'), { target: { value: 'Edited second stem' } })
     fireEvent.submit(form)
-    await waitFor(() => expect(api.patchQuestionDraftItem).toHaveBeenCalledWith(draftId, 1, expect.objectContaining({ stem: 'Edited second stem' })))
+    await waitFor(() => expect(api.patchQuestionDraftItem).toHaveBeenCalledWith(draftId, itemId(1), 0, expect.objectContaining({ stem: 'Edited second stem' })))
     expect(within(form).getByLabelText('Nội dung câu hỏi')).toBeDisabled()
     await act(async () => write.resolve(changed))
     // The drawer closes once the save is kept; the list then waits for the refresh.
@@ -259,7 +288,7 @@ describe('AiDraftDetailPage', () => {
     expect(api.deleteQuestionDraftItem).not.toHaveBeenCalled()
     choose(1, 'Xóa')
     await answerConfirm(true)
-    await waitFor(() => expect(api.deleteQuestionDraftItem).toHaveBeenCalledExactlyOnceWith(draftId, 0))
+    await waitFor(() => expect(api.deleteQuestionDraftItem).toHaveBeenCalledExactlyOnceWith(draftId, itemId(0), 0))
     await waitFor(() => expect(screen.getAllByRole('checkbox')).toHaveLength(2))
     expect(screen.queryByText('Question stem 1')).not.toBeInTheDocument()
     expect(screen.getByRole('checkbox', { name: 'Chọn câu 1 để duyệt' })).not.toBeChecked()
@@ -269,7 +298,7 @@ describe('AiDraftDetailPage', () => {
     fireEvent.click(screen.getByRole('checkbox', { name: 'Chọn câu 2 để duyệt' }))
     api.approveQuestionDraft.mockResolvedValue(makeDraft({ status: 'APPROVED' }))
     fireEvent.click(screen.getByRole('button', { name: 'Duyệt các câu đã chọn (1)' }))
-    await waitFor(() => expect(api.approveQuestionDraft).toHaveBeenCalledWith(draftId, { itemIndexes: [1] }))
+    await waitFor(() => expect(api.approveQuestionDraft).toHaveBeenCalledWith(draftId, { itemIds: [itemId(2)], revision: 0 }))
   })
 
   it.each(['APPROVED', 'REJECTED', 'FAILED'] as const)('does not expose item mutation actions for %s', async (status) => {

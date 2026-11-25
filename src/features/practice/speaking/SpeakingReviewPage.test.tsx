@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { HttpError } from '@/lib/httpClient'
+import { ToastProvider } from '@/components/toast/ToastProvider'
 import { SpeakingReviewPage } from './SpeakingReviewPage'
 import { RecordingTooLongError } from './sendSpeakingSubmission'
 import { clearSession, getRecording, saveRecording } from './speakingSession'
@@ -42,12 +43,12 @@ const recording = (seconds: number, silent = false) => ({ blob: new Blob(['x']),
 
 function renderReview(path = `/practice/speaking/review/pv?parts=${PART_1},${PART_2}`) {
   render(
-    <MemoryRouter initialEntries={[path]}>
+    <ToastProvider><MemoryRouter initialEntries={[path]}>
       <Routes>
         <Route path="/practice/speaking/review/:packageVersionId" element={<SpeakingReviewPage />} />
         <Route path="/practice-tests" element={<p>Danh mục luyện tập</p>} />
       </Routes>
-    </MemoryRouter>,
+    </MemoryRouter></ToastProvider>,
   )
 }
 

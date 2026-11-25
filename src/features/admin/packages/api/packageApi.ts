@@ -1,15 +1,17 @@
-import { z } from 'zod'
+﻿import { z } from 'zod'
 import { apiRequest } from '@/lib/httpClient'
 import {
   AUDIO_CONTENT_TYPES, AUDIO_MAX_BYTES, addSectionQuestionRequestSchema, audioRequestSchema, audioUploadSchema,
-  contentPackageSchema, createPackageRequestSchema, packageFiltersSchema, packageListItemSchema, packagePreviewSchema,
+  contentPackageSchema, createPackageRequestSchema, packageFiltersSchema, packagePageSchema, packagePreviewSchema,
   packageSectionSchema, packageVersionSchema, passageRequestSchema, practiceSourceSchema, publicationScheduleSchema,
   publishedPackageSchema, sectionAudioSchema, sectionOrderSchema, sectionQuestionOrderSchema, sectionQuestionSchema, sectionRequestSchema,
-  type AddSectionQuestionRequest, type AudioRequest, type CreatePackageRequest, type PackageFilters, type PassageRequest, type SectionRequest,
+  type AddSectionQuestionRequest, type AudioRequest, type CreatePackageRequest, type PackageFilters, type PackageListItem, type PassageRequest, type SectionRequest,
   type UpdatePackageInfoRequest, updatePackageInfoRequestSchema,
 } from '../types'
 
 const BASE = '/api/content/admin/packages'
+const ALL_PAGE_SIZE = 100
+const MAX_PAGES = 20
 const packagePath = (id: string) => `${BASE}/${z.guid().parse(id)}`
 const sectionsPath = (id: string, versionId: string) => `${packagePath(id)}/versions/${z.guid().parse(versionId)}/sections`
 const versionPath = (id: string, versionId: string) => `${packagePath(id)}/versions/${z.guid().parse(versionId)}`
@@ -17,8 +19,21 @@ const sectionPath = (id: string, versionId: string, sectionId: string) => `${sec
 
 export async function listPackages(filters: PackageFilters = {}, signal?: AbortSignal) {
   const params = new URLSearchParams()
-  for (const [key, value] of Object.entries(packageFiltersSchema.parse(filters))) if (value !== undefined) params.set(key, value)
-  return z.array(packageListItemSchema).parse(await apiRequest<unknown>(`${BASE}${params.size ? `?${params}` : ''}`, { auth: true, signal }))
+  const { excludeTypes, ...rest } = packageFiltersSchema.parse(filters)
+  for (const [key, value] of Object.entries(rest)) if (value !== undefined) params.set(key, String(value))
+  for (const type of excludeTypes ?? []) params.append('excludeType', type)
+  return packagePageSchema.parse(await apiRequest<unknown>(`${BASE}${params.size ? `?${params}` : ''}`, { auth: true, signal }))
+}
+
+/** Every package matching the filters, read page by page. For a screen that manages one small kind of package. */
+export async function listAllPackages(filters: PackageFilters = {}, signal?: AbortSignal) {
+  const items: PackageListItem[] = []
+  for (let page = 0; page < MAX_PAGES; page += 1) {
+    const result = await listPackages({ ...filters, page, size: ALL_PAGE_SIZE }, signal)
+    items.push(...result.content)
+    if (page + 1 >= result.totalPages) break
+  }
+  return items
 }
 
 export async function createPackage(body: CreatePackageRequest) {
@@ -29,9 +44,10 @@ export async function getPackage(id: string, signal?: AbortSignal) {
   return contentPackageSchema.parse(await apiRequest<unknown>(packagePath(id), { auth: true, signal }))
 }
 
-export async function createDraftVersion(id: string, rulesJson = '{}') {
-  const rules = z.string().max(20000).refine((value) => { try { JSON.parse(value); return true } catch { return false } }).parse(rulesJson)
-  return packageVersionSchema.parse(await apiRequest<unknown>(`${packagePath(id)}/versions`, { auth: true, method: 'POST', body: { rulesJson: rules } }))
+/** Without `rulesJson` the server starts the draft as a copy of the version learners get (empty when there is none). */
+export async function createDraftVersion(id: string, rulesJson?: string) {
+  const rules = rulesJson === undefined ? undefined : z.string().max(20000).refine((value) => { try { JSON.parse(value); return true } catch { return false } }).parse(rulesJson)
+  return packageVersionSchema.parse(await apiRequest<unknown>(`${packagePath(id)}/versions`, { auth: true, method: 'POST', body: rules === undefined ? {} : { rulesJson: rules } }))
 }
 
 export async function addSection(id: string, versionId: string, body: SectionRequest) {
@@ -56,6 +72,11 @@ export async function addSectionQuestion(id: string, versionId: string, sectionI
 
 export async function removeSectionQuestion(id: string, versionId: string, sectionId: string, sectionQuestionId: string) {
   z.null().parse(await apiRequest<unknown>(`${sectionPath(id, versionId, sectionId)}/questions/${z.guid().parse(sectionQuestionId)}`, { auth: true, method: 'DELETE' }))
+}
+
+/** Moves a question of a draft section to the newest published version of the same question, in place. */
+export async function moveToNewerQuestionVersion(id: string, versionId: string, sectionId: string, sectionQuestionId: string) {
+  return sectionQuestionSchema.parse(await apiRequest<unknown>(`${sectionPath(id, versionId, sectionId)}/questions/${z.guid().parse(sectionQuestionId)}/newer-version`, { auth: true, method: 'PUT' }))
 }
 
 export async function reorderSectionQuestions(id: string, versionId: string, sectionId: string, sectionQuestionIds: string[]) {

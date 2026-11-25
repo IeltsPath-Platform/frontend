@@ -1,4 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react'
+import { useToast } from '@/components/toast/toastContext'
 import { ArrowDown, ArrowUp } from 'lucide-react'
 import { z } from 'zod'
 import { AdminField } from '../../components/AdminField'
@@ -77,14 +78,14 @@ export function RubricEditor({ initial, persisted, onSaved, onActivated, onCance
   const [dirty, setDirty] = useState(!persisted)
   const [busy, setBusy] = useState(false)
   const [, setError] = useAdminError()
-  const [notice, setNotice] = useState<string | null>(null)
+  const { toast } = useToast()
   /** What is missing before this rubric can be activated; it is about the whole rubric, so it sits at the foot. */
   const [activationError, setActivationError] = useState<string | null>(null)
   const shape = shapeOf(draft)
   // eslint-disable-next-line react-hooks/exhaustive-deps -- the field names follow `shape`; their values come in through `flatValues`
   const schema = useMemo(() => rubricFormSchema(draft), [shape])
   const form = useFormErrors(schema, flatValues(draft))
-  function change(next: RubricRequest) { setDraft(next); setDirty(true); setNotice(null); setActivationError(null) }
+  function change(next: RubricRequest) { setDraft(next); setDirty(true); setActivationError(null) }
   function move(index: number, delta: number) {
     const criteria = [...draft.criteria]
     ;[criteria[index], criteria[index + delta]] = [criteria[index + delta]!, criteria[index]!]
@@ -99,13 +100,12 @@ export function RubricEditor({ initial, persisted, onSaved, onActivated, onCance
     if (!parsed.success) return
     setBusy(true)
     setError(null)
-    setNotice(null)
     try {
       const result = saved ? await updateRubric(parsed.data) : await createRubric(parsed.data)
       setDraft(rubricRequest(result))
       setSaved(true)
       setDirty(false)
-      setNotice('Đã lưu bản nháp.')
+      toast({ title: 'Thành công', description: 'Đã lưu bản nháp.', tone: 'success' })
       onSaved()
     } catch (reason) { setError(errorText(reason)) } finally { setBusy(false) }
   }
@@ -126,7 +126,6 @@ export function RubricEditor({ initial, persisted, onSaved, onActivated, onCance
   return <form className="adm-rubric-editor" aria-label="Soạn rubric" noValidate onSubmit={(event) => void save(event)}>
     {confirmDialog}
     <p className="adm-muted">{draft.task === 'SPEAKING' ? 'Kích hoạt cần FC, LR, GRA và PR; mỗi tiêu chí có đủ band 0,0–9,0 theo bước 0,5.' : `Kích hoạt cần đúng ${draft.task === 'TASK_1' ? 'TA' : 'TR'}, CC, LR, GRA; mỗi tiêu chí có đủ band 4,0–9,0 theo bước 0,5.`} Lưu bản nháp trước khi kích hoạt.</p>
-    {notice ? <p role="status">{notice}</p> : null}
     <fieldset className="adm-rubric-fields" disabled={busy}>
       <AdminField label="Nguồn rubric" {...form.field('sourceNote')}><textarea className="adm-textarea" maxLength={10000} value={draft.sourceNote} onChange={(event) => change({ ...draft, sourceNote: event.target.value })} /></AdminField>
       {draft.task === 'SPEAKING' ? <AdminField label="System prompt (tối đa 4.000 ký tự)" {...form.field('systemPrompt')}><textarea className="adm-textarea" maxLength={4000} value={draft.systemPrompt ?? ''} onChange={(event) => change({ ...draft, systemPrompt: event.target.value })} /></AdminField> : null}

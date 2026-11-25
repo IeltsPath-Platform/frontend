@@ -4,6 +4,7 @@ export type LessonTab = 'slides' | 'summary' | 'documents' | 'vocabulary' | 'exe
 export interface LessonSlideItem {
   id: string
   title: string
+  /** Short-lived signed download URL for the uploaded PDF. */
   url: string
   sortOrder: number
 }

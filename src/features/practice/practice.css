@@ -823,6 +823,25 @@
   white-space: nowrap;
 }
 
+.practice-premium-badge,
+.practice-premium-lock {
+  position: absolute;
+  z-index: 2;
+  top: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 1px solid #f2c46d;
+  border-radius: 999px;
+  background: #fff8e8;
+  color: #684400;
+  font-size: 12px;
+  font-weight: 700;
+}
+.practice-premium-badge { left: 12px; padding: 5px 9px; }
+.practice-premium-lock { right: 12px; width: 28px; height: 28px; }
+
 .card-body {
   display: flex;
   flex: 1;

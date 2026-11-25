@@ -1,14 +1,21 @@
+import { useAdminResource } from '../../lib/useAdminResource'
+import { AdminError, AdminLoading } from '../../components/AdminState'
+import { listPackages } from '../api/packageApi'
 import { PLACEMENT_POOLS } from '@/features/learning-path/placement/placementPools'
-import { placementPoolSchema, type PackageListItem } from '../types'
 
-/** Published placement tests in each band pool, from the list the screen already loaded. */
-export function PlacementPoolSummary({ items }: { items: readonly PackageListItem[] }) {
-  const counts = new Map(PLACEMENT_POOLS.map(({ pool }) => [pool, 0]))
-  for (const item of items) {
-    if (item.status !== 'PUBLISHED' || !item.placementPool) continue
-    const parsedPool = placementPoolSchema.safeParse(item.placementPool)
-    if (parsedPool.success) counts.set(parsedPool.data, (counts.get(parsedPool.data) ?? 0) + 1)
-  }
+/** Published placement tests in each band pool. */
+export function PlacementPoolSummary() {
+  // One request per pool: the server counts the published packages of each, so no list has to be loaded to count them.
+  const resource = useAdminResource('placement-pool-published-counts', async (signal) => new Map(await Promise.all(
+    PLACEMENT_POOLS.map(async ({ pool }) => {
+      const page = await listPackages({ type: 'PLACEMENT_TEST', status: 'PUBLISHED', placementPool: pool, page: 0, size: 1 }, signal)
+      return [pool, page.totalElements] as const
+    }),
+  )))
+  if (resource.status === 'loading') return <AdminLoading label="Đang tải số đề đã xuất bản theo kho…" />
+  if (resource.status === 'error') return <AdminError message={resource.error!} onRetry={resource.reload} />
+
+  const counts = resource.data ?? new Map<string, number>()
 
   return (
     <section className="adm-placement-summary" aria-labelledby="adm-placement-summary-title">

@@ -3,7 +3,7 @@ import { ZodError } from 'zod'
 import { clearAccessToken, setAccessToken } from '@/lib/httpClient'
 import { API_BASE_URL } from '@/lib/env'
 import { AUDIO_MAX_BYTES, type ContentPackage, type PackageVersion, type SectionRequest } from '../types'
-import { addSection, addSectionQuestion, cancelSchedule, createDraftVersion, createPackage, deleteAudio, deletePassage, deleteSection, getPackage, listPackages, listPracticeSources, listSchedules, previewVersion, publishVersion, removeSectionQuestion, reorderSectionQuestions, reorderSections, scheduleVersion, updateAudio, updatePassage, updateSection, uploadAudio } from './packageApi'
+import { addSection, addSectionQuestion, cancelSchedule, createDraftVersion, createPackage, deleteAudio, deletePassage, deleteSection, getPackage, listAllPackages, listPackages, listPracticeSources, listSchedules, previewVersion, publishVersion, removeSectionQuestion, reorderSectionQuestions, reorderSections, scheduleVersion, updateAudio, updatePassage, updateSection, uploadAudio } from './packageApi'
 
 const packageId = '00000000-0000-4000-8000-000000000001'
 const draftId = '00000000-0000-4000-8000-000000000002'
@@ -20,6 +20,7 @@ const timestamp = '2026-10-23T00:00:00Z'
 const packageFields = { id: packageId, code: 'READ-1', title: 'Reading test', packageType: 'PRACTICE_SET' as const, accessLevel: 'FREE' as const, status: 'DRAFT' as const, currentPublishedVersionId: null, lessonId: null, sourceCode: null, placementPool: null, createdAt: timestamp, updatedAt: timestamp }
 const makePackage = (versions: PackageVersion[] = [draft]): ContentPackage => ({ ...packageFields, topicId: null, courseId: null, versions })
 const summary = { ...packageFields, topicId: null, courseId: null, latestVersionNumber: 1, hasDraft: true }
+const page = (content: typeof summary[], totalElements = content.length) => ({ content, page: 0, size: 25, totalElements, totalPages: Math.ceil(totalElements / 25) })
 const createBody = { code: 'READ-1', title: 'Reading test', packageType: 'PRACTICE_SET' as const, accessLevel: 'FREE' as const, lessonId: null, sourceCode: null, topicId: null, courseId: null }
 const audioBody = { mediaReference: audio.mediaReference, durationSeconds: 45, transcript: audio.transcript }
 const uploaded = { mediaReference: audio.mediaReference, mediaUrl: audio.mediaUrl, contentType: 'audio/mpeg', sizeBytes: 4 }
@@ -62,9 +63,14 @@ describe('package authoring API', () => {
     respond(body)
     await expect(getPackage(packageId)).rejects.toBeInstanceOf(ZodError)
   })
-  it('creates an empty draft with server-owned version numbering', async () => {
+  it('creates a draft with server-owned version numbering and leaves the rules to the server', async () => {
     respond({ ...draft, sections: [] }, 201)
     await expect(createDraftVersion(packageId)).resolves.toEqual({ ...draft, sections: [] })
+    request(`${base}/versions`, 'POST', {})
+  })
+  it('sends explicit rules when given', async () => {
+    respond({ ...draft, sections: [] }, 201)
+    await createDraftVersion(packageId, '{}')
     request(`${base}/versions`, 'POST', { rulesJson: '{}' })
   })
   it.each(['create', 'update'] as const)('sends every section field on %s', async (action) => {
@@ -119,22 +125,44 @@ describe('package authoring API', () => {
   })
 
   it('lists packages with every supported filter and preserves literal search text', async () => {
-    respond([summary])
+    respond(page([summary]))
     const filters = { type: 'PRACTICE_SET' as const, status: 'DRAFT' as const, lessonId: questionId, topicId: sectionId, courseId: draftId, q: 'Test %_ & IELTS' }
-    await expect(listPackages(filters)).resolves.toEqual([summary])
+    await expect(listPackages(filters)).resolves.toEqual(page([summary]))
     const params = new URLSearchParams(filters)
     request(`${API_BASE_URL}/api/content/admin/packages?${params}`, 'GET')
   })
 
+  it('asks for a page and a page size', async () => {
+    respond(page([summary], 40))
+    await expect(listPackages({ type: 'QUIZ', page: 1, size: 25 })).resolves.toEqual(page([summary], 40))
+    request(`${API_BASE_URL}/api/content/admin/packages?type=QUIZ&page=1&size=25`, 'GET')
+  })
+
   it('omits the query when no package filter is selected', async () => {
-    respond([])
-    await expect(listPackages()).resolves.toEqual([])
+    respond(page([]))
+    await expect(listPackages()).resolves.toEqual(page([]))
     request(`${API_BASE_URL}/api/content/admin/packages`, 'GET')
   })
 
+  it('sends each excluded package type as its own excludeType parameter', async () => {
+    respond(page([summary]))
+    await listPackages({ excludeTypes: ['PRACTICE_TEST', 'PLACEMENT_TEST'], page: 0, size: 25 })
+    request(`${API_BASE_URL}/api/content/admin/packages?page=0&size=25&excludeType=PRACTICE_TEST&excludeType=PLACEMENT_TEST`, 'GET')
+  })
+
+  it('reads every page of a filtered list', async () => {
+    const twoPages = (pageNo: number) => new Response(JSON.stringify({ ...page([summary], 101), page: pageNo, totalPages: 2 }), { status: 200 })
+    fetchMock.mockResolvedValueOnce(twoPages(0)).mockResolvedValueOnce(twoPages(1))
+    await expect(listAllPackages({ type: 'QUIZ' })).resolves.toHaveLength(2)
+    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
+      `${API_BASE_URL}/api/content/admin/packages?type=QUIZ&page=0&size=100`,
+      `${API_BASE_URL}/api/content/admin/packages?type=QUIZ&page=1&size=100`,
+    ])
+  })
+
   it('sends the selected placement pool as a package list filter', async () => {
-    respond([summary])
-    await expect(listPackages({ type: 'PLACEMENT_TEST', placementPool: 'BAND_3_5' })).resolves.toEqual([summary])
+    respond(page([summary]))
+    await expect(listPackages({ type: 'PLACEMENT_TEST', placementPool: 'BAND_3_5' })).resolves.toEqual(page([summary]))
     request(`${API_BASE_URL}/api/content/admin/packages?type=PLACEMENT_TEST&placementPool=BAND_3_5`, 'GET')
   })
 
@@ -212,6 +240,8 @@ describe('package authoring API', () => {
   it.each([
     () => listPackages({ lessonId: 'invalid' }),
     () => listPackages({ placementPool: 'invalid' as never }),
+    () => listPackages({ size: 101 }),
+    () => listPackages({ page: -1 }),
     () => createPackage({ ...createBody, packageType: 'PLACEMENT_TEST' }),
     () => createPackage({ ...createBody, placementPool: 'BAND_3_5' as never }),
     () => createPackage({ ...createBody, packageType: 'TOPIC_TEST' }),

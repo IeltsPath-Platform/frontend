@@ -39,7 +39,7 @@ export function PlacementTestsPage() {
       {catalog.confirmDialog}
       {catalog.tests.status === 'loading' && catalog.tests.data == null ? <AdminLoading label="Đang tải đề đầu vào…" /> : null}
       {catalog.tests.status === 'error' ? <AdminError message={catalog.tests.error ?? 'Không tải được đề đầu vào.'} onRetry={catalog.tests.reload} /> : null}
-      {catalog.tests.data != null ? <PlacementPoolSummary items={catalog.rows} /> : null}
+      {catalog.tests.data != null ? <PlacementPoolSummary key={catalog.rows.map((row) => `${row.id}:${row.status}`).join('|')} /> : null}
       {catalog.tests.data != null ? (
         <div className="adm-pkg-tabs" role="tablist" aria-label="Kho band">
           {(['ALL', ...PLACEMENT_POOLS.map(({ pool }) => pool)] as const).map((pool) => (

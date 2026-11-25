@@ -42,6 +42,8 @@ export interface PracticeCard {
   votesCount?: number
   isCompleted?: boolean
   source?: ResourceSource
+  requiredFeatureKey?: string | null
+  isPremium?: boolean
 }
 
 export interface PracticeFlashcard {

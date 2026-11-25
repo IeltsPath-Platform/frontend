@@ -5,7 +5,7 @@ import { makeCatalogPackage } from '../testFixtures'
 import { PracticeLibraryPage } from './PracticeLibraryPage'
 
 const api = vi.hoisted(() => ({
-  listPackages: vi.fn(), listPracticeSources: vi.fn(), updatePackageInfo: vi.fn(), archivePackage: vi.fn(), restorePackage: vi.fn(),
+  listAllPackages: vi.fn(), listPracticeSources: vi.fn(), updatePackageInfo: vi.fn(), archivePackage: vi.fn(), restorePackage: vi.fn(),
   createPackage: vi.fn(), createDraftVersion: vi.fn(),
 }))
 const stats = vi.hoisted(() => ({ listPackageStats: vi.fn() }))
@@ -34,7 +34,7 @@ function menuOf(code: string) {
 
 describe('PracticeLibraryPage', () => {
   beforeEach(() => {
-    api.listPackages.mockReset().mockResolvedValue([reading, listening, hidden])
+    api.listAllPackages.mockReset().mockResolvedValue([reading, listening, hidden])
     api.listPracticeSources.mockReset().mockResolvedValue([{ code: 'IELTS_SPACE_PRO', name: 'IELTS Space Pro' }, { code: 'ACTUAL_TESTS', name: 'Actual Tests' }])
     api.updatePackageInfo.mockReset().mockResolvedValue(reading)
     api.archivePackage.mockReset().mockResolvedValue({ ...reading, status: 'ARCHIVED' })
