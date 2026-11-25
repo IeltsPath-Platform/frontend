@@ -6,6 +6,7 @@ import {
   packageSectionSchema, packageVersionSchema, passageRequestSchema, practiceSourceSchema, publicationScheduleSchema,
   publishedPackageSchema, sectionAudioSchema, sectionOrderSchema, sectionQuestionOrderSchema, sectionQuestionSchema, sectionRequestSchema,
   type AddSectionQuestionRequest, type AudioRequest, type CreatePackageRequest, type PackageFilters, type PassageRequest, type SectionRequest,
+  type UpdatePackageInfoRequest, updatePackageInfoRequestSchema,
 } from '../types'
 
 const BASE = '/api/content/admin/packages'
@@ -104,6 +105,21 @@ export async function cancelSchedule(id: string, versionId: string) {
 
 export async function listSchedules(id: string, signal?: AbortSignal) {
   return z.array(publicationScheduleSchema).parse(await apiRequest<unknown>(`${packagePath(id)}/publication-schedules`, { auth: true, signal }))
+}
+
+/** Changes the title, access level, source or band pool of a package; the server refuses what the type or state forbids. */
+export async function updatePackageInfo(id: string, body: UpdatePackageInfoRequest) {
+  return contentPackageSchema.parse(await apiRequest<unknown>(packagePath(id), { auth: true, method: 'PATCH', body: updatePackageInfoRequestSchema.parse(body) }))
+}
+
+/** Hides a practice or placement test from learners. */
+export async function archivePackage(id: string) {
+  return contentPackageSchema.parse(await apiRequest<unknown>(`${packagePath(id)}/archive`, { auth: true, method: 'POST' }))
+}
+
+/** Brings a hidden practice or placement test back. */
+export async function restorePackage(id: string) {
+  return contentPackageSchema.parse(await apiRequest<unknown>(`${packagePath(id)}/restore`, { auth: true, method: 'POST' }))
 }
 
 export async function listPracticeSources(signal?: AbortSignal) {
