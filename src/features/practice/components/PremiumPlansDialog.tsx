@@ -24,16 +24,17 @@ export function PremiumPlansDialog({ open, onClose, onChoose }: {
       <DialogContent className="sres-plans">
         <DialogHeader>
           <DialogTitle className="sres-plans__title"><Crown aria-hidden="true" /> Gói Premium</DialogTitle>
-          <DialogDescription>Mở khóa nội dung nâng cao và nhận lượt chấm Writing/Speaking trực tiếp từ giáo viên.</DialogDescription>
+          <DialogDescription>Luyện các đề Premium, chấm AI không tốn Point và nhờ giáo viên chấm không giới hạn lượt.</DialogDescription>
         </DialogHeader>
 
         <p className="sres-plans__why"><GraduationCap aria-hidden="true" /> Giáo viên chấm cho nhận xét chi tiết và chính xác hơn điểm AI, kèm góp ý riêng cho bài của bạn.</p>
 
         <ul className="sres-plans__benefits">
-          <li><Check size={18} aria-hidden="true" /><span>Lượt chấm Writing/Speaking trực tiếp từ giáo viên</span></li>
-          <li><Check size={18} aria-hidden="true" /><span>Toàn bộ bài học, đề thi và tài liệu nâng cao</span></li>
+          <li><Check size={18} aria-hidden="true" /><span>Nhờ giáo viên chấm Writing/Speaking không giới hạn lượt</span></li>
+          <li><Check size={18} aria-hidden="true" /><span>Luyện các đề có dấu Premium ở cả bốn kỹ năng</span></li>
+          <li><Check size={18} aria-hidden="true" /><span>AI chấm Writing và Speaking không tốn Point, thêm lượt chấm mỗi ngày</span></li>
           <li><Check size={18} aria-hidden="true" /><span>Báo cáo phân tích tiến độ học tập nâng cao</span></li>
-          <li className="is-off"><Minus size={18} aria-hidden="true" /><span>Không kèm AI Points; AI chấm vẫn trừ điểm trong Ví Point</span></li>
+          <li className="is-off"><Minus size={18} aria-hidden="true" /><span>Không kèm AI Points và không mở khóa khóa học: mở khóa vẫn trừ điểm trong Ví Point</span></li>
         </ul>
 
         <div className="sres-plans__options" role="radiogroup" aria-label="Lựa chọn thời hạn Premium">
