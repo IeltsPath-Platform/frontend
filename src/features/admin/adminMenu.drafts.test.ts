@@ -4,7 +4,7 @@ import { menuFor, rolesFor } from './adminMenu'
 
 describe('enabled question generation menu', () => {
   it('shows the question draft entry only to content authors', () => {
-    expect(menuFor(['CONTENT_AUTHOR']).find((item) => item.path === '/content-author/ai-drafts')?.label).toBe('Sinh nội dung bằng AI')
+    expect(menuFor(['CONTENT_AUTHOR']).find((item) => item.path === '/content-author/ai-drafts')?.label).toBe('Duyệt câu hỏi AI')
     for (const roles of [['ADMIN'], ['EXAMINER'], ['CUSTOMER'], undefined]) {
       expect(menuFor(roles).some((item) => item.path === '/content-author/ai-drafts')).toBe(false)
     }

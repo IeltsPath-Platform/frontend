@@ -45,7 +45,7 @@ export const ADMIN_MENU: readonly AdminMenuItem[] = [
   { path: '/content-author/ai-evaluation', label: 'Đánh giá AI chấm Writing', icon: BadgeCheck, roles: ['CONTENT_AUTHOR'], group: 'grading' },
   { path: '/content-author/rubrics', label: 'Rubric chấm Writing', icon: Scale, roles: ['CONTENT_AUTHOR'], group: 'grading' },
   { path: '/content-author/error-types', label: 'Mã lỗi', icon: Bug, roles: ['CONTENT_AUTHOR'], group: 'grading' },
-  { path: '/content-author/ai-drafts', label: 'Sinh nội dung bằng AI', icon: Sparkles, roles: ['CONTENT_AUTHOR'], enabled: QUESTION_DRAFTS_ENABLED, group: 'questions' },
+  { path: '/content-author/ai-drafts', label: 'Duyệt câu hỏi AI', icon: Sparkles, roles: ['CONTENT_AUTHOR'], enabled: QUESTION_DRAFTS_ENABLED, group: 'questions' },
   // Last: settings are rarely opened, so they sit at the bottom of the sidebar.
   { path: '/content-author/settings', label: 'Thiết lập tham số', icon: Settings, roles: ['CONTENT_AUTHOR'] },
 ]

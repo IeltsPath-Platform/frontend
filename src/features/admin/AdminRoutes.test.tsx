@@ -242,10 +242,11 @@ describe('AdminRoutes', () => {
     expect(screen.getByRole('link', { name: 'Về trang học' })).toHaveAttribute('href', '/overview')
   })
 
-  it('opens the content author workspace directly', () => {
+  it('opens the content author workspace directly', async () => {
     auth.mockReturnValue(session(['CONTENT_AUTHOR']))
     renderAt('/content-author')
     expect(screen.getByRole('heading', { name: 'Tổng quan nội dung' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Chương trình học' }))
     expect(screen.getByRole('link', { name: 'Khóa học & chủ đề' })).toHaveAttribute('href', '/content-author/courses')
     expect(screen.getByTestId('location').textContent).toBe('/content-author')
   })
@@ -260,12 +261,13 @@ describe('AdminRoutes', () => {
     expect(screen.getByRole('heading', { name: 'Bạn không có quyền truy cập' })).toBeInTheDocument()
   })
 
-  it('opens question generation for an author and lists it in the menu', () => {
+  it('opens draft review for an author and lists it in the menu', async () => {
     auth.mockReturnValue(session(['CONTENT_AUTHOR']))
     renderAt('/content-author/ai-drafts')
-    expect(screen.getByRole('heading', { name: 'Sinh nội dung bằng AI' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Duyệt câu hỏi AI' })).toBeInTheDocument()
     expect(screen.queryByText('Tính năng đang chờ triển khai')).not.toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Sinh nội dung bằng AI' })).toHaveAttribute('href', '/content-author/ai-drafts')
+    fireEvent.click(screen.getByRole('button', { name: 'Câu hỏi & đề' }))
+    expect(await screen.findByRole('link', { name: 'Duyệt câu hỏi AI' })).toHaveAttribute('href', '/content-author/ai-drafts')
   })
 
   it.each(['ADMIN', 'CUSTOMER', 'EXAMINER'])('does not grant %s access to question draft routes', (role) => {

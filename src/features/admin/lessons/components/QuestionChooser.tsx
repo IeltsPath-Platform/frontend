@@ -1,8 +1,9 @@
-import { useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { AdminSwitch } from '../../components/AdminSwitch'
 import { AdminError, AdminLoading } from '../../components/AdminState'
 import { adminErrorMessage } from '../../lib/adminErrors'
-import { useAdminResource } from '../../lib/useAdminResource'
+import { InfiniteCount, InfiniteSentinel } from '../../components/InfiniteSentinel'
+import { useInfiniteList } from '../../lib/useInfiniteList'
 import { getQuestion, listQuestions } from '../../questions/api/questionApi'
 import { SKILL_LABEL, TYPE_LABEL } from '../../questions/lib/labels'
 import { SKILLS } from '../../questions/types'
@@ -19,35 +20,50 @@ export interface QuestionChooserProps {
   hideSelected?: boolean
   /** Opens the picker on the skill of the lesson's topic. */
   defaultSkill?: string | null
+  /** Lists only this skill and hides the skill filter: the owner can only take questions of one skill. */
+  fixedSkill?: string | null
+  /** Lists only questions no lesson block or package section holds yet, so every row can be used. */
+  freeOnly?: boolean
+  /** Replaces the line shown when no question is on offer. */
+  emptyText?: string
   /** Requests the lesson exercise ownership and preview fields. Other chooser users omit it. */
   includeOwnershipPreview?: boolean
   blockId?: string
+  lessonKnowledgePointIds?: string[]
 }
 
 const PAGE_SIZE = 25
-const SEARCH_DELAY_MS = 300
 type QuestionLabel = { code: string; stemExcerpt?: string }
 
 /** Chooses questions from the published question bank. */
-export function QuestionChooser({ value, onChange, known, purpose = 'LEARNING', hideSelected = false, defaultSkill,
-  includeOwnershipPreview = false, blockId }: QuestionChooserProps) {
-  const [skill, setSkill] = useState(() => SKILLS.includes(defaultSkill as (typeof SKILLS)[number]) ? defaultSkill as string : '')
+export function QuestionChooser({ value, onChange, known, purpose = 'LEARNING', hideSelected = false, defaultSkill, fixedSkill, freeOnly = false, emptyText,
+  includeOwnershipPreview = false, blockId, lessonKnowledgePointIds }: QuestionChooserProps) {
+  const [chosenSkill, setSkill] = useState(() => SKILLS.includes(defaultSkill as (typeof SKILLS)[number]) ? defaultSkill as string : '')
+  const skill = fixedSkill ?? chosenSkill
   const [search, setSearch] = useState('')
-  const [page, setPage] = useState(0)
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [onlyFree, setOnlyFree] = useState(false)
+  const [onlyLessonPoints, setOnlyLessonPoints] = useState(Boolean(lessonKnowledgePointIds?.length))
   const [labels, setLabels] = useState<Record<string, QuestionLabel>>({})
   const [previews, setPreviews] = useState<Record<string, string>>({})
   const [, setPreviewError] = useAdminError()
 
   const code = search.trim()
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedSearch(code), 300)
+    return () => window.clearTimeout(timer)
+  }, [code])
+  const requestCode = debouncedSearch
   const include = includeOwnershipPreview ? 'ownership,preview' : undefined
   const exceptBlockId = includeOwnershipPreview ? blockId : undefined
-  const list = useAdminResource(`exercise-questions|${purpose}|${skill}|${code}|${page}|${include ?? ''}|${exceptBlockId ?? ''}|${onlyFree}`, async (signal) => {
-    if (code) await waitForSearchDelay(signal)
+  const filteredPointIds = onlyLessonPoints ? lessonKnowledgePointIds ?? [] : []
+  const filterKey = `exercise-questions|${purpose}|${skill}|${requestCode}|${include ?? ''}|${exceptBlockId ?? ''}|${onlyFree}|${filteredPointIds.join(',')}`
+  const list = useInfiniteList(filterKey, async (page, signal) => {
     const result = await listQuestions({
-      status: 'PUBLISHED', purpose, skill, code, page, size: PAGE_SIZE,
+      status: 'PUBLISHED', purpose, skill, code: requestCode, page, size: PAGE_SIZE,
       ...(include ? { include } : {}), ...(exceptBlockId ? { exceptBlockId } : {}),
-      ...(includeOwnershipPreview && onlyFree ? { onlyFree: true } : {}),
+      ...((freeOnly || (includeOwnershipPreview && onlyFree)) ? { onlyFree: true } : {}),
+      ...(filteredPointIds.length ? { knowledgePointIds: filteredPointIds } : {}),
     }, signal)
     if (!signal.aborted) {
       setLabels((existing) => {
@@ -63,9 +79,9 @@ export function QuestionChooser({ value, onChange, known, purpose = 'LEARNING', 
         return next
       })
     }
-    return result
+    return { content: result.content, page: result.page, totalElements: result.totalElements, totalPages: result.totalPages }
   })
-  const questions = list.data?.content ?? []
+  const questions = list.items
 
   async function preview(questionId: string) {
     setPreviewError(null)
@@ -79,7 +95,6 @@ export function QuestionChooser({ value, onChange, known, purpose = 'LEARNING', 
   }
 
   function changeFilter(change: () => void) {
-    setPage(0)
     change()
   }
 
@@ -106,28 +121,30 @@ export function QuestionChooser({ value, onChange, known, purpose = 'LEARNING', 
         </ol>
       </section>}
 
-      <label className="adm-field">
+      {fixedSkill ? null : <label className="adm-field">
         <span>Lọc kỹ năng</span>
         <select className="adm-select" onChange={(event) => changeFilter(() => setSkill(event.target.value))} value={skill}>
           <option value="">Tất cả</option>
           {SKILLS.map((item) => <option key={item} value={item}>{SKILL_LABEL[item]}</option>)}
         </select>
-      </label>
+      </label>}
 
-      {includeOwnershipPreview ? <AdminSwitch checked={onlyFree} onChange={(checked) => { setOnlyFree(checked); setPage(0) }}>Chỉ hiện câu còn trống</AdminSwitch> : null}
+      {includeOwnershipPreview ? <AdminSwitch checked={onlyFree} onChange={setOnlyFree}>Chỉ hiện câu còn trống</AdminSwitch> : null}
+      {lessonKnowledgePointIds?.length ? <AdminSwitch checked={onlyLessonPoints} onChange={setOnlyLessonPoints}>Chỉ câu thuộc điểm kiến thức của bài</AdminSwitch> : null}
 
       <label className="adm-field">
         <span>Tìm theo mã câu hỏi</span>
-        <input className="adm-input" onChange={(event) => changeFilter(() => setSearch(event.target.value))} value={search} />
+        <input className="adm-input" onChange={(event) => setSearch(event.target.value)} value={search} />
       </label>
 
-      {list.status === 'loading' ? <AdminLoading label="Đang tải câu hỏi đã xuất bản…" /> : null}
+      {list.status === 'loading' && questions.length === 0 ? <AdminLoading label="Đang tải câu hỏi đã xuất bản…" /> : null}
       {list.status === 'error' ? <AdminError message={list.error ?? 'Không tải được câu hỏi.'} onRetry={list.reload} /> : null}
       {list.status === 'success' && questions.length === 0 ? (
-        <p className="adm-muted">Chưa có câu hỏi đã xuất bản dành cho bài học. Xuất bản câu hỏi ở mục Ngân hàng câu hỏi trước.</p>
+        <p className="adm-muted">{emptyText ?? 'Chưa có câu hỏi đã xuất bản dành cho bài học. Xuất bản câu hỏi ở mục Ngân hàng câu hỏi trước.'}</p>
       ) : null}
       <ul aria-label="Danh sách câu hỏi" className="ls-questions__list">
-        {(questions ?? []).filter((question) => question.currentPublishedVersionId).map((question) => {
+        <InfiniteCount as="li" items={questions.length} noun="câu hỏi" total={list.total} />
+        {questions.filter((question) => question.currentPublishedVersionId).map((question) => {
           const versionId = question.currentPublishedVersionId as string
           const owned = includeOwnershipPreview && question.ownedElsewhere === true && !value.includes(versionId)
           return (
@@ -153,26 +170,9 @@ export function QuestionChooser({ value, onChange, known, purpose = 'LEARNING', 
             </li>
           )
         })}
+        <InfiniteSentinel as="li" hasMore={list.hasMore} itemCount={questions.length} loadingMore={list.loadingMore} moreError={list.moreError} noun="câu hỏi" onReachEnd={list.loadMore} onRetry={list.retryMore} resetKey={filterKey} />
       </ul>
-      {list.status === 'success' ? <nav aria-label="Phân trang câu hỏi" className="ls-questions__pagination">
-        <button className="adm-btn adm-btn--small" disabled={page === 0} onClick={() => setPage((current) => Math.max(0, current - 1))} type="button">Trước</button>
-        <span>Trang {list.data && list.data.totalPages > 0 ? page + 1 : 0} / {list.data?.totalPages ?? 0} · {list.data?.totalElements ?? 0} câu hỏi</span>
-        <button className="adm-btn adm-btn--small" disabled={!list.data || page + 1 >= list.data.totalPages} onClick={() => setPage((current) => current + 1)} type="button">Sau</button>
-      </nav> : null}
     </div>
   )
 }
 
-function waitForSearchDelay(signal: AbortSignal): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const timer = window.setTimeout(() => {
-      signal.removeEventListener('abort', abort)
-      resolve()
-    }, SEARCH_DELAY_MS)
-    const abort = () => {
-      window.clearTimeout(timer)
-      reject(new DOMException('Request was cancelled', 'AbortError'))
-    }
-    signal.addEventListener('abort', abort, { once: true })
-  })
-}

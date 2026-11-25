@@ -132,6 +132,7 @@ export interface BlockRequest {
   vocabularySenseIds?: string[]
   questionVersionIds?: string[]
   knowledgePointIds?: string[]
+  expectedQuestionVersionIds?: string[]
 }
 
 export interface LessonMetaRequest {

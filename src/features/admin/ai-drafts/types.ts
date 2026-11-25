@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
-export const AI_DRAFT_KINDS = ['QUESTIONS', 'COURSE', 'PRACTICE_SET'] as const
-export const AI_DRAFT_STATUSES = ['QUEUED', 'GENERATING', 'READY', 'FAILED', 'APPROVED', 'REJECTED'] as const
+export const AI_DRAFT_KINDS = ['QUESTIONS', 'COURSE', 'PRACTICE_SET', 'SECTION_QUESTIONS'] as const
+export const AI_DRAFT_STATUSES = ['QUEUED', 'GENERATING', 'READY', 'FAILED', 'APPROVED', 'REJECTED', 'EXPIRED'] as const
 
 export const aiDraftKindSchema = z.enum(AI_DRAFT_KINDS)
 export const aiDraftStatusSchema = z.enum(AI_DRAFT_STATUSES)
@@ -20,11 +20,16 @@ export const aiDraftSchema = z.object({
   finishedAt: z.iso.datetime().nullable(),
   reviewedAt: z.iso.datetime().nullable(),
   reviewNote: z.string().nullable(),
+  origin: z.object({ type: z.string(), title: z.string().nullable().optional(), knowledgePointName: z.string().nullable().optional(), lessonId: z.guid().nullable().optional(),
+    packageId: z.guid().nullable().optional(), versionId: z.guid().nullable().optional(), sectionId: z.guid().nullable().optional(),
+    topicId: z.guid().nullable().optional(), exists: z.boolean() }).nullable().optional(),
+  itemCount: z.number().int().nonnegative().optional(),
 })
 
-export const aiDraftListSchema = z.array(aiDraftSchema)
+export const aiDraftListEntrySchema = aiDraftSchema
+export const aiDraftListSchema = z.array(aiDraftListEntrySchema)
 export const aiDraftQuerySchema = z.object({
-  kind: aiDraftKindSchema.optional(),
+  kind: z.union([aiDraftKindSchema, z.array(aiDraftKindSchema)]).optional(),
   status: aiDraftStatusSchema.optional(),
   page: z.number().int().nonnegative().optional(),
   size: z.number().int().min(1).max(100).optional(),
@@ -32,12 +37,14 @@ export const aiDraftQuerySchema = z.object({
 export const rejectAiDraftRequestSchema = z.object({ note: z.string().max(1000) })
 
 export type AiDraftKind = z.infer<typeof aiDraftKindSchema>
-export type AiDraftStatus = z.infer<typeof aiDraftStatusSchema>
+export type AiDraftStatus = z.infer<typeof aiDraftStatusSchema> | (string & {})
 export type AiDraft = z.infer<typeof aiDraftSchema>
+export type AiDraftListEntry = z.infer<typeof aiDraftListEntrySchema>
 export type AiDraftQuery = z.infer<typeof aiDraftQuerySchema>
 export type RejectAiDraftRequest = z.infer<typeof rejectAiDraftRequestSchema>
 
 export const QUESTION_DRAFT_TYPES = ['MULTIPLE_CHOICE', 'TRUE_FALSE_NOT_GIVEN', 'FILL_IN_BLANK', 'SHORT_ANSWER'] as const
+export type QuestionDraftType = (typeof QUESTION_DRAFT_TYPES)[number]
 export const QUESTION_DIFFICULTIES = ['EASY', 'MEDIUM', 'HARD'] as const
 export const QUESTION_DRAFT_MAX_ITEMS = 20
 export const QUESTION_DRAFT_REJECTION_REASONS = [
@@ -45,12 +52,18 @@ export const QUESTION_DRAFT_REJECTION_REASONS = [
   'DISTRACTOR_NOT_A_WRONG_OPTION', 'UNKNOWN_ERROR_CODE', 'NO_ACCEPTED_ANSWER', 'DUPLICATE_STEM',
 ] as const
 
+export const SECTION_QUESTION_REJECTION_REASONS = [
+  'BAD_TFNG_OPTIONS', 'DUPLICATE_OPTIONS', 'ANSWER_TOO_LONG', 'ANSWER_NOT_IN_SOURCE', 'ANSWER_IN_STEM',
+  'BAD_BLANK', 'COPIED_FROM_SOURCE', 'DUPLICATE_IN_SECTION', 'DUPLICATE_IN_DRAFT', 'DUPLICATE_ANSWER',
+] as const
+
 export const questionGenerationRequestSchema = z.object({
   knowledgePointId: z.guid(),
   questionType: z.enum(QUESTION_DRAFT_TYPES),
   count: z.number().int().min(1).max(QUESTION_DRAFT_MAX_ITEMS),
-  difficulty: z.enum(QUESTION_DIFFICULTIES),
   instructions: z.string().max(500).nullable().optional(),
+  lessonId: z.guid().optional(),
+  blockId: z.guid().optional(),
 })
 
 const nonblankText = z.string().refine((value) => value.trim().length > 0)
@@ -60,6 +73,7 @@ const questionDraftAnswerSpecSchema = z.discriminatedUnion('type', [
 ])
 
 export const questionDraftItemSchema = z.object({
+  itemId: z.guid(),
   stem: nonblankText.max(4000),
   options: z.array(z.object({ optionKey: nonblankText, content: nonblankText, sortOrder: z.number().int().nonnegative() })),
   answerSpec: questionDraftAnswerSpecSchema,
@@ -71,6 +85,7 @@ export const questionDraftSchema = aiDraftSchema.extend({
   kind: z.literal('QUESTIONS'),
   request: questionGenerationRequestSchema,
   result: z.object({
+    revision: z.number().int().nonnegative(),
     items: z.array(questionDraftItemSchema),
     rejected: z.array(z.object({ index: z.number().int().nonnegative(), reason: z.string() })),
   }).nullable(),
@@ -110,8 +125,10 @@ export type PracticeSetGenerationRequest = z.infer<typeof practiceSetGenerationR
 export type PracticeSetDraft = z.infer<typeof practiceSetDraftSchema>
 
 export const approveQuestionDraftRequestSchema = z.object({
-  itemIndexes: z.array(z.number().int().nonnegative()).min(1)
-    .refine((indexes) => new Set(indexes).size === indexes.length, { message: 'Mỗi câu hỏi chỉ được chọn một lần.' }),
+  itemIds: z.array(z.guid()).min(1)
+    .refine((ids) => new Set(ids).size === ids.length, { message: 'Mỗi câu hỏi chỉ được chọn một lần.' }),
+  revision: z.number().int().nonnegative(),
+  createNewBlock: z.boolean().optional(),
 })
 
 export type QuestionGenerationRequest = z.infer<typeof questionGenerationRequestSchema>
@@ -127,3 +144,28 @@ export const questionDraftItemPatchSchema = z.object({
   accepted: z.array(z.string().max(500)).max(20).nullable().optional(),
 })
 export type QuestionDraftItemPatch = z.infer<typeof questionDraftItemPatchSchema>
+
+export const sectionQuestionRequestSchema = z.object({
+  packageId: z.guid(), versionId: z.guid(), sectionId: z.guid(),
+  questionType: z.enum(QUESTION_DRAFT_TYPES), count: z.number().int().min(1, 'Số câu phải từ 1 đến 10.').max(10, 'Số câu phải từ 1 đến 10.'),
+  instructions: z.string().max(500).nullable().optional(),
+})
+export const sectionQuestionItemSchema = questionDraftItemSchema.extend({ itemId: z.guid() })
+export const sectionQuestionDraftSchema = aiDraftSchema.extend({
+  kind: z.literal('SECTION_QUESTIONS'),
+  result: z.object({
+    requested: z.number().int(), revision: z.number().int(),
+    items: z.array(sectionQuestionItemSchema),
+    rejected: z.array(z.object({ index: z.number().int(), reason: z.string() })),
+    approved: z.array(z.object({ itemId: z.guid(), questionId: z.guid(), questionVersionId: z.guid(), sectionQuestionId: z.guid() })).optional(),
+  }).nullable(),
+}).passthrough()
+export const sectionQuestionDetailSchema = sectionQuestionDraftSchema.extend({
+  sourceChanged: z.boolean(), sectionState: z.enum(['OK', 'MISSING', 'VERSION_NOT_DRAFT', 'SKILL_CHANGED']),
+})
+export const aiAllowanceSchema = z.object({ limit: z.number().int(), used: z.number().int(), remaining: z.number().int() })
+export const sectionQuestionApproveSchema = z.object({ itemIds: z.array(z.guid()).min(1), revision: z.number().int(), acceptSourceChange: z.boolean() })
+export type SectionQuestionDraftRequest = z.infer<typeof sectionQuestionRequestSchema>
+export type SectionQuestionDraft = z.infer<typeof sectionQuestionDraftSchema>
+export type SectionQuestionItem = z.infer<typeof sectionQuestionItemSchema>
+export type SectionQuestionDetail = z.infer<typeof sectionQuestionDetailSchema>

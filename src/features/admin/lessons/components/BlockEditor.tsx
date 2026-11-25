@@ -7,7 +7,6 @@ import { lessonErrorText } from '../lib/lessonErrors'
 import type { BlockRequest, BlockType, LessonBlock } from '../types'
 import { AdminField } from '../../components/AdminField'
 import { MarkdownField } from '../../components/MarkdownField'
-import { LessonKnowledgeField } from './LessonKnowledgeField'
 import { QuestionChooser } from './QuestionChooser'
 import { VocabularySensePicker } from './VocabularySensePicker'
 import { useAdminError } from '../../lib/useAdminError'
@@ -18,11 +17,12 @@ export interface BlockEditorProps {
   block?: LessonBlock
   onSave: (body: BlockRequest) => Promise<void>
   onCancel: () => void
-  /** The skill of the topic the lesson is in, for the knowledge point picker. */
+  /** The skill of the topic the lesson is in: the question picker opens on it. */
   skill?: string | null
+  lessonKnowledgePointIds?: string[]
 }
 
-export function BlockEditor({ blockType, block, onSave, onCancel, skill }: BlockEditorProps) {
+export function BlockEditor({ blockType, block, onSave, onCancel, skill, lessonKnowledgePointIds }: BlockEditorProps) {
   const [state, setState] = useState<BlockFormState>(() => initialBlockState(blockType, block))
   const { roles } = useAuthSession()
   const canCreateWords = hasAnyRole(roles, ['CONTENT_AUTHOR'])
@@ -43,7 +43,7 @@ export function BlockEditor({ blockType, block, onSave, onCancel, skill }: Block
     setServerError(null)
     setSaving(true)
     try {
-      await onSave(result.body)
+      await onSave({ ...result.body, ...(blockType === 'EXERCISE' && block ? { expectedQuestionVersionIds: block.questions.map((question) => question.questionVersionId) } : {}) })
     } catch (reason) {
       setServerError(lessonErrorText(reason))
     } finally {
@@ -58,7 +58,7 @@ export function BlockEditor({ blockType, block, onSave, onCancel, skill }: Block
         <>
           <MarkdownField label="Nội dung (Markdown)" onChange={(textContent) => patch({ textContent })} textareaClassName="adm-textarea ls-textarea" value={state.textContent} />
           {problemText}
-          <LessonKnowledgeField onChange={(knowledgePointIds) => patch({ knowledgePointIds })} skill={skill} title="Knowledge point mà block này dạy" value={state.knowledgePointIds} />
+          {/* The knowledge points of a text block are not edited here for now; a block that already has some keeps them, since the form state carries them back on save. */}
         </>
       ) : null}
 
@@ -77,7 +77,7 @@ export function BlockEditor({ blockType, block, onSave, onCancel, skill }: Block
 
       {blockType === 'EXERCISE' ? (
         <>
-          <QuestionChooser blockId={block?.id} defaultSkill={skill} includeOwnershipPreview known={block?.questions ?? []} onChange={(questionVersionIds) => patch({ questionVersionIds })} value={state.questionVersionIds} />
+          <QuestionChooser blockId={block?.id} defaultSkill={skill} includeOwnershipPreview known={block?.questions ?? []} lessonKnowledgePointIds={lessonKnowledgePointIds} onChange={(questionVersionIds) => patch({ questionVersionIds })} value={state.questionVersionIds} />
           {problemText}
         </>
       ) : null}
