@@ -3,7 +3,7 @@ import { ZodError } from 'zod'
 import { clearAccessToken, setAccessToken } from '@/lib/httpClient'
 import { API_BASE_URL } from '@/lib/env'
 import { AUDIO_MAX_BYTES, type ContentPackage, type PackageVersion, type SectionRequest } from '../types'
-import { addSection, addSectionQuestion, cancelSchedule, createDraftVersion, createPackage, deleteAudio, deletePassage, deleteSection, getPackage, listPackages, listPracticeSources, listSchedules, previewVersion, publishVersion, removeSectionQuestion, reorderSectionQuestions, reorderSections, scheduleVersion, updateAudio, updatePassage, updateSection, uploadAudio } from './packageApi'
+import { addSection, addSectionQuestion, cancelSchedule, createDraftVersion, createPackage, deleteAudio, deletePassage, deleteSection, getPackage, listAllPackages, listPackages, listPracticeSources, listSchedules, previewVersion, publishVersion, removeSectionQuestion, reorderSectionQuestions, reorderSections, scheduleVersion, updateAudio, updatePassage, updateSection, uploadAudio } from './packageApi'
 
 const packageId = '00000000-0000-4000-8000-000000000001'
 const draftId = '00000000-0000-4000-8000-000000000002'
@@ -142,6 +142,22 @@ describe('package authoring API', () => {
     respond(page([]))
     await expect(listPackages()).resolves.toEqual(page([]))
     request(`${API_BASE_URL}/api/content/admin/packages`, 'GET')
+  })
+
+  it('sends each excluded package type as its own excludeType parameter', async () => {
+    respond(page([summary]))
+    await listPackages({ excludeTypes: ['PRACTICE_TEST', 'PLACEMENT_TEST'], page: 0, size: 25 })
+    request(`${API_BASE_URL}/api/content/admin/packages?page=0&size=25&excludeType=PRACTICE_TEST&excludeType=PLACEMENT_TEST`, 'GET')
+  })
+
+  it('reads every page of a filtered list', async () => {
+    const twoPages = (pageNo: number) => new Response(JSON.stringify({ ...page([summary], 101), page: pageNo, totalPages: 2 }), { status: 200 })
+    fetchMock.mockResolvedValueOnce(twoPages(0)).mockResolvedValueOnce(twoPages(1))
+    await expect(listAllPackages({ type: 'QUIZ' })).resolves.toHaveLength(2)
+    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
+      `${API_BASE_URL}/api/content/admin/packages?type=QUIZ&page=0&size=100`,
+      `${API_BASE_URL}/api/content/admin/packages?type=QUIZ&page=1&size=100`,
+    ])
   })
 
   it('sends the selected placement pool as a package list filter', async () => {

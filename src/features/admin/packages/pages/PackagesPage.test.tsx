@@ -108,9 +108,9 @@ describe('PackagesPage', () => {
     fireEvent.change(screen.getByLabelText('Lọc chủ đề'), { target: { value: topicId } })
     await waitFor(() => expect(screen.getByLabelText('Lọc bài học')).toBeEnabled())
     fireEvent.change(screen.getByLabelText('Lọc bài học'), { target: { value: 'lesson-one' } })
-    await waitFor(() => expect(api.listPackages).toHaveBeenLastCalledWith({ type: 'TOPIC_TEST', status: 'DRAFT', courseId, topicId, lessonId: 'lesson-one', q: undefined, page: 0, size: 25 }, expect.any(AbortSignal)))
+    await waitFor(() => expect(api.listPackages).toHaveBeenLastCalledWith({ type: 'TOPIC_TEST', status: 'DRAFT', courseId, topicId, lessonId: 'lesson-one', q: undefined, excludeTypes: ['PRACTICE_TEST', 'PLACEMENT_TEST'], page: 0, size: 25 }, expect.any(AbortSignal)))
     fireEvent.change(screen.getByLabelText('Lọc khóa học'), { target: { value: '' } })
-    await waitFor(() => expect(api.listPackages).toHaveBeenLastCalledWith({ type: 'TOPIC_TEST', status: 'DRAFT', courseId: undefined, topicId: undefined, lessonId: undefined, q: undefined, page: 0, size: 25 }, expect.any(AbortSignal)))
+    await waitFor(() => expect(api.listPackages).toHaveBeenLastCalledWith({ type: 'TOPIC_TEST', status: 'DRAFT', courseId: undefined, topicId: undefined, lessonId: undefined, q: undefined, excludeTypes: ['PRACTICE_TEST', 'PLACEMENT_TEST'], page: 0, size: 25 }, expect.any(AbortSignal)))
   })
   it('debounces search for 300 milliseconds and keeps literal percent and underscore text', async () => {
     vi.useFakeTimers()
@@ -130,27 +130,15 @@ describe('PackagesPage', () => {
     expect(await screen.findByText('Chưa có gói phù hợp')).toBeInTheDocument()
     expect(api.listPackages).toHaveBeenCalledTimes(2)
   })
-  it('shows the placement pool filter and independent published counts in the catalog', async () => {
-    const placementRows = [
-      makeCatalogPackage({ id: '00000000-0000-4000-8000-000000000013', packageType: 'PLACEMENT_TEST', placementPool: 'BAND_0_3', status: 'PUBLISHED' }),
-      makeCatalogPackage({ id: '00000000-0000-4000-8000-000000000014', packageType: 'PLACEMENT_TEST', placementPool: 'BAND_3_5', status: 'DRAFT' }),
-      makeCatalogPackage({ id: '00000000-0000-4000-8000-000000000015', packageType: 'PLACEMENT_TEST', placementPool: 'BAND_5_9', status: 'PUBLISHED' }),
-      makeCatalogPackage({ id: '00000000-0000-4000-8000-000000000012', packageType: 'PLACEMENT_TEST', placementPool: 'BAND_5_9', status: 'PUBLISHED' }),
-    ]
-    api.listPackages.mockImplementation((filters) => Promise.resolve(filters?.type !== 'PLACEMENT_TEST' ? makeCatalogPage([makeCatalogPackage()])
-      : filters.size === 1 ? makeCatalogPage([], { size: 1, totalElements: placementRows.filter((row) => row.status === 'PUBLISHED' && row.placementPool === filters.placementPool).length })
-      : makeCatalogPage(placementRows)))
+  it('leaves practice and placement tests to their own screens by asking the server to exclude them', async () => {
     show()
-    fireEvent.change(screen.getByLabelText('Loại gói'), { target: { value: 'PLACEMENT_TEST' } })
-    expect(await screen.findByLabelText('Lọc kho')).toBeInTheDocument()
-    expect(await screen.findAllByText('Band 0–3')).toHaveLength(3)
-    expect(screen.getByText('Cần thêm đề: lượt thi lại sẽ lặp đề')).toBeInTheDocument()
-    expect(screen.getByText('Chưa có đề, học viên không chọn được kho này')).toBeInTheDocument()
-    expect(api.listPackages).toHaveBeenCalledWith({ type: 'PLACEMENT_TEST', status: 'PUBLISHED', placementPool: 'BAND_5_9', page: 0, size: 1 }, expect.any(AbortSignal))
-    expect(screen.getAllByRole('columnheader', { name: 'Kho' })).toHaveLength(1)
-    fireEvent.change(screen.getByLabelText('Lọc kho'), { target: { value: 'BAND_3_5' } })
-    await waitFor(() => expect(api.listPackages).toHaveBeenCalledWith(expect.objectContaining({ type: 'PLACEMENT_TEST', placementPool: 'BAND_3_5' }), expect.any(AbortSignal)))
-    expect(screen.getAllByText(/Band 5–9/).length).toBeGreaterThan(1)
+    expect(await screen.findByRole('link', { name: 'Thư viện luyện đề' })).toHaveAttribute('href', '/content-author/practice-tests')
+    expect(screen.getByRole('link', { name: 'Đề đầu vào' })).toHaveAttribute('href', '/content-author/placement-tests')
+    const offered = Array.from(screen.getByLabelText('Loại gói').querySelectorAll('option')).map((option) => option.textContent)
+    expect(offered).not.toContain('Đề luyện tập')
+    expect(offered).not.toContain('Kiểm tra đầu vào')
+    expect(screen.queryByLabelText('Lọc kho')).not.toBeInTheDocument()
+    expect(api.listPackages).toHaveBeenCalledWith(expect.objectContaining({ excludeTypes: ['PRACTICE_TEST', 'PLACEMENT_TEST'], page: 0, size: 25 }), expect.any(AbortSignal))
   })
   it('loads more catalog rows and starts again from the first page when a filter changes', async () => {
     api.listPackages.mockImplementation((filters) => Promise.resolve(makeCatalogPage(

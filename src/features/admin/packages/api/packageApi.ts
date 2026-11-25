@@ -5,10 +5,13 @@ import {
   contentPackageSchema, createPackageRequestSchema, packageFiltersSchema, packagePageSchema, packagePreviewSchema,
   packageSectionSchema, packageVersionSchema, passageRequestSchema, practiceSourceSchema, publicationScheduleSchema,
   publishedPackageSchema, sectionAudioSchema, sectionOrderSchema, sectionQuestionOrderSchema, sectionQuestionSchema, sectionRequestSchema,
-  type AddSectionQuestionRequest, type AudioRequest, type CreatePackageRequest, type PackageFilters, type PassageRequest, type SectionRequest,
+  type AddSectionQuestionRequest, type AudioRequest, type CreatePackageRequest, type PackageFilters, type PackageListItem, type PassageRequest, type SectionRequest,
+  type UpdatePackageInfoRequest, updatePackageInfoRequestSchema,
 } from '../types'
 
 const BASE = '/api/content/admin/packages'
+const ALL_PAGE_SIZE = 100
+const MAX_PAGES = 20
 const packagePath = (id: string) => `${BASE}/${z.guid().parse(id)}`
 const sectionsPath = (id: string, versionId: string) => `${packagePath(id)}/versions/${z.guid().parse(versionId)}/sections`
 const versionPath = (id: string, versionId: string) => `${packagePath(id)}/versions/${z.guid().parse(versionId)}`
@@ -16,8 +19,21 @@ const sectionPath = (id: string, versionId: string, sectionId: string) => `${sec
 
 export async function listPackages(filters: PackageFilters = {}, signal?: AbortSignal) {
   const params = new URLSearchParams()
-  for (const [key, value] of Object.entries(packageFiltersSchema.parse(filters))) if (value !== undefined) params.set(key, String(value))
+  const { excludeTypes, ...rest } = packageFiltersSchema.parse(filters)
+  for (const [key, value] of Object.entries(rest)) if (value !== undefined) params.set(key, String(value))
+  for (const type of excludeTypes ?? []) params.append('excludeType', type)
   return packagePageSchema.parse(await apiRequest<unknown>(`${BASE}${params.size ? `?${params}` : ''}`, { auth: true, signal }))
+}
+
+/** Every package matching the filters, read page by page. For a screen that manages one small kind of package. */
+export async function listAllPackages(filters: PackageFilters = {}, signal?: AbortSignal) {
+  const items: PackageListItem[] = []
+  for (let page = 0; page < MAX_PAGES; page += 1) {
+    const result = await listPackages({ ...filters, page, size: ALL_PAGE_SIZE }, signal)
+    items.push(...result.content)
+    if (page + 1 >= result.totalPages) break
+  }
+  return items
 }
 
 export async function createPackage(body: CreatePackageRequest) {
@@ -110,6 +126,21 @@ export async function cancelSchedule(id: string, versionId: string) {
 
 export async function listSchedules(id: string, signal?: AbortSignal) {
   return z.array(publicationScheduleSchema).parse(await apiRequest<unknown>(`${packagePath(id)}/publication-schedules`, { auth: true, signal }))
+}
+
+/** Changes the title, access level, source or band pool of a package; the server refuses what the type or state forbids. */
+export async function updatePackageInfo(id: string, body: UpdatePackageInfoRequest) {
+  return contentPackageSchema.parse(await apiRequest<unknown>(packagePath(id), { auth: true, method: 'PATCH', body: updatePackageInfoRequestSchema.parse(body) }))
+}
+
+/** Hides a practice or placement test from learners. */
+export async function archivePackage(id: string) {
+  return contentPackageSchema.parse(await apiRequest<unknown>(`${packagePath(id)}/archive`, { auth: true, method: 'POST' }))
+}
+
+/** Brings a hidden practice or placement test back. */
+export async function restorePackage(id: string) {
+  return contentPackageSchema.parse(await apiRequest<unknown>(`${packagePath(id)}/restore`, { auth: true, method: 'POST' }))
 }
 
 export async function listPracticeSources(signal?: AbortSignal) {

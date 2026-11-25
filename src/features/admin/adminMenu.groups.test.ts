@@ -11,7 +11,7 @@ describe('menuEntriesFor', () => {
     expect(summary(['CONTENT_AUTHOR'])).toEqual([
       'Tổng quan nội dung',
       { group: 'Chương trình học', items: ['Khóa học & chủ đề', 'Cây tri thức', 'Nhập khóa học từ Excel'] },
-      { group: 'Câu hỏi & đề', items: ['Ngân hàng câu hỏi', 'Đề & gói câu hỏi', 'Duyệt câu hỏi AI'] },
+      { group: 'Câu hỏi & đề', items: ['Ngân hàng câu hỏi', 'Đề & gói câu hỏi', 'Thư viện luyện đề', 'Đề đầu vào', 'Duyệt câu hỏi AI'] },
       'Việc cần làm',
       { group: 'Chất lượng chấm', items: ['Đánh giá AI chấm Writing', 'Rubric chấm Writing', 'Mã lỗi'] },
       'Thiết lập tham số',

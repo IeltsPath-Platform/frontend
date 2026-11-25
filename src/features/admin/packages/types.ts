@@ -35,6 +35,13 @@ export const publishedPackageSchema = z.object({
 })
 export const packageListItemSchema = publishedPackageSchema.extend({
   topicId: z.guid().nullable(), courseId: z.guid().nullable(), latestVersionNumber: z.int().positive().nullable(), hasDraft: z.boolean(),
+  /** The one skill of the shown version's sections; null when they mix skills or there are none. */
+  skill: sectionSkillSchema.nullish(), partNos: z.array(z.int()).nullish(),
+  sectionCount: z.int().nonnegative().nullish(), questionCount: z.int().nonnegative().nullish(),
+})
+/** Attempts begun and submitted on a test, and the average band of its graded attempts (null when none is graded). */
+export const packageStatsSchema = z.object({
+  packageId: z.guid(), started: z.int().nonnegative(), submitted: z.int().nonnegative(), averageBand: z.number().nullable(),
 })
 export const packagePageSchema = z.object({
   content: z.array(packageListItemSchema), page: z.number(), size: z.number(), totalElements: z.number(), totalPages: z.number(),
@@ -53,7 +60,20 @@ export const sectionOrderSchema = z.object({ sectionIds: z.array(z.guid()).refin
 export const packageFiltersSchema = z.object({
   type: packageTypeSchema.optional(), status: packageStatusSchema.optional(), lessonId: z.guid().optional(),
   topicId: z.guid().optional(), courseId: z.guid().optional(), q: z.string().optional(), placementPool: placementPoolSchema.optional(),
+  accessLevel: z.enum(['FREE', 'PREMIUM']).optional(), skill: sectionSkillSchema.optional(),
+  /** Package types the list leaves out; the server applies it before paging, so counts and pages stay exact. */
+  excludeTypes: z.array(packageTypeSchema).optional(),
   page: z.int().min(0).optional(), size: z.int().min(1).max(100).optional(),
+})
+/**
+ * What an author changes on a package. A missing field is left as it is. A blank `sourceCode` takes a practice test
+ * out of the learner library.
+ */
+export const updatePackageInfoRequestSchema = z.object({
+  title: z.string().trim().min(1, 'Tiêu đề không được để trống.').max(255).optional(),
+  accessLevel: z.enum(['FREE', 'PREMIUM']).optional(),
+  sourceCode: z.string().max(40).optional(),
+  placementPool: placementPoolSchema.optional(),
 })
 export const createPackageRequestSchema = z.object({
   /** Left out or blank when the server chooses the code. */
@@ -126,3 +146,5 @@ export type AudioUpload = z.infer<typeof audioUploadSchema>
 export type PackagePreview = z.infer<typeof packagePreviewSchema>
 export type PublicationSchedule = z.infer<typeof publicationScheduleSchema>
 export type PracticeSource = z.infer<typeof practiceSourceSchema>
+export type PackageStats = z.infer<typeof packageStatsSchema>
+export type UpdatePackageInfoRequest = z.infer<typeof updatePackageInfoRequestSchema>

@@ -12,23 +12,28 @@ import { fetchLessons, fetchTopics } from '../../lessons/api/lessonApi'
 import { useAdminResource } from '../../lib/useAdminResource'
 import { createDraftVersion, createPackage, listPracticeSources } from '../api/packageApi'
 import { PACKAGE_TYPE_LABEL, packageError } from '../lib/packageLabels'
-import type { CreatePackageRequest, PackageType } from '../types'
+import type { CreatePackageRequest } from '../types'
 import type { PlacementPool } from '~types/learningPath'
 import { useAdminError } from '../../lib/useAdminError'
 
-const CREATE_TYPES = ['PRACTICE_SET', 'PRACTICE_TEST', 'MOCK_TEST', 'PLACEMENT_TEST', 'QUIZ', 'TOPIC_TEST', 'COURSE_TEST'] as const
+/** The types made in "Đề & gói câu hỏi". Practice tests and placement tests have their own screens (`fixedType`). */
+const CREATE_TYPES = ['PRACTICE_SET', 'MOCK_TEST', 'QUIZ', 'TOPIC_TEST', 'COURSE_TEST'] as const
+type CreateType = (typeof CREATE_TYPES)[number] | 'PRACTICE_TEST' | 'PLACEMENT_TEST'
 
-export function PackageCreateForm({ onCreated, onCancel, initialType }: {
+export function PackageCreateForm({ onCreated, onCancel, initialType, fixedType, initialPool }: {
   onCreated: (packageId: string) => void; onCancel: () => void; initialType?: string
+  /** Set by the screen that owns the type: the form makes only that type. */
+  fixedType?: 'PRACTICE_TEST' | 'PLACEMENT_TEST'
+  initialPool?: PlacementPool
 }) {
   const [title, setTitle] = useState('')
-  const [type, setType] = useState<(typeof CREATE_TYPES)[number]>(CREATE_TYPES.find((value) => value === initialType) ?? 'PRACTICE_SET')
+  const [type, setType] = useState<CreateType>(fixedType ?? (CREATE_TYPES.find((value) => value === initialType) ?? 'PRACTICE_SET'))
   const [access, setAccess] = useState<'FREE' | 'PREMIUM'>('FREE')
   const [courseId, setCourseId] = useState('')
   const [topicId, setTopicId] = useState('')
   const [lessonId, setLessonId] = useState('')
   const [sourceCode, setSourceCode] = useState('')
-  const [placementPool, setPlacementPool] = useState<PlacementPool | ''>('')
+  const [placementPool, setPlacementPool] = useState<PlacementPool | ''>(initialPool ?? '')
   const [pending, setPending] = useState(false)
   const [createdId, setCreatedId] = useState<string | null>(null)
   const [, setError] = useAdminError()
@@ -114,7 +119,7 @@ export function PackageCreateForm({ onCreated, onCancel, initialType }: {
     {createdId && !pending ? <button className="adm-btn adm-btn--primary" type="button" onClick={() => onCreated(createdId)}>Mở gói đã tạo</button> : null}
     <fieldset className="adm-package-fields adm-pc__fields" disabled={pending || !!createdId}>
       <div className="adm-pc__row">
-        <label className="adm-field"><span>Loại gói</span><select className="adm-select" value={type} onChange={(event) => { setType(event.target.value as Exclude<PackageType, 'LESSON'>); setError(null) }}>{CREATE_TYPES.map((value) => <option key={value} value={value}>{PACKAGE_TYPE_LABEL[value]}</option>)}</select></label>
+        <label className="adm-field"><span>Loại gói</span><select className="adm-select" disabled={!!fixedType} value={type} onChange={(event) => { setType(event.target.value as CreateType); setError(null) }}>{(fixedType ? [fixedType] : CREATE_TYPES).map((value) => <option key={value} value={value}>{PACKAGE_TYPE_LABEL[value]}</option>)}</select></label>
         <div className="adm-pc__switch"><AdminSwitch checked={access === 'FREE'} onChange={(free) => setAccess(free ? 'FREE' : 'PREMIUM')}>Miễn phí</AdminSwitch></div>
       </div>
       <AdminField label="Tiêu đề gói" {...form.field('title')}><input className="adm-input" maxLength={255} value={title} onChange={(event) => setTitle(event.target.value)} /></AdminField>

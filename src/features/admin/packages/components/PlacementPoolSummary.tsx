@@ -3,6 +3,7 @@ import { AdminError, AdminLoading } from '../../components/AdminState'
 import { listPackages } from '../api/packageApi'
 import { PLACEMENT_POOLS } from '@/features/learning-path/placement/placementPools'
 
+/** Published placement tests in each band pool. */
 export function PlacementPoolSummary() {
   // One request per pool: the server counts the published packages of each, so no list has to be loaded to count them.
   const resource = useAdminResource('placement-pool-published-counts', async (signal) => new Map(await Promise.all(
