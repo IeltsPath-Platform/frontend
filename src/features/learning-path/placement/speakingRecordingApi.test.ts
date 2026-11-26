@@ -3,6 +3,8 @@ import { clearAccessToken, setAccessToken } from '@/lib/httpClient'
 import { uploadSpeakingRecording } from './speakingRecordingApi'
 
 const fetchMock = vi.fn<typeof fetch>()
+const wav = vi.hoisted(() => ({ convert: vi.fn(async () => new Blob(['wav'], { type: 'audio/wav' })) }))
+vi.mock('@/features/practice/speaking/wavEncoder', () => ({ toWav16kMono: wav.convert }))
 const recorder = class {
   static isTypeSupported(type: string) { return type === 'audio/webm' || type === 'audio/wav' }
 }
@@ -31,16 +33,27 @@ describe('Speaking recording API', () => {
     })
 
     expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(wav.convert).toHaveBeenCalledWith(recording)
     const [url, request] = fetchMock.mock.calls[0]!
     expect(new URL(url as string).pathname).toBe('/api/assessments/speaking-recordings')
     expect(request).toMatchObject({ method: 'POST', credentials: 'include' })
-    expect((request!.body as FormData).get('file')).toBeInstanceOf(Blob)
+    const uploaded = (request!.body as FormData).get('file') as File
+    expect(uploaded).toBeInstanceOf(Blob)
+    expect(uploaded.type).toBe('audio/wav')
+    expect(uploaded.name).toBe('speaking-recording.wav')
     expect(request!.headers).not.toHaveProperty('Content-Type')
   })
 
   it('rejects audio MIME types the recorder or backend does not support', async () => {
     await expect(uploadSpeakingRecording(new Blob(['x'], { type: 'audio/flac' })))
       .rejects.toThrow(/không hỗ trợ/i)
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('checks the converted WAV against the assessment 5 MB limit', async () => {
+    wav.convert.mockResolvedValueOnce({ size: 5 * 1024 * 1024 + 1, type: 'audio/wav' } as Blob)
+    await expect(uploadSpeakingRecording(new Blob(['recording'], { type: 'audio/webm' })))
+      .rejects.toThrow(/giới hạn 5 MB/)
     expect(fetchMock).not.toHaveBeenCalled()
   })
 })
