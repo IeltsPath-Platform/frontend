@@ -24,12 +24,12 @@ describe('Speaking recording API', () => {
 
   it('uploads supported audio as multipart and returns only the storage reference', async () => {
     fetchMock.mockResolvedValue(new Response(JSON.stringify({
-      mediaReference: 'speaking/user/recording.webm', contentType: 'audio/webm', sizeBytes: 8,
+      mediaReference: 'speaking/user/recording.wav', contentType: 'audio/wav', sizeBytes: 48,
     }), { status: 201, headers: { 'Content-Type': 'application/json' } }))
     const recording = new Blob([new Uint8Array([1, 2, 3])], { type: 'audio/webm;codecs=opus' })
 
     await expect(uploadSpeakingRecording(recording)).resolves.toEqual({
-      mediaReference: 'speaking/user/recording.webm', contentType: 'audio/webm', sizeBytes: 8,
+      mediaReference: 'speaking/user/recording.wav', contentType: 'audio/wav', sizeBytes: 48,
     })
 
     expect(fetchMock).toHaveBeenCalledTimes(1)
@@ -54,6 +54,13 @@ describe('Speaking recording API', () => {
     wav.convert.mockResolvedValueOnce({ size: 5 * 1024 * 1024 + 1, type: 'audio/wav' } as Blob)
     await expect(uploadSpeakingRecording(new Blob(['recording'], { type: 'audio/webm' })))
       .rejects.toThrow(/giới hạn 5 MB/)
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('does not upload when the browser cannot decode the recording', async () => {
+    wav.convert.mockRejectedValueOnce(new Error('Không chuyển được bản ghi sang định dạng WAV.'))
+    await expect(uploadSpeakingRecording(new Blob(['recording'], { type: 'audio/webm' })))
+      .rejects.toThrow(/không chuyển được.*WAV/i)
     expect(fetchMock).not.toHaveBeenCalled()
   })
 })

@@ -45,6 +45,25 @@ describe('PlacementResultView', () => {
     expect(screen.queryByText(/Bạn đạt mức tối đa của kho/)).not.toBeInTheDocument()
   })
 
+  it('renders the Speaking grade and feedback returned by the placement result API', async () => {
+    api.getPlacementResult.mockResolvedValue({
+      ...baseResult,
+      skills: [...baseResult.skills, { skill: 'SPEAKING', band: 6.5 }],
+      sections: [{ skill: 'SPEAKING', title: 'Speaking', questions: [], essays: [] }],
+      speakingFeedback: {
+        summary: 'Bạn duy trì câu trả lời rõ ràng.',
+        criteria: [{ code: 'FC', band: 7, comment: 'Mạch nói khá tự nhiên.' }],
+      },
+    })
+
+    await show()
+
+    expect(await screen.findByText('Bạn duy trì câu trả lời rõ ràng.')).toBeInTheDocument()
+    expect(screen.getByText('Mạch nói khá tự nhiên.')).toBeInTheDocument()
+    expect(screen.getAllByText('6.5').length).toBeGreaterThan(0)
+    expect(screen.queryByText(/Hệ thống chưa chấm bản ghi Speaking/)).not.toBeInTheDocument()
+  })
+
   it('waits for Learning to report the new band before loading recommended courses', async () => {
     let applyBand!: (value: typeof options) => void
     api.getPlacementOptions.mockResolvedValueOnce({ ...options, currentBand: 4.5 }).mockImplementationOnce(() => new Promise((resolve) => { applyBand = resolve }))

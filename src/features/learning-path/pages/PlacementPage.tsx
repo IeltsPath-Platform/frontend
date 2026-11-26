@@ -1,7 +1,6 @@
 import { useEffect, useEffectEvent, useMemo, useState } from 'react'
 import { StudyActivityTracker } from '@/features/study-time/StudyActivityTracker'
 import { AiWaitPanel } from '@/components/loading/AiWaitPanel'
-import { essayWaitNote } from '@/components/loading/aiWaitNotes'
 import { Button } from '@/components/ui/button'
 import type { AssessmentAttempt, AttemptItemResponse, PlacementAssignment, PlacementPool } from '~types/learningPath'
 import { learningApi, toApiError } from '../api'
@@ -341,8 +340,8 @@ function PlacementGrading({ attemptId, onGraded }: { attemptId: string; onGraded
     phase === 'grading' ? (
       <div className="pl-grading">
         <AiWaitPanel
-          hint="Bài luận được chấm tự động nên có thể mất tới một phút. Đừng đóng trang này."
-          note={essayWaitNote}
+          hint="Bài viết và bản ghi Speaking đang được chấm tự động. Kết quả sẽ tự hiện khi hoàn tất; đừng đóng trang này."
+          note={placementWaitNote}
           title="Đang chấm bài của bạn"
         />
       </div>
@@ -358,4 +357,10 @@ function PlacementGrading({ attemptId, onGraded }: { attemptId: string; onGraded
     </section>
     )
   )
+}
+
+function placementWaitNote(seconds: number): string {
+  if (seconds >= 90) return 'Vẫn đang chấm · bản ghi Speaking có thể cần thêm thời gian · bạn không cần gửi lại'
+  if (seconds >= 30) return 'Bài viết và bản ghi Speaking đang được xử lý · hãy giữ trang này mở'
+  return 'Kết quả sẽ tự hiện khi chấm xong · giữ trang này mở'
 }
