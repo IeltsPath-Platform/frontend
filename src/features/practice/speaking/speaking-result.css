@@ -61,10 +61,12 @@
 .sres-back:focus-visible { outline: 3px solid var(--sres-focus); outline-offset: 2px; }
 
 .sres-main { display: grid; gap: 1.1rem; max-width: 80rem; margin: 0 auto; padding: 1.5rem 1.5rem 3.5rem; }
-.sres-titlebar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem 1rem; }
-.sres-titlebar h1 { margin: 0; font-size: clamp(1.75rem, 3vw, 2.2rem); font-weight: 800; letter-spacing: -0.015em; line-height: 1.2; color: var(--sres-primary-strong); }
+.sres-main--state { max-width: 59rem; }
+.sres-main--graded { max-width: 80rem; }
+.sres-titlebar { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.5rem 1rem; text-align: center; }
+.sres-titlebar h1 { margin: 0; font-size: clamp(1.75rem, 3vw, 2.2rem); font-weight: 800; letter-spacing: -0.015em; line-height: 1.2; color: var(--sres-primary-strong); text-align: center; }
 /* The titles are bold, and a short solid bar in the brand orange sits under the main ones. */
-.sres-titlebar h1::after,
+.sres-titlebar h1::after { content: ""; display: block; width: 2.6rem; height: 3px; margin: 0.5rem auto 0; border-radius: 2px; background: var(--sres-accent); }
 .sres-h2::after { content: ""; display: block; width: 2.6rem; height: 3px; margin-top: 0.5rem; border-radius: 2px; background: var(--sres-accent); }
 .sres-muted { margin: 0; color: var(--sres-muted); font-size: 0.85rem; }
 .sres-done { display: inline-flex; align-items: center; gap: 0.4rem; margin: 0; padding: 0.3rem 0.85rem; border-radius: 999px; background: var(--sres-good-soft); color: var(--sres-good); font-size: 0.9rem; font-weight: 600; }

@@ -1,0 +1,85 @@
+.ss-dialog {
+  --ss-ink: var(--classroom-text, #202633);
+  --ss-muted: #55607a;
+  --ss-line: var(--classroom-border, #e3e7ef);
+  --ss-primary: var(--classroom-primary, #123ab5);
+  --ss-primary-soft: var(--classroom-soft, #eef3ff);
+  --ss-good: #15803d;
+  --ss-good-soft: color-mix(in srgb, var(--ss-good) 9%, #ffffff);
+  width: calc(100% - 2rem);
+  max-width: 32rem;
+  justify-items: center;
+  gap: 1rem;
+  padding: 2.1rem 2rem 1.7rem;
+  border-color: var(--ss-line);
+  border-radius: 1.25rem;
+  text-align: center;
+}
+
+.ss-dialog__mark {
+  display: grid;
+  place-items: center;
+  width: 4.2rem;
+  height: 4.2rem;
+  border: 1px solid transparent;
+  border-radius: 50%;
+}
+
+.ss-dialog__mark.is-sent {
+  border-color: color-mix(in srgb, var(--ss-good) 22%, #ffffff);
+  background: var(--ss-good-soft);
+  color: var(--ss-good);
+}
+
+.ss-dialog__mark.is-sending {
+  border-color: color-mix(in srgb, var(--ss-primary) 15%, #ffffff);
+  background: var(--ss-primary-soft);
+  color: var(--ss-primary);
+}
+
+.ss-dialog__copy { display: grid; gap: 0.4rem; justify-items: center; }
+.ss-dialog__title { color: var(--ss-ink); font-size: 1.45rem; font-weight: 800; line-height: 1.25; }
+.ss-dialog__description { max-width: 26rem; color: var(--ss-muted); font-size: 0.96rem; line-height: 1.6; }
+
+.ss-dialog__context {
+  display: grid;
+  justify-items: center;
+  gap: 0.25rem;
+  width: 100%;
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--ss-line);
+  border-radius: 0.8rem;
+  background: #f8f9fc;
+  color: var(--ss-ink);
+  font-size: 0.94rem;
+  font-weight: 700;
+}
+
+.ss-dialog__context span {
+  color: var(--ss-muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+}
+
+.ss-dialog__progress,
+.ss-dialog__receipt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.ss-dialog__progress { color: var(--ss-muted); }
+.ss-dialog__receipt { color: var(--ss-good); font-weight: 700; }
+.ss-dialog__actions { display: flex; justify-content: center; width: 100%; }
+.ss-dialog__actions .ww-primary { width: 100%; max-width: none; min-height: 2.9rem; border-radius: 0.7rem; }
+.ss-dialog__actions .ww-primary:disabled { cursor: wait; opacity: 0.65; }
+
+@media (max-width: 520px) {
+  .ss-dialog { padding: 1.8rem 1.2rem 1.3rem; }
+}

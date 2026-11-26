@@ -312,9 +312,10 @@ export function SpeakingSubmissionResultPage() {
 
 /**
  * The result of one submission: the waiting screen while it is graded, then the result, all in the same place. The review
- * page shows this in itself after the answers are sent, so the learner is not taken to another page to wait.
+ * page shows this in itself after the answers are sent, so the learner is not taken to another page to wait. `justSent`
+ * says the server has just taken the answers, so the wait starts at the speech analysis before the first status is read.
  */
-export function SpeakingResultScreen({ submissionId }: { submissionId: string }) {
+export function SpeakingResultScreen({ submissionId, justSent = false }: { submissionId: string; justSent?: boolean }) {
   const { submission, error, short, retry } = useSpeakingSubmissionResult(submissionId)
   const status = submission?.status
   const view = status === 'GRADED' && submission?.result ? parseSpeakingResult(submission.result) : null
@@ -325,10 +326,11 @@ export function SpeakingResultScreen({ submissionId }: { submissionId: string })
       <Link className="sres-exit" to={CATALOG_PATH} aria-label="Về danh mục Speaking"><X size={16} aria-hidden="true" /></Link>
       <span><Mic size={16} aria-hidden="true" /> Bài luyện Speaking</span>
     </header>
-    <main className="sres-main">
+    <main className={`sres-main${view ? ' sres-main--graded' : ' sres-main--state'}`}>
       <div className="sres-titlebar"><h1>Kết quả chấm bài</h1>{view && <p className="sres-done"><CheckCircle2 size={16} aria-hidden="true" /> Đã chấm xong</p>}</div>
-      {!submission && !error && <SpeakingWaitingPanel status={undefined} />}
-      {working && !short && <SpeakingWaitingPanel status={status} />}
+      {/* One panel from the first read to the last stage: a second one would start the waited time again. */}
+      {((!submission && !error) || (working && !short))
+        && <SpeakingWaitingPanel status={status ?? (justSent ? 'QUEUED' : undefined)} />}
       {short && <Notice tone="warn" icon={<AlertTriangle size={20} />} title="Chưa nhận được kết quả">
         <p>Số dư point hiện tại chưa đủ để nhận kết quả bài này. Bài chấm của bạn được giữ lại, bạn nạp thêm point rồi thử lại nhé.</p>
         <button type="button" onClick={retry}>Thử lại</button></Notice>}
