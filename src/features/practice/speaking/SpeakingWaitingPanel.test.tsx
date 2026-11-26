@@ -10,7 +10,8 @@ describe('SpeakingWaitingPanel', () => {
   afterEach(() => { vi.useRealTimers() })
 
   it.each([
-    ['QUEUED', 'Đã nhận bài', 'Đang chờ tới lượt chấm'],
+    ['UPLOADING', 'Đã nhận bài', 'Đang chờ tới lượt chấm'],
+    ['QUEUED', 'Phân tích giọng nói', 'Đang phân tích giọng nói'],
     ['ANALYZING', 'Phân tích giọng nói', 'Đang phân tích giọng nói'],
     ['GRADING', 'Chấm bài', 'Đang chấm bài'],
     ['PAYMENT_PENDING', 'Hoàn tất kết quả', 'Đang hoàn tất kết quả'],

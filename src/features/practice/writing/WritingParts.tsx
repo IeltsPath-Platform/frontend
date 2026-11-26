@@ -113,8 +113,10 @@ export interface GradeConsent {
 }
 
 /** "Spend points to let the AI grade": the cost, the balance after, and what the learner gets. */
-export function GradeConfirmDialog({ figures, busy, error, canGrade, onGrade, onClose, copy, consent, progress }: {
+export function GradeConfirmDialog({ figures, busy, error, canGrade, onGrade, onClose, copy, consent, progress, free = false }: {
   figures: GradeFigures
+  /** The learner pays nothing (Premium): no cost or balance is shown, and the button names no price. */
+  free?: boolean
   busy: boolean
   error: string
   canGrade: boolean
@@ -130,25 +132,32 @@ export function GradeConfirmDialog({ figures, busy, error, canGrade, onGrade, on
     <Dialog open onOpenChange={(open) => { if (!open && !busy) onClose() }}>
       <DialogContent className="ww-dialog">
         <DialogTitle className="ww-dialog-title"><Sparkles size={20} aria-hidden="true" /> Chấm bài bằng AI</DialogTitle>
-        <DialogDescription>{copy?.description ?? 'AI chấm theo 4 tiêu chí IELTS Writing và trả về Band, lỗi cần sửa và gợi ý cải thiện.'}</DialogDescription>
+        <DialogDescription className={busy ? 'sr-only' : undefined}>{copy?.description ?? 'AI chấm theo 4 tiêu chí IELTS Writing và trả về Band, lỗi cần sửa và gợi ý cải thiện.'}</DialogDescription>
         <p className="ww-dialog-context">{figures.context}</p>
-        <div className="ww-figures">
-          <div><span>Chi phí chấm</span><strong className="is-strong">−{cost} point</strong></div>
-          <div><span>Số dư hiện tại</span><strong>{balance === null ? '—' : `${balance} point`}</strong></div>
-          <div><span>Số dư sau khi chấm</span><strong className="is-strong">{balance === null ? '—' : `${balance - cost} point`}</strong></div>
-        </div>
-        <div>
-          <h3 className="ww-dialog-sub">Bạn sẽ nhận được</h3>
-          <ul className="ww-benefits">{figures.benefits.map((benefit) => <li key={benefit}>✓ {benefit}</li>)}</ul>
-        </div>
-        <p className="ww-checks">{figures.checks.map((check, index) => (
-          <span key={check.text} className={check.ok ? 'is-ok' : 'is-warn'}>{index > 0 ? ' · ' : ''}{check.text} {check.ok ? '✓' : '!'}</span>
-        ))}</p>
-        {consent && (
-          <label className="ww-consent">
-            <input type="checkbox" checked={consent.checked} disabled={busy} onChange={(event) => consent.onChange(event.target.checked)} />
-            <span>{consent.label}</span>
-          </label>
+        {/* While the work runs the learner has already decided: only the wait is shown, so the popup fits without scrolling. */}
+        {!busy && (
+          <>
+            {!free && (
+              <div className="ww-figures">
+                <div><span>Chi phí chấm</span><strong className="is-strong">−{cost} point</strong></div>
+                <div><span>Số dư hiện tại</span><strong>{balance === null ? '—' : `${balance} point`}</strong></div>
+                <div><span>Số dư sau khi chấm</span><strong className="is-strong">{balance === null ? '—' : `${balance - cost} point`}</strong></div>
+              </div>
+            )}
+            <div>
+              <h3 className="ww-dialog-sub">Bạn sẽ nhận được</h3>
+              <ul className="ww-benefits">{figures.benefits.map((benefit) => <li key={benefit}>✓ {benefit}</li>)}</ul>
+            </div>
+            <p className="ww-checks">{figures.checks.map((check, index) => (
+              <span key={check.text} className={check.ok ? 'is-ok' : 'is-warn'}>{index > 0 ? ' · ' : ''}{check.text} {check.ok ? '✓' : '!'}</span>
+            ))}</p>
+            {consent && (
+              <label className="ww-consent">
+                <input type="checkbox" checked={consent.checked} onChange={(event) => consent.onChange(event.target.checked)} />
+                <span>{consent.label}</span>
+              </label>
+            )}
+          </>
         )}
         {error && <p className="ww-error" role="alert">{error}</p>}
         {busy && progress && <p className="ww-muted" role="status">{progress}</p>}
@@ -156,7 +165,7 @@ export function GradeConfirmDialog({ figures, busy, error, canGrade, onGrade, on
         <div className="ww-dialog-actions">
           <button type="button" className="ww-secondary" disabled={busy} onClick={onClose}>{copy?.backLabel ?? 'Quay lại chỉnh sửa'}</button>
           <button type="button" className="ww-primary" disabled={busy || !canGrade || (consent !== undefined && !consent.checked)} onClick={onGrade}>
-            {busy ? (copy?.busyLabel ?? 'Đang chấm bài…') : `Chấm bài · ${cost} point`}
+            {busy ? (copy?.busyLabel ?? 'Đang chấm bài…') : free ? 'Chấm bài' : `Chấm bài · ${cost} point`}
           </button>
         </div>
         <p className="ww-dialog-note">{copy?.note ?? 'Bài sẽ được khóa sau khi chấm. Nếu AI gặp lỗi, point sẽ được hoàn lại.'}</p>

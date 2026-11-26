@@ -100,8 +100,8 @@ export function SpeakingReviewPage() {
     seconds,
   })
 
-  // Once the answers are sent and the learner asks for the result, it is shown here, on the same page.
-  if (grading.viewingId) return <SpeakingResultScreen submissionId={grading.viewingId} />
+  // Once the answers are received and the learner goes on, the grading and its result are shown here, on the same page.
+  if (grading.viewingId) return <SpeakingResultScreen justSent submissionId={grading.viewingId} />
   if (!packageVersionId || parts.length === 0) return <Navigate replace to={CATALOG_PATH} />
   if (resource.status === 'loading') return <PageSkeleton label="Đang tải bài của bạn…" variant="article" />
   if (resource.status === 'error' && resource.error) return <><ApiErrorState error={resource.error} onRetry={resource.reload} />

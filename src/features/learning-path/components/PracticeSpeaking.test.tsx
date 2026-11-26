@@ -2,6 +2,7 @@ import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { HttpError } from '@/lib/httpClient'
+import { ToastProvider } from '@/components/toast/ToastProvider'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PracticeRecorded } from '~types/learningPath'
 import { PracticeSpeaking } from './PracticeSpeaking'
@@ -38,10 +39,10 @@ const item = (overrides: Partial<PracticeRecorded> = {}): PracticeRecorded => ({
 function show(props: Partial<React.ComponentProps<typeof PracticeSpeaking>> = {}) {
   const onFinish = vi.fn().mockResolvedValue(undefined)
   render(
-    <MemoryRouter>
+    <ToastProvider><MemoryRouter>
       <PracticeSpeaking attemptId="attempt-1" finished={false} onFinish={onFinish} recorded={[item()]}
         title="Nói Part 1" {...props} />
-    </MemoryRouter>,
+    </MemoryRouter></ToastProvider>,
   )
   return { onFinish }
 }
@@ -65,19 +66,18 @@ describe('the recorded answer of a lesson practice set', () => {
     expect(screen.getByText('Ghi âm câu trả lời trước khi gửi chấm.')).toBeInTheDocument()
   })
 
-  it('asks AI or teacher, sends the recording to the attempt, then follows the grading in place', async () => {
+  it('asks to confirm, sends the recording to the attempt, then follows the grading in place', async () => {
     sender.send.mockResolvedValue({ id: 'sub-1' })
     api.getSpeakingSubmission.mockResolvedValue({ id: 'sub-1', status: 'GRADING' })
     show()
     await userEvent.click(screen.getByRole('button', { name: 'Ghi thử' }))
 
     await userEvent.click(screen.getByRole('button', { name: 'Gửi chấm bài nói' }))
-    const method = await screen.findByRole('dialog')
-    expect(within(method).getByRole('button', { name: 'Chọn giáo viên' })).toBeDisabled()
-    await userEvent.click(within(method).getByRole('button', { name: /Chấm bằng AI/ }))
-    const confirm = await screen.findByRole('dialog')
+    await screen.findByRole('checkbox')
+    const confirm = screen.getByRole('dialog')
     await userEvent.click(within(confirm).getByRole('checkbox'))
     await userEvent.click(within(confirm).getByRole('button', { name: /Chấm bài · \d+ point/ }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Tiếp tục' }))
 
     expect(await screen.findByText('Đang chờ: GRADING')).toBeInTheDocument()
     const input = sender.send.mock.calls[0][0]

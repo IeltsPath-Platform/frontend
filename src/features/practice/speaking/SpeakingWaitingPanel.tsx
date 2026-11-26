@@ -8,8 +8,9 @@ const STEPS = [
   { label: 'Hoàn tất kết quả', hint: 'Kết quả sắp hiện ra.' },
 ] as const
 
+/** A queued submission has been received (the send popup said so), so its wait already belongs to the speech analysis. */
 const STAGE_OF: Record<string, number> = {
-  UPLOADING: 0, QUEUED: 0, ANALYZING: 1, GRADING: 2, PAYMENT_PENDING: 3, FAILED_RETRYABLE: 2,
+  UPLOADING: 0, QUEUED: 1, ANALYZING: 1, GRADING: 2, PAYMENT_PENDING: 3, FAILED_RETRYABLE: 2,
 }
 
 /** After this long the usual wait is over and the note says so, so a long grade is not mistaken for a stuck one. */

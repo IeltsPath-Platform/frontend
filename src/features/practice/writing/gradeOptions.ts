@@ -25,6 +25,12 @@ export const NO_PREMIUM = 'Cần gói Premium để gửi giáo viên chấm.'
 export const NO_CREDITS = 'Gói Premium của bạn đã hết lượt giáo viên chấm.'
 export const TEACHER_PENDING = 'Bài này đã gửi giáo viên và đang chờ chấm. Bạn gửi lại được sau khi giáo viên chấm xong.'
 
+/** Premium as the server judges it: a subscription that is active and not past its end. */
+export function hasActivePremium(subscription: Subscription | null | undefined, now = Date.now()): boolean {
+  return !!subscription && subscription.status === 'ACTIVE'
+    && (subscription.endsAt === null || Date.parse(subscription.endsAt) > now)
+}
+
 /**
  * What the learner may choose when finishing an essay. `subscription` is null for a learner without any, undefined when it
  * could not be read; `balance` is null when it could not be read. An unreadable value leaves the option open, because the
@@ -47,8 +53,7 @@ export function gradeOptions({ balance, cost, subscription, now = Date.now(), te
 
 function teacherOption(subscription: Subscription | null | undefined, now: number): TeacherOption {
   if (subscription === undefined) return { enabled: true, credits: null, reason: null }
-  const expired = subscription !== null && subscription.endsAt !== null && Date.parse(subscription.endsAt) <= now
-  if (subscription === null || subscription.status !== 'ACTIVE' || expired) return { enabled: false, credits: 0, reason: NO_PREMIUM }
+  if (subscription === null || !hasActivePremium(subscription, now)) return { enabled: false, credits: 0, reason: NO_PREMIUM }
   if (subscription.remainingCredits <= 0) return { enabled: false, credits: 0, reason: NO_CREDITS }
   return { enabled: true, credits: subscription.remainingCredits, reason: null }
 }

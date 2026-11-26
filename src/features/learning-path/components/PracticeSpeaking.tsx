@@ -34,8 +34,8 @@ interface PracticeSpeakingProps {
 }
 
 /**
- * The recorded answer of a lesson's Practice set. The learner records, sends it to the AI (the popup asks, with the
- * teacher shown as not yet available) and follows the grading here. Once the answer is graded its result is shown in place
+ * The recorded answer of a lesson's Practice set. The learner records, sends it to the AI (a popup confirms) and
+ * follows the grading here. Once the answer is graded its result is shown in place
  * and the set is handed in by itself, which is when the grade reaches mastery. A failed or empty answer can be recorded and
  * sent again.
  */
@@ -46,13 +46,15 @@ export function PracticeSpeaking({ attemptId, title, recorded, onFinish, finishe
       && !NOT_SENT.has(item.latest.status))
     return open?.latest?.id ?? null
   })
+  /** The answer on screen was sent just now, so its wait starts at the speech analysis. */
+  const [justSent, setJustSent] = useState(false)
   const ready = recorded.filter((item) => recordings[item.id])
   const flow = useSpeakingGradeFlow({
     context: title,
     attemptId,
     recordings: ready.map((item) => ({ questionVersionId: item.id, label: `Câu ${item.number}`, recording: recordings[item.id] })),
     seconds: ready.reduce((sum, item) => sum + recordings[item.id].durationSeconds, 0),
-    onSent: setSubmissionId,
+    onSent: (id) => { setJustSent(true); setSubmissionId(id) },
   })
   const passBand = recorded[0]?.passBand ?? null
 
@@ -77,6 +79,7 @@ export function PracticeSpeaking({ attemptId, title, recorded, onFinish, finishe
         <AnswerProgress
           done={done}
           finished={finished}
+          justSent={justSent}
           key={submissionId}
           onFinish={onFinish}
           onRetry={() => setSubmissionId(null)}
@@ -103,7 +106,8 @@ export function PracticeSpeaking({ attemptId, title, recorded, onFinish, finishe
 }
 
 /** Follows one submission until it ends, and hands the set in once it is graded. */
-function AnswerProgress({ submissionId, passBand, onFinish, finished, onRetry, done }: {
+function AnswerProgress({ submissionId, passBand, onFinish, finished, onRetry, done, justSent }: {
+  justSent: boolean
   submissionId: string
   passBand: number | null
   onFinish: () => Promise<void>
@@ -170,8 +174,9 @@ function AnswerProgress({ submissionId, passBand, onFinish, finished, onRetry, d
 
   return (
     <div className="lp-rec__result">
-      {!submission && !error ? <SpeakingWaitingPanel status={undefined} /> : null}
-      {status && WORKING.has(status) && !short ? <SpeakingWaitingPanel status={status} /> : null}
+      {/* One panel from the first read to the last stage: a second one would start the waited time again. */}
+      {(!submission && !error) || (status && WORKING.has(status) && !short)
+        ? <SpeakingWaitingPanel status={status ?? (justSent ? 'QUEUED' : undefined)} /> : null}
       {short ? (
         <p className="lp-hint lp-hint--warn" role="alert">
           Số dư point chưa đủ để nhận kết quả. Bài của bạn được giữ lại, nạp thêm point rồi thử lại.{' '}
