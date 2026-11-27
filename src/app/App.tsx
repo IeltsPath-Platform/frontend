@@ -26,6 +26,7 @@ import { ReadingPracticePage } from '@/features/practice/reading/ReadingPractice
 import { ReadingResultPage } from '@/features/practice/reading/ReadingResultPage'
 import { ReadingHistoryPage } from '@/features/practice/reading/ReadingHistoryPage'
 import { HomePage } from '@/features/home/HomePage'
+import { AccountDeletedPage, AccountDeletionPage } from '@/features/profile/pages/AccountDeletionPage'
 import { ExaminerDetailPage } from '@/features/home/pages/ExaminerDetailPage'
 import { ExpertsDirectoryPage } from '@/features/home/pages/ExpertsDirectoryPage'
 import { DeckDetailPage } from '@/features/flashcards/pages/DeckDetailPage'
@@ -117,6 +118,8 @@ function AppContent() {
         <Route path="matches/:matchId/result" element={<GameResultPage />} />
       </Route>
       <Route path="/home" element={<HomePage />} />
+      <Route path="/account/delete" element={<AccountDeletionPage />} />
+      <Route path="/account/deleted" element={<AccountDeletedPage />} />
       <Route path="/overview" element={<RequireAuth><OverviewPage /></RequireAuth>} />
       <Route path="/community" element={<RequireAuth><CommunityPage /></RequireAuth>} />
       <Route path="/community/admin/reports" element={<RequireAuth><ContentReportsAdminPage /></RequireAuth>} />
