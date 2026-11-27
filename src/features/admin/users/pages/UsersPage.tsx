@@ -113,7 +113,7 @@ function CreateUserForm({ onCreated, onCancel }: { onCreated: () => void; onCanc
         <AdminField label="Email" {...form.field('email')}><input autoComplete="email" className="adm-input" onChange={(event) => setEmail(event.target.value)} type="email" value={email} /></AdminField>
         <AdminField label="Họ tên" {...form.field('fullName')}><input autoComplete="name" className="adm-input" onChange={(event) => setFullName(event.target.value)} value={fullName} /></AdminField>
         <AdminField label="Số điện thoại (không bắt buộc)" {...form.field('phoneNumber')}><input autoComplete="tel" className="adm-input" maxLength={30} onChange={(event) => setPhoneNumber(event.target.value)} type="tel" value={phoneNumber} /></AdminField>
-        <AdminField label="Mật khẩu tạm thời (6–72 ký tự)" {...form.field('password')}><input autoComplete="new-password" className="adm-input" maxLength={72} onChange={(event) => setPassword(event.target.value)} type="password" value={password} /></AdminField>
+        <AdminField label={`Mật khẩu tạm thời (${PASSWORD_MIN_LENGTH}–${PASSWORD_MAX_LENGTH} ký tự)`}{...form.field('password')}><input autoComplete="new-password" className="adm-input" maxLength={72} onChange={(event) => setPassword(event.target.value)} type="password" value={password} /></AdminField>
       </div>
       <RoleChoices onChange={setRoles} value={roles} />
       <div className="adm-form-footer">

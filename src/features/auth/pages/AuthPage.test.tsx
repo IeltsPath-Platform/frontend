@@ -82,7 +82,7 @@ describe('AuthPage modal & SiteNavbar integration', () => {
 
     expect(screen.getByRole('dialog')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Đăng nhập để bắt đầu hành trình!' })).toBeInTheDocument()
-    expect(screen.getByLabelText(/Email hoặc số điện thoại/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/^Email/i)).toBeInTheDocument()
     // Google sign-in sits below the primary button; there is no mode-switch footer.
     expect(screen.getByLabelText('Đăng nhập qua mạng xã hội')).toBeInTheDocument()
     expect(screen.queryByText(/Chưa có tài khoản\?/)).not.toBeInTheDocument()
@@ -135,7 +135,7 @@ describe('AuthPage modal & SiteNavbar integration', () => {
       </MemoryRouter>,
     )
 
-    fireEvent.change(screen.getByLabelText(/Email hoặc số điện thoại/i), {
+    fireEvent.change(screen.getByLabelText(/^Email/i), {
       target: { value: 'learner@example.test' },
     })
     fireEvent.change(screen.getByLabelText('Mật khẩu'), {
@@ -162,7 +162,7 @@ describe('AuthPage modal & SiteNavbar integration', () => {
       </MemoryRouter>,
     )
 
-    fireEvent.change(screen.getByLabelText(/Email hoặc số điện thoại/i), {
+    fireEvent.change(screen.getByLabelText(/^Email/i), {
       target: { value: 'staff@example.test' },
     })
     fireEvent.change(screen.getByLabelText('Mật khẩu'), {
@@ -251,7 +251,7 @@ describe('AuthPage modal & SiteNavbar integration', () => {
     fireEvent.click(screen.getByRole('button', { name: /^Đăng nhập$/ }))
     const alerts = await screen.findAllByRole('alert')
     expect(alerts.map((alert) => alert.textContent)).toEqual([
-      'Email hoặc số điện thoại không được để trống.',
+      'Email không được để trống.',
       'Mật khẩu không được để trống.',
     ])
     expect(screen.getByLabelText('Mật khẩu')).toHaveAttribute('aria-invalid', 'true')
