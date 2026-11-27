@@ -69,6 +69,7 @@ import { TopicTestResultPage } from '@/features/learning-path/pages/TopicTestRes
 import { VideoDictationLibraryPage } from '@/features/video-dictation/pages/VideoDictationLibraryPage'
 import { VideoDictationPlayerPage } from '@/features/video-dictation/pages/VideoDictationPlayerPage'
 import { CommunityPage } from '@/features/community/pages/CommunityPage'
+import { BlockedUsersPage } from '@/features/community/pages/BlockedUsersPage'
 import { NotificationPreferencesPage } from '@/features/community/pages/NotificationPreferencesPage'
 import { ContentReportsAdminPage } from '@/features/community/pages/ContentReportsAdminPage'
 import type { PracticeMode, SkillType } from '@/types/practice'
@@ -123,6 +124,7 @@ function AppContent() {
       <Route path="/overview" element={<RequireAuth><OverviewPage /></RequireAuth>} />
       <Route path="/community" element={<RequireAuth><CommunityPage /></RequireAuth>} />
       <Route path="/community/admin/reports" element={<RequireAuth><ContentReportsAdminPage /></RequireAuth>} />
+      <Route path="/community/blocked" element={<RequireAuth><BlockedUsersPage /></RequireAuth>} />
       <Route path="/notifications/preferences" element={<RequireAuth><NotificationPreferencesPage /></RequireAuth>} />
       <Route path="/community/posts/:postId" element={<RequireAuth><CommunityPage /></RequireAuth>} />
       <Route path="/community/users/:userId" element={<RequireAuth><CommunityPage /></RequireAuth>} />
