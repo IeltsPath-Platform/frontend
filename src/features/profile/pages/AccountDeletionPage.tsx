@@ -8,7 +8,7 @@ import { DeleteAccountDialog } from '../components/DeleteAccountSection'
 import { DELETION_CONSEQUENCES } from '../lib/accountDeletion'
 import '../profile.css'
 
-const cardClass = 'w-full max-w-2xl rounded-3xl border border-[var(--classroom-border)] bg-white p-8 shadow-[var(--classroom-shadow)]'
+const cardClass = 'flex w-full max-w-2xl flex-col gap-4 rounded-3xl border border-[var(--classroom-border)] bg-white p-8 shadow-[var(--classroom-shadow)]'
 
 /**
  * Public page linked from the Google Play listing: explains what deleting an account removes and lets a signed-in
