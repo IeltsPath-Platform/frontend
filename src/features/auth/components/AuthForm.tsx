@@ -39,7 +39,7 @@ interface AuthFormProps {
 /** What each mode asks for. Fields are read by their name from the form. */
 function authSchema(mode: AuthMode) {
   const password = z.string({ error: 'Mật khẩu không được để trống.' }).min(1, 'Mật khẩu không được để trống.')
-  if (mode === 'sign-in') return z.object({ email: requiredText('Email hoặc số điện thoại', 255), password })
+  if (mode === 'sign-in') return z.object({ email: requiredText('Email', 255), password })
   return z.object({
     fullName: requiredText('Họ và tên', 150),
     email: emailText('Email'),
@@ -197,14 +197,14 @@ export function AuthForm({
               <InputField
                 id="auth-email"
                 name="email"
-                label={isSignUp ? 'Email' : 'Email hoặc số điện thoại'}
+                label="Email"
                 icon={isSignUp ? 'mail' : 'user'}
                 type="email"
                 autoComplete="username"
                 autoCapitalize="none"
                 inputMode="email"
                 required
-                placeholder={isSignUp ? 'Nhập email của bạn' : 'Nhập email hoặc số điện thoại'}
+                placeholder="Nhập email của bạn"
                 error={errors.email}
               />
             </div>
