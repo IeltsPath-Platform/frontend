@@ -226,6 +226,13 @@ describe('AdminRoutes', () => {
     expect(screen.getByRole('heading', { name: 'Bạn không có quyền truy cập' })).toBeInTheDocument()
   })
 
+  it('denies administrators the vocabulary catalog, which content authors keep', () => {
+    auth.mockReturnValue(session(['ADMIN']))
+    renderAt('/admin/vocabulary')
+
+    expect(screen.getByRole('heading', { name: 'Bạn không có quyền truy cập' })).toBeInTheDocument()
+  })
+
   it('denies content authors access to user management', () => {
     auth.mockReturnValue(session(['CONTENT_AUTHOR']))
     renderAt('/admin/users')

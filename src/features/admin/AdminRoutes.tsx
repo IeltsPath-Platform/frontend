@@ -73,11 +73,6 @@ function LegacyKnowledgeGraph() {
   return <Navigate replace to={`/${area}/knowledge-graph${search}${hash}`} />
 }
 
-function LegacyVocabulary() {
-  const { roles } = useAuthSession()
-  return hasAnyRole(roles, ['ADMIN']) ? <AdminVocabularyPage /> : <LegacyContentRedirect />
-}
-
 export function AdminRoutes({ area = 'admin' }: { area?: StaffArea }) {
   const isAuthorArea = area === 'content-author'
   const isExaminerArea = area === 'examiner'
@@ -134,7 +129,7 @@ export function AdminRoutes({ area = 'admin' }: { area?: StaffArea }) {
           <Route element={<Guard path="/admin/activity"><ActivityPage /></Guard>} path="activity" />
           <Route element={<Guard path="/examiner"><LegacyExaminerRedirect /></Guard>} path="examiner/*" />
           <Route element={<Guard path="/examiner"><LegacyExaminerRedirect /></Guard>} path="grading/*" />
-          <Route element={<Guard path="/admin/vocabulary"><LegacyVocabulary /></Guard>} path="vocabulary" />
+          <Route element={<Guard path="/admin/vocabulary"><LegacyContentRedirect /></Guard>} path="vocabulary" />
           <Route element={<Guard path="/admin/content"><LegacyContentRedirect /></Guard>} path="content" />
           <Route element={<Guard path="/admin/knowledge-graph"><LegacyKnowledgeGraph /></Guard>} path="knowledge-graph" />
           <Route element={<Guard path="/admin/content"><Navigate replace to="/content-author/courses" /></Guard>} path="lessons/*" />

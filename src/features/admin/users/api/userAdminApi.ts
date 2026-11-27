@@ -38,3 +38,7 @@ export async function updateUserStatus(id: string, status: UserStatus): Promise<
 export async function deleteUser(id: string): Promise<User> {
   return userSchema.parse(await apiRequest<unknown>(`${BASE}/${id}`, { method: 'DELETE', auth: true }))
 }
+
+export async function resetUserPassword(id: string, newPassword: string): Promise<void> {
+  await apiRequest<unknown>(`${BASE}/${id}/password`, { method: 'PUT', auth: true, body: { newPassword } })
+}

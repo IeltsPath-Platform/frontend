@@ -87,7 +87,7 @@ export function menuEntriesFor(roles: readonly string[] | undefined, area?: Staf
 
 export function rolesFor(path: string): readonly StaffRole[] {
   if (path === '/admin/vocabulary' || path === '/content-author/vocabulary') {
-    return ['CONTENT_AUTHOR', 'ADMIN']
+    return ['CONTENT_AUTHOR']
   }
   if (path === '/admin/knowledge-graph') return ['CONTENT_AUTHOR', 'EXAMINER']
   const canonical = path

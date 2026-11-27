@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Plus } from 'lucide-react'
 import { z } from 'zod'
 import { useAuthSession } from '@/features/auth/authSession'
@@ -12,7 +13,8 @@ import { useAdminConfirm } from '../../lib/useAdminConfirm'
 import { AdminEmpty, AdminError, AdminLoading } from '../../components/AdminState'
 import { AdminPage } from '../../pages/AdminPage'
 import { createUser, deleteUser, listUsers, updateUser, updateUserRoles, updateUserStatus } from '../api/userAdminApi'
-import { AdjustPointsForm, GrantPremiumForm } from '../components/AccessActionForms'
+import { AdjustPointsForm } from '../components/AccessActionForms'
+import { ResetPasswordForm } from '../components/ResetPasswordForm'
 import { LoginHistoryModal } from '../components/LoginHistoryModal'
 import { UserRowMenu } from '../components/UserRowMenu'
 import { useUserLock } from '../lib/useUserLock'
@@ -221,7 +223,9 @@ export function UsersPage() {
   const [editSection, setEditSection] = useState<EditorSection>('profile')
   const [viewingId, setViewingId] = useState<string | null>(null)
   const [historyId, setHistoryId] = useState<string | null>(null)
-  const [accessAction, setAccessAction] = useState<{ userId: string; kind: 'points' | 'premium' } | null>(null)
+  const [pointsId, setPointsId] = useState<string | null>(null)
+  const [passwordId, setPasswordId] = useState<string | null>(null)
+  const navigate = useNavigate()
   const [notice, setNotice] = useState('')
   const search = query.trim()
   const filterKey = `admin-users:${roleFilter}:${statusFilter}:${search}`
@@ -237,7 +241,8 @@ export function UsersPage() {
   const selected = rows.find((user) => user.id === selectedId) ?? null
   const viewing = rows.find((user) => user.id === viewingId) ?? null
   const historyUser = rows.find((user) => user.id === historyId) ?? null
-  const accessUser = rows.find((user) => user.id === accessAction?.userId) ?? null
+  const pointsUser = rows.find((user) => user.id === pointsId) ?? null
+  const passwordUser = rows.find((user) => user.id === passwordId) ?? null
 
   return (
     <AdminPage
@@ -277,8 +282,12 @@ export function UsersPage() {
                     onHistory={() => setHistoryId(user.id)}
                     onRoles={() => openEditor(user.id, 'roles')}
                     onToggleLock={() => void toggleLock(user)}
-                    onAdjustPoints={() => { setNotice(''); setAccessAction({ userId: user.id, kind: 'points' }) }}
-                    onGrantPremium={() => { setNotice(''); setAccessAction({ userId: user.id, kind: 'premium' }) }}
+                    onAdjustPoints={() => { setNotice(''); setPointsId(user.id) }}
+                    onPassword={() => {
+                      if (isCurrentUser(user, userId, email)) return void navigate('/overview?tab=profile')
+                      setNotice('')
+                      setPasswordId(user.id)
+                    }}
                     onView={() => setViewingId(user.id)}
                     self={isCurrentUser(user, userId, email)}
                     user={user}
@@ -292,18 +301,12 @@ export function UsersPage() {
             {(close) => <UserEditor key={`${selected.id}:${selected.updatedAt}:${editSection}`} section={editSection} onDeleted={() => { list.refresh(); close() }} onSaved={() => { list.refresh(); close() }} self={isCurrentUser(selected, userId, email)} user={selected} />}
           </AdminModal> : null}
           {historyUser ? <LoginHistoryModal onClose={() => setHistoryId(null)} user={historyUser} /> : null}
-          {accessUser && accessAction ? <AdminModal
-            title={accessAction.kind === 'points' ? 'Điều chỉnh điểm' : 'Cấp gói Premium'}
-            description={accessUser.email}
-            onClose={() => setAccessAction(null)}
-          >
-            {(close) => {
-              const done = (message: string) => { setNotice(message); close() }
-              return accessAction.kind === 'points'
-                ? <AdjustPointsForm onCancel={close} onDone={done} user={accessUser} />
-                : <GrantPremiumForm onCancel={close} onDone={done} user={accessUser} />
-            }}
+          {pointsUser ? <AdminModal title="Điều chỉnh điểm" description={pointsUser.email} onClose={() => setPointsId(null)}>
+            {(close) => <AdjustPointsForm onCancel={close} onDone={(message) => { setNotice(message); close() }} user={pointsUser} />}
           </AdminModal> : null}
+          {passwordUser ? <AdminDrawer title="Đặt lại mật khẩu" description={passwordUser.email} onClose={() => setPasswordId(null)}>
+            {(close) => <ResetPasswordForm onCancel={close} onDone={(message) => { setNotice(message); close() }} user={passwordUser} />}
+          </AdminDrawer> : null}
           {viewing ? <AdminModal title={viewing.fullName || viewing.email} description={viewing.email} onClose={() => setViewingId(null)}>
             {(close) => <>
               <AdminDetails items={[
