@@ -325,3 +325,11 @@
 
 @keyframes sres-spin { to { transform: rotate(360deg); } }
 .sres-alert ul { margin: 0.2rem 0 0; padding-left: 1.1rem; }
+
+/* Lets the learner flag a wrong AI grade, below the grade itself. */
+.sres-report {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+

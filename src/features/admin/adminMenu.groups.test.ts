@@ -31,10 +31,11 @@ describe('menuEntriesFor', () => {
       'Tổng quan chấm bài',
       'Chấm Writing',
       'Chấm Speaking',
+      'Báo cáo chấm AI',
       'Cây tri thức',
     ])
     expect(menuEntriesFor(['EXAMINER']).every((entry) => entry.kind === 'link')).toBe(true)
-    const graph = menuEntriesFor(['EXAMINER'])[3]
+    const graph = menuEntriesFor(['EXAMINER'])[4]
     expect(graph.kind === 'link' && graph.item.path).toBe('/examiner/knowledge-graph')
   })
 

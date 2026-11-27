@@ -1,6 +1,6 @@
 import { Activity, FileQuestion, Gauge, LayoutDashboard, Network, Server, Settings, Users, type LucideIcon } from 'lucide-react'
 import { hasAnyRole, type StaffArea, type StaffRole } from '@/features/auth/staffRoles'
-import { BadgeCheck, BookOpen, Bug, ClipboardList, GraduationCap, Library, ListTodo, Mic, PenLine, Scale, Sparkles, UserRound } from 'lucide-react'
+import { BadgeCheck, BookOpen, Bug, ClipboardList, Flag, GraduationCap, Library, ListTodo, Mic, PenLine, Scale, Sparkles, UserRound } from 'lucide-react'
 import { QUESTION_DRAFTS_ENABLED } from './ai-drafts/draftFlags'
 
 export interface AdminMenuItem {
@@ -33,6 +33,7 @@ export const ADMIN_MENU: readonly AdminMenuItem[] = [
   // Shown as plain links, never folded into a flyout: an examiner must see where to grade without hovering or clicking.
   { path: '/examiner/grading/writing', label: 'Chấm Writing', icon: PenLine, roles: ['EXAMINER'] },
   { path: '/examiner/grading/speaking', label: 'Chấm Speaking', icon: Mic, roles: ['EXAMINER'] },
+  { path: '/examiner/ai-grading-reports', label: 'Báo cáo chấm AI', icon: Flag, roles: ['EXAMINER'] },
   { path: '/examiner/profile', label: 'Hồ sơ của tôi', icon: UserRound, roles: ['EXAMINER'], offMenu: true },
   { path: '/examiner/knowledge-graph', label: 'Cây tri thức', icon: Network, roles: ['EXAMINER'] },
   { path: '/content-author', label: 'Tổng quan nội dung', icon: LayoutDashboard, roles: ['CONTENT_AUTHOR'] },

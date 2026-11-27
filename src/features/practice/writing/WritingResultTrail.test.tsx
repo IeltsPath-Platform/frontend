@@ -1,4 +1,4 @@
-﻿import { render, screen, within } from '@testing-library/react'
+import { render, screen, within } from '@/test/render'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { clearAccessToken, setAccessToken } from '@/lib/httpClient'

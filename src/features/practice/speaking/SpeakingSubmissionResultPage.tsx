@@ -10,6 +10,7 @@ import { PronunciationBreakdown } from './PronunciationBreakdown'
 import { commentBlocks, splitComment, type CommentBlock } from './speakingCommentBlocks'
 import { parseWeakness, type WeaknessToken } from './speakingWeakness'
 import { SpeakingWaitingPanel } from './SpeakingWaitingPanel'
+import { ReportAiGradingButton } from '../ai-grading-report/ReportAiGradingButton'
 import { useSpeakingSubmissionResult } from './useSpeakingSubmissionResult'
 import {
   averageBand, bandComment, groupErrors, parseSpeakingResult, summaryLine, weakestCriteria,
@@ -341,6 +342,7 @@ export function SpeakingResultScreen({ submissionId, justSent = false }: { submi
       {error && <Notice tone="stop" icon={<AlertTriangle size={20} />} title="Có lỗi xảy ra"><p>{error}</p>
         <button type="button" onClick={retry}>Tải lại</button></Notice>}
       {view && <SpeakingResultDetail view={view} />}
+      {view && <div className="sres-report"><ReportAiGradingButton submissionId={submissionId} submissionType="SPEAKING" /></div>}
       <Link className="sres-back" to={CATALOG_PATH}>← Về danh mục Speaking</Link>
     </main>
   </div>
