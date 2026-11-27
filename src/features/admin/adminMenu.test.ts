@@ -66,6 +66,7 @@ describe('adminMenu', () => {
     expect(rolesFor('/content-author/courses')).toEqual(['CONTENT_AUTHOR'])
     expect(rolesFor('/content-author/users')).toEqual([])
     expect(rolesFor('/admin/users')).toEqual(['ADMIN'])
+    for (const path of ['/admin/vocabulary', '/content-author/vocabulary']) expect(rolesFor(path)).toEqual(['CONTENT_AUTHOR'])
     expect(rolesFor('/admin/unknown')).toEqual([])
     expect(rolesFor('/examiner/knowledge-graph')).toEqual(['EXAMINER'])
     expect(rolesFor('/content-author/knowledge-graph')).toEqual(['CONTENT_AUTHOR'])

@@ -26,6 +26,8 @@ export const userSchema = z.object({
   roles: z.array(roleSchema),
   createdAt: z.string(),
   updatedAt: z.string(),
+  /** False for an account that only signs in with Google, which has no password to reset. */
+  hasPassword: z.boolean().optional(),
 })
 
 export type User = z.infer<typeof userSchema>

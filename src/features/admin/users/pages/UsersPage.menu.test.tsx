@@ -8,11 +8,11 @@ import type { User } from '../types'
 import { UsersPage } from './UsersPage'
 
 const { api, history, auth, search, access } = vi.hoisted(() => ({
-  api: { listUsers: vi.fn(), createUser: vi.fn(), updateUser: vi.fn(), updateUserRoles: vi.fn(), updateUserStatus: vi.fn(), deleteUser: vi.fn() },
+  api: { listUsers: vi.fn(), createUser: vi.fn(), updateUser: vi.fn(), updateUserRoles: vi.fn(), updateUserStatus: vi.fn(), deleteUser: vi.fn(), resetUserPassword: vi.fn() },
   history: { listLoginHistory: vi.fn() },
   auth: vi.fn(),
   search: { query: '', setQuery: vi.fn() },
-  access: { listPlans: vi.fn(), adjustPoints: vi.fn(), grantSubscription: vi.fn() },
+  access: { adjustPoints: vi.fn() },
 }))
 vi.mock('../api/userAdminApi', () => api)
 vi.mock('../api/loginHistoryApi', () => history)
@@ -85,7 +85,7 @@ describe('user row menu', () => {
     const menu = await openMenu('user@example.com')
 
     expect(within(menu).getAllByRole('menuitem').map((item) => item.textContent)).toEqual([
-      'Chi tiết', 'Chỉnh sửa', 'Phân quyền', 'Khóa', 'Điều chỉnh điểm', 'Cấp gói Premium', 'Lịch sử đăng nhập',
+      'Chi tiết', 'Chỉnh sửa', 'Phân quyền', 'Đặt lại mật khẩu', 'Khóa', 'Điều chỉnh điểm', 'Lịch sử đăng nhập',
     ])
     expect(within(menu).queryByRole('menuitem', { name: /Xóa/ })).not.toBeInTheDocument()
   })
@@ -109,26 +109,55 @@ describe('user row menu', () => {
     expect(access.adjustPoints.mock.calls[0]![0].idempotencyKey).toMatch(/^[0-9a-f-]{36}$/)
   })
 
-  it('grants an active plan for the chosen number of days', async () => {
-    access.listPlans.mockResolvedValue([
-      { id: 'plan-old', code: 'OLD', name: 'Gói cũ', status: 'INACTIVE' },
-      { id: 'plan-premium', code: 'PREMIUM', name: 'Premium', status: 'ACTIVE' },
-    ])
-    access.grantSubscription.mockResolvedValue({ id: 'sub-1', planName: 'Premium', endsAt: '2026-12-27T00:00:00Z' })
+  it('resets the password of another account and says so', async () => {
+    api.resetUserPassword.mockResolvedValue(undefined)
     renderUsers([fixture('user-id', 'user@example.com')])
 
-    await userEvent.click(within(await openMenu('user@example.com')).getByRole('menuitem', { name: 'Cấp gói Premium' }))
-    const dialog = await screen.findByRole('dialog')
-    const plan = await within(dialog).findByLabelText('Gói')
-    expect(within(plan).getAllByRole('option').map((option) => option.textContent)).toEqual(['Premium'])
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Cấp gói' }))
+    await userEvent.click(within(await openMenu('user@example.com')).getByRole('menuitem', { name: 'Đặt lại mật khẩu' }))
+    const drawer = await screen.findByRole('dialog', { name: 'Đặt lại mật khẩu' })
+    await userEvent.click(within(drawer).getByRole('button', { name: 'Lưu' }))
+    expect(within(drawer).getByRole('alert')).toHaveTextContent('Mật khẩu mới không được để trống.')
+    await userEvent.type(within(drawer).getByLabelText('Mật khẩu mới'), 'ngan')
+    expect(api.resetUserPassword).not.toHaveBeenCalled()
 
-    await waitFor(() => expect(access.grantSubscription).toHaveBeenCalledWith(
-      { userId: 'user-id', planId: 'plan-premium', durationDays: 30, humanGradingCredits: 0 },
-      expect.stringMatching(/^[0-9a-f-]{36}$/),
-    ))
-    expect(await screen.findByText(/^Đã cấp Premium/)).toHaveAttribute('role', 'status')
+    await userEvent.clear(within(drawer).getByLabelText('Mật khẩu mới'))
+    await userEvent.type(within(drawer).getByLabelText('Mật khẩu mới'), 'Moi-Matkhau-2026')
+    await userEvent.click(within(drawer).getByRole('button', { name: 'Lưu' }))
+
+    expect(await screen.findByText('Đã đặt lại mật khẩu cho user@example.com.')).toHaveAttribute('role', 'status')
+    expect(api.resetUserPassword).toHaveBeenCalledWith('user-id', 'Moi-Matkhau-2026')
   })
+
+  it('keeps the form open and shows what the server refused', async () => {
+    api.resetUserPassword.mockRejectedValue(new HttpError(409, 'Tài khoản này chưa có mật khẩu. Người dùng đăng nhập bằng Google.'))
+    renderUsers([fixture('user-id', 'user@example.com')])
+
+    await userEvent.click(within(await openMenu('user@example.com')).getByRole('menuitem', { name: 'Đặt lại mật khẩu' }))
+    const drawer = await screen.findByRole('dialog', { name: 'Đặt lại mật khẩu' })
+    await userEvent.type(within(drawer).getByLabelText('Mật khẩu mới'), 'Moi-Matkhau-2026')
+    await userEvent.click(within(drawer).getByRole('button', { name: 'Lưu' }))
+
+    expect(await screen.findByText(/chưa có mật khẩu/)).toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'Đặt lại mật khẩu' })).toBeInTheDocument()
+  })
+
+  it('offers no reset for an account that only signs in with Google', async () => {
+    renderUsers([{ ...fixture('google-id', 'google@example.com'), hasPassword: false }])
+
+    const menu = await openMenu('google@example.com')
+
+    expect(within(menu).getByRole('menuitem', { name: 'Đặt lại mật khẩu' })).toBeDisabled()
+  })
+
+  it('offers the signed-in admin Change Password instead of a reset', async () => {
+    renderUsers([fixture('self-id', 'admin@example.com')])
+
+    const menu = await openMenu('admin@example.com')
+
+    expect(within(menu).getByRole('menuitem', { name: 'Đổi mật khẩu' })).toBeInTheDocument()
+    expect(within(menu).queryByRole('menuitem', { name: 'Đặt lại mật khẩu' })).not.toBeInTheDocument()
+  })
+
   it('opens the roles of an account in their own small modal', async () => {
     renderUsers([fixture('user-id', 'user@example.com')])
 

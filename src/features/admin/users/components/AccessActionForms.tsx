@@ -1,7 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { AdminError, AdminLoading } from '../../components/AdminState'
 import { adminErrorMessage } from '../../lib/adminErrors'
-import { useAdminResource } from '../../lib/useAdminResource'
 import { accessAdminApi } from '../api/accessAdminApi'
 import type { User } from '../types'
 
@@ -55,66 +53,6 @@ export function AdjustPointsForm({ user, onCancel, onDone }: FormProps) {
       <div className="adm-form-footer">
         <button className="adm-btn" disabled={saving} onClick={onCancel} type="button">Hủy</button>
         <button className="adm-btn adm-btn--primary" disabled={saving} type="submit">{saving ? 'Đang lưu…' : 'Điều chỉnh điểm'}</button>
-      </div>
-    </form>
-  )
-}
-
-/** Gives a learner a Premium plan for a number of days, optionally with examiner grading credits. */
-export function GrantPremiumForm({ user, onCancel, onDone }: FormProps) {
-  const [idempotencyKey] = useState(() => crypto.randomUUID())
-  const plans = useAdminResource('access-plans', (signal) => accessAdminApi.listPlans(signal))
-  const activePlans = (plans.data ?? []).filter((plan) => plan.status === 'ACTIVE')
-  const [planId, setPlanId] = useState('')
-  const [days, setDays] = useState('30')
-  const [credits, setCredits] = useState('0')
-  const [error, setError] = useState('')
-  const [saving, setSaving] = useState(false)
-  const chosenPlan = planId || activePlans[0]?.id || ''
-
-  async function submit(event: FormEvent) {
-    event.preventDefault()
-    const durationDays = Number(days)
-    const humanGradingCredits = Number(credits)
-    if (!chosenPlan) return setError('Chọn gói cần cấp.')
-    if (!Number.isInteger(durationDays) || durationDays < 1) return setError('Thời hạn phải là số ngày, tối thiểu 1.')
-    if (!Number.isInteger(humanGradingCredits) || humanGradingCredits < 0) return setError('Số lượt chấm bởi giám khảo không được âm.')
-    setSaving(true)
-    setError('')
-    try {
-      const result = await accessAdminApi.grantSubscription({ userId: user.id, planId: chosenPlan, durationDays, humanGradingCredits }, idempotencyKey)
-      onDone(`Đã cấp ${result.planName}${result.endsAt ? ` đến ${new Date(result.endsAt).toLocaleDateString('vi-VN')}` : ''}.`)
-    } catch (reasonError) {
-      setError(adminErrorMessage(reasonError))
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  if (plans.status === 'loading') return <AdminLoading label="Đang tải danh sách gói…" />
-  if (plans.status === 'error') return <AdminError message={plans.error ?? 'Không tải được danh sách gói.'} onRetry={plans.reload} />
-
-  return (
-    <form className="um-form" noValidate onSubmit={submit}>
-      {error ? <p className="adm-alert adm-alert--error" role="alert">{error}</p> : null}
-      <label className="adm-field">
-        <span>Gói</span>
-        <select className="adm-select" onChange={(event) => setPlanId(event.target.value)} value={chosenPlan}>
-          {activePlans.length === 0 ? <option value="">Chưa có gói nào đang bán</option> : null}
-          {activePlans.map((plan) => <option key={plan.id} value={plan.id}>{plan.name}</option>)}
-        </select>
-      </label>
-      <label className="adm-field">
-        <span>Thời hạn (ngày)</span>
-        <input className="adm-input" inputMode="numeric" onChange={(event) => setDays(event.target.value)} value={days} />
-      </label>
-      <label className="adm-field">
-        <span>Lượt chấm bởi giám khảo</span>
-        <input className="adm-input" inputMode="numeric" onChange={(event) => setCredits(event.target.value)} value={credits} />
-      </label>
-      <div className="adm-form-footer">
-        <button className="adm-btn" disabled={saving} onClick={onCancel} type="button">Hủy</button>
-        <button className="adm-btn adm-btn--primary" disabled={saving || !chosenPlan} type="submit">{saving ? 'Đang cấp…' : 'Cấp gói'}</button>
       </div>
     </form>
   )
