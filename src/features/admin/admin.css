@@ -170,7 +170,7 @@
 .adm-switch:has(.adm-switch__input:disabled) { cursor: not-allowed; }
 @media (prefers-reduced-motion: reduce) { .adm-switch__track, .adm-switch__track::after { transition: none; } }
 
-.adm-badge { display: inline-flex; align-items: center; padding: 2px 9px; border-radius: 999px; font-size: .75rem; font-weight: 700; background: var(--adm-surface-2); color: var(--adm-text); border: 1px solid var(--adm-border); }
+.adm-badge { display: inline-flex; align-items: center; white-space: nowrap; padding: 2px 9px; border-radius: 999px; font-size: .75rem; font-weight: 700; background: var(--adm-surface-2); color: var(--adm-text); border: 1px solid var(--adm-border); }
 .adm-badge--ok { color: var(--adm-ok); border-color: var(--adm-ok); background: rgb(18 134 90 / 8%); }
 .adm-badge--warn { color: var(--adm-warn); border-color: var(--adm-warn); background: rgb(224 138 18 / 10%); }
 .adm-badge--danger { color: var(--adm-danger); border-color: var(--adm-danger); background: rgb(196 45 45 / 8%); }
@@ -186,6 +186,9 @@
 .adm-infinite__message { display: flex; align-items: center; justify-content: center; gap: 10px; }
 .adm-infinite__sentinel .adm-btn { flex: none; }
 .adm-infinite__sentinel td { text-align: center; }
+/* A flex <tr> stops being a table row, so its cell ignores colSpan and squeezes into the first (STT) column. */
+tr.adm-infinite__sentinel { display: table-row; padding: 0; }
+tr.adm-infinite__sentinel > td { padding: 8px; }
 .adm-infinite__sentinel[role="status"] { font-size: .86rem; }
 /* An actions column keeps its header on one line and takes only the width its button needs. */
 .adm-col-actions { width: 1%; white-space: nowrap; text-align: right; }

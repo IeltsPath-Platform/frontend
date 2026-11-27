@@ -7,6 +7,8 @@ export const postSchema = z.object({ id: z.string().guid(), authorId: z.string()
 export type CommunityPost = z.infer<typeof postSchema>
 export const cursorPageSchema = z.object({ content: z.array(postSchema), nextCursor: z.string().nullable(), hasNext: z.boolean(), size: z.number() })
 const profilePageSchema = z.object({ content: z.array(profileSchema), nextCursor: z.string().nullable(), hasNext: z.boolean(), size: z.number() })
+const blockedPageSchema = z.object({ content: z.array(profileSchema), page: z.number(), size: z.number(), totalElements: z.number(), totalPages: z.number() })
+export type BlockedUsersPage = z.infer<typeof blockedPageSchema>
 export const notificationSchema = z.object({ id: z.string().guid(), actorId: z.string().guid(), eventType: z.string(), postId: z.string().guid().nullable(), commentId: z.string().guid().nullable(), gradingJobId: z.string().guid().nullish(), createdAt: z.string(), readAt: z.string().nullable() })
 export type Notification = z.infer<typeof notificationSchema>
 export const notificationPreferenceSchema = z.object({ eventType: z.string(), enabled: z.boolean() })
@@ -96,6 +98,10 @@ export const communityApi = {
   comment: (id: string, body: string, parentCommentId?: string) => apiRequest(`/api/community/posts/${id}/comments`, { method: 'POST', auth: true, body: { body, parentCommentId } }),
   updateComment: (id: string, body: string) => apiRequest(`/api/community/comments/${id}`, { method: 'PUT', auth: true, body: { body } }),
   deleteComment: (id: string) => apiRequest<void>(`/api/community/comments/${id}`, { method: 'DELETE', auth: true }),
+  /** Blocking hides both people from each other and removes follows both ways; repeating it is harmless. */
+  block: (id: string) => apiRequest<void>(`/api/community/blocks/${id}`, { method: 'POST', auth: true }),
+  unblock: (id: string) => apiRequest<void>(`/api/community/blocks/${id}`, { method: 'DELETE', auth: true }),
+  blockedUsers: async (page = 0, size = 20) => blockedPageSchema.parse(await apiRequest(`/api/community/blocks?page=${page}&size=${size}`, { auth: true })),
   follow: (id: string, active: boolean) => apiRequest<void>(`/api/community/users/${id}/follow`, { method: active ? 'DELETE' : 'POST', auth: true }),
   notifications: async (page = 0) => z.array(notificationSchema).parse(await apiRequest(`/api/notifications?page=${page}&size=20`, { auth: true })),
   notificationPreferences: async () => z.array(notificationPreferenceSchema).parse(await apiRequest('/api/notifications/preferences', { auth: true })),

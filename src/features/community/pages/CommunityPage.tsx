@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { Bookmark, Lightbulb, Plus, Search, Users } from 'lucide-react'
+import { Ban, Bookmark, Lightbulb, Plus, Search, Users } from 'lucide-react'
+import { useToast } from '@/components/toast/toastContext'
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { OwlHero } from '@/components/OwlHero'
 import { SiteNavbar } from '@/components/SiteNavbar'
@@ -97,6 +98,13 @@ function CommunitySearchForm({ query, onSearch }: { query: string; onSearch: (qu
   )
 }
 
+/** The server's own wording when a block stands between the two people, so the learner knows why it failed. */
+function blockedInteractionMessage(error: unknown) {
+  if (!(error instanceof HttpError)) return null
+  const details = (error.body as { details?: { code?: string } | null } | null)?.details
+  return details?.code === 'USER_BLOCKED' ? error.message : null
+}
+
 function logCommunityFailure(operation: string, error: unknown) {
   const details = error instanceof HttpError
     ? { cause: error.isNetworkError ? 'network' : 'http', status: error.status, code: error.code }
@@ -125,6 +133,7 @@ export function CommunityPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const { confirm, confirmDialog } = useConfirmDialog()
+  const { toast } = useToast()
   const [composer, setComposer] = useState(false)
   const [composerMediaIntent, setComposerMediaIntent] = useState<ComposerIntent | null>(null)
   const [editingPost, setEditingPost] = useState<CommunityPost | null>(null)
@@ -551,7 +560,27 @@ export function CommunityPage() {
       }
     } catch (error) {
       logCommunityFailure('comment.send', error)
-      setError('Không thể gửi bình luận.')
+      setError(blockedInteractionMessage(error) ?? 'Không thể gửi bình luận.')
+    }
+  }
+
+  // Blocking hides both people from each other, so drop the author's posts and leave their profile.
+  const blockUser = async (targetId: string, displayName: string) => {
+    const confirmed = await confirm({
+      title: `Chặn ${displayName}?`,
+      message: 'Hai bạn sẽ không thấy bài viết, bình luận và hồ sơ của nhau, không thể nhắc tên hay theo dõi nhau. Bạn có thể bỏ chặn bất cứ lúc nào trong mục Đã chặn.',
+      confirmLabel: 'Chặn',
+      tone: 'danger',
+    })
+    if (!confirmed) return
+    try {
+      await communityApi.block(targetId)
+      setPosts((items) => items.filter((item) => item.authorId !== targetId))
+      toast({ title: `Đã chặn ${displayName}`, tone: 'success' })
+      if (userId === targetId) navigate('/community', { replace: true })
+    } catch (error) {
+      logCommunityFailure('user.block', error)
+      setError('Không thể chặn người dùng này.')
     }
   }
 
@@ -595,6 +624,9 @@ export function CommunityPage() {
             </Link>
             <Link className={isBookmarks ? 'selected' : ''} to="/community?tab=bookmarks">
               <Bookmark size={18} /> Đã lưu
+            </Link>
+            <Link to="/community/blocked">
+              <Ban size={18} /> Đã chặn
             </Link>
             {roles?.includes('ADMIN') && (
               <Link to="/community/admin/reports">Hàng chờ vi phạm</Link>
@@ -680,6 +712,15 @@ export function CommunityPage() {
                   }
                 >
                   {relationship.following ? 'Đang theo dõi' : 'Theo dõi'}
+                </button>
+              )}
+              {userId !== currentUserId && (
+                <button
+                  type="button"
+                  className="community-secondary"
+                  onClick={() => void blockUser(userId, profile.displayName)}
+                >
+                  <Ban size={16} aria-hidden="true" /> Chặn
                 </button>
               )}
             </section>
@@ -886,6 +927,7 @@ export function CommunityPage() {
                   .catch(() => setError('Không thể cập nhật theo dõi.'))
               }}
               onOpenReport={setReportTarget}
+              onBlockAuthor={(p) => void blockUser(p.authorId, p.author?.displayName ?? 'người dùng này')}
               onImageClick={setLightboxImage}
             >
               {commentPost === post.id && (

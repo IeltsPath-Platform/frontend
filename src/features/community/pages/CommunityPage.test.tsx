@@ -1,4 +1,5 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@/test/render'
+import { answerConfirm } from '@/test/confirm'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { CommunityPage } from './CommunityPage'
@@ -20,6 +21,7 @@ const { communityApiMock, authSessionMock } = vi.hoisted(() => ({
     create: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
+    block: vi.fn(),
   },
   authSessionMock: vi.fn(),
 }))
@@ -54,6 +56,7 @@ function renderCommunity(initialEntry: string | { pathname: string; state?: unkn
       <Routes>
         <Route path="/community" element={<><CommunityPage /><LocationStateProbe /></>} />
         <Route path="/community/users/:userId" element={<CommunityPage />} />
+        <Route path="/community/blocked" element={<p>Trang đã chặn</p>} />
       </Routes>
     </MemoryRouter>,
   )
@@ -75,6 +78,7 @@ describe('CommunityPage feed and profile tabs', () => {
     communityApiMock.reportContent.mockResolvedValue({ id: 'report-1', contentType: 'POST', contentId: 'post-1', reason: 'Spam', status: 'PENDING', createdAt: '2026-10-17T08:00:00Z' })
     communityApiMock.react.mockResolvedValue({})
     communityApiMock.removeReaction.mockResolvedValue({})
+    communityApiMock.block.mockResolvedValue(undefined)
     vi.stubGlobal('IntersectionObserver', class {
       observe() {}
       disconnect() {}
@@ -302,5 +306,23 @@ describe('CommunityPage feed and profile tabs', () => {
       )
     })
   })
-})
+  it('blocks a post author after confirmation and drops their posts from the feed', async () => {
+    communityApiMock.feed.mockResolvedValue({ ...emptyPage, content: [{ ...post, author: { id: 'author-1', displayName: 'Minh Trần' } }] })
+    renderCommunity('/community')
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Chặn' }))
+    expect((await answerConfirm(true)).textContent).toContain('Chặn Minh Trần?')
+
+    await waitFor(() => expect(communityApiMock.block).toHaveBeenCalledWith('author-1'))
+    await waitFor(() => expect(screen.queryByText('Một bài viết trong feed theo dõi.')).not.toBeInTheDocument())
+  })
+
+  it('does not block when the confirmation is cancelled', async () => {
+    renderCommunity('/community/users/profile-1')
+
+    fireEvent.click(await screen.findByRole('button', { name: /Chặn/ }))
+    await answerConfirm(false)
+
+    expect(communityApiMock.block).not.toHaveBeenCalled()
+  })})
 

@@ -34,6 +34,7 @@ import { GradedReviewPage } from '@/features/examiner/grading/pages/GradedReview
 import { SpeakingGradingPage } from '@/features/examiner/grading/pages/SpeakingGradingPage'
 import { WritingGradingPage } from '@/features/examiner/grading/pages/WritingGradingPage'
 import { WritingQueuePage } from '@/features/examiner/grading/pages/WritingQueuePage'
+import { AiGradingReportsPage } from '@/features/examiner/ai-grading-reports/AiGradingReportsPage'
 import { AiEvaluationPage } from './ai-evaluation/pages/AiEvaluationPage'
 import { EvaluationRunPage } from './ai-evaluation/pages/EvaluationRunPage'
 import { AdminVocabularyPage } from './vocabulary/pages/AdminVocabularyPage'
@@ -92,6 +93,7 @@ export function AdminRoutes({ area = 'admin' }: { area?: StaffArea }) {
           <Route element={<WritingGradingPage />} path="grading/writing/:jobId" />
           <Route element={<GradedReviewPage />} path="grading/writing/:jobId/review" />
           <Route element={<SpeakingGradingPage />} path="grading/speaking" />
+          <Route element={<AiGradingReportsPage />} path="ai-grading-reports" />
         </> : isAuthorArea ? <>
           <Route element={<LegacyContentRedirect />} path="content" />
           <Route element={<CoursesPage />} path="courses" />

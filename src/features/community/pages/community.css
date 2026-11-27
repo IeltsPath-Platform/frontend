@@ -230,6 +230,33 @@
   outline-offset: 2px;
 }
 
+/* Quiet action beside the primary one, e.g. blocking a learner from their profile. */
+.community-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  padding: 0.65rem 1rem;
+  color: #b91c1c;
+  background: transparent;
+  border: 1px solid #fecaca;
+  border-radius: 0.7rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.16s ease;
+}
+
+.community-secondary:hover {
+  background: #fef2f2;
+}
+
+.community-secondary:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
 /* Search Form */
 .community-search {
   display: flex;

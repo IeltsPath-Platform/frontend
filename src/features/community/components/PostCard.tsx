@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Bookmark, Edit3, Flag, MessageCircle, Trash2 } from 'lucide-react'
+import { Ban, Bookmark, Edit3, Flag, MessageCircle, Trash2 } from 'lucide-react'
 import type { CommunityPost } from '../api/communityApi'
 import { ReactionPicker } from './ReactionPicker'
 import { ReactionSummary } from './ReactionSummary'
@@ -34,6 +34,8 @@ export interface PostCardProps {
   onDeletePost: (postId: string) => void
   onFollowAuthor: (authorId: string, currentFollowing: boolean) => void
   onOpenReport: (target: { type: 'POST' | 'COMMENT'; id: string }) => void
+  /** Blocks the post's author; omitted where blocking is not offered. */
+  onBlockAuthor?: (post: CommunityPost) => void
   onImageClick: (url: string) => void
   /** The post the learner just published or saved; it slides in and is briefly highlighted. */
   isFresh?: boolean
@@ -51,6 +53,7 @@ export function PostCard({
   onDeletePost,
   onFollowAuthor,
   onOpenReport,
+  onBlockAuthor,
   onImageClick,
   isFresh = false,
   children,
@@ -243,6 +246,16 @@ export function PostCard({
           >
             <Flag size={16} />
             <span className="community-btn-text">Báo cáo</span>
+          </button>
+        )}
+        {!isOwner && onBlockAuthor && (
+          <button
+            type="button"
+            className="community-action-btn community-report-btn"
+            onClick={() => onBlockAuthor(post)}
+          >
+            <Ban size={16} />
+            <span className="community-btn-text">Chặn</span>
           </button>
         )}
       </footer>

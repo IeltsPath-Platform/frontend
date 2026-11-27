@@ -206,6 +206,15 @@ export const profileApi = {
     return learnerProfileSchema.parse(raw)
   },
 
+  /** Deletes the signed-in account for good; confirmed by the current password, or Google for a Google-only account. */
+  deleteAccount: async (body: ReauthRequest): Promise<void> => {
+    await apiRequest('/api/users/me', {
+      method: 'DELETE',
+      auth: true,
+      body,
+    })
+  },
+
   changePassword: async (body: { currentPassword: string; newPassword: string }): Promise<void> => {
     await apiRequest('/api/users/me/password', {
       method: 'POST',

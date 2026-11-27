@@ -9,6 +9,7 @@ import { PrivacySection } from './components/PrivacySection'
 import { SecuritySection } from './components/SecuritySection'
 import { SecurityActivitySection } from './components/SecurityActivitySection'
 import { SessionsSection } from './components/SessionsSection'
+import { DeleteAccountSection } from './components/DeleteAccountSection'
 import { ProfileSkeleton } from './components/ProfileSkeleton'
 import { ErrorBoundary } from '@/app/ErrorBoundary'
 import { useToast } from '@/components/toast/toastContext'
@@ -143,6 +144,10 @@ const ProfileTabContent: React.FC = () => {
 
       <motion.div variants={itemVariants}>
         <SecurityActivitySection />
+      </motion.div>
+
+      <motion.div variants={itemVariants}>
+        <DeleteAccountSection hasPassword={user?.hasPassword ?? true} />
       </motion.div>
     </motion.div>
   )

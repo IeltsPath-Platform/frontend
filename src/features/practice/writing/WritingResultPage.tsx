@@ -9,6 +9,7 @@ import { startStudyPointPractice } from '@/features/learning-path/lib/studyPoint
 import { useApiResource } from '@/features/learning-path/lib/useApiResource'
 import '@/features/learning-path/learning-path.css'
 import '@/features/learning-path/practice-essay.css'
+import { ReportAiGradingButton } from '../ai-grading-report/ReportAiGradingButton'
 import { ExaminerResult } from './ExaminerResult'
 import { getWritingSubmission } from './writingApi'
 import type { WritingBandLimit, WritingCriterion, WritingSubmission } from './writingApi'
@@ -123,6 +124,7 @@ function Graded({ submission, submissionId }: { submission: WritingSubmission; s
             <div className="wr-actions">
               <button type="button" className="wr-primary" onClick={() => essayRef.current?.scrollIntoView({ behavior: 'smooth' })}>Xem bài đã sửa</button>
               <button type="button" className="wr-secondary" onClick={() => void navigate(context?.retryPath ?? CATALOG_PATH)}>Viết lại bài</button>
+              <ReportAiGradingButton submissionId={submissionId} submissionType="WRITING" />
               {context && <span className="wr-time">Thời gian: <b>{formatClock(context.seconds)}</b>{context.timeLimitSeconds ? ` / ${formatClock(context.timeLimitSeconds)}` : ''}</span>}
             </div>
           </section>

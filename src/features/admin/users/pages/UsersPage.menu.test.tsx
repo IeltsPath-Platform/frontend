@@ -7,14 +7,16 @@ import { HttpError } from '@/lib/httpClient'
 import type { User } from '../types'
 import { UsersPage } from './UsersPage'
 
-const { api, history, auth, search } = vi.hoisted(() => ({
+const { api, history, auth, search, access } = vi.hoisted(() => ({
   api: { listUsers: vi.fn(), createUser: vi.fn(), updateUser: vi.fn(), updateUserRoles: vi.fn(), updateUserStatus: vi.fn(), deleteUser: vi.fn() },
   history: { listLoginHistory: vi.fn() },
   auth: vi.fn(),
   search: { query: '', setQuery: vi.fn() },
+  access: { listPlans: vi.fn(), adjustPoints: vi.fn(), grantSubscription: vi.fn() },
 }))
 vi.mock('../api/userAdminApi', () => api)
 vi.mock('../api/loginHistoryApi', () => history)
+vi.mock('../api/accessAdminApi', () => ({ accessAdminApi: access }))
 vi.mock('@/features/auth/authSession', () => ({ useAuthSession: auth }))
 vi.mock('../../adminSearch', () => ({ useAdminSearch: () => search }))
 
@@ -83,26 +85,50 @@ describe('user row menu', () => {
     const menu = await openMenu('user@example.com')
 
     expect(within(menu).getAllByRole('menuitem').map((item) => item.textContent)).toEqual([
-      'Chi tiết', 'Chỉnh sửa', 'Phân quyền', 'Khóa', 'Đặt lại mật khẩu', 'Thay đổi mật khẩu', 'Lịch sử đăng nhập',
+      'Chi tiết', 'Chỉnh sửa', 'Phân quyền', 'Khóa', 'Điều chỉnh điểm', 'Cấp gói Premium', 'Lịch sử đăng nhập',
     ])
     expect(within(menu).queryByRole('menuitem', { name: /Xóa/ })).not.toBeInTheDocument()
   })
 
-  it('shows the password actions as usable items that change nothing yet', async () => {
+  it('adjusts points with a reason and reports the new balance', async () => {
+    access.adjustPoints.mockResolvedValue({ id: 'ledger-1', delta: -20, balanceAfter: 80 })
     renderUsers([fixture('user-id', 'user@example.com')])
 
-    for (const action of ['Đặt lại mật khẩu', 'Thay đổi mật khẩu']) {
-      const menu = await openMenu('user@example.com')
-      const item = within(menu).getByRole('menuitem', { name: action })
-      expect(item).toBeEnabled()
-      await userEvent.click(item)
-      expect(screen.queryByRole('menu')).not.toBeInTheDocument()
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-    }
-    expect(api.updateUserStatus).not.toHaveBeenCalled()
-    expect(api.updateUserRoles).not.toHaveBeenCalled()
+    await userEvent.click(within(await openMenu('user@example.com')).getByRole('menuitem', { name: 'Điều chỉnh điểm' }))
+    const dialog = await screen.findByRole('dialog')
+    await userEvent.type(within(dialog).getByLabelText('Số điểm (âm để trừ)'), '-20')
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Điều chỉnh điểm' }))
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('Nhập lý do')
+    expect(access.adjustPoints).not.toHaveBeenCalled()
+
+    await userEvent.type(within(dialog).getByLabelText('Lý do'), 'Thu hồi điểm tặng nhầm')
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Điều chỉnh điểm' }))
+
+    expect(await screen.findByText('Đã trừ 20 điểm. Số dư mới: 80.')).toHaveAttribute('role', 'status')
+    expect(access.adjustPoints).toHaveBeenCalledWith(expect.objectContaining({ userId: 'user-id', delta: -20, reason: 'Thu hồi điểm tặng nhầm' }))
+    expect(access.adjustPoints.mock.calls[0]![0].idempotencyKey).toMatch(/^[0-9a-f-]{36}$/)
   })
 
+  it('grants an active plan for the chosen number of days', async () => {
+    access.listPlans.mockResolvedValue([
+      { id: 'plan-old', code: 'OLD', name: 'Gói cũ', status: 'INACTIVE' },
+      { id: 'plan-premium', code: 'PREMIUM', name: 'Premium', status: 'ACTIVE' },
+    ])
+    access.grantSubscription.mockResolvedValue({ id: 'sub-1', planName: 'Premium', endsAt: '2026-12-27T00:00:00Z' })
+    renderUsers([fixture('user-id', 'user@example.com')])
+
+    await userEvent.click(within(await openMenu('user@example.com')).getByRole('menuitem', { name: 'Cấp gói Premium' }))
+    const dialog = await screen.findByRole('dialog')
+    const plan = await within(dialog).findByLabelText('Gói')
+    expect(within(plan).getAllByRole('option').map((option) => option.textContent)).toEqual(['Premium'])
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Cấp gói' }))
+
+    await waitFor(() => expect(access.grantSubscription).toHaveBeenCalledWith(
+      { userId: 'user-id', planId: 'plan-premium', durationDays: 30, humanGradingCredits: 0 },
+      expect.stringMatching(/^[0-9a-f-]{36}$/),
+    ))
+    expect(await screen.findByText(/^Đã cấp Premium/)).toHaveAttribute('role', 'status')
+  })
   it('opens the roles of an account in their own small modal', async () => {
     renderUsers([fixture('user-id', 'user@example.com')])
 

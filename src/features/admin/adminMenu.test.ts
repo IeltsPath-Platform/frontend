@@ -19,12 +19,12 @@ describe('adminMenu', () => {
 
   it('shows an examiner their dashboard, the grading screens and the knowledge graph', () => {
     expect(menuFor(['EXAMINER']).map((item) => item.path)).toEqual([
-      '/examiner', '/examiner/grading/writing', '/examiner/grading/speaking', '/examiner/knowledge-graph',
+      '/examiner', '/examiner/grading/writing', '/examiner/grading/speaking', '/examiner/ai-grading-reports', '/examiner/knowledge-graph',
     ])
   })
 
   it('keeps the examiner screens to examiners', () => {
-    for (const path of ['/examiner', '/examiner/profile', '/examiner/grading/writing', '/examiner/grading/speaking']) {
+    for (const path of ['/examiner', '/examiner/profile', '/examiner/grading/writing', '/examiner/grading/speaking', '/examiner/ai-grading-reports']) {
       expect(rolesFor(path)).toEqual(['EXAMINER'])
       for (const role of ['ADMIN', 'CONTENT_AUTHOR', 'CUSTOMER']) expect(menuFor([role]).some((item) => item.path === path)).toBe(false)
     }
